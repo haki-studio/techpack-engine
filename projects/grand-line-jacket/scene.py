@@ -182,7 +182,7 @@ add(GM.burst(*SUN, [(a, L) for a, L in BURST if abs(a) not in (178.5, 1.5)], 8.6
 add(GM.burst(*SUN, [(a, L) for a, L in BURST if abs(a) in (178.5, 1.5)], 8.6, 1.5, 0.9, col="gl_pale"), 15)
 GLOW_ENV = affinity.scale(Point(SUN[0], HORIZON).buffer(1.0, quad_segs=48), 96, 90, origin=(SUN[0], HORIZON)).intersection(box(-400, -400, 400, HORIZON - 1.5))
 for k, r in enumerate(np.arange(15.0, 112.0, 9.5)):
-    reg = GM.arc_line(SUN[0], SUN[1], r, -179, -1, 0.55, "gl_teal" if r < 70 else "gl_deep")
+    reg = GM.arc_line(SUN[0], SUN[1], r, -179, -1, 0.7, "gl_teal" if r < 70 else "gl_deep")
     reg["geom"] = reg["geom"].intersection(GLOW_ENV)
     add([reg], 11)
 

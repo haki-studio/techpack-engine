@@ -32,7 +32,7 @@ def cover(index):
     o.append(t(14, 36, "Grand Line jacket · washed navy — embroidery", 7.0, 700))
     o.append(t(14, 44, f"{REV} · {DATE} · Drum Island block, size M base · 1 element (01 front scene), 2 pieces · 12 threads · all dimensions mm", 2.6, 400, MUTED))
     o.append(f'<line x1="14" y1="48" x2="{SW-14}" y2="48" stroke="{INK}" stroke-width="0.4"/>')
-    fv = espec.front_view_png(F, VF, (-325, -25, 325, 625), 2.2, list(VF))
+    fv = espec.front_view_png(F, VF, (-325, -105, 325, 560), 2.2, list(VF))
     tag, h = img_tag(fv, 14, 54, 110); o.append(tag); o.append(t(14, 54 + h + 3.5, "FRONT (size M stitch render). Back + sleeves: no embroidery.", 2.2, 700))
     ix = 202
     o.append(t(ix, 58, "CONTENTS", 2.8, 700)); y = 64
@@ -49,17 +49,17 @@ def cover(index):
 
 def overview():
     o = hdr("PLACEMENT OVERVIEW — the front scene on the garment", "Garment coords: x from CF (+ = wearer's left), y down from the CF neck seam. Tolerance ±2, rotation ±2° (the halves must meet at the zip).", "G2")
-    fv = espec.front_view_png(F, VF, (-325, -25, 325, 625), 2.6, list(VF))
+    fv = espec.front_view_png(F, VF, (-325, -105, 325, 560), 2.6, list(VF))
     w = 150; s = w / 650; ax, ay = 12, 30
     tag, h = img_tag(fv, ax, ay, w); o.append(tag)
-    X = lambda x: ax + (x + 325)*s; Y = lambda y: ay + (y + 25)*s
+    X = lambda x: ax + (x + 325)*s; Y = lambda y: ay + (y + 105)*s
     for p in P2:
         b = BB[p]
         o.append(f'<rect x="{f(X(b[0]))}" y="{f(Y(b[1]))}" width="{f((b[2]-b[0])*s)}" height="{f((b[3]-b[1])*s)}" fill="none" stroke="{RED}" stroke-width="0.3" stroke-dasharray="1.2 0.8"/>')
         o.append(f'<circle cx="{f(X(b[0]))}" cy="{f(Y(b[1]))}" r="2.6" fill="{RED}"/>' + t(X(b[0]), Y(b[1]) + 0.8, p, 1.6, 700, "#FFFFFF", "middle"))
     hz = D["info"]["marks"][0]["y"]
-    o.append(f'<line x1="{f(X(-40))}" y1="{f(Y(hz))}" x2="{f(X(40))}" y2="{f(Y(hz))}" stroke="#00A3FF" stroke-width="0.5"/>' + t(X(42), Y(hz) + 0.7, f"horizon match y {hz:.1f}", 1.6, 700, "#0A84D6"))
-    o.append(t(ax, ay + h + 3.5, "FRONT, size M (0.23:1). Red = art boxes (corner label = piece). Blue = horizon match mark at the zip.", 1.9, 700))
+    o.append(f'<line x1="{f(X(-40))}" y1="{f(Y(hz))}" x2="{f(X(40))}" y2="{f(Y(hz))}" stroke="#00A3FF" stroke-width="0.6"/>')
+    o.append(t(ax, ay + h + 3.5, f"FRONT, size M (0.23:1). Red = art boxes (corner label = piece). Blue = horizon match mark at the zip, y {hz:.1f} below the CF neck.", 1.9, 700))
     tx = 170; ty = 30
     o.append(t(tx, ty, "ART BOX PER SIZE (mm, x from CF / y from CF neck)", 2.2, 700))
     hd = ["Size", "Art", "FR x", "FR y", "FL x", "FL y", "Horizon y"]; cx = [tx, tx + 10, tx + 18, tx + 40, tx + 60, tx + 82, tx + 102]
@@ -150,7 +150,7 @@ def summary():
     return o
 
 def files_page():
-    o = hdr("PRODUCTION STITCH FILES + HOOP SPLITS", "DST (Tajima) + PES, one set per size per piece. Counts read back from the files; trims counted from the DST. Origin = centre of each file's design (⊕ on the pattern).", "G5")
+    o = hdr("PRODUCTION STITCH FILES + HOOP SPLITS", "DST (Tajima) + PES, one set per size per piece. Counts read back from the files; trims counted from the DST. Origin = centre of each file's design ((+) on the pattern).", "G5")
     o.append(t(12, 31, "01 FRONT SCENE — one file per size per piece (art re-clipped to each size's keep-outs)", 2.0, 700))
     hd = ["Size", "Art", "Piece", "Full file mm", "Stitches", "Trims", "Stops", "S1 top: st / trims / mm", "S2 bottom: st / trims / mm", "Fits 360²"]
     cx = [12, 22, 30, 40, 62, 78, 90, 102, 148, 194]

@@ -91,6 +91,14 @@ def lobe_regions(lobes, tone_of, flat_y=None, grp="CL", unit=None, base_bottom=T
         rim = V.intersection(ell(cx, cy, r).difference(ell(cx, cy + 0.35*wr, r - wr))).intersection(box(cx - 2*r, cy - 2*r, cx + 2*r, cy + 0.2*r))
         rim = smooth(rim.difference(edge.buffer(0.2)).difference(shade.buffer(0.2)), 0.45) if r >= 5.0 else Polygon()
         body = V.difference(rim).difference(shade).buffer(0)
+        # slivers narrower than the 0.8 satin minimum go to the shade (or rim) band they touch
+        bc = body.buffer(-0.42).buffer(0.42).intersection(body)
+        sl = body.difference(bc)
+        if not sl.is_empty and sl.area > 0.01:
+            body = bc
+            if not shade.is_empty: shade = shade.union(sl.intersection(shade.buffer(0.6).union(sl))).buffer(0)
+            elif not rim.is_empty: rim = rim.union(sl).buffer(0)
+            else: body = body.union(sl)
         for col, g, gg, sb in ((rcol, rim, grp + "-rim", "rim"), (bcol, body, grp, "body"), (scol, shade, grp + "-shade", "shade"), (EDGE, edge, grp + "-edge", "edge")):
             if not g.is_empty: regs.append(R(col, g, "satin", "auto", gg, unit=unit, sub=sb, ko=(sb != "edge")))
         front = front.union(d)

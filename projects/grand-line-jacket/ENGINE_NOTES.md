@@ -56,3 +56,10 @@ Problems hit while building this product, worked around in project code only. Ea
 - 4-point sparkle star (single-thread cross, gold+pale big sparkle), sunburst (tapered satin), radial-satin sun, run-stitch glow arcs,
 - sea: dark field + light horizontal tatami dashes in perspective rows; glitter path.
 - Proposed: move to `engine/motifs3.py` with a render test (one bank, one star, one sea patch).
+
+## 7. Max-stitch gate can fail by DST grid rounding
+- **Problem:** `make_pattern` splits sewn stitches only when > 7.5 mm, before coordinates are rounded to the 0.1 mm DST/PES grid; XXL/3XL
+  FR read back a 7.52 mm stitch (LESSONS B7 gate is ≤ 7.5).
+- **Workaround:** `build_size.cap_stitches()` splits any stitch > 7.4 mm in the pattern before `dst2.write`.
+- **Proposed fix:** split at > 7.4 in `make_pattern` (and in `turning_satin` / `fixed_satin`, which split at 7.0 already), or round first.
+- **Check:** `verify()` max_stitch ≤ 7.5 on every file of a scaled (108 %) test design.

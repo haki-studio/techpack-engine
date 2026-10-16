@@ -38,7 +38,7 @@ def _draw_pieces(o, g, codes, x0, y0, wmax, s, size, em=None, lw=0.5, tm=1.6, ga
     return y + rowh
 
 def p_pattern_pieces():
-    o = GT.header("PATTERN — pieces + cut list (size M, sample size)", "Drum Island first pattern, drafted from its fit chart (T4); welts at this jacket's position. Seam allowance included; dashed = sew line; slits = notches; ⊕ = drill holes; pink = embroidery placement.", "T11")
+    o = GT.header("PATTERN — pieces + cut list (size M, sample size)", "Drum Island first pattern, drafted from its fit chart (T4); welts at this jacket's position. Seam allowance included; dashed = sew line; slits = notches; (+) = drill holes; pink = embroidery placement.", "T11")
     g, mt = PT.draft("M"); em = PO.emb_marks("M")
     y1 = _draw_pieces(o, g, ["B01", "F01", "F02", "S01"], 12, 30, 190, 0.085, "M", em, lw=0.35, tm=1.4)
     y2 = _draw_pieces(o, g, ["C01", "C02", "K01", "K02", "L01", "L02", "L03"], 12, y1 + 6, 190, 0.06, "M", None, lw=0.28, tm=1.15, gap=3)
@@ -118,7 +118,7 @@ def p_pattern_grade():
     return o
 
 def p_pattern_emb():
-    o = GT.header("PATTERN — embroidery placement per size + keep-out check", "Placement is drawn on the pattern pieces (DXF layer 8: art outline + box + centre ⊕ = DST origin / needle start). Clearances measured from the art outline of each size's own stitch-file art.", "T13")
+    o = GT.header("PATTERN — embroidery placement per size + keep-out check", "Placement is drawn on the pattern pieces (DXF layer 8: art outline + box + centre (+) = DST origin / needle start). Clearances measured from the art outline of each size's own stitch-file art.", "T13")
     hd = ["Size", "Art", "Piece", "Art box x / y (from CF, CF neck)", "CF", "Armhole", "Shoulder", "Side", "Hem", "Welt", "Collar", "Result"]
     cx = [12, 22, 30, 44, 102, 116, 132, 150, 164, 178, 192, 208]
     for x_, h in zip(cx, hd): o.append(t(x_, 31, h, 1.6, 700, MUTED))

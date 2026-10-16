@@ -15,6 +15,21 @@ D = pickle.load(open(f"front_{size}.pkl", "rb"))
 OUT = f"out/01_front-scene/{size}"; os.makedirs(OUT, exist_ok=True)
 FRAME = (360.0, 360.0)
 
+def cap_stitches(pat, mx=7.4):
+    """split any sewn stitch longer than mx mm (the engine splits > 7.5 before the 0.1 mm DST grid rounding -> 7.52 seen)"""
+    import math, pyembroidery as pe
+    out = []; prev = None
+    for x, y, c in pat.stitches:
+        if (c & pe.COMMAND_MASK) == pe.STITCH and prev is not None:
+            d = math.hypot(x - prev[0], y - prev[1]) / 10.0
+            if d > mx:
+                n = int(math.ceil(d / 6.0))
+                for k in range(1, n): out.append([prev[0] + (x - prev[0])*k/n, prev[1] + (y - prev[1])*k/n, pe.STITCH])
+        out.append([x, y, c])
+        prev = (x, y) if (c & pe.COMMAND_MASK) in (pe.STITCH, pe.JUMP) else prev
+    pat.stitches = out
+    return pat
+
 def stops_for(vis):
     st = tech.stops(vis); n0 = len(st); return dst2.merge_stops(st), n0
 
@@ -27,7 +42,7 @@ for P in which:
         ub = unary_union([r["geom"] for r in vis]).bounds; c = ((ub[0]+ub[2])/2, (ub[1]+ub[3])/2)
         stops, n0 = stops_for(vis); pat, st = dst2.make_pattern(vis, stops, c)
         base = f"{OUT}/HAKI_GRLN_01_front-scene_{P}_{size}"
-        dst2.write(pat, base); v = dst2.verify(base); dst2.render(base, base + "_preview.png", s=0.5)
+        dst2.write(cap_stitches(pat), base); v = dst2.verify(base); dst2.render(base, base + "_preview.png", s=0.5)
         res["full"] = dict(v, trims_cmd=st["trims"], travel=st["travel"], jumps_cmd=st["jumps"], stops=len(stops), stops_before_merge=n0,
                            centre=c, art_box=ub, file=base, colours=[s["col"] for s in stops], secs=round(time.time()-t),
                            worst=sorted(st.get("by", {}).items(), key=lambda kv: -kv[1])[:10])
@@ -46,7 +61,7 @@ for P in which:
             cc = ((bb[0]+bb[2])/2, (bb[1]+bb[3])/2)
             pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=marks[key])
             base = f"{OUT}/splits/HAKI_GRLN_01_front-scene_{P}_{size}_{names[key]}"; os.makedirs(os.path.dirname(base), exist_ok=True)
-            dst2.write(pat, base); v = dst2.verify(base); dst2.render(base, base + "_preview.png", s=0.5)
+            dst2.write(cap_stitches(pat), base); v = dst2.verify(base); dst2.render(base, base + "_preview.png", s=0.5)
             spl["sections"][names[key]] = dict(v, trims_cmd=st["trims"], stops=len(stops) + 1, bbox=bb, centre=cc, marks=marks[key], file=base,
                                                fits=(bb[2]-bb[0] <= FRAME[0]-16 and bb[3]-bb[1] <= FRAME[1]-16), secs=round(time.time()-t))
             print(size, P, names[key], {k: spl["sections"][names[key]][k] for k in ("stitches", "trims_cmd", "stops", "size", "fits", "secs")}, flush=True)

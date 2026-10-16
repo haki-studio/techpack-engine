@@ -79,7 +79,7 @@ def build(cfg, F, vis_all):
 
     # ---------------- p1 preview + placement
     o = header(f"{n} · {cfg['title']} — stitch-out preview + placement", cfg["sub"], "p1 / 5")
-    bbox = (-325, -25, 325, 625); ppm = 2.6
+    bbox = (-325, -105, 325, 560); ppm = 2.6
     fv = front_view_png(F, vis_all, bbox, ppm, pieces)
     w_mm = 152; s = w_mm / (bbox[2] - bbox[0]); ax, ay = 12, 29
     tag, h = img_tag(fv, ax, ay, w_mm); o.append(tag)

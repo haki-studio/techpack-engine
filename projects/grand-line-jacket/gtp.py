@@ -228,7 +228,7 @@ def p_grade():
     o.append(t(gx, y, "Art boxes in mm, measured from each size's own art (after keep-out clipping).", 1.75, 400, MUTED))
     o.append(t(gx, y + 3.3, "Bigger sizes keep more cloud at the side seams (the art is composed past the M keep-outs).", 1.75, 400, MUTED))
     o.append(t(gx, y + 8, "C · PLACEMENT REFERENCE PER SIZE", 2.4, 700))
-    pl = ["The per-size stitch files are already in each size's pattern coordinates: origin = centre of the art box (⊕ on the pattern, DXF",
+    pl = ["The per-size stitch files are already in each size's pattern coordinates: origin = centre of the art box ((+) on the pattern, DXF",
           "   layer 8 = art outline, box, centre). Zip edge of the art 15 mm from CF on every size; horizon match mark at CF (G2).",
           "Hoop each cut front panel flat; mark CF, the horizon line and the welt box (drill holes) before hooping.",
           "Keep-outs held on every size: CF/zip 15 · side, armhole, shoulder 15 · hem seam 10 · welt 6 · collar lying flat 6 (T13)."]
