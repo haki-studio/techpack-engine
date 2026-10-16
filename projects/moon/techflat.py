@@ -136,8 +136,8 @@ def draw_front(F, emb_boxes=(), callouts=True):
     col = F.collar_front(); o.append(f'<path d="{poly_path(col)}" fill="{CORD}" stroke="{INK}" stroke-width="{f(0.6*K)}"/>'); o.append(cord_lines(col, 90, 2.2))
     o.append(topstitch(col, 4, "1.4 0.9", 0.25, "#C9A882"))
     for (x0, y0, x1, y1, lab) in emb_boxes:
-        o.append(f'<rect x="{f(x0)}" y="{f(y0)}" width="{f(x1-x0)}" height="{f(y1-y0)}" fill="none" stroke="#C0392B" stroke-width="{f(0.5*K)}" stroke-dasharray="3 2"/>')
-        o.append(f'<circle cx="{f(x0)}" cy="{f(y0)}" r="{f(LBL)}" fill="#C0392B"/><text x="{f(x0)}" y="{f(y0 + LBL*0.36)}" font-size="{f(LBL)}" font-weight="700" fill="#FFF" text-anchor="middle" font-family="Noto Sans CJK JP">{lab}</text>')
+        o.append(f'<rect x="{f(x0)}" y="{f(y0)}" width="{f(x1-x0)}" height="{f(y1-y0)}" fill="none" stroke="#FF5A4E" stroke-width="{f(0.8*K)}" stroke-dasharray="3 2"/>')
+        o.append(f'<circle cx="{f(x0)}" cy="{f(y0)}" r="{f(LBL)}" fill="#E0402F"/><text x="{f(x0)}" y="{f(y0 + LBL*0.36)}" font-size="{f(LBL)}" font-weight="700" fill="#FFF" text-anchor="middle" font-family="Noto Sans CJK JP">{lab}</text>')
     return "".join(o)
 
 def draw_back(F, emb_boxes=()):
@@ -156,8 +156,8 @@ def draw_back(F, emb_boxes=()):
     o.append(topstitch(col, 4, "1.4 0.9", 0.25, "#C9A882"))
     o.append(f'<line x1="0" y1="-30" x2="0" y2="{f(F.hem_edge + 10)}" stroke="#0A84D6" stroke-width="{f(0.3*K)}" stroke-dasharray="3 2"/>')
     for (x0, y0, x1, y1, lab) in emb_boxes:
-        o.append(f'<rect x="{f(x0)}" y="{f(y0)}" width="{f(x1-x0)}" height="{f(y1-y0)}" fill="none" stroke="#C0392B" stroke-width="{f(0.5*K)}" stroke-dasharray="3 2"/>')
-        o.append(f'<circle cx="{f(x0)}" cy="{f(y0)}" r="{f(LBL)}" fill="#C0392B"/><text x="{f(x0)}" y="{f(y0 + LBL*0.36)}" font-size="{f(LBL)}" font-weight="700" fill="#FFF" text-anchor="middle" font-family="Noto Sans CJK JP">{lab}</text>')
+        o.append(f'<rect x="{f(x0)}" y="{f(y0)}" width="{f(x1-x0)}" height="{f(y1-y0)}" fill="none" stroke="#FF5A4E" stroke-width="{f(0.8*K)}" stroke-dasharray="3 2"/>')
+        o.append(f'<circle cx="{f(x0)}" cy="{f(y0)}" r="{f(LBL)}" fill="#E0402F"/><text x="{f(x0)}" y="{f(y0 + LBL*0.36)}" font-size="{f(LBL)}" font-weight="700" fill="#FFF" text-anchor="middle" font-family="Noto Sans CJK JP">{lab}</text>')
     return "".join(o)
 
 def bounds_front(F):

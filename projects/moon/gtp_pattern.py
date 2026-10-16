@@ -42,7 +42,7 @@ def p_pattern_pieces():
     g, mt = PT.draft("M"); em = PO.emb_marks("M")
     y1 = _draw_pieces(o, g, ["B01", "F01", "F02", "S01"], 12, 30, 190, 0.085, "M", em, lw=0.35, tm=1.4)
     y2 = _draw_pieces(o, g, ["C01", "C02", "K01", "K02", "L01", "L02", "L03"], 12, y1 + 6, 190, 0.06, "M", None, lw=0.28, tm=1.15, gap=3)
-    _draw_pieces(o, g, ["R01", "R02", "P01", "P02", "P03", "P04"], 12, y2 + 6, 190, 0.06, "M", None, lw=0.28, tm=1.1, gap=4)
+    _draw_pieces(o, g, ["R01", "R02", "P01", "P02", "P03", "P04"], 12, y2 + 6, 190, 0.06, "M", None, lw=0.28, tm=0.8, gap=14)
     tx = 206; o.append(t(tx, 31, "CUT LIST — per jacket", 2.3, 700))
     hd = ["Code", "Piece", "Cut", "Material", "Fuse"]; cx = [tx, tx + 9, tx + 36, tx + 47, tx + 73]
     for x_, h in zip(cx, hd): o.append(t(x_, 35.5, h, 1.6, 700, MUTED))
@@ -256,15 +256,15 @@ def p_operations():
     o.append(t(cx[3], y, "TOTAL (sewing + finishing)", 1.8, 700)); o.append(t(cx[4], y, f"{tot:.0f} min", 1.8, 700))
     r = json.load(open("out/results/size_M.json")); gB = json.load(open("out/results/grade_B.json"))
     st = r["back"]["stitches"] + r["03L"]["stitches"] + r["03R"]["stitches"] + sum(gB[k]["stitches"] for k in ("02R", "02L", "04R", "04L"))
-    o.append(t(12, y + 6, f"Embroidery machine time, size M: {st/1000:.0f}k stitches (DST) → ≈ {st/750/60:.1f} h per head at 750 spm + colour changes + hooping (7 hoopings + the back as 4 splits = 10).", 1.75, 600))
+    o.append(t(12, y + 6, f"Embroidery machine time, size M: {st/1000:.0f}k stitches (DST) → ≈ {st/750/60:.1f} h per head at 750 spm + colour changes + hooping (02 + 03: 4 hoopings, 04: 4, back: 1 border frame or 4 splits (3XL 6) = 9 or 12).", 1.75, 600))
     o.append(GT.prop(12, y + 10, "SMVs are estimates — replace with the factory's time study at the sample stage", 1.75))
     return o
 
 # ---------------------------------------------------------------- revision log + sample tracker
 REVS = [("Garment Rev A", "16 Oct 2026", "Moon colourway on the Drum Island pattern (unchanged from plum + pine Rev B): washed navy duck, navy-black corduroy + rib. "
                                           "Side seams carry the wire wraps: no side-seam topstitch; back armhole topstitched on the body."),
-        ("Embroidery Rev A", "16 Oct 2026", "First release: 01 back scene per size + 4 × 360² splits with the licensed-figure placeholder box; 02 chest clouds A/B/C; "
-                                             "03 lower-front pole + wires per size; 04 sleeve clouds A/B/C. Figure licence confirmed by client 2026-10-16.")]
+        ("Embroidery Rev A", "16 Oct 2026", "First release: 01 back scene per size + 360² splits (4; 3XL 6) with the licensed-figure placeholder box; 02 chest clouds A/B/C; "
+                                             "03 lower-front pole + wires per size; 04 sleeve clouds A/B/C (2 hoopings per sleeve). Figure licence confirmed by client 2026-10-16.")]
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]
 
 def p_revisions():

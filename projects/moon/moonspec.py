@@ -97,10 +97,10 @@ PROD = ["Embroider the cut pieces flat, BEFORE any seam.",
 
 CFG = {
  "01": dict(slug="back-scene", title="BACK SCENE — moon, clouds, pole + wires, licensed-figure placeholder", pieces=["back"],
-            sub="Direct embroidery on the cut back panel · ONE FILE PER SIZE (+ 4 × 360² splits) · mm, finished size · art 1:1 · x from CB, y down from CB neck seam",
-            crops=[(-60, 150, -10, 200, "Moon body, maria, craters (low density)"), (-215, 280, -165, 330, "Cloud crown: caps, scallops, shadow"),
+            sub="Direct embroidery on the cut back panel · ONE FILE PER SIZE (+ 360² split files: 4, 3XL 6) · mm, finished size · art 1:1 · x from CB, y down from CB neck seam",
+            crops=[(-75, 185, -25, 235, "Moon body, maria, craters (low density)"), (-215, 280, -165, 330, "Cloud crown: caps, scallops, shadow"),
                    (-20, 360, 30, 410, "Pole top, crossarm, insulator"), (10, 395, 60, 445, "Transformer can + wires")],
-            dm=[(-80, 140, -10, 190, "Moon: horizontal tatami, maria at 30°"), (-230, 270, -150, 320, "Cloud: horizontal tatami, turning satin caps"), (-20, 360, 60, 410, "Pole: tatami along the pole, satin hardware")],
+            dm=[(-90, 180, -20, 230, "Moon: horizontal tatami, maria at 30°"), (-230, 270, -150, 320, "Cloud: horizontal tatami, turning satin caps"), (-20, 360, 60, 410, "Pole: tatami along the pole, satin hardware")],
             mock=(150, 200, 560, 720), mock_src="inputs/back.png"),
  "02": dict(slug="chest-clouds", title="CHEST CLOUDS (02R wearer's right · 02L wearer's left)", pieces=["02R", "02L"],
             sub="Direct embroidery on the cut front panels, before zip + welts · graded A/B/C · mm, finished size · x from CF (+ = wearer's left), y from CF neck seam",
@@ -171,6 +171,8 @@ def build(n):
         r = res_of(p)
         o.append(t(rx, yy, f"{p} ({'size M' if p in RES_M else 'grade B'})", 1.8, 400, MUTED))
         o.append(t(rx + 44, yy, f"{r['stitches']:,} st · {r['trims_dst']} trims · {r['stops']} stops · {r['threads']} threads · {r['stitches']/750:.0f} min", 1.8, 600)); yy += 3.5
+        if "sections" in r:
+            o.append(t(rx + 44, yy, "hoopings: " + " · ".join(f"{k[:2]} {v['stitches']/1000:.0f}k ({v['size'][0]:.0f}×{v['size'][1]:.0f})" for k, v in r["sections"].items()) + ("  fit 360²" if all(v["fits"] for v in r["sections"].values()) else "  CHECK"), 1.7, 400, MUTED)); yy += 3.5
     if n == "01":
         sp = RES_M["splits"]
         o.append(t(rx, yy, "360² splits (size M)", 1.8, 400, MUTED))
@@ -204,7 +206,7 @@ def build(n):
     zx = 192; o.append(t(zx, 32, "DETAIL CROPS", 2.4, 700)); yy = 35
     for (x0, y0, x1, y1, cap) in cfg["dm"]:
         im = direction_map(ALL, (x0, y0, x1, y1), 12, label_min=20, label_mm=1.4)
-        wmm = 92; tag, hh = img_tag(im, zx, yy, wmm, 90); o.append(tag)
+        wmm = 64; tag, hh = img_tag(im, zx, yy, wmm, 90); o.append(tag)
         o.append(f'<rect x="{zx}" y="{f(yy)}" width="{f(wmm)}" height="{f(hh)}" fill="none" stroke="#BBB" stroke-width="0.2"/>')
         o.append(t(zx, yy + hh + 3, cap, 1.75, 400, MUTED)); yy += hh + 6.5
     pages.append(o)
@@ -276,7 +278,9 @@ def build(n):
     o.append(t(76, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
     for i, c in enumerate(CHANGES[n]): o.append(t(76, my + 4.5 + i * 3.3, c, 1.8))
     o.append(t(196, my, "PRODUCTION", 2.4, 700))
-    pr = PROD + (["Back: border frame ≥ 610 × 470 single file, or the", "  4 split files S1–S4 (360²) with basting crosses."] if n == "01" else [])
+    _ab = unary_union([r["geom"] for r in VIS["back"]]).bounds
+    pr = PROD + ([f"Back: border frame ≥ {_ab[2]-_ab[0]+14:.0f} × {_ab[3]-_ab[1]+14:.0f} (M) single file, or", "  the 360² split files (4; 3XL 6) with basting crosses (G5)."] if n == "01" else [])
+    pr += (["Sleeves: two hoopings per sleeve (split files S1 +", "  S2, front + back half) with basting crosses."] if n == "04" else [])
     pr += ["Wires: bean 0.8; side-seam ends 3 mm short — match", "  the side-seam notches when closing (no topstitch)."] if n in ("01", "03") else []
     for i, c in enumerate(pr): o.append(t(196, my + 4.5 + i * 3.3, c, 1.8))
     o.append(t(14, SH - 12, "[proposed — confirm] threads + densities: approve a thread board and a sew-out on the production duck before bulk.", 1.8, 600, PROP))

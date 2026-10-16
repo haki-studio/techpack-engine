@@ -98,7 +98,7 @@ def p_details(F):
     stand = TF.Polygon(neck + drum.curve(F.hps, (-F.hps[0], 0), 22, 16)[1:] + [(-x, y) for x, y in neck][::-1][1:]).buffer(0)
     U = col.union(stand); cb = U.bounds; s = min(88 / (cb[2]-cb[0]), 52 / (cb[3]-cb[1])); TF.K = 1.0 / (s * 3)
     o.append(t(14, 32, "A · COLLAR", 2.5, 700))
-    body = (f'<path d="{TF.poly_path(stand)}" fill="#3E2A1E" stroke="{TF.INK}" stroke-width="{f(0.5*TF.K)}"/>'
+    body = (f'<path d="{TF.poly_path(stand)}" fill="#161A26" stroke="{TF.INK}" stroke-width="{f(0.5*TF.K)}"/>'
             f'<path d="{TF.poly_path(col)}" fill="{TF.CORD}" stroke="{TF.INK}" stroke-width="{f(0.7*TF.K)}"/>{TF.cord_lines(col, 90, 2.2)}'
             f'{TF.topstitch(col, 6, "3 2", 0.5, "#C9A882")}')
     o.append(f'<g transform="translate({f(18 - cb[0]*s)} {f(36 - cb[1]*s)}) scale({f(s)})">{body}</g>')
@@ -111,10 +111,10 @@ def p_details(F):
     o.append(t(bx, 32, "B · CUFF + HEM RIB", 2.5, 700))
     o.append(f'<rect x="{bx}" y="37" width="40" height="15" fill="{TF.CUFF}" stroke="{INK}" stroke-width="0.3"/>')
     for k in range(40): o.append(f'<line x1="{f(bx + k + 0.5)}" y1="37" x2="{f(bx + k + 0.5)}" y2="52" stroke="#3E4558" stroke-width="0.12"/>')
-    o.append(t(bx + 44, 42, "Cuff: 7.5 finished, folded double", 1.8)); o.append(prop(bx + 44, 45.5, "1×1 rib, navy-black, 95/5 cotton/elastane", 1.75))
+    o.append(t(bx + 44, 42, "Cuff: 7.5 finished, folded double", 1.8)); o.append(prop(bx + 44, 45.5, "1×1 rib navy-black, 95/5", 1.75))
     o.append(f'<rect x="{bx}" y="57" width="40" height="11" fill="{TF.RIBC}" stroke="{INK}" stroke-width="0.3"/>')
     for k in range(40): o.append(f'<line x1="{f(bx + k + 0.5)}" y1="57" x2="{f(bx + k + 0.5)}" y2="68" stroke="#3E4558" stroke-width="0.12"/>')
-    o.append(t(bx + 44, 61, "Hem: 5.5 finished, folded double", 1.8)); o.append(prop(bx + 44, 64.5, "1×1 rib, navy-black to match collar", 1.75))
+    o.append(t(bx + 44, 61, "Hem: 5.5 finished, folded double", 1.8)); o.append(prop(bx + 44, 64.5, "1×1 rib navy-black", 1.75))
     o.append(t(bx, 74, "Cuff opening (relaxed, ½): XS 14 → 3XL 17", 1.8)); o.append(t(bx, 77.5, "Bottom sweep (relaxed, ½): XS 52 → 3XL 70", 1.8))
     o.append(prop(bx, 81, "Rib cut length = 85% of attached edge (cuff), 90% (hem)", 1.75))
     # D zip (right column)
@@ -131,7 +131,7 @@ def p_details(F):
     # C welt pocket
     wy = 106
     o.append(t(14, wy, "C · WELT POCKET (×2)", 2.5, 700))
-    o.append(f'<rect x="16" y="{wy+5}" width="70" height="8" fill="#DCCFB4" stroke="{INK}" stroke-width="0.35"/>'
+    o.append(f'<rect x="16" y="{wy+5}" width="70" height="8" fill="#2E3854" stroke="{INK}" stroke-width="0.35"/>'
              f'<rect x="17" y="{wy+6}" width="68" height="6" fill="none" stroke="{MUTED}" stroke-width="0.2" stroke-dasharray="1 0.6"/>'
              f'<rect x="15" y="{wy+4}" width="2" height="10" fill="{INK}"/><rect x="85" y="{wy+4}" width="2" height="10" fill="{INK}"/>')
     o.append(t(16, wy + 18, "shown 0.5:1, drawn horizontal — sewn at 38° (see T2)", 1.7, 400, MUTED))
@@ -325,7 +325,7 @@ def p_labels():
         o.append(t(14, 34 + i*4.2, a, 1.9, 600)); o.append(t(46, 34 + i*4.2, b, 1.9))
     o.append(t(14, 60, "CARE / CONTENT LABEL TEXT", 2.4, 700))
     care = ["Shell: 100% cotton · Collar: 100% cotton · Rib: 95% cotton 5% elastane · Lining: 100% cotton / sleeve lining 100% polyester",
-            "Embroidery: 100% polyester · Made in [country] · Style HK-JK-DRUM-PP · Size [ ]",
+            "Embroidery: 100% polyester · Made in [country] · Style HK-JK-DRUM-MOON · Size [ ]",
             "Machine wash cold, inside out, gentle · Do not bleach · Tumble dry low · Cool iron on reverse, never on embroidery · Do not dry clean",
             "Care symbols (ISO 3758): wash 30 °C gentle · no bleach · tumble low · iron 1 dot · no dry clean"]
     for i, c in enumerate(care): o.append(prop(14, 65 + i*3.7, c, 1.8) if i < 2 else t(14, 65 + i*3.7, c, 1.85))
@@ -369,7 +369,7 @@ QUESTIONS = ["1. Shell colour: target ≈ #25304D washed navy from the mockup �
           "10. Garment wash after embroidery? If yes: wash test on the sew-out first (cream moon + white cloud caps grey first).",
           "11. Licensed figure on the pole: licence confirmed by client 2026-10-16. Factory digitizer adds it inside the placeholder box",
           "     from the licensor-approved art; confirm the box size/position against that art (G4).",
-          "12. Factory frame: 360 × 360 frames + 15-needle heads assumed (brief): back sewn as 4 split hoopings (G5)."]
+          "12. Factory frame: 360 × 360 frames + 15-needle heads assumed (brief): back sewn as 4 split hoopings, 3XL 6 (G5)."]
 def p_questions():
     o = header("OPEN QUESTIONS — garment", "Everything marked [proposed — confirm] in this pack, in one place. Embroidery questions are on G4.", "T10")
     for i, q in enumerate(QUESTIONS): o.append(t(14, 34 + i*4.6, q, 2.0))
@@ -388,9 +388,9 @@ def build(emb_pdf, emb_pages, out_pdf):
              GP.p_pattern_pieces(), GP.p_pattern_grade(), GP.p_pattern_emb(), GP.p_inside(), GP.p_operations(), GP.p_revisions()]
     w = PdfWriter()
     for i, pg in enumerate(pages, 1):
-        svg = doc(pg); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"T{i}.pdf")
-        cairosvg.svg2png(bytestring=svg.encode(), write_to=f"prev_T{i}.png", output_width=2400)
-        w.append(PdfReader(f"T{i}.pdf"))
+        svg = doc(pg); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"out/_T{i}.pdf")
+        cairosvg.svg2png(bytestring=svg.encode(), write_to=f"out/prev_T{i}.png", output_width=2400)
+        w.append(PdfReader(f"out/_T{i}.pdf"))
     if emb_pdf: w.append(PdfReader(emb_pdf))
     w.write(out_pdf)
     return len(pages)
