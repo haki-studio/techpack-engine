@@ -30,7 +30,7 @@ Merged the small, testable proposals; the rest is ordered in `docs/ROADMAP.md`. 
   strike-off (LESSONS A11). Cost-cutting items in the review fix lists were cancelled.
 - Process added: `engine/factory.py` + `factory.json` (F1 factory-requests page), `engine/readback.py` (per-stop counts from the DST,
   B20), review stages `review` → `reviewed`, close-up prompts (`inputs/closeup_request.md`).
-- Forestball close-ups (ChatGPT, 1254 px, wearer's right front only) are in `projects/forestball/inputs/closeups/`. `a` is the primary
+- Close-ups: Moon back/front/sleeves and Grand Line FR/FL (both complete), Forestball front-right only. Forestball close-ups (ChatGPT, 1254 px, wearer's right front only) are in `projects/forestball/inputs/closeups/`. `a` is the primary
   reference; `c` has drifted, so use it for texture only.
 - In flight: the 3 builders on Rev B; one engine builder cutting trims in its own worktree, which will open a PR. Next: re-review
   each Rev B and mark it `reviewed`, then merge the trim PR after checking its before/after table.

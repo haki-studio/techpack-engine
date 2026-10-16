@@ -5,39 +5,40 @@ Drum Island pattern materials (black corduroy collar, black rib). Nothing in eng
 import motifs2, tech
 
 STYLE = "HK-JK-DRUM-FB"; NAME = "Forestball Jacket"; SLUG = "forestball"
-REV_EMB = "Rev A"; REV_GAR = "Rev A"; DATE = "16 Oct 2026"
+REV_EMB = "Rev B"; REV_GAR = "Rev B"; DATE = "16 Oct 2026"
 FABRIC = "#3A463C"                     # washed forest green (mockup median #38433A..#3D483F)
 
 # ---------------------------------------------------------------- thread palette (13 threads + basting, 40wt polyester) — PROPOSED, read from the mockup
 PAL = {
     "navy":    ("#18222E", "Navy black",     "bark crevices, outlines, twigs, rock shadow"),
-    "bark":    ("#2D4862", "Bark blue",      "bark body, rock body"),
+    "bark":    ("#2D4862", "Bark blue",      "bark body + chain underside, rock body, stream"),
     "barklt":  ("#557696", "Bark blue light","bark ridges, rock rims, water mid"),
     "mossdk":  ("#3B4B26", "Moss dark",      "moss underside, lump contours, grass shade"),
-    "moss":    ("#55672C", "Moss",           "raised moss on limbs + rocks"),
-    "mosslt":  ("#8E9C44", "Moss light",     "moss tops, grass light, leaf shade on fronts"),
-    "leaf":    ("#C6C872", "Leaf yellow-green","leaf light half"),
-    "leafdk":  ("#8E9A42", "Leaf olive",     "leaf shade half"),
+    "moss":    ("#55672C", "Moss",           "raised moss on limbs + rocks + strands"),
+    "mosslt":  ("#8E9C44", "Moss light",     "moss tops + mottling, leaf shade half, grass light"),
+    "leaf":    ("#C6C872", "Leaf yellow-green","leaf light half, moss highlights"),
+    "grass":   ("#4F7B3B", "Grass green",    "grass blades, moss mottling (4th moss green)"),
     "sage":    ("#A1A88F", "Sage",           "light rays (sheer run)"),
-    "cream":   ("#DAD5B3", "Cream",          "light rays core, highlights, water sparkle"),
-    "water":   ("#294A63", "Stream blue",    "stream body"),
+    "cream":   ("#DAD5B3", "Cream",          "light rays core, water glints, moss-strand twist"),
     "waterlt": ("#7491B0", "Stream light",   "ripples, ripple rings"),
-    "grass":   ("#4F7B3B", "Grass green",    "grass blades"),
     "basting": ("#00A3FF", "Basting (remove)", "licensed-figure placeholder outline (water-soluble, removed)"),
 }
 motifs2.PAL.clear(); motifs2.PAL.update(PAL)
 motifs2.HEX.clear(); motifs2.HEX.update({k: v[0] for k, v in PAL.items()})
 motifs2.FABRIC = FABRIC
-tech.COLOUR_ORDER[:] = ["basting", "sage", "cream", "water", "waterlt", "bark", "navy", "barklt", "mossdk", "moss", "mosslt",
-                        "grass", "leafdk", "leaf"]
+tech.COLOUR_ORDER[:] = ["basting", "sage", "cream", "bark", "waterlt", "navy", "barklt", "mossdk", "moss", "grass", "mosslt", "leaf"]
+# Rev B thread merges: only pairs that are the same colour in the mockup (and matched the same catalogue thread).
+# Moss vs grass green stay separate (visibly different greens; fidelity first, founder 16 Oct).
+MERGE = {"leafdk": "mosslt", "water": "bark"}
+def col(c): return MERGE.get(c, c)
 tech.LAYER_NAMES.clear()
-tech.LAYER_NAMES.update({1: "Light rays", 2: "Stream", 3: "Grass behind", 4: "Rocks", 5: "Bark + twigs", 6: "Moss",
-                         7: "Leaves", 8: "Grass front", 0: "Placeholder outline", 10: "Hanging moss", 4.5: "Leaves"})
+tech.LAYER_NAMES.update({0: "Placeholder outline", 2: "Stream + rocks", 4.5: "Leaves", 5: "Bark + twigs", 6: "Moss",
+                         7: "Leaves", 8: "Grass", 10: "Hanging moss", 11: "Light rays (on top)"})
 STITCH_LAYER = {99: 99}                # truthy map: bark line work sews after the moss (tech.stops 6.5 rule)
 
 # ---------------------------------------------------------------- forest region codes (name, stitch, angle, density, length, underlay, pull, notes)
 tech.RULES.update({
- "LR":        ("Light ray (sheer)",          "Run, serpentine", "along the ray",          "1.9 rows", "2.6", "none",                       "—",    "≈ 15 % cover; sews first"),
+ "LR":        ("Light ray (sheer)",          "Run, serpentine", "along the ray",          "2.6 rows", "2.6", "none",                       "—",    "≈ 15 % cover; sewn LAST, over the art"),
  "MS":        ("Moss on bark (raised)",      "Padded tatami", "across limb (map)",        "0.45",   "5.0",  "1 padding layer @ 90°",      "0.30", "random split, no rows"),
  "MS-shade":  ("Moss underside",             "Satin / split satin", "same as moss",       "0.42",   "≤7.0", "edge run",                   "0.25", ""),
  "MS-top":    ("Moss top light",             "Satin",   "across band",                    "0.42",   "—",    "centre run",                 "0.20", "blend 1 row into moss"),
@@ -64,12 +65,11 @@ tech.RULES.update({
  "BU":        ("Water-lily bud petal",       "Satin",   "along petal",                    "0.40",   "—",    "centre run",                 "0.20", "original motif"),
  "BU-tip":    ("Bud petal tip light",        "Satin",   "along petal",                    "0.40",   "—",    "none",                       "0.15", "blend 1 row"),
  "RI":        ("Ripple rings",               "Run (single)", "follows line",              "—",      "2.4",  "none",                       "—",    ""),
- "HM":        ("Hanging moss strand",        "Satin, turning", "across strand",           "0.42",   "—",    "centre run if > 2",          "0.20", "hangs from the limb"),
- "HM-light":  ("Hanging moss highlight",     "Run (single)", "down the strand",           "—",      "2.0",  "none",                       "—",    "sewn on top of the strand"),
+ "HM":        ("Hanging moss rope body",     "Tatami",  "along the rope (map)",           "0.45",   "3.5",  "edge run + tatami 90° @ 2.0","0.25", "hangs from the limb"),
+ "HM-light":  ("Rope strands + chain edge",  "Bean (triple run)", "follows the rope",        "—",      "2.0",  "none",                       "—",    "twisted strands + yellow-green chain edge"),
 })
 
-import dst2   # after the rules (dst2.PULL reads them at import)
-dst2.PULL.update({k: (float(v[6]) if v[6] not in ("—", "") else 0.0) for k, v in tech.RULES.items()})
+import dst2   # engine reads pull comp from tech.RULES at call time (dst2.pull_for)
 dst2.ALONG = set(dst2.ALONG) | {"GR", "GR-light", "HM"}
 dst2.ACROSS = set(dst2.ACROSS) | {"MS", "MS-shade", "MS-shadow", "MS-top"}
 dst2.BLEND = dict(dst2.BLEND, **{"MS": 2.0, "MS-top": 1.2, "RM": 2.0, "RM-top": 1.2, "RK-shade": 2.0, "BU-tip": 1.0})

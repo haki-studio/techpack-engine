@@ -36,12 +36,13 @@ tech.COLOUR_ORDER = GL_ORDER + [c for c in tech.COLOUR_ORDER if c not in GL_ORDE
 # ---------------------------------------------------------------- region codes
 # code -> (name, stitch, angle rule, density, stitch length, underlay, pull comp, notes)
 GL_RULES = {
- "GLW":      ("Sky-glow arcs",            "Run (single)",       "follows arc",            "—",    "2.6", "none",                    "—",    "behind sun, sparse"),
+ "GLW":      ("Sky-glow radial lines",    "Run (double)",       "radial from the sun",    "—",    "2.6", "none",                    "—",    "sewn over the glow fill"),
+ "GLW-fill": ("Sky-glow fill",            "Tatami, radial",     "radial from the sun",    "0.45", "3.5", "edge run",                "0.20", "dark teal halo behind the sun"),
  "SEA":      ("Sea bar",                  "Tatami, horizontal", "0° (along bar)",         "0.45", "3.5", "edge run",                "0.15", "bars 1.6–2.2 high, gaps ≥ 0.6"),
  "SEA-hl":   ("Sea highlight bar",        "Tatami, horizontal", "0° (along bar)",         "0.45", "3.5", "edge run",                "0.15", "foam / pale"),
  "HZ":       ("Horizon line",             "Bean (triple run)",  "follows line",           "—",    "2.2", "none",                    "—",    "0.8 line"),
  "GLT":      ("Sun glitter bar",          "Tatami, horizontal", "0° (along bar)",         "0.45", "3.5", "edge run",                "0.15", "column under the sun"),
- "RAY":      ("Sun ray over the sea",     "Bean (triple run)",  "follows line",           "—",    "2.0", "none",                    "—",    "0.8 line, continuous"),
+ "RAY":      ("Dashed sun ray",           "Bean (triple run)",  "follows line",           "—",    "2.0", "none",                    "—",    "dash 4.6 / gap 2.6, 0.85 line"),
  "SUN":      ("Sun core",                 "Satin, radial",      "radial from sun centre", "0.40", "—",   "centre run",              "0.15", "Ø 9"),
  "SUN-ring": ("Sun ring",                 "Satin, radial",      "radial from sun centre", "0.40", "—",   "edge run",                "0.15", ""),
  "BURST":    ("Sunburst ray",             "Satin, tapered",     "across ray",             "0.42", "—",   "centre run",              "0.15", "≥ 0.9 wide, blunt tip"),
@@ -52,7 +53,9 @@ GL_RULES = {
  "ISL-rim":  ("Islet lobe rim (light)",   "Satin",              "across rim",             "0.42", "—",   "none",                    "0.15", ""),
  "ISL-shade":("Islet shade band",         "Satin",              "across band",            "0.42", "—",   "none",                    "0.15", ""),
  "ISL-edge": ("Islet edge (dark)",        "Satin",              "across band",            "0.42", "—",   "none",                    "0.15", ""),
- "SEA-field":("Sea field (dark)",         "Tatami, horizontal", "0°",                     "0.45", "3.5", "edge run + 90° lattice",  "0.20", "sewn last in the sea, around the dashes"),
+ "SEA-field":("Sea ground (dark teal)",   "Tatami, horizontal", "0°",                     "0.45", "3.5", "edge run + 90° lattice",  "0.20", "between the dashes, upper sea"),
+ "CL-scale": ("Cloud scale dashes",       "Run (double)",       "follows the lobe dome",  "—",    "2.0", "none",                    "—",    "2.6 dash / 1.7 gap, on top"),
+ "ISL-scale":("Islet scale dashes",       "Run (double)",       "follows the lobe dome",  "—",    "2.0", "none",                    "—",    "on top"),
  "ISL":      ("Islet cloud lobe",         "Satin, radial",      "radial from lobe base",  "0.42", "—",   "centre run",              "0.20", ""),
  "STAR":     ("Star / sparkle arm",       "Satin",              "across arm",             "0.40", "—",   "centre run",              "0.15", "≥ 0.9 wide, blunt tip"),
  "STAR-c":   ("Star centre",              "Satin dot",          "across dot",             "0.40", "—",   "none",                    "0.10", "Ø ≥ 1.4"),

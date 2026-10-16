@@ -42,9 +42,9 @@ def moss_regions(S, t0, t1, rng, size=1.3, min_r=2.0, gap_p=0.10, cover=0.66, gr
         band = [np.array(S[k][:2]) + N[k]*S[k][2]*(1 - cover) for k in range(i, j+1)]
         if len(band) >= 2:
             geoms.append(LineString(band).buffer(max(min_r*0.9, r*cover*0.55), cap_style="round"))
-        for _ in range(max(3, int(len(band)*1.5))):
+        for _ in range(max(5, int(len(band)*3.2))):          # Rev B: many small clumps (mockup texture)
             k = rng.randint(i, j); rk = max(S[k][2], min_r)
-            lr = max(min_r, min(10.0, rk*size*rng.uniform(0.16, 0.34)))
+            lr = max(min_r*0.85, min(7.0, rk*size*rng.uniform(0.10, 0.24)))
             c = np.array(S[k][:2]) + N[k]*(rk*rng.uniform(0.15, 0.75))
             geoms.append(Point(*c).buffer(lr, quad_segs=12))
         i = j
@@ -54,46 +54,75 @@ def moss_regions(S, t0, t1, rng, size=1.3, min_r=2.0, gap_p=0.10, cover=0.66, gr
     nm = np.mean([N[k] for k in range(i0, max(i0+1, i1))], axis=0)
     return moss_finish(g, lumps, nm, rng, grp, sparkle), g
 
-def moss_finish(g, lumps, nm, rng, grp="MS", sparkle=0.25, shadow=True):
-    """moss geometry -> regions: padded body, dark underside, lit top band, lump contours, a few cream sparkles,
-    navy cast shadow below it."""
+def moss_finish(g, lumps, nm, rng, grp="MS", sparkle=0.0, shadow=True):
+    """moss geometry -> regions: padded body in two tones (moss + dark-moss lumps, mottled as the mockup), dark underside,
+    lit top band + lit crescents on the lumps, lump contours on every lump, navy cast shadow below. No cream specks (Rev B)."""
     nm = np.array(nm, float); nm = nm / (np.linalg.norm(nm) or 1)
     ang = math.degrees(math.atan2(nm[1], nm[0]))
     shade = g.difference(affinity.translate(g, nm[0]*2.4, nm[1]*2.4)).buffer(-0.4).buffer(0.4)
     top = g.difference(affinity.translate(g, -nm[0]*1.6, -nm[1]*1.6)).difference(shade.buffer(0.3)).buffer(-0.45).buffer(0.45)
     shadow_g = affinity.translate(g, -nm[0]*2.0 + 0.3, -nm[1]*2.0).difference(g) if shadow else Polygon()
-    arcs, dots = [], []
-    for lp in lumps:
+    arcs, dark, lit, grn, hil = [], [], [], [], []
+    a0 = math.atan2(nm[1], nm[0])
+    for i, lp in enumerate(lumps):
         c = lp.centroid; rr = math.sqrt(lp.area/math.pi)
-        if rr < 2.4: continue
-        a0 = math.atan2(nm[1], nm[0])
-        pts = [(c.x + rr*0.8*math.cos(a0 + t), c.y + rr*0.8*math.sin(a0 + t)) for t in np.linspace(-1.0, 1.0, 12)]
+        if rr < 1.8: continue
+        pts = [(c.x + rr*0.8*math.cos(a0 + t), c.y + rr*0.8*math.sin(a0 + t)) for t in np.linspace(-1.1, 1.1, 12)]
         arcs.append(LineString(pts).buffer(0.35, cap_style="round"))
-        if rng.random() < sparkle:
-            dots.append(Point(c.x + nm[0]*rr*0.35, c.y + nm[1]*rr*0.35).buffer(0.75))
+        if rr > 3.0 and rng.random() < 0.5:          # second contour on the lower side of the bigger lumps
+            pts = [(c.x - rr*0.55*math.cos(a0 + t), c.y - rr*0.55*math.sin(a0 + t)) for t in np.linspace(-0.8, 0.8, 9)]
+            arcs.append(LineString(pts).buffer(0.35, cap_style="round"))
+        u = rng.random()
+        if u < 0.28: dark.append(lp.buffer(-0.6))
+        elif u < 0.52: grn.append(lp.buffer(-0.6))
+        elif rr > 2.2:
+            cres = lp.difference(affinity.translate(lp, -nm[0]*rr*0.45, -nm[1]*rr*0.45)).buffer(-0.45).buffer(0.45)
+            (hil if rng.random() < 0.25 else lit).append(cres)
     body = g.difference(shade).difference(top)
     seams = unary_union(arcs).intersection(body.buffer(-0.9)) if arcs else Polygon()
-    dots = unary_union(dots).intersection(body.buffer(-0.8)) if dots else Polygon()
+    dk = unary_union(dark).intersection(body.buffer(-0.5)).difference(seams.buffer(0.2)).buffer(-0.4).buffer(0.4) if dark else Polygon()
+    gr = unary_union(grn).intersection(body.buffer(-0.5)).difference(seams.buffer(0.2)).difference(dk).buffer(-0.4).buffer(0.4) if grn else Polygon()
+    lt = unary_union(lit).intersection(body.buffer(-0.5)).difference(seams.buffer(0.2)).difference(dk).difference(gr).buffer(-0.4).buffer(0.4) if lit else Polygon()
+    hl = unary_union(hil).intersection(body.buffer(-0.5)).difference(seams.buffer(0.2)).difference(dk).difference(gr).buffer(-0.4).buffer(0.4) if hil else Polygon()
     regs = [R("navy", shadow_g, "satin", "auto", grp + "-shadow"),
-            R("moss", body.difference(seams.buffer(0.05)).difference(dots), "padded", ang, grp),
+            R("moss", body.difference(seams.buffer(0.05)).difference(dk).difference(lt).difference(gr).difference(hl), "padded", ang, grp),
+            R("mossdk", dk, "padded", ang + 20, grp),
+            R("grass", gr, "padded", ang - 20, grp),
+            R("leaf", hl, "satin", ang, grp + "-top"),
             R("mossdk", shade, "satin", ang, grp + "-shade"),
-            R("mosslt", top, "satin", ang, grp + "-top"),
-            R("cream", dots, "satin", "auto", grp + "-top"),
-            R("mossdk", seams, "run", None, grp + "-lump")]
-    # mottling as the mockup: every other lump contour in navy (blue bark showing through the moss)
-    if arcs and len(arcs) > 3:
-        nv = unary_union(arcs[::2]).intersection(body.buffer(-0.9)).difference(dots.buffer(0.3))
-        regs[-1] = R("mossdk", unary_union(arcs[1::2]).intersection(body.buffer(-0.9)), "run", None, grp + "-lump")
-        regs.append(R("navy", nv, "run", None, grp + "-lump"))
+            R("mosslt", unary_union([top, lt]), "satin", ang, grp + "-top")]
+    if arcs and len(arcs) > 3:   # mottled contours: alternate navy (blue bark showing through) and dark moss
+        regs.append(R("mossdk", unary_union(arcs[1::2]).intersection(body.buffer(-0.9)).difference(dk), "run", None, grp + "-lump"))
+        regs.append(R("navy", unary_union(arcs[::2]).intersection(body.buffer(-0.9)), "run", None, grp + "-lump"))
+    elif arcs: regs.append(R("mossdk", seams, "run", None, grp + "-lump"))
     return [r for r in regs if not r["geom"].is_empty]
 
 def mossy_limb(pts_r, rng, grp="TR", moss=(0.0, 1.0), cover=0.7, size=1.3, gap_p=0.08, texture=True):
+    """mossy limb: bark tube (motifs2.limb_regions) whose underside is twisted blue chain bark (bark-blue band with
+    navy diagonal chain strokes, Rev B) under a raised two-tone moss cover."""
     regs, poly, S = M.limb_regions(pts_r, rng, grp=grp, texture=texture)
     regs = recol(regs, BARKMAP)
+    out = []
+    N = normals(S)
+    for r in regs:
+        if r["grp"].endswith("-shade"):
+            band = r["geom"]; out.append(dict(r, col="bark"))
+            ch = []; acc = 0.0
+            for k in range(1, len(S) - 1):
+                acc += math.hypot(S[k][0]-S[k-1][0], S[k][1]-S[k-1][1]); x, y, rad = S[k]
+                if acc < 3.2 or rad < 3.0: continue
+                acc = 0.0
+                tx, ty = S[k+1][0]-S[k-1][0], S[k+1][1]-S[k-1][1]; L = math.hypot(tx, ty) or 1; tx, ty = tx/L, ty/L
+                lo = (x - N[k][0]*rad*0.98, y - N[k][1]*rad*0.98); hi = (x - N[k][0]*rad*0.35, y - N[k][1]*rad*0.35)
+                d = rad*0.35          # diagonal stroke across the band = one chain link
+                ch.append(LineString([(lo[0] - tx*d, lo[1] - ty*d), ((lo[0]+hi[0])/2 + tx*d*0.2, (lo[1]+hi[1])/2 + ty*d*0.2),
+                                      (hi[0] + tx*d, hi[1] + ty*d)]).buffer(0.35, cap_style="round"))
+            if ch: out.append(R("navy", unary_union(ch).intersection(band.buffer(-0.5)), "bean", None, grp + "-crevice"))
+        else: out.append(r)
     mr, mg = ([], Polygon())
     if moss and max(s[2] for s in S) >= 2.4:
         mr, mg = moss_regions(S, moss[0], moss[1], rng, size=size, cover=cover, gap_p=gap_p)
-    return regs, mr, poly, S, mg
+    return out, mr, poly, S, mg
 
 def twig(pts, r0=1.2, r1=0.9):
     """thin dark twig (satin, turning) along pts"""
@@ -135,7 +164,7 @@ def leaf_spray(base, ang, length, rng, leaf=10.0, pairs=None, bend=12.0, r0=1.15
     return regs, unary_union(allg)
 
 # ---------------------------------------------------------------- sheer light ray (serpentine double run)
-def light_ray(p0, d, length, w0, w1, rng, sp=1.9, col="sage", core_col="cream", core=0.34, grp="LR"):
+def light_ray(p0, d, length, w0, w1, rng, sp=2.6, col="sage", core_col="cream", core=0.34, grp="LR"):
     """band from p0 along unit d, widening w0 -> w1. Rows run along the ray, `sp` apart, joined end to end into one
     serpentine path per tone (one object, no trims inside the ray). Row ends are ragged so the ray fades in/out.
     The central `core` fraction sews in the core colour."""
@@ -145,7 +174,7 @@ def light_ray(p0, d, length, w0, w1, rng, sp=1.9, col="sage", core_col="cream", 
     for k in range(nrows):
         f = (k + 0.5) / nrows - 0.5                     # -0.5..0.5 across
         c = core_col if abs(f) < core/2 else col
-        s0 = rng.uniform(0.0, 0.12)*length; s1 = length*(1 - rng.uniform(0.0, 0.18)*(1 + abs(f)))
+        s0 = rng.uniform(0.0, 0.10)*length; s1 = length*(1 - rng.uniform(0.0, 0.45)*(0.6 + abs(f)))   # ragged, fading ends (soft ray)
         if s1 - s0 < 20: continue
         pts = []
         for s in np.linspace(s0, s1, 12):
@@ -193,39 +222,42 @@ def stream(poly, rng, deep=None, nrip=60, nglint=26):
 
 # ---------------------------------------------------------------- mossy rock
 def blob(cx, cy, w, h, rng, k=9, rough=0.12, flat_bottom=True):
+    """rounded dome (mossy mound): half-ellipse top, softly flattened base"""
     pts = []
     for i in range(k):
         t = 2*math.pi*i/k; rr = 1 + rng.uniform(-rough, rough)
-        x = cx + w/2*math.cos(t)*rr; y = cy + h/2*math.sin(t)*rr
-        if flat_bottom and math.sin(t) > 0.3: y = cy + h/2*(0.75 + 0.25*math.sin(t))
+        x = cx + w/2*math.cos(t)*rr; y = cy + h/2*math.sin(t)*rr*(0.55 if math.sin(t) > 0 else 1.0)
         pts.append((x, y))
     sm = catmull(pts + pts[:3], 8)[8:-8*1]
-    return Polygon(sm).buffer(0).buffer(1.5).buffer(-1.5)
+    return Polygon(sm).buffer(0).buffer(2.0).buffer(-2.0)
 
-def mossy_rock(poly, rng, cover=0.48, grp="RK"):
-    """rock body (blue tatami) + navy shadow below + raised moss cap over the top `cover` of its height, with bumps
-    along the top contour (as the mockup mounds)."""
+def mossy_rock(poly, rng, cover=0.75, grp="RK"):
+    """mossy mound: moss over the top `cover` of its height with bumps all along the top contour, blue rock showing
+    below, a thin navy shadow only at the base (no hard under-shadow: mounds sit IN the bank, Rev B)."""
     x0, y0, x1, y1 = poly.bounds; h = y1 - y0
-    shade = poly.difference(affinity.translate(poly, 2.0, -h*0.22)).buffer(-0.5).buffer(0.5)
+    shade = poly.difference(affinity.translate(poly, 0, -min(3.0, h*0.08))).buffer(-0.5).buffer(0.5)
     cap = poly.difference(affinity.translate(poly, rng.uniform(-3, 3), h*cover))
     ring = LineString(list(cap.exterior.coords)) if cap.geom_type == "Polygon" else LineString(list(max(cap.geoms, key=lambda q: q.area).exterior.coords))
     lumps = []; s = 0.0
     while s < ring.length:
         p = ring.interpolate(s)
-        if p.y < y0 + h*cover*0.9:
-            rr = rng.uniform(4.0, 9.0); lumps.append(Point(p.x, p.y + rr*rng.uniform(0.3, 1.1)).buffer(rr, quad_segs=10))
-        s += rng.uniform(5, 9)
+        if p.y < y0 + h*cover*0.95:
+            rr = rng.uniform(4.0, 9.5); lumps.append(Point(p.x, p.y + rr*rng.uniform(0.3, 1.1)).buffer(rr, quad_segs=10))
+        s += rng.uniform(4.5, 8)
+    inner = cap.buffer(-4)       # lumps inside the cap too, so the contours cover the whole mound
+    if not inner.is_empty:
+        bx0, by0, bx1, by1 = inner.bounds
+        for _ in range(int(inner.area / 60)):
+            q = Point(rng.uniform(bx0, bx1), rng.uniform(by0, by1))
+            if inner.contains(q): lumps.append(q.buffer(rng.uniform(3.5, 7.0), quad_segs=10))
     g = unary_union([cap] + lumps).intersection(poly.buffer(2.5)).buffer(0.5).buffer(-0.5)
-    regs = [R("bark", poly.difference(shade).difference(g), "tatami", 20.0, grp),
-            R("navy", shade.difference(g), "tatami", 20.0, grp + "-shade")]
-    regs += moss_finish(g, lumps, (0, -1), rng, "RM", sparkle=0.3, shadow=False)
-    rim = poly.exterior.buffer(0.6).intersection(poly).difference(g.buffer(0.3)).intersection(box(x0, y0, x1, y0 + h*0.8))
-    if not rim.is_empty: regs.append(R("barklt", rim, "satin", "auto", grp + "-rim"))
+    regs = [R("bark", poly.difference(shade).difference(g), "tatami", 20.0, grp), R("navy", shade.difference(g), "tatami", 20.0, grp + "-shade")]
+    regs += moss_finish(g, lumps, (0, -1), rng, "RM", shadow=False)
     return [r for r in regs if not r["geom"].is_empty], unary_union([poly, g])
 
 # ---------------------------------------------------------------- grass
 GRASS_COLS = ["grass", "mosslt", "grass", "leafdk", "mossdk", "grass", "leaf"]
-def grass_tuft(x, y, h, n, rng, spread=34, lean=0.0, cols=None, r0=1.15, r1=0.55):
+def grass_tuft(x, y, h, n, rng, spread=34, lean=0.0, cols=None, r0=1.25, r1=0.55):
     """blades rising from (x, y): curved tapered satin columns, blunt tips (≥ 1.1 wide)."""
     regs = []; allg = []; cols = cols or GRASS_COLS
     for i in range(n):
@@ -241,21 +273,46 @@ def grass_tuft(x, y, h, n, rng, spread=34, lean=0.0, cols=None, r0=1.15, r1=0.55
 
 # ---------------------------------------------------------------- hanging moss (front shoulder)
 HM_COLS = ["moss", "mosslt", "bark", "mossdk", "leafdk", "barklt", "moss"]
-def hanging_moss(anchors, rng, length=(160, 300), wmin=1.4, wmax=2.6, sway=10.0):
-    """strands hanging from anchor points (on the limb), waving, tapering, overlapping; each strand gets a chain-stitch
-    look: satin body + a light run highlight down its centre and small knots along it. Returns regions + union."""
-    regs = []; allg = []
+HM_GREEN = ["moss", "mosslt", "mossdk", "moss", "mosslt"]; HM_BLUE = ["bark", "barklt", "bark"]
+def hanging_moss(anchors, rng, length=(120, 260), wmin=2.0, wmax=6.0, sway=14.0, blue_every=3):
+    """hanging moss as twisted ropes (Rev B): strands 4–12 mm wide (r 2–6), tapered at both ends, waving with different
+    phase/frequency so they overlap and cross; each strand gets a rope twist (diagonal cord-run strokes every ~3 mm, no
+    centre line). Green strands first, blue strands layered on top (later z), as the mockup."""
+    green, blue = [], []
     for i, (ax, ay) in enumerate(anchors):
-        L = rng.uniform(*length); ph = rng.uniform(0, 6.28); amp = rng.uniform(0.5, 1.0)*sway; fr = rng.uniform(2.5, 4.5)
-        pts = [(ax + amp*math.sin(ph + t*fr)*min(1, t*2.5) + rng.uniform(-0.8, 0.8), ay + L*t) for t in np.linspace(0, 1, 14)]
-        r0 = rng.uniform(wmin, wmax); poly, S = sweep(taper(pts, r0, max(0.7, r0*0.5)), n=6)
-        regs.append(R(HM_COLS[i % len(HM_COLS)], poly, "satin", "auto", "HM")); allg.append(poly)
-        ln = LineString([s_[:2] for s_ in S]).simplify(0.2)
-        if r0 > 2.4:
-            hl = ln.buffer(0.35, cap_style="round").intersection(poly.buffer(-1.0))
-            col = "cream" if HM_COLS[i % len(HM_COLS)] in ("bark", "mossdk") else ("mosslt" if HM_COLS[i % len(HM_COLS)] != "mosslt" else "leaf")
-            regs.append(R(col, hl, "run", None, "HM-light"))
-    return regs, unary_union(allg)
+        L = rng.uniform(*length); ph = rng.uniform(0, 6.28); amp = rng.uniform(0.5, 1.2)*sway; fr = rng.uniform(2.0, 5.0)
+        drift = rng.uniform(-18, 18)
+        pts = [(ax + amp*math.sin(ph + t*fr)*min(1, t*2.2) + drift*t, ay + L*t) for t in np.linspace(0, 1, 16)]
+        r0 = rng.uniform(wmin, wmax)
+        rad = [(x, y, r0*(0.55 + 0.45*min(1, t/0.12))*(1 - 0.78*max(0, (t - 0.55)/0.45))) for (x, y), t in zip(pts, np.linspace(0, 1, 16))]
+        poly, S = sweep([(x, y, max(0.6, r)) for x, y, r in rad], n=6)
+        isblue = (i % blue_every == 1)
+        col = (HM_BLUE[i % len(HM_BLUE)] if isblue else HM_GREEN[i % len(HM_GREEN)])
+        tw = []; acc = 0.0                   # rope twist strokes
+        for k in range(1, len(S) - 1):
+            acc += math.hypot(S[k][0]-S[k-1][0], S[k][1]-S[k-1][1]); x, y, r = S[k]
+            if acc < 3.0 or r < 1.6: continue
+            acc = 0.0
+            tx, ty = S[k+1][0]-S[k-1][0], S[k+1][1]-S[k-1][1]; Ln = math.hypot(tx, ty) or 1; tx, ty = tx/Ln, ty/Ln
+            nx, ny = -ty, tx
+            a_ = (x - nx*r*0.8 - tx*r*0.5, y - ny*r*0.8 - ty*r*0.5); b_ = (x + nx*r*0.8 + tx*r*0.5, y + ny*r*0.8 + ty*r*0.5)
+            tw.append(LineString([a_, b_]).buffer(0.32, cap_style="round"))
+        twc = "cream" if col in ("bark", "mossdk") else ("mossdk" if col == "mosslt" else "mosslt")
+        reg = [R(col, poly, "satin", "auto", "HM")]
+        if not isblue and r0 > 2.5:          # moss clumps along the green strands (chain links, two tones)
+            cl = []; acc = 0.0; side = 1
+            for k in range(1, len(S) - 1):
+                acc += math.hypot(S[k][0]-S[k-1][0], S[k][1]-S[k-1][1]); x, y, r = S[k]
+                if acc < r*1.1 or r < 2.0: continue
+                acc = 0.0; tx, ty = S[k+1][0]-S[k-1][0], S[k+1][1]-S[k-1][1]; Ln = math.hypot(tx, ty) or 1
+                cl.append(Point(x - ty/Ln*r*0.35*side, y + tx/Ln*r*0.35*side).buffer(r*0.5)); side = -side
+            if cl:
+                lump = unary_union(cl).intersection(poly.buffer(-0.5))
+                reg.append(R("mosslt" if col != "mosslt" else "leaf", lump, "satin", "auto", "HM"))
+        if tw: reg.append(R(twc, unary_union(tw).intersection(poly.buffer(-0.7)), "run", None, "HM-light"))
+        (blue if isblue else green).append((reg, poly))
+    regs = [r for rg, _ in green for r in rg] + [r for rg, _ in blue for r in rg]
+    return regs, unary_union([p for _, p in green + blue])
 
 # ---------------------------------------------------------------- licensed-figure placeholder (nothing stitched inside)
 def placeholder(cx, cy, w, h, label="LICENSED FIGURE — placeholder"):
@@ -310,3 +367,59 @@ def ridge_cleanup(vis, h=0.45):
             give.setdefault(j, []).append(piece)
     for j, pcs in give.items(): vis[j] = dict(vis[j], geom=unary_union([vis[j]["geom"]] + pcs).buffer(0))
     return [r for r in vis if not r["geom"].is_empty and r["geom"].area > 0.05]
+
+
+# ---------------------------------------------------------------- hanging moss as chain-link ropes (Rev B, mockup texture)
+CHAIN_TONES = [("bark", "barklt"), ("moss", "mosslt"), ("navy", "bark"), ("mossdk", "moss"), ("barklt", "bark"), ("moss", "leaf"), ("bark", "navy")]
+def hanging_chains(anchors, rng, length=(220, 300), wmin=2.6, wmax=5.2, sway=6.0, drift=10.0):
+    """dense mass of hanging moss ropes: each strand is a chain of overlapping oval links (satin, across the link),
+    alternating two tones (blue/teal or greens), tapering to the tip; strands overlap and cross (different phases,
+    drift), blue strands drawn over green ones. Returns (regions, union)."""
+    strands = []
+    for i, (ax, ay) in enumerate(anchors):
+        L = rng.uniform(*length); ph = rng.uniform(0, 6.28); amp = rng.uniform(0.4, 1.0)*sway; fr = rng.uniform(1.5, 3.5)
+        dr = rng.uniform(-drift, drift); r0 = rng.uniform(wmin, wmax)
+        line = LineString([(ax + amp*math.sin(ph + t*fr*math.pi)*min(1, t*3) + dr*t, ay + L*t) for t in np.linspace(0, 1, 40)])
+        strands.append((i, line, r0, CHAIN_TONES[i % len(CHAIN_TONES)]))
+    strands.sort(key=lambda s_: 0 if s_[3][0] in ("moss", "mossdk") else 1)       # greens under, blues on top
+    regs, allg = [], []
+    for i, line, r0, (c1, c2) in strands:
+        s_ = 0.0; k = 0; Ltot = line.length
+        while s_ < Ltot:
+            t = s_ / Ltot; r = r0*(0.6 + 0.4*min(1, t/0.08))*(1 - 0.75*max(0, (t - 0.6)/0.4))
+            if r < 0.9: break
+            p0 = line.interpolate(max(0, s_ - 0.5)); p1 = line.interpolate(min(Ltot, s_ + 0.5)); c = line.interpolate(s_)
+            ang = math.degrees(math.atan2(p1.y - p0.y, p1.x - p0.x))
+            link = affinity.rotate(affinity.scale(Point(c.x, c.y).buffer(1.0, quad_segs=10), r*1.15, r*0.95), ang + (18 if k % 2 else -18), origin=(c.x, c.y))
+            regs.append(R(c1 if k % 2 == 0 else c2, link, "satin", ang + 90, "HM")); allg.append(link)
+            s_ += r*1.35; k += 1
+    return regs, unary_union(allg)
+
+
+# ---------------------------------------------------------------- hanging moss ropes (Rev B, traced from the 4x mockup crop)
+def hanging_ropes(ropes, rng):
+    """ropes: [(pts [(x, y, r)], body colour)] — thick drooping moss ropes as the mockup: dark blue/navy chain body
+    (tatami along the rope), 3 twisted strand lines inside (wavy bean runs in teal + light moss), a yellow-green chain
+    edge (bean) with small loops along it. Later ropes lie over earlier ones."""
+    regs, allg = [], []
+    for ri, (pts, body_col) in enumerate(ropes):
+        poly, S = sweep(pts, n=8); N = normals(S)
+        regs.append(R(body_col, poly, "tatami", "auto", "HM")); allg.append(poly)
+        mr, mg = moss_regions(S, 0.0, 0.85, rng, size=1.1, min_r=1.7, gap_p=0.25, cover=0.42, grp="MS")   # lumpy moss on the rope
+        regs += [dict(r, geom=r["geom"].intersection(poly.buffer(1.5))) for r in mr if r["grp"] != "MS-shadow"]
+        line_cols = ["barklt", "mosslt", "bark" if body_col == "navy" else "navy"]
+        for j, off in enumerate((-0.45, 0.0, 0.45)):
+            ph = rng.uniform(0, 6.28); wl = []
+            for k, (x, y, r) in enumerate(S):
+                o = off + 0.18*math.sin(ph + k*0.55)
+                wl.append((x + N[k][0]*r*o, y + N[k][1]*r*o))
+            g = LineString(wl).buffer(0.38, cap_style="round").intersection(poly.buffer(-0.9))
+            regs.append(R(line_cols[j], g, "bean", None, "HM-light"))
+        # yellow-green chain edge: edge line + small loops every ~5 mm
+        edge = poly.exterior.buffer(0.38).intersection(poly.buffer(0.1))
+        loops = []; ring = poly.exterior; Lr = ring.length; t = rng.uniform(0, 4)
+        while t < Lr:
+            q = ring.interpolate(t); loops.append(Point(q.x, q.y).buffer(1.6).exterior.buffer(0.35)); t += rng.uniform(4.5, 6.5)
+        ch = unary_union([edge] + loops).intersection(poly.buffer(-0.05))
+        regs.append(R("mosslt" if ri % 2 == 0 else "leaf", ch, "bean", None, "HM-light"))
+    return regs, unary_union(allg)

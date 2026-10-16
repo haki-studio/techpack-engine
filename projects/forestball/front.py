@@ -27,6 +27,7 @@ def _welt(a, b, half=6.16): return LineString([a, b]).buffer(half, cap_style="fl
 WELT_R = _welt((-230.4, 408.48), (-118.4, 320.16))           # Drum Island welt 1.4 x 13 (pattern.WELT_L/W)
 WELT_L = _welt((121.6, 323.84), (217.6, 412.16))
 KEEP_CF, KEEP_SEAM, KEEP_HEM, KEEP_WELT, KEEP_COLLAR = 15.0, 15.0, 10.0, 6.0, 6.0
+CLIP_MARGIN = 0.6     # clip 0.6 inside the seam keep-outs so the pattern check reads >= 15.0 (Rev B)
 # shoulder + armhole keep-outs from the PATTERN (its shoulder seam sits 10 mm forward of the block's: chart P)
 import pattern as _PT
 _g, _mt = _PT.draft("M")
@@ -42,7 +43,7 @@ def clip_for(side):
     sidel = SIDE_R if side == "R" else mirror(SIDE_R)
     collar = COLLAR_R if side == "R" else COLLAR_L
     weltg = WELT_R if side == "R" else WELT_L
-    g = panel.difference(arm.buffer(KEEP_SEAM)).difference(sidel.buffer(KEEP_SEAM))
-    g = g.difference(box(-KEEP_CF, -150, KEEP_CF, 900)).intersection(box(-400, -150, 400, HEM - KEEP_HEM))
-    g = g.difference(collar.buffer(KEEP_COLLAR)).difference(weltg.buffer(KEEP_WELT))
+    g = panel.difference(arm.buffer(KEEP_SEAM + CLIP_MARGIN)).difference(sidel.buffer(KEEP_SEAM + CLIP_MARGIN))
+    g = g.difference(box(-KEEP_CF - 0.3, -150, KEEP_CF + 0.3, 900)).intersection(box(-400, -150, 400, HEM - KEEP_HEM - CLIP_MARGIN))
+    g = g.difference(collar.buffer(KEEP_COLLAR + CLIP_MARGIN)).difference(weltg.buffer(KEEP_WELT + CLIP_MARGIN))
     return g

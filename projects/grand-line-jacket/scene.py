@@ -16,6 +16,13 @@ BB, PPM = (-330.0, -110.0, 330.0, 540.0), 2.0
 HORIZON = 199.0                  # sea top edge (mockup y 363 px)
 SUN = (45.0, 195.0)              # sun centre, wearer's left of the zip (mockup 413, 362 px)
 CLIP_M = {s: F.clip_for("M", s) for s in "RL"}
+# the tightest keep-outs over all sizes, in M coordinates (each size's clip scaled back by its grade): whole lobes on every size
+LIM_ALL = {}
+for _s in "RL":
+    _g = CLIP_M[_s]
+    for _sz in glcore.SIZES:
+        _k = glcore.GRADE[_sz][1]; _g = _g.intersection(affinity.scale(F.clip_for(_sz, _s), 1/_k, 1/_k, origin=(0, 0)))
+    LIM_ALL[_s] = _g.buffer(0)
 ALLOWED_M = unary_union(list(CLIP_M.values()))
 
 # ---------------------------------------------------------------- mockup masks in mm space
@@ -76,20 +83,16 @@ def add(regs, layer, z=None, **kw):
         r.setdefault("ko", True); r.setdefault("kob", 0.0); r.setdefault("unit", None)
         items.append(r)
 
-# ================================================================ clouds: banks + islets
+# ================================================================ clouds: banks (from the mockup mask) + islets (counted, A2)
 cl_mask = ndi.binary_opening(CLOUDISH, structure=disk(1.6))
 cl_mask = ndi.binary_closing(cl_mask, structure=disk(2.0)) & PANEL & ~ZIP
 comps = mask_polys(cl_mask, min_area=60)
-BANKS, ISLETS = [], []
+BANKS = []
 for C in comps:
-    C = C.buffer(1.0).buffer(-1.0)
-    b = C.bounds; cy = (b[1] + b[3])/2
+    C = C.buffer(1.0).buffer(-1.0); b = C.bounds
     if b[1] < HORIZON - 4 and C.area < 250: continue          # star centres
-    if C.area > 900 or b[1] < HORIZON - 4:
-        BANKS.append(C)
-    elif C.area > 25:
-        ISLETS.append(C)
-BANKS.sort(key=lambda c: c.bounds[0]); ISLETS.sort(key=lambda c: (c.bounds[1], c.bounds[0]))
+    if C.area > 900 or b[1] < HORIZON - 4: BANKS.append(C)
+BANKS.sort(key=lambda c: c.bounds[0])
 
 def sample_bright(geom, step=0.8):
     b = geom.bounds; vals = []
@@ -103,11 +106,23 @@ def sample_bright(geom, step=0.8):
     return v[k].mean(axis=0)
 
 def tone_of(V, lobe):
-    r, g, b = sample_bright(V)
-    lum = 0.3*r + 0.59*g + 0.11*b
-    warm = r >= g - 1
-    if warm: return "cream" if lum > 172 else "sand"
-    return "sage" if lum >= 118 else "slate"
+    """tone from the mockup pixels under the lobe that are thread, not the dark gaps between lobes (lum > 85)"""
+    bnd = V.bounds; vals = []
+    for x in np.arange(bnd[0] + 0.4, bnd[2], 0.8):
+        for y in np.arange(bnd[1] + 0.4, bnd[3], 0.8):
+            if V.contains(Point(x, y)):
+                px, py = int((x - BB[0])*PPM), int((y - BB[1])*PPM)
+                if 0 <= px < W and 0 <= py < H: vals.append(_rgb[py, px])
+    v = np.array(vals) if vals else np.array([sample_mean(V)])
+    l = v @ np.array([0.3, 0.59, 0.11]); k = l > 85
+    if k.sum() < 3: return "slate"
+    r, g, b = v[k].mean(axis=0); lum = l[k].mean()
+    if r > g + 2: return "cream" if lum > 165 else "sand"
+    if lum > 185: return "cream"
+    return "sage" if (g - b) > 7 else "slate"
+def tone_islet(V, lobe):                                  # islets are cream with sand undersides (the sea shows through the samples)
+    rb, gb, bb_ = sample_bright(V); lb = 0.3*rb + 0.59*gb + 0.11*bb_
+    return "cream" if lb > 150 else "sand"
 
 def colheight(C):
     def f(x):
@@ -115,9 +130,12 @@ def colheight(C):
         return seg.length if not seg.is_empty else 0.0
     return f
 
+def fits(lim, cx, cy, r): return lim is None or lim.contains(GM.ell(cx, cy, r))
+
 def pack_var(C, Rf, rng, dy=0.42, dx=0.92, inset=0.5, rmin=2.6, lim=None):
-    """rows of overlapping discs, radius from Rf(x, y)."""
+    """rows of overlapping domes, radius from Rf(x, y); with `lim`, every dome lies wholly inside it (whole lobes at the keep-out)."""
     b = C.bounds; lobes = []; row = 0
+    lim_g = lim; lim = prepared.prep(lim_g) if lim_g is not None else None
     y = b[3] - 0.45*Rf((b[0] + b[2])/2, b[3])
     while y > b[1] - 2:
         rs = []
@@ -126,92 +144,152 @@ def pack_var(C, Rf, rng, dy=0.42, dx=0.92, inset=0.5, rmin=2.6, lim=None):
             Rl = Rf(x, y); r = Rl*rng.uniform(0.72, 1.28)
             cx, cy = x + rng.uniform(-0.16, 0.16)*Rl, y + rng.uniform(-0.14, 0.14)*Rl
             inner = C.buffer(-inset*r)
-            if not inner.is_empty and inner.contains(Point(cx, cy)) and (lim is None or lim.contains(Point(cx, cy).buffer(0.85*r))):
-                lobes.append([cx, cy, r]); rs.append(Rl)
+            if not inner.is_empty and inner.contains(Point(cx, cy)):
+                rr = r
+                while rr > rmin and not fits(lim, cx, cy, rr): rr *= 0.85
+                if fits(lim, cx, cy, rr) and rr >= rmin: lobes.append([cx, cy, rr]); rs.append(Rl)
             x += dx*Rl
         y -= dy*(np.median(rs) if rs else Rf((b[0] + b[2])/2, y)); row += 1
-    for _ in range(3):
-        U = unary_union([Point(cx, cy).buffer(r) for cx, cy, r in lobes]) if lobes else Polygon()
-        miss = C.difference(U.buffer(0.3)); added = 0
+    for _ in range(4):                       # fill what the rows missed, with domes that still fit
+        U = unary_union([GM.ell(cx, cy, r) for cx, cy, r in lobes]) if lobes else Polygon()
+        miss = C.difference(U.buffer(0.3))
+        if lim_g is not None: miss = miss.intersection(lim_g)
+        added = 0
         for p in sorted(GM.polys(miss), key=lambda p: -p.area):
             c = p.representative_point(); Rl = Rf(c.x, c.y)
             if p.area < (0.4*Rl)**2: continue
             r = max(rmin, min(Rl, math.sqrt(p.area/math.pi)*1.3))
-            if lim is not None and not lim.contains(Point(c.x, c.y).buffer(0.85*r)):
-                r = max(rmin, min(r, lim.exterior.distance(Point(c.x, c.y)) / 0.85 if lim.contains(Point(c.x, c.y)) else 0))
-                if r <= rmin or not lim.contains(Point(c.x, c.y).buffer(0.85*r)): continue
+            while r > rmin and not fits(lim, c.x, c.y, r): r *= 0.85
+            if r < rmin or not fits(lim, c.x, c.y, r): continue
             lobes.append([c.x, c.y, r]); added += 1
         if not added: break
-    lobes = [l for l in lobes if l[2] >= rmin]
     for l in lobes: l.append(l[1] + rng.uniform(-0.2, 0.2)*l[2])
     return lobes
 
 bank_info = []
 for i, C in enumerate(BANKS):
     side = "R" if C.centroid.x < 0 else "L"
-    # stop the bank ~ 1 lobe short of the seam keep-outs: lobes end in scallops instead of a cut edge
-    lim = CLIP_M[side].buffer(1.0)
-    Cc = C
-    ch = colheight(Cc)
-    Rf = lambda x, y, ch=ch: float(np.clip(0.22*ch(x), 5.0, 14.0))
+    lim = LIM_ALL[side].buffer(-1.0)        # whole lobes, 1.2 inside the M keep-out (grades shift it a little)
+    ch = colheight(C)
+    Rf = lambda x, y, ch=ch: float(np.clip(0.15*ch(x), 4.2, 10.0))          # florets: the mockup lobes are ~6-17 mm
     rng = random.Random(100 + i)
-    lobes = pack_var(Cc, Rf, rng, lim=lim)
+    lobes = pack_var(C, Rf, rng, lim=lim)
     flat = HORIZON + 0.5 if C.bounds[3] < HORIZON + 6 else None
     regs, sil = GM.lobe_regions(lobes, tone_of, flat_y=flat, grp="CL")
-    for r in regs: add([r], 16 + GM.SUB[r["sub"]], z=16*100000 + len(items), kgrp=f"bank{i}")
+    for r in regs: add([r], 16, z=16*100000 + len(items), kgrp=f"bank{i}")
     bank_info.append(dict(side=side, lobes=len(lobes), area=sil.area, bounds=sil.bounds))
 
-for i, C in enumerate(ISLETS):
-    b = C.bounds; h = b[3] - b[1]
+# islets on the sea: counted on the mockup (front.png px centre, width px) - 11 across both halves
+ISLETS_PX = [(303, 403, 47), (300, 433, 40), (287, 488, 15), (308, 522, 43), (280, 590, 74),
+             (460, 432, 21), (501, 432, 18), (460, 483, 27), (453, 513, 14), (423, 530, 20), (484, 560, 78)]
+islet_info = []
+for i, (px, py, wp) in enumerate(ISLETS_PX):
+    cx, cy = MM.P(px, py); w = wp*MM.SX; h = max(3.5, 0.21*w)
+    side = "R" if cx < 0 else "L"; lim = LIM_ALL[side].buffer(-1.0)
+    dome = lambda x0, y0: affinity.scale(Point(x0, y0).buffer(1.0, quad_segs=24), w/2, h, origin=(x0, y0)).intersection(box(x0 - w, y0 - 2*h, x0 + w, y0 + 0.25*h))
+    D = dome(cx, cy); moved = (0.0, 0.0)
+    if not lim.contains(D):                       # nudge (never drop) so the whole islet clears the welt / seams
+        best = None
+        for rr in np.arange(1, 40, 1.0):
+            for th in np.linspace(0, 2*math.pi, 24, endpoint=False):
+                if lim.contains(dome(cx + rr*math.cos(th), cy + rr*math.sin(th))): best = (rr*math.cos(th), rr*math.sin(th)); break
+            if best: break
+        if best: moved = best; cx, cy = cx + best[0], cy + best[1]; D = dome(cx, cy)
     rng = random.Random(300 + i)
-    Rf = lambda x, y, h=h: float(np.clip(0.5*h, 3.0, 7.0))
-    lobes = pack_var(C.buffer(0.6), Rf, rng, dy=0.5, dx=1.05, rmin=2.6)
-    if not lobes:
-        c = C.centroid; lobes = [[c.x, c.y, max(2.6, h*0.45), c.y]]
-    regs, sil = GM.lobe_regions(lobes, tone_of, flat_y=b[3] + 0.4, grp="ISL", unit=f"islet{i}")
-    for r in regs: add([r], 17 + GM.SUB[r["sub"]], z=17*100000 + len(items), unit=f"islet{i}", kgrp=f"islet{i}")
+    Rf = lambda x, y, h=h: float(np.clip(0.62*h, 2.6, 6.0))
+    lobes = pack_var(D.buffer(0.4), Rf, rng, dy=0.5, dx=0.95, rmin=2.4, lim=lim)
+    if not lobes: lobes = [[cx, cy, max(2.6, h*0.6), cy]]
+    regs, sil = GM.lobe_regions(lobes, tone_islet, flat_y=D.bounds[3] + 0.3, grp="ISL", unit=f"islet{i}")
+    for r in regs: add([r], 17, z=17*100000 + len(items), unit=f"islet{i}", kgrp=f"islet{i}")
+    islet_info.append(dict(px=(px, py), mm=(round(cx, 1), round(cy, 1)), w=round(w, 1), moved=moved, lobes=len(lobes)))
 CLOUD_U = unary_union([r["geom"] for r in items if 16 <= r["layer"] < 18]).buffer(0.6)
 for r in items:
-    if 16 <= r["layer"] < 18: r["kob"] = 0.5            # sea / rays / glow stop 0.5 short of the cloud edge
+    if 16 <= r["layer"] < 18 and r.get("ko", True): r["kob"] = 0.5      # sea / rays / glow stop 0.5 short of the cloud edge
 
-# ================================================================ sun, sunburst, sky glow
-BURST = [(-166.5, 25), (-157, 34), (-148.5, 42), (-121, 46), (-90, 54), (-65.5, 26), (-47.5, 50), (-21.5, 46), (-13, 32),
-         (-178.5, 62), (-1.5, 62)]                       # last two = flare along the horizon
+# ================================================================ sun, fine sunburst, radial glow
+BURST = [(-166.5, 25), (-157, 34), (-148.5, 42), (-121, 46), (-90, 54), (-65.5, 26), (-47.5, 50), (-21.5, 46), (-13, 32)]
 add(GM.sun(*SUN, flat_y=HORIZON + 0.6), 15)
-add(GM.burst(*SUN, [(a, L) for a, L in BURST if abs(a) not in (178.5, 1.5)], 8.6, 1.7, 0.9), 15)
-add(GM.burst(*SUN, [(a, L) for a, L in BURST if abs(a) in (178.5, 1.5)], 8.6, 1.5, 0.9, col="gl_pale"), 15)
+add(GM.burst(*SUN, BURST, 8.4, 1.05, 0.82), 15)                                     # hairline satin rays
+add(GM.burst(*SUN, [(-178.5, 62), (-1.5, 62)], 8.4, 1.1, 0.82, col="gl_pale"), 15)   # flare along the horizon
 GLOW_ENV = affinity.scale(Point(SUN[0], HORIZON).buffer(1.0, quad_segs=48), 96, 90, origin=(SUN[0], HORIZON)).intersection(box(-400, -400, 400, HORIZON - 1.5))
-for k, r in enumerate(np.arange(15.0, 112.0, 9.5)):
-    reg = GM.arc_line(SUN[0], SUN[1], r, -179, -1, 0.7, "gl_teal" if r < 70 else "gl_deep")
-    reg["geom"] = reg["geom"].intersection(GLOW_ENV)
-    add([reg], 11)
+HALO = affinity.scale(Point(SUN[0], HORIZON).buffer(1.0, quad_segs=48), 74, 70, origin=(SUN[0], HORIZON)).intersection(box(-400, -400, 400, HORIZON - 1.2)).difference(Point(SUN).buffer(8.0))
+add([GM.R("gl_deep", HALO, "tatami", ("radial", SUN[0], SUN[1]), "GLW-fill", kob=0.0)], 10.5)    # dark-teal glow behind the sun
+for a in np.arange(-175, -3, 8.0):                     # fine radial glow lines (mockup: radiating texture in the halo)
+    t = math.radians(a); L = 40 + 45*abs(math.sin(t*3.1))
+    ln = LineString([(SUN[0] + 10*math.cos(t), SUN[1] + 10*math.sin(t)), (SUN[0] + L*math.cos(t), SUN[1] + L*math.sin(t))])
+    add([GM.R("gl_teal", ln.buffer(0.33, cap_style="round").intersection(GLOW_ENV), "run", None, "GLW", kob=0.0, ko=False)], 11)
 
-# ================================================================ sea: horizon line, bars, glitter path
-add([GM.R("gl_foam", LineString([(-300, HORIZON + 0.6), (300, HORIZON + 0.6)]).buffer(0.45), "bean", None, "HZ", kob=0.0, ko=False)], 13)
+
+# ================================================================ sea: horizon line, dash field, glitter path
+add([GM.R("gl_foam", LineString([(-300, HORIZON + 0.6), (300, HORIZON + 0.6)]).buffer(0.45), "bean", None, "HZ", kob=0.3)], 13)
 SEAISH = (TEAL | LIGHT) & (YMM > HORIZON + 0.5) & ~ndi.binary_dilation(cl_mask, structure=disk(1.5))
-DENS = ndi.uniform_filter(SEAISH.astype(np.float32), size=(int(2.5*PPM), int(7*PPM)))
-def dens(x, y):
-    px, py = int((x - BB[0])*PPM), int((y - BB[1])*PPM)
-    return float(DENS[py, px]) if 0 <= px < W and 0 <= py < H else 0.0
-def lum_at(x0, x1, y):
+# the mockup's own welts (drawn 18-40 mm from where the pattern puts them): their dark pixels are not "no sea"
+MOCK_WELTS = unary_union([LineString([MM.P(128, 566), MM.P(250, 453)]).buffer(17), LineString([MM.P(622, 566), MM.P(500, 453)]).buffer(17)])
+_wm = Image.new("L", (W, H), 0); _wd = ImageDraw.Draw(_wm)
+for p in GM.polys(MOCK_WELTS): _wd.polygon([((x - BB[0])*PPM, (y - BB[1])*PPM) for x, y in p.exterior.coords], fill=255)
+WELTM = np.array(_wm) > 127
+LUM = np.where(WELTM, np.maximum(LUM, 66.0), LUM)
+SEAISH = SEAISH | (WELTM & (YMM > HORIZON + 30))
+def lum_at(x0, x1, y, q=60):
     py = int((y - BB[1])*PPM); a = int((x0 - BB[0])*PPM); b = max(a + 1, int((x1 - BB[0])*PPM))
     seg = LUM[max(0, py-1):py+2, max(0, a):min(W, b)]
-    return float(np.percentile(seg, 70)) if seg.size else 0.0
-
+    return float(np.percentile(seg, q)) if seg.size else 0.0
 GLITTER_X = (SUN[0] - 13, SUN[0] + 13)
-SEA_SUB = {"gl_foam": 12.1, "gl_pale": 12.1, "gl_tealt": 12.2, "gl_teal": 12.3, "gl_deep": 12.4}
-DENSE_Y = HORIZON + 95.0                          # solid sea down to here, then rows with fabric between them
+_sm = ndi.gaussian_filter(SEAISH.astype(np.float32), 3.0*PPM) > 0.05
+_sm = ndi.binary_opening(ndi.binary_closing(_sm, structure=disk(3.0)), structure=disk(2.0)) & (YMM > HORIZON + 1.0)
+_sp = mask_polys(_sm, min_area=200, simplify=0.8)
+SEA_SIL = unary_union([Polygon(p.buffer(3.0).buffer(-3.0).exterior) if p.buffer(3.0).buffer(-3.0).geom_type == 'Polygon' else p for p in _sp]).intersection(box(-400, HORIZON + 1.0, 400, 600)).difference(CLOUD_U).buffer(0)
+SIL_IN = prepared.prep(SEA_SIL.buffer(-0.3))
+def sea_col(lv):
+    if lv < 34: return None                        # navy shows (gap in the mockup)
+    return "gl_deep" if lv < 56 else ("gl_teal" if lv < 80 else ("gl_tealt" if lv < 115 else "gl_foam"))
+GROUND = SEA_SIL.intersection(box(-400, HORIZON + 1.0, 400, HORIZON + 92.0))
+_lim = unary_union([LIM_ALL["R"], LIM_ALL["L"]]).buffer(-2.0)
+_cf = box(-36, -500, 36, 900)
+GROUND = unary_union([GROUND.intersection(_lim).buffer(-4.0).buffer(4.0), GROUND.intersection(_lim).intersection(_cf)])   # rounded ends; straight only at the zip
+GROUND = unary_union([p for p in GM.polys(GROUND.buffer(-1.5).buffer(1.5)) if p.area > 150])
+_cells = []
+for cy_ in np.arange(HORIZON + 1.0, HORIZON + 92.0, 30.0):
+    for cx_ in np.arange(-400, 400, 45.0):
+        _cells += [g for g in GM.polys(GROUND.intersection(box(cx_, cy_, cx_ + 45.0, cy_ + 30.0))) if g.area > 4]
+add([GM.R("gl_deep", g, "tatami", 0.0, "SEA-field", kob=0.0) for g in _cells], 12, z=12*100000 - 1)   # mockup: dark teal between the dashes
+rng = random.Random(7); sea_bars = 0; y = HORIZON + 1.9; rows = 0
+while y < 470:
+    t = min(1.0, (y - HORIZON) / 210.0)
+    hgt = 1.45 + 0.75*t; vgap = (0.35 if y < HORIZON + 92 else 0.6) + 1.7*t          # perspective: rows open up toward the viewer
+    x = -300 + rng.uniform(0, 5)
+    while x < 300:
+        L = rng.uniform(4, 26) * (1.3 - 0.5*t)
+        x1 = x + L
+        if (x < 15.5 and x1 > -15.5) or (GLITTER_X[0] - 2 < x1 and x < GLITTER_X[1] + 2 and y < 400) or not SIL_IN.contains(LineString([(x, y), (x1, y)])):
+            x += rng.uniform(1.2, 3.0); continue
+        col = sea_col(lum_at(x, x1, y, 75))
+        if col == "gl_deep" and y < HORIZON + 92: col = None      # the ground is deep teal already
+        if col and x1 - x >= 3.0:
+            bar = LineString([(x + hgt/2, y), (x1 - hgt/2, y)]).buffer(hgt/2, cap_style="round")
+            add([GM.R(col, bar, "tatami", 0.0, "SEA-hl" if col == "gl_foam" else "SEA", kob=0.0)], 12)
+            sea_bars += 1
+        x = x1 + (rng.uniform(0.5, 1.0) if y < HORIZON + 92 else rng.uniform(0.7, 1.4) + 1.6*t*rng.random())
+    y += hgt + vgap; rows += 1
 
-# sea silhouette from the mockup
-_sm = ndi.gaussian_filter(SEAISH.astype(np.float32), 2.0*PPM) > 0.13
-_sm = ndi.binary_opening(ndi.binary_closing(_sm, structure=disk(3.0)), structure=disk(2.5)) & (YMM > HORIZON + 1.0)
-_sp = mask_polys(_sm, min_area=300, simplify=0.8)
-SEA_SIL = unary_union([p.buffer(3.0).buffer(-3.0) for p in _sp]).intersection(box(-400, HORIZON + 1.0, 400, 600))
-SEA_SIL = SEA_SIL.difference(box(-15.5, -500, 15.5, 900)).difference(CLOUD_U).buffer(0)
+y = HORIZON + 2.2                                      # glitter path under the sun
+while y < 400:
+    t = min(0.99, (y - HORIZON) / 190.0)
+    wmax = 24*(1 - t)**0.8 + 5
+    lv = lum_at(SUN[0] - wmax/2, SUN[0] + wmax/2, y, 70)
+    hgt = 1.5 + 0.5*t
+    if lv > 80:
+        w = wmax*rng.uniform(0.55, 1.0); cx = SUN[0] + rng.uniform(-2.5, 2.5)
+        parts = [(cx - w/2, cx + w/2)] if w < 12 or rng.random() < 0.5 else [(cx - w/2, cx - 0.9), (cx + 0.9, cx + w/2)]
+        for a_, b_ in parts:
+            if b_ - a_ < 3: continue
+            add([GM.R("gl_pale" if lv > 125 else "gl_foam", LineString([(a_ + hgt/2, y), (b_ - hgt/2, y)]).buffer(hgt/2, cap_style="round"),
+                      "tatami", 0.0, "GLT", kob=0.0)], 12.5)
+    y += hgt + 0.6 + 0.8*t
 
-# rays fanning from the sun over the sea (continuous gold bean lines)
+# ================================================================ dashed gold rays across the sea (as in the mockup)
 RAYS = [8.0, 20.0, 42.0, 68.0, 88.0, 125.5, 142.0, 162.0, 171.0, 176.5]
-ray_info = []; RAY_LINES = []
+ray_info = []
 for i, a_ in enumerate(RAYS):
     t = math.radians(a_); ux, uy = math.cos(t), math.sin(t)
     r0 = max((HORIZON + 3.0 - SUN[1]) / max(uy, 1e-3), 10.0)
@@ -221,103 +299,12 @@ for i, a_ in enumerate(RAYS):
     if not segs: continue
     pA = (SUN[0] + ux*r0, SUN[1] + uy*r0)
     pB = max([g.coords[0] for g in segs] + [g.coords[-1] for g in segs], key=lambda p: math.hypot(p[0]-SUN[0], p[1]-SUN[1]))
-    L = LineString([pA, pB]); RAY_LINES.append(L)
-    add([GM.R("gl_gold", L.buffer(0.4, cap_style="round"), "bean", None, "RAY", kob=0.0, ko=False)], 14)     # overlay: the field runs under it
+    regs = [r for r in GM.dashed(pA, pB, 4.6, 2.6, 0.85, 0.45, phase=(i*1.7) % 7.2) if r["st"] == "bean"]   # dashes only, fabric gaps
+    for r in regs: r["kob"] = 0.35
+    add(regs, 14)
     ray_info.append(dict(angle=a_, start=pA, end=pB))
 
-# rows (perspective: closer under the horizon)
-rows = []; y = HORIZON + 2.1
-while y < 470:
-    t = (y - HORIZON) / 200.0; hgt = 1.55 + 0.6*min(1, t); pitch = hgt + (0.0 if y < DENSE_Y else 0.62 + 1.1*min(1, t))
-    rows.append((y, hgt)); y += max(pitch, hgt + 0.0001) if y >= DENSE_Y else hgt + 0.62
-# dark field: solid under the horizon, rows below, tied together by bands along each ray (one connected object)
-FIELD = SEA_SIL.intersection(box(-400, HORIZON + 1.0, 400, DENSE_Y)).buffer(0)
-FIELD = FIELD.difference(box(-15.5, -500, 15.5, 900))
-FIELD = unary_union([p for p in GM.polys(FIELD) if p.area > 25])
-# cut into ~45 x 30 mm cells: each cell sews as its own object (short internal moves; long ones overflow the router)
-_cells = []
-_grid = [(cy_, 30.0, 45.0) for cy_ in np.arange(HORIZON + 1.0, DENSE_Y - 1, 30.0)]
-_grid = [(a, min(h, DENSE_Y - a), w) for a, h, w in _grid]
-for k_, (cy_, ch_, cw_) in enumerate(_grid):
-    off = cw_/2 if k_ % 2 else 0.0
-    for cx_ in np.arange(-400 - off, 400, cw_):
-        q = FIELD.intersection(box(cx_, cy_, cx_ + cw_, cy_ + ch_))
-        _cells += [g for g in GM.polys(q) if g.area > 4]
-add([GM.R("gl_deep", g, "tatami", 0.0, "SEA-field", kob=0.0) for g in _cells], 12.4, z=12*100000 - 1)
-
-# lighter dashes: holes in the field under the horizon; below it, chains of dashes on the fabric
-rng = random.Random(7); sea_bars = 0
-SIL_IN = prepared.prep(SEA_SIL.buffer(-0.4))
-def blocked(x, x1, y):
-    return (x < 15.5 and x1 > -15.5) or (GLITTER_X[0] - 2 < x1 and x < GLITTER_X[1] + 2 and y < 400) or not SIL_IN.contains(LineString([(x, y), (x1, y)]))
-lower_rows = []
-for y, hgt in rows:
-    if y >= DENSE_Y: continue
-    x = -300 + rng.uniform(0, 8)
-    while x < 300:
-        L = rng.uniform(7, 34); x1 = x + L
-        if blocked(x, x1, y): x += rng.uniform(1.5, 4.0); continue
-        lv = lum_at(x, x1, y)
-        col = "gl_foam" if lv > 150 else ("gl_tealt" if lv > 106 else ("gl_teal" if lv > 74 else None))
-        if col:
-            bar = LineString([(x + hgt/2, y), (x1 - hgt/2, y)]).buffer(hgt/2, cap_style="round")
-            add([GM.R(col, bar, "tatami", 0.0, "SEA-hl" if col == "gl_foam" else "SEA", kob=0.0)], SEA_SUB[col]); sea_bars += 1
-        x = x1 + rng.uniform(1.0, 6.0)
-y = DENSE_Y + 1.0
-while y < 470:
-    t = (y - HORIZON) / 200.0; hgt = 1.6 + 0.5*min(1, t)
-    x = -300 + rng.uniform(0, 10)
-    while x < 300:
-        clen = rng.uniform(40, 120); xs, xe = x, x + clen
-        lv = lum_at(xs, xe, y); col = "gl_tealt" if lv > 112 else ("gl_teal" if lv > 78 else "gl_deep")
-        n_ok = 0
-        while x < xe:
-            L = rng.uniform(6, 22); x1 = min(x + L, xe)
-            if x1 - x >= 3.5 and not blocked(x, x1, y):
-                c = col
-                bar = LineString([(x + hgt/2, y), (x1 - hgt/2, y)]).buffer(hgt/2, cap_style="round")
-                add([GM.R(c, bar, "tatami", 0.0, "SEA-hl" if c == "gl_foam" else "SEA", kob=0.0)], SEA_SUB[c]); sea_bars += 1; n_ok += 1
-            x = x1 + rng.uniform(1.0, 2.0)
-        x += rng.uniform(8, 24)
-    y += hgt + 1.0 + 1.6*min(1, t)
-
-# glitter path under the sun (sewn before the field: its travel hides under the field)
-y = HORIZON + 2.4; k = 0
-while y < 392:
-    t = min(0.99, (y - HORIZON) / 190.0)
-    wmax = 24*(1 - t)**0.8 + 5
-    lv = lum_at(SUN[0] - wmax/2, SUN[0] + wmax/2, y)
-    hgt = 1.6 + 0.4*t
-    if lv > 85:
-        w = wmax*rng.uniform(0.55, 1.0); cx = SUN[0] + rng.uniform(-2.5, 2.5)
-        parts = [(cx - w/2, cx + w/2)] if w < 12 or rng.random() < 0.5 else [(cx - w/2, cx - 0.9), (cx + 0.9, cx + w/2)]
-        for a_, b_ in parts:
-            if b_ - a_ < 3: continue
-            add([GM.R("gl_pale" if t < 0.45 and lv > 120 else "gl_foam", LineString([(a_ + hgt/2, y), (b_ - hgt/2, y)]).buffer(hgt/2, cap_style="round"),
-                      "tatami", 0.0, "GLT", kob=0.0)], 12.05, z=13*100000 + len(items))
-    y += hgt + 0.7 + 0.5*t; k += 1
-
-# ================================================================ stars
-burst_mask = Image.new("L", (W, H), 0); bd = ImageDraw.Draw(burst_mask)
-for a, L in BURST:
-    t = math.radians(a); p1 = (SUN[0] + math.cos(t)*(L + 6), SUN[1] + math.sin(t)*(L + 6))
-    bd.line([((SUN[0] - BB[0])*PPM, (SUN[1] - BB[1])*PPM), ((p1[0] - BB[0])*PPM, (p1[1] - BB[1])*PPM)], fill=255, width=int(5*PPM))
-BURSTM = np.array(burst_mask) > 127
-TOPHAT = LUM - ndi.grey_opening(LUM, size=(int(5*PPM), int(5*PPM)))
-sky = ndi.binary_closing((TOPHAT > 38) & (LUM > 80) & PANEL & ~ZIP, structure=disk(0.6)) & (YMM < HORIZON - 3) & ~ndi.binary_dilation(cl_mask, structure=disk(3.0)) & ~BURSTM & (np.hypot(XMM - SUN[0], YMM - SUN[1]) > 12)
-lab, n = ndi.label(ndi.binary_dilation(sky, structure=disk(0.6)) & ~ndi.binary_dilation(cl_mask, structure=disk(3.0)) & ~BURSTM, structure=np.ones((3, 3)))
-stars = []
-for i, sl in enumerate(ndi.find_objects(lab), 1):
-    m = lab[sl] == i; a = m.sum()/PPM**2
-    if a < 0.4 or a > 160: continue
-    ys, xs = np.nonzero(m); cx = BB[0] + (sl[1].start + xs.mean() + 0.5)/PPM; cy = BB[1] + (sl[0].start + ys.mean() + 0.5)/PPM
-    w = (xs.max() - xs.min() + 1)/PPM; h = (ys.max() - ys.min() + 1)/PPM
-    peak = float(LUM[sl][m].max())
-    if math.hypot(cx - SUN[0], cy - SUN[1]) < 78: continue           # sun glow texture, not stars
-    if not ALLOWED_M.buffer(-1.0).contains(Point(cx, cy)): continue  # outside the keep-outs (shoulder corners = background)
-    if peak < 110 or (max(w, h) < 2.6 and a < 0.8): continue          # noise
-    stars.append((cx, cy, w, h, a))
-# star field read off the mockup grid (front.png px): auto-detection loses the thin sparkle arms and the faint dots
+# ================================================================ stars (every mockup star, position + type)
 STARS_PX = {
  "big":   [(216.7, 223.3), (501.7, 218.3)],
  "med":   [(298, 300), (310, 277), (288, 245), (254, 198), (180, 193), (530, 172), (435, 248), (585, 248), (461, 303)],
@@ -329,27 +316,20 @@ stars = []
 for kind, pts in STARS_PX.items():
     for px, py in pts:
         cx, cy = MM.P(px, py); u = f"star{len(stars)}"; stars.append((cx, cy, kind))
-        if kind == "big":    regs = GM.star(cx, cy, 13.0, 9.0, 1.9, "big", u)
-        elif kind == "med":  regs = GM.star(cx, cy, 7.0, 5.0, 1.5, "sparkle", u)
-        elif kind == "small": regs = GM.star(cx, cy, 3.8, 3.0, 1.2, "cross", u)
-        else:                regs = GM.star(cx, cy, 1.9, 0, 0, "dot", u)
+        if kind == "big":     regs = GM.star(cx, cy, 15.0, 10.5, 1.35, "big", u)       # long thin arms + short diagonals
+        elif kind == "med":   regs = GM.star(cx, cy, 10.0, 6.0, 1.1, "sparkle", u)     # long-armed sparkle
+        elif kind == "small": regs = GM.star(cx, cy, 3.8, 3.0, 1.15, "cross", u)
+        else:                 regs = GM.star(cx, cy, 1.9, 0, 0, "dot", u)
         add(regs, 18, unit=u)
 
-META = dict(horizon=HORIZON, sun=SUN, rays=ray_info, burst=BURST, banks=bank_info, n_islets=len(ISLETS), n_stars=len(stars),
-            sea_bars=sea_bars, mock_map=dict(cfx=MM.CFX, necky=MM.NECKY, sx=MM.SX, sy=MM.SY))
-pickle.dump(dict(items=items, meta=META), open("scene.pkl", "wb"))
-print("items", len(items), "banks", len(BANKS), [ (b["side"], b["lobes"]) for b in bank_info], "islets", len(ISLETS), "stars", len(stars), "sea bars", sea_bars, "rays", len(ray_info))
+# ================================================================ sew order: one stop per thread (scale dashes after the cloud bodies)
+SEW = ["gl_deep", "gl_teal", "gl_tealt", "gl_foam", "gl_pale", "gl_gold", "gl_shadow", "gl_slate", "gl_sage", "gl_sagelt", "gl_sand", "gl_cream"]
+for r in items:
+    r["vlayer"] = r["layer"]
+    r["layer"] = (40 if r.get("sub") == "scale" else 20) + SEW.index(r["col"])
 
-if "preview" in sys.argv:
-    from render import geom_to_path
-    from motifs2 import HEX
-    import cairosvg
-    x0, y0, x1, y1 = -320, -100, 320, 520
-    o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{x0} {y0} {x1-x0} {y1-y0}" width="{(x1-x0)*3}" height="{(y1-y0)*3}">',
-         f'<rect x="{x0}" y="{y0}" width="{x1-x0}" height="{y1-y0}" fill="#FFFFFF"/>']
-    for pnl in (F.PANEL_R, F.PANEL_L): o.append(f'<path d="{geom_to_path(pnl)}" fill="{glcore.FABRIC}" stroke="#555" stroke-width="0.8"/>')
-    for s in "RL": o.append(f'<path d="{geom_to_path(CLIP_M[s])}" fill="none" stroke="#FF4040" stroke-width="0.4" stroke-dasharray="2 1.5"/>')
-    for r in sorted(items, key=lambda r: r["z"]):
-        o.append(f'<path d="{geom_to_path(r["geom"])}" fill="{HEX[r["col"]]}" fill-rule="evenodd"/>')
-    o.append('</svg>')
-    cairosvg.svg2png(bytestring="".join(o).encode(), write_to="out/scene_raw.png", output_width=1600)
+META = dict(horizon=HORIZON, sun=SUN, rays=ray_info, burst=BURST, banks=bank_info, islets=islet_info, n_islets=len(ISLETS_PX), n_stars=len(stars),
+            sea_bars=sea_bars, sea_rows=rows, mock_map=dict(cfx=MM.CFX, necky=MM.NECKY, sx=MM.SX, sy=MM.SY))
+pickle.dump(dict(items=items, meta=META), open("scene.pkl", "wb"))
+print("items", len(items), "banks", [(b["side"], b["lobes"]) for b in bank_info], "islets", len(islet_info), [i["moved"] for i in islet_info if any(i["moved"])],
+      "stars", len(stars), "sea dashes", sea_bars, "rows", rows, "rays", len(ray_info))

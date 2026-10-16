@@ -9,7 +9,7 @@ from render import f
 
 K = 1.0
 LBL = 7.0
-INK = "#1A1A1A"; MUT = "#C9D1C6"; SH = "#5F7062"; CORD = "#1F1F1F"; RIBC = "#2A2A2A"; CUFF = "#2A2A2A"; ZIP = "#A07C3C"
+INK = "#1A1A1A"; MUT = "#9AA79B"; SH = "#3A463C"; CORD = "#1F1F1F"; RIBC = "#2A2A2A"; CUFF = "#2A2A2A"; ZIP = "#A07C3C"
 
 class Flat:
     def __init__(self, size="M"):
@@ -121,7 +121,7 @@ def draw_front(F, emb_boxes=(), callouts=True):
     rib = F.hem_rib(); o.append(f'<path d="{poly_path(rib)}" fill="{RIBC}" stroke="{INK}" stroke-width="{f(0.5*K)}"/>'); o.append(rib_lines(rib, 3.2))
     o.append(dashed_line([(-F.sweep2, F.hem_seam - 5), (F.sweep2, F.hem_seam - 5)]))
     for s in (1, -1):
-        w = F.welt(s); o.append(f'<path d="{poly_path(w)}" fill="#4C5B4E" stroke="{INK}" stroke-width="{f(0.45*K)}"/>')
+        w = F.welt(s); o.append(f'<path d="{poly_path(w)}" fill="#2C3830" stroke="{INK}" stroke-width="{f(0.45*K)}"/>')
         o.append(topstitch(w, 2.0))
         cs = list(w.exterior.coords); o.append(f'<path d="{path([cs[0], cs[1]])}" stroke="{INK}" stroke-width="{f(0.9*K)}"/>')
     # zip

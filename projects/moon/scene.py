@@ -1,16 +1,20 @@
-"""Moon jacket scene composition. All art is composed on the size-M pattern (moonpattern / engine pattern, garment
-coords: back x from CB (+ = wearer's right), y down from CB neck seam; fronts x from CF (+ = wearer's left), y from
-CF neck seam; sleeves in S01/S02 pattern coords). Mockup (inputs/back.png, front.png, 724x870) was measured on a
-grid and converted to mm by hand (positions below are mm, M).
+"""Moon jacket scene composition — Rev B (fidelity first). The moon tones, every cloud (lobes, bands, highlights,
+indigo scallop lines, tails) and both poles with their hardware are TRACED from the mockup (tracedart.py, x4 Lanczos
+read of a low-res render) and placed on the size-M pattern; wires are drawn parametric so they meet the side seams.
+Garment coords: back x from CB (+ = wearer's right), y down from CB neck seam; fronts x from CF (+ = wearer's left),
+y from CF neck seam; sleeves in S01/S02 pattern coords.
 
 Elements
   01  back scene     — moon, clouds, pole, wires, LICENSED-FIGURE PLACEHOLDER BOX (knocked out) — per size
+  01b moon-in-box    — our moon fill inside the box, sewn before the factory's licensed figure [proposed] — per size
   02  chest clouds   — 02R wearer's right front, 02L wearer's left front — graded A/B/C
   03  lower front    — 03L pole + wires + cloud (wearer's left), 03R wires (wearer's right) — per size
   04  sleeve clouds  — 04R right sleeve (S01), 04L left sleeve (S02) — graded A/B/C
 Wires wrap back <-> front across the SIDE SEAMS (end 3 mm short on both pieces, same height above the hem seam)
-and cross the CF zip (end 15 mm each side, same curve) — so 01 and 03 are rebuilt per size from that size's pattern."""
+and cross the CF zip (end 15 mm each side, same curve); where a wire passes a welt pocket it stops 6 mm short of
+the welt box on both sides (it reads as passing behind the pocket) — so 01 and 03 are rebuilt per size."""
 import math, random
+import shapely
 import numpy as np
 from shapely.geometry import Point, Polygon, LineString, box
 from shapely.ops import unary_union
@@ -20,40 +24,39 @@ import moonpal
 import moonpattern, pattern as PT
 import moonmotifs as MM
 import front as FR
+import tracedart as TA
 
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
 SCALE = {"A": 0.92, "B": 1.0, "C": 1.08}
 KEEP = dict(seam=15.0, side=15.0, cf=15.0, hem=10.0, welt=6.0, collar=6.0, neck=6.0, cuff=10.0, wrap=FR.WRAP)
-L_MOON, L_MDET, L_WIRE, L_CLOUD, L_POLE, L_HW = 11, 12, 13, 14, 15, 16
+L_MOON, L_MDET, L_WIRE, L_CLOUD, L_POLE, L_HW = 11, 12, 15, 14, 15, 15     # wires + pole + hardware share one layer -> one stop per grey
 
-# ---------------------------------------------------------------- placeholder box (licensed figure)  — M, back coords
-# mockup figure bounds (back.png px x 316..377, y 358..437) -> 63 x 81 mm + 4 mm margin all round. PROPOSED.
-POLE_TOP_B = 338.0
-BOX_M = (-35.5, POLE_TOP_B - 89.0, 35.5, POLE_TOP_B)
+# ---------------------------------------------------------------- placeholder box (licensed figure), M, back coords
+# mockup figure (back.png) x 318..375 px, y 362..430 px (head to feet, incl. the stick) -> 62 x 73 mm at 1.08 mm/px,
+# + 3 mm margin; bottom = pole top. PROPOSED — confirm against the licensor art.
+BOX_M = (-34.0, 268.0, 34.0, 347.0)
+MOON_R = TA.MOON_R_PX * TA.K
 
-# ---------------------------------------------------------------- wire network: heights above the hem seam (mm, M)
-# back left side seam (wearer's left)  <->  front wearer's-left side seam (03L)
-H_LEFT = [150.0, 138.0, 100.0, 62.0]
-# back right side seam (wearer's right) <->  front wearer's-right side seam (03R, wires from the 03L pole across the zip)
-H_RIGHT = [80.0, 62.0, 46.0, 30.0]
+# ---------------------------------------------------------------- wire network (heights above the hem seam, mm, M) read off the mockup
+# back left side seam (wearer's left)  <-> front wearer's-left side seam (03L, short wires from the pole)
+H_LEFT = [159.0, 149.0, 89.0, 49.0]
+# back right side seam (wearer's right) <-> front wearer's-right side seam (03R, wires from the 03L pole across the zip)
+H_RIGHT = [175.0, 135.0, 105.0, 50.0, 18.0]
 
 def edge(g, pc, name): return LineString(next(e.pts for e in g[pc].edges if e.name == name))
 
 def size_tf(size):
-    """M -> size transform for per-size art: motifs scale by the grade about (CB/CF, 10 above the hem seam)."""
     g, mt = PT.draft(size); gM, mM = PT.draft("M"); sc = SCALE[GRADE[size][0]]
-    def back(x, y): return (x * sc, (mt["hem_b"] - 10) - ((mM["hem_b"] - 10) - y) * sc)
     kx = mt["block"].chest2 / mM["block"].chest2
-    def front(x, y):      # front pole sits by the side seam: x follows the chest grade, size follows the art grade
-        return (x * sc, (mt["hem_f"] - 10) - ((mM["hem_f"] - 10) - y) * sc)
-    return g, mt, sc, kx, back, front
+    return g, mt, mM, sc, kx
 
-def T(regs, f, sc):
+def tf_regs(regs, sc, anchor_from, anchor_to, dx=0.0):
     out = []
     for r in regs:
-        g = affinity.scale(r["geom"], sc, sc, origin=(0, 0))
-        o = f(0, 0); g = affinity.translate(g, o[0], o[1])
-        out.append(dict(r, geom=g.buffer(0) if r["st"] not in ("bean", "run") else g))
+        g = affinity.scale(r["geom"], sc, sc, origin=anchor_from)
+        g = affinity.translate(g, anchor_to[0] - anchor_from[0] + dx, anchor_to[1] - anchor_from[1])
+        ang = r["ang"]
+        out.append(dict(r, geom=g if r["st"] in ("bean", "run") else g.buffer(0), ang=ang))
     return out
 
 class Items(list):
@@ -62,71 +65,67 @@ class Items(list):
             if r["geom"] is not None and not r["geom"].is_empty:
                 r = dict(r); r["z"] = len(self); r["layer"] = layer; r["el"] = el; self.append(r)
 
+def fit(regs, clip, max_shift=60.0, tol=0.015):
+    """smallest move that brings a traced motif inside the keep-out clip (tails may hang out tol of the area)"""
+    U = unary_union([r["geom"] for r in regs if r["st"] not in ("bean", "run")])
+    if U.is_empty: return regs, (0.0, 0.0)
+    A = U.area
+    def out_frac(dx, dy): return affinity.translate(U, dx, dy).difference(clip).area / A
+    if out_frac(0, 0) <= tol: return regs, (0.0, 0.0)
+    best = None
+    for r in np.arange(1.0, max_shift + 0.1, 1.0):
+        for th in np.linspace(0, 2 * math.pi, 36, endpoint=False):
+            dx, dy = r * math.cos(th), r * math.sin(th)
+            if out_frac(dx, dy) <= tol: best = (dx, dy); break
+        if best: break
+    if best is None: return regs, (0.0, 0.0)
+    return [dict(r, geom=affinity.translate(r["geom"], *best)) for r in regs], best
+
+_T = None
+def traced():
+    global _T
+    if _T is None: _T = TA.load()
+    return _T
+
 # ================================================================ 01 back
 def back_art(size="M"):
-    """items for the back at `size`, + info (box, pole, wire seam marks)."""
-    g, mt, sc, kx, TB, _ = size_tf(size)
-    P = lambda x, y: TB(x, y)
-    S = lambda v: v * sc
-    it = Items(); rng = random.Random(7)
-    # moon
-    mreg, mdet, disc = MM.moon(*P(0, 244), S(120), random.Random(5))
-    it.add(mreg, L_MOON, "01"); it.add(mdet, L_MDET, "01")
-    # pole hardware geometry (attachment points first: wires go behind the hardware)
-    cx = 0.0
-    y0, y1 = P(0, POLE_TOP_B)[1], P(0, 575)[1]
-    arm0, arm1 = P(-66, 392), P(98, 367)
-    def on_arm(x):
-        t = (x - arm0[0]) / (arm1[0] - arm0[0]); return (x, arm0[1] + (arm1[1] - arm0[1]) * t)
-    ins_x = [S(-50), S(62), S(86)]
-    tips = {}
-    hw = []
-    a_regs, arm_g = MM.crossarm(arm0, arm1, S(4.8)); hw += a_regs
-    for nm, x in zip(("i1", "i2", "i3"), ins_x):
-        r_, tip = MM.insulator(x, on_arm(x)[1] - S(2.4), S(7.5), S(4.4)); hw += r_; tips[nm] = tip
-    for x in (S(-36), S(36)):
-        hw += MM.bracket(on_arm(x), (math.copysign(S(9), x), P(0, 412)[1]))
-    sl0, sl1 = P(-12, 428), P(-66, 428)
-    hw += MM.string_insulator(sl0, sl1, 6, S(4.8))
-    tips["s1"] = sl1
-    cr, _ = MM.can(*P(15, 397), S(40), S(70)); hw += cr
-    hw += MM.bracket(P(12, 405), P(16, 405)) + MM.bracket(P(12, 455), P(16, 455))
-    cl, _ = MM.can(*P(-42, 440), S(24), S(42)); hw += cl
-    hw += MM.bracket(P(-18, 448), P(-12, 448))
-    sr0, sr1 = P(12, 503), P(60, 503)
-    hw += MM.string_insulator(sr0, sr1, 6, S(4.2)); tips["s2"] = sr1
-    tips["a0"] = arm0; tips["a1"] = arm1
-    # wires: to the side seams at the agreed heights (graded), + two drop wires that end above the hem rib
+    g, mt, mM, sc, kx = size_tf(size); T_ = traced()
+    A0 = (0.0, mM["hem_b"] - 10); A1 = (0.0, mt["hem_b"] - 10)
+    P = lambda x, y: (A1[0] + (x - A0[0]) * sc, A1[1] + (y - A0[1]) * sc)
+    it = Items()
+    cb, cw = back_clips("M")
+    it.add(tf_regs(T_["moon"], sc, A0, A1), L_MOON, "01")
+    # wires (behind the clouds and the hardware), to the agreed heights at this size's side seams + 3 drop wires
+    tips = {k: P(*v) for k, v in T_["back_tips"].items()}
     xs = mt["block"].chest2
-    seamL = lambda h: (-xs, mt["hem_b"] - h * sc)
-    seamR = lambda h: (xs, mt["hem_b"] - h * sc)
-    W = [("a0", seamL(H_LEFT[0])), ("i1", seamL(H_LEFT[1])), ("s1", seamL(H_LEFT[2])), ("s1", seamL(H_LEFT[3])),
-         ("a1", seamR(H_RIGHT[0])), ("i3", seamR(H_RIGHT[1])), ("i2", seamR(H_RIGHT[2])), ("s2", seamR(H_RIGHT[3])),
-         ("s1", (S(-118), mt["hem_b"] - 4)), ("s2", (S(132), mt["hem_b"] - 4))]
-    wires = []; ends = []
+    seamL = lambda h: (-xs, mt["hem_b"] - h * sc); seamR = lambda h: (xs, mt["hem_b"] - h * sc)
+    W = [("armL", seamL(H_LEFT[0])), ("strL", seamL(H_LEFT[1])), ("strL2", seamL(H_LEFT[2])), ("canL", seamL(H_LEFT[3])),
+         ("pinA", seamR(H_RIGHT[0])), ("pinB", seamR(H_RIGHT[1])), ("armR", seamR(H_RIGHT[2])), ("canR", seamR(H_RIGHT[3])), ("insR", seamR(H_RIGHT[4])),
+         ("strL2", (P(TA.BX(205), 0)[0], mt["hem_b"] - 4)), ("canL", (P(TA.BX(300), 0)[0], mt["hem_b"] - 4)), ("insR", (P(TA.BX(445), 0)[0], mt["hem_b"] - 4))]
+    wires, ends = [], []
     for a, b in W:
         p0 = tips[a]; span = abs(b[0] - p0[0])
-        if abs(abs(b[0]) - xs) < 0.01: ends.append(("R" if b[0] > 0 else "L", round(mt["hem_b"] - b[1], 1), b))
-        reg, ln = MM.wire(p0, b, 0.055 * span if abs(b[1] - mt["hem_b"]) > 8 else 0.02 * span, 1.0)
+        drop = abs(b[1] - mt["hem_b"]) < 8
+        if abs(abs(b[0]) - xs) < 0.01: ends.append(("R" if b[0] > 0 else "L", round(mt["hem_b"] - b[1], 1), b, p0, 0.07 * span))
+        reg, ln = MM.wire(p0, b, (0.02 if drop else 0.07) * span, 1.0)
         wires.append(reg)
     it.add(wires, L_WIRE, "01")
-    # clouds (in front of the moon + wires)
-    CL = [(-268, -60, 268, 52, [(0, 0.78, 0, 1.0), (0.3, 1.0, 0.3, 0.62)], (1, 0.30), 11),
-          (-226, -40, 314, 36, None, (1, 0.25), 12),
-          (82, 278, 300, 44, [(0.0, 0.85, 0, 1.0), (0.25, 1.0, 0.25, 0.6)], (-1, 0.25), 13),
-          (-262, -60, 414, 50, [(0, 0.8, 0, 1.0), (0.35, 1.0, 0.3, 0.6)], (1, 0.22), 14),
-          (88, 280, 371, 46, None, (-1, 0.25), 15)]
-    for x0, x1, yb, H, tiers, tail, seed in CL:
-        (a, yy) = P(x0, yb); (b, _) = P(x1, yb)
-        regs, _ = MM.cloud(a, b, yy, S(H), random.Random(seed), tiers=tiers, tail=tail)
-        it.add(regs, L_CLOUD, "01")
-    # pole on top
-    pr, pbody = MM.pole(cx, y0, y1, S(25), rng); it.add(pr, L_POLE, "01")
-    it.add(hw, L_HW, "01")
-    bx = BOX_M; b0 = P(bx[0], bx[1]); b1 = P(bx[2], bx[3]); BOX = box(b0[0], b0[1], b1[0], b1[1])
-    info = dict(size=size, grade=GRADE[size][0], scale=sc, box=BOX.bounds, moon=dict(c=P(0, 244), r=S(120)),
-                pole=dict(x=cx, y0=y0, y1=y1), wire_ends=ends)
+    clouds = []
+    for c in T_["back_clouds"]:
+        regs, mv = fit(c["vis"], cb)
+        clouds.append(mv); it.add(tf_regs(regs, sc, A0, A1), L_CLOUD, "01")
+    it.add(tf_regs(T_["back_pole"], sc, A0, A1), L_POLE, "01")
+    b0 = P(BOX_M[0], BOX_M[1]); b1 = P(BOX_M[2], BOX_M[3]); BOX = box(b0[0], b0[1], b1[0], b1[1])
+    mc = P(0, 244)
+    info = dict(size=size, grade=GRADE[size][0], scale=sc, box=BOX.bounds, moon=dict(c=mc, r=MOON_R * sc),
+                pole=dict(x=0.0), wire_ends=[e[:3] for e in ends], wire_geo=ends, cloud_moves=clouds)
     return it, BOX, info
+
+def moon_in_box(size="M"):
+    """01b: our moon fill inside the placeholder box (same traced tones + concentric rows), to sew before the figure"""
+    it, BOX, info = back_art(size)
+    vis = [dict(r, geom=r["geom"].intersection(BOX)) for r in it if r["el"] == "01" and r["layer"] == L_MOON]
+    return [v for v in vis if not v["geom"].is_empty and v["geom"].area > 0.3], BOX
 
 def back_clips(size):
     g, mt = PT.draft(size); pc = g["B01"]; P_ = pc.sew_poly()
@@ -138,63 +137,40 @@ def back_clips(size):
     wire = base.difference(minus(["side L", "side R"], KEEP["wrap"]))
     return make_valid(art).buffer(0), make_valid(wire).buffer(0)
 
-# ================================================================ 03 lower front (per size), 02 chest clouds (M)
+# ================================================================ 03 lower front (per size)
 def front_art(size="M"):
-    g, mt, sc, kx, _, TF = size_tf(size)
-    P = lambda x, y: TF(x, y)
-    S = lambda v: v * sc
-    it = Items(); rng = random.Random(21)
-    tips = {}; hw = []
-    # pole on the wearer's left front, outside the welt pocket; held 15 from the side seam via x of the M layout x kx
-    PX = 250.0
-    def Q(x, y):             # pole-local: M x offsets from the pole centre, which follows the chest grade
-        px, py = P(PX, y); return (PX * kx + (x - PX) * sc, py)
-    y0, y1 = Q(PX, 325)[1], Q(PX, 500)[1]
-    a0, a1 = Q(205, 347), Q(282, 343)
-    def on_arm(x):
-        t = (x - a0[0]) / (a1[0] - a0[0]); return (x, a0[1] + (a1[1] - a0[1]) * t)
-    r_, arm = MM.crossarm(a0, a1, S(4.4)); hw += r_
-    for nm, x in (("i1", Q(214, 0)[0]), ("i2", Q(274, 0)[0])):
-        r_, tip = MM.insulator(x, on_arm(x)[1] - S(2.2), S(7.0), S(4.2)); hw += r_; tips[nm] = tip
-    hw += MM.bracket(on_arm(Q(226, 0)[0]), Q(241, 362))
-    cr, _ = MM.can(*Q(262, 360), S(21), S(46)); hw += cr
-    hw += MM.bracket(Q(260, 372), Q(263, 372)) + MM.bracket(Q(260, 398), Q(263, 398))
-    s0, s1 = Q(239, 436), Q(203, 436)
-    hw += MM.string_insulator(s0, s1, 5, S(4.4)); tips["s1"] = s1
-    cl, _ = MM.can(*Q(216, 444), S(18), S(36)); hw += cl
-    hw += MM.bracket(Q(234, 452), Q(240, 452))
-    tips.update(a1=a1, can=Q(283, 395), pr=Q(261, 455), cs=Q(216, 456), pl=Q(239, 470))
+    g, mt, mM, sc, kx = size_tf(size); T_ = traced()
+    A0 = (0.0, mM["hem_f"] - 10); A1 = (0.0, mt["hem_f"] - 10)
+    PX = TA.FRONT_POLE["cx"]; dxp = PX * kx - PX * sc          # the pole group follows the chest grade (stays by the side seam)
+    P = lambda x, y: (A1[0] + (x - A0[0]) * sc, A1[1] + (y - A0[1]) * sc)
+    Pp = lambda x, y: (P(x, y)[0] + dxp, P(x, y)[1])
+    it = Items(); fc = front_clips("M")
+    tips = {k: Pp(*v) for k, v in T_["front_tips"].items()}
     xs = mt["block"].chest2
-    seamL = lambda h: (xs, mt["hem_f"] - h * sc)                # wearer's left side seam (x > 0)
-    seamR = lambda h: (-xs, mt["hem_f"] - h * sc)               # wearer's right side seam, across the zip
-    W = [("i2", seamL(H_LEFT[0]), 0.0), ("a1", seamL(H_LEFT[1]), 0.0), ("can", seamL(H_LEFT[2]), 0.0), ("pr", seamL(H_LEFT[3]), 0.0),
-         ("s1", seamR(H_RIGHT[0]), 22.0), ("s1", seamR(H_RIGHT[1]), 24.0), ("cs", seamR(H_RIGHT[2]), 18.0), ("pl", seamR(H_RIGHT[3]), 13.0)]
-    wires = []; ends = []
-    for a, b, sag in W:
-        ends.append(("L" if b[0] > 0 else "R", round(mt["hem_f"] - b[1], 1), b))
-        reg, _ = MM.wire(tips[a], b, S(sag) if sag else 0.04 * abs(b[0] - tips[a][0]), 1.0); wires.append(reg)
+    seamL = lambda h: (xs, mt["hem_f"] - h * sc); seamR = lambda h: (-xs, mt["hem_f"] - h * sc)
+    W = [("armR", seamL(H_LEFT[0]), 0.0), ("canR", seamL(H_LEFT[1]), 0.0), ("pole", seamL(H_LEFT[2]), 0.0), ("bracket", seamL(H_LEFT[3]), 0.0),
+         ("pin", seamR(H_RIGHT[0]), 0.07), ("armL", seamR(H_RIGHT[1]), 0.07), ("strL", seamR(H_RIGHT[2]), 0.07), ("strL2", seamR(H_RIGHT[3]), 0.06), ("canL", seamR(H_RIGHT[4]), 0.03),
+         ("strL", (P(TA.FX(330), 0)[0], mt["hem_f"] - 4), 0.02), ("poleL", (P(TA.FX(500), 0)[0], mt["hem_f"] - 4), 0.02), ("bracket", (min(P(TA.FX(640), 0)[0] + dxp, xs - 20), mt["hem_f"] - 4), 0.02)]
+    wires, ends = [], []
+    for a, b, sg in W:
+        p0 = tips[a]; span = abs(b[0] - p0[0])
+        if abs(abs(b[0]) - xs) < 0.01: ends.append(("L" if b[0] > 0 else "R", round(mt["hem_f"] - b[1], 1), b, p0, (sg or 0.04) * span))
+        reg, _ = MM.wire(p0, b, (sg or 0.04) * span, 1.0); wires.append(reg)
     it.add(wires, L_WIRE, "03")
-    # lower cloud with a long wisp tail across the zip (split at the zip like the wires)
-    (ca, cy) = P(28, 392); (cb, _) = P(108, 392)
-    regs, _ = MM.cloud(ca, cb, cy, S(30), random.Random(31), tail=(-1, 0.0))
-    it.add(regs, L_CLOUD, "03")
-    it.add(MM.wisp(P(-92, 0)[0], ca + S(10), cy - S(2.0), S(2.4)), L_CLOUD, "03")
-    it.add(MM.wisp(P(-60, 0)[0], ca + S(4), cy + S(1.8), S(1.8)), L_CLOUD, "03")
-    pr, _ = MM.pole(Q(PX, 0)[0], y0, y1, S(22), rng); it.add(pr, L_POLE, "03")
-    it.add(hw, L_HW, "03")
-    return it, dict(size=size, grade=GRADE[size][0], scale=sc, pole_x=Q(PX, 0)[0], wire_ends=ends)
+    for c in T_["lower"]:
+        clip = fc["F01"][0] if c["side"] == "L" else fc["F02"][0]
+        regs, mv = fit(c["vis"], unary_union([fc["F01"][0], fc["F02"][0], box(-15.5, -100, 15.5, 900)]))     # wisps may cross the zip (split there)
+        it.add(tf_regs(regs, sc, A0, A1), L_CLOUD, "03")
+    it.add(tf_regs(T_["front_pole"], sc, A0, A1, dx=dxp), L_POLE, "03")
+    return it, dict(size=size, grade=GRADE[size][0], scale=sc, pole_x=PX * kx, wire_ends=[e[:3] for e in ends], wire_geo=ends)
 
 def chest_art():
-    """02 chest clouds at M (graded files are scaled about each piece's centre)."""
-    it = Items()
-    CL = [(-242, -50, 150, 58, [(0, 0.8, 0, 1.0), (0.3, 1.0, 0.28, 0.6)], (1, 0.25), 41),
-          (-258, -36, 215, 55, [(0, 0.75, 0, 1.0), (0.35, 1.0, 0.3, 0.62)], (1, 0.18), 42),
-          (72, 258, 185, 48, [(0.15, 1.0, 0, 1.0), (0.0, 0.7, 0.3, 0.6)], (-1, 0.28), 43),
-          (150, 270, 228, 34, None, (-1, 0.35), 44)]
-    for x0, x1, yb, H, tiers, tail, seed in CL:
-        regs, _ = MM.cloud(x0, x1, yb, H, random.Random(seed), tiers=tiers, tail=tail, flip=x0 > 0)
+    """02 chest clouds at M (graded files are scaled about each piece's centre)"""
+    T_ = traced(); fc = front_clips("M"); it = Items(); moves = []
+    for c in T_["chest"]:
+        clip = fc["F01"][0] if c["side"] == "L" else fc["F02"][0]
+        regs, mv = fit(c["vis"], clip); moves.append(mv)
         it.add(regs, L_CLOUD, "02")
-    it.add(MM.wisp(22, 95, 222, 2.2), L_CLOUD, "02")
     return it
 
 def front_clips(size):
@@ -211,17 +187,11 @@ def front_clips(size):
     return out
 
 # ================================================================ 04 sleeve clouds (M, sleeve pattern coords; S01 right: front x > 0)
-SLEEVE_CL = {
- "04R": [(45, 175, 48, 40, None, (-1, 0.22), 51), (25, 185, 175, 48, [(0, 0.8, 0, 1.0), (0.3, 1.0, 0.3, 0.6)], (-1, 0.2), 52),
-         (-190, -60, 50, 40, None, (1, 0.22), 53), (-175, -25, 170, 45, [(0.2, 1.0, 0, 1.0), (0, 0.7, 0.3, 0.6)], (1, 0.2), 54),
-         (-160, -15, 285, 45, None, (1, 0.25), 55)],
- "04L": [(-175, -45, 95, 42, None, (1, 0.22), 61), (-170, -35, 235, 46, [(0.2, 1.0, 0, 1.0), (0, 0.7, 0.3, 0.6)], (1, 0.2), 62),
-         (50, 195, 110, 46, [(0, 0.8, 0, 1.0), (0.3, 1.0, 0.3, 0.6)], (-1, 0.22), 63), (15, 160, 280, 45, None, (-1, 0.25), 64)]}
 def sleeve_art(k):
-    it = Items()
-    for x0, x1, yb, H, tiers, tail, seed in SLEEVE_CL[k]:
-        c = (x0 + x1) / 2; x0, x1 = c + (x0 - c) * 1.15, c + (x1 - c) * 1.15; H = H * 1.2
-        regs, _ = MM.cloud(x0, x1, yb, H, random.Random(seed), tiers=tiers, tail=tail, flip=x0 > 0)
+    T_ = traced(); clip = sleeve_clip("M", k); it = Items()
+    for s_ in T_["sleeves"]:
+        if s_["sleeve"] != k: continue
+        regs, mv = fit(s_["vis"], clip)
         it.add(regs, L_CLOUD, "04")
     return it
 
@@ -247,7 +217,19 @@ def build(items, clip, wire_clip=None, knock=None):
         vis.append(dict(r, geom=v))
     vis.reverse()
     vis = [v for v in vis if not v["geom"].is_empty and v["geom"].area > 0.02]
-    return absorb_slivers(vis)
+    return valid(absorb_slivers(vis))
+
+def valid(vis):
+    out = []
+    for v in vis:
+        g = v["geom"]
+        if not g.is_valid: g = make_valid(g)
+        if g.geom_type == "GeometryCollection": g = unary_union([p for p in MM._polys(g)])
+        if v["st"] not in ("bean", "run"):
+            # open by 0.06 mm: removes pinch points that turn invalid when the hatcher rotates the polygon
+            g = shapely.set_precision(g.buffer(-0.06, join_style=2).buffer(0.06, join_style=2), 0.005).buffer(0)
+        if not g.is_empty and g.area > 0.02: out.append(dict(v, geom=g))
+    return out
 
 def absorb_slivers(vis):
     """(from plum + pine back2.py) knockout slivers narrower than the stitch minimum go to the neighbour they touch most."""
@@ -300,10 +282,12 @@ def zip_marks(vis, side):
     return sorted(set(out), key=lambda t: t[1])
 
 def art_for_size(size):
-    """everything per size: back + 03L + 03R vis, marks."""
+    """everything per size: back + 03L + 03R vis, moon-in-box, marks."""
     itb, BOX, info = back_art(size)
     cb, cw = back_clips(size)
     vb = build(itb, cb, cw, knock=BOX)
+    mib = [dict(r, geom=r["geom"].intersection(BOX)) for r in build([r for r in itb if r["layer"] == L_MOON], cb)]
+    mib = [r for r in mib if not r["geom"].is_empty and r["geom"].area > 0.3]
     itf, finfo = front_art(size)
     fc = front_clips(size)
     vL = build(itf, *fc["F01"]); vR = build(itf, *fc["F02"])
@@ -312,8 +296,22 @@ def art_for_size(size):
                 marks=dict(back=seam_check(vb, info["wire_ends"], xs),
                            front_L=seam_check(vL, [e for e in finfo["wire_ends"] if e[0] == "L"], xs),
                            front_R=seam_check(vR, [e for e in finfo["wire_ends"] if e[0] == "R"], xs),
-                           zip_L=zip_marks(vL, 1), zip_R=zip_marks(vR, -1)))
-    return dict(back=vb, F03L=vL, F03R=vR, info=info)
+                           zip_L=zip_marks(vL, 1), zip_R=zip_marks(vR, -1),
+                           angles=wire_angles(info["wire_geo"], finfo["wire_geo"], xs)))
+    return dict(back=vb, moonbox=mib, F03L=vL, F03R=vR, info=info)
+
+def wire_angles(back_geo, front_geo, xs):
+    """slope of each wire at the side seam on the back and on the front (degrees below horizontal, wearer's view)"""
+    def slope(p0, p1, sag):
+        # quadratic sag curve y = lerp + 4 sag t(1-t); derivative at the seam end t = 1
+        dx = p1[0] - p0[0]; dy = (p1[1] - p0[1]) - 4 * sag
+        return math.degrees(math.atan2(dy, abs(dx)))
+    out = []
+    for s_, h, b, p0, sag in back_geo:
+        f = next((e for e in front_geo if e[0] == s_ and abs(e[1] - h) < 0.6), None)
+        if f is None: continue
+        out.append((s_, h, round(slope(p0, b, sag), 1), round(slope(f[3], f[2], f[4]), 1)))
+    return out
 
 def graded_art():
     """02 + 04 at M (clipped to the M pattern); per-size placement in emb_place."""

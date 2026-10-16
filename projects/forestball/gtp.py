@@ -72,7 +72,7 @@ def p_flats(F):
     X = lambda x: 12 + (x - b[0]) * s; Y = lambda y: 32 + (y - b[1]) * s
     BX = lambda x: X(x) + (b[2]-b[0])*s + 8
     cl = [(X(-90), Y(40), 1, X(-330), 36), (X(0), Y(330), 2, X(70), 124), (X(-175), Y(F.fnd + 365), 3, X(-430), Y(F.fnd + 330)),
-          (X(-150), Y(F.hem_seam + 25), 4, X(-150), 124), (X(-470), Y(620), 5, X(-500), 124), (X(-200), Y(60), 6, X(-480), Y(60)),
+          (X(-150), Y(F.hem_seam + 25), 4, X(-150), 124), (X(-470), Y(620), 5, X(-500), 124), (X(-215), Y(F.sp[1] - 2), 6, X(-470), Y(F.sp[1] + 30)),
           (BX(0), Y(150), 7, BX(150), Y(150)), (BX(275), Y(180), 8, BX(450), Y(120))]
     for x, y, n, tx, ty in cl: o.append(callout(x, y, n, tx, ty))
     lx = 12; ly = 136
@@ -129,7 +129,7 @@ def p_details(F):
     # C welt pocket
     wy = 106
     o.append(t(14, wy, "C · WELT POCKET (×2)", 2.5, 700))
-    o.append(f'<rect x="16" y="{wy+5}" width="70" height="8" fill="#5F7062" stroke="{INK}" stroke-width="0.35"/>'
+    o.append(f'<rect x="16" y="{wy+5}" width="70" height="8" fill="#3A463C" stroke="{INK}" stroke-width="0.35"/>'
              f'<rect x="17" y="{wy+6}" width="68" height="6" fill="none" stroke="{MUTED}" stroke-width="0.2" stroke-dasharray="1 0.6"/>'
              f'<rect x="15" y="{wy+4}" width="2" height="10" fill="{INK}"/><rect x="85" y="{wy+4}" width="2" height="10" fill="{INK}"/>')
     o.append(t(16, wy + 18, "shown 0.5:1, drawn horizontal — sewn at 38° (see T2)", 1.7, 400, MUTED))

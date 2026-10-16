@@ -16,6 +16,7 @@ import tech, stitchrender as SR
 import specbase as SB
 from specbase import img_tag, direction_map, production_svg
 import spec_back as SPB
+import emb_place as EP
 
 REV = fbcore.REV_EMB; DATE = fbcore.DATE
 OUT = "out/02_chest-branch"; os.makedirs(OUT, exist_ok=True)
@@ -61,7 +62,7 @@ def clearances(p):
 
 def page1():
     o = header("02 · CHEST MOSSY BRANCH (split at zip) — stitch-out preview + placement",
-               "Direct embroidery on both cut front panels, before zip + welts · two pieces registered across the CF zip · mm, finished size · art files 1:1 · size M (grade B)", "p1 / 5")
+               "Direct embroidery on both cut front panels, before zip + welts · registered across the CF zip · mm · art 1:1 · size M (grade B) · ART REDRAWN from a low-res mockup, no close-ups yet", "p1 / 5")
     bbox = (-325, -110, 325, 540); ppm = 2.6
     fv = front_view_png(VIS, bbox, ppm)
     w_mm = 152; s = w_mm / (bbox[2] - bbox[0]); ax, ay = 12, 29
@@ -89,9 +90,17 @@ def page1():
               "forward shoulder per chart P)."]:
         c = ORANGE if l.startswith("!") else MUTED
         o.append(t(rx, yy, l.lstrip("!"), 1.75, 600 if c == ORANGE else 400, c)); yy += 3.2
-    yy += 1.5; o.append(t(rx, yy, "ZIP MATCH MARKS (main limb at the 15 mm keep-out lines)", 2.1, 700)); yy += 4
-    for xx, a, b in MARKS:
-        o.append(t(rx, yy, f"x = {xx:+.0f}", 1.85, 600)); o.append(t(rx + 18, yy, f"limb from y {a:.0f} to {b:.0f} (centre {0.5*(a+b):.0f})", 1.85)); yy += 3.3
+    yy += 1.5; o.append(t(rx, yy, "ZIP MATCH MARKS per size (main-limb bark at x = −15 / +15, y from CF neck)", 2.1, 700)); yy += 3.8
+    OL = EP.outlines()
+    for i, h_ in enumerate(["Size", "02R limb y", "02L limb y", "centre step", "width R / L"]): o.append(t(rx + [0, 12, 40, 68, 90][i], yy, h_, 1.6, 700, MUTED))
+    yy += 3.2
+    for sz in ["XS", "S", "M", "L", "XL", "XXL", "3XL"]:
+        z = EP.zip_check(sz, OL)
+        if not z: continue
+        okc = GREEN if z["step"] <= 3 and z["dw"] <= 3 else RED
+        for i, v in enumerate([sz, f"{z['R'][0]:.0f}–{z['R'][1]:.0f}", f"{z['L'][0]:.0f}–{z['L'][1]:.0f}", f"{z['step']:.1f}", f"{z['wR']:.0f} / {z['wL']:.0f}"]):
+            o.append(t(rx + [0, 12, 40, 68, 90][i], yy, v, 1.6, 600 if i in (0, 3) else 400, okc if i == 3 else INK))
+        yy += 2.9
     return o
 
 def page2():

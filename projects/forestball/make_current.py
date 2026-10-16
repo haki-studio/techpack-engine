@@ -3,6 +3,15 @@ the DST read-back (LESSONS B8). Also checks the gates: max stitch ≤ 7.5, ≤ 1
 import json, os, collections
 import pyembroidery as pe
 
+def colour_counts(base):
+    """stitches per thread colour (hex) read from the DST, colours from the PES thread list"""
+    cols = [t.hex_color().upper() for t in pe.read(base + ".pes").threadlist]; p = pe.read(base + ".dst"); ci = 0; out = {}
+    for x, y, cmd in p.stitches:
+        k = cmd & pe.COMMAND_MASK
+        if k == pe.COLOR_CHANGE: ci += 1
+        elif k == pe.STITCH: h = cols[min(ci, len(cols)-1)]; out[h] = out.get(h, 0) + 1
+    return out
+
 def dst_count(base):
     p = pe.read(base + ".dst"); c = collections.Counter(s[2] & pe.COMMAND_MASK for s in p.stitches)
     return c[pe.TRIM], c[pe.STITCH]
@@ -33,7 +42,8 @@ for G in ("A", "B", "C"):
     if os.path.exists(p):
         r = json.load(open(p))
         for k, v in r.items():
-            v["trims_dst"], v["stitches_dst"] = dst_count(v["file"])
+            v["trims_dst"], v["stitches_dst"] = dst_count(v["file"]); v.pop("trims_cmd", None)   # one definition: DST read-back
+            v["per_colour"] = colour_counts(v["file"])
             gates.append((f"{G} {k}", v["max_stitch"] <= 7.5, v["threads"] <= 15))
             if k == "back":
                 v["ph_inside"], v["ph_basting"] = placeholder_check(v["file"], v["centre"], G)
@@ -43,7 +53,7 @@ for G in ("A", "B", "C"):
     if os.path.exists(p):
         s = json.load(open(p))
         for nm, v in s["sections"].items():
-            v["trims_dst"], v["stitches_dst"] = dst_count(v["file"])
+            v["trims_dst"], v["stitches_dst"] = dst_count(v["file"]); v.pop("trims_cmd", None)
             gates.append((f"{G} {nm}", v["max_stitch"] <= 7.5 and v["fits"], True))
             if v.get("placeholder"):
                 ctr = allr["grades"].get(G, {}).get("back", {}).get("centre")

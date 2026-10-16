@@ -21,14 +21,14 @@ def smooth(g, d=0.35):
     return g.buffer(d, join_style="round").buffer(-2*d, join_style="round").buffer(d, join_style="round")
 
 # ---------------------------------------------------------------- cloud lobes ("scale packing")
-TONES = {   # lobe class -> (body, rim, shade)
-    "cream": ("gl_cream", "gl_pale", "gl_sand"),
-    "sand":  ("gl_sand", "gl_cream", "gl_sage"),
-    "sage":  ("gl_sage", "gl_sagelt", "gl_slate"),
-    "slate": ("gl_slate", "gl_sagelt", "gl_shadow"),
+TONES = {   # lobe class -> (body, rim, shade, scale-dash colour)
+    "cream": ("gl_cream", "gl_pale", "gl_sand", "gl_sand"),
+    "sand":  ("gl_sand", "gl_cream", "gl_sage", "gl_sage"),
+    "sage":  ("gl_sage", "gl_sagelt", "gl_slate", "gl_slate"),
+    "slate": ("gl_slate", "gl_sagelt", "gl_shadow", "gl_shadow"),
 }
-EDGE = "gl_shadow"          # dark edge band along every lobe that sits in front of another
-SUB = {"rim": 0.1, "shade": 0.2, "body": 0.3, "edge": 0.4}     # sew order inside a cloud layer (travel hides under later parts)
+EX, EY = 1.16, 0.9                                   # lobes a little wider than tall (cumulus domes)
+def ell(cx, cy, r): return affinity.scale(Point(cx, cy).buffer(1.0, quad_segs=24), r*EX, r*EY, origin=(cx, cy))
 
 def pack_lobes(C, R0, rng, rjit=0.22, dy=0.62, dx=1.18, inset=0.5, rmin=2.6):
     """cumulus as overlapping discs whose union follows the outline C. Lower discs sit in front (higher z)."""
@@ -58,13 +58,11 @@ def pack_lobes(C, R0, rng, rjit=0.22, dy=0.62, dx=1.18, inset=0.5, rmin=2.6):
     for l in lobes: l.append(l[1] + rng.uniform(-0.25, 0.25)*R0)       # z: lower = in front
     return lobes
 
-def lobe_regions(lobes, tone_of, flat_y=None, grp="CL", unit=None, base_bottom=True, edge_w=1.15):
-    """visible part of each lobe -> rim (lit top edge), body, shade band and a dark edge band where the lobe in front
-    overlaps it. Lobes touch (no fabric gaps); the edge bands of neighbouring lobes join into one connected network.
-    Each region carries 'sub' (rim/body/shade/edge) for the sew order."""
+def lobe_regions(lobes, tone_of, flat_y=None, grp="CL", unit=None, base_bottom=True, gap=0.5, scale=True):
+    """Mockup-style cumulus: each lobe's visible dome (the lobes in front cut it back by a `gap` of bare fabric, the dark
+    line between lobes in the mockup) -> lit rim along the top, body, darker shade band where the front lobe overlaps it,
+    and rows of short dark scale dashes following the dome (the mockup's stitch texture), sewn on top (overlay)."""
     discs = []
-    EX, EY = 1.16, 0.9                                   # lobes a little wider than tall (cumulus domes)
-    def ell(cx, cy, r): return affinity.scale(Point(cx, cy).buffer(1.0, quad_segs=24), r*EX, r*EY, origin=(cx, cy))
     for cx, cy, r, z in lobes:
         d = ell(cx, cy, r)
         if flat_y is not None: d = d.intersection(box(cx - 2*r, cy - 2*r, cx + 2*r, flat_y))
@@ -72,37 +70,44 @@ def lobe_regions(lobes, tone_of, flat_y=None, grp="CL", unit=None, base_bottom=T
     discs.sort(key=lambda t: -t[0])                     # front first
     regs = []; front = Polygon()
     for z, cx, cy, r, d in discs:
-        V = (d.difference(front) if not front.is_empty else d).buffer(0)
-        if V.area < 3.0:
+        V = (d.difference(front.buffer(gap)) if not front.is_empty else d).buffer(0)
+        V = smooth(V, 0.3)
+        if V.area < 2.5:
             front = front.union(d); continue
         tone = tone_of(V, (cx, cy, r))
-        bcol, rcol, scol = TONES[tone]
-        wr = min(3.0, max(1.3, 0.24*r)); ws = min(3.2, max(1.3, 0.26*r))
-        edge = V.intersection(front.buffer(edge_w)) if not front.is_empty else Polygon()
-        if base_bottom and r >= 3.5:
-            bot = V.intersection(box(cx - 2*r, cy + 0.9*r*EY - edge_w, cx + 2*r, cy + 2*r))
-            edge = edge.union(bot)
-        edge = smooth(edge.intersection(V), 0.3)
-        # the edge band is an overlay (sewn last, on top): body + shade run underneath it so neighbouring bodies touch
-        shade = V.intersection(front.buffer(edge_w + ws)) if not front.is_empty else Polygon()
+        bcol, rcol, scol, dcol = TONES[tone]
+        wr = min(2.4, max(1.1, 0.26*r)); ws = min(1.6, max(1.0, 0.15*r))
+        shade = V.intersection(front.buffer(gap + ws)) if not front.is_empty else Polygon()
         if base_bottom:
-            shade = shade.union(V.intersection(box(cx - 2*r, cy + max(0.45*r, 0.9*r*EY - edge_w - ws), cx + 2*r, cy + 2*r)))
-        shade = smooth(shade, 0.4) if r >= 4.0 else Polygon()
+            shade = shade.union(V.intersection(box(cx - 2*r, cy + max(0.45*r, 0.9*r*EY - ws), cx + 2*r, cy + 2*r)))
+        shade = smooth(shade.intersection(V), 0.4) if r >= 3.5 else Polygon()
         rim = V.intersection(ell(cx, cy, r).difference(ell(cx, cy + 0.35*wr, r - wr))).intersection(box(cx - 2*r, cy - 2*r, cx + 2*r, cy + 0.2*r))
-        rim = smooth(rim.difference(edge.buffer(0.2)).difference(shade.buffer(0.2)), 0.45) if r >= 5.0 else Polygon()
+        rim = smooth(rim.difference(shade.buffer(0.2)), 0.45) if r >= 4.5 else Polygon()
         body = V.difference(rim).difference(shade).buffer(0)
-        # slivers narrower than the 0.8 satin minimum go to the shade (or rim) band they touch
-        bc = body.buffer(-0.42).buffer(0.42).intersection(body)
-        sl = body.difference(bc)
-        if not sl.is_empty and sl.area > 0.01:
-            body = bc
-            if not shade.is_empty: shade = shade.union(sl.intersection(shade.buffer(0.6).union(sl))).buffer(0)
-            elif not rim.is_empty: rim = rim.union(sl).buffer(0)
-            else: body = body.union(sl)
-        for col, g, gg, sb in ((rcol, rim, grp + "-rim", "rim"), (bcol, body, grp, "body"), (scol, shade, grp + "-shade", "shade"), (EDGE, edge, grp + "-edge", "edge")):
-            if not g.is_empty: regs.append(R(col, g, "satin", "auto", gg, unit=unit, sub=sb, ko=(sb != "edge")))
+        bc = body.buffer(-0.42).buffer(0.42).intersection(body); sl = body.difference(bc)
+        if not sl.is_empty and sl.area > 0.01 and not shade.is_empty:
+            body = bc; shade = shade.union(sl).buffer(0)
+        fan = ("radial", cx, cy + 0.55*r)                 # fan stitching from the floret base, as in the mockup
+        for col, g, gg, sb in ((rcol, rim, grp + "-rim", "rim"), (bcol, body, grp, "body"), (scol, shade, grp + "-shade", "shade")):
+            if not g.is_empty: regs.append(R(col, g, "satin", fan, gg, unit=unit, sub=sb))
+        if scale and r >= 5.0 and not body.is_empty:          # scale rows: dashed arcs inside the body
+            inner = body.buffer(-0.7)
+            for k, fr in enumerate((0.78, 0.55) if r >= 7 else (0.68,)):
+                rr = r*fr; n = max(6, int(math.pi*rr*1.2/1.0)); off = 0.5 if k % 2 else 0.0
+                L, gp = 2.6, 1.7; s_ = off*(L + gp); arc = []
+                pts = [(cx + rr*EX*math.cos(math.radians(a)), cy - rr*EY*math.sin(math.radians(a)) + 0.25*r) for a in np.linspace(12, 168, n)]
+                line = LineString(pts); tot = line.length
+                while s_ < tot - 0.8:
+                    seg = substring_(line, s_, min(tot, s_ + L))
+                    g = seg.buffer(0.33, cap_style="round").intersection(inner)
+                    if not g.is_empty and g.area > 0.9: regs.append(R(dcol, g, "run", None, grp + "-scale", unit=unit, sub="scale", ko=False))
+                    s_ += L + gp
         front = front.union(d)
     return regs, front
+
+def substring_(line, a, b):
+    from shapely.ops import substring
+    return substring(line, a, b)
 
 # ---------------------------------------------------------------- stars
 def taper_arm(cx, cy, ang, L, w0, w1=0.9, r0=0.0):
@@ -118,8 +123,8 @@ def star(cx, cy, Lv, Lh, w0, kind, unit, rot=0.0):
     if kind == "dot":
         return [R("gl_pale", Point(cx, cy).buffer(max(0.75, Lv/2), quad_segs=10), "satin", "auto", "DOT", unit=unit, kob=0.5)]
     cd = max(0.8, w0*0.75)
-    if kind in ("cross", "sparkle"):            # one thread: arms overlap at the centre and chain without a trim
-        col = "gl_pale" if kind == "cross" else "gl_gold"
+    if kind == "cross":                         # small cross: one thread, arms overlap at the centre
+        col = "gl_pale"
         return [R(col, taper_arm(cx, cy, a + rot, L, w0, 0.9, 0.0).union(Point(cx, cy).buffer(w0*0.62)), "satin", "auto", "STAR", unit=unit, kob=0.5)
                 for L, a in ((Lv, -90), (Lh, 0), (Lv, 90), (Lh, 180))]
     arms = []
@@ -130,8 +135,8 @@ def star(cx, cy, Lv, Lh, w0, kind, unit, rot=0.0):
             arms.append(taper_arm(cx, cy, a + rot, Lh*0.42, w0*0.8, 0.9, cd*0.6))
     centre = Point(cx, cy).buffer(cd + 0.2, quad_segs=12)
     for g in arms:
-        regs.append(R("gl_gold", g.difference(centre), "satin", "auto", "STAR", unit=unit, kob=0.5))
-    regs.append(R("gl_pale", centre, "satin", "auto", "STAR-c", unit=unit, kob=0.5))
+        regs.append(R("gl_pale", g.difference(centre), "satin", "auto", "STAR", unit=unit, kob=0.5))
+    regs.append(R("gl_pale", centre, "satin", "auto", "STAR-c", unit=unit, kob=0.5))   # same thread: arms + centre chain
     return regs
 
 # ---------------------------------------------------------------- sun + rays

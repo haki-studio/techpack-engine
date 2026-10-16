@@ -12,7 +12,8 @@ from render import geom_to_path, f
 from motifs2 import HEX, PAL
 import back as B
 import tech, stitchrender as SR
-import specbase as SB
+import specbase as SB, factory
+PROF = factory.load(); FRAME = factory.largest_frame(PROF)
 from specbase import img_tag, direction_map, production_svg
 
 REV = fbcore.REV_EMB; DATE = fbcore.DATE
@@ -40,7 +41,7 @@ def header(title, sub, page):
 
 def page1():
     o = header("01 · BACK SCENE — stitch-out preview + placement",
-               "Direct embroidery on the cut back panel, before assembly · mm, finished size · art files 1:1 · garment coords: x from CB, y down from CB neck seam · size M (grade B)", "p1 / 5")
+               "Direct embroidery on the cut back panel · mm, finished size · art 1:1 · x from CB, y down from CB neck seam · size M (grade B) · ART REDRAWN from a low-res mockup (~1 px/mm), no close-ups yet", "p1 / 5")
     ppm = 3.2; bx0, by0, bx1, by1 = -305, -30, 305, 590
     img = SR.render(VB, (bx0, by0, bx1, by1), ppm, base=fbcore.FABRIC)
     mask = Image.new("L", img.size, 0); ImageDraw.Draw(mask).polygon([((x-bx0)*ppm, (y-by0)*ppm) for x, y in B.PANEL.exterior.coords], fill=255)
@@ -53,7 +54,10 @@ def page1():
     o.append(dim_h(X(BB[0]), X(BB[2]), Y(BB[1]) - 2.2, f"art {BB[2]-BB[0]:.0f}", 1.9, col=GUIDE))
     o.append(dim_v(Y(BB[1]), Y(BB[3]), X(BB[0]) - 3, f"{BB[3]-BB[1]:.0f}", 1.9, col=GUIDE))
     o.append(f'<rect x="{f(X(PH[0]))}" y="{f(Y(PH[1]))}" width="{f((PH[2]-PH[0])*s)}" height="{f((PH[3]-PH[1])*s)}" fill="#FFFFFF" fill-opacity="0.35" stroke="{RED}" stroke-width="0.35"/>')
-    o.append(t(X(PH[2]) + 1.5, Y(PH[1]) + 2, "LICENSED", 1.6, 700, RED)); o.append(t(X(PH[2]) + 1.5, Y(PH[1]) + 4.2, "placeholder", 1.6, 600, RED))
+    lx, ly = ax + w_mm + 2.5, Y(PH[1]) - 14          # label outside the art, leader to the box
+    o.append(f'<line x1="{f(X(PH[2]))}" y1="{f(Y(PH[1]))}" x2="{f(lx - 0.5)}" y2="{f(ly + 1)}" stroke="{RED}" stroke-width="0.3"/>')
+    o.append(f'<rect x="{f(lx - 0.5)}" y="{f(ly - 3.2)}" width="18" height="8.2" fill="#FFFFFF" stroke="{RED}" stroke-width="0.3"/>')
+    o.append(t(lx + 0.6, ly, "LICENSED", 2.1, 700, RED)); o.append(t(lx + 0.6, ly + 3.4, "placeholder", 2.0, 600, RED))
     o.append(t(ax, ay + h + 4, "Stitch-out preview, back panel, size M (shown 0.25:1). Each region drawn with its own thread rows at its specified angle. Red box = licensed-figure placeholder.", 1.8, 400, MUTED))
     rx = 172
     o.append(t(rx, 33, "PLACEMENT", 2.6, 700))
@@ -61,7 +65,7 @@ def page1():
              ("Right edge → CB", f"{BB[2]:.0f} right of CB"), ("Top of art → CB neck seam", f"{BB[1]:.0f} down"),
              ("Bottom of art → hem-rib seam", f"{B.HEM - BB[3]:.0f} above"), ("Side seams + armholes", f"≥ {B.KEEP_SIDE:.0f} clear (nothing wraps)"),
              ("Shoulder seams / collar", f"≥ {B.KEEP_SH:.0f} / ≥ {B.KEEP_COLLAR:.0f} below the collar (fall {B.COLLAR_FALL:.0f}, proposed)"),
-             ("Hoopings", "4 × 360² split files (S1–S4) or a border frame")]
+             ("Hoopings (baseline)", f"4 on {FRAME[0]:.0f} × {FRAME[1]:.0f}: split files S1–S4 (G5, G6)")]
     for i, (a, b) in enumerate(facts):
         o.append(t(rx, 38 + i*3.7, a, 1.9, 400, MUTED)); o.append(t(rx + 44, 38 + i*3.7, b, 1.9, 600))
     o.append(t(rx, 72, "BY THE NUMBERS (read from the DST)", 2.6, 700))
@@ -69,7 +73,7 @@ def page1():
     nums = [("Stitches, single file", f"{d.get('stitches', 0):,}"), ("Trims (DST read-back)", f"{d.get('trims_dst', 0):,}"),
             ("Colour stops / threads", f"{d.get('stops', len(STOPS))} / {d.get('threads', '—')} (incl. placeholder basting)"),
             ("Max stitch", f"{d.get('max_stitch', 0)} mm"), ("Regions (digitizing objects)", f"{len(VB)}"),
-            ("Est. run time / head", f"≈ {d.get('stitches', 0)/750/60:.1f} h at 750 spm + stops")]
+            ("Machine time / head", f"≈ {factory.machine_hours(d.get('stitches', 0), PROF, d.get('trims_dst', 0), d.get('stops', 1) - 1):.1f} h at {PROF['spm']} spm incl. trims + changes")]
     for i, (a, b) in enumerate(nums):
         o.append(t(rx, 77 + i*3.7, a, 1.9, 400, MUTED)); o.append(t(rx + 44, 77 + i*3.7, b, 1.9, 600))
     y = 104
@@ -194,7 +198,11 @@ def page5():
     tag, hh = SHT.embed("inputs/back.png", (60, 60, 670, 720), 52, 14, my + 3); o.append(tag)
     o.append(t(14, my, "MOCKUP", 2.4, 700))
     o.append(t(70, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
-    ch = ["Composition re-traced from the mockup: mossy limb from the left,",
+    ch = ["Reference: art REDRAWN from the low-res mockup (back.png ≈ 1 px/mm,",
+          "  read at 4x) — motif counts matched, not traced; close-ups may follow.",
+          "Rev B: 6 broad sheer rays over the art, chain-bark underside, 4-green",
+          "  mottled moss lumps, mounds merged into a bank, denser grass.",
+          "Composition re-traced from the mockup: mossy limb from the left,"
           "  trunk down the right, upper twigs + ~35 leaf sprays, 4 light rays,",
           "  stream, 9 mossy rocks, grass in front and behind.",
           "ORB in the stream: LICENSED — not drawn. Marked placeholder box",
@@ -202,19 +210,17 @@ def page5():
           "Sides + armholes: mockup art runs into the seams. Pulled 15 inside",
           "  (outer art compressed inward); nothing wraps onto the sleeves.",
           "Bottom: mockup runs into the rib. Stops 10 above the hem seam.",
-          "Light rays: mockup reads as painted bands. Sheer serpentine run",
-          "  (sage edges, cream core) so the fabric shows through (brief).",
+          "Light rays: sheer serpentine run sewn LAST over the art (sage + cream).",
           "Moss: mockup chain-stitch texture → raised padded lumps + dark",
           "  underside + lit top + navy/olive lump runs (mottled).",
-          "Leaves: two-tone feather satin; grass blades blunt-tipped (≥ 1.1).",
-          "Clip check: leaf sprays cut off from their twig by a keep-out are",
-          "  removed (nothing floats, LESSONS A1)."]
+
+          "Clip check: sprays cut off from their twig by a keep-out are removed."]
     for i, c in enumerate(ch): o.append(t(70, my + 4.5 + i*3.3, c, 1.8, 600 if "LICENSED" in c else 400, RED if "LICENSED" in c else INK))
     px = 190
     o.append(t(px, my, "PRODUCTION", 2.4, 700))
-    pn = ["Hoop: 4 × 360² split files S1–S4 with basting",
-          "  registration crosses (G5), or a border frame",
-          f"  ≥ {BB[2]-BB[0]+14:.0f} × {BB[3]-BB[1]+14:.0f} for the single file.",
+    pn = [f"Hoop: 4 × {FRAME[0]:.0f}² split files S1–S4 with basting",
+          "  registration crosses (G5, origins per size G6).",
+          f"  Option: border frame ≥ {BB[2]-BB[0]+14:.0f} × {BB[3]-BB[1]+14:.0f} (single file).",
           "Embroider the cut back panel flat, BEFORE side,",
           "  shoulder and armhole seams.",
           "Canvas: 75/11 sharp, 2.5 oz cutaway, no topping.",

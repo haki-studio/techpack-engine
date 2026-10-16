@@ -13,7 +13,11 @@ import specbase as SB
 from specbase import img_tag
 import front as F, back as B
 import spec_front as SPF
-import emb_place as EP
+import emb_place as EP, factory
+import sheet
+PROF = factory.load(); FRAME = factory.largest_frame(PROF)
+HEX2KEY = {v.upper(): k for k, v in HEX.items()}
+def mh(d): return factory.machine_hours(d["stitches"], PROF, trims=d["trims_dst"], colour_changes=d["stops"] - 1)
 
 REV = fbcore.REV_EMB; DATE = fbcore.DATE
 FOOT = f"HAKI STUDIOS · {fbcore.NAME} · EMBROIDERY · {REV} · {DATE}"
@@ -27,7 +31,7 @@ PH = B.PH_BOX.bounds
 OUT_PDF = f"out/HAKI_FB_EMBROIDERY-PACK_{REV.replace(' ', '')}.pdf"
 
 def hdr(title, sub, page):
-    SB.FOOT = FOOT; return SB.header(title, sub, page)
+    SB.FOOT = FOOT; sheet.FOOT = FOOT; return SB.header(title, sub, page)
 
 def back_png(ppm=2.0):
     p = "out/art/sr_back_pack.png"
@@ -57,8 +61,8 @@ def cover(index):
     y += 4; o.append(t(ix, y, "TOTALS (size M, read from the DST)", 2.3, 700)); y += 5
     keys = ["back", "02R", "02L"]
     tot = sum(CUR[k]["stitches"] for k in keys); trims = sum(CUR[k]["trims_dst"] for k in keys)
-    for a, b in [("Stitches per jacket", f"{tot:,}"), ("Trims per jacket", f"{trims:,}"), ("Hoopings per jacket", "3 (border frame) or 6 (360² splits)"),
-                 ("Machine time / jacket", f"≈ {tot/750/60:.1f} h at 750 spm + stops"), ("Threads", f"{len(PAL) - 1} + 1 placement basting")]:
+    for a, b in [("Stitches per jacket", f"{tot:,}"), ("Trims per jacket", f"{trims:,}"), (f"Hoopings per jacket ({FRAME[0]:.0f} × {FRAME[1]:.0f})", "6: back S1–S4 + 02R + 02L"),
+                 ("Machine time / jacket", f"≈ {sum(mh(CUR[k]) for k in keys):.1f} h at {PROF['spm']} spm incl. trims + changes"), ("Threads", f"{len(PAL) - 1} + 1 placement basting (≤ {PROF['needles']} per file)")]:
         o.append(t(ix, y, a, 1.95, 400, MUTED)); o.append(t(SW - 14, y, b, 1.95, 600, INK, "end")); y += 4
     y += 3
     for l in ["LICENSED element: the stream orb is NOT in these files —", "placeholder box only (G2, element 01 p1). The factory",
@@ -104,11 +108,12 @@ def overview():
 
 def threads():
     o = hdr("THREAD + TRIM SUMMARY", "One palette for the whole jacket. Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target read from the mockup [proposed — confirm].", "G3")
-    use = {k: {} for k in PAL}
+    use = {k: {} for k in PAL}      # stitches per thread, read from the grade-B DST files (LESSONS B9)
     for (e, name, piece, v, key) in PIECES:
-        for s in fbcore.stitch_stops(v):
-            use[s["col"]][key] = use[s["col"]].get(key, 0) + s["st"]
-    hd = ["", "Thread", "Hex", "Isacord", "ΔE", "Madeira Polyneon", "ΔE", "Wt", "Used for", "Pieces", "Est. st."]
+        for h, n in CUR[key]["per_colour"].items():
+            k = HEX2KEY.get(h.upper())
+            if k: use[k][key] = use[k].get(key, 0) + n
+    hd = ["", "Thread", "Hex", "Isacord", "ΔE", "Madeira Polyneon", "ΔE", "Wt", "Used for", "Pieces", "DST st."]
     cx = [12, 18, 46, 60, 90, 98, 132, 140, 148, 222, 262]
     for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.75, 700, MUTED))
     rh = 4.6
@@ -126,19 +131,19 @@ def threads():
             o.append(t(cx[7], y, "40", 1.7)); o.append(t(cx[8], y, PAL[k][2][:46], 1.65, 400, MUTED))
         o.append(t(cx[9], y, ", ".join(sorted(use[k])) or "—", 1.7)); o.append(t(cx[10], y, f"{sum(use[k].values()):,.0f}", 1.7, 600))
     yb = 36 + len(PAL)*rh + 3
-    o.append(t(12, yb, "ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — amber/red rows must be picked from the physical card. Est. st. = area estimate; DST counts on G4/G5.", 1.75, 400, MUTED))
+    o.append(t(12, yb, f"ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — amber/red rows must be picked from the physical card. DST st. = stitches per thread read from the size-M files; total {sum(sum(u.values()) for u in use.values()):,}.", 1.75, 400, MUTED))
     o.append(t(12, yb + 7, "TRIMS + CONSUMABLES (per jacket)", 2.2, 700))
     for i, (a, b) in enumerate([("Backing", "2.5 oz cutaway, cut 30 larger than each art box; trim to 5 from stitching after embroidery"),
                                 ("Topping", "none (canvas surface is firm)"), ("Needles", "75/11 sharp (canvas); change every 8 h on the back scene"),
                                 ("Bobbin", "60wt white polyester pre-wound (black bobbin optional under the dark moss)"),
-                                ("Frames", f"01 back: border ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f} (single file) or 4 × 360² split files (G5) · 02R / 02L: ≤ 360 × 360"),
+                                ("Frames", f"baseline {FRAME[0]:.0f} × {FRAME[1]:.0f} (factory.json): 01 back = 4 split files S1–S4 (G5), 02R / 02L one hooping each; a border frame ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f} would take the single back file (option, ask on F1)"),
                                 ("Patches / labels", "none on this garment — all artwork is direct embroidery")]):
         o.append(t(12, yb + 11.5 + i*3.6, a, 1.85, 600)); o.append(t(42, yb + 11.5 + i*3.6, b, 1.85))
     return o
 
 def summary():
     o = hdr("STITCH SUMMARY + OPEN QUESTIONS", "", "G4")
-    hd = ["Element", "Piece", "Art box", "Stitches", "Trims", "Stops", "Threads", "Run time", "Width check"]
+    hd = ["Element", "Piece", "Art box", "Stitches", "Trims", "Stops", "Threads", "Machine h", "Width check"]
     cx = [12, 50, 112, 134, 152, 166, 180, 196, 214]
     for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.8, 700, MUTED))
     rows = []
@@ -148,19 +153,19 @@ def summary():
         o.append(t(cx[0], y, f"{e} {name}", 1.8, 600)); o.append(t(cx[1], y, piece[:34], 1.7))
         o.append(t(cx[2], y, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.8)); o.append(t(cx[3], y, f"{d['stitches']:,}", 1.8, 600))
         o.append(t(cx[4], y, f"{d['trims_dst']:,}", 1.8)); o.append(t(cx[5], y, f"{d['stops']}", 1.8)); o.append(t(cx[6], y, f"{d['threads']}", 1.8))
-        o.append(t(cx[7], y, f"{d['stitches']/750:.0f} min", 1.8))
+        o.append(t(cx[7], y, f"{mh(d):.2f} h", 1.8))
         q = QA[k]; wk = max(q, key=lambda c: q[c]["long_pct"]); wv = q[wk]["long_pct"]
         o.append(t(cx[8], y, "all codes pass (< 1 %)" if wv < 1 else f"worst: {wk} {wv:.1f}% — tapered tips; digitizer drops < 0.8", 1.7, 600, GREEN if wv < 1 else ORANGE))
     keys = [p[4] for p in PIECES]; y = 36 + len(PIECES)*4.6 + 1
     tot = sum(CUR[k]["stitches"] for k in keys); tr = sum(CUR[k]["trims_dst"] for k in keys)
-    o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{tot:,}", 1.9, 700)); o.append(t(cx[4], y, f"{tr:,}", 1.9, 700)); o.append(t(cx[7], y, f"{tot/750/60:.1f} h", 1.9, 700))
-    o.append(t(12, y + 4.5, "Stitches / trims counted from the DST files (grade B = sizes M–XL; trims from the DST read-back). Run time at 750 spm, excluding colour changes + hooping. Max stitch ≤ 7.5 mm in every file.", 1.7, 400, MUTED))
+    o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{tot:,}", 1.9, 700)); o.append(t(cx[4], y, f"{tr:,}", 1.9, 700)); o.append(t(cx[7], y, f"{sum(mh(CUR[k]) for k in keys):.1f} h", 1.9, 700))
+    o.append(t(12, y + 4.5, f"Stitches / trims counted from the DST files (grade B = sizes M–XL; trims = DST read-back, the only trim count used in this pack). Machine h = factory.machine_hours at {PROF['spm']} spm + 6 s/trim + 4 s/colour change, one head, excl. hooping. Max stitch ≤ 7.5 mm in every file.", 1.7, 400, MUTED))
     o.append(t(12, y + 7.8, "Width check = worst region code's share of area below its minimum width (fill/satin 0.8, line 0.6) for > 2.5 mm. Detail per code on each element's p3.", 1.7, 400, MUTED))
     qy = y + 15; o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
     qs = [f"1. LICENSED orb: placeholder box {PH[2]-PH[0]:.0f} × {PH[3]-PH[1]:.0f} at the mockup position (stream). Confirm final size + position from the licensor-approved art, who digitizes it, and that",
           "    the licence approval is in place before production (not verified by Haki tech). The figure's stitch file is NOT part of this pack.",
           "2. Grading: A 90 % (XS–S), B 100 % (M–XL), C 108 % (XXL–3XL); one file per grade per piece; every size checked on its pattern (T13). The placeholder grades with the art.",
-          f"3. Back frame: single file needs a border frame ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f}. Otherwise sew the 4 split files S1–S4 (360 × 360) with basting crosses (G5).",
+          f"3. Hooping: baseline 6 hoopings on {FRAME[0]:.0f} × {FRAME[1]:.0f} (back S1–S4 + 02R + 02L). A border frame ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f} would take the single back file — option, asked on F1.",
           "4. Shell: washed forest green duck — piece-dyed + pre-washed before embroidery, or garment-washed after? Wash-test the sew-out (cream, leaf yellow-green shift first).",
           "5. Thread palette read from the mockup (14 + basting) — approve a physical thread board; amber/red ΔE rows picked from the card (G3).",
           "6. Light rays: specced sheer (serpentine run, rows 1.9 apart) per the brief. Approve on the sew-out — denser would read as solid bands.",
@@ -185,8 +190,8 @@ def files_page():
         rb = ALL["grades"]["B"][k]; o.append(t(cx[4], y, f"{rb['stops']}", 1.55)); o.append(t(cx[5], y, f"{rb['threads']}", 1.55))
         o.append(t(cx[6], y, f"{max(ALL['grades'][G][k]['max_stitch'] for G in ALL['grades'] if k in ALL['grades'][G]):.1f}", 1.55))
         y += 3.8
-    y += 3; o.append(t(12, y, "01 BACK — 360 × 360 SPLITS per grade (stop 1 = basting crosses)", 2.0, 700)); y += 4.5
-    hd = ["Grade", "S1", "S2", "S3", "S4", "Fit 344²", "Cut mm"]; cx2 = [12, 26, 56, 86, 116, 148, 164]
+    y += 3; o.append(t(12, y, f"01 BACK — {FRAME[0]:.0f} × {FRAME[1]:.0f} SPLITS per grade (stop 1 = basting crosses) · baseline: 6 hoopings per jacket (S1–S4 + 02R + 02L) · plan per size: G6", 2.0, 700)); y += 4.5
+    hd = ["Grade", "S1", "S2", "S3", "S4", f"Fit {FRAME[0]-16:.0f}²", "Cut mm"]; cx2 = [12, 26, 56, 86, 116, 148, 164]
     for x_, h in zip(cx2, hd): o.append(t(x_, y, h, 1.6, 700, MUTED))
     y += 4
     for i, G in enumerate("ABC"):
@@ -207,7 +212,8 @@ def files_page():
                   ("Trims", "hidden travel + underpath; objects ordered inside hidden areas; trims counted from the DST read-back."),
                   ("Threads / stops", "≤ 15 per file (fits a 15-needle head); repeated colours merged into the earliest safe stop."),
                   ("Placeholder", "basting box outline = first stop; nothing stitched inside; water stops 1 mm outside."),
-                  ("Ties", "3-stitch tie-on/off at every trim + colour change; max stitch 7.5 mm.")]:
+                  ("Ties", "3-stitch tie-on/off at every trim + colour change; max stitch 7.5 mm."),
+                  ("Splits", "split lines balance the stitch load (cut length + 2 mm per 1,000 st of imbalance); no motif reaches > 8 mm past a split line.")]:
         o.append(t(12, y, a, 1.6, 700)); o.append(t(36, y, b_, 1.5)); y += 3.3
     det = Image.open(glob.glob("out/01_back-scene/B_M-XL/HAKI_FB_01_back-scene_B-M-XL_preview.png")[0])
     tag, dh = img_tag(det, 12, y + 2, 70); o.append(tag)
@@ -229,7 +235,7 @@ def files_page():
             seen.add(tuple(m)); mx, my = X(m[0]), Y(m[1])
             o.append(f'<path d="M{f(mx-1.4)} {f(my)} H{f(mx+1.4)} M{f(mx)} {f(my-1.4)} V{f(my+1.4)}" stroke="#00A3FF" stroke-width="0.45"/>')
     o.append(t(bx, by + bh + 3.5, f"Size M splits. Red = split lines ({SPL['cut_mm']:.0f} mm of fill crosses them); blue = file extents; + = basting crosses.", 1.45, 400, MUTED))
-    sy0 = by + bh + 9; o.append(t(bx, sy0, "SEWING THE SPLIT BACK (no border frame)", 2.0, 700))
+    sy0 = by + bh + 9; o.append(t(bx, sy0, "SEWING THE SPLIT BACK (baseline)", 2.0, 700))
     for i, st_ in enumerate(["1. Mark CB + both split lines on the cut back (chalk), from B01.",
                              "2. Hoop S1. Stop 1 = basting crosses. Sew S1.",
                              "3. Re-hoop for S2; align on the shared S1 crosses; sew its",
@@ -238,24 +244,74 @@ def files_page():
                              "    (leaf sprays, rocks) are never cut between hoopings.",
                              "5. Licensed figure: sewn by the factory after S1–S4, in",
                              "    the basting box; then remove basting + backing.",
-                             "Every grade has its own S1–S4 (folder <grade>/splits)."]):
+                             "Every grade has its own S1–S4 (folder <grade>/splits); origins per size: G6."]):
         o.append(t(bx, sy0 + 4 + i*3.1, st_, 1.5, 600 if "Licensed" in st_ else 400, RED if "Licensed" in st_ else INK))
     return o
 
+def hooping_page():
+    """G6: the hooping plan per size — split lines, every hooping's origin (needle start = design centre) measured from CB
+    and the CB / CF neck seam on that size's pattern, and the order. Baseline frame from factory.json."""
+    o = hdr("HOOPING PLAN PER SIZE — 6 hoopings on the baseline frame",
+            f"Frame {FRAME[0]:.0f} × {FRAME[1]:.0f} (factory.json, {'confirmed' if PROF['frames_confirmed'] else 'PROPOSED — confirm on F1'}). Origin = design centre of the file = needle start; back x from CB (+ = wearer's right), y down from the CB neck seam; fronts x from CF, y from the CF neck seam.", "G6")
+    OL = EP.outlines()
+    hd = ["Size", "Gr", "Split x / y (back)", "1 · S1", "2 · S2", "3 · S3", "4 · S4", "5 · 02R", "6 · 02L"]
+    cx = [12, 22, 30, 66, 104, 142, 180, 218, 254]
+    for x_, h in zip(cx, hd): o.append(t(x_, 32, h, 1.7, 700, MUTED))
+    y = 37
+    for i, sz in enumerate(drum_sizes):
+        G = EP.GRADE[sz][0]; pl, g, mt = EP.place(sz, OL); TF = pl["_tf"]; spl = ALL["splits"][G]; res = ALL["grades"][G]
+        def org(k, cc):       # file origin (grade coords) -> this size's pattern coords
+            sc, ce, dx, dy = TF[k]; cu = res[k]["centre"]
+            return (cc[0] + (1 - sc)*(ce[0] - cu[0]) + dx, cc[1] + (1 - sc)*(ce[1] - cu[1]) + dy)
+        if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-2.9)}" width="{SW-22}" height="4.4" fill="#F5F2EC"/>')
+        o.append(t(cx[0], y, sz, 1.75, 700)); o.append(t(cx[1], y, G, 1.75, 700, RED))
+        sxy = org("back", (spl["sx"], spl["sy"]))
+        o.append(t(cx[2], y, f"x {sxy[0]:+.0f} / y {sxy[1]:.0f}", 1.6))
+        for j, nm in enumerate(sorted(spl["sections"])):
+            v = spl["sections"][nm]; ox, oy = org("back", v["centre"])
+            o.append(t(cx[3 + j], y, f"{ox:+.0f}, {oy:.0f} · {v['stitches']/1000:.0f}k" + (" ▣" if v.get("placeholder") else ""), 1.55))
+        for j, k in enumerate(("02R", "02L")):
+            ox, oy = org(k, res[k]["centre"]); o.append(t(cx[7 + j], y, f"{ox:+.0f}, {oy:.0f} · {res[k]['stitches']/1000:.0f}k", 1.55))
+        y += 4.4
+    y += 3
+    for l in ["Values per hooping: origin x, y (mm) · stitches. ▣ = the hooping that carries the licensed-placeholder basting box.",
+              "ORDER: 1 S1 top-left → 2 S2 top-right → 3 S3 bottom-left → 4 S4 bottom-right (back, each re-hooped on the shared basting crosses), 5 02R, 6 02L.",
+              "Each back section file contains ONLY its own art (+ crosses); motifs never reach more than 8 mm past a split line (longer overhangs are cut at the line with 1.2 mm fill overlap).",
+              "Split lines: x = vertical split, y = horizontal split, in this size's back-pattern coordinates. Mark both on the cut back (chalk) before hooping S1.",
+              f"Option (not baseline): a border frame ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f} sews the single back file in one hooping — asked on F1."]:
+        o.append(t(12, y, l, 1.65, 600 if l.startswith("ORDER") else 400, INK if l.startswith("ORDER") else MUTED)); y += 3.5
+    return o
+
+drum_sizes = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
+
+def f1_pages():
+    sheet.FOOT = FOOT
+    strike = [dict(file=os.path.basename(CUR[k]["file"]) + ".dst", piece=p_, stitches=CUR[k]["stitches"], trims=CUR[k]["trims_dst"])
+              for k, p_ in (("back", "01 back (single file; or S1–S4)"), ("02R", "02R front right"), ("02L", "02L front left"))]
+    for nm, v in sorted(SPL["sections"].items()):
+        strike.append(dict(file=os.path.basename(v["file"]) + ".dst", piece=f"01 back hooping {nm[:2]}", stitches=v["stitches"], trims=v["trims_dst"]))
+    th = [dict(name=PAL[k][1], code=f"Polyneon {SB.TH[k]['polyneon'][0]} / Isacord {SB.TH[k]['isacord'][0]}",
+               de=min(SB.TH[k]["polyneon"][3], SB.TH[k]["isacord"][3])) for k in PAL if k != "basting"]
+    pcs = [dict(piece="01 back scene", w=BB[0][2]-BB[0][0], h=BB[0][3]-BB[0][1], hoopings=len(SPL["sections"]))]
+    return factory.requests_page(f"{fbcore.NAME} ({fbcore.STYLE})", strike, th, pcs, page="F1", prof=PROF)
+
 def build():
-    pages = {"G2": overview(), "G3": threads(), "G4": summary(), "G5": files_page()}
+    pages = {"G2": overview(), "G3": threads(), "G4": summary(), "G5": files_page(), "G6": hooping_page()}
     el = [("01 Back scene", glob.glob("out/01_back-scene/*SPEC_*.pdf")[0]), ("02 Chest mossy branch", glob.glob("out/02_*/*SPEC_*.pdf")[0])]
     index = [("G1 Cover + contents", 1), ("G2 Placement overview", 2), ("G3 Thread + trim summary", 3), ("G4 Stitch summary + open questions", 4),
-             ("G5 Production stitch files + hoop splits", 5)]
-    pg = 6
+             ("G5 Production stitch files + hoop splits", 5), ("G6 Hooping plan per size", 6), ("F1 Factory requests", 7)]
+    pg = 8
     for name, path in el:
         n = len(PdfReader(path).pages); index.append((name + f" ({n} pp)", pg)); pg += n
     pages["G1"] = cover(index)
     w = PdfWriter()
-    for k in ("G1", "G2", "G3", "G4", "G5"):
+    for k in ("G1", "G2", "G3", "G4", "G5", "G6"):
         svg = doc(pages[k]); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"{k}.pdf")
         cairosvg.svg2png(bytestring=svg.encode(), write_to=f"prev_{k}.png", output_width=2400)
         w.append(PdfReader(f"{k}.pdf"))
+    for svg in f1_pages():
+        cairosvg.svg2pdf(bytestring=svg.encode(), write_to="F1.pdf"); cairosvg.svg2png(bytestring=svg.encode(), write_to="prev_F1.png", output_width=2400)
+        w.append(PdfReader("F1.pdf"))
     for name, path in el: w.append(PdfReader(path))
     w.write(OUT_PDF); print("embroidery pages", pg - 1)
     return index
