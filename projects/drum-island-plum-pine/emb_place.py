@@ -159,5 +159,5 @@ if __name__ == "__main__":
         c = clearances(sz, OL)
         nd = c.pop("nudge"); wr = c.pop("wrap"); print(sz, "wrap", wr)
         bad = {e: {k: round(v, 1) for k, v in d.items() if k in MIN.get(e, {}) and v < MIN[e][k] - 0.6} for e, d in c.items()}
-        print(sz, "nudge", {k: tuple(round(v, 1) for v in d) for k, d in nd.items() if any(d)}, {e: {k: round(v, 1) for k, v in d.items()} for e, d in c.items()})
+        print(sz, "nudge", {k: tuple(round(v, 1) if not isinstance(v, str) else v for v in d) for k, d in nd.items() if any(d)}, {e: {k: round(v, 1) for k, v in d.items()} for e, d in c.items()})
         print("   FAIL:", {e: v for e, v in bad.items() if v})

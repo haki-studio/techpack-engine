@@ -57,14 +57,14 @@ def front_view_png(F, vis_all, bbox, ppm, highlight):
     return out
 
 def build(cfg, F, vis_all):
-    SB.FOOT = f"HAKI STUDIOS · Drum Island jacket · plum + pine · {cfg["id"]} {cfg["short"]} · Rev B · 16 Oct 2026"
+    SB.FOOT = f"HAKI STUDIOS · Drum Island jacket · plum + pine · {cfg["id"]} {cfg["short"]} · Rev C · 16 Oct 2026"
     OUT = f"out/{cfg['id']}_{cfg['slug']}"; os.makedirs(OUT, exist_ok=True)
     pieces = cfg["pieces"]
     V = {p: vis_all[p] for p in pieces}
     ALL = [r for p in pieces for r in V[p]]
     STOPS = {p: tech.stops(V[p]) for p in pieces}
     TOT = {p: sum(s["st"] for s in STOPS[p]) for p in pieces}
-    _r = json.load(open("dst2_results.json")) if os.path.exists("dst2_results.json") else {}
+    _r = json.load(open("dst_current.json")) if os.path.exists("dst_current.json") else {}
     DSTN = {p: _r[p]["stitches"] for p in pieces if p in _r}
     BBs = {p: unary_union([r["geom"] for r in V[p]]).bounds for p in pieces}
     UB = unary_union([r["geom"] for r in ALL]).bounds
@@ -197,7 +197,7 @@ def build(cfg, F, vis_all):
         cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"e{n}_{i}.pdf")
         cairosvg.svg2png(bytestring=svg.encode(), write_to=f"prev_{n}_p{i}.png", output_width=2400)
         w.append(PdfReader(f"e{n}_{i}.pdf"))
-    w.write(f"{OUT}/HAKI_jacket_{n}_{cfg['slug']}_SPEC_RevB.pdf")
+    w.write(f"{OUT}/HAKI_jacket_{n}_{cfg['slug']}_SPEC_RevC.pdf")
     for p in pieces:
         b = BBs[p]; ox, oy = b[0] - 5, b[1] - 5; Wd, Hd = b[2] - b[0] + 10, b[3] - b[1] + 10
         side = "R" if b[2] < 0 else "L"

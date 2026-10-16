@@ -81,7 +81,7 @@ def plot_pdf(size, path):
         W = (b[2] - b[0]) + 2*m; H = (b[3] - b[1]) + 2*m + 40
         X = lambda x: x - b[0] + m; Y = lambda y: y - b[1] + m + 40
         o = [f'<rect width="{W:.1f}" height="{H:.1f}" fill="#FFFFFF"/>']
-        o += PD.piece_svg(pc, X, Y, 1.0, label=True, size=size, emb=em.get(code, ()), lw=1.0, text_mm=7)
+        o += PD.piece_svg(pc, X, Y, 1.0, label=True, size=size, emb=em.get(code, ()), lw=1.0, text_mm=7, emb_fill=False)
         o.append(f'<rect x="{m}" y="8" width="100" height="25" fill="none" stroke="#000" stroke-width="0.4"/>')
         o.append(f'<text x="{m + 2}" y="18" font-size="5" font-family="Helvetica">TEST: 100 mm</text>')
         o.append(f'<text x="{m + 2}" y="28" font-size="4" font-family="Helvetica">print at 100 % — no scaling</text>')
@@ -117,6 +117,30 @@ def measure(size):
              ("Cuff rib vs shell sleeve opening (ratio)", R02.edges[0].length, S.edges[2].length, None)]
     return m, walks, mt
 
+def shape_checks(size):
+    """automated pattern sanity checks (LESSONS C1-C3). Returns [(name, ok, detail)]."""
+    g, mt = PT.draft(size); out = []
+    def sag(pts, inside_poly):
+        a, b = pts[0], pts[-1]; m = pts[len(pts)//2]
+        mid = ((a[0]+b[0])/2, (a[1]+b[1])/2)
+        # concave neck: the curve's middle lies INSIDE the body relative to its chord's midpoint
+        return inside_poly.contains(Point(m)) is False and inside_poly.contains(Point(mid)) is False, math.hypot(m[0]-mid[0], m[1]-mid[1])
+    for code, nm in (("F01", "neck"), ("B01", "neck")):
+        pc = g[code]; e = next(x for x in pc.edges if x.name == nm)
+        poly = pc.sew_poly(); a, b = e.pts[0], e.pts[-1]; m = e.pts[len(e.pts)//2]
+        chord_mid = ((a[0]+b[0])/2, (a[1]+b[1])/2)
+        # scooped: the chord midpoint lies OUTSIDE the piece (the neck cuts into the body)
+        ok = not poly.buffer(-0.01).contains(Point(chord_mid)) if code == "F01" else True
+        out.append((f"{code} neck scooped (chord outside piece)", ok, f"sagitta {math.hypot(m[0]-chord_mid[0], m[1]-chord_mid[1]):.1f} mm"))
+    for code in PT.ORDER:
+        pc = g[code]; c = PT.cut_poly(pc); sp = pc.sew_poly()
+        if getattr(pc, "inset", 0): continue
+        ok = c.buffer(0.5).contains(sp) and (c.area > sp.area or all(e.sa == 0 for e in pc.edges))
+        out.append((f"{code} cut line encloses sew line", ok, f"+{(c.area - sp.area)/100:.0f} cm²"))
+    rib = g["R02"].edges[0].length / g["S01"].edges[2].length
+    out.append(("cuff rib / sleeve opening 0.75–0.85", 0.75 <= rib <= 0.85, f"{rib:.2f}"))
+    return out
+
 def qa_table():
     rows = {}
     for sz in PT.SIZES:
@@ -130,6 +154,8 @@ if __name__ == "__main__":
         for sz, r in rows.items():
             dev = {k: round(r["meas"][k]/10 - drum.POM_CM[k][2][drum.SIZES.index(sz)], 2) for k in drum.POM_CM}
             print(sz, "dev cm", {k: v for k, v in dev.items() if abs(v) > 0.05}, "cap h", round(r["cap_h"]), "ease", round(r["ease"], 1))
+            bad = [c for c in shape_checks(sz) if not c[1]]
+            print("    shape checks:", "all pass" if not bad else bad)
             for nm, a, b, tol in r["walks"]:
                 flag = "" if tol is None or abs(a - b) <= tol else "  <-- CHECK"
                 print("   ", nm, round(a, 1), round(b, 1), flag)

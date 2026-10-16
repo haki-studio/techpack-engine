@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /home/claude/jk
+cd "$(dirname "$0")"
 until grep -q "^3XL " back_size_log.txt || grep -q Traceback back_size_log.txt; do sleep 15; done
 # wait for grade A/B front builds to stop
 while pgrep -f "build_dst3.py [AB]" > /dev/null; do sleep 15; done

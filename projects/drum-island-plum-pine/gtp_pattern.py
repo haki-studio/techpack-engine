@@ -39,10 +39,11 @@ def _draw_pieces(o, g, codes, x0, y0, wmax, s, size, em=None, lw=0.5, tm=1.6, ga
 def p_pattern_pieces():
     o = GT.header("PATTERN — pieces + cut list (size M, sample size)", "First pattern, drafted from the Drum Island fit chart (T4). Seam allowance included; dashed = sew line; slits = notches; ⊕ = drill holes; pink = embroidery placement.", "T11")
     g, mt = PT.draft("M"); em = PO.emb_marks("M")
-    _draw_pieces(o, g, ["B01", "F01", "F02", "S01", "S02"], 12, 30, 190, 0.092, "M", em, lw=0.35, tm=1.5)
-    _draw_pieces(o, g, ["C01", "C02", "K01", "K02", "L01", "L02", "L03", "R01", "R02", "P01", "P02", "P03", "P04"], 12, 92, 190, 0.072, "M", None, lw=0.3, tm=1.3, gap=3)
+    y1 = _draw_pieces(o, g, ["B01", "F01", "F02", "S01"], 12, 30, 190, 0.085, "M", em, lw=0.35, tm=1.4)
+    y2 = _draw_pieces(o, g, ["C01", "C02", "K01", "K02", "L01", "L02", "L03"], 12, y1 + 6, 190, 0.06, "M", None, lw=0.28, tm=1.15, gap=3)
+    _draw_pieces(o, g, ["R01", "R02", "P01", "P02", "P03", "P04"], 12, y2 + 6, 190, 0.06, "M", None, lw=0.28, tm=1.1, gap=4)
     tx = 206; o.append(t(tx, 31, "CUT LIST — per jacket", 2.3, 700))
-    hd = ["Code", "Piece", "Cut", "Material", "Fuse"]; cx = [tx, tx + 10, tx + 42, tx + 51, tx + 84]
+    hd = ["Code", "Piece", "Cut", "Material", "Fuse"]; cx = [tx, tx + 9, tx + 36, tx + 47, tx + 73]
     for x_, h in zip(cx, hd): o.append(t(x_, 35.5, h, 1.6, 700, MUTED))
     for i, code in enumerate([c for c in PT.ORDER if not c.startswith("I")]):
         pc = g[code]; y = 39.5 + i*3.5
@@ -55,6 +56,7 @@ def p_pattern_pieces():
                            "Grain: body + sleeves straight grain; collar CB on grain; rib wales across the band height.",
                            "Fusing: woven 60 g/m², cut 3 mm inside the piece (IC01, IK01, IK02, IP01).",
                            "Back is cut whole (not on fold): embroidery 01 is sewn on it flat.",
+                           "S02 sleeve left = mirror of S01 (drawn: S01, right sleeve, with the 01 wrap).",
                            "Files: DXF (AAMA layers) per size + all sizes; 1:1 plot PDF for size M."]):
         o.append(t(tx, y + i*3.4, l, 1.5, 400, MUTED))
     o.append(GT.prop(12, SH - 14, "First pattern from the measurement chart — sew a size-M sample and fit it before cutting the size set", 1.7))
@@ -155,7 +157,7 @@ def p_pattern_emb():
 # ---------------------------------------------------------------- inside view
 def p_inside():
     o = GT.header("INSIDE VIEW — lining, facings, pockets, labels (size M)", "Jacket opened flat, inside facing up. Drawn from the pattern pieces. Shell facing = sand; flannel = check; taffeta sleeves = tan; twill bags dashed.", "T14")
-    g, mt = PT.draft("M"); s = 0.17; ox, oy = 150, 40
+    g, mt = PT.draft("M"); s = 0.125; ox, oy = 182, 52
     X = lambda x: ox + x*s; Y = lambda y: oy + (y + 40)*s
     sand, flan, taff, cord = "#E9DCC0", "#D8C3A0", "#E8D6B4", "#5A3B2A"
     defs = ('<defs><pattern id="chk" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="4" fill="#D8C3A0"/>'
@@ -174,25 +176,27 @@ def p_inside():
         fc = [(dx - side*x, y - (mt["hem_f"] - mt["hem_b"])) for x, y in g["K01"].sew()]
         o.append(f'<path d="{P(fc)}" fill="{sand}" stroke="{INK}" stroke-width="0.3"/>')
         # pocket bag behind the welt
-        wc = mt["welt_c"]; u = mt["welt_u"]
-        bag = Polygon([(0, 0), (PT.BAG_W, 0), (PT.BAG_W, PT.BAG_D), (0, PT.BAG_D)])
-        ang = math.degrees(math.atan2(u[1], u[0]))
-        bag = affinity.translate(bag, -PT.BAG_W/2, -8); bag = affinity.rotate(bag, ang, origin=(0, 0))
-        bx_, by_ = dx - side*wc[0], wc[1] - (mt["hem_f"] - mt["hem_b"])
-        bag = affinity.translate(affinity.scale(bag, -side, 1, origin=(0, 0)), bx_, by_)
+        wc = mt["welt_c"]; u = mt["welt_u"]; dyh = mt["hem_f"] - mt["hem_b"]
+        m0 = (wc[0] - u[0]*(PT.WELT_L/2 + 20), wc[1] - u[1]*(PT.WELT_L/2 + 20)); m1 = (wc[0] + u[0]*(PT.WELT_L/2 + 20), wc[1] + u[1]*(PT.WELT_L/2 + 20))
+        yb = max(m0[1], m1[1]) + 110
+        bag = Polygon([m0, m1, (m1[0], yb), (m0[0], yb)]).buffer(8).buffer(-8)
+        bag = affinity.translate(affinity.scale(bag, -side, 1, origin=(0, 0)), dx, -dyh)
         o.append(f'<path d="{P(list(bag.exterior.coords))}" fill="none" stroke="{INK}" stroke-width="0.25" stroke-dasharray="1.2 0.8"/>')
+        wl = [(dx - side*x, y - dyh) for x, y in g["F01"].internal[0][1]]
+        o.append(f'<path d="{P(wl)}" fill="{sand}" stroke="{INK}" stroke-width="0.25"/>')
         # zip along CF
         cfx = dx; o.append(f'<line x1="{f(X(cfx))}" y1="{f(Y(-(mt["hem_f"] - mt["hem_b"]) ))}" x2="{f(X(cfx))}" y2="{f(Y(mt["hem_b"]))}" stroke="#9A7A30" stroke-width="0.9"/>')
     # collar along the neck (inside: under collar visible)
-    o.append(f'<path d="{P([(x, y - 28) for x, y in g["C02"].sew()])}" fill="{cord}" stroke="{INK}" stroke-width="0.3" opacity="0.9"/>')
+    o.append(f'<path d="{P([(x, y - 45) for x, y in g["C02"].sew()])}" fill="{cord}" stroke="{INK}" stroke-width="0.3" opacity="0.9"/>')
+    o.append(t(X(0), Y(-150), "collar (under collar shown, laid up)", 1.5, 400, MUTED, "middle"))
     # hem rib
-    hw = 3 * mt["block"].chest2 + 20
+    hw = 2 * mt["block"].chest2
     o.append(f'<rect x="{f(X(-hw))}" y="{f(Y(mt["hem_b"]))}" width="{f(2*hw*s)}" height="{f(PT.HEM_RIB*s)}" fill="#D9C79F" stroke="{INK}" stroke-width="0.3"/>')
     # labels
     ly = 12
     o.append(f'<rect x="{f(X(-35))}" y="{f(Y(ly))}" width="{f(70*s)}" height="{f(20*s)}" fill="#111" />' + t(X(0), Y(ly) + 2.4, "HAKI", 1.6, 700, "#F2E8D5", "middle"))
     o.append(f'<rect x="{f(X(-10))}" y="{f(Y(ly + 22))}" width="{f(20*s)}" height="{f(15*s)}" fill="#333"/>')
-    cl_x = 2 * mt["block"].chest2 - 15; cl_y = mt["hem_b"] - 100 - (mt["hem_f"] - mt["hem_b"]) * 0
+    cl_x = mt["block"].chest2 + 6
     o.append(f'<rect x="{f(X(cl_x))}" y="{f(Y(mt["hem_b"] - 100))}" width="{f(40*s)}" height="{f(60*s)}" fill="#FFF" stroke="{INK}" stroke-width="0.25"/>')
     o.append(f'<rect x="{f(X(-6))}" y="{f(Y(-34))}" width="{f(12*s)}" height="{f(28*s)}" fill="none" stroke="{INK}" stroke-width="0.3"/>')
     # callouts
@@ -201,18 +205,18 @@ def p_inside():
              ("3", "Back lining — cotton flannel, 2 cm CB pleat stitched 5 cm down from the facing.", X(0), Y(250)),
              ("4", "Front facing — shell canvas 6 cm at CF, 4 cm on the shoulder; zip tape between shell + facing.", X(2*mt["block"].chest2 - 30), Y(250)),
              ("5", "Front lining — flannel; joins facing, shoulder, armhole, side; bagged to the hem-rib seam.", X(2*mt["block"].chest2 - 170), Y(150)),
-             ("6", "Pocket bags — 8 oz twill, 18 × 20 cm, hang from the welt; caught in the lining? NO — free-hanging, edge-bound.", X(-2*mt["block"].chest2 + 170), Y(330)),
+             ("6", "Pocket bags — 8 oz twill, hang from the welt, free between shell + lining, edges bound.", X(-2*mt["block"].chest2 + 150), Y(420)),
              ("7", "Care / content label — wearer's left side seam, 10 cm above the hem-rib seam.", X(cl_x + 20), Y(mt["hem_b"] - 70)),
-             ("8", "Embroidery backing — cutaway trimmed to 5 mm, hidden by the lining (back, fronts, right sleeve).", X(-150), Y(420)),
-             ("9", "Sleeve lining — polyester taffeta 210T (lets the arm slide); joined at armhole + cuff-rib seam.", X(-2*mt["block"].chest2 - 20), Y(60))]
+             ("8", "Embroidery backing — cutaway trimmed to 5 mm, hidden by the lining (back, fronts, right sleeve).", X(-150), Y(450)),
+             ("9", "Sleeve lining — polyester taffeta 210T (lets the arm slide); joined at armhole + cuff-rib seam (sleeves not drawn).", X(-mt["block"].chest2 + 25), Y(120))]
     for i, (n, txt, px, py) in enumerate(notes):
-        tx_, ty_ = 14, 40 + i*7.5
+        tx_, ty_ = 14, 36 + i*9.5
         o.append(GT.callout(px, py, n, px + 0.001, py)[:0] if False else "")
         o.append(f'<circle cx="{f(px)}" cy="{f(py)}" r="2.1" fill="#FFF" stroke="{INK}" stroke-width="0.25"/>' + t(px, py + 0.8, n, 1.8, 700, INK, "middle"))
         o.append(f'<circle cx="{f(tx_ + 2)}" cy="{f(ty_ - 0.7)}" r="2.0" fill="#FFF" stroke="{INK}" stroke-width="0.25"/>' + t(tx_ + 2, ty_, n, 1.7, 700, INK, "middle"))
         words = txt.replace("&", "+").split(); line, lines = "", []
         for w_ in words:
-            if len(line) + len(w_) > 46: lines.append(line); line = w_
+            if len(line) + len(w_) > 40: lines.append(line); line = w_
             else: line = (line + " " + w_).strip()
         lines.append(line)
         for j, l in enumerate(lines): o.append(t(tx_ + 6, ty_ + j*2.7, l, 1.65))

@@ -8,7 +8,7 @@ INK = "#1A1A1A"; RED = "#D0312D"; BLUE = "#0A84FF"; GREY = "#8A8A8A"; EMB = "#C2
 def path_d(pts, close=True):
     return "M" + " L".join(f"{f(x)} {f(y)}" for x, y in pts) + (" Z" if close else "")
 
-def piece_svg(pc, X, Y, s, label=True, size="M", emb=(), lw=1.0, fill="#FFFFFF", text_mm=None):
+def piece_svg(pc, X, Y, s, label=True, size="M", emb=(), lw=1.0, fill="#FFFFFF", text_mm=None, emb_fill=True):
     """X, Y map piece coords -> sheet coords; s = sheet units per mm (for stroke/text sizing)."""
     o = []
     cut = PT.cut_poly(pc)
@@ -27,7 +27,8 @@ def piece_svg(pc, X, Y, s, label=True, size="M", emb=(), lw=1.0, fill="#FFFFFF",
                      f'<path d="M{f(X(x)-r)} {f(Y(y))} H{f(X(x)+r)} M{f(X(x))} {f(Y(y)-r)} V{f(Y(y)+r)}" stroke="{INK}" stroke-width="{f(0.15*lw)}"/>')
     for nm, pts, kind in emb:
         if kind == "outline":
-            o.append(f'<path d="{path_d(T(pts))}" fill="#C2185B22" stroke="{EMB}" stroke-width="{f(0.2*lw)}"/>')
+            fl = f'fill="{EMB}" fill-opacity="0.18"' if emb_fill else 'fill="none"'
+            o.append(f'<path d="{path_d(T(pts))}" {fl} stroke="{EMB}" stroke-width="{f(0.2*lw)}"/>')
         elif kind == "box":
             o.append(f'<path d="{path_d(T(pts))}" fill="none" stroke="{EMB}" stroke-width="{f(0.25*lw)}" stroke-dasharray="{f(1.5*lw)} {f(0.8*lw)}"/>')
         elif kind == "cross":

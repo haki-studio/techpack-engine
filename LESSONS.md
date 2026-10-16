@@ -15,7 +15,7 @@ effect is on record.
 | A2 | First pass was far less dense than the mockup; client asked twice for "closer to the mockup". | Count motifs per area in the mockup (blossoms, buds, twigs) and match it; put shading tones in from the first pass. | Side-by-side mockup vs stitch render on the spec page. |
 | A3 | Art drawn over seams, rib and collar. | Keep-outs (mm from the sew line): side seams 15, CF/zip 15, front armhole + shoulder 15, hem-rib seam 10, welt box 6, collar lying flat 6. Rib knit is never embroidered. | `emb_place.clearances()` per size, MIN table. |
 | A4 | Branches wrap from the back onto the sleeve. | Split into back piece + sleeve piece, 3 mm short of the seam on each side, limb crossings exported as match marks (notches on the cap). | `spec2.match_marks()`; per-size: `back_size.py` marks. |
-| A5 | Wrap art on graded sizes: scaling the art doesn't scale the armhole; only 0–2 of 7 limbs met the seam on non-M sizes. | One 01 back + sleeve file **per size**: grade the unclipped scene, anchor it on that size's armhole, re-clip to that size's keep-outs; the overflow becomes that size's sleeve file. | `emb_place` wrap check (aligned / total marks). |
+| A5 | Wrap art on graded sizes: scaling the art doesn't scale the armhole; only 0–2 of 7 limbs met the seam on non-M sizes. | One 01 back + sleeve file **per size**: grade the unclipped scene, anchor it on that size's armhole, re-clip to that size's keep-outs; the overflow becomes that size's sleeve file. | `emb_place` wrap check (aligned / total marks): 6/7 on S–XXL, 4/4 XS, 6/6 3XL. Art anchored on the right armhole (`back_size.py`). |
 | A6 | Thin knockout slivers between regions — unstitchable and they create trims. | `back2.absorb_slivers()` at build time; `dst2.clean_vis()` before stitching (close 0.3 mm, drop fills < 1.5 mm² or < 0.7 mm wide, lines < 0.8 mm²). [9,099 → 4,179 fragments, 0.7 % area] | fragment count printed by the build. |
 | A7 | Copyrighted characters in AI mockups (e.g. soot sprites). | Decline that element, offer an original; never draw a lookalike. | Inventory step. |
 
@@ -39,9 +39,9 @@ effect is on record.
 
 | # | Problem | Rule / fix | Check |
 |---|---|---|---|
-| C1 | Front neck drawn convex (bulging out) instead of scooped. | Neck curves must lie *below* their chord (into the body). | Visual check of the pattern render; TODO automated sagitta check. |
+| C1 | Front neck drawn convex (bulging out) instead of scooped. | Neck curves must lie *below* their chord (into the body). | `pattern_out.shape_checks()` (neck chord midpoint must lie outside the piece). |
 | C2 | Shell sleeve opening came out half size — POM charts give **half** measurements (1/2 chest, 1/2 opening). | Always convert half-measures explicitly; pattern half-width ≠ half-circumference. | seam walk: cuff rib / sleeve opening ratio 0.75–0.85. |
-| C3 | Seam-allowance offset picked the inside of rectangles (endpoint test tied). | Pick the offset side by testing points along the middle of the offset line. | cut ≥ sew + SA on every piece (`pattern.py` main prints sizes). |
+| C3 | Seam-allowance offset picked the inside of rectangles (endpoint test tied). | Pick the offset side by testing points along the middle of the offset line. | `pattern_out.shape_checks()`: cut line encloses sew line on every piece. |
 | C4 | Welt pocket spec (1.6 × 14) clashed with embroidery 03/04. | Garment details and embroidery are checked together on every size; welt 1.4 × 13. | `emb_place.clearances()` welt ≥ 6. |
 | C5 | 108 % art outgrew the XL shoulder; 04 boxed in by welt + hem on XXL/3XL. | Grade per element with overrides; XL uses B (100 %); 04 stays 100 % on XXL/3XL; per-size nudge solver (smallest move that restores every keep-out). | T13 table "all pass". |
 | C6 | Values not on the fit chart (shoulder slope, rib heights, cap ease, facing widths). | Mark as PROPOSED everywhere they appear; list on the open-questions page. | `pattern.PROPOSED`. |
@@ -62,3 +62,4 @@ effect is on record.
 | E1 | Long jobs (10–25 min each on 2 cores). | Run in the background, two at a time on the cloud box, all cores locally; queue with `xargs -P`. |
 | E2 | `pkill -f <pattern>` killed the calling shell (its own command line matched). | Kill by PID from `ps -eo pid,args` with an exact argv match. |
 | E3 | Fixing one thing at a time cost four rounds. | Run every check in this file before the first delivery; deliver with the check table. |
+| E4 | Embroidery placement solid-filled on 1:1 plots (8-digit hex alpha unsupported by cairosvg). | Use `fill-opacity`; outlines only on plot PDFs. |

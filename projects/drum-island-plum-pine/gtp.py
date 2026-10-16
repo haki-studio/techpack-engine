@@ -231,23 +231,25 @@ def p_grade():
     return o
 
 def p_bom():
-    o = header("BILL OF MATERIALS", "Per jacket, size M. Consumption is a marker estimate (150 cm usable width) — replace with the factory's marker. Embroidery threads: see embroidery section G3.", "T6")
+    o = header("BILL OF MATERIALS", "Per jacket, size M. Fabric consumption = pattern piece area ÷ (150 cm width × 80 % marker efficiency) — replace with the factory's marker. Threads: G3.", "T6")
+    import gtp_pattern as GP
+    C = GP.consumption("M")
     hd = ["#", "Component", "Material / spec", "Colour", "Placement", "Supplier", "Qty (M)"]
     cx = [12, 18, 48, 124, 168, 222, 258]
     for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.8, 700, MUTED))
     rows = [
-        ("Shell", "12 oz (407 g/m²) 100% cotton duck canvas, 150 cm", "sand / khaki — match strike-off ≈ #D9C4A0", "body, sleeves, welts, facing", "TBC", "1.70 m", False),
-        ("Collar", "14-wale cotton corduroy, 8 oz", "dark brown ≈ #5A3B2A", "upper + under collar", "TBC", "0.25 m", True),
-        ("Hem rib", "1×1 rib, 95/5 cotton/elastane, 400 g/m²", "tan to match shell", "hem band", "TBC", "0.15 m", True),
-        ("Cuff rib", "1×1 rib, 95/5 cotton/elastane, 400 g/m²", "dark brown to match collar", "cuffs ×2", "TBC", "0.10 m", True),
-        ("Body lining", "100% cotton flannel, 180 g/m²", "brown/tan check or solid", "body", "TBC", "1.20 m", True),
-        ("Sleeve lining", "polyester taffeta 210T", "tan", "sleeves", "TBC", "0.90 m", True),
-        ("Pocket bag", "8 oz cotton twill", "tan", "welt pockets ×2", "TBC", "0.30 m", True),
-        ("Interlining", "woven fusible, 60 g/m²", "white", "collar band, zip facing, welts", "TBC", "0.30 m", True),
+        ("Shell", "12 oz (407 g/m²) 100% cotton duck canvas, 150 cm", "sand / khaki — match strike-off ≈ #D9C4A0", "body, sleeves, welts, facing", "TBC", f"{C['Shell']:.2f} m", False),
+        ("Collar", "14-wale cotton corduroy, 8 oz", "dark brown ≈ #5A3B2A", "upper + under collar", "TBC", f"{C['Collar']:.2f} m", True),
+        ("Hem rib", "1×1 rib, 95/5 cotton/elastane, 400 g/m²", "tan to match shell", "hem band", "TBC", f"{C['Hem rib']/1000:.2f} m (1 × {C['Hem rib']/10:.0f} cm cut)", True),
+        ("Cuff rib", "1×1 rib, 95/5 cotton/elastane, 400 g/m²", "dark brown to match collar", "cuffs ×2", "TBC", f"{C['Cuff rib']/1000:.2f} m", True),
+        ("Body lining", "100% cotton flannel, 180 g/m²", "brown/tan check or solid", "body", "TBC", f"{C['Body lining']:.2f} m", True),
+        ("Sleeve lining", "polyester taffeta 210T", "tan", "sleeves", "TBC", f"{C['Sleeve lining']:.2f} m", True),
+        ("Pocket bag", "8 oz cotton twill", "tan", "welt pockets ×2", "TBC", f"{C['Pocket bag']:.2f} m", True),
+        ("Interlining", "woven fusible, 60 g/m²", "white", "top collar, facings, welts", "TBC", f"{C['Interlining']:.2f} m", True),
         ("Zip", "YKK #5 metal separating, auto-lock, one-way", "antique brass teeth, brown tape", "CF", "YKK", "1 × 56 cm (M)", False),
         ("Thread — seams", "Coats Epic 120 (Tex 27) corespun poly/cotton", "tonal to shell", "all seams + overlock", "Coats", "~ 450 m", True),
         ("Thread — topstitch", "Coats Gral 40 (Tex 60) poly", "tonal to shell", "topstitch, bartacks", "Coats", "~ 120 m", True),
-        ("Embroidery thread", "Madeira Polyneon 40 (16 colours, see G3)", "per embroidery spec", "01–04", "Madeira", "per spec", False),
+        ("Embroidery thread", "Madeira Polyneon 40 (15 colours, see G3)", "per embroidery spec", "01–04", "Madeira", "per spec", False),
         ("Embroidery backing", "2.5 oz cutaway", "white", "behind each element", "TBC", "6 pieces", False),
         ("Main label", "woven damask, HAKI logo, 7 × 2 cm, folded", "black / cream", "CB neck facing", "TBC", "1", True),
         ("Size label", "woven, 2 × 1.5 cm", "black / cream", "under main label", "TBC", "1", True),
@@ -357,25 +359,30 @@ def p_questions():
     qs = ["1. Shell colour: target ≈ #D9C4A0 from the mockup — send a Pantone / lab-dip reference.",
           "2. Collar corduroy weight + wale (proposed 14-wale, 8 oz) and colour.",
           "3. Rib: fibre (proposed 95/5 cotton/elastane), heights (hem 5.5, cuff 7.5 — not on the fit chart), colours.",
-          "4. Shoulder drop (4.5 proposed) and armhole shape — the fit chart gives straight armhole only; pattern maker to confirm.",
+          "4. Pattern (T11–T13) is a FIRST pattern drafted from the chart: shoulder slope 4.5, cap ease 1.2, facings, rib heights proposed — sample + fit M first.",
           "5. Lining: flannel body + taffeta sleeves proposed. Quilted or unlined alternative?",
           "6. Zip garage at collar + auto-lock slider — confirm. Zip lengths per size on T3 assume CF length − 0.5 cm.",
           "7. Pocket bag fabric + depth (18 cm proposed); inside chest pocket? (none drawn — mockup doesn't show the inside).",
           "8. Seam types + SPI (T7) are a standard proposal — factory to confirm capability (5-thread safety stitch, bartack).",
           "9. Labels + packaging artwork, country of origin, care-symbol set, carton marks.",
-          "10. Embroidery grading: 3 art sizes (92% / 100% / 108%) proposed — OK, or one fixed size (cheaper, shifts relative to seams)?",
-          "11. Garment wash after embroidery? If yes: wash test on the sew-out first (whites + golds grey first)."]
+          "10. Embroidery grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL); 01 back + sleeve has one file per size (wrap). OK?",
+          "11. Garment wash after embroidery? If yes: wash test on the sew-out first (whites + golds grey first).",
+          "12. Factory frame + machine: border frame ≥ 570 × 564 for the single-file back, else 4 × 360² splits; heads need ≥ 15 needles.",
+          "13. Inside: pocket bags free-hanging + bound (proposed); inside chest pocket — add one? (T14)"]
     for i, q in enumerate(qs): o.append(t(14, 34 + i*4.6, q, 2.0))
     return o
 
 PAGES = ["T1 Cover + contents", "T2 Technical flats", "T3 Construction details", "T4 Measurements + size chart",
          "T5 Grading + embroidery grading", "T6 Bill of materials", "T7 Seams, stitches, assembly", "T8 Labels, packaging, QC",
-         "T9 Colourway + artwork", "T10 Open questions — garment"]
+         "T9 Colourway + artwork", "T10 Open questions — garment", "T11 Pattern — pieces + cut list", "T12 Pattern — grade nests + measurement check",
+         "T13 Pattern — embroidery placement per size", "T14 Inside view", "T15 Operations + time estimate", "T16 Revision log + sample tracker"]
 
 def build(emb_pdf, emb_pages, out_pdf):
     F = TF.Flat("M")
     index = [(n, i + 1) for i, n in enumerate(PAGES)] + [("EMBROIDERY SECTION (G1–G5 + elements 01–04)", len(PAGES) + 1)] + emb_pages
-    pages = [p_cover(index), p_flats(F), p_details(F), p_pom(F), p_grade(), p_bom(), p_construction(), p_labels(), p_colourway(), p_questions()]
+    import gtp_pattern as GP
+    pages = [p_cover(index), p_flats(F), p_details(F), p_pom(F), p_grade(), p_bom(), p_construction(), p_labels(), p_colourway(), p_questions(),
+             GP.p_pattern_pieces(), GP.p_pattern_grade(), GP.p_pattern_emb(), GP.p_inside(), GP.p_operations(), GP.p_revisions()]
     w = PdfWriter()
     for i, pg in enumerate(pages, 1):
         svg = doc(pg); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"T{i}.pdf")

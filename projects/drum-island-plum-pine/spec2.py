@@ -23,7 +23,7 @@ TOT_B, TOT_S = sum(s["st"] for s in STOPS_B), sum(s["st"] for s in STOPS_S)
 TH = tech.thread_table(list(PAL))
 UB = unary_union([r["geom"] for r in VB]); BB = UB.bounds
 US = unary_union([r["geom"] for r in VS])
-FOOT = "HAKI STUDIOS · Drum Island jacket · plum + pine · 01 back scene · Rev E · 16 Oct 2026"
+FOOT = "HAKI STUDIOS · Drum Island jacket · plum + pine · 01 back scene · Rev F · 16 Oct 2026"
 
 def header(title, sub, page):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>', t(12, 16, title, 4.6, 700), t(12, 21.8, sub, 2.2, 400, MUTED),
@@ -141,7 +141,7 @@ def page1():
         o.append(t(rx, 38 + i*3.7, a, 1.95, 400, MUTED)); o.append(t(rx + 46, 38 + i*3.7, b, 1.95, 600))
     o.append(t(rx, 72, "BY THE NUMBERS", 2.6, 700))
     import json as _j
-    _r = _j.load(open("dst2_results.json")) if os.path.exists("dst2_results.json") else {}
+    _r = _j.load(open("dst_current.json")) if os.path.exists("dst_current.json") else {}
     DB = _r.get("back", {}).get("stitches", TOT_B); DS = _r.get("sleeve", {}).get("stitches", TOT_S)
     nums = [("Stitches, back (DST v2)", f"{DB:,.0f}  · trims {_r.get('back', {}).get('trims_dst', _r.get('back', {}).get('trims_cmd', 0)):,}"), ("Stitches, sleeve (DST v2)", f"{DS:,.0f}"),
             ("Colour stops, back", f"{len(STOPS_B)}  (16 threads)"), ("Colour stops, sleeve", f"{len(STOPS_S)}"),
@@ -293,8 +293,8 @@ def page5():
     o.append(t(70, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
     ch = ["Composition re-traced from the mockup: same trunk line, limbs, pine",
           "  groups and bamboo; blossom + bud positions taken from the mockup.",
-          "Rev E: refit to the Drum Island block (size M, boxy + cropped) — art",
-          "  re-scaled into the new panel; leaves grow from the bark; bamboo on a drift.",
+          "Rev E/F: refit to the Drum Island block; v3 stitch files (15 threads,",
+          "  production density); one back + sleeve file per size (wrap re-clipped).",
           "Wood drawn crooked (kinked limbs, bulging trunk) with short spray twigs,",
           "  bud clusters and snow dabs, as in the mockup.",
           "Right side: branches wrap the armhole onto the sleeve as in the mockup —",
@@ -353,7 +353,7 @@ def build():
         cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"q{i}.pdf")
         cairosvg.svg2png(bytestring=svg.encode(), write_to=f"prev2_p{i}.png", output_width=2400)
         w.append(PdfReader(f"q{i}.pdf"))
-    w.write(f"{OUT}/HAKI_jacket_01_back-scene_SPEC_RevE.pdf")
+    w.write(f"{OUT}/HAKI_jacket_01_back-scene_SPEC_RevF.pdf")
     # back art: origin = art box top-left, guides = CB line + panel outline
     ox, oy = BB[0] - 5, BB[1] - 5; W, H = BB[2] - BB[0] + 10, BB[3] - BB[1] + 10
     pan = affinity.translate(B.PANEL, -ox, -oy)
