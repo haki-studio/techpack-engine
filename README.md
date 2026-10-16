@@ -19,8 +19,14 @@ path to batch runs. Projects: `projects/drum-island-plum-pine` (embroidered work
 `projects/konpeito-jeans` (patches + direct embroidery, see `.claude/skills/embroidery-tech-pack`).
 
 ```bash
-scripts/setup_mac.sh            # macOS: cairo + venv + deps + tests (once)
+scripts/setup_wsl.sh            # WSL 2 / Ubuntu: system libs + venv + deps + tests (once)  (macOS: scripts/setup_mac.sh)
 scripts/new_project.sh <slug>     # scaffold a new product on its own branch
 source scripts/env.sh projects/drum-island-plum-pine
 python3 pattern_out.py qa
 ```
+
+## Windows (WSL 2)
+- Install Claude Code inside the WSL terminal: `curl -fsSL https://claude.ai/install.sh | bash`, then `claude` (log in once).
+- Clone into the Linux home (`cd ~ && git clone https://github.com/haki-studio/techpack-engine`), not `/mnt/c/...`.
+- Open outputs from Windows (Hatch, Acrobat) at `\\wsl$\Ubuntu\home\<you>\techpack-engine\projects\<style>\out\`.
+- Give WSL most of your cores for the stitch builds: `%UserProfile%\.wslconfig` → `[wsl2]` `processors=<n>` `memory=<n>GB`, then `wsl --shutdown`.
