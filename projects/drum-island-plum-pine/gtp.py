@@ -52,7 +52,7 @@ def p_cover(index):
         o.append(t(ix, y, name, 1.95)); o.append(t(SW - 14, y, str(pg), 1.95, 600, MUTED, "end")); y += 3.9
     y += 3; o.append(t(ix, y, "KEY SPECS", 2.4, 700)); y += 4.6
     for a, b in [("Shell", "12 oz cotton duck canvas"), ("Collar", "cotton corduroy, dark brown"), ("Zip", "YKK #5 metal, brass, separating"),
-                 ("Hem / cuffs", "rib knit, tan / dark brown"), ("Embroidery", "4 elements, 6 pieces, 16 threads"), ("Fit", "Drum Island block (boxy, cropped)")]:
+                 ("Hem / cuffs", "rib knit, tan / dark brown"), ("Embroidery", "4 elements, 6 pieces, 15 threads per file"), ("Fit", "Drum Island block (boxy, cropped)"), ("Pattern", "XS–3XL first pattern, DXF + 1:1 plot")]:
         o.append(t(ix, y, a, 1.95, 400, MUTED)); o.append(t(ix + 22, y, b, 1.95, 600)); y += 3.8
     o.append(t(SW - 14, SH - 8, FOOT, 1.8, 400, MUTED, "end"))
     return o

@@ -138,6 +138,7 @@ def summary():
     for e in ("02", "03", "04"):
         k = max(SUMS[e]["width"], key=lambda k: SUMS[e]["width"][k]); widths[e] = (SUMS[e]["width"][k], k)
     ST2 = [DST2[k]["stitches"] for k in DKEYS]; TR2 = [DST2[k].get("trims_dst", DST2[k]["trims_cmd"]) for k in DKEYS]
+    NST = [DST2[k]["stops"] for k in DKEYS]
     for i, ((e, name, piece, v), b, st, ns, tr) in enumerate(zip(PIECES, BB, ST2, NST, TR2)):
         y = 36 + i*4.6
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-3)}" width="225" height="4.6" fill="#F5F2EC"/>')
@@ -152,10 +153,10 @@ def summary():
     o.append(t(12, y + 4.5, "Width check = worst region code's share of area below its minimum width (fill/satin 0.8, line 0.6) for > 2.5 mm. All other codes < 3.5%; detail per code on each element's p3.", 1.75, 400, MUTED))
     qy = y + 16
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
-    qs = ["1. Fit + grading: art is placed on the Drum Island size-M block (garment pack T4). 3 art sizes proposed — A 92% (XS–S), B 100% (M–L),",
-          "    C 108% (XL–3XL), see T5. Confirm, or one fixed size (cheaper; it shifts relative to seams on XS / 3XL).",
-          "2. Pattern: positions are from finished edges on a traced pattern. The factory converts to cut-piece coordinates on their own pattern —",
-          "    send their pattern back so the art files can be re-registered if anything moves by > 5.",
+    qs = ["1. Grading: A 92% (XS–S), B 100% (M–XL), C 108% (XXL–3XL; 04 stays B). 01 back + sleeve: one file per size. Confirm, or one",
+          "    fixed size for all (cheaper, but the wrap and keep-outs then fail on XS / 3XL — see T13).",
+          "2. Pattern: placements sit on Haki's first pattern (DXF, garment T11–T13). If the fit sample changes the pattern, send the revised",
+          "    pattern back so the art + stitch files are re-registered (anything moving > 5 mm).",
           f"3. Back frame: single file needs a border frame ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f}. Otherwise sew the 4 split files S1–S4 (360 × 360) with basting crosses (G5).",
           "4. Sleeve wrap: armhole topstitch must sit on the sleeve side so it doesn't cross the branches. Confirm with the sewing room.",
           "5. Zip: chest branch is split 15 each side of CF. Confirm zip tape width (art assumes ≤ 12 tape + topstitch).",
@@ -163,7 +164,7 @@ def summary():
           "7. Wash: if the jacket is garment-washed / enzyme-washed after embroidery, run a wash test on the sew-out (whites + golds grey first).",
           "8. Leaves on the plum: kept from the mockup though winter plum is leafless — keep or drop?",
           "9. Reference images supplied (pine/bamboo illustrations) were used for motif language only; nothing traced.",
-          "10. DST/PES v2 are production-intent drafts: the factory digitizer opens them, checks density + pull on 12 oz duck and edits before sew-out."]
+          "10. DST/PES v3 are production-intent drafts: the factory digitizer opens them, checks density + pull on 12 oz duck and edits before sew-out."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i*3.6, q, 1.85))
     return o
 

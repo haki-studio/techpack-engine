@@ -143,8 +143,8 @@ def p_pattern_emb():
     # picture: XS and 3XL back + front left with art
     em_xs = PO.emb_marks("XS"); em_3 = PO.emb_marks("3XL")
     gx, _ = PT.draft("XS"); g3, _ = PT.draft("3XL")
-    s = 0.085; yy = y + 17
-    for k, (gg, em, lab, ox) in enumerate(((gx, em_xs, "XS", 12), (g3, em_3, "3XL", 150))):
+    s = 0.068; yy = y + 17
+    for k, (gg, em, lab, ox) in enumerate(((gx, em_xs, "XS", 12), (g3, em_3, "3XL", 152))):
         xx = ox
         for code in ("B01", "F02", "F01", "S01"):
             pc = gg[code]; b = PT.cut_poly(pc).bounds
