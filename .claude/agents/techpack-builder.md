@@ -26,5 +26,12 @@ Rules:
    check) — the coordinator merges those.
 6. Commit with `scripts/commit_project.sh <slug> "<what changed>"` after each stage (it locks, so builders don't collide).
 7. Every check in LESSONS must pass before `delivered`. Render and look at every page and preview.
-8. Final message (to the coordinator): deliverable paths, key numbers (stitches/trims per file, sizes, pages),
+8. Read `factory.json` (`engine/factory.py`) for frames/needles/speed; never hard-code 360. Add the F1 Factory
+   requests page to the pack (strike-off files size M, multi-hooping pieces, threads ΔE > 3, quote basis) and machine
+   hours + trims per piece on the G pages.
+9. Low-res mockups are normal (see `techpack-pipeline` §0b): if `inputs/closeups/` has close-ups, trace from them; if not,
+   match motif counts and say on the spec page that the art was redrawn from a low-res mockup.
+10. After delivery a separate reviewer checks your pack; the coordinator will send you its findings — fix every blocker
+   and should-fix, rebuild, re-render, and report what changed.
+11. Final message (to the coordinator): deliverable paths, key numbers (stitches/trims per file, sizes, pages),
    PROPOSED items, open questions, and anything blocked.

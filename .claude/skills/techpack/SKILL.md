@@ -30,7 +30,10 @@ images and watch.
    - **IP flags**: anything that looks like an existing character, logo or franchise creature (e.g. a known
      game/anime creature) → flag it; that element gets an original replacement, never a lookalike. Public-domain
      art (e.g. Hokusai's Great Wave) is fine to reference.
-   - low-resolution source → note it (ask for originals in step 4 but don't wait for them).
+   - low-resolution source (the usual case: AI renders ~1–1.5k px for the whole garment) → there are no originals.
+     Write `projects/<slug>/inputs/closeup_request.md` (one prompt per decorated panel, template in
+     `techpack-pipeline` §0b) and, in step 4, ask Devin to run those prompts in the same image tool and drop the results
+     into `inbox/<slug>/closeups/` (`closeup_<element>.png`). Builders start without them and trace from them when they land.
 4. Write `inbox/_plan.json` (format in `scripts/intake.py`) and run `python3 scripts/intake.py apply inbox/_plan.json`.
    Post ONE message: a table of products (slug, garment, block, process, elements, flags) + every question that
    blocks a product (usually: fit charts for non-Drum-Island garments, fabric). Then continue — don't wait.
@@ -49,4 +52,14 @@ product's latest preview.
 - Engine changes: builders don't edit `engine/`; they write proposals to `projects/<slug>/ENGINE_NOTES.md`. When
   all builders are done, apply the proposals yourself (one at a time, tests passing), add LESSONS rows + tests,
   commit and push to `main`.
-- Finish with a summary table: product, stage, stitches (back M), files, what's blocked and why.
+- **Independent review (every product, no exceptions):** when a builder reports `delivered`, launch one `reviewer`
+  subagent on that pack (it did not build it): every page rendered and looked at, stitch preview vs mockup side by side
+  (A2 density), every number vs the generated files, factory clarity, LESSONS gates, cost (trims / stitches). Send its
+  blocker + should-fix items back to the same builder (SendMessage) to fix, re-review once, then mark `reviewed`.
+  Only a `reviewed` pack goes to the factory.
+- **Factory loop:** every pack carries the F1 page (`engine/factory.py`): strike-off files (size M), frame + needle
+  question, thread card / lab dip for weak matches, quote basis. Frames, needles, speed and thread brands come from
+  `factory.json` — when the factory answers, update it and rebuild the splits. Strike-off photos/notes go into
+  `projects/<slug>/inputs/strikeoff/`; feed them back per `techpack-pipeline` §6 and add LESSONS rows.
+- Finish with a summary table: product, stage (delivered / reviewed), stitches + trims (M), machine hours, files,
+  what's blocked and why, and what the factory has been asked (F1).

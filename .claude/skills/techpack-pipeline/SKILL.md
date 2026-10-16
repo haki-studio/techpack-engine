@@ -12,6 +12,26 @@ Inventory: garment, fit chart (POM, half-measures!), fabric + hardware, every em
 its pattern piece, process and keep-outs. List what's PROPOSED. Ask only what blocks (usually: fit chart, frame size
 at the factory, number of needles).
 
+## 0b. Low-resolution sources (the normal case)
+There are usually no originals: the mockup is an AI render ~1–1.5k px for the whole garment (≈1 px per mm of art).
+A bigger frame does NOT help — frame size decides hoopings, not detail. What does:
+1. **Close-ups from the same image tool** — one prompt per decorated panel, saved as `inputs/closeup_request.md`:
+   > "Same jacket and embroidery as the attached image. A straight-on, flat, evenly lit close-up of ONLY the
+   > <element> embroidery on the <piece>, filling the whole frame edge to edge, no perspective, no folds, no model,
+   > highest resolution available (≥ 3000 px wide). Keep every motif, colour and position exactly as in the original;
+   > do not add or remove anything."
+   Close-ups are the tracing reference when they exist; the full mockup stays the reference for placement and scale
+   (the generator may drift — compare motif positions and reject a close-up that moved things).
+2. **Count, don't trace** (A2): count motifs per area (leaves, blossoms, stars, cloud lobes) on the mockup and match
+   the count in the art; detail comes from the motif library at stitch resolution, not from mockup pixels.
+3. **Upscaling** (Lanczos ×4 + light sharpening) only for reading shapes and colour boundaries — it adds no detail; never
+   claim traced accuracy from an upscale.
+4. Say on the spec page which reference the art came from (mockup / close-up) so the factory knows what was redrawn.
+
+## 0c. Factory profile
+Read `factory.json` (repo root) via `factory.load()`: frames (`factory.largest_frame()` → `split_clip(frame=...)`),
+needles (thread limit), speed (machine hours). Never hard-code 360 x 360. Unconfirmed values are PROPOSED.
+
 ## 1. Block + pattern
 Fill the POM chart into the block; draft all pieces; run `pattern_out.py qa` — every POM within tolerance, seam walks
 equal, cap ease 10–15 mm, rib ratios sane. Render the pieces and look at them (neck curves scoop inward, cuff widths).
@@ -25,6 +45,8 @@ Check against the mockup side by side; density matched (A2); nothing floating (A
 `clean_vis` → `merge_colours` (≤ 15 threads) → stops → `merge_stops` → `make_pattern` → write DST + PES → verify.
 Fronts: one file per art grade. Wrap pieces: one file per size (A5). Back > frame: `split_clip` + basting crosses.
 Gates: max stitch ≤ 7.5, trims from DST read-back, stitch count + run time recorded, every preview looked at.
+Cost: report trims per piece and trims per 10k stitches; a piece over ~25 trims / 10k stitches gets its sew order
+reworked (LESSONS B1, B2, B14, B15) before delivery.
 
 ## 4. Placement per size
 `emb_place.clearances()` for all sizes — all keep-outs pass, wrap marks aligned.
@@ -32,6 +54,19 @@ Gates: max stitch ≤ 7.5, trims from DST read-back, stitch count + run time rec
 ## 5. Documents
 Element specs → embroidery pack (G1–G5) → garment pack (T1–T16) → merge → `shrink.py` → zip with README.
 Every number comes from files. Render every page and look at it.
+Every pack includes **F1 Factory requests** (`factory.requests_page`, after the G pages): size-M strike-off files with
+their stitches/trims, pieces that need > 1 hooping on the current frame, threads with ΔE > 3 for a lab dip, quote basis.
+G pages state machine hours per piece (`factory.machine_hours`, incl. trims + colour changes) and trims per piece.
+
+## 5b. Independent review
+The coordinator has a separate reviewer check every delivered pack; fix every blocker + should-fix it returns, then the
+pack is `reviewed`. Don't send a pack to the factory before that.
+
+## 6. Strike-off feedback (after the factory sews size M)
+Photos + notes go in `inputs/strikeoff/`. For each issue: measured design size vs spec → pull comp / shrink per stitch
+type; puckering → density / underlay; fabric show-through → density; colour off → thread swap (update the palette);
+digitiser comments → rule change. Rebuild, bump the revision, add a LESSONS row with the measured numbers (this is the
+only real calibration the engine gets — keep the numbers).
 
 ## Parallelism
 Independent: art per element, stitch files per element/grade/size, pattern outputs, page builds. Run them as

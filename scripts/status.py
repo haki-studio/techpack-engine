@@ -4,7 +4,7 @@
   status.py --watch    refresh every 15 s"""
 import os, sys, json, glob, time, html, datetime
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STAGES = ["intake", "inventory", "pattern", "art", "stitch", "qa", "documents", "delivered"]
+STAGES = ["intake", "inventory", "pattern", "art", "stitch", "qa", "documents", "delivered", "review", "reviewed"]
 
 def load():
     out = []

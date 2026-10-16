@@ -1,0 +1,12 @@
+{
+  "_doc": "What we know about the embroidery factory. Builders read frames/needles/spm from here (never hard-code 360). Update when the factory answers the F1 page.",
+  "name": "[proposed — confirm]",
+  "frames_mm": [[360, 360]],
+  "frames_confirmed": false,
+  "needles": 15,
+  "needles_confirmed": false,
+  "spm": 750,
+  "thread_brands": ["Madeira Polyneon", "Isacord"],
+  "thread_card_received": false,
+  "price_basis": "unknown — ask: per 1,000 stitches, per trim, per hooping, or per piece"
+}

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Record a product's progress: status_set.py <slug> <stage> "<note>" [--preview path] [--question "..."] [--blocked]
-Stages (in order): intake inventory pattern art stitch qa documents delivered"""
+Stages (in order): intake inventory pattern art stitch qa documents delivered review reviewed"""
 import sys, os, json, datetime, argparse
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STAGES = ["intake", "inventory", "pattern", "art", "stitch", "qa", "documents", "delivered"]
+STAGES = ["intake", "inventory", "pattern", "art", "stitch", "qa", "documents", "delivered", "review", "reviewed"]
 ap = argparse.ArgumentParser(); ap.add_argument("slug"); ap.add_argument("stage"); ap.add_argument("note", nargs="?", default="")
 ap.add_argument("--preview"); ap.add_argument("--question", action="append"); ap.add_argument("--blocked", action="store_true")
 a = ap.parse_args()
