@@ -13,7 +13,7 @@ from specbase import img_tag
 import front as F
 import espec
 
-REV = "Rev F"; DATE = "16 Oct 2026"
+REV = "Rev G"; DATE = "16 Oct 2026"
 SB.FOOT = f"HAKI STUDIOS · Drum Island jacket · plum + pine · EMBROIDERY · {REV} · {DATE}"
 D = pickle.load(open("back2_vis.pkl", "rb")); VF = pickle.load(open("front_vis.pkl", "rb"))
 VB, VS = D["back"], D["sleeve"]
@@ -98,12 +98,12 @@ def overview():
 
 # ---------------------------------------------------------------- threads + trims
 def threads():
-    o = hdr("THREAD + TRIM SUMMARY", "One palette for the whole jacket — 15 threads in the stitch files (Vermilion is sewn as Plum red). Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target.", "G3")
+    o = hdr("THREAD + TRIM SUMMARY", "One palette for the whole jacket — 15 threads in the stitch files (Vermilion is sewn as Plum red). THREAD: Madeira Polyneon 40 (confirmed by Haki, 16 Oct 2026); Isacord = alternate only. Approve the physical board before sampling; hex = on-screen target.", "G3")
     use = {k: {} for k in PAL}
     for (e, *_ , v) in PIECES:
         for s in tech.stops(v):
             use[s["col"]][e] = use[s["col"]].get(e, 0) + s["st"]
-    hd = ["", "Thread", "Hex", "Isacord", "ΔE", "Madeira Polyneon", "ΔE", "Wt", "Used for", "Elements", "Stitches"]
+    hd = ["", "Thread", "Hex", "Madeira Polyneon (spec)", "ΔE", "Isacord (alternate)", "ΔE", "Wt", "Used for", "Elements", "Stitches"]
     cx = [12, 18, 44, 58, 88, 96, 130, 138, 146, 220, 262]
     for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.75, 700, MUTED))
     TH = SB.TH; rh = 4.6
@@ -113,12 +113,12 @@ def threads():
         iso, pn = TH[k]["isacord"], TH[k]["polyneon"]
         ci = GREEN if iso[3] < 3 else (ORANGE if iso[3] < 5.5 else RED); cp = GREEN if pn[3] < 3 else (ORANGE if pn[3] < 5.5 else RED)
         o.append(swatch(cx[0], y, k, 4.5, 2.8)); o.append(t(cx[1], y, PAL[k][1], 1.9, 600)); o.append(t(cx[2], y, HEX[k], 1.75, 400, MUTED))
-        o.append(t(cx[3], y, f"{iso[0]} {iso[1]}"[:22], 1.75)); o.append(t(cx[4], y, f"{iso[3]:.1f}", 1.7, 600, ci))
-        o.append(t(cx[5], y, f"{pn[0]} {pn[1]}"[:24], 1.75)); o.append(t(cx[6], y, f"{pn[3]:.1f}", 1.7, 600, cp))
+        o.append(t(cx[3], y, f"{pn[0]} {pn[1]}"[:24], 1.75, 600)); o.append(t(cx[4], y, f"{pn[3]:.1f}", 1.7, 600, cp))
+        o.append(t(cx[5], y, f"{iso[0]} {iso[1]}"[:22], 1.75, 400, MUTED)); o.append(t(cx[6], y, f"{iso[3]:.1f}", 1.7, 400, MUTED))
         o.append(t(cx[7], y, "40", 1.75)); o.append(t(cx[8], y, PAL[k][2][:46], 1.7, 400, MUTED))
         o.append(t(cx[9], y, ", ".join(sorted(use[k])) or "—", 1.75)); o.append(t(cx[10], y, f"{sum(use[k].values()):,.0f}", 1.75, 600))
     yb = 36 + len(PAL)*rh + 3
-    o.append(t(12, yb, "ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — red rows must be picked from the physical card.", 1.8, 400, MUTED))
+    o.append(t(12, yb, "ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — amber/red Polyneon rows: pick the closest shade from the physical Madeira card.", 1.8, 400, MUTED))
     o.append(t(12, yb + 7, "TRIMS + CONSUMABLES (per jacket)", 2.2, 700))
     tr = [("Backing", "2.5 oz cutaway, cut 30 larger than each art box; trim to 5 from stitching after embroidery"),
           ("Topping", "none (canvas surface is firm)"), ("Needles", "75/11 sharp (canvas); change every 8 h on the back scene"),
@@ -152,23 +152,22 @@ def summary():
     o.append(t(12, y + 8, "Stitches / trims = counted from the v3 DST files (size M: per-size back, grade-B fronts). Run time at 750 spm, excluding colour changes + hooping.", 1.75, 400, MUTED))
     o.append(t(12, y + 4.5, "Width check = worst region code's share of area below its minimum width (fill/satin 0.8, line 0.6) for > 2.5 mm. All other codes < 3.5%; detail per code on each element's p3.", 1.75, 400, MUTED))
     qy = y + 16
-    o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
-    qs = ["1. Grading: A 92% (XS–S), B 100% (M–XL), C 108% (XXL–3XL; 04 stays B). 01 back + sleeve: one file per size. Confirm, or one",
-          "    fixed size for all (cheaper, but the wrap and keep-outs then fail on XS / 3XL — see T13).",
+    o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling (green = answered)", 2.6, 700))
+    qs = ["1. CONFIRMED (Haki, 16 Oct): grading A 92% (XS–S), B 100% (M–XL), C 108% (XXL–3XL; 04 stays B); 01 back + sleeve one file per size.",
           "2. Pattern: placements sit on Haki's first pattern (DXF, garment T11–T13). If the fit sample changes the pattern, send the revised",
           "    pattern back so the art + stitch files are re-registered (anything moving > 5 mm).",
           f"3. Back frame: single file needs a border frame ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f}. Otherwise sew the 4 split files S1–S4 (360 × 360) with basting crosses (G5).",
           "4. Sleeve wrap: armhole topstitch must sit on the sleeve side so it doesn't cross the branches. Confirm with the sewing room.",
           "5. Zip: chest branch is split 15 each side of CF. Confirm zip tape width (art assumes ≤ 12 tape + topstitch).",
-          "6. Thread board: Madeira Polyneon is the closer brand (9 of 16 within ΔE 3, vs 3 for Isacord). Pick the amber/red rows from the physical card (G3).",
+          "6. CONFIRMED (Haki, 16 Oct): thread = Madeira Polyneon 40. Factory: pick the amber/red rows from the physical Madeira card (G3).",
           "7. Wash: if the jacket is garment-washed / enzyme-washed after embroidery, run a wash test on the sew-out (whites + golds grey first).",
-          "8. Leaves on the plum: kept from the mockup though winter plum is leafless — keep or drop?",
+          "8. CONFIRMED (Haki, 16 Oct): leaves on the plum are kept as drawn.",
           "9. Reference images supplied (pine/bamboo illustrations) were used for motif language only; nothing traced.",
           "10. DST/PES v3 are production-intent drafts: the factory digitizer opens them, checks density + pull on 12 oz duck and edits before sew-out."]
-    for i, q in enumerate(qs): o.append(t(12, qy + 5 + i*3.6, q, 1.85))
+    for i, q in enumerate(qs): o.append(t(12, qy + 5 + i*3.6, q, 1.85, 600 if "CONFIRMED" in q else 400, GREEN if "CONFIRMED" in q else INK))
     return o
 
-OUT_PDF = "out/HAKI_Drum-Island_plum-pine_EMBROIDERY-PACK_RevF.pdf"
+OUT_PDF = "out/HAKI_Drum-Island_plum-pine_EMBROIDERY-PACK_RevG.pdf"
 V1_BACK = dict(stitches=254030, trims=4462); V2_BACK = dict(stitches=437582, trims=1411)      # v1 DRAFT.dst (read back), kept for the before/after line
 
 def files_page():

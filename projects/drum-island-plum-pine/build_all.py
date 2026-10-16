@@ -10,6 +10,6 @@ pg = base + 5
 for name, pat in [("01 Back scene", "out/01_back-scene/*SPEC_RevF.pdf"), ("02 Chest plum branch", "out/02_*/*SPEC_RevC.pdf"),
                   ("03 Chest white pine", "out/03_*/*SPEC_RevC.pdf"), ("04 Lower-front bamboo", "out/04_*/*SPEC_RevC.pdf")]:
     sub.append((f"   {name}", pg)); pg += len(PdfReader(glob.glob(pat)[0]).pages)
-OUT = "out/HAKI_Drum-Island_plum-pine_FULL-TECHPACK_RevB.pdf"
+OUT = "out/HAKI_Drum-Island_plum-pine_FULL-TECHPACK_RevC.pdf"
 n = gtp.build(pack.OUT_PDF, sub, OUT)
 print("garment pages", n, "total", len(PdfReader(OUT).pages), OUT)

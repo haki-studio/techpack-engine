@@ -16,7 +16,7 @@ if "splitsonly" in sys.argv and os.path.exists(f"{OUT}/result.json"):
     res = json.load(open(f"{OUT}/result.json"))
 for k in (() if "splitsonly" in sys.argv else ("back", "sleeve")):
     t = time.time(); vis = prep(D[k])
-    ub = unary_union([r["geom"] for r in vis]).bounds; c = ((ub[0]+ub[2])/2, (ub[1]+ub[3])/2)
+    ub = dst2.bounds_of([r["geom"] for r in vis]); c = ((ub[0]+ub[2])/2, (ub[1]+ub[3])/2)
     stops, n0 = stops_for(vis); pat, st = dst2.make_pattern(vis, stops, c)
     base = f"{OUT}/HAKI_jacket_01_back-scene_{k.upper()}_v3_{size}"
     dst2.write(pat, base); v = dst2.verify(base); dst2.render(base, base + "_preview.png", s=0.5 if k == "back" else 1.0)
@@ -33,7 +33,7 @@ if "nosplit" not in sys.argv:
     spl = dict(frame=FRAME, sx=sp["sx"], sy=sp["sy"], cut_mm=sp["cut"], whole_max=wm, sections={})
     for key in sorted(sp["secs"], key=lambda k: (k[1], k[0])):
         sv = sp["secs"][key]; t = time.time(); stops, n0 = stops_for(sv)
-        bb = unary_union([r["geom"] for r in sv] + [Point(m).buffer(6) for m in marks[key]]).bounds
+        bb = dst2.bounds_of([r["geom"] for r in sv] + [Point(m).buffer(6) for m in marks[key]])
         cc = ((bb[0]+bb[2])/2, (bb[1]+bb[3])/2)
         pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=marks[key])
         base = f"{OUT}/splits/HAKI_jacket_01_back-scene_v3_{size}_{names[key]}"; os.makedirs(os.path.dirname(base), exist_ok=True)

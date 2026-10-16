@@ -268,7 +268,9 @@ REVS = [("Garment Rev A", "16 Oct 2026", "First garment pack on the Drum Island 
         ("Embroidery Rev D", "16 Oct 2026", "Leaves grow from bark; bamboo on a snow drift (were floating)."),
         ("Embroidery Rev E", "16 Oct 2026", "Refit to the Drum Island block; stitch engine v2 (trims −68 %, turning satin, underlay, blends, 360² splits)."),
         ("Embroidery Rev F", "16 Oct 2026", "v3 files: production density (back −33 % stitches), 15 threads (vermilion → plum red), merged colour stops, "
-                                             "per-size back + sleeve files, graded fronts A/B/C.")]
+                                             "per-size back + sleeve files, graded fronts A/B/C."),
+        ("Garment Rev C / Emb. Rev G", "16 Oct 2026", "Haki answers: per-size art grading confirmed; thread = Madeira Polyneon 40 (Isacord alternate only); "
+                                             "leaves on the plum kept. Stitch files unchanged.")]
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]
 
 def p_revisions():

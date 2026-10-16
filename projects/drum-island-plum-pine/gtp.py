@@ -13,7 +13,7 @@ import drum, techflat as TF
 import specbase as SB
 from specbase import img_tag
 
-REV = "Rev B"; DATE = "16 Oct 2026"; STYLE = "HK-JK-DRUM-PP"; NAME = "Drum Island Jacket — Plum + Pine"
+REV = "Rev C"; DATE = "16 Oct 2026"; STYLE = "HK-JK-DRUM-PP"; NAME = "Drum Island Jacket — Plum + Pine"
 FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · GARMENT TECH PACK · {REV} · {DATE}"
 PROP = "#8A5A00"        # colour for 'proposed — confirm' text
 
@@ -351,7 +351,8 @@ def p_colourway():
         o.append(t(cx + 8, 40 + i*5.5, n, 1.85))
     o.append(t(cx, 72, "Lab-dip / strike-off approval", 1.9, 700))
     o.append(t(cx, 75.5, "required for shell, collar and both ribs.", 1.85))
-    o.append(t(cx, 82, "Embroidery: 16 threads,", 1.9, 700)); o.append(t(cx, 85.5, "Madeira Polyneon (G3).", 1.85))
+    import dst2 as _D; from motifs2 import PAL as _PAL
+    o.append(t(cx, 82, f"Embroidery: {len(_PAL) - len(_D.COL_MERGE)} threads,", 1.9, 700)); o.append(t(cx, 85.5, "Madeira Polyneon 40 (confirmed, G3).", 1.85))
     return o
 
 def p_questions():
