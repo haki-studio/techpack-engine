@@ -40,3 +40,6 @@ Long jobs: background them; 2 at a time on a 2-core box, more locally (`xargs -P
 ## Delivery
 One merged PDF (garment pages T*, then embroidery G* + element specs) + a zip with `elements/`, `pattern/`, README.
 Recompress PDFs (`shrink.py`) before sending.
+
+## Tests
+`python3 -m pytest -q tests` — pattern vs chart for every size, seam walks, shape checks, stitch-engine smoke test. Run before every push.
