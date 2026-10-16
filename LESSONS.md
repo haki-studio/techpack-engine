@@ -45,6 +45,7 @@ effect is on record.
 | B17 | A 7.52 mm stitch read back from XXL/3XL files: stitches were split at > 7.5 mm before rounding to the 0.1 mm grid. | Split sewn stitches at > 7.4 mm in `make_pattern`. | `verify()` max_stitch ≤ 7.5 on every file (could not reproduce on a synthetic design, so no unit test yet). |
 | B18 | `tech.stops()` silently dropped every region whose colour was not in `COLOUR_ORDER` (a new palette lost art without an error). | `tech.stops()` raises on an unknown colour; `dst2.pull_for()` reads pull comp from `tech.RULES` at call time, so project rules count. | `test_stops_raises_on_unknown_colour`, `test_pull_reads_rules_added_after_import`. |
 | B19 | Sliver cleanup gave a wire's end sliver to the neighbouring crossarm fill, which then sat 12 mm from the side seam (keep-out 15) on XL (Moon, Oct 2026). | Line regions (bean/run) keep their own slivers; only fills absorb fill slivers. | `emb_place.clearances()` side ≥ 15 on every size. TODO: move `absorb_slivers` into the engine with that rule. |
+| B20 | Per-stop tables printed region estimates: Grand Line's stop table summed to ~67k vs 113,830 in the DST; Forestball's G3 "Est. st." was 39 % under; json `trims` fields held jump counts (independent review, Oct 2026). | Every per-file and per-stop number in a document comes from `readback.dst(path)` (stitches, trims, jumps per stop, max stitch, size). No estimate columns; name json fields for what they count. | `test_readback_per_stop_sums_to_file`; reviewer re-reads the DSTs. |
 
 ## C. Pattern (`engine/pattern.py`)
 

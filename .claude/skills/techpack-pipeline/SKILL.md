@@ -53,7 +53,7 @@ reworked (LESSONS B1, B2, B14, B15) before delivery.
 
 ## 5. Documents
 Element specs → embroidery pack (G1–G5) → garment pack (T1–T16) → merge → `shrink.py` → zip with README.
-Every number comes from files. Render every page and look at it.
+Every number comes from files — per-file and per-stop counts via `readback.dst()` (LESSONS B20). Render every page and look at it.
 Every pack includes **F1 Factory requests** (`factory.requests_page`, after the G pages): size-M strike-off files with
 their stitches/trims, pieces that need > 1 hooping on the current frame, threads with ΔE > 3 for a lab dip, quote basis.
 G pages state machine hours per piece (`factory.machine_hours`, incl. trims + colour changes) and trims per piece.

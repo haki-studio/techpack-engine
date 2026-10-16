@@ -78,3 +78,17 @@ def test_split_fit_counts_cross_arm_on_split_line():
         assert sp["fits"][k] == (x1 - x0 <= 344), (k, x1 - x0, sp["fits"][k])
     assert not all(sp["fits"].values())      # 647 mm of solid art cannot go into two 344 mm sections with crosses
 
+
+
+def test_readback_per_stop_sums_to_file():
+    """LESSONS B20: per-stop tables are read from the DST and add up to the file totals."""
+    import readback
+    vis = dst2.clean_vis(motif())
+    stops = dst2.merge_stops(tech.stops(vis, tech.STITCH_LAYER))
+    pat, _ = dst2.make_pattern(vis, stops, (40, 20))
+    d = tempfile.mkdtemp(); base = os.path.join(d, "t"); dst2.write(pat, base)
+    rb = readback.dst(base + ".dst")
+    assert rb["stops"] == len(stops) and len(rb["per_stop"]) == len(stops)
+    assert sum(s["stitches"] for s in rb["per_stop"]) == rb["stitches"] > 500
+    assert all(s["stitches"] > 0 for s in rb["per_stop"])
+    assert abs(rb["stitches"] - dst2.verify(base)["stitches"]) <= 2
