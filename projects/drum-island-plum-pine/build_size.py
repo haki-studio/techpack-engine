@@ -12,7 +12,9 @@ def prep(vis):
 def stops_for(vis):
     st = tech.stops(vis, tech.STITCH_LAYER); n0 = len(st); return dst2.merge_stops(st), n0
 res = {"info": {k: v for k, v in info.items()}}
-for k in ("back", "sleeve"):
+if "splitsonly" in sys.argv and os.path.exists(f"{OUT}/result.json"):
+    res = json.load(open(f"{OUT}/result.json"))
+for k in (() if "splitsonly" in sys.argv else ("back", "sleeve")):
     t = time.time(); vis = prep(D[k])
     ub = unary_union([r["geom"] for r in vis]).bounds; c = ((ub[0]+ub[2])/2, (ub[1]+ub[3])/2)
     stops, n0 = stops_for(vis); pat, st = dst2.make_pattern(vis, stops, c)

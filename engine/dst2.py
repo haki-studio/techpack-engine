@@ -555,7 +555,7 @@ def reg_marks_for(sx, sy, b):
     if sx is not None and sy is not None: m.append((sx, sy))
     return m
 
-def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.0):
+def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.0, ext=12.0):
     """Production split. Small components (bbox < whole_max mm) go whole to the section that holds their
     representative point; larger fills are cut at the split line with `overlap` mm sewn into both sections
     so the join never shows fabric. The split position is searched to minimise length cut through art."""
@@ -565,8 +565,17 @@ def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.
     xs = np.linspace(b[0] + (b[2]-b[0])*0.40, b[0] + (b[2]-b[0])*0.60, 21) if nx == 2 else [None]
     ys = np.linspace(b[1] + (b[3]-b[1])*0.40, b[1] + (b[3]-b[1])*0.60, 21) if ny == 2 else [None]
     best = None
-    for sx in xs:
-        for sy in ys:
+    def fits_cand(sx, sy):        # each half (+ the outer registration crosses, ext mm beyond the art) must fit the frame
+        ok = True
+        if sx is not None: ok &= (sx - b[0] + ext <= fw) and (b[2] - sx + ext <= fw)
+        if sy is not None: ok &= (sy - b[1] + ext <= fh) and (b[3] - sy + ext <= fh)
+        return ok
+    if any(fits_cand(sx, sy) for sx in xs for sy in ys):
+        cands = [(sx, sy) for sx in xs for sy in ys if fits_cand(sx, sy)]
+    else:
+        cands = [(sx, sy) for sx in xs for sy in ys]
+    for sx, sy in cands:
+        if True:
             cut = 0.0
             if sx is not None: cut += U_.intersection(LineString([(sx, b[1]), (sx, b[3])])).length
             if sy is not None: cut += U_.intersection(LineString([(b[0], sy), (b[2], sy)])).length
@@ -618,7 +627,7 @@ def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.
         for k in keys:
             if parts[k]: secs[k].append(dict(r, geom=unary_union(parts[k])))
     bbs = {k: unary_union([r["geom"] for r in secs[k]]).bounds for k in keys if secs[k]}
-    fits = {k: (bb[2]-bb[0] <= fw and bb[3]-bb[1] <= fh) for k, bb in bbs.items()}
+    fits = {k: (bb[2]-bb[0] + ext <= fw and bb[3]-bb[1] + ext <= fh) for k, bb in bbs.items()}
     return dict(sx=sx, sy=sy, secs=secs, bbs=bbs, fits=fits, cut=best[0], bounds=b)
 
 def split_marks(sp, clear=5.0, ext=12.0):
