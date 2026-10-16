@@ -16,7 +16,9 @@ INBOX = os.path.join(ROOT, "inbox")
 IMG = (".png", ".jpg", ".jpeg", ".webp")
 
 def inbox_images():
-    return sorted(p for p in glob.glob(os.path.join(INBOX, "*")) if p.lower().endswith(IMG) and not os.path.basename(p).startswith("_"))
+    """images directly in inbox/ and one level down (a subfolder = one product, folder name = slug)"""
+    ps = glob.glob(os.path.join(INBOX, "*")) + glob.glob(os.path.join(INBOX, "*", "*"))
+    return sorted(p for p in ps if p.lower().endswith(IMG) and not any(part.startswith("_") for part in os.path.relpath(p, INBOX).split(os.sep)))
 
 def sheet():
     ims = inbox_images()
@@ -28,8 +30,12 @@ def sheet():
         for x in range(0, W, 100): d.line([(x, 0), (x, H)], fill=(255, 0, 0), width=1); d.text((x + 2, 2), str(x), fill=(255, 0, 0))
         for y in range(0, H, 100): d.line([(0, y), (W, y)], fill=(255, 0, 0), width=1); d.text((2, y + 2), str(y), fill=(255, 0, 0))
         tiles.append((os.path.basename(p), im))
-        print(f"{os.path.basename(p)}  {W}x{H}")
-        im.save(os.path.join(INBOX, f"_grid_{os.path.splitext(os.path.basename(p))[0]}.png"))
+        rel = os.path.relpath(p, INBOX); folder = os.path.dirname(rel)
+        print(f"{rel}  {W}x{H}" + (f"   [folder '{folder}' = product slug]" if folder else ""))
+        im.save(os.path.join(INBOX, "_grid_" + rel.replace(os.sep, "__").rsplit(".", 1)[0] + ".png"))
+    for d in sorted(x for x in glob.glob(os.path.join(INBOX, "*")) if os.path.isdir(x) and not os.path.basename(x).startswith("_")):
+        for notes in glob.glob(os.path.join(d, "*.md")) + glob.glob(os.path.join(d, "*.txt")):
+            print(f"notes for {os.path.basename(d)}: {os.path.relpath(notes, INBOX)}")
     print("grid overlays written to inbox/_grid_*.png (view them to read crop coordinates)")
 
 def crop(src, x0, y0, x1, y1, out):
@@ -79,8 +85,17 @@ def apply(plan_path):
         os.system(f'python3 "{os.path.join(ROOT, "scripts", "status_set.py")}" {slug} intake "projects created from inbox"')
         print("project", slug)
     done = os.path.join(INBOX, "_done"); os.makedirs(done, exist_ok=True)
+    folders = set()
     for src in used:
+        rel = os.path.relpath(src, INBOX)
+        if os.sep in rel: folders.add(rel.split(os.sep)[0]); continue
         if src.startswith(INBOX) and os.path.exists(src): shutil.move(src, os.path.join(done, os.path.basename(src)))
+    for f in folders:                          # product subfolders: copy any notes into the project, then archive the folder
+        src = os.path.join(INBOX, f)
+        for notes in glob.glob(os.path.join(src, "*.md")) + glob.glob(os.path.join(src, "*.txt")):
+            dst_proj = next((pr["slug"] for pr in plan["products"] if any(os.path.relpath(os.path.join(ROOT, im["src"]), INBOX).startswith(f + os.sep) for im in pr.get("images", []))), None)
+            if dst_proj: shutil.copy(notes, os.path.join(ROOT, "projects", dst_proj, "inputs", "notes_" + os.path.basename(notes)))
+        if os.path.isdir(src): shutil.move(src, os.path.join(done, f))
     for g in glob.glob(os.path.join(INBOX, "_grid_*.png")): os.remove(g)
 
 if __name__ == "__main__":

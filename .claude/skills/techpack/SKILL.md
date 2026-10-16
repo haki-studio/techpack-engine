@@ -14,6 +14,8 @@ images and watch.
 ## 1. Intake (you)
 1. `python3 scripts/intake.py sheet` — lists every image in `inbox/` and writes grid overlays `inbox/_grid_*.png`.
    Look at every overlay. Images may be single products, close-ups, or **boards with many products** (crop those).
+   **A subfolder of `inbox/` is one product: use the folder name as the slug** (all images in it belong together),
+   and read any `.md`/`.txt` notes in it as the client's brief for that product.
 2. Group images into products: one product = one garment design (front, back and close-ups together). Skip a
    design that already has a project folder under `projects/` (say so). Give each a short slug
    (`wave-jacket`, `koi-lily-hooded-jacket`).
