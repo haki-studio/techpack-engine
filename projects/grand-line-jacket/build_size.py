@@ -37,7 +37,7 @@ for P in which:
         for wm in (70.0, 55.0, 40.0):
             sp = dst2.split_clip(vis, FRAME, whole_max=wm)
             if all(sp["fits"].values()): break
-        marks = dst2.split_marks(sp)
+        marks = dst2.split_marks(sp, ext=4.0)          # crosses 4 mm outside the art: wide pieces still fit 344 mm
         names = {(0, 0): "S1_top", (0, 1): "S2_bottom", (1, 0): "S1b_right", (1, 1): "S2b_right"}
         spl = dict(frame=FRAME, sx=sp["sx"], sy=sp["sy"], cut_mm=sp["cut"], whole_max=wm, sections={})
         for key in sorted(sp["secs"], key=lambda k: (k[1], k[0])):
