@@ -49,7 +49,7 @@ def build(size):
     its = scaled(ITEMS, s); res = {"info": dict(size=size, grade=grade, scale=s)}
     for side in "RL":
         P = "FR" if side == "R" else "FL"
-        clip = F.clip_for(size, side)
+        clip = F.clip_for(size, side).buffer(-0.4)        # 0.4 inside the keep-out: cleaning + simplification never cross it
         half = [r for r in its if (r["geom"].centroid.x < 0) == (side == "R") or r["geom"].intersects(clip)]
         # whole small motifs: keep or drop as a unit
         units = {}
@@ -64,6 +64,8 @@ def build(size):
         vis = visible(kept, clip)
         raw_area = unary_union([r["geom"] for r in kept if r["geom"].intersects(clip)]).area
         vis = dst2.clean_vis(vis)
+        vis = [dict(r, geom=r["geom"].intersection(clip).buffer(0)) for r in vis]
+        vis = [r for r in vis if not r["geom"].is_empty and r["geom"].area > 0.3]
         res[P] = vis
         u = unary_union([r["geom"] for r in vis])
         res["info"][P] = dict(objects=len(vis), area=u.area, bbox=u.bounds, dropped_units=sorted(drop),
