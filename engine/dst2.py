@@ -293,7 +293,8 @@ def build_object(r, earlier_tones):
     # density blend into the earlier tone
     if code in BLEND and earlier_tones is not None and not earlier_tones.is_empty:
         fw = BLEND[code]
-        zone = r["geom"].buffer(fw).difference(r["geom"]).intersection(earlier_tones)
+        ring = r["geom"].buffer(fw).difference(r["geom"])
+        zone = earlier_tones.clip(ring) if hasattr(earlier_tones, "clip") else ring.intersection(earlier_tones)
         a = SR.auto_angle(r["geom"]) if (ang in ("auto", None) or isinstance(ang, tuple)) else ang
         blocks += feather(r, zone, a, fw)
     return [b for b in blocks if len(b) > 1]
@@ -314,6 +315,43 @@ def clean_vis(vis, close=0.3, min_area=1.5, min_w=0.7, min_line=0.8):
         if keep:
             out.append(dict(r, geom=unary_union([p.buffer(0) for p in keep]).buffer(0)))
     return out
+
+# ------------------------------------------------------------------ fast geometry helpers (LESSONS B13)
+def bounds_of(geoms):
+    """envelope of many geometries = bounds of their union, without computing the union (that union cost ~1 min on a back)."""
+    bs = np.array([g.bounds for g in geoms if not g.is_empty])
+    return (bs[:, 0].min(), bs[:, 1].min(), bs[:, 2].max(), bs[:, 3].max())
+
+class Tones:
+    """fill already sewn by earlier stops, queried locally. Replaces unary_union(all earlier fills) per stop,
+    which grew with every stop and was ~60 % of a back build (265 s of 454 s on XS)."""
+    def __init__(self): self.ps = []; self.tree = None
+    def add(self, g): self.ps += [p for p in polys(g) if not p.is_empty]; self.tree = None
+    @property
+    def is_empty(self): return not self.ps
+    def clip(self, zone):
+        if not self.ps or zone.is_empty: return Polygon()
+        if self.tree is None:
+            from shapely.strtree import STRtree
+            self.tree = STRtree(self.ps)
+        hit = [self.ps[i] for i in self.tree.query(zone, predicate="intersects")]
+        return unary_union([zone.intersection(p) for p in hit]) if hit else Polygon()
+
+def cut_length(geoms, line, tree=None):
+    """length of `line` inside the union of `geoms` (1-D interval merge along the line; no 2-D union)."""
+    from shapely.strtree import STRtree
+    tree = tree or STRtree(geoms); (ax, ay), (bx, by) = line.coords[0], line.coords[-1]
+    L = math.hypot(bx - ax, by - ay); ux, uy = (bx - ax) / L, (by - ay) / L; iv = []
+    for i in tree.query(line, predicate="intersects"):
+        for seg in [geoms[i].intersection(line)]:
+            for part in getattr(seg, "geoms", [seg]):
+                if part.is_empty or part.length == 0: continue
+                ts = [(x - ax) * ux + (y - ay) * uy for x, y in part.coords]; iv.append((min(ts), max(ts)))
+    iv.sort(); tot = 0.0; cur = None
+    for a, b in iv:
+        if cur is None or a > cur[1]: tot += (cur[1] - cur[0]) if cur else 0.0; cur = [a, b]
+        else: cur[1] = max(cur[1], b)
+    return tot + ((cur[1] - cur[0]) if cur else 0.0)
 
 # ------------------------------------------------------------------ coverage raster for hidden travel
 class Cover:
@@ -377,14 +415,14 @@ class Cover:
 FILL_ST = ("tatami", "padded", "satin")
 
 def make_pattern(vis, stops, origin, reg_marks=None):
-    allg = unary_union([r["geom"] for r in vis]); cov = Cover(allg.bounds)
+    cov = Cover(bounds_of([r["geom"] for r in vis]))
     for i, s in enumerate(stops):
         g = unary_union([r["geom"] for r in s["regions"] if r["st"] in FILL_ST])
         if not g.is_empty: cov.add_stop(i, g)
         gl = unary_union([r["geom"] for r in s["regions"] if r["st"] == "bean"])
         if not gl.is_empty: cov.add_stop(i, gl, inset=0.12)      # travel may hide under triple-run lines too
     # tones sewn so far (for blends): union of fill geometry per colour sewn earlier
-    sewn_geom = []
+    tones = Tones()
     pat = pe.EmbPattern(); ox, oy = origin
     stats = dict(stitches=0, trims=0, travel=0, jumps=0)
     def emit_thread(k, label=None):
@@ -409,7 +447,7 @@ def make_pattern(vis, stops, origin, reg_marks=None):
         k = s["col"]
         if not first_stop: pat.add_command(pe.COLOR_CHANGE)
         emit_thread(k); first_stop = False
-        earlier = unary_union(sewn_geom) if sewn_geom else Polygon()
+        earlier = tones
         objs = []
         regs = sorted(s["regions"], key=lambda r: {"tatami": 0, "padded": 1, "satin": 2, "run": 3, "bean": 4}[r["st"]])
         for r in regs:
@@ -486,7 +524,7 @@ def make_pattern(vis, stops, origin, reg_marks=None):
             if o["r"]["st"] in ("tatami", "padded"): cov.stamp(sewn_same, o["r"]["geom"])
             prev_o = o
         fills = [r["geom"] for r in s["regions"] if r["st"] in FILL_ST]
-        if fills: sewn_geom.append(unary_union(fills))
+        if fills: tones.add(unary_union(fills))
     pat.add_command(pe.TRIM); pat.add_command(pe.END)
     return pat, stats
 
@@ -524,7 +562,8 @@ def render(base, out_png, bg=(215, 194, 156), s=0.5):
 def split_sections(vis, frame=(360.0, 360.0), margin=8.0):
     """2x2 (or 1x2/2x1) split. Objects (regions) go whole to the section holding their representative point;
     split lines are searched to minimise cut length through art and to keep each section inside the frame."""
-    U_ = unary_union([r["geom"] for r in vis]); b = U_.bounds
+    from shapely.strtree import STRtree
+    GS = [p for r in vis for p in polys(r["geom"])]; GT = STRtree(GS); b = bounds_of(GS)
     fw, fh = frame[0] - 2*margin, frame[1] - 2*margin
     nx = 1 if b[2]-b[0] <= fw else 2; ny = 1 if b[3]-b[1] <= fh else 2
     best = None
@@ -539,11 +578,11 @@ def split_sections(vis, frame=(360.0, 360.0), margin=8.0):
                 secs.setdefault(key, []).append(r)
             ok = True; bbs = {}
             for key, rs in secs.items():
-                bb = unary_union([r["geom"] for r in rs]).bounds; bbs[key] = bb
+                bb = bounds_of([r["geom"] for r in rs]); bbs[key] = bb
                 if bb[2]-bb[0] > fw or bb[3]-bb[1] > fh: ok = False
             cut = 0.0
-            if sx is not None: cut += U_.intersection(LineString([(sx, b[1]), (sx, b[3])])).length
-            if sy is not None: cut += U_.intersection(LineString([(b[0], sy), (b[2], sy)])).length
+            if sx is not None: cut += cut_length(GS, LineString([(sx, b[1]), (sx, b[3])]), GT)
+            if sy is not None: cut += cut_length(GS, LineString([(b[0], sy), (b[2], sy)]), GT)
             score = cut + (0 if ok else 1e6)
             if best is None or score < best[0]: best = (score, sx, sy, secs, bbs, ok)
     return best
@@ -559,7 +598,8 @@ def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.
     """Production split. Small components (bbox < whole_max mm) go whole to the section that holds their
     representative point; larger fills are cut at the split line with `overlap` mm sewn into both sections
     so the join never shows fabric. The split position is searched to minimise length cut through art."""
-    U_ = unary_union([r["geom"] for r in vis]); b = U_.bounds
+    from shapely.strtree import STRtree
+    GS = [p for r in vis for p in polys(r["geom"])]; GT = STRtree(GS); b = bounds_of(GS)
     fw, fh = frame[0] - 2*margin, frame[1] - 2*margin
     nx = 1 if b[2]-b[0] <= fw else 2; ny = 1 if b[3]-b[1] <= fh else 2
     xs = np.linspace(b[0] + (b[2]-b[0])*0.40, b[0] + (b[2]-b[0])*0.60, 21) if nx == 2 else [None]
@@ -577,8 +617,8 @@ def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.
     for sx, sy in cands:
         if True:
             cut = 0.0
-            if sx is not None: cut += U_.intersection(LineString([(sx, b[1]), (sx, b[3])])).length
-            if sy is not None: cut += U_.intersection(LineString([(b[0], sy), (b[2], sy)])).length
+            if sx is not None: cut += cut_length(GS, LineString([(sx, b[1]), (sx, b[3])]), GT)
+            if sy is not None: cut += cut_length(GS, LineString([(b[0], sy), (b[2], sy)]), GT)
             if best is None or cut < best[0]: best = (cut, sx, sy)
     _, sx, sy = best
     BIG = 1e4
@@ -657,7 +697,7 @@ def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.
         secs[k] = keep
     for k in keys:
         secs[k] += moved[k]
-    bbs = {k: unary_union([r["geom"] for r in secs[k]]).bounds for k in keys if secs[k]}
+    bbs = {k: bounds_of([r["geom"] for r in secs[k]]) for k in keys if secs[k]}
     fits = {k: (bb[2]-bb[0] + ext <= fw and bb[3]-bb[1] + ext <= fh) for k, bb in bbs.items()}
     return dict(sx=sx, sy=sy, secs=secs, bbs=bbs, fits=fits, cut=best[0], bounds=b)
 

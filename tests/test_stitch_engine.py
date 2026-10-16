@@ -22,3 +22,23 @@ def test_engine_writes_valid_files():
     assert v["colour_changes"] + 1 <= 15
     assert st["trims"] <= 3
     assert v["stitches"] > 500
+
+
+def _blobs(n=40):
+    import random
+    random.seed(1)
+    return [Point(random.uniform(0, 200), random.uniform(0, 120)).buffer(random.uniform(3, 15)) for _ in range(n)]
+
+def test_fast_geometry_matches_union():
+    """LESSONS B13: bounds_of / cut_length / Tones.clip replace whole-design unions — same answers."""
+    from shapely.ops import unary_union
+    gs = _blobs(); U = unary_union(gs)
+    assert all(abs(a - b) < 1e-9 for a, b in zip(dst2.bounds_of(gs), U.bounds))
+    for x in (30.0, 77.7, 150.0):
+        line = LineString([(x, -10), (x, 140)])
+        assert abs(dst2.cut_length(gs, line) - U.intersection(line).length) < 1e-6
+    T = dst2.Tones(); [T.add(g) for g in gs[:25]]; E = unary_union(gs[:25])
+    for g in gs[25:]:
+        ring = g.buffer(2.5).difference(g)
+        assert abs(T.clip(ring).area - ring.intersection(E).area) < 1e-6
+    assert dst2.Tones().is_empty and dst2.Tones().clip(box(0, 0, 1, 1)).is_empty
