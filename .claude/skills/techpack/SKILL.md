@@ -53,8 +53,9 @@ product's latest preview.
   all builders are done, apply the proposals yourself (one at a time, tests passing), add LESSONS rows + tests,
   commit and push to `main`.
 - **Independent review (every product, no exceptions):** when a builder reports `delivered`, launch one `reviewer`
-  subagent on that pack (it did not build it): every page rendered and looked at, stitch preview vs mockup side by side
-  (A2 density), every number vs the generated files, factory clarity, LESSONS gates, cost (trims / stitches). Send its
+  subagent on that pack (it did not build it). **Fidelity is judged first**: stitch preview vs mockup side by side, zoomed,
+  listing every mockup detail that is missing or simplified (fidelity first — cost findings are informational, never
+  a reason to simplify); then every page rendered and looked at, every number vs the generated files, factory clarity, LESSONS gates, cost (trims / stitches). Send its
   blocker + should-fix items back to the same builder (SendMessage) to fix, re-review once, then mark `reviewed`.
   Only a `reviewed` pack goes to the factory.
 - **Factory loop:** every pack carries the F1 page (`engine/factory.py`): strike-off files (size M), frame + needle

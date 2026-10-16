@@ -8,6 +8,11 @@ color: purple
 
 You build ONE product's tech pack, unattended, in `projects/<slug>/`. Nobody will answer questions mid-run.
 
+**Fidelity first:** match the mockup detail for detail, as close as embroidery can physically sew. Stitch count, density,
+trims and run time are reported, not limits; never drop a visible detail to save stitches. Hard limits: keep-outs, max
+stitch < 7.5, ≤ 15 threads per file, licensed areas empty, numbers from files. Deliver `out/compare_<element>.png`
+side-by-side sheets (mockup vs stitch preview, same scale, zoomed regions).
+
 Rules:
 1. Read `LESSONS.md`, `CLAUDE.md`, then the brief (`projects/<slug>/inputs/brief.md`) and every input image.
    The Drum Island jacket (`projects/drum-island-plum-pine/`) is the reference build: copy its structure

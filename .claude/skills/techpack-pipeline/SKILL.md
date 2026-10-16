@@ -7,6 +7,12 @@ description: End-to-end garment tech pack from mockups + a fit chart — embroid
 
 Read `LESSONS.md` first. Work in `projects/<style>/` with `source scripts/env.sh projects/<style>`.
 
+**Fidelity first (founder rule, 2026-10-16).** Rev A/B of every design matches the mockup detail for detail, as close as
+embroidery can physically sew — push the limit, don't optimise early. Stitch count, density, trims, stops and run time are
+REPORTED, not limits, until a strike-off says what to clean up. Hard limits only: keep-outs, max stitch < 7.5 mm, ≤ 15
+threads per file, licensed areas empty, every number read from the files, an honest spec. Cleanup (density, trims, stop
+merges, simplification) is a separate, later pass — never trade away a visible mockup detail to save stitches.
+
 ## 0. Intake (first reply)
 Inventory: garment, fit chart (POM, half-measures!), fabric + hardware, every embroidery/print/trim element with
 its pattern piece, process and keep-outs. List what's PROPOSED. Ask only what blocks (usually: fit chart, frame size
@@ -40,13 +46,15 @@ equal, cap ease 10–15 mm, rib ratios sane. Render the pieces and look at them 
 Reuse library motifs; author new ones with a render-compare loop against the mockup crop (ROADMAP §2). Compose on
 the size-M block with keep-outs (LESSONS A3). Wrap-around art: split per piece with match marks (A4).
 Check against the mockup side by side; density matched (A2); nothing floating (A1).
+**Compare sheets:** `out/compare_<element>.png` = mockup crop and stitch preview at the same scale + 3–4 zoomed regions.
+Iterate until no mockup detail is missing or simplified (every lobe, crater, leaf, star, texture line, tone step).
 
 ## 3. Stitch files
 `clean_vis` → `merge_colours` (≤ 15 threads) → stops → `merge_stops` → `make_pattern` → write DST + PES → verify.
 Fronts: one file per art grade. Wrap pieces: one file per size (A5). Back > frame: `split_clip` + basting crosses.
 Gates: max stitch ≤ 7.5, trims from DST read-back, stitch count + run time recorded, every preview looked at.
-Cost: report trims per piece and trims per 10k stitches; a piece over ~25 trims / 10k stitches gets its sew order
-reworked (LESSONS B1, B2, B14, B15) before delivery.
+Cost: report trims per piece, trims per 10k stitches and machine hours — reported, not a gate (fidelity first). Sew-order
+work that cuts trims without losing detail (LESSONS B1, B2, B14, B15) is always welcome.
 
 ## 4. Placement per size
 `emb_place.clearances()` for all sizes — all keep-outs pass, wrap marks aligned.
@@ -62,10 +70,11 @@ G pages state machine hours per piece (`factory.machine_hours`, incl. trims + co
 The coordinator has a separate reviewer check every delivered pack; fix every blocker + should-fix it returns, then the
 pack is `reviewed`. Don't send a pack to the factory before that.
 
-## 6. Strike-off feedback (after the factory sews size M)
+## 6. Strike-off feedback + cleanup pass (after the factory sews size M)
 Photos + notes go in `inputs/strikeoff/`. For each issue: measured design size vs spec → pull comp / shrink per stitch
 type; puckering → density / underlay; fabric show-through → density; colour off → thread swap (update the palette);
-digitiser comments → rule change. Rebuild, bump the revision, add a LESSONS row with the measured numbers (this is the
+digitiser comments → rule change. This is also when the cleanup pass happens: cut density / trims / stops only where
+the sew-out shows it's needed, keeping every detail that read well. Rebuild, bump the revision, add a LESSONS row with the measured numbers (this is the
 only real calibration the engine gets — keep the numbers).
 
 ## Parallelism
