@@ -108,7 +108,7 @@ def page2():
     b = BBs["02R"]
     for c, cap in [((b[0] + 5, b[1] + 40, b[0] + 50, b[1] + 65), "Hanging moss: turning satin strands + light run"),
                    ((-120, 120, -75, 145), "Main limb: tatami along, padded moss across"),
-                   ((60, 170, 105, 195), "02L leaf sprays: feather satin ±45°")]:
+                   ((60, 170, 105, 195), "Limb moss: padded across, lit top + lump runs")]:
         im = direction_map(ALL, c, 14, label_min=30, label_mm=1.2)
         wmm = (c[2]-c[0])*2; tag, hh = img_tag(im, zx, yy, wmm, 90); o.append(tag)
         o.append(f'<rect x="{zx}" y="{f(yy)}" width="{f(wmm)}" height="{f(hh)}" fill="none" stroke="#BBB" stroke-width="0.2"/>')

@@ -22,7 +22,7 @@ PAL = {
     "cream":   ("#DAD5B3", "Cream",          "light rays core, highlights, water sparkle"),
     "water":   ("#294A63", "Stream blue",    "stream body"),
     "waterlt": ("#7491B0", "Stream light",   "ripples, ripple rings"),
-    "grass":   ("#4F7B3B", "Grass green",    "grass blades, lily pad"),
+    "grass":   ("#4F7B3B", "Grass green",    "grass blades"),
     "basting": ("#00A3FF", "Basting (remove)", "licensed-figure placeholder outline (water-soluble, removed)"),
 }
 motifs2.PAL.clear(); motifs2.PAL.update(PAL)

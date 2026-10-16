@@ -129,7 +129,7 @@ def p_details(F):
     # C welt pocket
     wy = 106
     o.append(t(14, wy, "C · WELT POCKET (×2)", 2.5, 700))
-    o.append(f'<rect x="16" y="{wy+5}" width="70" height="8" fill="#DCCFB4" stroke="{INK}" stroke-width="0.35"/>'
+    o.append(f'<rect x="16" y="{wy+5}" width="70" height="8" fill="#5F7062" stroke="{INK}" stroke-width="0.35"/>'
              f'<rect x="17" y="{wy+6}" width="68" height="6" fill="none" stroke="{MUTED}" stroke-width="0.2" stroke-dasharray="1 0.6"/>'
              f'<rect x="15" y="{wy+4}" width="2" height="10" fill="{INK}"/><rect x="85" y="{wy+4}" width="2" height="10" fill="{INK}"/>')
     o.append(t(16, wy + 18, "shown 0.5:1, drawn horizontal — sewn at 38° (see T2)", 1.7, 400, MUTED))

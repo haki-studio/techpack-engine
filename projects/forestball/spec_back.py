@@ -95,14 +95,14 @@ def page2():
     dm = direction_map(VB, (BB[0]-4, BB[1]-4, BB[2]+4, BB[3]+4), 4.0)
     tag, h = img_tag(dm, 14, 29, 146, 88); o.append(tag)
     o.append(f'<rect x="14" y="29" width="146" height="{f(h)}" fill="none" stroke="#BBB" stroke-width="0.2"/>')
-    zx = 168; o.append(t(zx, 32, "DETAIL CROPS (shown 1.6:1)", 2.6, 700))
+    zx = 168; o.append(t(zx, 32, "DETAIL CROPS (shown 1.3:1)", 2.6, 700))
     c1 = _ctr(*LIMB, 60, 35); c2 = _ctr(*PHC, 80, 47); c3 = _ctr(*RAYLEAF, 60, 35)
     yy = 35
     for c, cap in [(c1, "Main limb: tatami along the limb, padded moss across it, navy lump runs"),
                    (c2, "Stream around the licensed placeholder: horizontal tatami, ripple satins"),
                    (c3, "Leaf sprays (feather satin ±45°) over the sheer light rays (serpentine run)")]:
         im = direction_map(VB, c, 14, label_min=12, label_mm=1.5)
-        w = 98; tag, hh = img_tag(im, zx, yy, w, 90); o.append(tag)
+        w = 76; tag, hh = img_tag(im, zx, yy, w, 90); o.append(tag)
         o.append(f'<rect x="{zx}" y="{f(yy)}" width="{w}" height="{f(hh)}" fill="none" stroke="#BBB" stroke-width="0.2"/>')
         o.append(t(zx, yy + hh + 3, cap, 1.8, 400, MUTED)); yy += hh + 6.5
     return o
@@ -184,7 +184,7 @@ def page4():
 def page5():
     o = header("01 · 1:1 DETAILS, WHAT CHANGED, PRODUCTION NOTES", "", "p5 / 5")
     o.append(t(14, 31, "1:1 STITCH-OUT DETAILS (print at 100% to check scale)", 2.6, 700))
-    crops = [(_ctr(*LIMB, 50, 50), "Mossy main limb"), (_ctr(*PHC, 66, 56), "Placeholder box in the stream (empty)"),
+    crops = [(_ctr(*LIMB, 50, 50), "Mossy main limb"), (_ctr(*PHC, 62, 52), "Placeholder box (empty)"),
              (_ctr(*RAYLEAF, 50, 50), "Leaf sprays over light rays"), (_ctr(*ROCK, 50, 50), "Grass + mossy rock")]
     x = 14
     for c, cap in crops:
