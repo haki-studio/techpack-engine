@@ -36,7 +36,12 @@ FEATHER_SP = 1.0                                             # blend row spacing
 ALONG = {"TR", "LM", "PB", "-shade", "TW", "-ridge"}       # stitch angle follows the centreline tangent (fill rows along)
 ACROSS = {"SN", "PB-SN", "SN-shade", "SN-shadow", "P-snow", "P-snow-shade"}
 BLEND = {"-shade": 2.5, "-ridge": 1.4, "SN": 2.0, "BL-rim": 1.2, "PW-inner": 2.5, "P-snow": 1.5}
-PULL = {k: (float(v[6]) if v[6] not in ("—", "") else 0.0) for k, v in tech.RULES.items()}
+def pull_for(code, default=0.2):
+    """pull compensation for a rule code, read from tech.RULES at call time (rules added by a project after import count)"""
+    v = tech.RULES.get(code)
+    if v is None: return default
+    return float(v[6]) if v[6] not in ("—", "") else 0.0
+PULL = {k: pull_for(k) for k in tech.RULES}     # kept for older project scripts; the engine reads pull_for()
 
 # ------------------------------------------------------------------ geometry helpers
 def polys(g): return SR.polys(g)
@@ -245,7 +250,7 @@ def feather(r, zone, ang, width):
 # ------------------------------------------------------------------ object builder
 def build_object(r, earlier_tones):
     """returns list of blocks (point lists) for one region, underlay first."""
-    code = tech.rule_for(r["grp"]); st = r["st"]; ang = r["ang"]; pull = PULL.get(code, 0.2)
+    code = tech.rule_for(r["grp"]); st = r["st"]; ang = r["ang"]; pull = pull_for(code)
     blocks = []
     for p in polys(r["geom"]):
         if p.area < 0.06: continue
@@ -516,7 +521,7 @@ def make_pattern(vis, stops, origin, reg_marks=None):
                     if last is not None:
                         d = math.hypot(x-last[0], y-last[1])
                         if d < 0.25: continue
-                        if d > 7.5:        # safety: never a sewn stitch > 7.5 mm
+                        if d > 7.4:        # safety: never a sewn stitch > 7.5 mm after 0.1 mm grid rounding (LESSONS B17)
                             for q in sub(last, (x, y), 6.0)[:-1]:
                                 pat.add_stitch_absolute(pe.STITCH, (q[0]-ox)*U, (q[1]-oy)*U); stats["stitches"] += 1
                     pat.add_stitch_absolute(pe.STITCH, (x-ox)*U, (y-oy)*U); stats["stitches"] += 1; last = (x, y)
@@ -594,7 +599,7 @@ def reg_marks_for(sx, sy, b):
     if sx is not None and sy is not None: m.append((sx, sy))
     return m
 
-def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.0, ext=18.5):   # ext = cross 12 mm out + 6 mm arm + 0.5
+def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.0, ext=18.5, arm=6.0):   # ext = cross 12 mm out + 6 mm arm + 0.5; arm = cross arm on the split line
     """Production split. Small components (bbox < whole_max mm) go whole to the section that holds their
     representative point; larger fills are cut at the split line with `overlap` mm sewn into both sections
     so the join never shows fabric. The split position is searched to minimise length cut through art."""
@@ -607,8 +612,8 @@ def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.
     best = None
     def fits_cand(sx, sy):        # each half (+ the outer registration crosses, ext mm beyond the art) must fit the frame
         ok = True
-        if sx is not None: ok &= (sx - b[0] + ext <= fw) and (b[2] - sx + ext <= fw)
-        if sy is not None: ok &= (sy - b[1] + ext <= fh) and (b[3] - sy + ext <= fh)
+        if sx is not None: ok &= (sx - b[0] + ext + arm <= fw) and (b[2] - sx + ext + arm <= fw)
+        if sy is not None: ok &= (sy - b[1] + ext + arm <= fh) and (b[3] - sy + ext + arm <= fh)
         return ok
     if any(fits_cand(sx, sy) for sx in xs for sy in ys):
         cands = [(sx, sy) for sx in xs for sy in ys if fits_cand(sx, sy)]
@@ -698,7 +703,14 @@ def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.
     for k in keys:
         secs[k] += moved[k]
     bbs = {k: bounds_of([r["geom"] for r in secs[k]]) for k in keys if secs[k]}
-    fits = {k: (bb[2]-bb[0] + ext <= fw and bb[3]-bb[1] + ext <= fh) for k, bb in bbs.items()}
+    def span(k, bb):        # section extent as the file is measured: art + outer crosses (ext) + the cross arm on each split line
+        i, j = k
+        x0 = b[0] - ext if (sx is None or i == 0) else min(bb[0], sx - arm)
+        x1 = b[2] + ext if (sx is None or i == 1) else max(bb[2], sx + arm)
+        y0 = b[1] - ext if (sy is None or j == 0) else min(bb[1], sy - arm)
+        y1 = b[3] + ext if (sy is None or j == 1) else max(bb[3], sy + arm)
+        return x1 - x0, y1 - y0
+    fits = {k: (lambda w, h: w <= fw and h <= fh)(*span(k, bb)) for k, bb in bbs.items()}      # LESSONS B16
     return dict(sx=sx, sy=sy, secs=secs, bbs=bbs, fits=fits, cut=best[0], bounds=b)
 
 def split_marks(sp, clear=5.0, ext=12.0):

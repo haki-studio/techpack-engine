@@ -126,6 +126,9 @@ def stops(vis, layer_map=None):
     """Group visible regions into colour stops: layer order, then colour within layer;
     merge consecutive same-colour stops."""
     by = {}
+    unknown = sorted({r["col"] for r in vis} - set(COLOUR_ORDER))
+    if unknown:     # LESSONS B18: a colour missing from COLOUR_ORDER used to drop its regions silently
+        raise ValueError(f"tech.stops: colour(s) not in tech.COLOUR_ORDER: {unknown} - add them to the project palette")
     for r in vis:
         lay = r["layer"]
         if layer_map and lay == 5 and r["st"] in ("bean", "run"): lay = 6.5    # bark lines after snow: snow travel hides under them

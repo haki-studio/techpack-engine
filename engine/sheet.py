@@ -28,12 +28,14 @@ def dim_v(y1, y2, x, label, size=2.2, tick=1.3, col=INK, side=-1):
             f'<text x="{f(tx)}" y="{f(cy)}" font-family="{FONT}" font-size="{size}" font-weight="600" fill="{col}" '
             f'text-anchor="middle" transform="rotate(-90 {f(tx)} {f(cy)})">{esc(label)}</text>')
 
+FOOT = "HAKI STUDIOS · plum + pine work jacket · Rev A · 16 Oct 2026"     # page footer; each project sets sheet.FOOT
+
 def header(title, sub, page=None):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>',
          t(12, 16, title, 4.8, 700), t(12, 22, sub, 2.3, 400, MUTED),
          f'<line x1="12" y1="25.5" x2="{SW-12}" y2="25.5" stroke="{INK}" stroke-width="0.3"/>']
     if page: o.append(t(SW - 12, 16, page, 2.4, 600, MUTED, "end"))
-    o.append(t(SW - 12, SH - 6, "HAKI STUDIOS · plum + pine work jacket · Rev A · 16 Oct 2026", 1.9, 400, MUTED, "end"))
+    o.append(t(SW - 12, SH - 6, FOOT, 1.9, 400, MUTED, "end"))
     return o
 
 def swatch(x, y, col, w=5, h=3):

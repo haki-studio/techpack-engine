@@ -42,3 +42,39 @@ def test_fast_geometry_matches_union():
         ring = g.buffer(2.5).difference(g)
         assert abs(T.clip(ring).area - ring.intersection(E).area) < 1e-6
     assert dst2.Tones().is_empty and dst2.Tones().clip(box(0, 0, 1, 1)).is_empty
+
+
+def test_stops_raises_on_unknown_colour():
+    """LESSONS B18: a region whose colour is not in tech.COLOUR_ORDER must stop the build, not vanish."""
+    import pytest
+    vis = motif() + [dict(col="not-a-thread", geom=Point(10, 40).buffer(4), st="tatami", ang=0, grp="TR", layer=5, z=4)]
+    with pytest.raises(ValueError, match="not-a-thread"):
+        tech.stops(vis, tech.STITCH_LAYER)
+    assert sum(len(s["regions"]) for s in tech.stops(motif(), tech.STITCH_LAYER)) == len(motif())
+
+
+def test_pull_reads_rules_added_after_import():
+    """dst2 used to freeze pull comp at import; a rule a project adds later must be honoured."""
+    code = "ZZTEST"
+    row = list(next(iter(tech.RULES.values()))); row[6] = "0.35"
+    tech.RULES[code] = tuple(row) if isinstance(next(iter(tech.RULES.values())), tuple) else row
+    try:
+        assert dst2.pull_for(code) == 0.35
+    finally:
+        del tech.RULES[code]
+
+
+def test_split_fit_counts_cross_arm_on_split_line():
+    """LESSONS B16: a section reported 'fits' by split_clip must fit with its registration crosses as written:
+    outer crosses `ext` mm beyond the art and a 6 mm cross arm on each split line."""
+    # a 2 x 1 field just under 2 x the usable frame: the old check passed sections that were 6 mm too wide
+    w = 2 * (344 - 18.5) - 4
+    vis = [dict(col="bark", geom=box(0, 0, w, 120), st="tatami", ang=0, grp="TR", layer=5, z=1)]
+    sp = dst2.split_clip(vis)
+    for k, bb in sp["bbs"].items():
+        i, _ = k
+        x0 = sp["bounds"][0] - 18.5 if i == 0 else min(bb[0], sp["sx"] - 6)
+        x1 = sp["bounds"][2] + 18.5 if i == 1 else max(bb[2], sp["sx"] + 6)
+        assert sp["fits"][k] == (x1 - x0 <= 344), (k, x1 - x0, sp["fits"][k])
+    assert not all(sp["fits"].values())      # 647 mm of solid art cannot go into two 344 mm sections with crosses
+

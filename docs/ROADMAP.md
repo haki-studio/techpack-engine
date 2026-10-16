@@ -30,3 +30,20 @@
    pattern QA (measurements vs chart for every size), document builds (page count, no overlapping text).
 5. **Factory loop.** Record sew-out feedback per element (puckering, coverage, registration) in the project and
    fold it into density / pull-comp rules — the only way to know the files are right is a sew-out.
+
+## Engine proposals from the first /techpack batch (Grand Line, Forestball, Moon — 16 Oct 2026)
+Merged: unknown colour raises in `tech.stops()`, pull comp read at call time, split fit counts the cross arm on the
+split line, stitch split at 7.4 mm, `sheet.FOOT`, shared venv in `env.sh` (LESSONS B16–B18, E5). Still open (each built
+three times over in project code, so this is the next engine work, in this order):
+1. **Project palette/rules file** (all three builds patched `motifs2.PAL/HEX`, `tech.RULES/COLOUR_ORDER/LAYER_NAMES`,
+   `dst2.COL_MERGE`, `specbase.TH` in place: `glcore.py`, `fbcore.py`, `moonpal.py`). Also per-code density
+   (`RULE_DENSITY`) for sheer rays / low-density moon.
+2. **First-class placeholder** for licensed areas (`moonstitch.add_placeholder`, Forestball `PH` + `build(voids=)`) — LESSONS A9.
+3. **Any-grid hoop split** (`projects/moon/moonsplit.grid_split`) and frame-adaptive cross spacing (Grand Line `split_marks(ext=4)`).
+4. **Pattern config**: materials, welt size/position, style code, embroidery-piece map (`pattern_gl.py`, `pattern_moon.py`, `pattern_fb.py`);
+   `pattern.keepout_lines(size, piece)` (LESSONS C8).
+5. **QA**: `drop_floating` into `qa.py` (A8); `absorb_slivers` with line regions keeping their slivers (B19); seam-wrap helper (`scene.seam_check`).
+6. **Hidden-travel router**: merge later-stop masks before insetting; native overlay (`ko=False`) regions; dashed-run stitch; auto-section fills with many holes (B14).
+7. **Motif library** (with a render test each): clouds/sparkles/sun/sea (`grand-line-jacket/gl_motifs.py`), moss/limb/rock/leaf spray/
+   light ray/stream/grass (`forestball/fmotifs.py`), cloud/moon/pole/wires (`moon/moonmotifs.py`).
+8. Fonts: `get_fonts.sh` installs Noto Sans CJK; `sheet.py` warns when `fc-match` falls back.
