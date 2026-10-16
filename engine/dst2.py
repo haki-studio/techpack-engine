@@ -555,7 +555,7 @@ def reg_marks_for(sx, sy, b):
     if sx is not None and sy is not None: m.append((sx, sy))
     return m
 
-def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.0, ext=12.0):
+def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.0, ext=18.5):   # ext = cross 12 mm out + 6 mm arm + 0.5
     """Production split. Small components (bbox < whole_max mm) go whole to the section that holds their
     representative point; larger fills are cut at the split line with `overlap` mm sewn into both sections
     so the join never shows fabric. The split position is searched to minimise length cut through art."""
