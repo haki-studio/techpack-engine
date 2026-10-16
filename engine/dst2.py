@@ -626,6 +626,37 @@ def split_clip(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.
                     if not q.is_empty and q.area > 0.5: parts[k] += polys(q)
         for k in keys:
             if parts[k]: secs[k].append(dict(r, geom=unary_union(parts[k])))
+    # frame pass: anything a section can't hold (whole motifs overhanging the split) moves whole to the neighbour
+    # that can hold it, else is cut at the frame limit with the overlap going to the neighbour (LESSONS B12)
+    def allowed(key):
+        i, j = key
+        x0 = b[0] - ext if (sx is None or i == 0) else b[2] + ext - fw
+        x1 = b[0] - ext + fw if (sx is not None and i == 0) else b[2] + ext
+        y0 = b[1] - ext if (sy is None or j == 0) else b[3] + ext - fh
+        y1 = b[1] - ext + fh if (sy is not None and j == 0) else b[3] + ext
+        return box(x0, y0, x1, y1)
+    AL = {k: allowed(k) for k in keys}
+    moved = {k: [] for k in keys}
+    for k in keys:
+        keep = []
+        for r in secs[k]:
+            stay, out = [], []
+            for p in polys(r["geom"]):
+                if AL[k].buffer(0.01).contains(p): stay.append(p); continue
+                home = next((k2 for k2 in keys if k2 != k and AL[k2].buffer(0.01).contains(p)), None)
+                if home is not None: out.append((home, p)); continue
+                inside = p.intersection(AL[k])
+                if not inside.is_empty: stay += polys(inside)
+                rest = p.difference(AL[k].buffer(-overlap))
+                for k2 in keys:
+                    if k2 == k: continue
+                    q = rest.intersection(AL[k2])
+                    if not q.is_empty and q.area > 0.3: out += [(k2, qq) for qq in polys(q)]
+            if stay: keep.append(dict(r, geom=unary_union(stay)))
+            for k2, q in out: moved[k2].append(dict(r, geom=q))
+        secs[k] = keep
+    for k in keys:
+        secs[k] += moved[k]
     bbs = {k: unary_union([r["geom"] for r in secs[k]]).bounds for k in keys if secs[k]}
     fits = {k: (bb[2]-bb[0] + ext <= fw and bb[3]-bb[1] + ext <= fh) for k, bb in bbs.items()}
     return dict(sx=sx, sy=sy, secs=secs, bbs=bbs, fits=fits, cut=best[0], bounds=b)
