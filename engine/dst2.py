@@ -1,6 +1,7 @@
 """Stitch engine v2 — draft production stitch files from the region art.
  1. Travel routing   : moves between objects run as hidden travel stitches under fill that is sewn later
-                       (or over same-colour tatami already sewn); only exposed moves become trims.
+                       (or over same-colour tatami already sewn); only exposed moves become trims. Later stops form
+                       one merged mask (B21); long moves route on a coarse grid (B22); exposed_travel() is the QA (B24).
  2. Turning satin    : elongated satins walk a skeleton centreline, stitches stay perpendicular to it.
                        Long fills are cut into 6 mm sections, each with its own local angle.
  3. Underlay / pull  : satin <2 none, 2-4 centre run, >4 edge run + centre run; tatami edge run (+ 90° tatami at 2.0 mm if > 30 mm²);
@@ -24,6 +25,12 @@ import specbase as SB
 
 U = 10.0          # 0.1 mm units
 TRIM_MIN = 2.5    # exposed moves shorter than this become plain jumps (no trim)
+MERGE_LATER = True   # hidden travel: merge this stop + all later stops into one mask before insetting (LESSONS B21)
+TATAMI_CHAIN = True     # tatami rows sewn cell by cell around holes instead of row by row across them (LESSONS B23)
+OWN_HALO = 0.25         # travel inside the object being sewn may run this far outside its outline (was 0.6: ran beside thin objects, LESSONS B24)
+ROUTE_MAX_PX = 900000   # fine router window limit (pixels)
+ROUTE_COARSE = 4        # larger windows are routed on blocks of up to 4 x 4 px and re-checked on the fine raster (0 = trim)
+MERGE_ERODE = 1      # inset of that merged mask in raster pixels (1 px = 0.2 mm at 5 px/mm; per-stop masks use 0.25 mm)
 RNG = random.Random(1)
 # ---- density knobs (v3: production density for 12 oz duck)
 SP_TAT, SP_PAD, SP_SAT, SP_RAD = 0.45, 0.45, 0.42, 0.40     # row spacing mm (v2: 0.40 / 0.38 / 0.37 / 0.36)
@@ -128,18 +135,61 @@ def edge_run(p, inset=0.5, L=2.5):
         if len(cs) > 3: out.append(path_resample(cs, L))
     return out
 
+def chain_rows(segs, p, ang, sp):
+    """Order hatch segments cell by cell (boustrophedon): walk up one run of overlapping segments in consecutive rows,
+    stop where the run splits around a hole or another unsewn run merges in, then start the nearest new cell.
+    hatch() returns segments row by row, so a fill with holes used to zig-zag across every hole on every row
+    (one block + one travel move per segment). Returns [(a, b, row)] with a = start point."""
+    c = p.centroid
+    info = []
+    for s in segs:
+        cs = list(s.coords)
+        if len(cs) < 2: continue
+        q = affinity.rotate(LineString([cs[0], cs[-1]]), -ang, origin=c).coords
+        (xa, ya), (xb, yb) = q[0], q[-1]
+        info.append([min(xa, xb), max(xa, xb), (ya + yb) / 2, cs[0], cs[-1]])
+    if not info: return []
+    y0 = min(t[2] for t in info)
+    rows = {}
+    for k, t in enumerate(info):
+        t.append(int(round((t[2] - y0) / sp))); rows.setdefault(t[5], []).append(k)
+    ov = lambda a, b: min(info[a][1], info[b][1]) - max(info[a][0], info[b][0]) > 0.2
+    used = [False] * len(info); out = []; pos = None
+    def free_below(k):
+        return any(not used[u] and ov(u, k) for u in rows.get(info[k][5] - 1, ()))
+    while len(out) < len(info):
+        starts = [k for k in range(len(info)) if not used[k] and not free_below(k)] or [k for k in range(len(info)) if not used[k]]
+        if pos is None: k = min(starts, key=lambda k: (info[k][5], info[k][0]))
+        else: k = min(starts, key=lambda k: min(math.dist(pos, info[k][3]), math.dist(pos, info[k][4])))
+        while True:
+            a, b = info[k][3], info[k][4]
+            if pos is not None and math.dist(pos, b) < math.dist(pos, a): a, b = b, a
+            out.append((a, b, info[k][5])); used[k] = True; pos = b
+            nxt = [t for t in rows.get(info[k][5] + 1, ()) if not used[t] and ov(k, t)]
+            if not nxt: break
+            t = min(nxt, key=lambda t: min(math.dist(pos, info[t][3]), math.dist(pos, info[t][4])))
+            if any(not used[u] and ov(u, t) for u in rows[info[k][5]]): break     # another unsewn run joins here
+            k = t
+    return out
+
 def tatami_rows(p, ang, sp=0.40, L=3.5):
     pts = []
     if p.is_empty or p.area < 0.05: return pts
-    for i, s in enumerate(SR.hatch(p, ang, sp)):
-        cs = list(s.coords)
-        if len(cs) < 2: continue
-        a, b = (cs[0], cs[-1]) if i % 2 == 0 else (cs[-1], cs[0])
+    segs = SR.hatch(p, ang, sp)
+    if TATAMI_CHAIN:
+        seq = chain_rows(segs, p, ang, sp)
+    else:
+        seq = []
+        for i, s in enumerate(segs):
+            cs = list(s.coords)
+            if len(cs) < 2: continue
+            seq.append(((cs[0], cs[-1]) if i % 2 == 0 else (cs[-1], cs[0])) + (i,))
+    for a, b, i in seq:
         d = math.hypot(b[0]-a[0], b[1]-a[1]); ux, uy = (b[0]-a[0])/max(d, 1e-9), (b[1]-a[1])/max(d, 1e-9)
-        off = (i % 3) * L / 3; seq = [a]; t = off if off > 0.4 else L
+        off = (i % 3) * L / 3; run = [a]; t = off if off > 0.4 else L
         while t < d - 0.4:
-            seq.append((a[0] + ux*t, a[1] + uy*t)); t += L
-        seq.append(b); pts.append(seq)
+            run.append((a[0] + ux*t, a[1] + uy*t)); t += L
+        run.append(b); pts.append(run)
     return pts
 
 def join_rows(rows):
@@ -364,14 +414,23 @@ class Cover:
         self.x0, self.y0 = bounds[0] - 5, bounds[1] - 5; self.ppm = ppm
         self.W = int((bounds[2] - bounds[0] + 10) * ppm); self.H = int((bounds[3] - bounds[1] + 10) * ppm)
         self.later = np.full((self.H, self.W), -1, np.int16)    # last stop index whose fill covers the pixel
+        self.raw = np.full((self.H, self.W), -1, np.int16)      # same, drawn without inset (for the merged mask)
     def _draw(self, g, inset=0.4):
         im = Image.new("L", (self.W, self.H), 0); d = ImageDraw.Draw(im)
-        for p in polys(g.buffer(-inset)):
+        for p in polys(g.buffer(-inset) if inset else g):
             T = lambda cs: [((x - self.x0)*self.ppm, (y - self.y0)*self.ppm) for x, y in cs]
             d.polygon(T(p.exterior.coords), fill=255)
             for q in p.interiors: d.polygon(T(q.coords), fill=0)
         return np.array(im) > 127
-    def add_stop(self, idx, g, inset=0.25): self.later[self._draw(g, inset)] = idx
+    def add_stop(self, idx, g, inset=0.25):
+        self.later[self._draw(g, inset)] = idx
+        if MERGE_LATER: self.raw[self._draw(g, 0.0)] = idx
+    def merged(self, stop_idx):
+        """everything sewn from stop_idx on (this stop's own fills + all later stops) as ONE mask, inset once.
+        Insetting each stop on its own left a ~0.5 mm unhidden strip on every seam between two different later
+        fills, so travel could not cross from one to the other although pull comp covers that seam (LESSONS B21)."""
+        if not MERGE_LATER: return np.zeros_like(self.raw, bool)
+        return ndi.binary_erosion(self.raw >= stop_idx, structure=np.ones((3, 3), bool), iterations=MERGE_ERODE)
     def hidden(self, a, b, stop_idx, sewn_mask=None):
         n = max(2, int(math.hypot(b[0]-a[0], b[1]-a[1]) * self.ppm))
         xs = ((np.linspace(a[0], b[0], n) - self.x0) * self.ppm).astype(int)
@@ -389,7 +448,9 @@ class Cover:
         x0 = min(a[0], b[0]) - pad; y0 = min(a[1], b[1]) - pad; x1 = max(a[0], b[0]) + pad; y1 = max(a[1], b[1]) + pad
         c0 = max(0, int((x0 - self.x0)*self.ppm)); r0 = max(0, int((y0 - self.y0)*self.ppm))
         c1 = min(self.W, int((x1 - self.x0)*self.ppm) + 1); r1 = min(self.H, int((y1 - self.y0)*self.ppm) + 1)
-        if c1 - c0 < 3 or r1 - r0 < 3 or (c1 - c0) * (r1 - r0) > 900000: return None
+        if c1 - c0 < 3 or r1 - r0 < 3: return None
+        f = max(1, math.ceil(math.sqrt((c1 - c0) * (r1 - r0) / ROUTE_MAX_PX)))
+        if f > 1 and (not ROUTE_COARSE or f > ROUTE_COARSE): return None
         hid = (self.later[r0:r1, c0:c1] > stop_idx) | sewn_mask[r0:r1, c0:c1]
         if own is not None:
             im = Image.new("L", (c1 - c0, r1 - r0), 0); dr = ImageDraw.Draw(im)
@@ -399,6 +460,7 @@ class Cover:
                 for q in p.interiors: dr.polygon(T(q.coords), fill=0)
             hid = hid | (np.array(im) > 127)
         P = lambda p: (min(r1 - r0 - 1, max(0, int((p[1] - self.y0)*self.ppm) - r0)), min(c1 - c0 - 1, max(0, int((p[0] - self.x0)*self.ppm) - c0)))
+        if f > 1: return self._route_coarse(a, b, hid, f, P, c0, r0)
         sa, sb = P(a), P(b)
         cost = np.where(hid, 1.0, 400.0)
         for (pr, pc_) in (sa, sb):                     # endpoints sit on the pull-compensated edge: forgive ~0.8 mm
@@ -413,6 +475,35 @@ class Cover:
         if L > 4.0 * math.hypot(b[0]-a[0], b[1]-a[1]) + 25: return None   # absurd detour -> trim instead
         out = [a] + [p for i, p in enumerate(pts[1:-1]) if i % 6 == 5] + [b]
         return LineString(out).simplify(0.4).coords[:]
+    def _route_coarse(self, a, b, hid, f, P, c0, r0):
+        """route() for a window too big for the fine raster (long moves inside big fills, LESSONS B22): least-cost path on
+        f x f blocks (a block is hidden only if all its pixels are), then the path is re-checked on the fine raster with
+        the same 0.6 mm exposed allowance."""
+        from skimage.graph import route_through_array
+        H, W = hid.shape[0] // f * f, hid.shape[1] // f * f
+        hc = hid[:H, :W].reshape(H // f, f, W // f, f).all(axis=(1, 3))
+        cost = np.where(hc, 1.0, 400.0)
+        sa, sb = P(a), P(b); sa = (min(sa[0] // f, H // f - 1), min(sa[1] // f, W // f - 1)); sb = (min(sb[0] // f, H // f - 1), min(sb[1] // f, W // f - 1))
+        e = max(1, 4 // f)
+        for (pr, pc_) in (sa, sb): cost[max(0, pr-e):pr+e+1, max(0, pc_-e):pc_+e+1] = 1.0
+        try:
+            path, tot = route_through_array(cost, sa, sb, fully_connected=True, geometric=True)
+        except Exception:
+            return None
+        if tot > 1.6 * len(path) + 3 * 400 / f + 40: return None
+        pts = [a] + [((c * f + f / 2 + c0) / self.ppm + self.x0, (r * f + f / 2 + r0) / self.ppm + self.y0) for r, c in path[1:-1]] + [b]
+        out = LineString(pts).simplify(0.4)
+        L = out.length
+        if L > 4.0 * math.hypot(b[0]-a[0], b[1]-a[1]) + 25: return None
+        # fine check: exposed length along the path (first/last 0.8 mm forgiven, like the fine router's endpoint window)
+        n = max(2, int(L * self.ppm * 2))
+        ss = np.linspace(0, L, n); keep = (ss > 0.8) & (ss < L - 0.8)
+        q = [out.interpolate(t) for t in ss[keep]]
+        if q:
+            cs = np.clip(((np.array([g.x for g in q]) - self.x0) * self.ppm).astype(int) - c0, 0, hid.shape[1] - 1)
+            rs = np.clip(((np.array([g.y for g in q]) - self.y0) * self.ppm).astype(int) - r0, 0, hid.shape[0] - 1)
+            if (~hid[rs, cs]).sum() * (L / n) > 0.6: return None
+        return out.coords[:]
     def stamp(self, mask, g):
         im = self._draw(g, 0.6); mask |= im
 
@@ -429,7 +520,7 @@ def make_pattern(vis, stops, origin, reg_marks=None):
     # tones sewn so far (for blends): union of fill geometry per colour sewn earlier
     tones = Tones()
     pat = pe.EmbPattern(); ox, oy = origin
-    stats = dict(stitches=0, trims=0, travel=0, jumps=0)
+    stats = dict(stitches=0, trims=0, travel=0, jumps=0, runs=[])     # runs: (stop, travel polyline) for exposed_travel()
     def emit_thread(k, label=None):
         th = pe.EmbThread(); th.set_hex_color(HEX[k] if k in HEX else k)
         if k in HEX:
@@ -459,14 +550,14 @@ def make_pattern(vis, stops, origin, reg_marks=None):
             for p in polys(r["geom"]):          # one object per connected piece, so ordering can chain them
                 rp_ = dict(r, geom=p)
                 bl = build_object(rp_, earlier)
-                if bl: objs.append(dict(blocks=bl, r=rp_, own=p.buffer(0.6)))
+                if bl: objs.append(dict(blocks=bl, r=rp_, own=p.buffer(OWN_HALO)))
         sewn_same = cov.blank()
         # hidden-travel mask for this stop: fill sewn by later stops + this stop's own fills/satins
         # (travel under an object that is about to be sewn over is a standard underpath)
         own_mask = cov.blank()
         for o in objs:
             if o["r"]["st"] in FILL_ST: own_mask |= cov._draw(o["r"]["geom"], -0.1)
-        base_hid = (cov.later > si) | own_mask
+        base_hid = (cov.later > si) | own_mask | cov.merged(si)
         lab, _ = ndi.label(ndi.binary_dilation(base_hid, iterations=2), structure=np.ones((3, 3), int))
         def comp(pt, rad=3):
             c = int((pt[0] - cov.x0) * cov.ppm); r_ = int((pt[1] - cov.y0) * cov.ppm)
@@ -506,6 +597,7 @@ def make_pattern(vis, stops, origin, reg_marks=None):
                                        pad=max(12.0, 0.5 * d))
                         if rp: route = path_resample(rp, TRAVEL_L)
                     if route is not None:
+                        if len(route) > 1: stats["runs"].append((si, [tuple(cur)] + [tuple(q) for q in route]))
                         for x, y in route[:-1] if len(route) > 1 else route:
                             pat.add_stitch_absolute(pe.STITCH, (x-ox)*U, (y-oy)*U); stats["travel"] += 1
                     elif d < TRIM_MIN:
@@ -513,6 +605,9 @@ def make_pattern(vis, stops, origin, reg_marks=None):
                     else:
                         pat.add_command(pe.TRIM); stats["trims"] += 1
                         stats.setdefault("by", {}); kk = tech.rule_for(o["r"]["grp"]) + ("/intra" if o.get("started") else ""); stats["by"][kk] = stats["by"].get(kk, 0) + 1
+                        # why: 'island' = no hidden connection between the two points; 'route' = same hidden area, router gave up
+                        wk = "route" if (comp(cur) and comp(cur) == comp((x0, y0))) else "island"
+                        stats.setdefault("why", {}); stats["why"][wk] = stats["why"].get(wk, 0) + 1
                         pat.add_stitch_absolute(pe.JUMP, (x0-ox)*U, (y0-oy)*U)
                 else:
                     pat.add_stitch_absolute(pe.JUMP, (x0-ox)*U, (y0-oy)*U)
@@ -532,6 +627,30 @@ def make_pattern(vis, stops, origin, reg_marks=None):
         if fills: tones.add(unary_union(fills))
     pat.add_command(pe.TRIM); pat.add_command(pe.END)
     return pat, stats
+
+def exposed_travel(stops, runs, forgive=0.8, tol=0.3):
+    """QA for hidden travel, measured on the region geometry (not the router's raster): for every travel run, the longest
+    stretch that lies on bare fabric, i.e. outside every fill/bean sewn at or after the run's stop. The first and last
+    `forgive` mm of a run are skipped (they sit on the pull-compensated edges of the two objects they join); a fill
+    covers `tol` mm beyond its outline (pull comp, and the router's raster is drawn to the pixel).
+    Returns the sorted list of exposed lengths (mm), one per run with any exposure."""
+    from shapely.strtree import STRtree
+    gs, ix = [], []
+    for i, s in enumerate(stops):
+        for r in s["regions"]:
+            if r["st"] in FILL_ST or r["st"] == "bean":
+                for p in polys(r["geom"]): gs.append(p); ix.append(i)
+    if not gs: return []
+    tree = STRtree(gs); ix = np.array(ix); out = []
+    for si, pts in runs:
+        ln = LineString(pts)
+        if ln.length <= 2 * forgive: continue
+        ln = substring(ln, forgive, ln.length - forgive)
+        hits = [h for h in tree.query(ln.buffer(tol), predicate="intersects") if ix[h] >= si]
+        bare = ln.difference(unary_union([gs[h].buffer(tol, 4) for h in hits])) if hits else ln
+        if not bare.is_empty and bare.length > 1e-3:
+            out.append(max(g.length for g in getattr(bare, "geoms", [bare])))
+    return sorted(out)
 
 def write(pat, base):
     settings = {"long_stitch_contingency": pe.CONTINGENCY_LONG_STITCH_SEW_TO, "max_stitch": 121, "max_jump": 121,
