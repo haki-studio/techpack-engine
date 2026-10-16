@@ -1,0 +1,2 @@
+# Moon jacket (washed navy, full moon + power lines + clouds)
+Built by the /techpack command. Inputs + brief in inputs/, outputs in out/.
