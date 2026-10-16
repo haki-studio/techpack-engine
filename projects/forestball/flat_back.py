@@ -13,7 +13,7 @@ print("items", len(B.items), f"{time.time()-t0:.1f}s", flush=True)
 vb = B.build()
 import fmotifs as FM
 vb, nd = FM.drop_floating(vb); print("floating pieces dropped (A1)", nd)
-vb = dst2.clean_vis(vb)
+vb = FM.ridge_cleanup(dst2.clean_vis(vb))
 print("vis", len(vb), f"{time.time()-t0:.1f}s", flush=True)
 pickle.dump({"back": vb}, open("back_vis.pkl", "wb"))
 x0, y0, x1, y1 = -320, -40, 320, 600

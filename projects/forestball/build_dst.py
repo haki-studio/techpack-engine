@@ -28,6 +28,8 @@ def scaled(vis, s, origin):
 
 def prep(k):
     vis = dst2.merge_colours(SRC[k])
+    # leaves sew BEFORE the twigs + bark: travel between the leaves of a spray hides under the twig sewn later (LESSONS B2)
+    vis = [dict(r, layer=4.5) if r["grp"] in ("LF", "LF-dark") else r for r in vis]
     ub = unary_union([r["geom"] for r in vis]).bounds; c = ((ub[0]+ub[2])/2, (ub[1]+ub[3])/2)
     return scaled(vis, SC, c), c
 
@@ -51,15 +53,22 @@ for k in ([] if "splitsonly" in args else which):
                   threads=len({s["col"] for s in stops}), size_art=(ub[2]-ub[0], ub[3]-ub[1]), file=base,
                   worst=sorted(st.get("by", {}).items(), key=lambda kv: -kv[1])[:8], secs=round(time.time()-t))
     print(G, k, {kk: res[k][kk] for kk in ("stitches", "trims_cmd", "stops", "threads", "size", "max_stitch")}, f"{time.time()-t:.0f}s", flush=True)
-    json.dump(res, open(RES, "w"), default=float, indent=1)
+    cur = json.load(open(RES)) if os.path.exists(RES) else {}           # merge: another process may own other pieces
+    cur[k] = res[k]; json.dump(cur, open(RES, "w"), default=float, indent=1)
 
 if "back" in which and "nosplit" not in args:
     FRAME = (360.0, 360.0)
     vis, c = prep("back")
-    for wm in (70.0, 55.0, 40.0):
-        sp = dst2.split_clip(vis, FRAME, whole_max=wm)
-        if all(sp["fits"].values()): break
-    marks = dst2.split_marks(sp)
+    def fits_all(sp, marks):          # same measure as the section files: art + basting crosses within frame - 16
+        for key, sv in sp["secs"].items():
+            bb = unary_union([r["geom"] for r in sv] + [Point(m).buffer(6) for m in marks[key]]).bounds
+            if bb[2]-bb[0] > FRAME[0]-16 or bb[3]-bb[1] > FRAME[1]-16: return False
+        return True
+    for wm in (70.0, 55.0, 40.0, 30.0, 20.0):
+        # 8 mm frame margin for the split-line crosses' arms (split_clip's ext only counts the outer crosses)
+        sp = dst2.split_clip(vis, (FRAME[0] - 8, FRAME[1] - 8), whole_max=wm); marks = dst2.split_marks(sp)
+        if all(sp["fits"].values()) and fits_all(sp, marks): break
+        print("split whole_max", wm, "does not fit the frame with its crosses, retrying", flush=True)
     names = {(0, 0): "S1_top-left", (1, 0): "S2_top-right", (0, 1): "S3_bottom-left", (1, 1): "S4_bottom-right"}
     info = dict(frame=FRAME, sx=sp["sx"], sy=sp["sy"], cut_mm=sp["cut"], whole_max=wm, sections={})
     for key in sorted(sp["secs"], key=lambda k: (k[1], k[0])):

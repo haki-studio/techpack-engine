@@ -13,7 +13,7 @@ print("items", len(F.items), f"{time.time()-t0:.1f}s", flush=True)
 import fmotifs as FM
 vis = {}
 for p in F.PIECES:
-    v, nd = FM.drop_floating(F.build(p)); vis[p] = dst2.clean_vis(v); print(p, "floating pieces dropped (A1)", nd)
+    v, nd = FM.drop_floating(F.build(p)); vis[p] = FM.ridge_cleanup(dst2.clean_vis(v)); print(p, "floating pieces dropped (A1)", nd)
 print({k: len(v) for k, v in vis.items()}, f"{time.time()-t0:.1f}s", flush=True)
 pickle.dump(vis, open("front_vis.pkl", "wb"))
 x0, y0, x1, y1 = -320, -110, 320, 530

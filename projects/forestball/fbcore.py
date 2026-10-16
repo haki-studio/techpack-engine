@@ -23,7 +23,7 @@ PAL = {
     "water":   ("#294A63", "Stream blue",    "stream body"),
     "waterlt": ("#7491B0", "Stream light",   "ripples, ripple rings"),
     "grass":   ("#4F7B3B", "Grass green",    "grass blades, lily pad"),
-    "basting": ("#00A3FF", "Placement basting", "licensed-figure placeholder outline (water-soluble, removed)"),
+    "basting": ("#00A3FF", "Basting (remove)", "licensed-figure placeholder outline (water-soluble, removed)"),
 }
 motifs2.PAL.clear(); motifs2.PAL.update(PAL)
 motifs2.HEX.clear(); motifs2.HEX.update({k: v[0] for k, v in PAL.items()})
@@ -32,7 +32,7 @@ tech.COLOUR_ORDER[:] = ["basting", "sage", "cream", "water", "waterlt", "bark", 
                         "grass", "leafdk", "leaf"]
 tech.LAYER_NAMES.clear()
 tech.LAYER_NAMES.update({1: "Light rays", 2: "Stream", 3: "Grass behind", 4: "Rocks", 5: "Bark + twigs", 6: "Moss",
-                         7: "Leaves", 8: "Grass front", 0: "Placeholder outline", 10: "Hanging moss"})
+                         7: "Leaves", 8: "Grass front", 0: "Placeholder outline", 10: "Hanging moss", 4.5: "Leaves"})
 STITCH_LAYER = {99: 99}                # truthy map: bark line work sews after the moss (tech.stops 6.5 rule)
 
 # ---------------------------------------------------------------- forest region codes (name, stitch, angle, density, length, underlay, pull, notes)
@@ -92,3 +92,16 @@ def draft(size):
         if pc.code == "B01": pc.note = "CB marked by notches; embroidery 01 sewn on the cut piece"
     return g, mt
 PT.draft = draft
+
+def stitch_stops(vis):
+    """colour stops exactly as the stitch files sew them (build_dst.py): leaves before the twigs, then tech.stops +
+    dst2.merge_stops. Specs use this so their stop tables match the DST."""
+    for r in vis:                        # in place: production_svg keys regions by identity
+        if r["grp"] in ("LF", "LF-dark"): r["layer"] = 4.5
+    return dst2.merge_stops(tech.stops(vis, STITCH_LAYER))
+
+# reused Drum Island codes: print the production densities the engine actually sews (dst2 v3 knobs, LESSONS B4)
+for _k in ("TR", "LM", "-shade", "-ridge", "TW", "TR-knot"):
+    _v = list(tech.RULES[_k])
+    _v[3] = {"Tatami": "0.45", "Satin": "0.42"}.get(_v[1], _v[3])
+    tech.RULES[_k] = tuple(_v)

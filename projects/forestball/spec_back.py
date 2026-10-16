@@ -18,7 +18,7 @@ from specbase import img_tag, direction_map, production_svg
 REV = fbcore.REV_EMB; DATE = fbcore.DATE
 OUT = "out/01_back-scene"; os.makedirs(OUT, exist_ok=True)
 VB = pickle.load(open("back_vis.pkl", "rb"))["back"]
-STOPS = tech.stops(VB, fbcore.STITCH_LAYER)
+STOPS = fbcore.stitch_stops(VB)
 TOT = sum(s["st"] for s in STOPS)
 UB = unary_union([r["geom"] for r in VB]); BB = UB.bounds
 PH = B.PH_BOX.bounds
@@ -26,6 +26,13 @@ FOOT = f"HAKI STUDIOS · {fbcore.NAME} · 01 back scene · {REV} · {DATE}"
 CUR = json.load(open("dst_current.json")) if os.path.exists("dst_current.json") else {}
 SPL = json.load(open("dst_splits_B.json")) if os.path.exists("dst_splits_B.json") else {}
 QA = json.load(open("qa_width.json"))["back"]
+from shapely.ops import nearest_points as _np
+def _ctr(x, y, w, h): return (x - w/2, y - h/2, x + w/2, y + h/2)
+LIMB = B.P(270, 340)
+_lr = unary_union([r["geom"] for r in VB if r["grp"] == "LR"]); _lf = unary_union([r["geom"] for r in VB if r["grp"] == "LF"])
+RAYLEAF = _np(_lr, _lf)[1].coords[0]
+ROCK = B.P(215, 650)
+PHC = ((PH[0]+PH[2])/2, (PH[1]+PH[3])/2)
 LIC = "LICENSED FIGURE — placeholder only. Nothing stitched inside; the factory digitizer adds it from the licensor-approved artwork."
 
 def header(title, sub, page):
@@ -89,7 +96,7 @@ def page2():
     tag, h = img_tag(dm, 14, 29, 146, 88); o.append(tag)
     o.append(f'<rect x="14" y="29" width="146" height="{f(h)}" fill="none" stroke="#BBB" stroke-width="0.2"/>')
     zx = 168; o.append(t(zx, 32, "DETAIL CROPS (shown 1.6:1)", 2.6, 700))
-    c1 = (-210, 120, -150, 155); c2 = (PH[0] - 25, PH[1] - 8, PH[0] + 35, PH[1] + 27); c3 = (60, 70, 120, 105)
+    c1 = _ctr(*LIMB, 60, 35); c2 = _ctr(*PHC, 80, 47); c3 = _ctr(*RAYLEAF, 60, 35)
     yy = 35
     for c, cap in [(c1, "Main limb: tatami along the limb, padded moss across it, navy lump runs"),
                    (c2, "Stream around the licensed placeholder: horizontal tatami, ripple satins"),
@@ -166,7 +173,7 @@ def thread_match(o, sx, ty, keys):
 
 def page4():
     o = header("01 · COLOUR STOP SEQUENCE + THREADS",
-               "Sewing order, back to front: placeholder basting → light rays → stream → grass behind → rocks → bark + twigs → moss → bark line work → leaves → grass in front. Fills before the lines on them.", "p4 / 5")
+               "Sewing order, back to front: placeholder basting → light rays → stream → grass behind → rocks → leaves → bark + twigs → moss → bark line work → grass in front (leaves before twigs: their travel hides under the twig). Fills before the lines on them.", "p4 / 5")
     stops_table(o, STOPS, 12, 30.5, "BACK PANEL (single file, size M)")
     sx = 204; yb = thread_match(o, sx, 33, [k for k in PAL])
     for i, l in enumerate(["ΔE < 3 green: close match. 3–5.5 amber,", "> 5.5 red: pick from the physical card.",
@@ -177,8 +184,8 @@ def page4():
 def page5():
     o = header("01 · 1:1 DETAILS, WHAT CHANGED, PRODUCTION NOTES", "", "p5 / 5")
     o.append(t(14, 31, "1:1 STITCH-OUT DETAILS (print at 100% to check scale)", 2.6, 700))
-    crops = [((-205, 110, -155, 160), "Mossy main limb"), ((PH[0] - 4, PH[1] - 2, PH[0] + 46, PH[1] + 48), "Placeholder box in the stream"),
-             ((70, 60, 120, 110), "Leaf sprays over light rays"), ((-275, 470, -225, 520), "Grass + mossy rock")]
+    crops = [(_ctr(*LIMB, 50, 50), "Mossy main limb"), (_ctr(*PHC, 66, 56), "Placeholder box in the stream (empty)"),
+             (_ctr(*RAYLEAF, 50, 50), "Leaf sprays over light rays"), (_ctr(*ROCK, 50, 50), "Grass + mossy rock")]
     x = 14
     for c, cap in crops:
         im = SR.render(VB, c, 14, base=fbcore.FABRIC); tag, hh = img_tag(im, x, 35, c[2] - c[0]); o.append(tag)

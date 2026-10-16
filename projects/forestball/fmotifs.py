@@ -291,3 +291,22 @@ def drop_floating(vis, min_bark=150.0, join=0.9):
             if i in keep: out.append(dict(r, geom=unary_union(keep[i])))
         else: out.append(r)
     return out, dropped
+
+
+def ridge_cleanup(vis, h=0.45):
+    """Bark ridge highlights half-hidden under moss leave thin satin strips (< 0.8 mm). Open each ridge region by h and
+    hand the strips to the bark body region they touch most (the strip then sews as bark, no gap)."""
+    import shapely
+    body_ix = [i for i, r in enumerate(vis) if r["grp"] in ("TR", "LM") and r["st"] == "tatami"]
+    tree = shapely.STRtree([vis[i]["geom"] for i in body_ix]); give = {}
+    for i, r in enumerate(vis):
+        if not r["grp"].endswith("-ridge"): continue
+        g = r["geom"]; op = g.buffer(-h).buffer(h).intersection(g); rest = g.difference(op)
+        vis[i] = dict(r, geom=op)
+        for piece in polys(rest):
+            hits = [body_ix[int(j)] for j in tree.query(piece.buffer(0.05))]
+            if not hits: continue
+            j = max(hits, key=lambda j: piece.buffer(0.05).intersection(vis[j]["geom"]).area)
+            give.setdefault(j, []).append(piece)
+    for j, pcs in give.items(): vis[j] = dict(vis[j], geom=unary_union([vis[j]["geom"]] + pcs).buffer(0))
+    return [r for r in vis if not r["geom"].is_empty and r["geom"].area > 0.05]

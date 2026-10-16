@@ -66,7 +66,7 @@ for px in np.linspace(150, 245, 15):
     if col.is_empty: continue
     anchors.append((x, col.bounds[3] - 2.5))
 HM, HMU = FM.hanging_moss(anchors, random.Random(9), length=(120, 240), wmin=3.6, wmax=5.6, sway=14.0)
-add(HM, 10)
+add(HM, 6)          # sews with the limb moss (same threads, fewer stops)
 # moss highlights on the strands (light run of the mockup's yellow-green chain stitch)
 ANCH = anchors
 

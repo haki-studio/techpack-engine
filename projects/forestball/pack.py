@@ -106,7 +106,7 @@ def threads():
     o = hdr("THREAD + TRIM SUMMARY", "One palette for the whole jacket. Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target read from the mockup [proposed — confirm].", "G3")
     use = {k: {} for k in PAL}
     for (e, name, piece, v, key) in PIECES:
-        for s in tech.stops(v, fbcore.STITCH_LAYER):
+        for s in fbcore.stitch_stops(v):
             use[s["col"]][key] = use[s["col"]].get(key, 0) + s["st"]
     hd = ["", "Thread", "Hex", "Isacord", "ΔE", "Madeira Polyneon", "ΔE", "Wt", "Used for", "Pieces", "Est. st."]
     cx = [12, 18, 46, 60, 90, 98, 132, 140, 148, 222, 262]

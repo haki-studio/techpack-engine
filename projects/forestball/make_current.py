@@ -7,6 +7,26 @@ def dst_count(base):
     p = pe.read(base + ".dst"); c = collections.Counter(s[2] & pe.COMMAND_MASK for s in p.stitches)
     return c[pe.TRIM], c[pe.STITCH]
 
+import fbcore, back as B
+from shapely.geometry import box as _box, Point
+from shapely import affinity
+SCALE = {"A": 0.90, "B": 1.0, "C": 1.08}
+def placeholder_check(base, centre, G, origin=None):
+    """licensed box: every stitch inside it must belong to the basting colour (LESSONS: nothing stitched in the box).
+    Returns (stitches of other colours inside the box shrunk 1.5 mm, basting stitches on the box outline)."""
+    c = tuple(centre); origin = tuple(origin or centre)
+    ph = affinity.scale(B.PH_BOX, SCALE[G], SCALE[G], origin=c)
+    inner = ph.buffer(-1.5); ring = ph.exterior.buffer(1.0)
+    cols = [t.hex_color().upper() for t in pe.read(base + ".pes").threadlist]; p = pe.read(base + ".dst"); ci = 0; bad = 0; bast = 0
+    for x, y, cmd in p.stitches:
+        k = cmd & pe.COMMAND_MASK
+        if k == pe.COLOR_CHANGE: ci += 1; continue
+        if k != pe.STITCH: continue
+        q = Point(x/10 + origin[0], y/10 + origin[1]); col = cols[min(ci, len(cols)-1)]
+        if col == "#00A3FF":
+            if ring.contains(q): bast += 1
+        elif inner.contains(q): bad += 1
+    return bad, bast
 allr = {"grades": {}, "splits": {}}; gates = []
 for G in ("A", "B", "C"):
     p = f"dst_results_{G}.json"
@@ -15,6 +35,9 @@ for G in ("A", "B", "C"):
         for k, v in r.items():
             v["trims_dst"], v["stitches_dst"] = dst_count(v["file"])
             gates.append((f"{G} {k}", v["max_stitch"] <= 7.5, v["threads"] <= 15))
+            if k == "back":
+                v["ph_inside"], v["ph_basting"] = placeholder_check(v["file"], v["centre"], G)
+                gates.append((f"{G} back placeholder empty ({v['ph_inside']} st inside, {v['ph_basting']} basting)", v["ph_inside"] == 0, v["ph_basting"] > 10))
         allr["grades"][G] = r
     p = f"dst_splits_{G}.json"
     if os.path.exists(p):
@@ -22,6 +45,11 @@ for G in ("A", "B", "C"):
         for nm, v in s["sections"].items():
             v["trims_dst"], v["stitches_dst"] = dst_count(v["file"])
             gates.append((f"{G} {nm}", v["max_stitch"] <= 7.5 and v["fits"], True))
+            if v.get("placeholder"):
+                ctr = allr["grades"].get(G, {}).get("back", {}).get("centre")
+                if ctr:
+                    v["ph_inside"], v["ph_basting"] = placeholder_check(v["file"], ctr, G, origin=v["centre"])
+                    gates.append((f"{G} {nm} placeholder empty ({v['ph_inside']} inside)", v["ph_inside"] == 0, v["ph_basting"] > 10))
         allr["splits"][G] = s
 json.dump(allr, open("dst_all.json", "w"), default=float, indent=1)
 B = allr["grades"].get("B", {})
@@ -33,3 +61,5 @@ for G, s in allr["splits"].items():
     print(G, "splits", {nm: (v["stitches"], v["trims_dst"], v["fits"]) for nm, v in s["sections"].items()})
 bad = [g for g in gates if not (g[1] and g[2])]
 print("GATES", "all pass" if not bad else bad, len(gates))
+for g in gates:
+    if "placeholder" in g[0]: print("  ", g)

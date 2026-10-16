@@ -22,7 +22,7 @@ OUT = "out/02_chest-branch"; os.makedirs(OUT, exist_ok=True)
 VIS = pickle.load(open("front_vis.pkl", "rb"))
 PIECES = ["02R", "02L"]
 ALL = [r for p in PIECES for r in VIS[p]]
-STOPS = {p: tech.stops(VIS[p], fbcore.STITCH_LAYER) for p in PIECES}
+STOPS = {p: fbcore.stitch_stops(VIS[p]) for p in PIECES}
 BBs = {p: unary_union([r["geom"] for r in VIS[p]]).bounds for p in PIECES}
 CUR = json.load(open("dst_current.json")) if os.path.exists("dst_current.json") else {}
 QA = json.load(open("qa_width.json"))
@@ -123,7 +123,7 @@ def page3():
     return o
 
 def page4():
-    o = header("02 · COLOUR STOP SEQUENCE + THREADS", "Back to front: bark + twigs → moss → bark line work → leaves → hanging moss. Thread codes = shared jacket palette (G3).", "p4 / 5")
+    o = header("02 · COLOUR STOP SEQUENCE + THREADS", "Order: leaves → bark + twigs → moss + hanging moss → bark line work (leaves first so their travel hides under the twigs). Thread codes = shared jacket palette (G3).", "p4 / 5")
     SPB.stops_table(o, STOPS["02R"], 12, 30.5, "PIECE 02R", width=134)
     SPB.stops_table(o, STOPS["02L"], 152, 30.5, "PIECE 02L", width=134)
     return o

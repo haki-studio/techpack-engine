@@ -32,3 +32,14 @@
 
 7. **Sheer fills:** the engine has one tatami density. Light rays are done as serpentine runs (rows 1.9 mm) — works, but a
    per-region `density` override on tatami would be the cleaner primitive. → Check: stitches/mm² of `LR` vs `WA`.
+
+8. **`split_clip` "fits" and the section-file "fits" disagree (LESSONS B12 follow-up).** Forestball grade B: `split_clip` reported
+   all sections fit, but S2/S4 came out 348.4 mm wide with their basting crosses (> 344 = 360 − 16). The build loop in
+   `build_dst3.py`/`build_size.py` only retries smaller `whole_max` when `split_clip` says no.
+   → Fix: return the cross positions from `split_clip` and measure fit on art + crosses (as the files are measured); Forestball's
+   `build_dst.py` re-checks with the file measure and retries (70 → 55 → 40 → 30 → 20). Root cause: when the best split sits at
+   its frame limit, the crosses ON the split line add their 6 mm arm beyond `ext`; Forestball passes the frame − 8 mm to `split_clip`. → Check: `fits` in `dst_splits_<G>.json`.
+
+9. **Leaves-first stop order (LESSONS B2 applied to leaf sprays):** sewing leaf halves before the twigs/bark cut front trims
+   249 → 166 (02R) and 257 → 123 (02L). → Proposed LESSONS row: "small detail motifs that touch a later fill (leaves on twigs) sew
+   before it". → Check: trims from the DST read-back before/after.
