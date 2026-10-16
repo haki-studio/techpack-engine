@@ -255,6 +255,7 @@ def absorb_slivers(vis):
     geoms = [v["geom"] for v in vis]; tree = STRtree(geoms); give = {}
     for i, v in enumerate(vis):
         line = v["st"] in ("bean", "run"); h = 0.3 if line else 0.4
+        if line: continue          # line work keeps its own pieces (a wire sliver must never grow a fill past a keep-out)
         clean = v["geom"].buffer(-h).buffer(h).intersection(v["geom"]); sl = v["geom"].difference(clean)
         if sl.is_empty or sl.area < 0.01: continue
         keep = clean
