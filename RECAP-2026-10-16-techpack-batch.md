@@ -21,3 +21,16 @@ Merged the small, testable proposals; the rest is ordered in `docs/ROADMAP.md`. 
   machine. Its `emb_place.clearances()` already measures on pattern pieces, so C8 should have shown on its T13; B16 needs a
   re-measure of its split files the next time that project is rebuilt.
 - System python has no engine deps; `~/.venvs/techpack` → `~/.venvs/techpack-grand-line`, activated by `env.sh`.
+
+## Later the same day — review round + fidelity-first
+- Independent reviewers checked all three Rev A packs: all three NOT ready. The numbers in them matched the DSTs; fidelity, hooping
+  instructions and per-stop tables did not (Grand Line's per-stop table summed to ~67k against 113,830 in the DST). Findings went to
+  each builder, which is now making Rev B.
+- Founder ruling: **fidelity first**. Match the mockup detail for detail, report cost but don't cap it, and do cleanup only after the
+  strike-off (LESSONS A11). Cost-cutting items in the review fix lists were cancelled.
+- Process added: `engine/factory.py` + `factory.json` (F1 factory-requests page), `engine/readback.py` (per-stop counts from the DST,
+  B20), review stages `review` → `reviewed`, close-up prompts (`inputs/closeup_request.md`).
+- Forestball close-ups (ChatGPT, 1254 px, wearer's right front only) are in `projects/forestball/inputs/closeups/`. `a` is the primary
+  reference; `c` has drifted, so use it for texture only.
+- In flight: the 3 builders on Rev B; one engine builder cutting trims in its own worktree, which will open a PR. Next: re-review
+  each Rev B and mark it `reviewed`, then merge the trim PR after checking its before/after table.
