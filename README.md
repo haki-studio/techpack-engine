@@ -16,10 +16,11 @@ What it produces for a garment:
 
 Start with `CLAUDE.md` (how to run, conventions) and `LESSONS.md` (rules + checks). `docs/ROADMAP.md` covers the
 path to batch runs. Projects: `projects/drum-island-plum-pine` (embroidered work jacket),
-`projects/konpeito-jeans` (patches + direct embroidery, see `skills/embroidery-tech-pack`).
+`projects/konpeito-jeans` (patches + direct embroidery, see `.claude/skills/embroidery-tech-pack`).
 
 ```bash
-pip install -r requirements.txt
+scripts/setup_mac.sh            # macOS: cairo + venv + deps + tests (once)
+scripts/new_project.sh <slug>     # scaffold a new product on its own branch
 source scripts/env.sh projects/drum-island-plum-pine
 python3 pattern_out.py qa
 ```

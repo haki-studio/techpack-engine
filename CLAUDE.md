@@ -13,7 +13,7 @@ pass before anything is delivered.
   (`pattern.py`, `pattern_draw.py`, `pattern_out.py`), thread palettes (`pal/`).
 - `projects/<style>/` — one folder per garment: its scene/art builders, spec + pack page builders, run scripts,
   `inputs/` (mockups, references, fixed json). Outputs go to `projects/<style>/out/` (git-ignored).
-- `skills/` — `techpack-pipeline` (end-to-end procedure) and `embroidery-tech-pack` (patches/labels house spec).
+- `.claude/skills/` — `techpack-pipeline` (end-to-end procedure) and `embroidery-tech-pack` (patches/labels house spec).
 - `docs/ROADMAP.md` — what's generic vs project-specific today, and the plan to make batch runs possible.
 
 ## Running
