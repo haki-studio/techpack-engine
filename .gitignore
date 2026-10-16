@@ -21,3 +21,8 @@ projects/*/clean_*
 projects/*/*.pdf
 projects/*/*.png
 !projects/*/inputs/*
+
+inbox/*
+!inbox/.gitkeep
+status.html
+projects/*/STATUS.json

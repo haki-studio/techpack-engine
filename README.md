@@ -18,6 +18,14 @@ Start with `CLAUDE.md` (how to run, conventions) and `LESSONS.md` (rules + check
 path to batch runs. Projects: `projects/drum-island-plum-pine` (embroidered work jacket),
 `projects/konpeito-jeans` (patches + direct embroidery, see `.claude/skills/embroidery-tech-pack`).
 
+## Daily use
+1. Drop mockup images (single products, close-ups or whole boards) into `inbox/`
+   (Windows: `\\wsl$\Ubuntu\home\<you>\techpack-engine\inbox`).
+2. In Claude Code: `/techpack` (optionally with notes: `/techpack all on 12 oz duck`).
+3. Watch: open `status.html` (refreshes itself, shows each product's latest render) or run `python3 scripts/status.py --watch`;
+   `/techpack-status` lists open questions.
+
+## Setup
 ```bash
 scripts/setup_wsl.sh            # WSL 2 / Ubuntu: system libs + venv + deps + tests (once)  (macOS: scripts/setup_mac.sh)
 scripts/new_project.sh <slug>     # scaffold a new product on its own branch

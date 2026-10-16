@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+"""Record a product's progress: status_set.py <slug> <stage> "<note>" [--preview path] [--question "..."] [--blocked]
+Stages (in order): intake inventory pattern art stitch qa documents delivered"""
+import sys, os, json, datetime, argparse
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STAGES = ["intake", "inventory", "pattern", "art", "stitch", "qa", "documents", "delivered"]
+ap = argparse.ArgumentParser(); ap.add_argument("slug"); ap.add_argument("stage"); ap.add_argument("note", nargs="?", default="")
+ap.add_argument("--preview"); ap.add_argument("--question", action="append"); ap.add_argument("--blocked", action="store_true")
+a = ap.parse_args()
+p = os.path.join(ROOT, "projects", a.slug, "STATUS.json")
+s = json.load(open(p)) if os.path.exists(p) else {"slug": a.slug, "log": [], "questions": []}
+s["stage"] = a.stage; s["stage_index"] = STAGES.index(a.stage) if a.stage in STAGES else s.get("stage_index", 0)
+s["blocked"] = a.blocked; s["updated"] = datetime.datetime.now().isoformat(timespec="seconds")
+if a.preview: s["preview"] = os.path.relpath(os.path.abspath(a.preview), os.path.join(ROOT, "projects", a.slug))
+if a.question: s["questions"] = list(dict.fromkeys(s.get("questions", []) + a.question))
+s["log"].append([s["updated"], a.stage, a.note]); s["log"] = s["log"][-40:]
+json.dump(s, open(p, "w"), indent=1)

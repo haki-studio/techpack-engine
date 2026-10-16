@@ -3,9 +3,31 @@
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "git -C \"$CLAUDE_PROJECT_DIR\" pull --ff-only --quiet 2>/dev/null || echo 'techpack-engine: could not fast-forward main — pull manually'" }
+          {
+            "type": "command",
+            "command": "git -C \"$CLAUDE_PROJECT_DIR\" pull --ff-only --quiet 2>/dev/null || echo 'techpack-engine: could not fast-forward main \u2014 pull manually'"
+          }
         ]
       }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(python3 *)",
+      "Bash(scripts/*)",
+      "Bash(source scripts/env.sh *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(pdftoppm *)",
+      "Bash(zip *)",
+      "Edit",
+      "Write",
+      "Read"
     ]
   }
 }
