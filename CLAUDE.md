@@ -43,3 +43,12 @@ Recompress PDFs (`shrink.py`) before sending.
 
 ## Tests
 `python3 -m pytest -q tests` — pattern vs chart for every size, seam walks, shape checks, stitch-engine smoke test. Run before every push.
+
+## Learning loop (how this repo gets smarter)
+- Sessions start with a `git pull` (hook in `.claude/settings.json`), so every session runs the latest engine + LESSONS.
+- When you hit and fix a new problem: add a row to `LESSONS.md` (problem → rule → check), add or extend a test in
+  `tests/`, and commit it with the fix. A lesson without a check is a TODO, not a lesson.
+- One session per product, working in `projects/<style>/` on its own branch. Changes to `engine/` go in their own
+  commit with tests passing, then merge to `main` (PR when several sessions are running) — never edit `engine/` in two
+  sessions at once without merging between.
+- New motifs go into the motif library with a render test, so the next product can reuse them.
