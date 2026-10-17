@@ -28,7 +28,11 @@ def dim_v(y1, y2, x, label, size=2.2, tick=1.3, col=INK, side=-1):
             f'<text x="{f(tx)}" y="{f(cy)}" font-family="{FONT}" font-size="{size}" font-weight="600" fill="{col}" '
             f'text-anchor="middle" transform="rotate(-90 {f(tx)} {f(cy)})">{esc(label)}</text>')
 
+<<<<<<< Updated upstream
 FOOT = "HAKI STUDIOS · plum + pine work jacket · Rev A · 16 Oct 2026"     # page footer; each project sets sheet.FOOT
+=======
+FOOT = "HAKI STUDIOS · plum + pine work jacket · Rev A · 16 Oct 2026"     # projects set sheet.FOOT
+>>>>>>> Stashed changes
 
 def header(title, sub, page=None):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>',

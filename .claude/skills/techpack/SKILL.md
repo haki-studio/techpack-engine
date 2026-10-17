@@ -21,6 +21,8 @@ images and watch.
    (`wave-jacket`, `koi-lily-hooded-jacket`).
 3. For each product decide, from the images and the batch notes:
    - **garment + fit block**: if it's the collared work jacket (corduroy collar, rib hem/cuffs) use `drum-island`;
+     the boxy zip hoodie (hood, zip, self-fabric elastic hem/cuffs — e.g. the koi hoodie) → `zip-hoodie`
+     (`engine/hoodie.py`, pattern ready; reference build `projects/zip-hoodie-block/`; its blank fit sample is pending — say so);
      anything else → `unknown — needs a fit chart` (art + stitch files still go ahead on a proposed block; the
      pattern waits for the chart).
    - **process**: embroidery (thread texture, satin sheen, raised fills), **knit jacquard / printed fleece**

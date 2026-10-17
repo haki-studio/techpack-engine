@@ -15,6 +15,9 @@ side-by-side sheets (mockup vs stitch preview, same scale, zoomed regions).
 
 Rules:
 1. Read `LESSONS.md`, `CLAUDE.md`, then the brief (`projects/<slug>/inputs/brief.md`) and every input image.
+   Block `zip-hoodie`: the pattern is `hoodie.draft(size)` (body = Drum Island, + hood H01–H04, bands R01/R02); write pattern
+   files with `pattern_out.write_dxf(..., blk=hoodie)` / `plot_pdf(..., blk=hoodie)`; flats + size chart from `projects/zip-hoodie-block/`
+   (`hflat.py`, `build.py`). The hood is an extra embroidery area (H01 sides, H02 centre).
    The Drum Island jacket (`projects/drum-island-plum-pine/`) is the reference build: copy its structure
    (art builder → build_dst3/build_size → spec pages → pack → garment pages) and adapt it; reuse library motifs.
 2. Unknown facts: take the most reasonable assumption, write it into the brief under "Assumptions", mark it

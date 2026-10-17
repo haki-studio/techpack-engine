@@ -150,7 +150,8 @@ def collar_edges(Ln, M, N, extra=0.0):
     neck_full = mirror(rev(neckR)) + neckR[1:]                     # front L end -> CB -> front R end
     return neck_full, [E, T], rev(outerR) + mirror(outerR)[1:], [mirror([T])[0], mirror([E])[0]], neckR
 
-def draft(size):
+def draft(size, cuff_h=None):
+    """cuff_h: finished cuff height (default the jacket rib); derived blocks (hoodie) pass their own."""
     b = drum.Block(size); g = {}
     n2, sh2, ch2, drop = b.neck2, b.sh2, b.chest2, b.drop
     # ------------------------------------------------ BACK (one piece, cut 1 — embroidered, not cut on fold)
@@ -188,8 +189,8 @@ def draft(size):
                 Edge("hem", X([(ch2, hem_f), (0, hem_f)]), SA_HEM)]
     # welt pocket per size: keeps its distance above the hem seam, x graded with the chest
     wl_m = drum.Block("M"); kx = ch2 / wl_m.chest2
-    import front as FR
-    wc = FR.WELT_L.centroid; c = np.array(FR.WELT_L.exterior.coords)
+    WL = Polygon(drum.WELT_L_M)                       # block data (drum.py), not a project import
+    wc = WL.centroid; c = np.array(WL.exterior.coords)
     u = c[1] - c[2]; u = u / np.linalg.norm(u)
     if u[1] < 0: u = -u
     wcx, wcy = wc.x * kx, hem_f - (wl_m.f_hem - wc.y)
@@ -205,7 +206,7 @@ def draft(size):
     g["B01"] = back
     # ------------------------------------------------ SLEEVE (right sleeve: back of cap on the left, x < 0)
     AH = arm_len_b + arm_len_f; target = AH + CAP_EASE
-    Lc = m_G = drum.m("G", size) - CUFF_RIB                      # cap top -> cuff seam along the sleeve centre
+    Lc = m_G = drum.m("G", size) - (CUFF_RIB if cuff_h is None else cuff_h)                      # cap top -> cuff seam along the sleeve centre
     Hh = drum.m("H", size); Ww = Hh * CUFF_RATIO                    # half-width of the sleeve at the cuff seam (= 1/2 shell opening)
     F = drum.m("F", size)                                           # half bicep, 25 mm below underarm
     def cap(W, h, pb=0.92, pf=1.08, n=80):
