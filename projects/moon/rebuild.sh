@@ -3,6 +3,7 @@
 cd "$(dirname "$0")"; H=../../scripts/heavy.sh; set -o pipefail
 log() { echo "[$(date +%T)] $*" >> rebuild_log.txt; }
 : > rebuild_log.txt
+./py.sh closeart.py 2>&1 | grep -v Warn | tail -1 >> rebuild_log.txt
 rm -f art_*.pkl
 printf "%s\n" M XS S L XL XXL 3XL graded | xargs -P 4 -I{} ./py.sh art_size.py {} 2>&1 | grep -v Warn >> rebuild_log.txt
 ./py.sh emb_place.py 2>&1 | grep -v Warn | grep -E "wrap|FAIL" >> rebuild_log.txt
@@ -20,3 +21,4 @@ log previews done
 printf "%s\n" 01 02 03 04 | xargs -P 4 -I{} sh -c '../../scripts/heavy.sh ./py.sh moonspec.py {} 2>&1 | grep -v Warn | tail -2' >> rebuild_log.txt
 $H ./py.sh build_all.py 2>&1 | grep -v Warn | tail -3 >> rebuild_log.txt
 log ALLDONE
+./py.sh emb_place.py 2>&1 | grep -v Warn | grep -E 'wrap|FAIL' >> rebuild_log.txt

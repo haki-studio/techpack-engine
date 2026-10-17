@@ -278,10 +278,10 @@ def build(n):
         o.append(t(rx + 44, yy, " · ".join(f"{k[:2]} {v['stitches']/1000:.0f}k" for k, v in sp["sections"].items()) + ("  all fit" if all(v["fits"] for v in sp["sections"].values()) else "  CHECK"), 1.8, 600)); yy += 5
         o.append(t(rx, yy, "LICENSED FIGURE — PLACEHOLDER ONLY", 2.2, 700, RED)); yy += 4
         for l in ["Licence confirmed by client 2026-10-16. Nothing is drawn inside the box;",
-                  "our fills are knocked out there. Last stop of the file = basting outline",
-                  "of the box (pink, water-soluble): the factory digitizer replaces it with",
-                  "the licensor-approved figure insert, matching the moon fill around it.",
-                  f"Box placed in split section {sp['box_section']} for the 4-hooping route."]:
+                  "our fills are knocked out there. Last stop = box outline run in Moon cream",
+                  "(12-colour limit), covered by 01b MOON-IN-BOX (our moon fill inside the box,",
+                  "sewn first); the factory digitizer adds the licensed figure on top of it.",
+                  f"Box whole in split section {sp['box_section']} (moon whole there too)."]:
             o.append(t(rx, yy, l, 1.7)); yy += 3.2
     if n in ("01", "03"):
         yy += 2; o.append(t(rx, yy, "SIDE-SEAM WIRE MARKS (height above the hem seam, M)", 2.0, 700)); yy += 3.8

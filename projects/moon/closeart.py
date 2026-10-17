@@ -154,11 +154,15 @@ def hardware(img, box_px, f, pole_x, open_r=5, up=2, exclude=None):
     a = np.asarray(img.crop(box_px).convert("RGB")).astype(float)
     sat = a.max(2) - a.min(2); lum = a.mean(2); blue = a[..., 2] - a[..., 0]
     m = ((sat < 42) & (lum > 52) & (blue < 25)) | ((lum <= 52) & (lum > 18) & (blue < 12))
-    m = ndi.binary_closing(m, iterations=2); m = ndi.binary_fill_holes(m)
+    m = ndi.binary_closing(m, iterations=2); m = morphology.remove_small_holes(m, 300)     # only small holes: big ones are fabric between wires
     core = morphology.binary_opening(m, morphology.disk(open_r))        # drops the free wires (they are drawn parametric)
     keep = m & ndi.binary_dilation(core, iterations=open_r + 1)
     lab, n = ndi.label(keep); sizes = np.bincount(lab.ravel()); ok = np.zeros(n + 1, bool); ok[1:] = sizes[1:] > 120
     keep = ok[lab]
+    # only the pole structure: the connected group (allowing 8 px gaps) that holds the most pixels; drops stray cloud bits
+    lab2, n2 = ndi.label(ndi.binary_dilation(keep, iterations=8))
+    if n2 > 1:
+        big = np.argmax(np.bincount(lab2[keep])[1:]) + 1; keep &= lab2 == big
     if exclude is not None:
         yy, xx = np.mgrid[y0:y1, x0:x1]; keep &= ~exclude(xx, yy)
     def mask(rc, up_, b):

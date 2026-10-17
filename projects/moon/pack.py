@@ -57,7 +57,7 @@ def cover(index):
     tot = sum(e[4]["stitches"] for e in ELEMENTS); trims = sum(e[4]["trims_dst"] for e in ELEMENTS)
     hp = sum(hoopings(e[2], e[4]) for e in ELEMENTS if e[2] != "moonbox") + 1
     for a, b in [("Stitches per jacket", f"{tot:,}"), ("Trims per jacket", f"{trims:,}"), ("Hoopings per jacket", f"{hp} on {factory.largest_frame(PROF)[0]:.0f}² frames (01b in the box hooping)"),
-                 ("Machine time / jacket", f"≈ {sum(hours(e[4]) for e in ELEMENTS):.1f} h ({PROF['spm']} spm + trims + changes)"), ("Threads", "14 colours (40wt polyester) + basting")]:
+                 ("Machine time / jacket", f"≈ {sum(hours(e[4]) for e in ELEMENTS):.1f} h ({PROF['spm']} spm + trims + changes)"), ("Threads", "12 per file (14-tone palette, 40wt poly)")]:
         o.append(t(ix, y, a, 2.0, 400, MUTED)); o.append(t(SW - 14, y, b, 2.0, 600, INK, "end")); y += 4
     y += 3; o.append(t(ix, y, "Licensed figure on the pole: placeholder box only —", 1.9, 700, RED)); o.append(t(ix, y + 3.4, "licence confirmed by client 2026-10-16; factory adds", 1.9, 400)); o.append(t(ix, y + 6.8, "the figure from the licensor-approved art (G4).", 1.9, 400))
     o.append(t(SW - 14, SH - 8, SB.FOOT, 1.9, 400, MUTED, "end"))
@@ -93,7 +93,7 @@ def overview():
           "Sleeves: cap seam + underarm seam 15, cuff seam 10.",
           "Exception — WIRES: bean lines run to 3 mm from the side seam on BOTH back and front and meet at the same height above the hem seam",
           "(match marks = side-seam notches, listed per size on T13). Wires crossing the CF zip stop 15 each side on the same curve.",
-          "Licensed-figure box: nothing of ours is stitched inside it; the pink basting outline marks it for the factory insert."]
+          "Licensed-figure box: nothing of ours is stitched inside it; its outline is run in Moon cream (covered by 01b) to mark it for the factory insert."]
     for i, k in enumerate(ko): o.append(t(12, ky + 4.4 + i * 3.4, k, 1.75))
     y = ky + 4.4 + len(ko) * 3.4 + 3
     res = []
@@ -103,7 +103,7 @@ def overview():
     return o
 
 def threads():
-    o = hdr("G3 · THREAD + TRIM SUMMARY", "One palette for the whole jacket: 14 threads + 1 basting (Rev B, from the close-ups). Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target from the mockup.", "G3")
+    o = hdr("G3 · THREAD + TRIM SUMMARY", "14-tone palette from the close-ups; every file ≤ 12 colours (manufacturer): violet → periwinkle, pole dark grey → pole grey in the files. Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target from the mockup.", "G3")
     use = {k: collections.Counter() for k in PAL}
     for e, nm, k, piece, r in ELEMENTS:
         for hx, n in per_colour(r["file"]).items():
@@ -123,10 +123,10 @@ def threads():
         o.append(t(cx[3], y, f"{iso[0]} {iso[1]}"[:22], 1.7)); o.append(t(cx[4], y, f"{iso[3]:.1f}", 1.7, 600, ci))
         o.append(t(cx[5], y, f"{pn[0]} {pn[1]}"[:24], 1.7)); o.append(t(cx[6], y, f"{pn[3]:.1f}", 1.7, 600, cp))
         o.append(t(cx[7], y, "40", 1.7)); o.append(t(cx[8], y, PAL[k][2][:44], 1.65, 400, MUTED))
-        o.append(t(cx[9], y, ", ".join(sorted(use[k])) or "—", 1.65)); o.append(t(cx[10], y, f"{sum(use[k].values()):,}", 1.7, 600))
+        mg = moonpal.FILE_MERGE.get(k)
+        o.append(t(cx[9], y, (", ".join(sorted(use[k])) or "—") if not mg else f"merged → {PAL[mg][1]} in every file", 1.65, 400 if not mg else 600, INK if not mg else ORANGE)); o.append(t(cx[10], y, f"{sum(use[k].values()):,}", 1.7, 600))
     y = 36 + len(keys) * rh
-    o.append(f'<rect x="{cx[0]}" y="{f(y-2.6)}" width="4.5" height="2.8" fill="{MS.PH_HEX}"/>'); o.append(t(cx[1], y, "Basting (water-soluble)", 1.85, 600))
-    o.append(t(cx[8], y, "registration crosses on split files + licensed-figure placeholder outline (01, last stop) — removed after sewing", 1.65, 400, MUTED))
+    o.append(t(cx[1], y, "No separate basting thread (12-colour limit): registration crosses run in Pole grey, the placeholder outline in Moon cream — both picked out / covered after sewing.", 1.7, 600))
     yb = y + 6
     o.append(t(12, yb, "ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — red rows (moon taupe, cloud lavender on Polyneon) must be picked from the physical card. Stitch counts per colour read from the PES files.", 1.75, 400, MUTED))
     o.append(t(12, yb + 7, "TRIMS + CONSUMABLES (per jacket)", 2.2, 700))
@@ -203,11 +203,11 @@ def files_page():
         o.append(t(cx2[5], y, ("2 × 360²: " + " · ".join(f"{v['size'][0]:.0f}×{v['size'][1]:.0f}" for v in rb["sections"].values())) if "sections" in rb else "1 × 360²", 1.45))
         y += 3.8
     y += 3; o.append(t(12, y, "WHAT IS DIGITIZED", 2.0, 700)); y += 4.2
-    notes = [("Density", "production density (tatami 0.45, satin 0.42); MOON at 0.55 rows + light 4 mm underlay (low density, no stiff dome)."),
-             ("Travel", "hidden travel under later fills + underpath; trims only where a move is exposed (> 2.5 mm)."),
-             ("Wires", "bean line 0.8 mm, ends 3 mm short of every side seam (both pieces) and 15 from CF; sewn before the clouds + pole."),
-             ("Placeholder", "01 last stop = pink water-soluble basting outline of the licensed-figure box; on split files each section bastes its part."),
-             ("Ties / max", "3-stitch tie-on/off at every trim + colour change; max stitch 7.5 mm.")]
+    notes = [("Density", "production density everywhere (tatami 0.45, satin 0.42) — Rev B fidelity first; DST mm/mm² per code on each element p3."),
+             ("Travel", "hidden travel under later fills + underpath (engine PR #1); trims only where a move is exposed (> 2.5 mm)."),
+             ("Wires", "satin cord 1.6 mm with a wrap at each insulator; ends 3 mm short of every side seam (both pieces), 15 from CF."),
+             ("Placeholder", "01 last stop = outline of the licensed-figure box in Moon cream (covered by 01b moon-in-box); nothing else inside it."),
+             ("Ties / max", "3-stitch tie-on/off at every trim + colour change; max stitch < 7.5 mm (read back); ≤ 12 colours per file.")]
     for a, b_ in notes: o.append(t(12, y, a, 1.55, 700)); o.append(t(34, y, b_, 1.5)); y += 3.3
     # split diagram M
     bk = Image.open("cover_back.png"); F = TF.Flat("M"); b = TF.bounds_front(F)
