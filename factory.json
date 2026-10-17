@@ -17,5 +17,6 @@
   ],
   "thread_card_received": false,
   "price_basis": "unknown — ask: per 1,000 stitches, per trim, per hooping, or per piece",
-  "needles_note": "Manufacturer, 2026-10-16: max 12 colours per stitch file (incl. basting / registration — sew those in a colour already in the file)."
+  "needles_note": "Manufacturer, 2026-10-16: max 12 distinct colours per stitch file (incl. basting / registration — sew those in a colour already in the file). Colour changes / repeated stops are fine.",
+  "colour_changes_ok": true
 }
