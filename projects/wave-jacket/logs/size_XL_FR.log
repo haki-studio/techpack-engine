@@ -1,0 +1,4 @@
+XL FR {'stitches': 118348, 'trims': 560, 'jumps': 1548, 'stops': 11, 'size_mm': (294.8, 396.9), 'max_stitch': 7.28} 46s
+XL FR S1_top {'stitches': 60063, 'trims': 288, 'stops': 11, 'size_mm': (314.2, 244.1), 'fits': True} split y 368.9
+XL FR S2_bottom {'stitches': 58520, 'trims': 274, 'stops': 11, 'size_mm': (314.2, 180.1), 'fits': True} split y 368.9
+DONE XL ['FR']

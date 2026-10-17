@@ -1,4 +1,4 @@
-"""Technical flats (Drum Island block) for the Grand Line jacket — washed navy, black collar + rib (line drawings in mm, size M). y from HPS line (0) down."""
+"""Technical flats (Drum Island block) for the Wave jacket — washed navy, navy collar + rib [proposed] (line drawings in mm, size M). y from HPS line (0) down."""
 import math
 import numpy as np
 from shapely.geometry import Polygon, LineString, Point, box
@@ -9,7 +9,7 @@ from render import f
 
 K = 1.0
 LBL = 7.0
-INK = "#111111"; MUT = "#9AA3B8"; SH = "#3C4560"; CORD = "#1E1E1E"; RIBC = "#262626"; CUFF = "#262626"; ZIP = "#A07C3C"
+INK = "#111111"; MUT = "#9AA3B8"; SH = "#3C4560"; CORD = "#1E2434"; RIBC = "#232A3C"; CUFF = "#232A3C"; ZIP = "#A07C3C"
 
 class Flat:
     def __init__(self, size="M"):

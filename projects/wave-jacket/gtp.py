@@ -1,5 +1,5 @@
-"""Garment tech pack pages — Grand Line jacket (Drum Island block), washed navy, front-scene embroidery."""
-import glcore
+"""Garment tech pack pages — Wave jacket (Drum Island block), washed navy, wave + foam embroidery on 5 pieces."""
+import wavecore as glcore
 import json, math, os, pickle
 import numpy as np
 import cairosvg
@@ -32,8 +32,8 @@ def flat_group(svgbody, b, ox, oy, s, k=None):
 import pickle as _pk
 from shapely.ops import unary_union as _uu
 def art_box(size, P):
-    D = _pk.load(open(f"front_{size}.pkl", "rb")); return _uu([r["geom"] for r in D[P]]).bounds
-EMB = {P: {"box": art_box("M", P), "ref": "front"} for P in glcore.PIECES}
+    D = _pk.load(open(f"art_{size}.pkl", "rb")); return _uu([r["geom"] for r in D[P]]).bounds
+EMB = {P: {"box": art_box("M", P), "ref": "back" if P == "BK" else "front"} for P in glcore.PIECES}
 GRADE = glcore.GRADE
 
 def callout(x, y, n, tx, ty):
@@ -55,8 +55,8 @@ def p_cover(index):
     for name, pg in index:
         o.append(t(ix, y, name, 1.95)); o.append(t(SW - 14, y, str(pg), 1.95, 600, MUTED, "end")); y += 3.9
     y += 3; o.append(t(ix, y, "KEY SPECS", 2.4, 700)); y += 4.6
-    for a, b in [("Shell", "12 oz cotton duck, washed navy"), ("Collar", "cotton corduroy, black"), ("Zip", "YKK #5 metal, brass, separating"),
-                 ("Hem / cuffs", "rib knit, black"), ("Embroidery", "1 element (front scene), 2 pieces, 12 threads"), ("Fit", "Drum Island block (boxy, cropped)"), ("Pattern", "XS–3XL, Drum Island pattern, DXF + 1:1 plot")]:
+    for a, b in [("Shell", "12 oz cotton duck, washed navy"), ("Collar", "cotton corduroy, navy"), ("Zip", "YKK #5 metal, brass, separating"),
+                 ("Hem / cuffs", "rib knit, navy"), ("Embroidery", "1 element (wave), 5 pieces, 9 threads"), ("Fit", "Drum Island block (boxy, cropped)"), ("Pattern", "XS–3XL, Drum Island pattern, DXF + 1:1 plot")]:
         o.append(t(ix, y, a, 1.95, 400, MUTED)); o.append(t(ix + 22, y, b, 1.95, 600)); y += 3.8
     o.append(t(SW - 14, SH - 8, FOOT, 1.8, 400, MUTED, "end"))
     return o
@@ -65,9 +65,9 @@ def p_flats(F):
     o = header("TECHNICAL FLATS — front + back (size M)", "Line drawing to scale (0.13:1). Dashed grey = topstitching. Red dashed boxes = embroidery placement (see embroidery section).", "T2")
     b = TF.bounds_front(F); s = 0.122
     TF.K = 1.0 / (s * 6); TF.LBL = 2.6 / s
-    fb = [(*EMB[e]["box"], "01") for e in glcore.PIECES]
+    fb = [(*EMB[e]["box"], "01") for e in ("FR", "FL")]
     fb = [(x0, y0 + F.fnd, x1, y1 + F.fnd, lab) for x0, y0, x1, y1, lab in fb]
-    bb = []
+    bb = [(x0, y0 + F.bnd, x1, y1 + F.bnd, "01") for x0, y0, x1, y1 in [EMB["BK"]["box"]]]
     o.append(flat_group(TF.draw_front(F, fb), b, 12, 32, s))
     o.append(flat_group(TF.draw_back(F, bb), b, 12 + (b[2]-b[0])*s + 8, 32, s))
     o.append(t(12 + (b[2]-b[0])*s/2, 32 + (b[3]-b[1])*s + 5, "FRONT", 2.3, 700, INK, "middle"))
@@ -79,14 +79,14 @@ def p_flats(F):
           (BX(0), Y(150), 7, BX(150), Y(150))]
     for x, y, n, tx, ty in cl: o.append(callout(x, y, n, tx, ty))
     lx = 12; ly = 136
-    notes = [("1", "Collar: black cotton corduroy, point collar, 6 mm edge topstitch; under collar same corduroy; collar band interlined."),
+    notes = [("1", "Collar: navy cotton corduroy, point collar, 6 mm edge topstitch; under collar same corduroy; collar band interlined."),
              ("2", "CF: YKK #5 metal separating zip, antique brass, auto-lock slider; tape enclosed, 10 mm topstitch each side."),
              ("3", "Hand-warmer welt pockets ×2: welt 1.4 × 13 cm, diagonal; bartack both ends; cotton twill pocket bag."),
-             ("4", "Hem: rib knit, black, finished height 5.5 cm; joined with 4-thread overlock, topstitched 5 mm on body."),
-             ("5", "Cuffs: rib knit, black, finished height 7.5 cm, folded double; seam inside."),
+             ("4", "Hem: rib knit, navy, finished height 5.5 cm; joined with 4-thread overlock, topstitched 5 mm on body."),
+             ("5", "Cuffs: rib knit, navy, finished height 7.5 cm, folded double; seam inside."),
              ("6", "Shoulder: 5-thread safety stitch, pressed to back, 6 mm single-needle topstitch on back."),
-             ("7", "Back + sleeves: plain, no embroidery. One-piece back panel, no yoke; 6 mm armhole topstitch on the body."),
-             ("8", "Embroidery 01 front scene: both cut front panels, flat, before welts + zip; horizon + rays match across the zip.")]
+             ("7", "Back: one-piece panel, no yoke, wave embroidery 01 BK; sleeves carry 01 SR / SL; 6 mm armhole topstitch on the body."),
+             ("8", "Embroidery 01 wave: back, both fronts, both sleeves — flat on the cut pieces, before welts, zip and any seam.")]
     for i, (n, s_) in enumerate(notes):
         o.append(f'<circle cx="{f(lx + 2.3)}" cy="{f(ly + i*4.0 - 0.7)}" r="1.9" fill="#FFF" stroke="{INK}" stroke-width="0.25"/>' + t(lx + 2.3, ly + i*4.0, n, 1.7, 700, INK, "middle"))
         o.append(t(lx + 6, ly + i*4.0, s_, 1.9))
@@ -105,17 +105,17 @@ def p_details(F):
     o.append(f'<g transform="translate({f(18 - cb[0]*s)} {f(36 - cb[1]*s)}) scale({f(s)})">{body}</g>')
     ys = 36 + (cb[3]-cb[1])*s + 6
     for i, l in enumerate(["Collar height at CB (M): 10.0 ± 0.3", "Collar point (neck point → tip): 8.5 ± 0.3", "Neck opening seam-to-seam: 20.0 ± 0.5",
-                           "Upper + under collar: 14-wale cotton corduroy, black", "Collar band: woven fusible interlining", "Edge topstitch 6 mm, tonal Tex 60"]):
+                           "Upper + under collar: 14-wale cotton corduroy, navy", "Collar band: woven fusible interlining", "Edge topstitch 6 mm, tonal Tex 60"]):
         o.append(t(14, ys + i*3.5, l, 1.8) if i < 3 else prop(14, ys + i*3.5, l, 1.8))
     # B cuff + hem rib
     bx = 112
     o.append(t(bx, 32, "B · CUFF + HEM RIB", 2.5, 700))
     o.append(f'<rect x="{bx}" y="37" width="40" height="15" fill="{TF.CUFF}" stroke="{INK}" stroke-width="0.3"/>')
     for k in range(40): o.append(f'<line x1="{f(bx + k + 0.5)}" y1="37" x2="{f(bx + k + 0.5)}" y2="52" stroke="#4A4A4A" stroke-width="0.12"/>')
-    o.append(t(bx + 44, 42, "Cuff: 7.5 finished, folded double", 1.8)); o.append(prop(bx + 44, 45.5, "1×1 rib, black, 95/5 cotton/elastane", 1.75))
+    o.append(t(bx + 44, 42, "Cuff: 7.5 finished, folded double", 1.8)); o.append(prop(bx + 44, 45.5, "1×1 rib, navy, 95/5 cotton/elastane", 1.75))
     o.append(f'<rect x="{bx}" y="57" width="40" height="11" fill="{TF.RIBC}" stroke="{INK}" stroke-width="0.3"/>')
     for k in range(40): o.append(f'<line x1="{f(bx + k + 0.5)}" y1="57" x2="{f(bx + k + 0.5)}" y2="68" stroke="#4A4A4A" stroke-width="0.12"/>')
-    o.append(t(bx + 44, 61, "Hem: 5.5 finished, folded double", 1.8)); o.append(prop(bx + 44, 64.5, "1×1 rib, black (as cuffs)", 1.75))
+    o.append(t(bx + 44, 61, "Hem: 5.5 finished, folded double", 1.8)); o.append(prop(bx + 44, 64.5, "1×1 rib, navy (as cuffs)", 1.75))
     o.append(t(bx, 74, "Cuff opening (relaxed, ½): XS 14 → 3XL 17", 1.8)); o.append(t(bx, 77.5, "Bottom sweep (relaxed, ½): XS 52 → 3XL 70", 1.8))
     o.append(prop(bx, 81, "Rib cut length = 85% of attached edge (cuff), 90% (hem)", 1.75))
     # D zip (right column)
@@ -123,7 +123,7 @@ def p_details(F):
     o.append(t(zx, 32, "D · ZIP", 2.5, 700))
     zl = {sz: round((drum.POM_CM["A"][2][i] - drum.POM_CM["K"][2][i] - 0.5)) for i, sz in enumerate(drum.SIZES)}
     zrows = [("Type", "YKK #5 metal, separating, one-way"), ("Teeth / slider", "antique brass, auto-lock"),
-             ("Tape", "black"), ("Length XS–M", "  ".join(f"{k} {v}" for k, v in list(zl.items())[:3]) + " cm"),
+             ("Tape", "navy"), ("Length XS–M", "  ".join(f"{k} {v}" for k, v in list(zl.items())[:3]) + " cm"),
              ("Length L–3XL", "  ".join(f"{k} {v}" for k, v in list(zl.items())[3:]) + " cm"),
              ("Top", "zip garage, 2.5 fold of shell"), ("Setting", "tape enclosed shell/facing, 10 mm topstitch")]
     for i, (a, b_) in enumerate(zrows):
@@ -135,8 +135,8 @@ def p_details(F):
     o.append(f'<rect x="16" y="{wy+5}" width="70" height="8" fill="#2E3550" stroke="{INK}" stroke-width="0.35"/>'
              f'<rect x="17" y="{wy+6}" width="68" height="6" fill="none" stroke="{MUTED}" stroke-width="0.2" stroke-dasharray="1 0.6"/>'
              f'<rect x="15" y="{wy+4}" width="2" height="10" fill="{INK}"/><rect x="85" y="{wy+4}" width="2" height="10" fill="{INK}"/>')
-    o.append(t(16, wy + 18, "shown 0.5:1, drawn horizontal — sewn at 38° (see T2)", 1.7, 400, MUTED))
-    o.append(prop(16, wy + 21.5, "Position from the mockup: centre 20.5 from CF, 34.7 below the CF neck (M)", 1.65))
+    o.append(t(16, wy + 18, "shown 0.5:1, drawn horizontal — sewn at 39° (see T2)", 1.7, 400, MUTED))
+    o.append(prop(16, wy + 21.5, "Position from the mockup: centre 22.1 from CF, 34.8 below the CF neck (M)", 1.65))
     for i, l in enumerate(["Welt 1.4 wide × 13.0 long", "Bartack both ends, 10 mm, tonal", "Edge topstitch 2 mm around welt"]):
         o.append(t(94, wy + 5 + i*3.5, l, 1.8))
     o.append(prop(94, wy + 5 + 3*3.5, "Pocket bag: cotton twill 8 oz, depth 18, French seams", 1.75))
@@ -147,7 +147,7 @@ def p_details(F):
     ins = [("Lining", "body: 100% cotton flannel; sleeves: polyester taffeta for easy on/off", True),
            ("Facing", "shell canvas facing at CF, 6 cm wide; zip set between shell + facing", True),
            ("Hanger loop", "6 cm self-fabric loop at CB neck, under the main label", True),
-           ("Embroidery backing", "cutaway trimmed to 5 mm; front lining covers the back of the front scene", False),
+           ("Embroidery backing", "cutaway trimmed to 5 mm; body + sleeve linings cover the back of the embroidery", False),
            ("Labels", "main + size at CB neck facing; care/content wearer's left inside side seam, 10 above hem (T8)", False)]
     for i, (a, b_, pp) in enumerate(ins):
         o.append(t(14, iy + 6 + i*3.7, a, 1.85, 600)); o.append(prop(44, iy + 6 + i*3.7, b_, 1.8) if pp else t(44, iy + 6 + i*3.7, b_, 1.85))
@@ -210,28 +210,25 @@ def p_grade():
         for j in range(6): o.append(t(cx[2 + j], y, f"{vals[j+1] - vals[j]:+.1f}", 1.8))
     o.append(t(tx, ty + 9.5 + 8*4.2 + 2, "Increments are uneven by design (fit chart) — grade nests from the chart, not a fixed rule.", 1.75, 400, MUTED))
     gx = 136
-    o.append(t(gx, ty, "B · EMBROIDERY GRADING (01 front scene)", 2.4, 700))
-    o.append(t(gx, ty + 4.5, "3 art grades, scaled about the CF neck point so the horizon + rays meet at CF on every size.", 1.75, 400, MUTED))
-    o.append(t(gx, ty + 7.8, "One stitch file per size per piece: art re-clipped to that size's own keep-outs (pattern T13).", 1.75, 400, MUTED))
-    hd = ["Size", "Art", "Scale", "FR art box", "FL art box", "Horizon y at CF"]
-    hx = [gx, gx + 10, gx + 18, gx + 30, gx + 62, gx + 94]
-    for x, h in zip(hx, hd): o.append(t(x, ty + 13, h, 1.75, 700, MUTED))
-    hz = json.load(open("scene_meta.json"))["horizon"]
+    o.append(t(gx, ty, "B · EMBROIDERY GRADING (01 wave)", 2.4, 700))
+    o.append(t(gx, ty + 4.5, "3 art grades: the render map is scaled about each piece's neck point (sleeves: the sleeve map of that", 1.75, 400, MUTED))
+    o.append(t(gx, ty + 7.8, "size), then re-clipped to that size's own keep-outs. One stitch file per size per piece (pattern T13).", 1.75, 400, MUTED))
+    hd = ["Size", "Art", "Scale"] + [f"{P} art box" for P in glcore.PIECES]
+    hx = [gx, gx + 9, gx + 16] + [gx + 26 + 26*j for j in range(5)]
+    for x, h in zip(hx, hd): o.append(t(x, ty + 13, h, 1.6, 700, MUTED))
     for i, sz in enumerate(drum.SIZES):
         g, sc = GRADE[sz]; y = ty + 17.5 + i*4.4
         if i % 2 == 0: o.append(f'<rect x="{gx-1}" y="{f(y-3.1)}" width="{SW - gx - 11}" height="4.4" fill="#F5F2EC"/>')
-        o.append(t(hx[0], y, sz, 1.9, 700)); o.append(t(hx[1], y, g, 1.9, 700, RED)); o.append(t(hx[2], y, f"{sc*100:.0f}%", 1.85))
+        o.append(t(hx[0], y, sz, 1.8, 700)); o.append(t(hx[1], y, g, 1.8, 700, RED)); o.append(t(hx[2], y, f"{sc*100:.0f}%", 1.75))
         for j, P in enumerate(glcore.PIECES):
-            b = art_box(sz, P); o.append(t(hx[3 + j], y, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.75))
-        o.append(t(hx[5], y, f"{hz*sc:.0f} mm below CF neck", 1.75))
+            b = art_box(sz, P); o.append(t(hx[3 + j], y, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.6))
     y = ty + 17.5 + 7*4.4 + 2
     o.append(t(gx, y, "Art boxes in mm, measured from each size's own art (after keep-out clipping).", 1.75, 400, MUTED))
-    o.append(t(gx, y + 3.3, "Bigger sizes keep more cloud at the side seams (the art is composed past the M keep-outs).", 1.75, 400, MUTED))
     o.append(t(gx, y + 8, "C · PLACEMENT REFERENCE PER SIZE", 2.4, 700))
-    pl = ["The per-size stitch files are already in each size's pattern coordinates: origin = centre of the art box ((+) on the pattern, DXF",
-          "   layer 8 = art outline, box, centre). Zip edge of the art 15 mm from CF on every size; horizon match mark at CF (G2).",
-          "Hoop each cut front panel flat; mark CF, the horizon line and the welt box (drill holes) before hooping.",
-          "Keep-outs held on every size: CF/zip 15 · side, armhole, shoulder 15 · hem seam 10 · welt 6 · collar lying flat 6 (T13)."]
+    pl = ["The per-size stitch files are already in each size's pattern coordinates: origin = centre of each file ((+) on the pattern, DXF",
+          "   layer 8 = art outline + box, layer 13 = needle start of every file + split section).",
+          "Hoop each cut piece flat; mark CF/CB, split lines and the welt box (drill holes) before hooping.",
+          "Keep-outs held on every size: CF/zip 15 · side, armhole, shoulder, cap, underarm 15 · hem + cuff 10 · welt 6 · collar 6 (T13)."]
     for i, l in enumerate(pl): o.append(t(gx, y + 12.5 + i*3.6, l, 1.7))
     return o
 
@@ -259,18 +256,18 @@ def p_bom():
     for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.8, 700, MUTED))
     rows = [
         ("Shell", "12 oz (407 g/m²) 100% cotton duck canvas, 150 cm, washed", "washed navy ≈ #252B3B", "body, sleeves, welts, facing", "TBC", f"{C['Shell']:.2f} m", False),
-        ("Collar", "14-wale cotton corduroy, 8 oz", "black", "upper + under collar", "TBC", f"{C['Collar']:.2f} m", True),
-        ("Hem rib", "1×1 rib, 95/5 cotton/elastane, 400 g/m²", "black", "hem band", "TBC", f"{C['Hem rib']/1000:.2f} m (1 × {C['Hem rib']/10:.0f} cm cut)", True),
-        ("Cuff rib", "1×1 rib, 95/5 cotton/elastane, 400 g/m²", "black", "cuffs ×2", "TBC", f"{C['Cuff rib']/1000:.2f} m", True),
+        ("Collar", "14-wale cotton corduroy, 8 oz", "navy", "upper + under collar", "TBC", f"{C['Collar']:.2f} m", True),
+        ("Hem rib", "1×1 rib, 95/5 cotton/elastane, 400 g/m²", "navy", "hem band", "TBC", f"{C['Hem rib']/1000:.2f} m (1 × {C['Hem rib']/10:.0f} cm cut)", True),
+        ("Cuff rib", "1×1 rib, 95/5 cotton/elastane, 400 g/m²", "navy", "cuffs ×2", "TBC", f"{C['Cuff rib']/1000:.2f} m", True),
         ("Body lining", "100% cotton flannel, 180 g/m²", "navy solid", "body", "TBC", f"{C['Body lining']:.2f} m", True),
         ("Sleeve lining", "polyester taffeta 210T", "navy", "sleeves", "TBC", f"{C['Sleeve lining']:.2f} m", True),
         ("Pocket bag", "8 oz cotton twill", "navy", "welt pockets ×2", "TBC", f"{C['Pocket bag']:.2f} m", True),
         ("Interlining", "woven fusible, 60 g/m²", "charcoal", "top collar, facings, welts", "TBC", f"{C['Interlining']:.2f} m", True),
-        ("Zip", "YKK #5 metal separating, auto-lock, one-way", "antique brass teeth, black tape", "CF", "YKK", "1 × 56 cm (M)", False),
+        ("Zip", "YKK #5 metal separating, auto-lock, one-way", "antique brass teeth, navy tape", "CF", "YKK", "1 × 56 cm (M)", False),
         ("Thread — seams", "Coats Epic 120 (Tex 27) corespun poly/cotton", "tonal navy", "all seams + overlock", "Coats", "~ 450 m", True),
         ("Thread — topstitch", "Coats Gral 40 (Tex 60) poly", "tonal navy", "topstitch, bartacks", "Coats", "~ 120 m", True),
-        ("Embroidery thread", "Madeira Polyneon 40 (12 colours, see G3)", "per embroidery spec", "01 front scene", "Madeira", thread_qty(), False),
-        ("Embroidery backing", "2.5 oz cutaway", "black / charcoal", "behind FR + FL", "TBC", "2 pieces", False),
+        ("Embroidery thread", "Madeira Polyneon 40 (9 colours, see G3)", "per embroidery spec", "01 wave, 5 pieces", "Madeira", thread_qty(), False),
+        ("Embroidery backing", "2.5 oz cutaway", "navy / charcoal", "behind BK, FR, FL, SR, SL", "TBC", "5 pieces", False),
         ("Main label", "woven damask, HAKI logo, 7 × 2 cm, folded", "black / cream", "CB neck facing", "TBC", "1", True),
         ("Size label", "woven, 2 × 1.5 cm", "black / cream", "under main label", "TBC", "1", True),
         ("Care / content label", "printed satin, multi-page", "white", "wearer's left inside side seam", "TBC", "1", True),
@@ -284,7 +281,7 @@ def p_bom():
         o.append(t(cx[2], y, mat, 1.75, 600 if pp else 400, PROP if pp else INK))
         o.append(t(cx[3], y, colr, 1.7)); o.append(t(cx[4], y, plc, 1.7)); o.append(t(cx[5], y, sup, 1.7, 400, MUTED)); o.append(t(cx[6], y, qty, 1.75, 600))
     y = 35.5 + len(rows)*4.55 + 2
-    o.append(t(12, y, "Amber rows = proposed by Haki tech design, not yet specified — confirm material, weight and supplier. Shell (12 oz duck, navy), black collar/rib and zip are from the client notes.", 1.75, 600, PROP))
+    o.append(t(12, y, "Amber rows = proposed by Haki tech design, not yet specified — confirm material, weight and supplier. Shell, collar, rib colours are read from the render (brief: [proposed]).", 1.75, 600, PROP))
     o.append(t(12, y + 3.5, "Shell fabric: pre-shrunk / garment-wash tested before embroidery (dense embroidery shrinks panels 1.5–2.5%).", 1.75, 400, MUTED))
     return o
 
@@ -315,7 +312,7 @@ def p_construction():
     ax = 204
     o.append(t(ax, 31, "ASSEMBLY ORDER", 2.4, 700))
     steps = ["Cut shell; mark welts, embroidery placement, notches.",
-             "Embroider 01 front scene on both fronts flat.",
+             "Embroider 01 wave on BK, FR, FL, SR, SL flat.",
              "Trim backing to 5 mm; press from the wrong side.",
              "Make welt pockets on both fronts; bartack.",
              "Join shoulders; topstitch.",
@@ -360,35 +357,35 @@ def p_labels():
     return o
 
 def p_colourway():
-    o = header("COLOURWAY + ARTWORK — washed navy, sunrise over a sea of clouds", "Garment colours and the embroidery in place (stitch preview, size M). Embroidery detail: following section.", "T9")
+    o = header("COLOURWAY + ARTWORK — washed navy, Hokusai-style wave", "Garment colours and the embroidery in place (stitch preview on the flat lay, size M). Embroidery detail: following section.", "T9")
     fr = Image.open("cover_front.png"); bk = Image.open("cover_back.png")
     tag, h = img_tag(fr, 14, 30, 100); o.append(tag); tag, h2 = img_tag(bk, 120, 30, 100); o.append(tag)
     cx = 228; o.append(t(cx, 33, "GARMENT COLOURS", 2.3, 700))
-    cols = [(glcore.FABRIC, "Shell — washed navy duck"), ("#1E1E1E", "Collar — black corduroy"), ("#262626", "Hem + cuff rib — black"),
-            ("#A07C3C", "Zip — antique brass, black tape")]
+    cols = [(glcore.FABRIC, "Shell — washed navy duck"), ("#1E2434", "Collar — navy corduroy"), ("#1E2434", "Hem + cuff rib — navy"),
+            ("#A07C3C", "Zip — antique brass, navy tape")]
     for i, (h_, n) in enumerate(cols):
         o.append(f'<rect x="{cx}" y="{f(37 + i*5.5)}" width="6" height="4" rx="0.5" fill="{h_}" stroke="#BBB" stroke-width="0.2"/>')
         o.append(t(cx + 8, 40 + i*5.5, n, 1.85))
     o.append(t(cx, 66, "Lab-dip / strike-off approval", 1.9, 700))
     o.append(t(cx, 69.5, "required for shell, collar and both ribs.", 1.85))
-    o.append(t(cx, 76, "Embroidery: 12 threads,", 1.9, 700)); o.append(t(cx, 79.5, "Madeira Polyneon (G3).", 1.85))
+    o.append(t(cx, 76, "Embroidery: 9 threads,", 1.9, 700)); o.append(t(cx, 79.5, "Madeira Polyneon (G3).", 1.85))
     o.append(prop(cx, 86, "Shell piece-dyed + washed BEFORE", 1.75)); o.append(t(cx, 89.5, "embroidery (garment dye would", 1.75, 600, PROP)); o.append(t(cx, 93, "shift thread shades) — T10 Q1", 1.75, 600, PROP))
     return o
 
 def p_questions():
     o = header("OPEN QUESTIONS — garment", "Everything marked [proposed — confirm] in this pack, in one place. Embroidery questions are on G4.", "T10")
-    qs = ["1. Shell: 12 oz duck washed navy — piece-dyed + washed before embroidery (assumed) or garment-dyed after? Send a lab-dip / Pantone reference.",
-          "2. Collar corduroy weight + wale (proposed 14-wale, 8 oz, black); zip tape colour (black proposed).",
-          "3. Rib: fibre (proposed 95/5 cotton/elastane), heights (hem 5.5, cuff 7.5 — not on the fit chart), black.",
+    qs = ["1. Shell: 12 oz duck washed navy [proposed] — piece-dyed + washed before embroidery (assumed) or garment-dyed after? Send a lab-dip / Pantone reference.",
+          "2. Collar: the render shows a corduroy collar (navy, proposed 14-wale 8 oz); the intake note mentioned a hood — built with the collar. Confirm.",
+          "3. Rib: fibre (proposed 95/5 cotton/elastane), heights (hem 5.5, cuff 7.5 — not on the fit chart), navy.",
           "4. Pattern (T11–T13) is the Drum Island first pattern: shoulder slope 4.5, cap ease 1.2, facings, rib heights proposed — sample + fit M first.",
-          "5. Welt pockets: Drum Island welt 1.4 × 13 cm moved to the mockup position (20.5 from CF, 34.7 below the neck, 38°). Confirm.",
-          "6. Lining: navy flannel body + taffeta sleeves proposed. Quilted or unlined alternative?",
+          "5. Welt pockets: Drum Island welt 1.4 × 13 cm at the render position (22.1 from CF, 34.8 below the neck, 39°). Confirm.",
+          "6. Lining: navy flannel body + taffeta sleeves proposed (covers the embroidery backing on all 5 pieces). Quilted or unlined alternative?",
           "7. Zip garage at collar + auto-lock slider — confirm. Zip lengths per size on T3 assume CF length − 0.5 cm.",
           "8. Seam types + SPI (T7) are a standard proposal — factory to confirm capability (5-thread safety stitch, bartack).",
           "9. Labels + packaging artwork, country of origin, care-symbol set, carton marks.",
-          "10. Embroidery grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per front piece. OK?",
-          "11. Frame: each front piece needs 2 hoopings on the assumed 360 × 360 frame (split files) — or one hooping on a ≥ 300 × 520 frame (full files). Which?",
-          "12. Product name: 'Grand Line' is a One Piece term — internal slug only? Confirm the retail name before labels/hangtags.",
+          "10. Embroidery grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per piece. OK?",
+          "11. Frame: back, fronts and sleeves need 2–4 hoopings on the assumed 360 × 360 frame (split files, G6) — larger frames available?",
+          "12. Foam curls: raised padded + loop texture proposed; chenille heads at the factory? Wash test the cream foam on the strike-off.",
           "13. Inside: pocket bags free-hanging + bound (proposed); inside chest pocket — add one? (T14)"]
     for i, q in enumerate(qs): o.append(t(14, 34 + i*4.6, q, 2.0))
     return o
@@ -400,7 +397,7 @@ PAGES = ["T1 Cover + contents", "T2 Technical flats", "T3 Construction details",
 
 def build(emb_pdf, emb_pages, out_pdf):
     F = TF.Flat("M")
-    index = [(n, i + 1) for i, n in enumerate(PAGES)] + [("EMBROIDERY SECTION (G1–G5 + element 01)", len(PAGES) + 1)] + emb_pages
+    index = [(n, i + 1) for i, n in enumerate(PAGES)] + [("EMBROIDERY SECTION (G1–G6, element 01, F1)", len(PAGES) + 1)] + emb_pages
     import gtp_pattern as GP
     pages = [p_cover(index), p_flats(F), p_details(F), p_pom(F), p_grade(), p_bom(), p_construction(), p_labels(), p_colourway(), p_questions(),
              GP.p_pattern_pieces(), GP.p_pattern_grade(), GP.p_pattern_emb(), GP.p_inside(), GP.p_operations(), GP.p_revisions()]
