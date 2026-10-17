@@ -74,7 +74,7 @@ def koi(cx, cy, L, ang, rng, pattern=0, bend=0.0, unit=None):
     for sg in (-1, 1):
         for k, f in enumerate((0.25, 0.55, 0.85)):
             e = (X(0.80 + 0.18*f), spine(0.80 + 0.18*f) + sg*(0.03*L + f*0.11*L))
-            rays.append(line_poly([(X(0.71), spine(0.71) + sg*0.012*L), e], 0.55))
+            rays.append(line_poly([(X(0.71), spine(0.71) + sg*0.012*L), e], 0.65))
     ray_u = unary_union(rays).intersection(tail.buffer(-0.35))
     regs.append(R("kb_grey", ray_u, "run", None, "KO-ray", 2))
     # fins: pectoral pair at s 0.24, pelvic pair at s 0.47 (fan shapes swept back), cream with grey rays
@@ -92,7 +92,7 @@ def koi(cx, cy, L, ang, rng, pattern=0, bend=0.0, unit=None):
             regs.append(R("kb_cream", fan, "satin", ("radial", bx, by), "KO-fin", 1))
             if fl > 6:
                 for f in (-0.3, 0.15):
-                    fin_rays.append(line_poly([(bx, by), (bx + ux*fl*0.85 + nx*fw*f, by + uy*fl*0.85 + ny*fw*f)], 0.5))
+                    fin_rays.append(line_poly([(bx, by), (bx + ux*fl*0.85 + nx*fw*f, by + uy*fl*0.85 + ny*fw*f)], 0.65))
     if fin_rays:
         fins_u = unary_union([r["geom"] for r in regs if r["grp"] == "KO-fin"])
         regs.append(R("kb_grey", unary_union(fin_rays).intersection(fins_u.buffer(-0.3)).difference(body.buffer(0.3)), "run", None, "KO-ray", 2))

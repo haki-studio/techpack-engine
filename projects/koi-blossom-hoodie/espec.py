@@ -123,10 +123,10 @@ def build(cfg, vis_all):
         wmm = (bb[2]-bb[0])*scale; tag, hh = img_tag(dm, xcur, 30, wmm, 88); o.append(tag)
         o.append(f'<rect x="{f(xcur)}" y="30" width="{f(wmm)}" height="{f(hh)}" fill="none" stroke="#BBB" stroke-width="0.2"/>')
         o.append(t(xcur, 30 + hh + 3.2, f"Piece {p} (shown {scale:.2f}:1)", 1.9, 700)); xcur += wmm + 6
-    zx = 192; o.append(t(zx, 32, "DETAIL CROPS (shown 2:1)", 2.4, 700)); yy = 35
+    zx = 192; o.append(t(zx, 32, "DETAIL CROPS (shown 1.6:1)", 2.4, 700)); yy = 35
     for (P, c, cap) in cfg["dm_crops"]:
         im = direction_map(V[P], c, 14, label_min=30, label_mm=1.2)
-        wmm = (c[2]-c[0])*2; tag, hh = img_tag(im, zx, yy, wmm, 90); o.append(tag)
+        wmm = (c[2]-c[0])*1.6; tag, hh = img_tag(im, zx, yy, wmm, 90); o.append(tag)
         o.append(f'<rect x="{zx}" y="{f(yy)}" width="{f(wmm)}" height="{f(hh)}" fill="none" stroke="#BBB" stroke-width="0.2"/>')
         o.append(t(zx, yy + hh + 3, cap, 1.75, 400, MUTED)); yy += hh + 6.5
     pages.append(o)
@@ -189,7 +189,7 @@ def build(cfg, vis_all):
         im = R_(V[P], c, 14); tag, hh = img_tag(im, x, 35, c[2] - c[0]); o.append(tag)
         o.append(t(x, 35 + hh + 3, cap, 1.8, 600)); x += (c[2] - c[0]) + 4
     my = 104
-    tag, hh = SHT.embed(cfg["mock_file"], cfg["mock_crop"], 56, 14, my + 3); o.append(tag)
+    tag, hh = SHT.embed(cfg["mock_file"], cfg["mock_crop"], cfg.get("mock_w", 56), 14, my + 3); o.append(tag)
     o.append(t(14, my, "MOCKUP", 2.4, 700))
     o.append(t(76, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
     for i, c in enumerate(cfg["changes"]): o.append(t(76, my + 4.5 + i*3.2, c, 1.8))

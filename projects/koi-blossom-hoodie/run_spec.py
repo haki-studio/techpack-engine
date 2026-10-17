@@ -62,7 +62,7 @@ CFG = {
              ("SR", (40, 60, 95, 90), "Top koi")],
    crops=[("SR", (25, 390, 80, 450), "Cuff lily, 1:1"), ("SL", (-105, 250, -55, 310), "Long koi"),
           ("SR", (50, 330, 105, 390), "Koi + petals"), ("SL", (-140, 340, -85, 400), "Koi near the cuff")],
-   mock_file="inputs/front.png", mock_crop=(0, 450, 180, 930),
+   mock_file="inputs/front.png", mock_crop=(0, 450, 180, 930), mock_w=28,
    changes=["Placed from the mockup's front view: each point mapped",
             "  onto the sleeve pattern (outer fold = centre line,",
             "  inner edge = front underarm seam, cylinder projection).",
