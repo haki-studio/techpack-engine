@@ -91,13 +91,34 @@ def trace_view(view):
     dist, (iy, ix) = ndi.distance_transform_edt(~blue, return_indices=True)
     under = (foam | thin) & (dist < 5 * up)
     blab = np.where(blue, lab, -1); blab = np.where(under, lab[iy, ix], blab)
+    # smooth the stripe tones (the render's thread sheen speckles them): majority vote over ~2 render px, band area kept
+    ins = blab >= 0
+    oh = np.stack([ndi.uniform_filter((blab == NAMES.index(n)).astype(np.float32), 2 * up + 1) for n in BLUES], -1)
+    blab = np.where(ins, np.array(ids(BLUES))[oh.argmax(-1)], -1)
+    # the render's edge highlights (sleeve folds, collar, hem) read as thin pale lines: nothing thin within 5 px of the
+    # silhouette edge is art
+    sil = MM.silhouette(view)[b[1]:b[3], b[0]:b[2]]
+    edge = ~ndi.binary_erosion(sil, iterations=5)
+    edge = np.kron(edge, np.ones((up, up), bool))[:thin.shape[0], :thin.shape[1]]
+    tl, nt = ndi.label(thin, structure=np.ones((3, 3)))
+    edge9 = ~ndi.binary_erosion(sil, iterations=10)
+    edge9 = np.kron(edge9, np.ones((up, up), bool))[:thin.shape[0], :thin.shape[1]]
+    for i, sl in enumerate(ndi.find_objects(tl), 1):
+        m = tl[sl] == i
+        if (m & edge9[sl]).sum() > 0.5 * m.sum(): thin[sl] &= ~m
+    bl_, nb = ndi.label(blab >= 0)
+    for i, sl in enumerate(ndi.find_objects(bl_), 1):
+        m = bl_[sl] == i
+        if m.sum() < 400 * up * up and (m & edge[sl]).sum() > 0.3 * m.sum(): blab[sl] = np.where(m, -1, blab[sl])
+    out["lines"] = TR.polys_of(thin, up, b, min_px=2, simplify=0.10)
     bands = {}
     for n in BLUES:
         bands[n] = TR.polys_of(blab == NAMES.index(n), up, b, min_px=3, simplify=0.12)
     out["bands"] = bands
     out["band_all"] = TR.polys_of(blab >= 0, up, b, min_px=3, simplify=0.12)
-    out["lines"] = TR.polys_of(thin, up, b, min_px=2, simplify=0.10)
+
     # ---- foam components
+    edgeF = np.kron(~ndi.binary_erosion(MM.silhouette(view)[b[1]:b[3], b[0]:b[2]], iterations=10), np.ones((up, up), bool))[:foam.shape[0], :foam.shape[1]]
     fl, nf = ndi.label(foam)
     comps = []
     objs = ndi.find_objects(fl)
@@ -117,6 +138,8 @@ def trace_view(view):
         c["inner"] = {k: v for k, v in c["inner"].items() if not v.is_empty and v.area > 0.3}
         c["kind"] = "dot" if area_px < DOT_MAX else "crest"
         if c["mass"].is_empty: continue
+        sk_ = morphology.skeletonize(m).sum() / up
+        if (m & edgeF[sl]).sum() > 0.4 * m.sum() and sk_ > 15 and area_px / max(sk_, 1) < 3.5: continue   # long thin fold highlight
         # dots: their blue lower half = band-blue pixels touching the drop (within 1.5 px), not part of a band
         comps.append(c)
     out["foam"] = comps

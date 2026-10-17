@@ -78,7 +78,7 @@ def lobes(tr, min_dist_px=7.0):
         for i in range(1, len(pk) + 1):
             cell = TR.polys_of(ws == i, k, (b[0], b[1]), min_px=1, simplify=0.05)
             if cell.is_empty: continue
-            cell = cell.buffer(0.15).intersection(F)            # cells touch: 0.15 px overlap, no slit between curls
+            cell = cell.buffer(1.2).intersection(F)             # neighbouring curls overlap 1.2 px: no slit between them after the rigid move
             pp = {t: g.intersection(cell) for t, g in parts.items()}
             ii = {t: g.intersection(cell) for t, g in inner.items()}
             out.append(dict(kind="lobe", anchor=cell.centroid.coords[0], parts=pp, inner=ii, blue={}, outline=cell))
@@ -114,7 +114,8 @@ def lin_at(m, kind, view, size, a):
     if not np.all(np.isfinite(J)): return None
     U, sv, Vt = np.linalg.svd(J); Rm = U @ Vt
     if np.linalg.det(Rm) < 0: U[:, -1] *= -1; Rm = U @ Vt
-    return Rm * math.sqrt(abs(np.linalg.det(J)))
+    # scale: the body's mean scale (the patch Jacobian blows up near the folded cap; curls keep the size they have on the body)
+    return Rm * MM.S_of(view) * MM.GRADE[size][1]
 
 def pt_map(m, kind):
     if kind == "body": return lambda x, y: m(x, y)
@@ -147,6 +148,8 @@ def items_for(size, P):
             if q.is_empty: continue
             mm_ = nonrigid(q, m)
             for p in polys(mm_):
+                if kind == "sleeve" and width(p) < 2.5 and p.length > 60 and p.intersection(box(-8, -200, 8, 600)).area > 0.6 * p.area:
+                    continue                                  # the render's sleeve-fold highlight, not art
                 st = "satin" if width(p) < 5.0 else "tatami"
                 add(tone, p, st, "auto", "WV", Z["band"])
         q = tr["lines"].intersection(regb)
@@ -156,6 +159,7 @@ def items_for(size, P):
         for i, lb in enumerate(tr["lobes"]):
             if not lb["outline"].intersects(regb): continue
             a = lb["anchor"]
+            if kind == "sleeve" and not reg.buffer(6).contains(Point(a)): continue
             A = lin_at(m, kind, view, size, a)
             a_mm = m(np.array([a[0]]), np.array([a[1]]))
             a_mm = (float(np.ravel(a_mm[0])[0]), float(np.ravel(a_mm[1])[0]))
@@ -212,35 +216,92 @@ def scallop(line, r=0.75, step=1.5):
     pts.append(line.coords[-1])
     return LineString(pts)
 
+def ring_chain(p, spacing):
+    """inward contour rings of p joined into open spiral-like paths (each ring left open 3 mm where it hands over to
+    the next ring), so one path = one run object whose buffer has no holes"""
+    paths = []
+    def walk(q, path):
+        ring = LineString(q.exterior.coords)
+        if ring.length < 6: 
+            if path: paths.append(path)
+            return
+        if path:
+            e = Point(path[-1]); s0 = ring.project(e)
+        else: s0 = 0.0
+        L = ring.length; seg = []
+        for t in np.arange(0, L - 3.0, 0.6): seg.append(ring.interpolate((s0 + t) % L).coords[0])
+        path = path + seg
+        inner = [r for r in polys(q.buffer(-spacing)) if r.area > 3.0]
+        if len(inner) == 1: walk(inner[0], path)
+        else:
+            paths.append(path)
+            for r in inner: walk(r, [])
+    walk(p, [])
+    return [LineString(pp) for pp in paths if len(pp) > 4]
+
 def loops_for(foam_geom, spacing=2.1, inset=0.9):
-    """scalloped contour rings inside the visible foam, one closed path per ring part"""
+    """scalloped contour spirals inside the visible foam: the render's looped (chenille) texture"""
     out = []
-    g = foam_geom.buffer(-inset)
-    k = 0
-    while not g.is_empty and k < 12:
-        for p in polys(g):
-            if p.area < 3.0: continue
-            ring = LineString(p.exterior.coords)
-            if ring.length < 6: continue
-            s = scallop(ring.simplify(0.15))
+    for p in polys(foam_geom.buffer(-inset)):
+        if p.area < 3.0: continue
+        for ln in ring_chain(p, spacing):
+            s = scallop(ln.simplify(0.15))
             out.append(s.buffer(0.22, cap_style="round", join_style="round"))
-        g = g.buffer(-spacing); k += 1
+    return out
+
+def curl_lines(vis):
+    """the render's curl separations: a fine shade line where one curl overlaps the next, and the C-curl of every
+    larger lobe (240 deg arc, open to the underside where the hollow is)"""
+    foam = [r for r in vis if r["grp"] == "FM"]; out = []
+    by = {}
+    for r in foam: by.setdefault(r.get("unit"), []).append(r["geom"])
+    U = {u: unary_union(g) for u, g in by.items()}
+    keys = list(U); tree = shapely.STRtree([U[k] for k in keys])
+    for i, u in enumerate(keys):
+        g = U[u]
+        others = [U[keys[j]] for j in tree.query(g.buffer(0.8)) if j != i]
+        if others:
+            seam = g.boundary.intersection(unary_union(others).buffer(0.7))
+            for ln in getattr(seam, "geoms", [seam]):
+                if ln.geom_type == "LineString" and ln.length > 2.5:
+                    q = ln.buffer(0.35, cap_style="round").intersection(g)
+                    for p in polys(q):
+                        if p.area > 0.4: out.append(dict(R("w3", p, "bean", None, "FM-curl"), z=Z["foam"] + 0.6, unit=u))
+        if g.area > 55:
+            c = g.representative_point(); rr = 0.42 * math.sqrt(g.area / math.pi)
+            arc = LineString([(c.x + rr * math.cos(t), c.y + rr * math.sin(t)) for t in np.radians(np.linspace(120, 360, 30))])
+            q = arc.buffer(0.35, cap_style="round").intersection(g.buffer(-0.8))
+            for p in polys(q):
+                if p.area > 0.6: out.append(dict(R("w3", p, "bean", None, "FM-curl"), z=Z["foam"] + 0.6, unit=u))
+    return out
+
+def close_foam_gaps(vis):
+    """rigid curls moved a little apart leave fabric slits between them: fill slits < 2.4 mm inside a crest with foam"""
+    foam = unary_union([r["geom"] for r in vis if r["grp"] == "FM"])
+    if foam.is_empty: return vis
+    closed = foam.buffer(1.2, join_style=2).buffer(-1.2, join_style=2)
+    gaps = closed.difference(unary_union([r["geom"] for r in vis]).buffer(0.05))
+    out = list(vis)
+    for p in polys(gaps):
+        if p.area > 0.3 and width(p) > 0.5: out.append(dict(R("w1", p, "satin", "auto", "FM"), z=Z["foam"], unit=None))
     return out
 
 def add_loops(vis):
+    vis = close_foam_gaps(vis)
     foam = [r for r in vis if r["grp"] == "FM" and r["st"] == "padded"]
-    out = list(vis)
+    out = list(vis) + curl_lines(vis)
+    curls = unary_union([r["geom"] for r in out if r["grp"] == "FM-curl"]) if any(r["grp"] == "FM-curl" for r in out) else Polygon()
     for r in foam:
         for p in polys(r["geom"]):
             for lp in loops_for(p):
-                lp = lp.intersection(p.buffer(-0.3))
+                lp = lp.intersection(p.buffer(-0.3)).difference(curls.buffer(0.3))
                 for q in polys(lp):
-                    if q.area > 0.5: out.append(dict(R("w2", q, "run", None, "FM-loop"), z=Z["foam"] + 0.5, unit=r.get("unit")))
+                    if q.area > 0.5: out.append(dict(R("w3", q, "run", None, "FM-loop"), z=Z["foam"] + 0.5, unit=r.get("unit")))
     return out
 
 def layer_of(r):
     return {"RP": WC.L_ROPE, "WV": WC.L_BAND, "FM-sh": WC.L_FDET, "FM-gr": WC.L_FDET, "FM-in": WC.L_FDET, "FM": WC.L_FOAM,
-            "FM-loop": WC.L_LOOP, "DR-b": WC.L_DROPB, "DR": WC.L_DROP}[r["grp"]]
+            "FM-loop": WC.L_LOOP, "FM-curl": WC.L_LOOP, "DR-b": WC.L_DROPB, "DR": WC.L_DROP}[r["grp"]]
 
 # ---------------------------------------------------------------- wrap marks
 SEAMS = {"BK": [("armhole L", "SL"), ("armhole R", "SR")], "FR": [("armhole", "SR")], "FL": [("armhole", "SL")], "SR": [("cap", None)], "SL": [("cap", None)]}

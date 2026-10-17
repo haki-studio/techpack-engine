@@ -1,0 +1,4 @@
+M BK {'stitches': 232231, 'trims': 1324, 'jumps': 3526, 'stops': 13, 'size_mm': (568.8, 490.2), 'max_stitch': 7.21} 105s
+M BK S1_top-left {'stitches': 104061, 'trims': 573, 'stops': 13, 'size_mm': (308.7, 304.8), 'fits': True} split y 368.9
+M BK S2_top-right {'stitches': 31973, 'trims': 243, 'stops': 11, 'size_mm': (315.5, 309.4), 'fits': True} split y 368.9
+M BK S3_bottom-left {'stitches': 15345, 'trims': 118, 'stops': 11, 'size_mm': (305.8, 234.2), 'fits': True} split y 368.9

@@ -110,32 +110,51 @@ def coons(T, B, L, R, u, v):
     return (1 - v_) * Tu + v_ * Bu + (1 - u_) * Lv + u_ * Rv - ((1 - u_) * (1 - v_) * P00 + u_ * (1 - v_) * P10 + (1 - u_) * v_ * P01 + u_ * v_ * P11)
 
 class SleeveMap:
-    """render px of one visible sleeve half -> that half of the sleeve pattern (piece coords). u: 0 at the outer fold,
-    1 at the underarm seam; v: 0 at the armhole / cap, 1 at the cuff seam."""
+    """render px of one visible sleeve half -> the sleeve pattern (piece coords), by an affine map that lays the render's
+    outer fold (shoulder point -> outer cuff corner) on the sleeve centre line (cap top -> cuff) and keeps the art's
+    width at the body's x scale (widened up to 1.45 so the render's inner sleeve edge meets the underarm keep-out). The render's drop-shoulder sleeves are long and only ~1/2 as wide as the pattern
+    sleeve, so a seam-true map (armhole -> cap) would fold the patch; the art is placed by its position on the hanging
+    sleeve instead (from the fold, down from the shoulder) and the armhole is a normal 15 mm keep-out. [PROPOSED]"""
     def __init__(self, view, side, size="M"):
-        from scipy.interpolate import LinearNDInterpolator
         self.view, self.side, self.size = view, side, size
-        self.piece, sgn = HALF[(view, side)]
-        f, finv = body_tf(view, size)
+        self.piece, sgn = HALF[(view, side)]; self.sgn = sgn
+        f, finv = body_tf(view, size); g_ = GRADE[size][1]
         arm = np.array(armhole_mm(view, side, size)); ax, ay = finv(arm[:, 0], arm[:, 1]); arm_px = np.c_[ax, ay]
         co, ci = CUFF_PX[(view, side)]
-        n = 60
         oc = outer_contour(view, side, arm_px[0][1] + 25, co[1] - 8)
-        Ti = _arc(arm_px, n); Bi = _arc([co, ci], n); Li = _arc([tuple(arm_px[0])] + oc + [tuple(co)], n); Ri = _arc([arm_px[-1], ci], n)
-        cap, cin, cout = cap_half(size, self.piece, sgn)
-        Tp = _arc(cap, n); Bp = _arc([cout, cin], n); Lp = _arc([cap[0], cout], n); Rp = _arc([cap[-1], cin], n)
-        uu, vv = np.meshgrid(np.linspace(-0.9, 1.6, 126), np.linspace(-0.45, 1.25, 86))
-        u, v = uu.ravel(), vv.ravel()
-        I = coons(Ti, Bi, Li, Ri, u, v); P = coons(Tp, Bp, Lp, Rp, u, v)
-        self.fwd = LinearNDInterpolator(I, P); self.inv = LinearNDInterpolator(P, I)
-        self.arm_px, self.cap = arm_px, cap
-        self.quad_px = Polygon(list(map(tuple, Ti)) + [tuple(ci), tuple(co)] + list(map(tuple, Li[::-1]))).buffer(0)
-        self.sgn = sgn
+        g, mt = draft(size)
+        sp = np.array(arm_px[0], float); d = np.array(co, float) - sp; Lpx = np.linalg.norm(d); d /= Lpx
+        nrm = np.array([-d[1], d[0]])
+        if np.dot(np.array(arm_px[-1]) - sp, nrm) < 0: nrm = -nrm          # lateral axis points to the inner (underarm) side
+        self.sa = (mt["cap_h"] + mt["Lu"]) / Lpx                             # along: shoulder point -> cuff seam = sleeve length
+        self.sc = VIEW[view]["SX"] * g_                                      # across: the body's x scale
+        self.o, self.d, self.n, self.top = sp, d, nrm, (0.0, -mt["cap_h"])
+        self.arm_px = arm_px
+        Li = [tuple(arm_px[0])] + oc + [tuple(co)]
+        # lateral is measured from the render's outer contour (the fold) at the same distance down the sleeve, so the
+        # contour lands exactly on the sleeve centre line and the two halves never overlap across the fold
+        L_ = np.array(Li) - sp; ca, cc = L_ @ d, L_ @ nrm; o_ = np.argsort(ca); self.ca, self.cc = ca[o_], cc[o_]
+        # inner edge of the visible sleeve (armhole line, then underarm -> cuff) as lateral width per distance down:
+        # the art is widened (x 1.0 .. 1.45) so that this edge lands on the underarm keep-out line, i.e. art cut by
+        # the render's inner edge ends at a seam, not in the middle of the sleeve
+        inner = np.r_[arm_px, np.linspace(arm_px[-1], ci, 20)] - sp
+        ia = inner @ d; ic = inner @ nrm - np.interp(ia, self.ca, self.cc); o_ = np.argsort(ia)
+        self.ia, self.ic = ia[o_], np.maximum(ic[o_], 1.0)
+        self.W, self.Ww, self.Lu = mt["W"], mt["Ww"], mt["Lu"]
+        self.quad_px = Polygon([tuple(p) for p in arm_px] + [tuple(ci)] + Li[::-1]).buffer(0)
     def __call__(self, px, py):
-        q = self.fwd(np.c_[np.atleast_1d(px), np.atleast_1d(py)])
-        return q[:, 0], q[:, 1]
+        q = np.c_[np.atleast_1d(px).astype(float), np.atleast_1d(py).astype(float)] - self.o
+        a = q @ self.d; c = q @ self.n - np.interp(q @ self.d, self.ca, self.cc)
+        y = self.top[1] + a * self.sa
+        return self.sgn * c * self.sc * self.k(a, y), y
+    def k(self, a, y):
+        Wy = np.where(y > 0, self.W + (self.Ww - self.W) * np.clip(y / self.Lu, 0, 1), self.W)
+        kk = (Wy - 15.0) / (np.interp(a, self.ia, self.ic) * self.sc)
+        return np.where(y > 0, np.clip(kk, 1.0, 1.45), 1.0)
+    def inv(self, P):
+        P = np.atleast_2d(P); a = (P[:, 1] - self.top[1]) / self.sa; c = self.sgn * P[:, 0] / (self.sc * self.k(a, P[:, 1])) + np.interp(a, self.ca, self.cc)
+        return self.o + np.outer(a, self.d) + np.outer(c, self.n)
     def jac(self, px, py, h=2.0):
-        """local linear map (2x2) at a render point"""
         x0 = np.array(self(px, py)).ravel(); xa = np.array(self(px + h, py)).ravel(); xb = np.array(self(px, py + h)).ravel()
         return np.c_[(xa - x0) / h, (xb - x0) / h], x0
 

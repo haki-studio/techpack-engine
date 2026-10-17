@@ -4,8 +4,7 @@ drafted pattern — LESSONS A3, C8: keep-out lines come from the pattern piece, 
   BK  B01 back                 FR  F02 wearer's right front     FL  F01 wearer's left front
   SR  S01 right sleeve         SL  S02 left sleeve
 Keep-outs (mm from the sew line): side seams 15, CF / zip 15, shoulder 15, hem-rib seam 10, welt box 6, collar lying
-flat 6, neck 6, sleeve underarm seams 15, cuff seam 10. ARMHOLE / CAP = 3 (wrap seam, LESSONS A4: the wave crosses
-the armhole on the render, so it stops 3 short of the seam on both pieces and lines up across it)."""
+flat 6, neck 6, sleeve underarm seams 15, cuff seam 10. ARMHOLE / CAP = 15 (the render's drop-shoulder sleeves cannot be mapped seam-true, so no 3 mm wrap — see mockmap.SleeveMap)."""
 import functools
 from shapely.geometry import LineString, Polygon
 from shapely.ops import unary_union
@@ -16,7 +15,7 @@ import front as FR
 PIECES = ["BK", "FR", "FL", "SR", "SL"]
 CODE = {"BK": "B01", "FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
 NAME = {"BK": "back", "FR": "wearer's right front", "FL": "wearer's left front", "SR": "right sleeve", "SL": "left sleeve"}
-WRAP = 3.0
+WRAP = 15.0     # no seam-true wrap on this render (mockmap.SleeveMap): armhole + cap are normal 15 mm keep-outs
 KEEP = {
     "BK": {"side L": 15, "side R": 15, "shoulder L": 15, "shoulder R": 15, "hem": 10, "neck": 6, "armhole L": WRAP, "armhole R": WRAP},
     "FR": {"CF / zip": 15, "side": 15, "shoulder": 15, "hem": 10, "neck": 6, "armhole": WRAP, "welt": 6, "collar": 6},
