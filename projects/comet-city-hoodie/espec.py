@@ -1,5 +1,5 @@
-"""Element spec (5 pages) for the 01 front scene (pieces FR + FL), adapted from the Drum Island espec."""
-import glcore
+"""Element spec (5 pages) per element: 01 front scene (FR + FL) and 02 sleeves (SR + SL), adapted from the Drum Island espec."""
+import cccore
 import os, json, pickle
 import numpy as np
 import cairosvg
@@ -17,7 +17,7 @@ import specbase as SB
 from specbase import img_tag, direction_map, header
 
 def _SRR(vis, bbox, ppm, **kw):
-    return SR.render(vis, bbox, ppm, base=glcore.FABRIC, **kw)
+    return SR.render(vis, bbox, ppm, base=cccore.FABRIC, **kw)
 
 def width_check(vis):
     groups = {}
@@ -55,19 +55,18 @@ def front_view_png(F, vis_all, bbox, ppm, highlight):
         for pg in SR.polys(um): md.polygon(T(pg.exterior.coords), fill=255)
         out.paste(fade, (0, 0), om)
     d = ImageDraw.Draw(out)
-    for c in (F.COLLAR_R, F.COLLAR_L): d.line(T(c.exterior.coords), fill=(110, 80, 60), width=2)
     for w in (F.WELT_R, F.WELT_L): d.polygon(T(w.exterior.coords), outline=(120, 100, 70), fill=(46, 53, 80))
     d.rectangle([((-6 - x0)*ppm, (0 - y0)*ppm), ((6 - x0)*ppm, (F.HEM - y0)*ppm)], fill=(150, 118, 60))
     for pnl in (F.PANEL_R, F.PANEL_L): d.line(T(pnl.exterior.coords), fill=(90, 70, 50), width=3)
     return out
 
 def build(cfg, F, vis_all):
-    SB.FOOT = f"HAKI STUDIOS · {glcore.NAME} · {cfg['id']} {cfg['short']} · {glcore.REV_EMB} · {glcore.DATE}"
+    SB.FOOT = f"HAKI STUDIOS · {cccore.NAME} · {cfg['id']} {cfg['short']} · {cccore.REV_EMB} · {cccore.DATE}"
     OUT = f"out/{cfg['id']}_{cfg['slug']}"; os.makedirs(OUT, exist_ok=True)
     pieces = cfg["pieces"]
     V = {p: vis_all[p] for p in pieces}
     ALL = [r for p in pieces for r in V[p]]
-    import dst2; glcore.patch_dst2()
+    import dst2; cccore.patch_dst2()
     STOPS = {p: dst2.merge_stops(tech.stops(V[p])) for p in pieces}
     TOT = {p: sum(s["st"] for s in STOPS[p]) for p in pieces}
     _r = json.load(open("dst_current.json")) if os.path.exists("dst_current.json") else {}
@@ -79,18 +78,20 @@ def build(cfg, F, vis_all):
 
     # ---------------- p1 preview + placement
     o = header(f"{n} · {cfg['title']} — stitch-out preview + placement", cfg["sub"], "p1 / 5")
-    bbox = (-325, -105, 325, 560); ppm = 2.6
-    fv = front_view_png(F, vis_all, bbox, ppm, pieces)
-    w_mm = 152; s = w_mm / (bbox[2] - bbox[0]); ax, ay = 12, 29
+    if cfg.get("view"): fv, bbox, ppm, vcap = cfg["view"](V)
+    else:
+        bbox = (-325, -105, 325, 560); ppm = 2.6
+        fv = front_view_png(F, vis_all, bbox, ppm, pieces); vcap = "Front view, size M (shown 0.23:1). Gold bar = zip at CF, dark = welt boxes; the hood is sewn to the neck line (top)."
+    w_mm = min(152, 150 * (bbox[2] - bbox[0]) / (bbox[3] - bbox[1])); s = w_mm / (bbox[2] - bbox[0]); ax, ay = 12, 29
     tag, h = img_tag(fv, ax, ay, w_mm); o.append(tag)
     X = lambda x: ax + (x - bbox[0])*s; Y = lambda y: ay + (y - bbox[1])*s
-    for p in pieces:
+    for p in (pieces if not cfg.get("view") else []):
         b = BBs[p]
         o.append(f'<rect x="{f(X(b[0]))}" y="{f(Y(b[1]))}" width="{f((b[2]-b[0])*s)}" height="{f((b[3]-b[1])*s)}" fill="none" stroke="{GUIDE}" stroke-width="0.25" stroke-dasharray="1.2 0.8"/>')
         o.append(t(X(b[0]) + 0.6, Y(b[1]) - 0.9, f"{p}: {b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.7, 700, GUIDE))
-    o.append(t(ax, ay + h + 3.5, "Front view, size M (shown 0.23:1). Brown line = collar lying flat, gold bar = zip at CF, tan = welt boxes.", 1.8, 400, MUTED))
+    o.append(t(ax, ay + h + 3.5, vcap, 1.8, 400, MUTED))
     rx = 172
-    o.append(t(rx, 33, "PLACEMENT (garment coords: x from CF, + = wearer's left; y down from CF neck seam)", 2.2, 700))
+    o.append(t(rx, 33, cfg.get("coords", "PLACEMENT (garment coords: x from CF, + = wearer's left; y down from CF neck seam)"), 2.2, 700))
     yy = 38
     for a_, b_ in cfg["placement"](BBs):
         o.append(t(rx, yy, a_, 1.9, 400, MUTED)); o.append(t(rx + 50, yy, b_, 1.9, 600)); yy += 3.6
@@ -186,7 +187,7 @@ def build(cfg, F, vis_all):
         im = _SRR(ALL, c, 14); tag, hh = img_tag(im, x, 35, c[2] - c[0]); o.append(tag)
         o.append(t(x, 35 + hh + 3, cap, 1.8, 600)); x += (c[2] - c[0]) + 4
     my = 98
-    tag, hh = SHT.embed("inputs/front.png", cfg["mock_crop"], 56, 14, my + 3); o.append(tag)
+    tag, hh = SHT.embed("inputs/front.png", cfg["mock_crop"], cfg.get("mock_w", 56), 14, my + 3); o.append(tag)
     o.append(t(14, my, "MOCKUP", 2.4, 700))
     o.append(t(76, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
     o.append(t(14, my + 62, cfg.get("reference", ""), 1.7, 600, ORANGE))
@@ -201,18 +202,20 @@ def build(cfg, F, vis_all):
         cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"e{n}_{i}.pdf")
         cairosvg.svg2png(bytestring=svg.encode(), write_to=f"prev_{n}_p{i}.png", output_width=2400)
         w.append(PdfReader(f"e{n}_{i}.pdf"))
-    w.write(f"{OUT}/HAKI_GRLN_{n}_{cfg['slug']}_SPEC_{glcore.REV_EMB.replace(' ', '')}.pdf")
+    w.write(f"{OUT}/HAKI_{cccore.SHORT}_{n}_{cfg['slug']}_SPEC_{cccore.REV_EMB.replace(' ', '')}.pdf")
     for p in pieces:
         b = BBs[p]; ox, oy = b[0] - 5, b[1] - 5; Wd, Hd = b[2] - b[0] + 10, b[3] - b[1] + 10
-        side = "R" if b[2] < 0 else "L"
-        panel = F.PANEL_R if side == "R" else F.PANEL_L
+        if p in cccore.SLEEVES:
+            g_, _ = F.pieces("M"); panel = g_["S01" if p == "SR" else "S02"].sew_poly()
+        else:
+            panel = F.PANEL_R if p == "FR" else F.PANEL_L
         gd = (f'<path d="{geom_to_path(affinity.translate(panel, -ox, -oy))}" fill="none" stroke="#00A3FF" stroke-width="0.4" stroke-dasharray="3 2"/>'
               f'<line x1="{f(-ox)}" y1="{f(-oy)}" x2="{f(-ox)}" y2="{f(Hd)}" stroke="#00A3FF" stroke-width="0.3" stroke-dasharray="4 2"/>'
-              f'<text x="{f(-ox + 1)}" y="{f(-oy + 4)}" font-size="3" fill="#00A3FF">CF</text>')
-        open(f"{OUT}/HAKI_GRLN_{n}_{cfg['slug']}_{p}_M_ART.svg", "w").write(SB.production_svg(V[p], STOPS[p], Wd, Hd, ox, oy))
-        open(f"{OUT}/HAKI_GRLN_{n}_{cfg['slug']}_{p}_M_ART+guides.svg", "w").write(SB.production_svg(V[p], STOPS[p], Wd, Hd, ox, oy, gd))
+              f'<text x="{f(-ox + 1)}" y="{f(-oy + 4)}" font-size="3" fill="#00A3FF">{"sleeve centre line" if p in cccore.SLEEVES else "CF"}</text>')
+        open(f"{OUT}/HAKI_{cccore.SHORT}_{n}_{cfg['slug']}_{p}_M_ART.svg", "w").write(SB.production_svg(V[p], STOPS[p], Wd, Hd, ox, oy))
+        open(f"{OUT}/HAKI_{cccore.SHORT}_{n}_{cfg['slug']}_{p}_M_ART+guides.svg", "w").write(SB.production_svg(V[p], STOPS[p], Wd, Hd, ox, oy, gd))
     full = _SRR(ALL, (UB[0]-6, UB[1]-6, UB[2]+6, UB[3]+6), 7)
-    full.save(f"{OUT}/HAKI_GRLN_{n}_{cfg['slug']}_M_STITCH-PREVIEW.png")
+    full.save(f"{OUT}/HAKI_{cccore.SHORT}_{n}_{cfg['slug']}_M_STITCH-PREVIEW.png")
     json.dump(dict(stitches=TOT, stops={p: len(STOPS[p]) for p in pieces}, objects={p: len(V[p]) for p in pieces},
                    bbox={p: BBs[p] for p in pieces}, width=WC, colours=sorted({r["col"] for r in ALL})),
               open(f"{OUT}/summary.json", "w"), default=float)

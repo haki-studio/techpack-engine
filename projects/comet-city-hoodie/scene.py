@@ -124,14 +124,18 @@ STREAK_U = unary_union([COMET_U.buffer(2.0), COMET_U.buffer(9.0).intersection(bo
                        [Point(P(_x, _y)).buffer(8.0) for _x, _y in ((403.5, 597.5),)])
 streakm = rast([STREAK_U])
 Ls = ndi.gaussian_filter(LUM, 0.35*PPM)
-cloudish = (Ls > 60) & PANEL & (YMM > 88) & (YMM < 408)
+# no seam topstitching / welt pockets / zip tape from the mockup: cloud tones only 20 inside the side + armhole seams,
+# 12 clear of the welt boxes, 17 from CF
+_inner = rast([F.PANEL_R.buffer(-20), F.PANEL_L.buffer(-20), box(-400, 330, 400, 600).intersection(unary_union([F.PANEL_R, F.PANEL_L]))])
+_inner &= ~rast([F.WELT_R.buffer(12), F.WELT_L.buffer(12)]) & (np.abs(XMM) > 17)
+cloudish = (Ls > 60) & PANEL & _inner & (YMM > 88) & (YMM < 408)
 _front = rast([box(*P(360, 486), *P(480, 528))])         # the one cloud bank the comet passes behind (mockup, at the zip)
 cloudish &= ~(streakm & ~(_front & (SAT < 0.42)))
 cloudish = ndi.binary_opening(cloudish, structure=disk(0.6))
 lab, n = ndi.label(cloudish)
 sizes = ndi.sum(cloudish, lab, range(1, n + 1)) / PPM**2
 _cy = np.array([c[0] for c in ndi.center_of_mass(cloudish, lab, range(1, n + 1))]) / PPM + BB[1] if n else np.array([])
-keep = np.isin(lab, 1 + np.nonzero((sizes >= 6.0) & ((sizes >= 25.0) | (_cy > 200)))[0])      # sky above the clouds: only real cloud wisps
+keep = np.isin(lab, 1 + np.nonzero((sizes >= 12.0) & ((sizes >= 25.0) | (_cy > 200)))[0])      # sky above the clouds: only real cloud wisps
 cloudish = ndi.binary_closing(keep, structure=disk(0.5)) & PANEL
 _holes = ndi.binary_fill_holes(cloudish) & ~cloudish            # fill only small holes (< 3 mm2); bigger dark gaps stay fabric
 _hl, _hn = ndi.label(_holes); _hs = ndi.sum(_holes, _hl, range(1, _hn + 1)) / PPM**2
@@ -144,6 +148,13 @@ for col, m, zz in (("cc_dusk", cloudish, 0.0), ("cc_cloud", tone_cl, 0.1), ("cc_
         cy = g.centroid.y
         sew = "haze" if cy > 340 else "cloud"
         add([CM.R(col, g, "tatami", 0.0 if col != "cc_cloud" else 8.0, "CL", kob=0.0, kgrp="clouds")], sew, Z["cloud" if sew == "cloud" else "haze"] + zz)
+# each tone patch remembers the y of its cloud silhouette (per-size hem anchoring moves whole clouds, never single tones)
+_sil = [r["geom"] for r in items if r["grp"] == "CL" and r["col"] == "cc_dusk"]
+_tree = __import__("shapely").STRtree(_sil)
+for r in items:
+    if r["grp"] != "CL": continue
+    q = r["geom"].representative_point(); hit = [int(j) for j in _tree.query(q) if _sil[int(j)].buffer(0.05).contains(q)]
+    r["cref"] = _sil[hit[0]].centroid.y if hit else r["geom"].centroid.y
 CLOUD_U = unary_union([r["geom"] for r in items if r["grp"] == "CL"]).buffer(0)
 
 # rose city glow: the pink pixels in the haze band behind the skyline
@@ -284,7 +295,7 @@ add([CM.R("cc_ice", LineString([(lp + 1.7, P(0, 640)[1]), (lp + 1.7, P(0, 788)[1
 rng = random.Random(11)
 BUSH_PX = [(540, 760, 9, 6, 250), (586, 752, 8, 5, 285), (529, 772, 8, 5, 245), (566, 776, 8, 6, 270), (546, 770, 13, 7, 255), (562, 756, 14, 7, 262), (578, 768, 12, 7, 275), (535, 783, 10, 6, 250), (557, 781, 11, 6, 268), (575, 784, 9, 6, 280), (549, 747, 9, 5, 265)]
 for i, (bx, by, R0, n, rot) in enumerate(BUSH_PX):
-    add(CM.rosette(*P(bx, by), R0, n, rot, "cc_royal", "cc_azure", f"bush{i}", rng, spread=230), "bush", Z["bush"] + 0.01*i, unit=f"bush{i}")
+    add(CM.palm(*P(bx, by), R0*1.15, n, rot, "cc_royal", "cc_azure", f"bush{i}", rng), "bush", Z["bush"] + 0.01*i, unit=f"bush{i}")
 BIKE_REAR = (P(188.7, 0)[0], 476.0)
 add(CM.bicycle(*BIKE_REAR, r=22.0, wb=84.0), "bike", Z["bike"], unit="bike")
 FIG_FEET = (P(414.7, 0)[0], 499.0)

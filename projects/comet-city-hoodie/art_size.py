@@ -16,6 +16,8 @@ cccore.patch_dst2()
 
 SC = pickle.load(open("scene.pkl", "rb")); ITEMS = SC["items"]; META = SC["meta"]
 SL = pickle.load(open("sleeve_scene.pkl", "rb")) if os.path.exists("sleeve_scene.pkl") else None
+HEM_M = LineString(F.keep_geoms("M", "L")["hem"]).bounds[1]     # 510 on the Drum Island block
+Y0, Y1 = 200.0, 340.0                                            # hem-anchoring ramp (size-M mm): sky above Y0 stays, city below Y1 moves fully
 
 def scaled(items, s, origin=(0, 0)):
     if s == 1.0: return [dict(r) for r in items]
@@ -70,6 +72,23 @@ def build(size):
     t0 = time.time(); grade, s = cccore.GRADE[size]
     res = {"info": dict(size=size, grade=grade, scale=s)}
     its = scaled(ITEMS, s)
+    # hem anchoring: the city band (railing, bicycle, figure, buildings) stands on THIS size's hem-band seam; the shift ramps
+    # in through the lower clouds (whole clouds / whole motifs move together); the comet + upper sky stay on the CF-neck grade
+    hem = LineString(F.keep_geoms(size, "L")["hem"]).bounds[1]
+    dy = hem - HEM_M * s
+    def ramp(y): return float(np.clip((y - Y0*s) / ((Y1 - Y0)*s), 0, 1))
+    refs = {}
+    for r in its:
+        if r.get("unit"): refs.setdefault(r["unit"], []).append(r["geom"].centroid.y)
+    for r in its:
+        if r.get("sew") in ("comet",): continue
+        yr = r.get("cref", None)
+        yr = yr*s if yr is not None else (np.mean(refs[r["unit"]]) if r.get("unit") else r["geom"].centroid.y)
+        k = ramp(yr) * dy
+        if abs(k) > 0.01:
+            r["geom"] = affinity.translate(r["geom"], 0, k)
+            if isinstance(r["ang"], tuple): r["ang"] = (r["ang"][0], r["ang"][1], r["ang"][2] + k)
+    res["info"]["hem_shift"] = round(dy, 1)
     for side in "RL":
         P = "FR" if side == "R" else "FL"
         clip = F.clip_for(size, side).buffer(-0.4)        # 0.4 inside the keep-out: cleaning + simplification never cross it
@@ -98,13 +117,13 @@ def build(size):
     for nm, dy in (("top rail", 0.0), ("kerb", 47.5)):
         for xx in (-F.KEEP_CF, F.KEEP_CF):
             px = MM.Pinv(xx, 0)[0]; y = MM.P(px, 720.0 + (px - 130.0)*7/470 + dy)[1]
-            marks.append(dict(name=nm, x=xx*s, y=y*s))
+            marks.append(dict(name=nm, x=xx*s, y=y*s + dy))
     sp = np.array(META.get("spine", []))
     if len(sp):
         for xx in (-F.KEEP_CF, F.KEEP_CF):
             i = int(np.argmin(np.abs(sp[:, 0] - xx))); marks.append(dict(name="comet core", x=xx*s, y=float(sp[i, 1])*s))
     res["info"]["marks"] = marks
-    pickle.dump(res, open(f"art_{size}.pkl", "wb"))
+    pickle.dump(res, open(f"art_{size}.pkl.tmp", "wb")); os.replace(f"art_{size}.pkl.tmp", f"art_{size}.pkl")   # atomic: builds may be reading
     print(size, grade, s, {P: (res["info"][P]["objects"], round(res["info"][P]["area"]), [round(v) for v in res["info"][P]["bbox"]], res["info"][P]["n_dropped"])
                            for P in cccore.PIECES if P in res["info"]}, f"{time.time()-t0:.0f}s", flush=True)
     return res

@@ -69,7 +69,7 @@ for side in "RL":
     YMM_ = bb[1] + (np.arange(H) + 0.5)/PPM
     _, _, _ys, _ws = MM.sleeve_dims()
     Wy = np.interp(YMM_, _ys, _ws)[:, None]
-    front_half = ((XMM * sgn)[None, :] > 22.0) & ((XMM * sgn)[None, :] < 0.85 * Wy)   # front half, minus the silhouette edges (background / body)
+    front_half = ((XMM * sgn)[None, :] > 28.0) & ((XMM * sgn)[None, :] < 0.80 * Wy)   # front half, minus the silhouette edges (background / body)
     im = Image.new("L", (W, H), 0); ImageDraw.Draw(im).polygon([((x - bb[0])*PPM, (y - bb[1])*PPM) for x, y in pc.exterior.coords], fill=255)
     inside = (np.array(im) > 127) & front_half
     # do not read the body / background next to the sleeve
@@ -99,7 +99,7 @@ for side in "RL":
     cl = (L > 62) & (L < 215) & (sat < 0.6) & inside & ~ndi.binary_dilation(leafy, iterations=2)
     cl = ndi.binary_opening(cl, structure=np.ones((3, 3)))
     lab, n = ndi.label(cl); sizes = ndi.sum(cl, lab, range(1, n + 1))/PPM**2
-    cl = np.isin(lab, 1 + np.nonzero(sizes >= 20.0)[0])
+    cl = np.isin(lab, 1 + np.nonzero(sizes >= 30.0)[0])
     cl = ndi.binary_closing(cl, structure=np.ones((3, 3))) & inside
     t_cl = ndi.binary_opening(cl & (L >= 96), structure=np.ones((3, 3))); t_ice = ndi.binary_opening(cl & (L >= 132), structure=np.ones((3, 3)))
     ncl = 0
