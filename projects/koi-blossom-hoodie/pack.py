@@ -119,7 +119,7 @@ def threads():
         o.append(t(cx[3], y, f"{iso[0]} {iso[1]}"[:22], 1.75)); o.append(t(cx[4], y, f"{iso[3]:.1f}", 1.7, 600, ci))
         o.append(t(cx[5], y, f"{pn[0]} {pn[1]}"[:24], 1.75)); o.append(t(cx[6], y, f"{pn[3]:.1f}", 1.7, 600, cp))
         o.append(t(cx[7], y, "40", 1.75)); o.append(t(cx[8], y, PAL[k][2][:58], 1.65, 400, MUTED))
-        o.append(t(cx[9], y, " / ".join(str(use[k].get(p, 0)) for p in PS), 1.75, 600))
+        o.append(t(cx[9], y, " / ".join(str(use[k].get(p, 0)) for p in PS) if any(use[k].values()) else "spare — not in Rev A files", 1.75, 600, INK if any(use[k].values()) else MUTED))
     yb = 36 + len(kbcore.KB_KEYS)*rh + 3
     o.append(t(12, yb, "ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — amber/red rows must be picked from the physical card. All targets are PROPOSED (read from a low-res AI mockup).", 1.8, 600, ORANGE))
     o.append(t(12, yb + 7, "TRIMS + CONSUMABLES (per jacket)", 2.2, 700))
@@ -148,7 +148,7 @@ def summary():
         o.append(t(cx[10], y, ("all < 1 %" if wc[wk] < 1 else f"{wk} {wc[wk]:.1f}% (tapered tips)"), 1.6, 600, GREEN if wc[wk] < 1 else ORANGE))
     y = 36 + len(PS)*4.6 + 1
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.9, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.9, 700)); o.append(t(cx[9], y, f"{MH:.1f} h", 1.9, 700))
-    o.append(t(12, y + 4.5, f"Split files (2 hoopings per piece): {MH_SPLIT:.1f} h per jacket. Width check = share of a code's area below its minimum width (satin 0.8, run 0.6). Fin/tail rays + leaf midribs are single-run lines by design.", 1.65, 400, MUTED))
+    o.append(t(12, y + 4.5, f"Split files ({HOOPS} hoopings per jacket): {MH_SPLIT:.1f} h per jacket. Width check = share of a code's area below its minimum width (satin 0.8, run 0.6). Fin/tail rays + leaf midribs are single-run lines by design.", 1.65, 400, MUTED))
     o.append(t(12, y + 7.8, "Rev A is built for fidelity (LESSONS A11): trims, stops and run time are reported, not limited — clean-up after the strike-off.", 1.65, 400, MUTED))
     qy = y + 15
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))

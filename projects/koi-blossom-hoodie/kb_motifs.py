@@ -113,7 +113,7 @@ def koi(cx, cy, L, ang, rng, pattern=0, bend=0.0, unit=None):
     red = unary_union(reds).intersection(body.buffer(-0.7))
     regs.append(R("kb_red", red, "satin", "auto", "KO-red", 5))
     # head: lighter snout + eyes
-    eyes = unary_union([Point(X(0.085), spine(0.085) + sg*h(0.085)*0.62).buffer(0.68) for sg in (-1, 1)])
+    eyes = unary_union([Point(X(0.085), spine(0.085) + sg*h(0.085)*0.60).buffer(0.80) for sg in (-1, 1)])
     regs.append(R("kb_ink", eyes, "satin", "auto", "KO-eye", 6))
     sil = unary_union([r["geom"] for r in regs]).buffer(0.3)
     out = []
