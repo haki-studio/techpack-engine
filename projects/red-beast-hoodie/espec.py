@@ -142,7 +142,7 @@ def build(cfg, vis_all):
         o.append(t(cx[10], y, f"{q:.1f}%", 1.6, 600, qc)); o.append(t(cx[11], y, f"{s_['n']}", 1.6, 400, MUTED)); o.append(t(cx[12], y, f"{s_['area']:,.0f}", 1.6, 400, MUTED))
     yb = y0 + 3.8 + len(order)*rh + 3
     for i, l in enumerate(["Globals: 40wt polyester, 75/11 sharp needle, 2.5 oz black cutaway backing, no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; trims on jumps ≥ 2.5.",
-                           "Width < 0.8 mm share comes from the tapered tips of hair strokes and streaks (as the mockup draws them); the satin engine trims tips below 0.9 — check them on the sew-out.",
+                           "Thin strands + tapered tips are grown to ≥ 1.0 mm along their own skeleton before stitching (40wt satin minimum 0.8); 'Width' = what is still under 0.8 mm.",
                            "Stitch counts are not estimated per region: per-file and per-stop counts (p1, p4, G4, G5) are read back from the DST files.",
                            cfg.get("p3_note", "")]):
         o.append(t(12, yb + i*3.2, l, 1.7, 400, MUTED))
@@ -169,9 +169,7 @@ def build(cfg, vis_all):
         o.append(t(hc[4], y + 3.2, f"= DST {_r[p]['stitches']:,} stitches / {_r[p]['trims']} trims, max stitch {_r[p]['max_stitch']:.2f} mm", 1.45, 400, MUTED))
     yb = 38.5 + max(len(_r[p]["per_stop"]) for p in pieces)*4.6 + 14
     o.append(t(12, yb, "WHY THIS ORDER", 2.2, 700))
-    for i, l in enumerate(["Red hair strokes first, crimson shadow strokes next: their travel hides under the black ground sewn after them (LESSONS B2/B14).",
-                           "Black ground fills between the red strokes as one connected area (few trims), then the cream outlines + teeth sew LAST so they sit",
-                           "raised on top of red and black, as the mockup's white raised outline. Same thread may repeat as a stop where merging would cross art."]):
+    for i, l in enumerate(cfg["why"]):
         o.append(t(12, yb + 4.2 + i*3.2, l, 1.7))
     pages.append(o)
 

@@ -15,7 +15,13 @@ REF = [f"Art traced, not redrawn by hand: the head from the mockup's own detail 
        f"registered onto the full mockup by a projective fit ({REG['inliers']} SIFT matches, residual {REG['resid_mm_median']:.1f} mm median / {REG['resid_mm_p90']:.1f} mm p90);",
        "mane, lightning, streaks + sleeves from the low-res mockup (~1.15 mm/px). No original artwork files."]
 
-CFG01 = dict(id="01", short="beast head", title="BEAST HEAD — fronts, split at the zip",
+WHY01 = ["Red hair strokes first, crimson shadow strokes next: their travel hides under the black ground sewn after them (LESSONS B2/B14).",
+         "Black ground fills between the red strokes as one connected area (few trims), then the cream outlines + teeth sew LAST so they sit",
+         "raised on top of red and black, as the mockup's white raised outline. Same thread may repeat as a stop where merging would cross art."]
+WHY02 = ["Red streaks first, crimson shadow strokes next (they sit inside and beside the red streaks), cream branch tip last on top (SR only).",
+         "No black ground on the sleeves. Each streak is an island on bare fabric, so most trims here are unavoidable jumps between streaks."]
+NTH = {P: CUR[P]["threads"] for P in rbcore.PIECES}
+CFG01 = dict(id="01", why=WHY01, short="beast head", title="BEAST HEAD — fronts, split at the zip",
    sub="Direct embroidery on both cut front panels, before zip + welts · two pieces registered across the CF zip · mm, finished size · art files 1:1",
    coords="PLACEMENT (x from CF, + = wearer's left; y down from CF neck seam)",
    view_caption="Front view, size M (0.23:1). Orange = keep-out boundary (art area), gold bar = zip, dark boxes = welt pockets [PROPOSED position].",
@@ -26,9 +32,9 @@ CFG01 = dict(id="01", short="beast head", title="BEAST HEAD — fronts, split at
              "!Welts moved 45 out / 27.5 down from the render: the render",
              "draws the FL welt under the lower jaw. [PROPOSED — confirm]",
              "!2 hoopings per piece on the factory frame (split files, G5/G6)."],
-   dm_crops=[((150, 210, 195, 235), "Teeth + mouth: cream satin teeth, black ground"),
-             ((40, 150, 85, 175), "Hair strokes: red satin columns + tatami cells"),
-             ((-200, 40, -155, 65), "Lightning branch: forked cream satin")],
+   dm_crops=[((150, 212, 195, 234), "Teeth + mouth: cream satin teeth, black ground"),
+             ((40, 152, 85, 174), "Hair strokes: red satin columns + tatami cells"),
+             ((-215, 40, -170, 62), "Lightning branch: forked cream satin")],
    crops=[("FL", (160, 205, 215, 260), "Fangs + mouth"), ("FL", (215, 190, 270, 245), "Snout + nose"),
           ("FR", (-190, 120, -135, 175), "Mane strokes")],
    mock_src="inputs/front.png", mock_crop=(130, 280, 640, 720),
@@ -48,7 +54,7 @@ CFG01 = dict(id="01", short="beast head", title="BEAST HEAD — fronts, split at
             "Specks < 3 mm² on bare fabric (denim highlights) dropped."],
    production=["Embroider the cut front panels flat, BEFORE",
                "  zip, welt pockets, hood and side seams.",
-               "4 threads, 40wt polyester (G3); stop order p4.",
+               f"{max(NTH['FR'], NTH['FL'])} threads, 40wt polyester (G3); stop order p4.",
                "Washed black 12 oz duck: 75/11 sharp, 2.5 oz",
                "  black cutaway, no topping. Pre-wash shell.",
                "Mark CF + welt box (drills) on each panel.",
@@ -58,7 +64,7 @@ CFG01 = dict(id="01", short="beast head", title="BEAST HEAD — fronts, split at
                "  puckering on the strike-off before bulk.",
                "Sew-out on production canvas before bulk."])
 
-CFG02 = dict(id="02", short="sleeve streaks", title="SLASH STREAKS — both sleeves",
+CFG02 = dict(id="02", why=WHY02, short="sleeve streaks", title="SLASH STREAKS — both sleeves",
    sub="Direct embroidery on the cut sleeve panels (front half of each sleeve), before the sleeve seams · mm, finished size · art files 1:1",
    coords="PLACEMENT (sleeve pattern coords: y = 0 underarm line, cap top -cap_h)",
    view_caption="Sleeves, size M (S01 wearer's right left | S02 wearer's left right). Orange = keep-out boundary: cap 15, underarms 15, cuff seam 10.",
@@ -88,7 +94,7 @@ CFG02 = dict(id="02", short="sleeve streaks", title="SLASH STREAKS — both slee
             "Shell fold shading in the render is NOT stitched (no black)."],
    production=["Embroider the cut sleeve panels flat,",
                "  BEFORE the underarm seams + cuffs.",
-               "3 threads (red, crimson, cream on SR).",
+               f"Threads per file (PES): SR {NTH['SR']}, SL {NTH['SL']}.",
                "Same backing / needle as 01.",
                "Mark the cap top notch + sleeve centre line",
                "  on each panel (DXF) before hooping.",

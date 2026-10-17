@@ -35,6 +35,10 @@ MH_SPLIT = sum((sum(mh(s) for s in secs(p).values()) if secs(p) else mh(CUR[p]))
 NH = sum(hoopings(p) for p in P4)
 NTH = len({c for p in P4 for c in CUR[p]["colours"]})
 ENAME = {"01": "01 Beast head", "02": "02 Sleeve streaks"}
+SUMS = {e: json.load(open(f"out/{e}_{rbcore.ELEMS[e][0]}/summary.json")) for e in rbcore.ELEMS}
+WMAX = max(v for sm in SUMS.values() for v in sm["width"].values())
+FW = max(BB[p][2]-BB[p][0] for p in P4) + 14; FH = max(BB[p][3]-BB[p][1] for p in P4) + 14
+MAXST = max(r["full"]["max_stitch"] for d in ALL.values() for r in d.values())
 
 def cover(index):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>']
@@ -61,8 +65,8 @@ def cover(index):
 
 def overview():
     o = hdr("PLACEMENT OVERVIEW — the art on every piece", "Fronts: x from CF (+ = wearer's left), y down from the CF neck seam. Sleeves: sleeve pattern coords (y = 0 underarm line). Tolerance ±2, rotation ±2°.", "G2")
-    fv = espec.piece_view_png("01", V, 2.4); w = 118; tag, h = img_tag(fv, 12, 30, w); o.append(tag)
-    bb = espec.view_bbox("01"); s = w / (bb[2] - bb[0]); X = lambda x: 12 + (x - bb[0])*s; Y = lambda y: 30 + (y - bb[1])*s
+    fv = espec.piece_view_png("01", V, 2.4); w = 92; tag, h = img_tag(fv, 26, 30, w); o.append(tag)
+    bb = espec.view_bbox("01"); s = w / (bb[2] - bb[0]); X = lambda x: 26 + (x - bb[0])*s; Y = lambda y: 30 + (y - bb[1])*s
     for p in ("FR", "FL"):
         b = BB[p]; sy = CUR[p]["splits"].get("sy")
         o.append(f'<rect x="{f(X(b[0]))}" y="{f(Y(b[1]))}" width="{f((b[2]-b[0])*s)}" height="{f((b[3]-b[1])*s)}" fill="none" stroke="{RED}" stroke-width="0.3" stroke-dasharray="1.2 0.8"/>')
@@ -70,11 +74,11 @@ def overview():
         if sy is not None:
             o.append(f'<line x1="{f(X(b[0]-6))}" y1="{f(Y(sy))}" x2="{f(X(b[2]+6))}" y2="{f(Y(sy))}" stroke="#0A84FF" stroke-width="0.4" stroke-dasharray="2 1"/>')
             o.append(t(X(b[0]) + 1, Y(sy) - 1, f"{p} split y {sy:.0f}", 1.5, 700, "#0A84FF"))
-    sv = espec.piece_view_png("02", V, 1.6); tag, h2 = img_tag(sv, 12, 30 + h + 6, 118); o.append(tag)
-    o.append(t(12, 30 + h + 6 + h2 + 3.5, "Size M. Red = art boxes; blue dashed = hoop split lines (G6); orange = keep-out boundary.", 1.8, 700))
+    sv = espec.piece_view_png("02", V, 1.6); tag, h2 = img_tag(sv, 12, 30 + h + 4, 120); o.append(tag)
+    o.append(t(12, 30 + h + 4 + h2 + 3.2, "Size M. Red = art boxes; blue dashed = hoop split lines (G6); orange = keep-out boundary.", 1.8, 700))
     tx = 140; ty = 30
     o.append(t(tx, ty, "ART BOX PER SIZE (mm) + KEEP-OUT CHECK (every rule, every size: emb_place.py)", 2.1, 700))
-    hd = ["Size", "Grade", "FR x / y", "FL x / y", "SR x / y", "SL x / y", "Keep-outs"]; cx = [tx, tx + 10, tx + 20, tx + 52, tx + 84, tx + 116, tx + 146]
+    hd = ["Size", "Grade", "FR x / y", "FL x / y", "SR x / y", "SL x / y", "Keep-outs"]; cx = [tx, tx + 9, tx + 20, tx + 48, tx + 76, tx + 104, tx + 133]
     for x_, hh in zip(cx, hd): o.append(t(x_, ty + 5, hh, 1.6, 700, MUTED))
     for i, sz in enumerate(rbcore.SIZES):
         pl = EP.place(sz)[0]; y = ty + 9.5 + i*4.0
@@ -126,7 +130,7 @@ def threads():
     o.append(t(12, yb, "ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — amber/red rows must be picked from the physical card. All targets are PROPOSED (read from the mockup).", 1.8, 600, ORANGE))
     o.append(t(12, yb + 3.5, "Shadow black on washed black duck reads as texture, not colour (as in the mockup's detail panel): judge it on the strike-off, in raking light.", 1.8, 400, MUTED))
     o.append(t(12, yb + 10, "TRIMS + CONSUMABLES (per jacket)", 2.2, 700))
-    fw = max(BB[p][2]-BB[p][0] for p in P4) + 14; fh = max(BB[p][3]-BB[p][1] for p in P4) + 14
+    fw, fh = FW, FH
     tr = [("Backing", "2.5 oz cutaway, black, cut 30 larger than each hooping; trim to 5 from stitching after embroidery (dense head: consider 3 oz on FL)"),
           ("Topping", "none (canvas surface is firm)"), ("Needles", "75/11 sharp (canvas)"), ("Bobbin", "60wt black polyester pre-wound (dark shell)"),
           ("Frames", f"{FR_S} (factory.json{'' if PROF['frames_confirmed'] else ', PROPOSED'}): {NH} hoopings per jacket (split files, G5) · one hooping per piece needs ≥ {fw:.0f} × {fh:.0f} (M)"),
@@ -150,7 +154,7 @@ def summary():
         o.append(t(cx[10], y, f"{hoopings(p)}", 1.8))
     y = 36 + len(P4)*4.6 + 1
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.9, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.9, 700)); o.append(t(cx[9], y, f"{MH:.1f} h", 1.9, 700)); o.append(t(cx[10], y, f"{NH}", 1.9, 700))
-    o.append(t(12, y + 4.5, "Width check (spec p3): every region code has < 1 % of its area under 0.8 mm (hair tips grown to ≥ 1.0 mm along their skeleton). Max stitch ≤ 7.5 on every file of every size (G5).", 1.7, 400, MUTED))
+    o.append(t(12, y + 4.5, f"Width check (spec p3): worst region code has {WMAX:.1f} % of its area under 0.8 mm (hair tips grown to ≥ 1.0 mm along their skeleton). Max sewn stitch over every file of every size: {MAXST:.2f} mm (limit 7.5).", 1.7, 400, MUTED))
     o.append(t(12, y + 7.8, f"Machine time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one hooping (split files: {MH_SPLIT:.1f} h per jacket). Rev A is built for fidelity: trims + time are reported, cleaned up after the sew-out.", 1.7, 400, MUTED))
     qy = y + 15
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
@@ -158,7 +162,7 @@ def summary():
           "2. Back + hood: plain (the mockup shows the front only). Confirm, or send a back / hood mockup.",
           "3. Armhole crossing: streaks + branch tips end 15 short of the seam on front and sleeve (no wrap). Wrap them across with match marks (3 mm short, Drum Island A4) instead?",
           "4. Hood pattern: body = Drum Island; the hood block is pending in the engine (pattern pages + DXF follow). Neck/hood seam keep-out 10 mm [PROPOSED].",
-          f"5. Frame: fronts need 2 hoopings each on {FR_S} (split S1/S2 + registration crosses, G6); a ≥ 300 × 520 frame takes each front in one. Which frames do you have?",
+          f"5. Frame: fronts need 2 hoopings each on {FR_S} (split S1/S2 + registration crosses, G6); a ≥ {FW:.0f} × {FH:.0f} frame takes every piece in one (size M). Which frames do you have?",
           "6. Thread board: all targets read from an AI mockup — approve physical colours (G3). Shadow black is black-on-black texture: keep it, or drop it to save stitches?",
           "7. Shell: washed black 12 oz duck assumed, washed before embroidery. If garment-washed after embroidery, wash-test the sew-out (dense FL head).",
           "8. Grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per piece, fronts scaled about the CF neck so the halves meet at the zip.",

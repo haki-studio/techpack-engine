@@ -28,9 +28,9 @@ tech.COLOUR_ORDER = SEW + [c for c in tech.COLOUR_ORDER if c not in SEW]
 # ---------------------------------------------------------------- region codes
 # code -> (name, stitch, angle rule, density, stitch length, underlay, pull comp, notes)
 RB_RULES = {
- "HR":      ("Hair stroke (red)",          "Satin, turning",       "across the stroke",          "0.40", "≤7",  "centre run (≥ 2 wide)",      "0.20", "strokes ≥ 0.9 wide; tapered tips trimmed to 0.9"),
+ "HR":      ("Hair stroke (red)",          "Satin, turning",       "across the stroke",          "0.40", "≤7",  "centre run (≥ 2 wide)",      "0.20", "strands ≥ 1.0 wide (tips grown along the skeleton)"),
  "HR-fill": ("Hair mass (red)",            "Tatami, flow angle",   "along the hair flow (traced)","0.42", "3.5", "edge run + 90° lattice",     "0.20", "long-and-short look; angle per 14 mm cell"),
- "SK":      ("Slash streak",               "Satin, turning",       "across the streak",          "0.40", "≤7",  "centre run (≥ 2 wide)",      "0.20", "tapered; split satin > 7"),
+ "SK":      ("Slash streak",               "Satin, turning",       "across the streak",          "0.40", "≤7",  "centre run (≥ 2 wide)",      "0.20", "≥ 1.0 wide; split satin > 7"),
  "SK-fill": ("Slash streak, wide part",    "Tatami, flow angle",   "along the streak",           "0.42", "3.5", "edge run",                   "0.20", ""),
  "BK":      ("Black shading stroke",       "Satin, turning",       "across the stroke",          "0.42", "≤7",  "none",                       "0.15", "black on black: texture, not colour"),
  "BK-fill": ("Black ground",               "Tatami, flow angle",   "along the hair flow",        "0.45", "3.5", "edge run + 90° lattice",     "0.20", "fills between the red strokes (sewn after red)"),
