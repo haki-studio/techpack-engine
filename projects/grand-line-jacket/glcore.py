@@ -87,4 +87,4 @@ PIECE_NAME = {"FR": "wearer's right front", "FL": "wearer's left front"}
 PIECE_CODE = {"FR": "F02", "FL": "F01"}        # pattern piece codes (pattern.py)
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
-REV_EMB = "Rev A"; REV_GAR = "Rev A"; DATE = "16 Oct 2026"
+REV_EMB = "Rev B"; REV_GAR = "Rev B"; DATE = "16 Oct 2026"

@@ -138,7 +138,7 @@ def summary():
         o.append(t(cx[0], y, "01 Front scene", 1.85, 600)); o.append(t(cx[1], y, f"{p} {glcore.PIECE_NAME[p]}", 1.8))
         o.append(t(cx[2], y, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.8)); o.append(t(cx[3], y, f"{r['stitches']:,}", 1.8, 600))
         o.append(t(cx[4], y, f"{r['trims']:,}", 1.8)); o.append(t(cx[5], y, f"{r['stops']}", 1.8)); o.append(t(cx[6], y, f"{len(set(r['colours']))}", 1.8))
-        o.append(t(cx[7], y, f"{r['max_stitch']:.1f} mm", 1.8)); o.append(t(cx[8], y, f"{mh(r)*60:.0f} min", 1.8))
+        o.append(t(cx[7], y, f"{r['max_stitch']:.2f} mm", 1.8)); o.append(t(cx[8], y, f"{mh(r)*60:.0f} min", 1.8))
         if wk is not None:
             v = wc[wk]; o.append(t(cx[9], y, ("fills/satins < 1 %" if v < 1 else f"worst {wk} {v:.1f}% (tapered ends)") + f"; hairline runs: {', '.join(HAIR)}", 1.6, 600, GREEN if v < 1 else ORANGE))
     y = 36 + len(P2)*4.6 + 1
@@ -147,14 +147,14 @@ def summary():
     o.append(t(12, y + 7.8, f"Run time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one hooping (split files: {MH_SPLIT:.1f} h per jacket). Rev B is built for fidelity; cost is cleaned up after the sew-out.", 1.7, 400, MUTED))
     qy = y + 16
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
-    qs = [f"1. Frame: each piece is ~420–505 tall → 2 hoopings on {FR_S} (split S1/S2, basting crosses, G5), or 1 hooping on a ≥ 300 × 520 frame (full files). Which?",
+    qs = [f"1. Frame: each piece is ~420–505 tall → 2 hoopings on {FR_S} (split S1/S2, registration crosses, G5/G6), or 1 hooping on a ≥ 300 × 520 frame (full files). Which?",
           "2. Thread board: all 12 targets are read from a low-res AI mockup — approve physical colours (G3), especially sea teals vs the navy shell.",
           "3. Shell dye: embroidery assumes piece-dyed, pre-washed navy duck. If the jacket is garment-dyed/washed after embroidery, wash-test the sew-out first.",
           "4. Grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per piece, scaled about the CF neck so the horizon meets at CF. OK?",
           "5. Zip: art stops 15 each side of CF (assumes ≤ 12 tape + 10 mm topstitch). Confirm tape width.",
           "6. Welts: placed at the mockup position (moved 18 toward CF), Drum Island welt size 1.4 × 13. Confirm before the art is frozen.",
-          "7. Rays: the mockup's dashed rays are continuous 0.8 bean lines (dashes add ~2 trims each). Dashed wanted anyway?",
-          "8. Originals: higher-resolution art would let the stars, scallops and glow be traced instead of reinterpreted.",
+          "7. Fidelity first (Devin): dashed rays, dash-field sea, soft florets and hairline glow are built as in the close-ups; trims + run time are reported, clean up after the sew-out.",
+          "8. Reference: layout from the mockup, detail from AI close-ups (inputs/closeups) - not originals. Real artwork files would still be better.",
           "9. Name: 'Grand Line' is a One Piece term (Shueisha/Toei) — internal slug only; the art itself is generic (no characters/logos).",
           "10. DST/PES are production-intent drafts: the factory digitizer checks density + pull on 12 oz duck and edits before the sew-out."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i*3.6, q, 1.8))
@@ -207,14 +207,14 @@ def files_page():
         o.append(t(X(bb[0]) + 1, Y(bb[1]) + 3, nm[:2], 2.0, 700, "#0A84FF"))
         for m in sx_["marks"]:
             mx, my = X(m[0]), Y(m[1]); o.append(f'<path d="M{f(mx-1.4)} {f(my)} H{f(mx+1.4)} M{f(mx)} {f(my-1.4)} V{f(my+1.4)}" stroke="#00E0FF" stroke-width="0.45"/>')
-    o.append(t(bx, by + bh + 3, f"FR size M: red = split line (y {sp.get('sy', 0):.0f}), blue = files, + = basting crosses.", 1.45, 400, MUTED))
+    o.append(t(bx, by + bh + 3, f"FR size M: red = split line (y {sp.get('sy', 0):.0f}), blue = files, + = registration crosses (stop-1 thread).", 1.45, 400, MUTED))
     sy0 = by + bh + 8
     o.append(t(bx, sy0, "SEWING A SPLIT PIECE", 2.0, 700))
     steps = ["1. Mark CF, horizon + split line on the cut", "    panel (chalk) from the pattern.",
-             "2. Hoop S1 (top). Stop 1 = basting crosses", "    (water-soluble/contrast). Sew S1.",
+             "2. Hoop S1 (top). Stop 1 starts with the", "    registration crosses (stop-1 thread). Sew S1.",
              "3. Re-hoop for S2; align the needle on the", "    shared crosses, sew them (check), then S2.",
              "4. Fills crossing the split overlap 1.2;", "    lobes, stars, islets < 70 go whole to one file.",
-             "5. Remove basting + backing after S2.", f"Fits the frame on every size: {'yes' if allfit else 'CHECK'}."]
+             "5. Pick out the crosses, trim backing after S2.", f"Fits the frame on every size: {'yes' if allfit else 'CHECK'}."]
     for i, st_ in enumerate(steps): o.append(t(bx, sy0 + 4 + i*3.0, st_, 1.5, 700 if i == len(steps) - 1 else 400, (GREEN if allfit else RED) if i == len(steps) - 1 else INK))
     return o
 
@@ -252,11 +252,13 @@ def hooping_page():
     notes = ["The split line is chosen where it cuts the least art inside the frame (searched 12–88 % of the art height). Where it still crosses a cloud",
              "bank (amber), lobes under 70 mm go whole to one file and larger fills overlap 1.2 mm — check that joint on the strike-off photos.",
              "Needle start = centre of each file's design (origin of the DST/PES). Mark it on the cut panel from the pattern (DXF layer 13 + layer 8 cross).",
-             "Stop 1 of every split file = water-soluble basting crosses on the split line; S2 re-registers on the crosses S1 sewed."]
+             "Registration crosses sew at the start of stop 1 in that stop's thread (factory: max 12 colours per file, no separate basting thread);",
+             "long 4 mm stitches on bare fabric 4 mm outside the art — S2 re-registers on the crosses S1 sewed; pick them out after S2."]
     for i, l in enumerate(notes): o.append(t(12, y + i*3.4, l, 1.6, 400, MUTED))
     return o
 
 def f1_pages():
+    import sheet as _SH; _SH.FOOT = SB.FOOT
     so = [dict(file=os.path.basename(CUR[p]["file"]) + ".dst", piece=f"{p} {glcore.PIECE_NAME[p]}", stitches=CUR[p]["stitches"], trims=CUR[p]["trims"]) for p in P2]
     so += [dict(file=os.path.basename(s["file"]) + ".dst", piece=f"{p} split {nm}", stitches=s["stitches"], trims=s["trims"]) for p in P2 for nm, s in CUR[p]["splits"]["sections"].items()]
     th = [dict(name=PAL[k][1], code=f"Isacord {SB.TH[k]['isacord'][0]} / Polyneon {SB.TH[k]['polyneon'][0]}", de=min(SB.TH[k]["isacord"][3], SB.TH[k]["polyneon"][3])) for k in glcore.GL_KEYS]

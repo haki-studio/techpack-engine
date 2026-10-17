@@ -38,20 +38,31 @@ def cap_stitches(pat, mx=7.4):
     pat.stitches = out
     return pat
 
+def reg_in_first_colour(pat):
+    """factory limit (12 colours incl. registration): drop the dedicated basting thread; the crosses sew at the start of
+    stop 1 in stop 1's thread (long 4 mm stitches, picked out after the last hooping)"""
+    import pyembroidery as pe
+    if len(pat.threadlist) < 2 or pat.threadlist[0].catalog_number != "WSB": return pat
+    pat.threadlist.pop(0)
+    for i, (x, y, c) in enumerate(pat.stitches):
+        if (c & pe.COMMAND_MASK) == pe.COLOR_CHANGE: del pat.stitches[i]; break
+    return pat
+
 def stops_for(vis):
     st = tech.stops(vis); n0 = len(st); return dst2.merge_stops(st), n0
 
 def sews(stops, basting=False):
     """what each colour stop sews: region codes + stitch types (underlay/edge runs are part of every fill object)"""
-    out = [dict(col="#00A3FF", codes=["REG"], types=["basting crosses"])] if basting else []
+    out = []
     for s in stops:
         codes = sorted({tech.rule_for(r["grp"]) for r in s["regions"]})
         types = sorted({r["st"] for r in s["regions"]})
         out.append(dict(col=s["col"], codes=codes, types=types, objects=len(s["regions"])))
+    if basting and out: out[0]["codes"] = ["REG crosses"] + out[0]["codes"]
     return out
 
 def record(base, stops, extra, basting=False):
-    rb = readback.dst(base + ".dst")
+    rb = readback.dst(base + ".dst"); rb["threads"] = factory.check_threads(base + ".pes")
     info = sews(stops, basting)
     assert len(info) == rb["stops"], f"{base}: {len(info)} stops built vs {rb['stops']} in the DST"
     for ps, si in zip(rb["per_stop"], info): ps.update(si)
@@ -85,7 +96,7 @@ for P in which:
             cc = ((bb[0]+bb[2])/2, (bb[1]+bb[3])/2)
             pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=marks[key])
             base = f"{OUT}/splits/HAKI_GRLN_01_front-scene_{P}_{size}_{names[key]}"; os.makedirs(os.path.dirname(base), exist_ok=True)
-            dst2.write(cap_stitches(pat), base); dst2.render(base, base + "_preview.png", s=0.5)
+            dst2.write(cap_stitches(reg_in_first_colour(pat)), base); dst2.render(base, base + "_preview.png", s=0.5)
             r = record(base, stops, dict(bbox=bb, origin=cc, marks=marks[key], secs=round(time.time()-t)), basting=True)
             r["fits"] = r["size_mm"][0] <= FRAME[0] - 16 and r["size_mm"][1] <= FRAME[1] - 16
             spl["sections"][names[key]] = r

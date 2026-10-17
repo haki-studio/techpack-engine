@@ -47,7 +47,7 @@ CFG = dict(id="01", slug="front-scene", short="front scene", title="FRONT SCENE 
                "Mark CF, horizon line + welt box (drills)",
                "  on each panel before hooping.",
                "Frame (factory.json): split files S1 + S2,",
-               "  basting crosses in stop 1 (G5).",
+               "  registration crosses open stop 1 (G6).",
                "Sew-out on production canvas before bulk."])
 if __name__ == "__main__":
     r = espec.build(CFG, F, VIS)

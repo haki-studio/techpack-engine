@@ -25,11 +25,11 @@ pattern/
 
 elements/01_front-scene/<size>/            per size: FR (wearer's right front) + FL (wearer's left front) stitch files (DST + PES),
                                            previews, thread charts. splits/ = S1_top + S2_bottom for a 360 x 360 frame
-                                           (stop 1 = basting registration crosses, water-soluble, remove after sewing).
+                                           (stop 1 opens with registration crosses in its own thread - pick out after the last hooping).
 elements/01_front-scene/*_SPEC_*.pdf       element spec (5 pages); *_M_ART*.svg = size-M region art with digitizing attributes.
 
-Size M: FR {cur['FR']['stitches']:,} stitches / {cur['FR']['trims_dst']} trims, FL {cur['FL']['stitches']:,} / {cur['FL']['trims_dst']} (read from the DST).
-12 threads per file (<= 15-needle head). The files are production-intent drafts: the factory digitizer opens them, checks density + pull
+Size M: FR {cur['FR']['stitches']:,} stitches / {cur['FR']['trims']} trims, FL {cur['FL']['stitches']:,} / {cur['FL']['trims']} (read from the DST).
+max 12 thread colours per file (factory limit, incl. registration). The files are production-intent drafts: the factory digitizer opens them, checks density + pull
 on 12 oz duck, edits if needed, and sews out before bulk. Every value marked [proposed - confirm] in the PDF is still open.
 """)
 for z in glob.glob("out/*.zip"): os.remove(z)

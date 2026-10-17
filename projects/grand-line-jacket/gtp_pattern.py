@@ -88,9 +88,9 @@ def p_pattern_grade():
             Y = lambda q: oy + (q - ay)*s + (46 if code in ("B01", "F01") else 0)
             o.append(f'<path d="{PD.path_d([(X(x), Y(y)) for x, y in sew])}" fill="none" stroke="{cols[i]}" stroke-width="{0.22 if sz != "M" else 0.4}"/>')
         o.append(t(ox, 31, f"{nm} — sew lines", 1.7, 700))
-    o.append(t(14, 84, "Nests shown at 0.07:1; heaviest line = M. Body aligned on CB/CF + hem seam; sleeve on cap top; collar on CB neck.", 1.55, 400, MUTED))
+    o.append(t(14, 89, "Nests shown at 0.07:1; heaviest line = M. Body aligned on CB/CF + hem seam; sleeve on cap top; collar on CB neck.", 1.55, 400, MUTED))
     # measurement table
-    rows = PO.qa_table(); ty = 92
+    rows = PO.qa_table(); ty = 96
     hd = ["POM", "Description"] + PT.SIZES + ["Tol"]
     cx = [14, 21] + [70 + 15*i for i in range(7)] + [176]
     for x_, h in zip(cx, hd): o.append(t(x_, ty, h, 1.7, 700, MUTED))
@@ -273,7 +273,11 @@ def p_operations():
 REVS = [("Garment Rev A", "16 Oct 2026", "First garment pack for the Grand Line jacket on the Drum Island block + pattern: flats, details, size chart, grading, BOM, construction, labels, "
                                           "colourway, pattern XS–3XL (DXF + 1:1 plot), embroidery placement per size, inside view, operations, this log. Welts moved to the mockup position."),
         ("Embroidery Rev A", "16 Oct 2026", "01 front scene (sunrise over a sea of clouds) on FR + FL: art composed from the mockup, 12 threads, per-size stitch files XS–3XL "
-                                             "+ hoop splits; horizon + ray match marks at CF.")]
+                                             "+ hoop splits; horizon + ray match marks at CF."),
+        ("Garment + Embroidery Rev B", "16 Oct 2026", "Independent review + founder 'fidelity first': art rebuilt from Devin's close-ups (layout from the mockup) - 4-tone florets with "
+                                             "fan satin and no outline, banks ending in whole lobes, 11 islets, 43 stars, dashed rays, dash-field sea to the welts (no slab), fine sun "
+                                             "with hairline glow. Every per-file / per-stop number read back from the DST. Max 12 colours per file (registration in stop 1's thread). "
+                                             "G6 hooping table, F1 factory requests, T11/T12 layout, BOM thread metres.")]
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]
 
 def p_revisions():
