@@ -92,9 +92,13 @@ def apply(plan_path):
         if src.startswith(INBOX) and os.path.exists(src): shutil.move(src, os.path.join(done, os.path.basename(src)))
     for f in folders:                          # product subfolders: copy any notes into the project, then archive the folder
         src = os.path.join(INBOX, f)
+        dst_proj = next((pr["slug"] for pr in plan["products"] if any(os.path.relpath(os.path.join(ROOT, im["src"]), INBOX).startswith(f + os.sep) for im in pr.get("images", []))), None)
         for notes in glob.glob(os.path.join(src, "*.md")) + glob.glob(os.path.join(src, "*.txt")):
             dst_proj = next((pr["slug"] for pr in plan["products"] if any(os.path.relpath(os.path.join(ROOT, im["src"]), INBOX).startswith(f + os.sep) for im in pr.get("images", []))), None)
             if dst_proj: shutil.copy(notes, os.path.join(ROOT, "projects", dst_proj, "inputs", "notes_" + os.path.basename(notes)))
+        cu = os.path.join(src, "closeups")             # per-panel close-ups (techpack-pipeline §0b) -> inputs/closeups/
+        if dst_proj and os.path.isdir(cu):
+            shutil.copytree(cu, os.path.join(ROOT, "projects", dst_proj, "inputs", "closeups"), dirs_exist_ok=True)
         if os.path.isdir(src): shutil.move(src, os.path.join(done, f))
     for g in glob.glob(os.path.join(INBOX, "_grid_*.png")): os.remove(g)
 
