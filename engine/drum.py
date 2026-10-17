@@ -25,6 +25,9 @@ POM_CM = {   # code: (name, how measured, values XS..3XL, tolerance cm)
  "P": ("Shoulder forward", "shoulder seam forward of HPS", [1]*7, 0.2),
 }
 PROPOSED = {"hem_rib": 55, "cuff_rib": 75, "shoulder_drop": 45, "zip_tape": 12}
+# welt pocket opening on the wearer's LEFT front, size M, front coords (mm). Block data (was read from a project's front.py).
+WELT_L_M = [(213.4293317701434, 416.69333503245286), (221.77066822985665, 407.6266649675471),
+            (125.77066822985665, 319.3066649675471), (117.42933177014336, 328.37333503245287)]
 
 def m(code, size="M"): return POM_CM[code][2][SIZES.index(size)] * 10.0
 

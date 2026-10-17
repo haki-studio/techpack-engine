@@ -4,7 +4,7 @@ import numpy as np
 import ezdxf, cairosvg
 from pypdf import PdfWriter, PdfReader
 from shapely.geometry import Point, LineString, Polygon
-import pattern as PT, pattern_draw as PD, emb_place as EP, drum
+import pattern as PT, pattern_draw as PD, drum      # emb_place (project module) is imported only when placements are drawn
 
 STYLE = "HK-JK-DRUM-PP"; OUTD = "out/pattern"; os.makedirs(OUTD, exist_ok=True)
 EMB_ON = {"B01": ["back"], "F01": ["02L", "03"], "F02": ["02R", "04"], "S01": ["sleeve"]}
@@ -12,7 +12,10 @@ EMB_NAME = {"back": "01 back scene", "sleeve": "01 sleeve wrap", "02R": "02R che
 
 def emb_marks(size, pl=None):
     """{piece_code: [(name, pts, kind)]} — art outline, art box and design centre (= DST origin / needle start)."""
-    pl = pl or EP.place(size)[0]; out = {}
+    if pl is None:
+        import emb_place as EP
+        pl = EP.place(size)[0]
+    out = {}
     for pc, elems in EMB_ON.items():
         lst = []
         for e in elems:
@@ -27,7 +30,7 @@ def emb_marks(size, pl=None):
     return out
 
 # ---------------------------------------------------------------- DXF (AAMA layer convention)
-def add_block(doc, pc, size, emb=()):
+def add_block(doc, pc, size, emb=(), style=None):
     name = f"{pc.code}_{size}"; blk = doc.blocks.new(name=name)
     F = lambda pts: [(x, -y) for x, y in pts]
     cut = PT.cut_poly(pc)
@@ -51,32 +54,35 @@ def add_block(doc, pc, size, emb=()):
             blk.add_polyline2d(F(pts), close=True, dxfattribs={"layer": "8"})
     c = cut.representative_point(); tx, ty = c.x, -c.y
     lines = [f"Piece Name: {pc.code} {pc.name}", f"Size: {size}", f"Quantity: {pc.qty}", f"Material: {pc.material}",
-             f"Category: {pc.category}", f"Style Name: {STYLE}", "Units: mm"]
+             f"Category: {pc.category}", f"Style Name: {style or STYLE}", "Units: mm"]
     if pc.fuse: lines.append("Fuse: yes")
     for i, l in enumerate(lines):
         blk.add_text(l, dxfattribs={"layer": "15", "height": 6, "insert": (tx - 60, ty - i * 9)})
     return name, cut.bounds
 
-def write_dxf(sizes, path, pieces=None):
+def write_dxf(sizes, path, pieces=None, blk=None, style=None, emb=True):
+    """blk = block module with draft()/ORDER (default: the Drum Island jacket, pattern.py)."""
+    blk = blk or PT
     doc = ezdxf.new("R12"); msp = doc.modelspace()
     for ln in ("1", "4", "7", "8", "13", "14", "15"): doc.layers.add(ln)
     y0 = 0.0
     for size in sizes:
-        g, mt = PT.draft(size); em = emb_marks(size) if size else {}
+        g, mt = blk.draft(size); em = emb_marks(size) if (size and emb) else {}
         x0 = 0.0; rowh = 0.0
-        for code in (pieces or PT.ORDER):
-            pc = g[code]; name, b = add_block(doc, pc, size, em.get(code, ()))
+        for code in (pieces or blk.ORDER):
+            pc = g[code]; name, b = add_block(doc, pc, size, em.get(code, ()), style)
             w, h = b[2] - b[0], b[3] - b[1]
             msp.add_blockref(name, (x0 - b[0], y0 + b[3]))      # y flipped: top of piece at y0
             x0 += w + 60; rowh = max(rowh, h)
-        msp.add_text(f"{STYLE} size {size}", dxfattribs={"layer": "15", "height": 25, "insert": (0, y0 + 60)})
+        msp.add_text(f"{style or STYLE} size {size}", dxfattribs={"layer": "15", "height": 25, "insert": (0, y0 + 60)})
         y0 -= rowh + 200
     doc.saveas(path)
 
 # ---------------------------------------------------------------- 1:1 plot PDF: one page per piece (cut quantity on the page)
-def plot_pdf(size, path):
-    g, mt = PT.draft(size); em = emb_marks(size); w = PdfWriter()
-    for code in PT.ORDER:
+def plot_pdf(size, path, blk=None, style=None, emb=True):
+    blk = blk or PT; ST = style or STYLE
+    g, mt = blk.draft(size); em = emb_marks(size) if emb else {}; w = PdfWriter()
+    for code in blk.ORDER:
         pc = g[code]; b = PT.cut_poly(pc).bounds; m = 25.0
         W = (b[2] - b[0]) + 2*m; H = (b[3] - b[1]) + 2*m + 40
         X = lambda x: x - b[0] + m; Y = lambda y: y - b[1] + m + 40
@@ -85,7 +91,7 @@ def plot_pdf(size, path):
         o.append(f'<rect x="{m}" y="8" width="100" height="25" fill="none" stroke="#000" stroke-width="0.4"/>')
         o.append(f'<text x="{m + 2}" y="18" font-size="5" font-family="Helvetica">TEST: 100 mm</text>')
         o.append(f'<text x="{m + 2}" y="28" font-size="4" font-family="Helvetica">print at 100 % — no scaling</text>')
-        o.append(f'<text x="{m + 110}" y="18" font-size="6" font-weight="700" font-family="Helvetica">{STYLE} · {pc.code} {pc.name.replace("&", "+")} · size {size} · cut {pc.qty}</text>')
+        o.append(f'<text x="{m + 110}" y="18" font-size="6" font-weight="700" font-family="Helvetica">{ST} · {pc.code} {pc.name.replace("&", "+")} · size {size} · cut {pc.qty}</text>')
         o.append(f'<text x="{m + 110}" y="28" font-size="4.5" font-family="Helvetica">{pc.material} · seam allowance included (dashed = sew line) · notches = slits · ⊕ = drill holes</text>')
         svg = f'<svg xmlns="http://www.w3.org/2000/svg" width="{W:.1f}mm" height="{H:.1f}mm" viewBox="0 0 {W:.1f} {H:.1f}">' + "".join(o) + "</svg>"
         buf = io.BytesIO(); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=buf); buf.seek(0); w.append(PdfReader(buf))

@@ -9,7 +9,7 @@ pass before anything is delivered.
 ## Layout
 - `engine/` — reusable: stitch engine (`dst2.py`), stitch rules + thread matching + colour stops (`tech.py`),
   renderers (`stitchrender.py`, `render.py`), A4 sheet helpers (`sheet.py`, `specbase.py`), region QA (`qa.py`),
-  motif library (`motifs.py`, `motifs2.py`), block from a POM chart (`drum.py`), pattern drafting + outputs
+  motif library (`motifs.py`, `motifs2.py`), block from a POM chart (`drum.py`), derived blocks (`hoodie.py`: zip hoodie = Drum Island body + hood + elastic bands), pattern drafting + outputs
   (`pattern.py`, `pattern_draw.py`, `pattern_out.py`), thread palettes (`pal/`).
 - `projects/<style>/` — one folder per garment: its scene/art builders, spec + pack page builders, run scripts,
   `inputs/` (mockups, references, fixed json). Outputs go to `projects/<style>/out/` (git-ignored).

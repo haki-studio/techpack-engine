@@ -21,6 +21,8 @@ images and watch.
    (`wave-jacket`, `koi-lily-hooded-jacket`).
 3. For each product decide, from the images and the batch notes:
    - **garment + fit block**: if it's the collared work jacket (corduroy collar, rib hem/cuffs) use `drum-island`;
+     the boxy zip hoodie (hood, zip, self-fabric elastic hem/cuffs — e.g. the koi hoodie) → `zip-hoodie`
+     (`engine/hoodie.py`, pattern ready; reference build `projects/zip-hoodie-block/`; its blank fit sample is pending — say so);
      anything else → `unknown — needs a fit chart` (art + stitch files still go ahead on a proposed block; the
      pattern waits for the chart).
    - **process**: embroidery (thread texture, satin sheen, raised fills), **knit jacquard / printed fleece**
@@ -62,5 +64,7 @@ product's latest preview.
   question, thread card / lab dip for weak matches, quote basis. Frames, needles, speed and thread brands come from
   `factory.json` — when the factory answers, update it and rebuild the splits. Strike-off photos/notes go into
   `projects/<slug>/inputs/strikeoff/`; feed them back per `techpack-pipeline` §6 and add LESSONS rows.
+- Sync with GitHub only when every builder is done (shared working tree): `git status` must show no uncommitted
+  project work, then `git pull --rebase` (never `--autostash`), `python3 -m pytest -q tests`, `git push`.
 - Finish with a summary table: product, stage (delivered / reviewed), stitches + trims (M), machine hours, files,
   what's blocked and why, and what the factory has been asked (F1).
