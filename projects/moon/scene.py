@@ -59,6 +59,13 @@ def tf_regs(regs, sc, anchor_from, anchor_to, dx=0.0):
         out.append(dict(r, geom=g if r["st"] in ("bean", "run") else g.buffer(0), ang=ang))
     return out
 
+WIRE_W = 1.6
+def cord(p0, p1, sag):
+    """wire as a twisted-cord satin column (1.6 mm, turning satin along the sag curve) + a wrap at the insulator end"""
+    pts = MM.wire_pts(p0, p1, sag)
+    return [dict(col="p2", geom=LineString(pts).buffer(WIRE_W / 2, cap_style="flat"), st="satin", ang="auto", grp="WR"),
+            dict(col="p1", geom=Point(p0).buffer(1.6, 16), st="satin", ang="auto", grp="PL-hl")]
+
 class Items(list):
     def add(self, regs, layer, el=None):
         for r in regs:
@@ -84,7 +91,8 @@ def fit(regs, clip, max_shift=60.0, tol=0.015):
 _T = None
 def traced():
     global _T
-    if _T is None: _T = TA.load()
+    if _T is None:
+        import closeart; _T = closeart.load()          # close-ups = tracing reference; mockup = placement (closeart docstring)
     return _T
 
 # ================================================================ 01 back
@@ -107,8 +115,7 @@ def back_art(size="M"):
         p0 = tips[a]; span = abs(b[0] - p0[0])
         drop = abs(b[1] - mt["hem_b"]) < 8
         if abs(abs(b[0]) - xs) < 0.01: ends.append(("R" if b[0] > 0 else "L", round(mt["hem_b"] - b[1], 1), b, p0, 0.07 * span))
-        reg, ln = MM.wire(p0, b, (0.02 if drop else 0.07) * span, 1.0)
-        wires.append(reg)
+        wires += cord(p0, b, (0.02 if drop else 0.07) * span)
     it.add(wires, L_WIRE, "01")
     clouds = []
     for c in T_["back_clouds"]:
@@ -155,7 +162,7 @@ def front_art(size="M"):
     for a, b, sg in W:
         p0 = tips[a]; span = abs(b[0] - p0[0])
         if abs(abs(b[0]) - xs) < 0.01: ends.append(("L" if b[0] > 0 else "R", round(mt["hem_f"] - b[1], 1), b, p0, (sg or 0.04) * span))
-        reg, _ = MM.wire(p0, b, (sg or 0.04) * span, 1.0); wires.append(reg)
+        wires += cord(p0, b, (sg or 0.04) * span)
     it.add(wires, L_WIRE, "03")
     for c in T_["lower"]:
         clip = fc["F01"][0] if c["side"] == "L" else fc["F02"][0]

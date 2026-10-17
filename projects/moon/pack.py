@@ -133,7 +133,7 @@ def threads():
     ab = unary_union([r["geom"] for r in A["back"]]).bounds
     tr = [("Backing", "2.5 oz cutaway, black/navy (dark ground), cut 30 larger than each art box; trim to 5 from stitching after embroidery"),
           ("Topping", "none (canvas surface is firm)"), ("Needles", "75/11 sharp (canvas)"), ("Bobbin", "60wt polyester, navy (dark ground) pre-wound"),
-          ("Frames", f"01 back: border frame ≥ {ab[2]-ab[0]+14:.0f} × {ab[3]-ab[1]+14:.0f} (M, single file) or the 360² split files (G5); 04 sleeves: 2 × 360² each; 02/03: 360²"),
+          ("Frames", f"01 back: border frame ≥ {ab[2]-ab[0]+14:.0f} × {ab[3]-ab[1]+14:.0f} (M, single file) or the 360² split files (G5); 04 sleeves: split per the frame (G5); 02/03: 360²"),
           ("Patches / labels", "none on this garment — all artwork is direct embroidery")]
     for i, (a, b) in enumerate(tr): o.append(t(12, yb + 11.5 + i * 3.6, a, 1.8, 600)); o.append(t(42, yb + 11.5 + i * 3.6, b, 1.8))
     return o
@@ -177,7 +177,7 @@ def summary():
 def files_page():
     o = hdr("G5 · PRODUCTION STITCH FILES + HOOP SPLITS", "DST (Tajima) + PES. Counts read back from the files; trims from the DST. Origin = centre of each file's design (= the ⊕ on the pattern). Thread chart .txt next to every file.", "G5")
     o.append(t(12, 31, "01 BACK + 03 LOWER FRONTS — one file per size (wires re-run to that size's side seams)", 2.0, 700))
-    hd = ["Size", "Art", "01 back mm", "Stitches", "Trims", "Stops", "03L st / tr", "03R st / tr", "360² splits (stitches · all fit)"]; cx = [12, 22, 30, 52, 68, 80, 92, 116, 138]
+    hd = ["Size", "Art", "01 back mm", "Stitches", "Trims", "Stops", "03L st / tr", "03R st / tr", "Frame splits (stitches · all fit)"]; cx = [12, 22, 30, 52, 68, 80, 92, 116, 138]
     for x_, h in zip(cx, hd): o.append(t(x_, 35.5, h, 1.55, 700, MUTED))
     y = 39.5
     for i, sz in enumerate(drum.SIZES):
@@ -227,13 +227,13 @@ def files_page():
     sy0 = 118; sx0 = 12
     o.append(t(sx0 + 120, 31 + 0, "", 1))
     steps = ["SEWING THE SPLIT BACK (no border frame)",
-             "1. Mark CB + the split lines on the cut back (chalk), from the pattern (B01).",
+             "1. Mark CB + the split lines on the cut back (chalk), from the pattern (B01) — x / y per size on 01 p6.",
              "2. Hoop S1. Stop 1 = basting crosses. Sew S1.",
              "3. Re-hoop for the next section; align the needle on the crosses it shares; sew its",
              "    crosses over them (check), then the art. Order S1 → Sn (top row, then bottom).",
              "4. Fills crossing a split overlap 1.2 mm; motif clusters < 70 mm go whole to one section.",
              "5. The placeholder outline is basted in the section(s) listed above; remove basting + trim backing at the end.",
-             "Every size has its own split set (folder by-size/<size>/splits); 3XL needs 3 columns (6 hoopings)."]
+             "Every size has its own split set (by-size/<size>/splits): 3 × 2, moon + box whole in S2, pole whole in S5."]
     for i, st_ in enumerate(steps): o.append(t(12, y + 3 + i * 3.1, st_, 1.5, 700 if i == 0 else 400))
     return o
 

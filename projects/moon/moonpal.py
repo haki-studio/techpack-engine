@@ -51,6 +51,7 @@ def install():
      "MN-warm":   ("Moon warm tone + rim",       "Tatami", "concentric (15° sectors)", "0.45", "3.5", "edge run (+ lattice if > 60 mm²)", "0.20", "short-stitch blend 1.0"),
      "MN-crater": ("Crater / mare light",        "Tatami", "concentric (15° sectors)", "0.45", "3.5", "edge run",                      "0.20", "short-stitch blend 1.0"),
      "MN-mare":   ("Crater / mare dark",         "Tatami", "concentric (15° sectors)", "0.45", "3.5", "edge run",                      "0.20", "short-stitch blend 1.0"),
+     "MN-ray":    ("Crater rays + rim strokes",  "Run (single)",      "follows line", "—", "2.0", "none",                      "—",    "0.6 line, sewn on top"),
      "CL":        ("Cloud body (periwinkle)",    "Tatami / satin < 3", "0° (horizontal banding)", "0.45", "3.5", "edge run + tatami 90° @ 2.0", "0.25", "traced band"),
      "CL-top":    ("Cloud light band (lavender)", "Tatami / satin < 3", "0°",     "0.45", "3.5", "edge run",                      "0.25", "blend 1.0"),
      "CL-hl":     ("Cloud highlight (white)",    "Tatami / satin < 3", "0°",     "0.45", "3.5", "edge run",                      "0.20", "blend 1.0"),
@@ -58,7 +59,7 @@ def install():
      "CL-shade":  ("Cloud underside (indigo)",   "Tatami / satin < 3", "0°",     "0.45", "3.5", "edge run",                      "0.25", ""),
      "CL-line":   ("Cloud scallop lines",        "Bean (triple run)", "follows line", "—", "2.0", "none",                      "—",    "0.7 line, sewn on top"),
      "CL-wisp":   ("Cloud wisps / tails",        "Satin, turning",    "across the wisp", "0.42", "—", "centre run",           "0.15", "blunt tips ≥ 1.0"),
-     "WR":        ("Wires",                      "Bean (triple run)", "follows line", "—", "2.2", "none",                      "—",    "0.8 line; ends 3 short of seams"),
+     "WR":        ("Wires (twisted cord)",       "Satin, turning",    "across the cord", "0.42", "—", "centre run",           "0.15", "1.6 wide; ends 3 short of seams"),
      "PL":        ("Pole grey (body, hardware)", "Tatami / satin < 3", "along long axis", "0.45", "3.5", "edge run + tatami @ 2.0", "0.25", "traced"),
      "PL-hl":     ("Pole light grey",            "Tatami / satin < 3", "along long axis", "0.45", "3.5", "edge run",             "0.20", ""),
      "PL-shade":  ("Pole dark grey",             "Tatami / satin < 3", "along long axis", "0.45", "3.5", "edge run",             "0.25", ""),
@@ -72,5 +73,15 @@ install()
 def patch_dst2():
     """Rev B: no density override (fidelity first, production density everywhere); only blends + pull for the moon codes."""
     import dst2
+    import stitchrender as SR, shapely
+    from shapely.validation import make_valid
+    if not getattr(SR, "_moon_safe", False):
+        _h = SR.hatch
+        def hatch(p, ang, sp):
+            try: return _h(p, ang, sp)
+            except Exception:                 # pinched blend zones from unions: snap + retry, else skip that zone
+                try: return _h(shapely.set_precision(make_valid(p).buffer(0), 0.01).buffer(0), ang, sp)
+                except Exception: return []
+        SR.hatch = hatch; SR._moon_safe = True
     dst2.BLEND.update({"MN-hl": 1.0, "MN-warm": 1.0, "MN-crater": 1.0, "MN-mare": 1.0, "CL-top": 1.0, "CL-hl": 1.0, "CL-mid": 1.0})
     return dst2

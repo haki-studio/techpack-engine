@@ -127,7 +127,7 @@ PROD = ["Embroider the cut pieces flat, BEFORE any seam.",
 
 CFG = {
  "01": dict(slug="back-scene", title="BACK SCENE — moon, clouds, pole + wires, licensed-figure placeholder", pieces=["back"],
-            sub="Direct embroidery on the cut back panel · ONE FILE PER SIZE (+ 360² split files: 4, 3XL 6) · mm, finished size · art 1:1 · x from CB, y down from CB neck seam",
+            sub="Direct embroidery on the cut back panel · ONE FILE PER SIZE (+ 6 frame-split files, 3 × 2) + 01b moon-in-box · mm, finished size · art 1:1 · x from CB, y down from CB neck seam",
             crops=[(-75, 185, -25, 235, "Moon body, maria, craters (low density)"), (-215, 280, -165, 330, "Cloud crown: caps, scallops, shadow"),
                    (-20, 360, 30, 410, "Pole top, crossarm, insulator"), (10, 395, 60, 445, "Transformer can + wires")],
             dm=[(-90, 180, -20, 230, "Moon: horizontal tatami, maria at 30°"), (-230, 270, -150, 320, "Cloud: horizontal tatami, turning satin caps"), (-20, 360, 60, 410, "Pole: tatami along the pole, satin hardware")],
@@ -393,7 +393,7 @@ def build(n):
     for i, c in enumerate(CHANGES[n]): o.append(t(76, my + 4.5 + i * 3.3, c, 1.8))
     o.append(t(196, my, "PRODUCTION", 2.4, 700))
     _ab = unary_union([r["geom"] for r in VIS["back"]]).bounds
-    pr = PROD + ([f"Back: border frame ≥ {_ab[2]-_ab[0]+14:.0f} × {_ab[3]-_ab[1]+14:.0f} (M) single file, or", "  the 360² split files (4; 3XL 6) with basting crosses (G5)."] if n == "01" else [])
+    pr = PROD + ([f"Back: border frame ≥ {_ab[2]-_ab[0]+14:.0f} × {_ab[3]-_ab[1]+14:.0f} (M) single file, or", "  the 6 split files (3 × 2, frame from factory.json) (p6, G5)."] if n == "01" else [])
     pr += (["Sleeves: two hoopings per sleeve (split files S1 +", "  S2, front + back half) with basting crosses."] if n == "04" else [])
     pr += ["Wires: satin cord 1.6; side-seam ends 3 mm short —", "  match the W notches when closing (no topstitch)."] if n in ("01", "03") else []
     pr += {"01": ["Hooping order: S1 → S6 (top row L→R, bottom row);", "  01b moon-in-box in the S2 hooping, then the figure."],

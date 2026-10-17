@@ -257,15 +257,18 @@ def p_operations():
     o.append(t(cx[3], y, "TOTAL (sewing + finishing)", 1.8, 700)); o.append(t(cx[4], y, f"{tot:.0f} min", 1.8, 700))
     r = json.load(open("out/results/size_M.json")); gB = json.load(open("out/results/grade_B.json"))
     st = r["back"]["stitches"] + r["03L"]["stitches"] + r["03R"]["stitches"] + sum(gB[k]["stitches"] for k in ("02R", "02L", "04R", "04L"))
-    o.append(t(12, y + 6, f"Embroidery machine time, size M: {st/1000:.0f}k stitches (DST) → ≈ {st/750/60:.1f} h per head at 750 spm + colour changes + hooping (02 + 03: 4 hoopings, 04: 4, back: 1 border frame or 4 splits (3XL 6) = 9 or 12).", 1.75, 600))
+    o.append(t(12, y + 6, f"Embroidery machine time, size M: {st/1000:.0f}k stitches (DST) → ≈ {st/750/60:.1f} h per head at 750 spm + colour changes + hooping (02 + 03: 4 hoopings, 04: per sleeve split, back: 6 splits + 01b).", 1.75, 600))
     o.append(GT.prop(12, y + 10, "SMVs are estimates — replace with the factory's time study at the sample stage", 1.75))
     return o
 
 # ---------------------------------------------------------------- revision log + sample tracker
-REVS = [("Garment Rev A", "16 Oct 2026", "Moon colourway on the Drum Island pattern (unchanged from plum + pine Rev B): washed navy duck, navy-black corduroy + rib. "
+REVS = [("Garment Rev B", "16 Oct 2026", "Wire notches (W = height above hem) on B01/F01/F02 side seams + zip-end notches (Z) in every size DXF; T12 ratio ranges from the files; T13 + 04L; 12-colour files."),
+        ("Embroidery Rev B", "16 Oct 2026", "Fidelity first (founder): art traced from the close-ups (moon tones, craters + rays, seigaiha clouds, pole hardware), satin cord wires, box tightened to 68 × 79, 01b moon-in-box, 3 × 2 splits with moon + pole whole, ≤ 12 colours per file, per-stop numbers via readback.dst."),
+        ("Garment Rev A", "16 Oct 2026", "Moon colourway on the Drum Island pattern (unchanged from plum + pine Rev B): washed navy duck, navy-black corduroy + rib. "
                                           "Side seams carry the wire wraps: no side-seam topstitch; back armhole topstitched on the body."),
         ("Embroidery Rev A", "16 Oct 2026", "First release: 01 back scene per size + 360² splits (4; 3XL 6) with the licensed-figure placeholder box; 02 chest clouds A/B/C; "
                                              "03 lower-front pole + wires per size; 04 sleeve clouds A/B/C (2 hoopings per sleeve). Figure licence confirmed by client 2026-10-16.")]
+REVS = REVS[2:] + REVS[:2]      # newest last
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]
 
 def p_revisions():
