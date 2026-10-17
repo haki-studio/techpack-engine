@@ -35,7 +35,7 @@ Long jobs: background them; 2 at a time on a 2-core box, more locally (`xargs -P
 - Every number in a document is read from a generated file (stitch counts from the DST, measurements from the
   pattern), never estimated or typed.
 - Render every page/preview to PNG and look at it before delivering.
-- ≤ 15 threads per stitch file; DST trims are counted from the DST read-back.
+- ≤ 12 threads per stitch file (manufacturer limit, factory.json); DST trims are counted from the DST read-back.
 
 ## Delivery
 One merged PDF (garment pages T*, then embroidery G* + element specs) + a zip with `elements/`, `pattern/`, README.

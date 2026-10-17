@@ -12,7 +12,7 @@ import json, os
 from sheet import SW, SH, INK, MUTED, RED, ORANGE, GREEN, t, header, doc
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT = dict(name="[proposed — confirm]", frames_mm=[[360, 360]], frames_confirmed=False, needles=15,
+DEFAULT = dict(name="[proposed — confirm]", frames_mm=[[360, 360]], frames_confirmed=False, needles=12,
                needles_confirmed=False, spm=750, thread_brands=["Madeira Polyneon", "Isacord"],
                thread_card_received=False, price_basis="unknown")
 DE_ASK = 3.0          # thread matches worse than this (ΔE2000) go on the lab-dip / thread-card list
@@ -23,6 +23,20 @@ def load(path=None):
     prof = dict(DEFAULT)
     if os.path.exists(p): prof.update({k: v for k, v in json.load(open(p)).items() if not k.startswith("_")})
     return prof
+
+
+def max_threads(prof=None):
+    """most thread colours one stitch file may use = needles per head (factory.json)"""
+    return int((prof or load())["needles"])
+
+
+def check_threads(pes_path, prof=None):
+    """distinct thread colours in a written file (PES thread list); raises if over the factory limit (LESSONS B5)"""
+    import pyembroidery as pe
+    n = len({t.hex_color() for t in pe.read(pes_path).threadlist})
+    lim = max_threads(prof)
+    if n > lim: raise ValueError(f"{pes_path}: {n} thread colours > factory limit {lim} (factory.json needles)")
+    return n
 
 
 def largest_frame(prof=None):
@@ -62,7 +76,7 @@ def requests_page(style, strikeoff, threads, pieces, page="F1", prof=None):
     h2("2  Frames + machine")
     fr = ", ".join(f"{w:.0f} x {h:.0f}" for w, h in prof["frames_mm"])
     if not prof["frames_confirmed"]:
-        line(f"We assumed {fr} mm frames and {prof['needles']}-needle heads [proposed — confirm]. Please list every frame size you", ORANGE)
+        line(f"We assumed {fr} mm frames [proposed — confirm]" + ("" if prof.get("needles_confirmed") else f" and {prof['needles']}-needle heads") + ". Please list every frame size you", ORANGE)
         line("have (inner sewing field, mm), including border / jacket-back frames, and the needles per head.", ORANGE)
         big = [p for p in pieces if p.get("hoopings", 1) > 1]
         if big:
@@ -70,7 +84,9 @@ def requests_page(style, strikeoff, threads, pieces, page="F1", prof=None):
             for p in big:
                 line(f"•  {p['piece']}: art {p['w']:.0f} x {p['h']:.0f} mm → {p['hoopings']} hoopings today", x=20)
     else:
-        line(f"Frames on file: {fr} mm; {prof['needles']} needles. Files are split for these.", GREEN)
+        line(f"Frames on file: {fr} mm. Files are split for these.", GREEN)
+    if prof.get("needles_confirmed"):
+        line(f"Colours: max {prof['needles']} per stitch file (confirmed) — every file is built to that.", GREEN)
     y += 2
 
     h2("3  Thread card / lab dip")

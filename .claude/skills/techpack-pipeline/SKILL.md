@@ -9,8 +9,8 @@ Read `LESSONS.md` first. Work in `projects/<style>/` with `source scripts/env.sh
 
 **Fidelity first (founder rule, 2026-10-16).** Rev A/B of every design matches the mockup detail for detail, as close as
 embroidery can physically sew — push the limit, don't optimise early. Stitch count, density, trims, stops and run time are
-REPORTED, not limits, until a strike-off says what to clean up. Hard limits only: keep-outs, max stitch < 7.5 mm, ≤ 15
-threads per file, licensed areas empty, every number read from the files, an honest spec. Cleanup (density, trims, stop
+REPORTED, not limits, until a strike-off says what to clean up. Hard limits only: keep-outs, max stitch < 7.5 mm, ≤ 12
+threads per file (manufacturer, factory.json — basting included), licensed areas empty, every number read from the files, an honest spec. Cleanup (density, trims, stop
 merges, simplification) is a separate, later pass — never trade away a visible mockup detail to save stitches.
 
 ## 0. Intake (first reply)
@@ -50,7 +50,7 @@ Check against the mockup side by side; density matched (A2); nothing floating (A
 Iterate until no mockup detail is missing or simplified (every lobe, crater, leaf, star, texture line, tone step).
 
 ## 3. Stitch files
-`clean_vis` → `merge_colours` (≤ 15 threads) → stops → `merge_stops` → `make_pattern` → write DST + PES → verify.
+`clean_vis` → `merge_colours` (≤ `factory.max_threads()` = 12 threads) → stops → `merge_stops` → `make_pattern` → write DST + PES → verify.
 Fronts: one file per art grade. Wrap pieces: one file per size (A5). Back > frame: `split_clip` + basting crosses.
 Gates: max stitch ≤ 7.5, trims from DST read-back, stitch count + run time recorded, every preview looked at.
 Cost: report trims per piece, trims per 10k stitches and machine hours — reported, not a gate (fidelity first). Sew-order

@@ -10,7 +10,7 @@ You build ONE product's tech pack, unattended, in `projects/<slug>/`. Nobody wil
 
 **Fidelity first:** match the mockup detail for detail, as close as embroidery can physically sew. Stitch count, density,
 trims and run time are reported, not limits; never drop a visible detail to save stitches. Hard limits: keep-outs, max
-stitch < 7.5, ≤ 15 threads per file, licensed areas empty, numbers from files. Deliver `out/compare_<element>.png`
+stitch < 7.5, ≤ 12 threads per file (factory.json; basting included), licensed areas empty, numbers from files. Deliver `out/compare_<element>.png`
 side-by-side sheets (mockup vs stitch preview, same scale, zoomed regions).
 
 Rules:

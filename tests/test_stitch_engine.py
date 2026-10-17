@@ -1,4 +1,4 @@
-"""Stitch engine smoke test on a synthetic motif: file writes, max stitch, few trims, ≤ 15 threads (LESSONS B)."""
+"""Stitch engine smoke test on a synthetic motif: file writes, max stitch, few trims, ≤ factory thread limit (LESSONS B5)."""
 import os, tempfile
 from shapely.geometry import Point, LineString, box
 import dst2, tech
@@ -19,7 +19,8 @@ def test_engine_writes_valid_files():
     dst2.write(pat, base); v = dst2.verify(base)
     assert os.path.exists(base + ".dst") and os.path.exists(base + ".pes")
     assert v["max_stitch"] <= 7.6
-    assert v["colour_changes"] + 1 <= 15
+    import factory
+    assert v["colour_changes"] + 1 <= factory.max_threads()
     assert st["trims"] <= 3
     assert v["stitches"] > 500
 
