@@ -64,5 +64,7 @@ product's latest preview.
   question, thread card / lab dip for weak matches, quote basis. Frames, needles, speed and thread brands come from
   `factory.json` — when the factory answers, update it and rebuild the splits. Strike-off photos/notes go into
   `projects/<slug>/inputs/strikeoff/`; feed them back per `techpack-pipeline` §6 and add LESSONS rows.
+- Sync with GitHub only when every builder is done (shared working tree): `git status` must show no uncommitted
+  project work, then `git pull --rebase` (never `--autostash`), `python3 -m pytest -q tests`, `git push`.
 - Finish with a summary table: product, stage (delivered / reviewed), stitches + trims (M), machine hours, files,
   what's blocked and why, and what the factory has been asked (F1).
