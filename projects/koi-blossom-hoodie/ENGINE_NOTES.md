@@ -1,0 +1,42 @@
+# Engine notes from the koi blossom hoodie (16 Oct 2026)
+
+Problems hit while building this product, worked around in project code only. Each: problem → proposed engine fix → check.
+
+## 1. Sleeve art placed from a front-view mockup
+- **Problem:** the mockup shows the sleeves from the front only; the engine has no way to map a front-view point onto the sleeve
+  pattern (Drum Island only had a back→sleeve wrap in seam coordinates).
+- **Workaround:** `mockmap.sleeve_P()` / `sleeve_Pinv()`: per sleeve, the mockup's outer silhouette (= sleeve centre line x = 0)
+  and inner edge (= front underarm seam) as polylines from the armhole to the cuff seam; a point is mapped by (t along, u across)
+  with a cylinder projection (u = arc fraction, projected p = (1 − cos πu)/2) to the S01/S02 front half. `warp_piece()` resamples
+  the mockup into sleeve coords for the compare sheets.
+- **Proposed fix:** `engine/mockmap.py` with front-panel + sleeve maps driven by a small landmark json per project.
+- **Check:** round trip `sleeve_P(sleeve_Pinv(x, y)) ≈ (x, y)` within 0.5 mm on a grid; compare sheet shows mockup koi on top of the render.
+
+## 2. Hatchers fail on degenerate (self-touching) polygons → fills render as their complement
+- **Problem:** zig-zag tone boundaries (long-and-short look) left 0-width spikes; `stitchrender.hatch()` rotates the polygon, the
+  rotated ring became invalid and `intersection()` returned the complement inside the bounding box (a whole petal rendered as a
+  hole; the same rotate-then-intersect pattern is in `dst2.tatami_rows`).
+- **Workaround:** `kbvis.tidy()` = make_valid + buffer(+0.03, −0.06, +0.03, mitre) + simplify(0.02) on every visible region.
+- **Proposed fix:** `make_valid` + tiny open/close inside `stitchrender.hatch/radial` and `dst2.tatami_rows/fixed_satin` before rotating.
+- **Check:** test: a polygon with a 0-width spike hatches to ≈ its own area (not bbox − area).
+
+## 3. Whole-motif keep-out fitting (no cut motifs)
+- **Problem:** clipping koi / petals / lily clusters at a keep-out line cuts them in half; dropping them loses mockup detail (A11).
+- **Workaround:** `art_size.fit_group()`: every unit (koi, petal) and every flower-cluster core (flowers + stems) is nudged
+  (≤ 18–24 mm, spiral search) and only then shrunk (≥ 85 %) until it lies inside that size's keep-outs; cluster leaves are fitted
+  one by one after the core move. Moves are recorded per size (art_<size>.pkl info) — 0 units dropped on any size.
+- **Proposed fix:** generic `qa.fit_units(items, clip, max_move, min_scale)` in the engine, with the move log printed in G2.
+- **Check:** after fitting, every unit's union lies inside the clip (0 mm² outside) on every size.
+
+## 4. Single-hooping pieces in split tables
+- **Problem:** `split_clip` returns one section when the art fits the frame; the Grand Line pages assumed S1 + S2 (split line
+  drawn at y = 0).
+- **Workaround:** pages check `len(sections) > 1`.
+- **Proposed fix:** `split_clip` sets `sy = None` and names the single section `S1_single`.
+
+## 5. Same as Grand Line notes 1, 5, 8 (palette/rules hard-wired, font, split y-search)
+- Project palette + rules injected by `kbcore.py`; `split_clip` y-search widened by exec-patching (copied from Grand Line).
+
+## 6. Hooded variant
+- `front.pieces()` calls `pattern.draft(size, variant="hooded")` and falls back to the Drum Island draft (TypeError). Keep-outs,
+  placement and per-size art read the pattern, so re-running `art_size.py` + `run_sizes.sh` after the PR lands re-fits everything.
