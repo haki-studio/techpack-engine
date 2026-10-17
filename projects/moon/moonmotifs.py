@@ -203,3 +203,62 @@ def wire_pts(p0, p1, sag, n=60):
 def wire(p0, p1, sag, w=0.8):
     pts = wire_pts(p0, p1, sag)
     return R("p2", LineString(pts).buffer(w / 2, cap_style="flat"), "bean", None, "WR"), LineString(pts)
+
+# ================================================================ Rev B: seigaiha cloud texture inside a traced silhouette
+def cloud_texture(sil, ppm=4.0, scale_r=3.8, rng_seed=0):
+    """Fill a cloud silhouette (mm) the way the close-ups are sewn: horizontal tone bands by height inside each column
+    (white-pink caps along the top contour, lavender, periwinkle, indigo underside), and rows of overlapping fish-scale
+    arcs (seigaiha) sewn as indigo/lavender bean lines on top — every lobe reads as a fan of curved scallop rows."""
+    from shapely import contains_xy
+    from skimage import measure as _ms
+    if sil.is_empty: return []
+    x0, y0, x1, y1 = sil.bounds; W = int((x1 - x0) * ppm) + 3; H = int((y1 - y0) * ppm) + 3
+    yy, xx = np.mgrid[0:H, 0:W]; X = x0 + (xx + 0.5) / ppm; Y = y0 + (yy + 0.5) / ppm
+    m = contains_xy(sil, X, Y)
+    from scipy import ndimage as ndi
+    # depth below the top contour (per column) and distance to the upper boundary
+    top = np.where(m.any(0), m.argmax(0), H); bot = np.where(m.any(0), H - 1 - m[::-1].argmax(0), 0)
+    hgt = np.maximum(bot - top, 1)
+    t = (yy - top[None, :]) / hgt[None, :]
+    up = ndi.distance_transform_edt(m) / ppm
+    # boundary pixels whose outward normal points up = the lit tops of the lobes
+    gy = ndi.sobel(m.astype(float), 0)
+    lit = ndi.binary_dilation(gy > 0.5, iterations=int(2.2 * ppm)) & m & (up < 2.6)
+    lab = np.full(m.shape, -1)
+    lab[m] = 3                                   # periwinkle
+    lab[m & (t < 0.45)] = 2                      # lavender band
+    lab[m & (t > 0.72)] = 5                      # indigo underside
+    lab[lit & (t < 0.6)] = 1                     # white-pink caps on lit lobe tops
+    lab = ndi.median_filter(lab, size=5)
+    names = {1: "c1", 2: "c2", 3: "c3", 5: "c5"}; codes = {1: "CL-hl", 2: "CL-top", 3: "CL", 5: "CL-shade"}
+    regs = []
+    for v, n in names.items():
+        mm_ = (lab == v) & m
+        if not mm_.any(): continue
+        g = Polygon()
+        for cnt in _ms.find_contours(np.pad(mm_, 1).astype(float), 0.5):
+            if len(cnt) < 4: continue
+            p = Polygon([(x0 + (c - 1 + 0.5) / ppm, y0 + (r - 1 + 0.5) / ppm) for r, c in cnt]).buffer(0)
+            g = g.symmetric_difference(p)
+        g = g.buffer(0.2).buffer(-0.2).intersection(sil)
+        for p in _polys(g):
+            if p.area < 0.8: continue
+            w = 2 * p.area / max(p.length, 1e-6)
+            regs.append(R(n, p, "satin" if w < 2.6 else "tatami", "auto" if w < 2.6 else 0, codes[v]))
+    # seigaiha scale rows: arcs (upper half circles) on a staggered grid, clipped to the silhouette minus the caps
+    rs = scale_r; dx = 2 * rs * 0.92; dy = rs * 0.95
+    inner = sil.buffer(-0.8)
+    caps = unary_union([r["geom"] for r in regs if r["col"] == "c1"]) if regs else Polygon()
+    lines = []
+    k = 0
+    for yc in np.arange(y0 + rs, y1 + rs, dy):
+        off = (k % 2) * dx / 2; k += 1
+        for xc in np.arange(x0 - dx + off, x1 + dx, dx):
+            arc = LineString([(xc + rs * math.cos(a), yc - rs * math.sin(a)) for a in np.linspace(0.12 * math.pi, 0.88 * math.pi, 9)])
+            seg = arc.intersection(inner).difference(caps.buffer(0.3))
+            for s in ([seg] if seg.geom_type == "LineString" else [g for g in getattr(seg, "geoms", []) if g.geom_type == "LineString"]):
+                if s.length > 2.0: lines.append(s)
+    if lines:
+        L = unary_union([s.buffer(0.35, cap_style="round") for s in lines])
+        regs.append(R("c5", L, "bean", None, "CL-line"))
+    return regs

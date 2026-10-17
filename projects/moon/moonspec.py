@@ -1,7 +1,7 @@
 """Element spec sheets (5 pages each, A4 landscape) for the moon jacket elements 01–04 + production art SVGs.
 Every count is read from the generated files (out/results/*.json: DST read-back), every clearance from emb_place.
 usage: ./py.sh moonspec.py 01 02 03 04"""
-import os, sys, json, pickle
+import os, sys, json, pickle, math
 import numpy as np
 import cairosvg
 from PIL import Image, ImageDraw
@@ -18,8 +18,11 @@ import tech, stitchrender as SR, qa
 import specbase as SB
 from specbase import img_tag, direction_map, header
 import moonpattern, pattern as PT, emb_place as EP, scene, preview as PV
+import readback, factory, sheet as _SH
+import pyembroidery as pe
+from shapely.strtree import STRtree
 
-REV = "Rev A"; DATE = "16 Oct 2026"
+REV = "Rev B"; DATE = "16 Oct 2026"
 PROP = "#8A5A00"
 RES_M = json.load(open("out/results/size_M.json")); RES_B = json.load(open("out/results/grade_B.json"))
 CLR = json.load(open("out/results/clearances.json"))
@@ -29,6 +32,29 @@ PIECE_OF = {"back": "B01", "03L": "F01", "03R": "F02", "02R": "F02", "02L": "F01
 G_M, MT_M = PT.draft("M")
 
 def res_of(p): return RES_M[p] if p in RES_M else RES_B[p]
+
+def measured_density(p):
+    """thread length (mm) per mm² and stitches per mm² for every fill code, read from the DST: each sewn segment is given
+    to the art region under its midpoint (travel under later fills counts where it lies — that is what the fabric gets)."""
+    r = res_of(p); cx, cy = r["centre"]; pt = pe.read(r["file"] + ".dst")
+    regs = [q for q in VIS[p] if q["st"] in ("tatami", "satin", "padded")]
+    geoms = [q["geom"] for q in regs]; tree = STRtree(geoms); L = {}; N = {}; A = {}
+    for q in regs: A[tech.rule_for(q["grp"])] = A.get(tech.rule_for(q["grp"]), 0) + q["geom"].area
+    prev = None
+    from shapely.geometry import Point as _P
+    for x, y, c in pt.stitches:
+        k = c & pe.COMMAND_MASK
+        X, Y = x / 10 + cx, y / 10 + cy
+        if k == pe.STITCH:
+            if prev is not None:
+                mx, my = (X + prev[0]) / 2, (Y + prev[1]) / 2
+                hit = tree.query(_P(mx, my), predicate="within")
+                if len(hit):
+                    code = tech.rule_for(regs[int(hit[0])]["grp"]); d = math.hypot(X - prev[0], Y - prev[1])
+                    L[code] = L.get(code, 0) + d; N[code] = N.get(code, 0) + 1
+            prev = (X, Y)
+        else: prev = None
+    return {k: (L.get(k, 0) / A[k], N.get(k, 0) / A[k], A[k]) for k in A if A[k] > 0}
 
 def width_check(vis):
     groups = {}
@@ -57,35 +83,39 @@ def piece_view(p, ppm=2.2, highlight=True):
     return PV.piece_img(VIS[p], poly, ppm, extra), poly.bounds
 
 CHANGES = {
- "01": ["Composition from the mockup: full moon behind a utility pole at CB, five",
-        "  clouds in front of the moon, wires fanning to both side seams.",
-        "Moon: soft tonal body (ivory highlight, cream, pale-gold rim) + maria +",
-        "  craters at LOW density (0.55 rows, light underlay): no stiff dome.",
-        "Figure on the pole: LICENSED — not drawn. Its area is a placeholder box",
-        "  (mockup figure bounds + 4 mm), knocked out of our art; basting outline",
-        "  as the last stop. Factory adds the licensor-approved figure there.",
-        "Wires: the mockup runs them over the hanging sleeves. On the garment they",
-        "  cross the SIDE SEAMS: 3 mm short both sides, same height (notches).",
-        "Mockup clouds that cross the side/armhole are pulled 15 inside.",
-        "Pole stops 10 above the hem seam (rib knit is never embroidered)."],
- "02": ["Two scalloped clouds per chest panel as the mockup (crown + front row",
-        "  of small scallops, white caps, indigo underside, streak wisps).",
-        "Mockup clouds run over the armhole / side and onto the sleeve: pulled",
-        "  15 inside the seams; the sleeve part is element 04.",
-        "Small wisp right of the zip kept, starts 15 from CF."],
- "03": ["Pole with crossarm, pin + string insulators and two transformer cans on",
-        "  the wearer's left front, as the mockup, moved OUTSIDE the welt pocket",
-        "  (pattern welt sits lower than the mockup's) and held 15 off the side seam.",
-        "Wires: mockup wires cross the welt opening. Re-routed BELOW the welt",
-        "  (≥ 6 clear); 4 wires cross the zip (split 15 each side) to the wearer's",
-        "  right side seam, 4 short ones to the wearer's left side seam.",
-        "Every wire meets its back (01) partner at the side seam (same height).",
-        "Lower cloud kept left of the pole; its wisp crosses the zip (split)."],
- "04": ["Clouds on both sleeves, front + back halves, as the mockup (5 on the",
-        "  right sleeve, 4 on the left).",
-        "Placed by the mockup's distance from the shoulder + lateral position;",
-        "  15 clear of the cap + underarm seams, 10 above the cuff seam.",
-        "Same cloud motif + threads as 01/02."]}
+ "01": ["Source: art redrawn from Devin's close-up (inputs/closeups/closeup_back.png,",
+        "  1448 px; moon 550 px) on top of the low-res mockup: shapes + tones traced",
+        "  from the close-up, placement + size from the mockup (mockup wins).",
+        "Moon: 5 close-up tones (cream, highlight, pale gold, crater light, crater",
+        "  grey-green) traced patch by patch, warm 2.5 mm rim, concentric rows in",
+        "  15° sectors (thread texture follows the disc), craters each at their own",
+        "  angle, star-burst rays + rim strokes as run lines (in the close-up).",
+        "Clouds: each cloud from the close-up (scale rows = indigo lines, 5 tones,",
+        "  white-pink tops, tapering wisps), placed + sized on the mockup cloud.",
+        "Pole: every part traced from the close-up (wood grain lines, bands, crossarm,",
+        "  2 pin insulators, ribbed transformer + small can, coiled string, bracket);",
+        "  pole body extended to 10 above the hem (close-up ends above it).",
+        "Licensed figure in the close-up NOT traced: box 68 × 79 (fig + 3 mm).",
+        "Wires: satin cord 1.6, 12 wires, wraps at the insulators; side-seam wrap."],
+ "02": ["Source: close-up closeup_front.png (clouds 3 per panel incl. the wisp by",
+        "  the zip), each cloud placed + sized on its mockup cloud (mockup wins).",
+        "Every lobe + scale row traced: 5 tones, indigo scallop lines, white-pink",
+        "  tops, tapering tails. Clouds that cross a seam in the mockup are moved",
+        "  the smallest distance that clears the 15 mm keep-outs."],
+ "03": ["Source: close-up closeup_front.png (pole + hardware traced), mockup",
+        "  placement: pole outside the welt, 15 off the side seam, 10 above hem.",
+        "Hardware: pole grain, bands, crossarm, pin insulator, ribbed transformer,",
+        "  small can, coiled string insulator (+7 mm to clear the welt), bracket.",
+        "Wires: 12 (5 across the zip to the wearer's right side seam, 4 to the left",
+        "  side seam, 3 drops), satin cord 1.6 with wraps. Where a wire passes a welt",
+        "  pocket it stops 6 short of the welt box both sides (behind the pocket).",
+        "Every wire meets its back (01) partner at the side seam (same height)."],
+ "04": ["Source: close-up closeup_sleeves.png — 4 views (R back half, R front half,",
+        "  L front half, L back half, read from the cap seams): cloud count +",
+        "  position per view kept (fraction along the sleeve + across the view).",
+        "Every lobe + scale row traced, same 5 tones as 01/02.",
+        "15 clear of the cap + underarm seams, 10 above the cuff seam (moved",
+        "  the smallest distance where a close-up cloud sat on a seam)."]}
 PROD = ["Embroider the cut pieces flat, BEFORE any seam.",
         "40wt polyester (Madeira Polyneon), 75/11 sharp,",
         "  2.5 oz cutaway (black/navy on the dark duck).",
@@ -146,8 +176,77 @@ def placement_rows(n):
                      ("  → cap / underarm / cuff", f"{d['cap']:.0f} / {d['underarm']:.0f} / {d['cuff']:.0f}")]
     return rows
 
+
+def page6_01(NP):
+    o = header("01 · HOOP SPLITS PER SIZE + MOON-IN-BOX FILE", f"Frame from factory.json: {' / '.join(f'{w:.0f} × {h:.0f}' for w, h in factory.load()['frames_mm'])} mm [proposed — confirm]. Layout: moon + box whole in the top-middle hooping, pole + hardware whole in the bottom-middle one (every size).", f"p6 / {NP}")
+    import drum
+    hd = ["Size", "Grid", "Split x (mm, from CB)", "Split y", "Sections: stitches · size · fit", "Placeholder basted in", "Moon-in-box st / trims"]
+    cx = [12, 22, 32, 64, 80, 214, 254]
+    for x_, h in zip(cx, hd): o.append(t(x_, 31, h, 1.55, 700, MUTED))
+    y = 35.5
+    for i, sz in enumerate(drum.SIZES):
+        R_ = json.load(open(f"out/results/size_{sz}.json")); sp = R_["splits"]
+        if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-2.6)}" width="{SW-22}" height="3.7" fill="#F5F2EC"/>')
+        o.append(t(cx[0], y, sz, 1.5, 700)); o.append(t(cx[1], y, f"{sp['grid'][0]}×{sp['grid'][1]}", 1.45))
+        o.append(t(cx[2], y, ", ".join(f"{v:+.0f}" for v in sp["xs"]), 1.45)); o.append(t(cx[3], y, ", ".join(f"{v:.0f}" for v in sp["ys"]), 1.45))
+        o.append(t(cx[4], y, " · ".join(f"{k[:2]} {v['stitches']/1000:.0f}k {v['size'][0]:.0f}×{v['size'][1]:.0f}{'' if v['fits'] else ' !'}" for k, v in sp["sections"].items()), 1.3))
+        o.append(t(cx[5], y, sp["box_section"][:28], 1.4)); mb = R_.get("moonbox")
+        o.append(t(cx[6], y, f"{mb['stitches']:,} / {mb['trims_dst']}" if mb else "—", 1.45)); y += 3.7
+    y += 2
+    M_ = json.load(open("out/results/size_M.json"))["splits"]
+    o.append(t(12, y, "Registration crosses, size M (mm, garment coords; every size in the result files + thread charts):", 1.55, 700)); y += 3.3
+    cr = sorted({(round(m[0]), round(m[1])) for v in M_["sections"].values() for m in v["marks"]})
+    for j in range(0, len(cr), 12):
+        o.append(t(12, y, "  ".join(f"({a:+d}, {b})" for a, b in cr[j:j + 12]), 1.4)); y += 3.0
+    # diagrams for every size
+    yy = y + 3; xx = 12
+    for sz in drum.SIZES:
+        R_ = json.load(open(f"out/results/size_{sz}.json")); sp = R_["splits"]; g, mt = PT.draft(sz)
+        poly = g["B01"].sew_poly(); b = poly.bounds; s_ = 36 / (b[2] - b[0])
+        X = lambda x, b=b, xx=xx, s_=s_: xx + (x - b[0]) * s_; Y = lambda yv, b=b, yy=yy, s_=s_: yy + (yv - b[1]) * s_
+        o.append(f'<path d="{"M" + " L".join(f"{f(X(px))} {f(Y(py))}" for px, py in poly.exterior.coords)} Z" fill="#E9ECF3" stroke="#888" stroke-width="0.15"/>')
+        for nm, v in sp["sections"].items():
+            bb = v["bbox"]
+            o.append(f'<rect x="{f(X(bb[0]))}" y="{f(Y(bb[1]))}" width="{f((bb[2]-bb[0])*s_)}" height="{f((bb[3]-bb[1])*s_)}" fill="none" stroke="#0A84FF" stroke-width="0.18"/>')
+            o.append(t(X((bb[0]+bb[2])/2), Y((bb[1]+bb[3])/2) + 0.5, nm[:2], 1.3, 700, "#0A84FF", "middle"))
+            for m in v["marks"]:
+                o.append(f'<path d="M{f(X(m[0])-0.7)} {f(Y(m[1]))} H{f(X(m[0])+0.7)} M{f(X(m[0]))} {f(Y(m[1])-0.7)} V{f(Y(m[1])+0.7)}" stroke="#00A3FF" stroke-width="0.2"/>')
+        bx = R_["info"]["box"]
+        o.append(f'<rect x="{f(X(bx[0]))}" y="{f(Y(bx[1]))}" width="{f((bx[2]-bx[0])*s_)}" height="{f((bx[3]-bx[1])*s_)}" fill="none" stroke="#FF2D9B" stroke-width="0.3"/>')
+        o.append(t(xx, yy - 1.2, sz, 1.6, 700)); xx += 40
+    o.append(t(12, yy + 45, "Blue = each split file's extent (art + crosses); + = basting crosses; pink = licensed-figure box. Hooping order S1 → Sn (top row left → right, then bottom row).", 1.5, 400, MUTED))
+    o.append(t(12, yy + 49, "01b MOON-IN-BOX (per size): our moon fill inside the box (same tones, concentric rows), origin = box centre; sew it before the licensed figure.", 1.55, 700, PROP))
+    o.append(t(12, yy + 52.5, "Ownership [proposed — confirm]: Haki supplies the moon-in-box file; the factory digitizer adds the figure on top of it from the licensor-approved art.", 1.55, 600, PROP))
+    return o
+
+def page6_03(NP):
+    import drum
+    o = header("03 · WIRE MARKS PER SIZE — side seams + zip", "Heights in mm above the hem seam (side seams) / y below the CF neck seam (zip ends at x = ±15). Read from each size's art + stitch file. Notches carry these labels on the DXF (layer 4).", f"p6 / {NP}")
+    hd = ["Size", "Wearer's LEFT side seam (back ↔ 03L)", "Wearer's RIGHT side seam (back ↔ 03R)", "Zip ends 03L (y)", "Zip ends 03R (y)"]
+    cx = [12, 24, 84, 150, 220]
+    for x_, h in zip(cx, hd): o.append(t(x_, 31, h, 1.6, 700, MUTED))
+    y = 36
+    for i, sz in enumerate(drum.SIZES):
+        mk = pickle.load(open(f"art_{sz}.pkl", "rb"))["info"]["marks"]
+        if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-2.7)}" width="{SW-22}" height="3.9" fill="#F5F2EC"/>')
+        L_ = ", ".join(f"W{h:.0f}" for s_, h, d in mk["back"] if s_ == "L"); R_ = ", ".join(f"W{h:.0f}" for s_, h, d in mk["back"] if s_ == "R")
+        zl = ", ".join(f"{yv:.0f}" for gname, yv in mk["zip_L"] if gname == "WR"); zr = ", ".join(f"{yv:.0f}" for gname, yv in mk["zip_R"] if gname == "WR")
+        o.append(t(cx[0], y, sz, 1.6, 700)); o.append(t(cx[1], y, L_, 1.5)); o.append(t(cx[2], y, R_, 1.5)); o.append(t(cx[3], y, zl, 1.5)); o.append(t(cx[4], y, zr, 1.5)); y += 3.9
+    y += 4
+    ang = pickle.load(open("art_M.pkl", "rb"))["info"]["marks"]["angles"]
+    o.append(t(12, y, "WIRE ANGLE AT THE SIDE SEAM, size M (degrees below horizontal, + = falling toward the seam; back / front)", 2.0, 700)); y += 4.5
+    for j in range(0, len(ang), 3):
+        o.append(t(12, y, "    ".join(f"{s_} W{h:.0f}: back {a:+.0f}° / front {b:+.0f}°" for s_, h, a, b in ang[j:j + 3]), 1.6)); y += 3.4
+    y += 3
+    for l in ["Rule: the HEIGHT must match across the seam (± 2 mm, notch to notch). The angle need not match: each wire is its own sagging",
+              "span (pole → seam on one panel, seam → pole on the other), as a real line bends at the body's side — the mockup reads the same.",
+              "Where a wire passes a welt pocket it stops 6 mm short of the welt box on both sides (reads as passing behind the pocket).",
+              "Hooping order: 03L and 03R are one hooping each; sew 02 (chest clouds) first, then 03, on the same cut front panel."]:
+        o.append(t(12, y, l, 1.7)); y += 3.6
+    return o
+
 def build(n):
-    cfg = CFG[n]; pieces = cfg["pieces"]
+    cfg = CFG[n]; pieces = cfg["pieces"]; NP = 6 if n in ("01", "03") else 5
     SB.FOOT = f"HAKI STUDIOS · Drum Island jacket · moon · {n} {cfg['slug']} · {REV} · {DATE}"
     OUT = f"out/{n}_{cfg['slug']}"; os.makedirs(OUT, exist_ok=True)
     V = {p: VIS[p] for p in pieces}; ALL = [r for p in pieces for r in V[p]]
@@ -156,7 +255,7 @@ def build(n):
     WC = width_check(ALL)
     pages = []
     # ---------------- p1
-    o = header(f"{n} · {cfg['title']}", cfg["sub"], "p1 / 5")
+    o = header(f"{n} · {cfg['title']}", cfg["sub"], f"p1 / {NP}")
     x = 12; ymax = 0
     imgs = [piece_view(p, 2.0) for p in pieces]
     widths = [(b[2] - b[0] + 24) for _, b in imgs]; s = min(150 / sum(widths), 150 / max(b[3] - b[1] + 24 for _, b in imgs))
@@ -194,7 +293,7 @@ def build(n):
             zl = [f"{y_:.0f}" for g_, y_ in m["zip_L"]]; o.append(t(rx, yy, f"zip (x = ±15): wire/wisp ends at y {', '.join(zl)}", 1.7)); yy += 3.2
     pages.append(o)
     # ---------------- p2 direction map
-    o = header(f"{n} · STITCH-DIRECTION MAP + REGION CODES", "Hatch = stitch direction of every fill/satin region. Dark solid = line work (bean / run). Labels = region code → stitch table p3.", "p2 / 5")
+    o = header(f"{n} · STITCH-DIRECTION MAP + REGION CODES", "Hatch = stitch direction of every fill/satin region. Dark solid = line work (bean / run). Labels = region code → stitch table p3.", f"p2 / {NP}")
     xcur = 12; widths = [BB[p][2] - BB[p][0] + 6 for p in pieces]
     scale = min(165 / max(BB[p][3] - BB[p][1] + 6 for p in pieces), (172 - 6 * (len(pieces) - 1)) / sum(widths))
     for p in pieces:
@@ -212,51 +311,66 @@ def build(n):
     pages.append(o)
     # ---------------- p3 region table
     o = header(f"{n} · REGION STITCH TABLE — digitizing parameters per region code",
-               "Density = row spacing (mm). Pull comp = added width per side (mm). Width = measured share of the code's area below its minimum (fill/satin 0.8, line 0.6).", "p3 / 5")
+               "Rows = row spacing (mm). Pull comp = added width per side (mm). Width = share of the code's area below its minimum (fill/satin 0.8, line 0.6).", f"p3 / {NP}")
     stats = {}
     for r in ALL:
         k = tech.rule_for(r["grp"]); st_ = stats.setdefault(k, dict(n=0, cols=set(), st=0.0)); st_["n"] += 1; st_["cols"].add(r["col"]); st_["st"] += tech.stitches(r)
-    hdr = ["Code", "Region", "Thread(s)", "Stitch", "Angle", "Dens.", "Len.", "Underlay", "Pull", "Notes", "Width", "Obj."]
-    cx = [12, 30, 66, 90, 126, 158, 167, 176, 216, 224, 263, 275]
-    for x_, hd in zip(cx, hdr): o.append(t(x_, 31, hd, 1.75, 700, MUTED))
-    order = [k for k in tech.RULES if k in stats]; rh = 4.2
+    MD = {}
+    for p in pieces:
+        for k_, (mm, sn, a_) in measured_density(p).items():
+            o_ = MD.get(k_, (0, 0, 0)); MD[k_] = (o_[0] + mm * a_, o_[1] + sn * a_, o_[2] + a_)
+    MD = {k_: (v[0] / v[2], v[1] / v[2]) for k_, v in MD.items() if v[2] > 0}
+    hdr = ["Code", "Region", "Thread(s)", "Stitch", "Angle", "Rows", "Len.", "Underlay", "Pull", "Notes", "Width", "DST mm/mm² · st/mm²", "Obj."]
+    cx = [12, 30, 63, 86, 117, 150, 159, 168, 206, 214, 238, 250, 279]
+    for x_, hd in zip(cx, hdr): o.append(t(x_, 31, hd, 1.65, 700, MUTED))
+    order = [k for k in tech.RULES if k in stats]; rh = min(4.2, 140 / max(1, len(order)))
     for i, k in enumerate(order):
         y = 34.6 + i * rh
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-2.9)}" width="{SW-22}" height="{f(rh)}" fill="#F5F2EC"/>')
         name, st, ang, dens, ln, ul, pull, note = tech.RULES[k]; s_ = stats[k]
-        o.append(t(cx[0], y, k, 1.7, 700)); o.append(t(cx[1], y, name, 1.6))
+        o.append(t(cx[0], y, k, 1.6, 700)); o.append(t(cx[1], y, name[:24], 1.5))
         xs = cx[2]
-        for c in sorted(s_["cols"], key=lambda c: tech.COLOUR_ORDER.index(c))[:4]: o.append(swatch(xs, y, c, 3.2, 2.2)); xs += 4.2
+        for c in sorted(s_["cols"], key=lambda c: tech.COLOUR_ORDER.index(c))[:4]: o.append(swatch(xs, y, c, 3.0, 2.1)); xs += 4.0
         for j, v in enumerate((st, ang, dens, ln, ul, pull, note)):
-            o.append(t(cx[3 + j], y, v if (j != 6 or len(v) <= 30) else v[:30].rsplit(' ', 1)[0] + '…', 1.55))
+            lim = {0: 20, 1: 24, 4: 28, 6: 18}.get(j, 30)
+            o.append(t(cx[3 + j], y, v if len(v) <= lim else v[:lim].rsplit(' ', 1)[0] + '…', 1.45))
         q = WC.get(k, 0.0); qc = GREEN if q < 1.0 else (ORANGE if q < 3.5 else RED)
-        o.append(t(cx[10], y, f"{q:.1f}%", 1.6, 600, qc)); o.append(t(cx[11], y, f"{s_['n']}", 1.6, 400, MUTED))
+        o.append(t(cx[10], y, f"{q:.1f}%", 1.5, 600, qc))
+        if k in MD: o.append(t(cx[11], y, f"{MD[k][0]:.1f} · {MD[k][1]:.2f}", 1.5, 600))
+        o.append(t(cx[12], y, f"{s_['n']}", 1.5, 400, MUTED))
     yb = 34.6 + len(order) * rh + 3
     tot = sum(res_of(p)["stitches"] for p in pieces)
-    o.append(t(12, yb, f"Stitches in the production files ({', '.join(pieces)}, M / grade B): {tot:,} (DST read-back). 40wt polyester, 75/11 sharp, 2.5 oz cutaway, no topping.", 1.75, 600))
-    o.append(t(12, yb + 3.6, "Satin > 7.0 wide → split satin. Tie-in/off every object; trims at exposed moves > 2.5. Max stitch 7.5 mm. Moon codes MN* run at low density on purpose.", 1.75, 400, MUTED))
+    o.append(t(12, yb, f"Stitches in the production files ({', '.join(pieces)}, M / grade B): {tot:,} (DST read-back). 40wt polyester, 75/11 sharp, 2.5 oz cutaway, no topping.", 1.7, 600))
+    o.append(t(12, yb + 3.4, "DST mm/mm² = thread length the file actually sews per mm² of each code (underlay + top rows + blends + hidden travel that lies under it), read back", 1.6, 400, MUTED))
+    o.append(t(12, yb + 6.6, "from the DST. One 0.45 tatami layer alone is ≈ 2.2 mm/mm². Rev B is fidelity-first (client direction): density is reported, not limited — clean up after the sew-out.", 1.6, 600, PROP))
     if any(v >= 1.0 for v in WC.values()):
-        o.append(t(12, yb + 7.2, "Amber = short tapered ends (wisp tips, cap tips) under 0.8 for < 2.5 mm; the digitizer drops or widens them — no visible effect.", 1.75, 400, ORANGE))
+        o.append(t(12, yb + 9.8, "Amber width = short tapered ends (wisp tips, cap tips, crater slivers) under 0.8 for < 2.5 mm; the digitizer drops or widens them.", 1.6, 400, ORANGE))
     pages.append(o)
     # ---------------- p4 colour stops
-    o = header(f"{n} · COLOUR STOP SEQUENCE + THREADS", "Sewing order back to front: moon → craters → wires → clouds → pole → hardware. Fills before the lines on them. Same-colour stops merged where nothing sewn in between is within 1 mm.", "p4 / 5")
+    o = header(f"{n} · COLOUR STOP SEQUENCE + THREADS", "Sewing order back to front: moon → craters → wires → clouds → pole → hardware. Fills before the lines on them. Same-colour stops merged where nothing sewn in between is within 1 mm.", f"p4 / {NP}")
     colx = [12, 150] if len(pieces) == 2 else [12]
+    H2K = {v[0].upper(): k_ for k_, v in PAL.items()}
     for ci, p in enumerate(pieces):
         x0 = colx[ci]; mst = __import__("moonstitch").stops_for(V[p])[0]
-        o.append(t(x0, 30.5, f"PIECE {p} — {len(mst)} stops after merge" + (" + 1 placeholder basting stop" if p == "back" else ""), 2.1, 700))
-        hc = [x0, x0 + 9, x0 + 38, x0 + 62, x0 + 88]
-        for x_, hd in zip(hc, ["Stop", "Thread", "Isacord", "Polyneon", "Sews (region codes)"]): o.append(t(x_, 34.5, hd, 1.6, 700, MUTED))
-        rh = min(3.4, 150 / max(1, len(mst) + 1))
-        for i, s_ in enumerate(mst):
-            y = 38 + i * rh; k = s_["col"]; iso, pn = SB.TH[k]["isacord"], SB.TH[k]["polyneon"]
+        rb = readback.dst(res_of(p)["file"] + ".dst"); thr = pe.read(res_of(p)["file"] + ".pes").threadlist
+        o.append(t(x0, 30.5, f"PIECE {p} — {rb['stops']} stops in the file · {rb['stitches']:,} st · {rb['trims']} trims (readback.dst)", 2.0, 700))
+        hc = [x0, x0 + 8, x0 + 36, x0 + 50, x0 + 64, x0 + 98, x0 + 116]
+        for x_, hd in zip(hc, ["Stop", "Thread", "Isacord", "Polyneon", "Sews (region codes)", "Stitches", "Trims"]): o.append(t(x_, 34.5, hd, 1.55, 700, MUTED))
+        rh = min(3.4, 150 / max(1, rb["stops"] + 1))
+        for i, ps in enumerate(rb["per_stop"]):
+            y = 38 + i * rh; hx = thr[min(i, len(thr) - 1)].hex_color().upper(); k = H2K.get(hx)
             if i % 2 == 0: o.append(f'<rect x="{x0-1}" y="{f(y-2.4)}" width="134" height="{f(rh)}" fill="#F5F2EC"/>')
-            o.append(t(hc[0], y, f"{i+1:02d}", 1.6, 700)); o.append(swatch(hc[1], y, k, 3.2, 2.2)); o.append(t(hc[1] + 4.2, y, PAL[k][1], 1.5))
-            o.append(t(hc[2], y, f"{iso[0]}", 1.5)); o.append(t(hc[3], y, f"{pn[0]}", 1.5))
-            o.append(t(hc[4], y, ", ".join(sorted({tech.rule_for(r['grp']) for r in s_['regions']}))[:34], 1.42, 400, MUTED))
-        if p == "back":
-            y = 38 + len(mst) * rh
-            o.append(f'<rect x="{hc[1]}" y="{f(y-2.0)}" width="3.2" height="2.2" fill="{__import__("moonstitch").PH_HEX}"/>')
-            o.append(t(hc[0], y, f"{len(mst)+1:02d}", 1.6, 700)); o.append(t(hc[1] + 4.2, y, "PLACEHOLDER basting outline (water-soluble) — licensed insert", 1.5, 600, RED))
+            o.append(t(hc[0], y, f"{i+1:02d}", 1.55, 700))
+            if k:
+                iso, pn = SB.TH[k]["isacord"], SB.TH[k]["polyneon"]
+                o.append(swatch(hc[1], y, k, 3.2, 2.2)); o.append(t(hc[1] + 4.2, y, PAL[k][1][:16], 1.45))
+                o.append(t(hc[2], y, f"{iso[0]}", 1.45)); o.append(t(hc[3], y, f"{pn[0]}", 1.45))
+                mi = next((m for m in mst if m["col"] == k), None)
+                if mi: o.append(t(hc[4], y, ", ".join(sorted({tech.rule_for(r['grp']) for r in mi['regions']}))[:26], 1.35, 400, MUTED))
+            else:
+                o.append(f'<rect x="{hc[1]}" y="{f(y-2.0)}" width="3.2" height="2.2" fill="{hx}"/>')
+                o.append(t(hc[1] + 4.2, y, "PLACEHOLDER basting outline — licensed insert" if p == "back" and i == rb["stops"] - 1 else "basting (registration)", 1.45, 600, RED))
+            o.append(t(hc[5], y, f"{ps['stitches']:,}", 1.45)); o.append(t(hc[6], y, f"{ps['trims']}", 1.45))
     if len(pieces) == 1:
         sx = 160; used = sorted({r["col"] for r in ALL}, key=lambda c: tech.COLOUR_ORDER.index(c))
         o.append(t(sx, 30.5, "THREADS USED (ΔE2000 to target)", 2.2, 700))
@@ -267,7 +381,7 @@ def build(n):
             o.append(t(sx + 44, y, f"Isacord {iso[0]}  ΔE {iso[3]:.1f}", 1.55, 600, ci_)); o.append(t(sx + 80, y, f"Polyneon {pn[0]}  ΔE {pn[3]:.1f}", 1.55, 600, cp))
     pages.append(o)
     # ---------------- p5 1:1 details + mockup + changes
-    o = header(f"{n} · 1:1 DETAILS, WHAT CHANGED, PRODUCTION NOTES", "Print at 100 % to check scale. Mockup = AI render: details reinterpreted for stitching.", "p5 / 5")
+    o = header(f"{n} · 1:1 DETAILS, WHAT CHANGED, PRODUCTION NOTES", "Print at 100 % to check scale. Art redrawn from the close-ups (low-res AI renders): shapes read off a x2 upscale, not traced at stitch resolution.", f"p5 / {NP}")
     o.append(t(14, 31, "1:1 STITCH-OUT DETAILS", 2.6, 700)); x = 14
     for (x0, y0, x1, y1, cap) in cfg["crops"]:
         im = SR.render(ALL, (x0, y0, x1, y1), 12, base=moonpal.FABRIC); tag, hh = img_tag(im, x, 35, x1 - x0); o.append(tag)
@@ -281,10 +395,16 @@ def build(n):
     _ab = unary_union([r["geom"] for r in VIS["back"]]).bounds
     pr = PROD + ([f"Back: border frame ≥ {_ab[2]-_ab[0]+14:.0f} × {_ab[3]-_ab[1]+14:.0f} (M) single file, or", "  the 360² split files (4; 3XL 6) with basting crosses (G5)."] if n == "01" else [])
     pr += (["Sleeves: two hoopings per sleeve (split files S1 +", "  S2, front + back half) with basting crosses."] if n == "04" else [])
-    pr += ["Wires: bean 0.8; side-seam ends 3 mm short — match", "  the side-seam notches when closing (no topstitch)."] if n in ("01", "03") else []
+    pr += ["Wires: satin cord 1.6; side-seam ends 3 mm short —", "  match the W notches when closing (no topstitch)."] if n in ("01", "03") else []
+    pr += {"01": ["Hooping order: S1 → S6 (top row L→R, bottom row);", "  01b moon-in-box in the S2 hooping, then the figure."],
+           "02": ["Hooping order: 02 first on each cut front panel,", "  then 03 (pole + wires) on the same panel."],
+           "03": ["Hooping order: after 02 on the same front panel."],
+           "04": ["Hooping order per sleeve: S1 (back half) then S2."]}[n]
     for i, c in enumerate(pr): o.append(t(196, my + 4.5 + i * 3.3, c, 1.8))
     o.append(t(14, SH - 12, "[proposed — confirm] threads + densities: approve a thread board and a sew-out on the production duck before bulk.", 1.8, 600, PROP))
     pages.append(o)
+    if n == "01": pages.append(page6_01(NP))
+    if n == "03": pages.append(page6_03(NP))
     w = PdfWriter()
     for i, pg in enumerate(pages, 1):
         svg = doc(pg)

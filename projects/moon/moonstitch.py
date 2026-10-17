@@ -8,8 +8,8 @@ import moonpal
 import dst2, tech
 moonpal.patch_dst2()
 U = dst2.U
-PH_HEX = "#FF2D9B"
-PH_LABEL = "PLACEHOLDER licensed figure area - basting outline, remove; licensed insert (factory, licensor-approved art) sews here"
+PH_HEX = "#FF2D9B"      # on-page marking colour only (the file sews the outline in moon cream, see moonpal.PH_COL)
+PH_LABEL = "PLACEHOLDER licensed figure area - outline run in Moon cream (covered by 01b moon-in-box); licensed insert sews here"
 
 def stops_for(vis):
     st = tech.stops(vis); n0 = len(st); return dst2.merge_stops(st), n0
@@ -19,9 +19,10 @@ def add_placeholder(pat, bx, origin):
     ox, oy = origin
     while pat.stitches and (pat.stitches[-1][2] & pe.COMMAND_MASK) in (pe.END, pe.TRIM): pat.stitches.pop()
     pat.add_command(pe.TRIM); pat.add_command(pe.COLOR_CHANGE)
-    th = pe.EmbThread(); th.set_hex_color(PH_HEX); th.description = PH_LABEL; th.catalog_number = "WSB"; pat.add_thread(th)
+    th = pe.EmbThread(); th.set_hex_color(moonpal.HEXK(moonpal.PH_COL)); th.description = PH_LABEL; th.catalog_number = "PH"; pat.add_thread(th)
     if len(bx) == 4 and not isinstance(bx[0], (list, tuple)):
-        x0, y0, x1, y1 = bx; paths = [[(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]]
+        x0, y0, x1, y1 = bx; i_ = 1.5     # 1.5 mm inside the box edge: the 01b moon-in-box fill covers it
+        x0, y0, x1, y1 = x0 + i_, y0 + i_, x1 - i_, y1 - i_; paths = [[(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]]
     else:
         paths = bx                      # part of the outline (box split across hoopings)
     for k, ring in enumerate(paths):
@@ -48,9 +49,12 @@ def make(vis, base, scale_preview=0.5, placeholder=None, reg_marks=None, origin=
         pb = ph_bounds(placeholder); ub = (min(ub[0], pb[0]), min(ub[1], pb[1]), max(ub[2], pb[2]), max(ub[3], pb[3]))
     c = origin or ((ub[0] + ub[2]) / 2, (ub[1] + ub[3]) / 2)
     pat, st = dst2.make_pattern(vis, stops, c, reg_marks=reg_marks)
+    if reg_marks:            # registration crosses in a thread the file already uses (12-colour limit): wire grey, pick out after
+        t0 = pat.threadlist[0]; t0.set_hex_color(moonpal.HEXK(moonpal.REG_COL)); t0.description = "REGISTRATION crosses - Pole grey run, pick out after the last hooping"
     if placeholder is not None: add_placeholder(pat, placeholder, c)
     os.makedirs(os.path.dirname(base), exist_ok=True)
     dst2.write(pat, base); v = dst2.verify(base)
+    import factory; factory.check_threads(base + ".pes")
     dst2.render(base, base + "_preview.png", bg=(37, 48, 77), s=scale_preview)
     pt = pe.read(base + ".pes")
     lines = [os.path.basename(base), "stop  thread", "-" * 60] + [f"{i:>3}   {t.hex_color()}  {t.description}" for i, t in enumerate(pt.threadlist, 1)]

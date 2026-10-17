@@ -14,7 +14,7 @@ import drum, techflat as TF
 import specbase as SB
 from specbase import img_tag
 
-REV = "Rev A"; DATE = "16 Oct 2026"; STYLE = "HK-JK-DRUM-MOON"; NAME = "Drum Island Jacket — Moon"
+REV = "Rev B"; DATE = "16 Oct 2026"; STYLE = "HK-JK-DRUM-MOON"; NAME = "Drum Island Jacket — Moon"
 FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · GARMENT TECH PACK · {REV} · {DATE}"
 PROP = "#8A5A00"        # colour for 'proposed — confirm' text
 
@@ -54,7 +54,7 @@ def p_cover(index):
         o.append(t(ix, y, name, 1.95)); o.append(t(SW - 14, y, str(pg), 1.95, 600, MUTED, "end")); y += 3.9
     y += 3; o.append(t(ix, y, "KEY SPECS", 2.4, 700)); y += 4.6
     for a, b in [("Shell", "12 oz cotton duck, washed navy"), ("Collar", "cotton corduroy, navy-black"), ("Zip", "YKK #5 metal, brass, separating"),
-                 ("Hem / cuffs", "rib knit, navy-black"), ("Embroidery", "4 elements, 8 pieces, ≤ 12 threads per file"), ("Fit", "Drum Island block (boxy, cropped)"), ("Pattern", "XS–3XL first pattern, DXF + 1:1 plot")]:
+                 ("Hem / cuffs", "rib knit, navy-black"), ("Embroidery", "4 elements (+ 01b), 7 pieces, ≤ 12 threads per file"), ("Fit", "Drum Island block (boxy, cropped)"), ("Pattern", "XS–3XL first pattern, DXF + 1:1 plot")]:
         o.append(t(ix, y, a, 1.95, 400, MUTED)); o.append(t(ix + 22, y, b, 1.95, 600)); y += 3.8
     o.append(t(SW - 14, SH - 8, FOOT, 1.8, 400, MUTED, "end"))
     return o
@@ -211,16 +211,16 @@ def p_grade():
     o.append(t(gx, ty, "B · EMBROIDERY GRADING", 2.4, 700))
     o.append(t(gx, ty + 4.5, "3 art sizes: A 92 % (XS–S), B 100 % (M–XL), C 108 % (XXL–3XL). Motifs scale; wires re-run per size.", 1.75, 400, MUTED))
     o.append(t(gx, ty + 7.8, "Digitizer re-densities at scale (don't scale stitches); stitch angles + thread order unchanged.", 1.75, 400, MUTED))
-    hd = ["Size", "Art", "Scale", "01 back", "02R", "02L", "03L", "04R"]
-    hx = [gx, gx + 10, gx + 18, gx + 30, gx + 56, gx + 76, gx + 96, gx + 116]
+    hd = ["Size", "Art", "Scale", "01 back", "02R", "02L", "03L", "04R", "04L"]
+    hx = [gx, gx + 9, gx + 16, gx + 26, gx + 47, gx + 67, gx + 87, gx + 107, gx + 129]
     for x, h in zip(hx, hd): o.append(t(x, ty + 13, h, 1.75, 700, MUTED))
     for i, sz in enumerate(drum.SIZES):
         g, sc = GRADE[sz]; y = ty + 17.5 + i*4.4
         pl = EPL.place(sz)[0]
         if i % 2 == 0: o.append(f'<rect x="{gx-1}" y="{f(y-3.1)}" width="{SW - gx - 11}" height="4.4" fill="#F5F2EC"/>')
         o.append(t(hx[0], y, sz, 1.9, 700)); o.append(t(hx[1], y, g, 1.9, 700, RED)); o.append(t(hx[2], y, f"{sc*100:.0f}%", 1.85))
-        for j, e in enumerate(("back", "02R", "02L", "03L", "04R")):
-            bx = pl[e][1].bounds; o.append(t(hx[3 + j], y, f"{bx[2]-bx[0]:.0f}×{bx[3]-bx[1]:.0f}", 1.75))
+        for j, e in enumerate(("back", "02R", "02L", "03L", "04R", "04L")):
+            bx = pl[e][1].bounds; o.append(t(hx[3 + j], y, f"{bx[2]-bx[0]:.0f}×{bx[3]-bx[1]:.0f}", 1.65))
     y = ty + 17.5 + 7*4.4 + 2
     o.append(t(gx, y, "Art boxes in mm, measured on each size's placed art. 01 + 03 widths follow the body (wires run to 3 mm from", 1.75, 400, MUTED))
     o.append(t(gx, y + 3.3, "the side seams on every size); every size is checked on its own pattern for all keep-outs (T13).", 1.75, 400, MUTED))
@@ -252,7 +252,7 @@ def p_bom():
         ("Zip", "YKK #5 metal separating, auto-lock, one-way", "antique brass teeth, navy tape", "CF", "YKK", "1 × 56 cm (M)", False),
         ("Thread — seams", "Coats Epic 120 (Tex 27) corespun poly/cotton", "tonal to shell", "all seams + overlock", "Coats", "~ 450 m", True),
         ("Thread — topstitch", "Coats Gral 40 (Tex 60) poly", "tonal to shell", "topstitch, bartacks", "Coats", "~ 120 m", True),
-        ("Embroidery thread", "Madeira Polyneon 40 (11 colours + basting, see G3)", "per embroidery spec", "01–04", "Madeira", "per spec", False),
+        ("Embroidery thread", "Madeira Polyneon 40 (14 colours + basting, see G3)", "per embroidery spec", "01–04", "Madeira", "per spec", False),
         ("Embroidery backing", "2.5 oz cutaway", "black / navy (dark ground)", "behind each element", "TBC", "8 pieces", False),
         ("Main label", "woven damask, HAKI logo, 7 × 2 cm, folded", "black / cream", "CB neck facing", "TBC", "1", True),
         ("Size label", "woven, 2 × 1.5 cm", "black / cream", "under main label", "TBC", "1", True),
@@ -354,7 +354,7 @@ def p_colourway():
         o.append(t(cx + 8, 40 + i*5.5, n, 1.85))
     o.append(t(cx, 72, "Lab-dip / strike-off approval", 1.9, 700))
     o.append(t(cx, 75.5, "required for shell, collar and both ribs.", 1.85))
-    o.append(t(cx, 82, "Embroidery: 11 threads,", 1.9, 700)); o.append(t(cx, 85.5, "Madeira Polyneon (G3).", 1.85))
+    o.append(t(cx, 82, "Embroidery: 14 threads,", 1.9, 700)); o.append(t(cx, 85.5, "Madeira Polyneon (G3).", 1.85))
     return o
 
 QUESTIONS = ["1. Shell colour: target ≈ #25304D washed navy from the mockup — send a Pantone / lab-dip reference; dye/wash method to confirm.",
@@ -369,7 +369,7 @@ QUESTIONS = ["1. Shell colour: target ≈ #25304D washed navy from the mockup �
           "10. Garment wash after embroidery? If yes: wash test on the sew-out first (cream moon + white cloud caps grey first).",
           "11. Licensed figure on the pole: licence confirmed by client 2026-10-16. Factory digitizer adds it inside the placeholder box",
           "     from the licensor-approved art; confirm the box size/position against that art (G4).",
-          "12. Factory frame: 360 × 360 frames + 15-needle heads assumed (brief): back sewn as 4 split hoopings, 3XL 6 (G5)."]
+          "12. Factory: 360 × 360 frames assumed (factory.json, unconfirmed); max 12 thread colours per file (manufacturer, confirmed): back = 6 hoopings (G5)."]
 def p_questions():
     o = header("OPEN QUESTIONS — garment", "Everything marked [proposed — confirm] in this pack, in one place. Embroidery questions are on G4.", "T10")
     for i, q in enumerate(QUESTIONS): o.append(t(14, 34 + i*4.6, q, 2.0))

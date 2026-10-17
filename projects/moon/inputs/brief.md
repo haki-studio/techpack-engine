@@ -45,3 +45,13 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - Drop wires to the hem end 10 mm above the hem seam (rib is never embroidered).
 - Pattern = Drum Island pattern unchanged; collar + rib materials re-labelled navy-black.
 - Palette (11 threads + basting): moon cream / ivory / pale gold / taupe, cloud white-lilac / lavender / periwinkle / indigo, pole light grey / grey / charcoal (wires in pole grey).
+
+## Rev B (2026-10-16) — fidelity first (founder direction) + reviewer findings
+- Tracing reference: `inputs/closeups/` (Devin, ChatGPT, 1448 × 1086). Placement + scale: the mockup (mockup wins where they differ). Licensed figure in the close-up is not traced.
+- Moon: 5 close-up tones traced, concentric directional rows (15° sectors), 3 star-burst craters with rays, small oval craters with light rims, 2.5 mm warm rim. Ø 240 mm (M) — the brief's 228 was the Rev A estimate; files give 240.
+- Clouds: traced silhouettes (count + position from the close-ups/mockup: back 5, chest 3 per panel incl. the wisp, sleeves per close-up), inside them tone bands + seigaiha scale rows as on the close-ups.
+- Placeholder box tightened to the mockup figure + 3 mm: 68 × 79 mm (M). 01b moon-in-box file supplied by Haki [proposed — confirm ownership].
+- Manufacturer limit: ≤ 12 thread colours per file incl. basting/registration (factory.json). Palette 14 tones → 12 per file (pole dark grey → charcoal, cloud violet → periwinkle merged in every file); registration crosses in pole grey, placeholder outline in moon cream.
+- Back splits: 3 × 2 on every size (moon + box whole in the top-middle hooping, pole whole in the bottom-middle).
+- Wires: satin cord 1.6 mm, 12 back + 12 front, heights at the side seams notched on the pattern (W labels).
+- Density / stitches / trims are REPORTED, not limited (clean-up after the sew-out).

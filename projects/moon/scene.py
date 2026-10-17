@@ -39,7 +39,7 @@ MOON_R = TA.MOON_R_PX * TA.K
 
 # ---------------------------------------------------------------- wire network (heights above the hem seam, mm, M) read off the mockup
 # back left side seam (wearer's left)  <-> front wearer's-left side seam (03L, short wires from the pole)
-H_LEFT = [159.0, 149.0, 89.0, 49.0]
+H_LEFT = [159.0, 128.0, 89.0, 49.0]
 # back right side seam (wearer's right) <-> front wearer's-right side seam (03R, wires from the 03L pole across the zip)
 H_RIGHT = [175.0, 135.0, 105.0, 50.0, 18.0]
 
@@ -181,7 +181,7 @@ def front_clips(size):
         weltg = Polygon(g[pc].internal[0][1])
         collar = FR.COLLAR_L if side > 0 else FR.COLLAR_R
         base = P_.difference(sub(["armhole", "shoulder"], KEEP["seam"])).difference(sub(["CF / zip"], KEEP["cf"]))
-        base = base.difference(sub(["hem"], KEEP["hem"])).difference(weltg.buffer(KEEP["welt"])).difference(collar.buffer(KEEP["collar"]))
+        base = base.difference(sub(["hem"], KEEP["hem"])).difference(weltg.buffer(KEEP["welt"] + 0.25)).difference(collar.buffer(KEEP["collar"]))
         base = base.difference(sub(["neck"], KEEP["neck"]))
         out[pc] = (make_valid(base.difference(sub(["side"], KEEP["side"]))).buffer(0), make_valid(base.difference(sub(["side"], KEEP["wrap"]))).buffer(0))
     return out
@@ -203,20 +203,25 @@ def sleeve_clip(size, k):
 
 # ================================================================ knockout + clip
 def build(items, clip, wire_clip=None, knock=None):
-    vis = []; above = Polygon()
-    for r in reversed(items):
+    """clip every item to its keep-out region, then knock out what later items cover (painter's order).
+    Local knockout via an STRtree (only later items that touch this one), not one growing union (that was O(n²))."""
+    from shapely.strtree import STRtree
+    G = []
+    for r in items:
         cl = wire_clip if (wire_clip is not None and r["grp"] == "WR") else clip
-        try:
-            gg = r["geom"].intersection(cl)
-            if knock is not None: gg = gg.difference(knock)
-            v = gg.difference(above); above = above.union(gg)
-        except Exception:
-            gg = make_valid(r["geom"]).buffer(0.001).buffer(-0.001).intersection(cl)
-            if knock is not None: gg = gg.difference(knock)
-            v = gg.difference(above.buffer(0)); above = above.buffer(0).union(gg)
-        vis.append(dict(r, geom=v))
-    vis.reverse()
-    vis = [v for v in vis if not v["geom"].is_empty and v["geom"].area > 0.02]
+        try: g = r["geom"].intersection(cl)
+        except Exception: g = make_valid(r["geom"]).buffer(0).intersection(cl)
+        if knock is not None and not g.is_empty: g = g.difference(knock)
+        G.append(g)
+    idx = [i for i, g in enumerate(G) if not g.is_empty]
+    tree = STRtree([G[i] for i in idx]); vis = []
+    for n, i in enumerate(idx):
+        later = [G[idx[j]] for j in tree.query(G[i]) if idx[j] > i]
+        g = G[i]
+        if later:
+            try: g = g.difference(unary_union(later))
+            except Exception: g = make_valid(g).buffer(0).difference(make_valid(unary_union(later)).buffer(0))
+        if not g.is_empty and g.area > 0.02: vis.append(dict(items[i], geom=g))
     return valid(absorb_slivers(vis))
 
 def valid(vis):
@@ -227,7 +232,8 @@ def valid(vis):
         if g.geom_type == "GeometryCollection": g = unary_union([p for p in MM._polys(g)])
         if v["st"] not in ("bean", "run"):
             # open by 0.06 mm: removes pinch points that turn invalid when the hatcher rotates the polygon
-            g = shapely.set_precision(g.buffer(-0.06, join_style=2).buffer(0.06, join_style=2), 0.005).buffer(0)
+            try: g = shapely.set_precision(g.buffer(-0.06, join_style=2).buffer(0.06, join_style=2), 0.005).buffer(0)
+            except Exception: g = make_valid(g).buffer(-0.06, join_style=2).buffer(0.06, join_style=2).buffer(0)
         if not g.is_empty and g.area > 0.02: out.append(dict(v, geom=g))
     return out
 

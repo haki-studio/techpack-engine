@@ -7,7 +7,7 @@ for a in sys.argv[1:]:
     t = time.time()
     if a == "graded":
         g = scene.graded_art(); n0 = {k: len(v) for k, v in g.items()}
-        g = {k: dst2.clean_vis(v) for k, v in g.items()}
+        g = {k: dst2.merge_colours(dst2.clean_vis(v), moonpal.FILE_MERGE) for k, v in g.items()}
         pickle.dump(g, open("art_graded.pkl", "wb")); print("graded", n0, {k: len(v) for k, v in g.items()}, f"{time.time()-t:.0f}s", flush=True)
     else:
         d = scene.art_for_size(a)

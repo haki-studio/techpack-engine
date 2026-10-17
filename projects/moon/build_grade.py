@@ -17,9 +17,11 @@ for k in which:
     base = f"out/{DIRS[k]}/grade-{G}/HAKI_moon_{DIRS[k]}_{k}_{G}-{LAB}"
     r = MS.make(vis, base, 1.0, origin=c); r["m_centre"] = c
     w, h = r["size"]
-    if w > 344 or h > 344:          # larger than a 360 frame: split into hoopings (sleeve = front half + back half)
+    import factory
+    FR_ = tuple(float(v) for v in factory.largest_frame())
+    if w > FR_[0] - 16 or h > FR_[1] - 16:          # larger than the frame: split into hoopings (sleeve = back half + front half)
         import moonsplit
-        sp = moonsplit.grid_split(vis, (360.0, 360.0), whole_max=260.0); r["sections"] = {}
+        sp = moonsplit.grid_split(vis, FR_, whole_max=260.0); r["sections"] = {}
         for key in sorted(sp["secs"], key=lambda q: (q[1], q[0])):
             bb = sp["bbs"][key]; cc = ((bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2)
             sb = f"{base}_{sp['names'][key]}"

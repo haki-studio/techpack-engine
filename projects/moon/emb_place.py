@@ -22,7 +22,7 @@ NAME = {"back": "01 back scene", "box": "01 LICENSED FIGURE placeholder box (fac
 def outline(vis, lines=None):
     rs = [r for r in vis if (lines is None) or ((r["grp"] == "WR") == lines)]
     if not rs: return Polygon()
-    return unary_union([r["geom"].buffer(0.3) for r in rs]).buffer(-0.3).simplify(0.4)
+    return unary_union([r["geom"] for r in rs]).simplify(0.05)
 
 _G = None
 def graded():

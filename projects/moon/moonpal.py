@@ -5,28 +5,38 @@ specbase / dst2 — so thread matching (specbase.TH) and stop ordering see the m
 import motifs2, motifs, tech
 
 FABRIC = "#25304D"          # washed navy 12 oz duck (mockup sample) — PROPOSED, lab dip to confirm
-PAL = {   # key: (hex, name, use) — Rev B: sampled from the mockup by k-means on the moon / cloud / pole pixels. PROPOSED
-    "m1": ("#F1E5D2", "Moon highlight",  "lightest moon face"),
-    "m2": ("#EADCC1", "Moon cream",      "moon body"),
-    "m3": ("#E0CDAB", "Moon warm",       "warm tone, rim"),
-    "m4": ("#D4C5A4", "Moon crater light", "crater + mare light tone"),
-    "m5": ("#B2A98B", "Moon crater dark",  "crater + mare dark tone (grey-green)"),
-    "c1": ("#DED6E6", "Cloud white",     "highlight caps"),
-    "c2": ("#B8AECB", "Cloud lavender",  "light band"),
-    "c3": ("#8E8AB0", "Cloud periwinkle", "cloud body"),
-    "c4": ("#73729F", "Cloud violet",    "lower band"),
-    "c5": ("#535A8A", "Cloud indigo",    "underside + scallop lines"),
-    "p1": ("#C1B6AC", "Pole light grey", "highlights, insulators"),
-    "p2": ("#7A747C", "Pole grey",       "pole body, hardware, WIRES"),
-    "p3": ("#4E484F", "Pole dark grey",  "shade side, can ribs"),
-    "p4": ("#2A282E", "Pole charcoal",   "outlines, bands, wood grain"),
+PAL = {   # key: (hex, name, use) — Rev B: from the close-ups (inputs/closeups), k-means of moon / cloud / pole pixels. PROPOSED
+    "m1": ("#F7E6CC", "Moon highlight",    "lightest moon face"),
+    "m2": ("#F1D7B0", "Moon cream",        "moon body"),
+    "m3": ("#DFC195", "Moon pale gold",    "warm tone, rim"),
+    "m4": ("#C2A985", "Moon crater light", "crater + mare light tone"),
+    "m5": ("#9A8E74", "Moon crater dark",  "crater + mare dark tone (grey-green taupe), rays"),
+    "c1": ("#DCCFE2", "Cloud white-pink",  "highlight tops"),
+    "c2": ("#A9A1C8", "Cloud lavender",    "light band"),
+    "c3": ("#8682AE", "Cloud periwinkle",  "cloud body"),
+    "c4": ("#66699A", "Cloud violet",      "lower band"),
+    "c5": ("#464B7D", "Cloud indigo",      "underside + scale lines"),
+    "p1": ("#CBBEBE", "Pole light grey",   "highlights, insulators"),
+    "p2": ("#8B7C7E", "Pole grey",         "pole body, hardware, WIRES, registration crosses"),
+    "p3": ("#645659", "Pole dark grey",    "shade side, can ribs"),
+    "p4": ("#2E2729", "Pole charcoal",     "outlines, bands, wood grain"),
 }
 ORDER = ["m2", "m1", "m3", "m4", "m5", "c3", "c2", "c4", "c1", "c5", "p2", "p1", "p3", "p4"]
+# manufacturer limit (factory.json, 2026-10-16): <= 12 colours per stitch file incl. basting/registration.
+# Two pairs merged in every file (pole dark grey -> charcoal ΔE 10.9, cloud violet -> periwinkle ΔE 9.3) so the moon keeps all
+# 5 close-up tones (fidelity first); the in-between tone comes
+# from the short-stitch density blends at the tone edges instead of a 13th thread.
+FILE_MERGE = {"p3": "p4", "c4": "c3"}
+USED = [k for k in ORDER if k not in FILE_MERGE]
+REG_COL = "p2"      # registration crosses (removable runs) in a colour the file already has
+PH_COL = "m2"       # placeholder outline in moon cream: hidden under the 01b moon-in-box fill
 # mockup tones used to SEGMENT the image (screen colours of the render) -> thread key
 SEG = {"m1": (233, 218, 196), "m2": (228, 210, 180), "m3": (218, 197, 164), "m4": (201, 180, 148), "m5": (170, 152, 126),
        "c1": (188, 176, 193), "c2": (146, 139, 165), "c3": (115, 113, 147), "c4": (82, 89, 127), "c5": (64, 70, 104),
        "p1": (193, 181, 170), "p2": (117, 111, 116), "p3": (76, 70, 76), "p4": (18, 17, 22),
        "navy": (33, 43, 66), "navy2": (25, 33, 52)}
+
+def HEXK(k): return PAL[k][0]
 
 def install():
     for k, v in PAL.items():

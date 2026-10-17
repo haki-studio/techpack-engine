@@ -66,7 +66,7 @@ def p_pattern_pieces():
 def p_pattern_grade():
     o = GT.header("PATTERN — grade nests + measurement check (XS–3XL)", "Each size drafted from its own fit-chart values (not a fixed grade rule). Measured off the pattern pieces vs the chart; seam walks below.", "T12")
     cols = ["#9C9C9C", "#7E7E7E", "#1A1A1A", "#5A5A5A", "#3A3A3A", "#2A2A2A", "#111111"]
-    nests = [("B01", "Back", 0.072, (14, 32)), ("F01", "Front left", 0.072, (64, 32)), ("S01", "Sleeve", 0.072, (92, 32)), ("C02", "Under collar", 0.072, (138, 36))]
+    nests = [("B01", "Back", 0.068, (14, 36)), ("F01", "Front left", 0.068, (64, 36)), ("S01", "Sleeve", 0.068, (92, 36)), ("C02", "Under collar", 0.068, (150, 36))]
     for code, nm, s, (ox, oy) in nests:
         for i, sz in enumerate(PT.SIZES):
             g, mt = PT.draft(sz); pc = g[code]
@@ -79,7 +79,7 @@ def p_pattern_grade():
             X = lambda q: ox + 22*(code != "F01" and code != "C02") + (q - ax)*s + (0 if code != "C02" else 22)
             Y = lambda q: oy + (q - ay)*s + (46 if code in ("B01", "F01") else 0)
             o.append(f'<path d="{PD.path_d([(X(x), Y(y)) for x, y in sew])}" fill="none" stroke="{cols[i]}" stroke-width="{0.22 if sz != "M" else 0.4}"/>')
-        o.append(t(ox, oy - 2, f"{nm} — sew lines", 1.7, 700))
+        o.append(t(ox + (24 if code in ("S01",) else 0), 31, f"{nm} — sew lines", 1.6, 700))
     o.append(t(14, 84, "Nests shown at 0.07:1; heaviest line = M. Body aligned on CB/CF + hem seam; sleeve on cap top; collar on CB neck.", 1.55, 400, MUTED))
     # measurement table
     rows = PO.qa_table(); ty = 92
@@ -111,16 +111,17 @@ def p_pattern_grade():
             else: txt = f"{a:.0f}/{b:.0f}"
             bad = tol is not None and abs(a - b) > tol
             o.append(t(cxw[1 + j], y, txt, 1.5, 700 if sz == "M" else 400, RED if bad else INK))
-        note = {"Sleeve cap vs armhole (ease)": "cap ease, 12 mm all sizes", "Hem rib vs body hem (ratio)": "rib / body hem: 0.94–0.97 (chart sweep)",
-                "Cuff rib vs shell sleeve opening (ratio)": "rib / sleeve: 0.80 (rib stretched 25 %)", "Top vs under collar outer": "+2 mm turn of cloth"}.get(nm, "equal within 1–2 mm")
+        _hr = [rows[z]["walks"][i][1] / rows[z]["walks"][i][2] for z in PT.SIZES] if "ratio" in nm else [0]
+        note = {"Sleeve cap vs armhole (ease)": "cap ease, 12 mm all sizes", "Hem rib vs body hem (ratio)": f"rib / body hem {min(_hr):.2f}–{max(_hr):.2f} (follows chart sweep D)",
+                "Cuff rib vs shell sleeve opening (ratio)": f"rib / sleeve {min(_hr):.2f}–{max(_hr):.2f} (rib stretched)", "Top vs under collar outer": "+2 mm turn of cloth"}.get(nm, "equal within 1–2 mm")
         o.append(t(cxw[0], y + 3.1, note, 1.4, 400, MUTED))
     o.append(t(wx, 39.5 + 10*7.2 + 1, "a/b = first seam / its partner. Cap height ≈ 9.8–10.7 cm.", 1.45, 400, MUTED))
     return o
 
 def p_pattern_emb():
     o = GT.header("PATTERN — embroidery placement per size + keep-out check", "Placement is drawn on the pattern pieces (DXF layer 8: art outline + box + centre ⊕ = DST origin / needle start). Box = art box on the sew-line coordinates (mm).", "T13")
-    hd = ["Size", "Art", "01 back x / y (CB, CB neck)", "02R x / y (CF, neck)", "02L x / y", "03L x / y", "04R x / y (sleeve)", "Wires", "Keep-outs"]
-    cx = [12, 21, 29, 79, 116, 150, 186, 224, 240]
+    hd = ["Size", "Art", "01 back x / y (CB, CB neck)", "02R x / y (CF, neck)", "02L x / y", "03L x / y", "04R x / y (sleeve)", "04L x / y", "Wires", "Keep-outs"]
+    cx = [12, 20, 27, 71, 103, 131, 162, 197, 230, 242]
     for x_, h in zip(cx, hd): o.append(t(x_, 31, h, 1.55, 700, MUTED))
     for i, sz in enumerate(PT.SIZES):
         pl, g, mt = EP.place(sz); c = EP.clearances(sz); bad = EP.failures(c)
@@ -128,9 +129,9 @@ def p_pattern_emb():
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-3.2)}" width="{SW-22}" height="5.2" fill="#F5F2EC"/>')
         o.append(t(cx[0], y, sz, 1.8, 700)); o.append(t(cx[1], y, EP.GRADE[sz][0], 1.8, 700, RED))
         def bx(e): b = pl[e][1].bounds; return f"{b[0]:+.0f}…{b[2]:+.0f} / {b[1]:.0f}…{b[3]:.0f}"
-        for j, e in enumerate(("back", "02R", "02L", "03L", "04R")): o.append(t(cx[2 + j], y, bx(e), 1.45))
-        o.append(t(cx[7], y, f"{c['wrap']['aligned']}/{c['wrap']['total']}", 1.6, 700, GREEN if c['wrap']['aligned'] == c['wrap']['total'] else RED))
-        o.append(t(cx[8], y, "all pass" if not bad else "; ".join(bad)[:40], 1.5, 700, GREEN if not bad else RED))
+        for j, e in enumerate(("back", "02R", "02L", "03L", "04R", "04L")): o.append(t(cx[2 + j], y, bx(e), 1.35))
+        o.append(t(cx[8], y, f"{c['wrap']['aligned']}/{c['wrap']['total']}", 1.5, 700, GREEN if c['wrap']['aligned'] == c['wrap']['total'] else RED))
+        o.append(t(cx[9], y, "all pass" if not bad else "; ".join(bad)[:30], 1.45, 700, GREEN if not bad else RED))
     y = 36 + 7*5.2 + 2
     rules = ["Keep-outs checked on every size against that size's pattern (minimum, mm): side seams 15 · CF/zip 15 · armhole + shoulder 15 · hem-rib",
              "seam 10 · welt box 6 · collar 6 · sleeve cap + underarm 15, cuff 10. WIRES (bean line) run to 3 mm (max 3.6) from the side seam on BOTH pieces.",
@@ -228,7 +229,7 @@ def p_inside():
 # ---------------------------------------------------------------- operations / SMV
 OPS = [("Cutting", "Cut shell, collar, lining, rib, pocketing, fusing; drill welt + embroidery marks", "Cutting table", 6.0),
        ("Fusing", "Fuse top collar, facings, back neck facing, welts", "Fusing press", 2.5),
-       ("Embroidery", "01 back (4 hoopings), 02R/02L, 03L/03R, 04R/04L — flat on cut pieces (machine time: G4)", "Multi-head (15 needle)", 10.0),
+       ("Embroidery", "01 back (6 hoopings + 01b), 02R/02L, 03L/03R, 04R/04L — flat on cut pieces (machine time: G4)", "Multi-head (12 colours per file)", 10.0),
        ("Embroidery finish", "Trim backing to 5 mm, remove basting (split files), press from wrong side", "Hand / press", 6.0),
        ("Welt pockets", "Mark, set welt + bags both fronts, bartack ×4", "Lockstitch + bartack", 9.0),
        ("Shoulders", "Join shoulders (5-thread), press to back, 6 mm topstitch", "Safety stitch + lockstitch", 2.5),

@@ -1,4 +1,4 @@
-"""Embroidery pack G1–G5 + element specs -> out/HAKI_moon_EMBROIDERY-PACK_RevA.pdf.
+"""Embroidery pack G1–G5 + element specs -> out/HAKI_moon_EMBROIDERY-PACK_RevB.pdf.
 All counts from out/results/all.json (DST/PES read-back); stitches per thread colour counted from the PES files."""
 import os, json, glob, pickle, collections
 import cairosvg
@@ -12,19 +12,25 @@ from render import f
 from motifs2 import HEX, PAL
 import tech, specbase as SB
 from specbase import img_tag
-import drum, emb_place as EP, moonstitch as MS
+import drum, emb_place as EP, moonstitch as MS, factory, readback, sheet as _SH
 import techflat as TF
 
-REV = "Rev A"; DATE = "16 Oct 2026"
-SB.FOOT = f"HAKI STUDIOS · Drum Island jacket · moon · EMBROIDERY · {REV} · {DATE}"
+REV = "Rev B"; DATE = "16 Oct 2026"
+SB.FOOT = f"HAKI STUDIOS · Drum Island jacket · moon · EMBROIDERY · {REV} · {DATE}"; _SH.FOOT = SB.FOOT
+PROF = factory.load()
+def hours(r): return factory.machine_hours(r["stitches"], PROF, trims=r["trims_dst"], colour_changes=max(0, r["stops"] - 1))
+def hoopings(k, r):
+    if k == "back": return len(M["splits"]["sections"])
+    return len(r["sections"]) if "sections" in r else 1
 ALL = json.load(open("out/results/all.json")); M = ALL["sizes"]["M"]; B = ALL["grades"]["B"]
 CLR = json.load(open("out/results/clearances.json"))
 A = pickle.load(open("art_M.pkl", "rb")); G = pickle.load(open("art_graded.pkl", "rb"))
 ELEMENTS = [("01", "Back scene + placeholder", "back", "back panel B01", M["back"]),
+            ("01b", "Moon-in-box (before figure)", "moonbox", "B01, inside the box", M["moonbox"]),
             ("02", "Chest clouds", "02R", "wearer's right front F02", B["02R"]), ("02", "Chest clouds", "02L", "wearer's left front F01", B["02L"]),
             ("03", "Lower front pole + wires", "03L", "wearer's left front F01", M["03L"]), ("03", "Lower front wires", "03R", "wearer's right front F02", M["03R"]),
             ("04", "Sleeve clouds", "04R", "right sleeve S01", B["04R"]), ("04", "Sleeve clouds", "04L", "left sleeve S02", B["04L"])]
-OUT_PDF = "out/HAKI_moon_EMBROIDERY-PACK_RevA.pdf"
+OUT_PDF = "out/HAKI_moon_EMBROIDERY-PACK_RevB.pdf"
 HEX2KEY = {v[0].upper(): k for k, v in PAL.items()}
 
 def per_colour(base):
@@ -41,7 +47,7 @@ def hdr(title, sub, page): return SB.header(title, sub, page)
 def cover(index):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>']
     o.append(t(14, 24, "HAKI STUDIOS", 3.0, 700, MUTED)); o.append(t(14, 36, "Drum Island jacket · moon — embroidery", 7.0, 700))
-    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island pattern, size M base · 4 elements, 7 pieces · ≤ 12 threads per file · all dimensions mm", 2.6, 400, MUTED))
+    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island pattern, size M base · 4 elements (+ 01b moon-in-box), 7 pieces · ≤ 12 threads per file · all dimensions mm", 2.6, 400, MUTED))
     o.append(f'<line x1="14" y1="48" x2="{SW-14}" y2="48" stroke="{INK}" stroke-width="0.4"/>')
     tag, h = img_tag(Image.open("cover_front.png"), 14, 54, 90); o.append(tag); o.append(t(14, 54 + h + 3.5, "FRONT", 2.2, 700))
     tag, h2 = img_tag(Image.open("cover_back.png"), 108, 54, 90); o.append(tag); o.append(t(108, 54 + h2 + 3.5, "BACK (pink box = licensed-figure placeholder)", 2.2, 700))
@@ -49,9 +55,9 @@ def cover(index):
     for name, pg in index: o.append(t(ix, y, name, 2.0)); o.append(t(SW - 14, y, f"{pg}", 2.0, 600, MUTED, "end")); y += 4.2
     y += 4; o.append(t(ix, y, "TOTALS, SIZE M (from the DST files)", 2.4, 700)); y += 5
     tot = sum(e[4]["stitches"] for e in ELEMENTS); trims = sum(e[4]["trims_dst"] for e in ELEMENTS)
-    hoop = 1 + 2 + 2 + 2 + 2
-    for a, b in [("Stitches per jacket", f"{tot:,}"), ("Trims per jacket", f"{trims:,}"), ("Hoopings per jacket", f"{hoop} (back 1 border frame) / {len(M['splits']['sections']) + 8} (360² splits)"),
-                 ("Machine time / jacket", f"≈ {tot/750/60:.1f} h at 750 spm + stops"), ("Threads", "11 colours (40wt polyester) + basting")]:
+    hp = sum(hoopings(e[2], e[4]) for e in ELEMENTS if e[2] != "moonbox") + 1
+    for a, b in [("Stitches per jacket", f"{tot:,}"), ("Trims per jacket", f"{trims:,}"), ("Hoopings per jacket", f"{hp} on {factory.largest_frame(PROF)[0]:.0f}² frames (01b in the box hooping)"),
+                 ("Machine time / jacket", f"≈ {sum(hours(e[4]) for e in ELEMENTS):.1f} h ({PROF['spm']} spm + trims + changes)"), ("Threads", "14 colours (40wt polyester) + basting")]:
         o.append(t(ix, y, a, 2.0, 400, MUTED)); o.append(t(SW - 14, y, b, 2.0, 600, INK, "end")); y += 4
     y += 3; o.append(t(ix, y, "Licensed figure on the pole: placeholder box only —", 1.9, 700, RED)); o.append(t(ix, y + 3.4, "licence confirmed by client 2026-10-16; factory adds", 1.9, 400)); o.append(t(ix, y + 6.8, "the figure from the licensor-approved art (G4).", 1.9, 400))
     o.append(t(SW - 14, SH - 8, SB.FOOT, 1.9, 400, MUTED, "end"))
@@ -97,7 +103,7 @@ def overview():
     return o
 
 def threads():
-    o = hdr("G3 · THREAD + TRIM SUMMARY", "One palette for the whole jacket: 11 threads + 1 basting. Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target from the mockup.", "G3")
+    o = hdr("G3 · THREAD + TRIM SUMMARY", "One palette for the whole jacket: 14 threads + 1 basting (Rev B, from the close-ups). Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target from the mockup.", "G3")
     use = {k: collections.Counter() for k in PAL}
     for e, nm, k, piece, r in ELEMENTS:
         for hx, n in per_colour(r["file"]).items():
@@ -132,22 +138,22 @@ def threads():
     for i, (a, b) in enumerate(tr): o.append(t(12, yb + 11.5 + i * 3.6, a, 1.8, 600)); o.append(t(42, yb + 11.5 + i * 3.6, b, 1.8))
     return o
 
-EMB_Q = ["1. Licensed figure: licence confirmed by client 2026-10-16. Placeholder box 71 × 89 mm (M), on the pole top, centred on CB — confirm the size",
-         "    against the licensor-approved art; the factory digitizer adds the figure (+ moon fill around it inside the box) from that art.",
-         "2. Grading: A 92 % (XS–S), B 100 % (M–XL), C 108 % (XXL–3XL) for motifs; 01 back + 03 lower fronts are one file per size (wires meet the",
-         "    side seams). 02 + 04 one file per grade. Confirm, or one fixed size (cheaper, but wires then miss the side seams on other sizes).",
-         "3. Wires wrap back ↔ front across the SIDE SEAMS (mockup draws them over the hanging sleeves). Side seams not topstitched — confirm.",
-         "4. Front split in two hoopings per panel (02 chest clouds + 03 pole/wires): the full front art is taller than a 360 frame.",
-         "5. Moon density: 0.55 mm rows + light underlay on navy duck (low density on purpose). Sew-out to confirm coverage / no navy grin-through.",
-         "6. Thread board: pick the red ΔE rows (moon taupe, cloud lavender Polyneon) from the physical card (G3).",
-         "7. Frames + machines: 360 × 360 frames and 15-needle heads assumed (brief) — every file ≤ 12 threads; back as 4 (3XL: 6) split hoopings.",
-         "8. Wash: if garment-washed after embroidery, run a wash test on the sew-out (cream moon + white caps grey first).",
+EMB_Q = ["1. Licensed figure: licence confirmed by client 2026-10-16. Placeholder box 68 × 79 mm (M) = mockup figure + 3 mm, on the pole top, centred on CB;",
+         "    nothing of ours inside it. Moon-in-box: Haki supplies 01b (our moon fill in the box) [proposed — confirm]; the factory digitizer adds the figure on top.",
+         "2. Rev B is FIDELITY-FIRST (client direction 2026-10-16): art traced from the close-ups at production density; stitch count, trims, density and run time",
+         "    are reported, not limited. Clean-up (density, trims, stops) after the size-M sew-out — see F1.",
+         "3. Grading: A 92 % (XS–S), B 100 % (M–XL), C 108 % (XXL–3XL) for motifs; 01 back + 03 lower fronts one file per size (wires meet the side seams).",
+         "4. Wires wrap back ↔ front across the SIDE SEAMS only (mockup draws them over the hanging sleeves); side seams not topstitched — confirm (Q3, client).",
+         "5. Front: two hoopings per panel (02 chest clouds, then 03 pole/wires) — the full front art is taller than the frame.",
+         "6. Thread board: rows with ΔE > 3 (F1) — pick from the physical card; closer Isacord / Polyneon alternative listed per thread.",
+         "7. Frames + machines from factory.json (unconfirmed): back = 6 hoopings (moon + box whole, pole whole); sleeves 2 each.",
+         "8. Wash: if garment-washed after embroidery, run a wash test on the sew-out (cream moon + white-pink caps grey first).",
          "9. DST/PES are production-intent drafts: the factory digitizer opens them, checks density + pull on 12 oz duck and edits before sew-out."]
 
 def summary():
     o = hdr("G4 · STITCH SUMMARY + OPEN QUESTIONS", "", "G4")
-    hd = ["Element", "Piece", "Art box", "Stitches", "Trims", "Stops", "Threads", "Run time", "Width check"]
-    cx = [12, 70, 112, 134, 152, 166, 180, 196, 214]
+    hd = ["Element", "Piece", "Art box", "Stitches", "Trims", "Stops", "Threads", "Hoop.", "Machine h", "Width check"]
+    cx = [12, 62, 104, 126, 144, 156, 168, 180, 192, 214]
     for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.8, 700, MUTED))
     sums = {e: json.load(open(glob.glob(f"out/{e}_*/summary.json")[0])) for e in ("01", "02", "03", "04")}
     for i, (e, nm, k, piece, r) in enumerate(ELEMENTS):
@@ -156,14 +162,14 @@ def summary():
         o.append(t(cx[0], y, f"{e} {nm}"[:40], 1.8, 600)); o.append(t(cx[1], y, f"{k} · {piece}"[:30], 1.7))
         o.append(t(cx[2], y, f"{r['size'][0]:.0f} × {r['size'][1]:.0f}", 1.75)); o.append(t(cx[3], y, f"{r['stitches']:,}", 1.75, 600))
         o.append(t(cx[4], y, f"{r['trims_dst']:,}", 1.75)); o.append(t(cx[5], y, f"{r['stops']}", 1.75)); o.append(t(cx[6], y, f"{r['threads']}", 1.75))
-        o.append(t(cx[7], y, f"{r['stitches']/750:.0f} min", 1.75))
-        w = sums[e]["width"]; wk = max(w, key=lambda q: w[q]); wv = w[wk]
-        o.append(t(cx[8], y, "all codes pass" if wv < 1 else f"worst {wk} {wv:.1f}% (short tips)", 1.7, 600, GREEN if wv < 1 else ORANGE))
+        o.append(t(cx[7], y, f"{hoopings(k, r)}", 1.75)); o.append(t(cx[8], y, f"{hours(r):.2f}", 1.75))
+        w = sums[e[:2]]["width"]; wk = max(w, key=lambda q: w[q]); wv = w[wk]
+        o.append(t(cx[9], y, "all codes pass" if wv < 1 else f"worst {wk} {wv:.1f}% (short tips)", 1.7, 600, GREEN if wv < 1 else ORANGE))
     y = 36 + len(ELEMENTS) * 4.6 + 1
     tot = sum(e[4]["stitches"] for e in ELEMENTS); tr = sum(e[4]["trims_dst"] for e in ELEMENTS)
-    o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{tot:,}", 1.9, 700)); o.append(t(cx[4], y, f"{tr:,}", 1.9, 700)); o.append(t(cx[7], y, f"{tot/750/60:.1f} h", 1.9, 700))
-    o.append(t(12, y + 4.5, "Size M (01, 03 per size) / grade B (02, 04). Counts from the DST/PES read-back (trims from the DST, LESSONS B8). Run time at 750 spm excl. colour changes + hooping.", 1.7, 400, MUTED))
-    o.append(t(12, y + 8, "Stops include the placeholder basting stop (01). Max stitch ≤ 7.5 mm and ≤ 15 threads in every file (gate checked on all 7 sizes + 3 grades + every split file).", 1.7, 400, MUTED))
+    o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{tot:,}", 1.9, 700)); o.append(t(cx[4], y, f"{tr:,}", 1.9, 700)); o.append(t(cx[8], y, f"{sum(hours(e[4]) for e in ELEMENTS):.1f} h", 1.9, 700))
+    o.append(t(12, y + 4.5, f"Size M (01, 03 per size) / grade B (02, 04). Counts from the DST read-back (LESSONS B8/B20). Machine h = factory.machine_hours at {PROF['spm']} spm + 6 s/trim + 4 s/colour change, one head, excl. hooping.", 1.7, 400, MUTED))
+    o.append(t(12, y + 8, "Stops include the placeholder basting stop (01). Max stitch ≤ 7.5 mm and ≤ 12 thread colours in every file (factory.check_threads) (gate checked on all 7 sizes + 3 grades + every split file).", 1.7, 400, MUTED))
     qy = y + 16; o.append(t(12, qy, "OPEN QUESTIONS — embroidery (confirm before sampling)", 2.6, 700))
     for i, q in enumerate(EMB_Q): o.append(t(12, qy + 5 + i * 3.6, q, 1.85))
     return o
@@ -231,12 +237,28 @@ def files_page():
     for i, st_ in enumerate(steps): o.append(t(12, y + 3 + i * 3.1, st_, 1.5, 700 if i == 0 else 400))
     return o
 
+def f1_pages():
+    so = []
+    for e, nm, k, piece, r in ELEMENTS:
+        so.append(dict(file=os.path.basename(r["file"]) + ".dst", piece=f"{e} {piece}", stitches=r["stitches"], trims=r["trims_dst"]))
+    th = []
+    for k in moonpal.ORDER:
+        iso, pn = SB.TH[k]["isacord"], SB.TH[k]["polyneon"]
+        best = min((("Isacord", iso), ("Polyneon", pn)), key=lambda q: q[1][3])
+        other = pn if best[0] == "Isacord" else iso
+        th.append(dict(name=f"{PAL[k][1]} {HEX[k]}", code=f"{best[0]} {best[1][0]} (alt. {'Polyneon' if best[0] == 'Isacord' else 'Isacord'} {other[0]} ΔE {other[3]:.1f})", de=best[1][3]))
+    ab = M["back"]["size"]
+    pcs = [dict(piece="01 back (moon, clouds, pole, wires)", w=ab[0], h=ab[1], hoopings=len(M["splits"]["sections"]))]
+    for k in ("04R", "04L"):
+        r = B[k]; pcs.append(dict(piece=f"04 sleeve clouds {k}", w=r["size"][0], h=r["size"][1], hoopings=len(r.get("sections", {})) or 1))
+    return factory.requests_page("Drum Island jacket — Moon (HK-JK-DRUM-MOON)", so, th, pcs, page="F1", prof=PROF)
+
 def build():
     pages = {"G2": overview(), "G3": threads(), "G4": summary(), "G5": files_page()}
-    el = [("01 Back scene", glob.glob("out/01_back-scene/*SPEC_RevA.pdf")[0]), ("02 Chest clouds", glob.glob("out/02_*/*SPEC_RevA.pdf")[0]),
-          ("03 Lower front pole + wires", glob.glob("out/03_*/*SPEC_RevA.pdf")[0]), ("04 Sleeve clouds", glob.glob("out/04_*/*SPEC_RevA.pdf")[0])]
-    index = [("G1 Cover + contents", 1), ("G2 Placement overview", 2), ("G3 Thread + trim summary", 3), ("G4 Stitch summary + open questions", 4), ("G5 Production stitch files + hoop splits", 5)]
-    pg = 6
+    el = [("01 Back scene", glob.glob("out/01_back-scene/*SPEC_RevB.pdf")[0]), ("02 Chest clouds", glob.glob("out/02_*/*SPEC_RevB.pdf")[0]),
+          ("03 Lower front pole + wires", glob.glob("out/03_*/*SPEC_RevB.pdf")[0]), ("04 Sleeve clouds", glob.glob("out/04_*/*SPEC_RevB.pdf")[0])]
+    index = [("G1 Cover + contents", 1), ("G2 Placement overview", 2), ("G3 Thread + trim summary", 3), ("G4 Stitch summary + open questions", 4), ("G5 Production stitch files + hoop splits", 5), ("F1 Factory requests", 6)]
+    pg = 7
     for name, path in el:
         n = len(PdfReader(path).pages); index.append((name + f" ({n} pp)", pg)); pg += n
     pages["G1"] = cover(index)
@@ -245,6 +267,9 @@ def build():
         svg = doc(pages[k]); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"out/_{k}.pdf")
         cairosvg.svg2png(bytestring=svg.encode(), write_to=f"out/prev_{k}.png", output_width=2400)
         w.append(PdfReader(f"out/_{k}.pdf"))
+    for svg in f1_pages():
+        cairosvg.svg2pdf(bytestring=svg.encode(), write_to="out/_F1.pdf"); cairosvg.svg2png(bytestring=svg.encode(), write_to="out/prev_F1.png", output_width=2400)
+        w.append(PdfReader("out/_F1.pdf"))
     for name, path in el: w.append(PdfReader(path))
     w.write(OUT_PDF); print("embroidery pack pages", pg - 1, OUT_PDF)
     return index

@@ -1,30 +1,38 @@
-"""Per-size stitch files: 01 back (+ placeholder basting stop) + 2x2 360² splits, 03L + 03R lower fronts.
+"""Per-size stitch files: 01 back (+ placeholder basting stop) + 3x2 frame splits (factory.json frame), 01b moon-in-box, 03L + 03R lower fronts.
 usage: ./py.sh build_size.py SIZE [nosplit] [only=back,03L,03R]  ->  out/<el>/by-size/<SIZE>/..., result json"""
 import sys, pickle, json, time, os
 from shapely.ops import unary_union
 from shapely.geometry import Point
-import moonstitch as MS, dst2
+import moonstitch as MS, dst2, tech
 size = sys.argv[1]; args = sys.argv[2:]
-only = next((a.split("=")[1].split(",") for a in args if a.startswith("only=")), ["back", "03L", "03R"])
+only = next((a.split("=")[1].split(",") for a in args if a.startswith("only=")), ["back", "moonbox", "03L", "03R"])
 splitsonly = "splitsonly" in args
 if splitsonly: only = []
 D = pickle.load(open(f"art_{size}.pkl", "rb")); info = D["info"]
 RES = f"out/results/size_{size}.json"; os.makedirs("out/results", exist_ok=True)
 res = json.load(open(RES)) if os.path.exists(RES) else {}
 res["info"] = {k: v for k, v in info.items()}
-PATH = {"back": ("01_back-scene", "01_back-scene_BACK"), "03L": ("03_lower-front", "03_lower-front_03L"), "03R": ("03_lower-front", "03_lower-front_03R")}
-SRC = {"back": "back", "03L": "F03L", "03R": "F03R"}
+PATH = {"moonbox": ("01_back-scene", "01b_MOON-IN-BOX"), "back": ("01_back-scene", "01_back-scene_BACK"), "03L": ("03_lower-front", "03_lower-front_03L"), "03R": ("03_lower-front", "03_lower-front_03R")}
+SRC = {"moonbox": "moonbox", "back": "back", "03L": "F03L", "03R": "F03R"}
 for k in only:
     t = time.time(); d, nm = PATH[k]
     base = f"out/{d}/by-size/{size}/HAKI_moon_{nm}_{size}"
-    r = MS.make(D[SRC[k]], base, 0.5 if k == "back" else 1.0, placeholder=info["box"] if k == "back" else None)
+    bx_ = info["box"]
+    r = MS.make(D[SRC[k]], base, 0.5 if k == "back" else 1.0, placeholder=bx_ if k == "back" else None,
+                origin=((bx_[0] + bx_[2]) / 2, (bx_[1] + bx_[3]) / 2) if k == "moonbox" else None)
     res[k] = r
     print(size, k, {kk: r[kk] for kk in ("stitches", "trims_dst", "stops", "threads", "size", "max_stitch")}, f"{time.time()-t:.0f}s", flush=True)
     json.dump(res, open(RES, "w"), default=float, indent=1)
 if ("back" in only or splitsonly) and "nosplit" not in args:
-    FRAME = (360.0, 360.0); vis = D["back"]
+    vis = D["back"]
     import moonsplit
-    sp = moonsplit.grid_split(vis, FRAME)
+    import factory, scene
+    FRAME = tuple(float(v) for v in factory.largest_frame())
+    mc, mr = info["moon"]["c"], info["moon"]["r"]
+    # layout: moon + box whole in the top-middle hooping, pole + hardware whole in the bottom-middle one (3 x 2 on every size)
+    MOONG = lambda r: tech.rule_for(r["grp"]).startswith("MN")
+    POLEG = lambda r: tech.rule_for(r["grp"]).startswith("PL")
+    sp = moonsplit.grid_split(vis, FRAME, xs=[mc[0] - mr - 7, mc[0] + mr + 7], ys=[mc[1] + mr + 4], groups={"moon": MOONG, "pole": POLEG})
     marks = sp["marks"]; names = sp["names"]
     bx = info["box"]; boxc = ((bx[0] + bx[2]) / 2, (bx[1] + bx[3]) / 2)
     # the placeholder basting outline goes to the section that can hold it inside the frame (with its crosses)

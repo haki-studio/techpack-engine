@@ -15,7 +15,7 @@ FILL = ("tatami", "padded", "satin")
 
 def _polys(g): return dst2.polys(g)
 
-def grid_split(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.0, arm=6.0, clear=5.0):
+def grid_split(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.0, arm=6.0, clear=5.0, xs=None, ys=None, groups=None):
     fw, fh = frame[0] - 2 * margin, frame[1] - 2 * margin
     U = unary_union([r["geom"] for r in vis]); b = U.bounds; W, H = b[2] - b[0], b[3] - b[1]
     F = unary_union([r["geom"] for r in vis if r["st"] in FILL])
@@ -37,7 +37,9 @@ def grid_split(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.
         if y not in CY: CY[y] = Fs.intersection(LineString([(b[0], y), (b[2], y)])).length
         return CY[y]
     best = None
-    for nx in (1, 2, 3, 4):
+    if xs is not None and ys is not None:          # preset layout (e.g. moon + box whole in one hooping, pole in another)
+        best = ((len(xs) + 1) * (len(ys) + 1), sum(cxl(x) for x in xs) + sum(cyl(y) for y in ys)), tuple(xs), tuple(ys)
+    for nx in ((1, 2, 3, 4) if best is None else ()):
         for ny in (1, 2, 3):
             cx = cand(nx, b[0], W, fw); cy = cand(ny, b[1], H, fh)
             if not cx or not cy: continue
@@ -88,7 +90,18 @@ def grid_split(vis, frame=(360.0, 360.0), margin=8.0, overlap=1.2, whole_max=70.
         k = key_of(c)
         return k if AL[k].buffer(0.01).contains(p) else None
     secs = {k: [] for k in keys}
+    # whole groups (predicate on a region): every piece goes to the one section that can hold the group's bounds
+    ghome = {}
+    for gname, pred in (groups or {}).items():
+        gs = [r["geom"] for r in vis if pred(r)]
+        if not gs: continue
+        gb = unary_union(gs).bounds; gc = Point((gb[0] + gb[2]) / 2, (gb[1] + gb[3]) / 2)
+        k = key_of(gc)
+        if AL[k].buffer(0.01).contains(box(*gb)): ghome[gname] = k
     for r in vis:
+        gk = next((ghome[n] for n, pred in (groups or {}).items() if n in ghome and pred(r)), None)
+        if gk is not None:
+            secs[gk].append(r); continue
         parts = {k: [] for k in keys}
         ov = overlap if r["st"] in FILL else 0.0
         for p in _polys(r["geom"]):
