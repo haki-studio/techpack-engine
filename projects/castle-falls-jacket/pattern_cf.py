@@ -40,10 +40,10 @@ def emb_marks(size, pl=None):
         for nm, s in r.get("splits", {}).get("sections", {}).items():
             lst.append((f"{e} {P} {nm} start", [tuple(s["origin"])], "cross"))
         b = r["full"]["art_box"]
-        if r.get("splits", {}).get("sy") is not None:
-            sy = r["splits"]["sy"]; lst.append((f"{e} {P} split line y", [(b[0] - 5, sy), (b[2] + 5, sy)], "line"))
-        if r.get("splits", {}).get("sx") is not None:
-            sx = r["splits"]["sx"]; lst.append((f"{e} {P} split line x", [(sx, b[1] - 5), (sx, b[3] + 5)], "line"))
+        for sy in r.get("splits", {}).get("ys", []):
+            lst.append((f"{e} {P} split line y", [(b[0] - 5, sy), (b[2] + 5, sy)], "line"))
+        for sx in r.get("splits", {}).get("xs", []):
+            lst.append((f"{e} {P} split line x", [(sx, b[1] - 5), (sx, b[3] + 5)], "line"))
         out[code] = lst
     return out
 PO.emb_marks = emb_marks

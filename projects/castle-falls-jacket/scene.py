@@ -87,6 +87,7 @@ def build(P):
         t = refill(t, fall_c, fc_t)                                  # no fall straight under the castle
         info["ip_edit_px"] = int(ring_left.sum() + fall_c.sum())
         regs, knock, base_bot = CM.castle(108.0, 171.0)
+        regs = [r for r in regs if r.get("ko", True)] + [r for r in regs if not r.get("ko", True)]   # trims / windows / studs above the walls + roofs
         # the mockup castle (gold horns, roofs, red balcony) is erased everywhere outside the new castle: sky/cloud behind it
         from shapely.prepared import prep
         mock_castle = (PX > 420) & (PX < 578) & (PY > 270) & (PY < 456)
@@ -99,6 +100,21 @@ def build(P):
         horns = (PX > 452) & (PX < 548) & (PY > 272) & (PY < 304) & ~kn & (t >= 0) & ~np.isin(t, [TI["cf_sky"], TI["cf_skylt"], TI["cf_cream"]])
         t = refill(t, horns, bld | {"cf_grn", "cf_grnlt", "cf_grndk"})
         add(regs, 21)
+    if P in ("SR", "SL"):
+        # the centre fold is the flat-lay silhouette edge in both views (dark shading, read as bare shell): where the art
+        # runs on both sides of the fold, the fold strip takes the tones beside it (the top of the arm is not a seam)
+        X, Y = f(xs_, ys_); strip = np.abs(X) < 16
+        art = t >= 0
+        cols_l = (X > -26) & (X < -16); cols_r = (X > 16) & (X < 26)
+        rowl = (art & cols_l).sum(1) > 0.5 * cols_l.sum(1).clip(1); rowr = (art & cols_r).sum(1) > 0.5 * cols_r.sum(1).clip(1)
+        rows = ndi.binary_closing(rowl & rowr, iterations=4)
+        edge = (t < 0) | (t == TI["cf_navy"])          # the silhouette shading reads as shell or as deep navy
+        fold = strip & edge & rows[:, None]
+        t = refill(t, fold, {"cf_navy"}); info["fold_fill_px"] = int(fold.sum())
+        # hairline seam between the two halves (the two views meet at x = 0): close it wherever both sides are art
+        art = t >= 0; nl = (art & (X > -6) & (X < -2)).sum(1) > 0; nr = (art & (X > 2) & (X < 6)).sum(1) > 0
+        hair = (np.abs(X) < 2.5) & (t < 0) & (nl & nr)[:, None]
+        t = refill(t, hair, set()); info["fold_fill_px"] += int(hair.sum())
     fz = zone_mask(res, P, FALLS[P])
     # ---- traced regions
     for k in TONES:

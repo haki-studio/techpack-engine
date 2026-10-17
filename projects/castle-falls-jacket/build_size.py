@@ -125,18 +125,31 @@ if __name__ == "__main__":
             for wm in (70.0, 55.0, 40.0):
                 sp = split_clip_wide(vis, FRAME, whole_max=wm)
                 if all(sp["fits"].values()): break
-            marks = dst2.split_marks(sp, ext=4.0)
-            spl = dict(frame=FRAME, sx=sp["sx"], sy=sp["sy"], cut_mm=sp["cut"], whole_max=wm, sections={})
-            for key in sorted(sp["secs"], key=lambda k: (k[1], k[0])):
-                sv = sp["secs"][key]; t = time.time(); stops, n0 = stops_for(sv); nm = sec_name(key, sp)
-                bb = dst2.bounds_of([r["geom"] for r in sv] + [Point(m).buffer(6) for m in marks[key]])
+            jobs = []
+            if all(sp["fits"].values()):
+                marks = dst2.split_marks(sp, ext=4.0)
+                spl = dict(frame=FRAME, sx=sp["sx"], sy=sp["sy"], xs=[sp["sx"]] if sp["sx"] is not None else [], ys=[sp["sy"]] if sp["sy"] is not None else [],
+                           grid=[2 if sp["sx"] is not None else 1, 2 if sp["sy"] is not None else 1], cut_mm=sp["cut"], whole_max=wm, method="split_clip", sections={})
+                for key in sorted(sp["secs"], key=lambda k: (k[1], k[0])): jobs.append((sec_name(key, sp), sp["secs"][key], marks[key]))
+            else:          # wider than two hoopings (XXL/3XL back): any-grid split (moon gridsplit), crosses on the split lines
+                import gridsplit
+                gp = gridsplit.grid_split(vis, FRAME)
+                spl = dict(frame=FRAME, sx=None, sy=None, xs=gp["xs"], ys=gp["ys"], grid=[gp["nx"], gp["ny"]], cut_mm=gp["cut"], whole_max=70.0, method="grid_split", sections={})
+                for key in sorted(gp["secs"], key=lambda k: (k[1], k[0])): jobs.append((gp["names"][key], gp["secs"][key], gp["marks"][key]))
+            for nm, sv, mk in jobs:
+                t = time.time(); stops, n0 = stops_for(sv)
+                bb = dst2.bounds_of([r["geom"] for r in sv] + [Point(m).buffer(6) for m in mk])
                 cc = ((bb[0]+bb[2])/2, (bb[1]+bb[3])/2)
-                pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=marks[key])
+                pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=mk)
                 base = f"{OUT}/splits/{tag}_{nm}"; os.makedirs(os.path.dirname(base), exist_ok=True)
                 dst2.write(cap_stitches(reg_in_first_colour(pat)), base); dst2.render(base, base + "_preview.png", bg=(46, 56, 71), s=0.5)
-                r = record(base, stops, dict(bbox=bb, origin=cc, marks=marks[key], secs=round(time.time()-t)), basting=True)
+                r = record(base, stops, dict(bbox=bb, origin=cc, marks=mk, secs=round(time.time()-t)), basting=True)
                 r["fits"] = r["size_mm"][0] <= FRAME[0] - 16 and r["size_mm"][1] <= FRAME[1] - 16
                 spl["sections"][nm] = r
                 print(size, P, nm, {k: r[k] for k in ("stitches", "trims", "stops", "size_mm", "fits", "threads")}, flush=True)
+            if "splitsonly" in sys.argv and os.path.isdir(f"{OUT}/splits"):
+                for fn in os.listdir(f"{OUT}/splits"):          # drop section files of an older split layout
+                    if fn.startswith(tag + "_") and not any(fn.startswith(f"{tag}_{nm}.") or fn.startswith(f"{tag}_{nm}_") for nm in spl["sections"]):
+                        os.remove(f"{OUT}/splits/{fn}")
             res["splits"] = spl; json.dump(res, open(rp, "w"), default=float, indent=1)
     print("DONE", size, which, flush=True)

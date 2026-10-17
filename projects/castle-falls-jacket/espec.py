@@ -80,8 +80,12 @@ def build(cfg, art):
         c = KO.clearances(unary_union([r["geom"] for r in V[p]]).buffer(0.3).buffer(-0.3), "M", p); mn = KO.minimums("M", p); b = BBs[p]
         o.append(t(rx, yy, f"{p} {cfcore.PIECE_NAME[p]} ({cfcore.PIECE_CODE[p]}): art {b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.85, 700)); yy += 3.4
         o.append(t(rx + 2, yy, f"x {b[0]:+.0f} … {b[2]:+.0f}, y {b[1]:.0f} … {b[3]:.0f}  ({cfg['coords']})", 1.6, 400, MUTED)); yy += 3.2
-        line = "  ".join(f"{k} {v:.1f}≥{mn[k]:.0f}" for k, v in c.items())
-        for chunk in [line[i:i + 92] for i in range(0, len(line), 92)]:
+        items_ = [f"{k} {v:.1f}≥{mn[k]:.0f}" for k, v in c.items()]; chunks, cur = [], ""
+        for it in items_:
+            if len(cur) + len(it) > 84: chunks.append(cur); cur = it
+            else: cur = (cur + "   " + it).strip()
+        chunks.append(cur)
+        for chunk in chunks:
             o.append(t(rx + 2, yy, chunk, 1.5, 400, GREEN if all(v >= mn[k] - 0.3 for k, v in c.items()) else RED)); yy += 3.0
         yy += 1
     yy += 2; o.append(t(rx, yy, "BY THE NUMBERS (size M, read back from the DST)", 2.2, 700)); yy += 4.4
@@ -106,9 +110,12 @@ def build(cfg, art):
         o.append(f'<rect x="{f(xcur)}" y="30" width="{f(wmm)}" height="{f(hh)}" fill="none" stroke="#BBB" stroke-width="0.2"/>')
         o.append(t(xcur, 30 + hh + 3.2, f"{p} (shown {scale:.2f}:1)", 1.9, 700)); xcur += wmm + 5
     zx = 194; o.append(t(zx, 32, "DETAIL CROPS (shown 1.6:1)", 2.4, 700)); yy = 35
+    cfg = dict(cfg, dm_crops=[(p, (c[0], c[1], c[2], c[1] + (c[3] - c[1]) * 0.75), cap) for p, c, cap in cfg["dm_crops"]])
     for (p, c, cap) in cfg["dm_crops"]:
         im = direction_map(V[p], c, 10, label_min=20, label_mm=1.3)
-        wmm = (c[2] - c[0]) * 1.6; tag, hh = img_tag(im, zx, yy, wmm, 90); o.append(tag)
+        wmm = (c[2] - c[0]) * 1.6; hh_ = wmm * (c[3] - c[1]) / (c[2] - c[0])
+        if yy + hh_ + 4 > SH - 12: break
+        tag, hh = img_tag(im, zx, yy, wmm, 90); o.append(tag)
         o.append(f'<rect x="{zx}" y="{f(yy)}" width="{f(wmm)}" height="{f(hh)}" fill="none" stroke="#BBB" stroke-width="0.2"/>')
         o.append(t(zx, yy + hh + 3, f"{p}: {cap}", 1.7, 400, MUTED)); yy += hh + 6.5
     pages.append(o)

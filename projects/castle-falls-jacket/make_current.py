@@ -25,6 +25,10 @@ if __name__ == "__main__":
             r = json.load(open(p))
             if "full" not in r: continue
             fresh(r["full"])
+            sp = r.get("splits")
+            if sp is not None and "xs" not in sp:          # results built before the grid fallback: 2 x 2 split lines as lists
+                sp["xs"] = [sp["sx"]] if sp.get("sx") is not None else []; sp["ys"] = [sp["sy"]] if sp.get("sy") is not None else []
+                sp["grid"] = [max(1, len(sp["xs"]) + 1), max(1, len(sp["ys"]) + 1)]; sp["method"] = "split_clip"
             for s in r.get("splits", {}).get("sections", {}).values(): fresh(s)
             json.dump(r, open(p, "w"), default=float, indent=1)
             allr.setdefault(sz, {})[P] = r
