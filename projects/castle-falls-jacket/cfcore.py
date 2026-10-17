@@ -21,16 +21,16 @@ CF_PAL = {   # key: (hex, name, use)
     "cf_navy":  ("#22355C", "Deep navy",       "roofs, deep sky, windows, outlines"),
     "cf_slate": ("#566577", "Rock slate",      "cliff faces, distant ridges"),
     "cf_lav":   ("#9690B6", "Far lavender",    "distant mountains, haze"),
-    "cf_grndk": ("#2B442E", "Pine dark",       "foliage shadow, moss shadow"),
-    "cf_grn":   ("#4F7B3B", "Leaf green",      "foliage body, moss"),
-    "cf_grnlt": ("#97AE5B", "Moss light",      "foliage tops, moss highlights"),
+    "cf_grndk": ("#2F402D", "Pine dark",       "foliage shadow, moss shadow"),
+    "cf_grn":   ("#5A7240", "Leaf green",      "foliage body, moss"),
+    "cf_grnlt": ("#9DA65F", "Moss light",      "foliage tops, moss highlights"),
     "cf_pinklt":("#F2C3CE", "Blossom pale",    "blossom florets, petals"),
     "cf_pink":  ("#DE8EA6", "Blossom pink",    "blossom florets, petals"),
     "cf_rose":  ("#B4506F", "Blossom deep",    "blossom shade, floret centres"),
     "cf_red":   ("#B23F2E", "Vermilion",       "bridge, pagoda, gate, timber"),
     "cf_gold":  ("#D3A63F", "Gold",            "castle trims, roof ornaments, lanterns"),
-    "cf_bark":  ("#8E7049", "Bark tan",        "pine trunk, cherry trunks"),
-    "cf_brown": ("#4A3628", "Bark dark",       "bark crevices, trunk shade"),
+    "cf_bark":  ("#958262", "Bark tan",        "pine trunk, cherry trunks"),
+    "cf_brown": ("#4E3F31", "Bark dark",       "bark crevices, trunk shade"),
 }
 CF_KEYS = list(CF_PAL)
 FABRIC = "#2E3847"          # washed navy duck (mockup sample)
