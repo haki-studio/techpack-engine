@@ -29,19 +29,19 @@ tech.COLOUR_ORDER = KC_ORDER + [c for c in tech.COLOUR_ORDER if c not in KC_ORDE
 # ---------------------------------------------------------------- region codes
 # code -> (name, stitch, angle rule, density, stitch length, underlay, pull comp, notes)
 KC_RULES = {
- "GLOW":   ("Neon glow halo (sheer)",     "Run, serpentine",    "along the text line",      "1.6 rows", "2.6", "none",              "—",    "≈ 20 % cover, sewn first; knocks nothing out"),
+ "GLOW":   ("Neon glow halo (sheer)",     "Run, serpentine",    "along the text line",      "1.6 rows", "2.6", "none",              "—",    "sewn first, under the art"),
  "STAR":   ("Star speckle (4-point)",     "Satin",              "across arm",               "0.40",  "—",    "none",                  "0.15", "arms ≥ 0.9 wide, blunt tips"),
- "DOT":    ("Star dot",                   "Satin dot",          "across dot",               "0.40",  "—",    "none",                  "0.10", "Ø 1.3–2.0"),
- "TXF":    ("Text stroke, flat satin",    "Satin, turning",     "across the stroke",        "0.40",  "—",    "centre run if ≥ 2",     "0.20", "set from the font, split per stroke"),
- "PF-TX":  ("Text stroke, 3D puff",       "Satin over 3 mm foam","across the stroke",       "0.30",  "—",    "none (foam)",           "0.35", "puff: 2.5–7 wide; sew-out to confirm"),
+ "DOT":    ("Star dot",                   "Satin dot",          "across dot",               "0.40",  "—",    "none",                  "0.10", "Ø 1.45–2.0"),
+ "TXF":    ("Text stroke, flat satin",    "Satin, turning",     "across the stroke",        "0.40",  "—",    "centre run if ≥ 1.6",   "0.20", "font strokes, 1 satin each"),
+ "PF-TX":  ("Text stroke, 3D puff",       "Satin over 3 mm foam","across the stroke",       "0.30",  "—",    "none (foam)",           "0.35", "puff, strokes 2.5–7 wide"),
  "PF-BAR": ("Spark bar, 3D puff",         "Satin over 3 mm foam","across the bar",          "0.30",  "—",    "none (foam)",           "0.35", "rounded capsule ends"),
  "PF-HRT": ("Heart, 3D puff",             "Satin over 3 mm foam","across the heart (45°)",  "0.30",  "—",    "none (foam)",           "0.35", ""),
  "PF-STR": ("Big star, 3D puff",          "Satin over 3 mm foam","across each arm",         "0.30",  "—",    "none (foam)",           "0.35", "5-point, arms ≥ 2.5"),
  "BAR":    ("Spark bar, satin",           "Satin, turning",     "across the bar",           "0.40",  "—",    "centre run",            "0.20", ""),
  "STR5":   ("5-point star, satin",        "Satin",              "across each arm",          "0.40",  "—",    "centre run",            "0.20", ""),
  "STR5-o": ("Star outline (open)",        "Satin, turning",     "across the outline",       "0.40",  "—",    "none",                  "0.15", "1.4 wide"),
- "DOTB":   ("Ring dot (domed)",           "Satin, radial",      "radial from dot centre",   "0.38",  "—",    "edge run + 1 padding",  "0.15", "Ø 8.5, raised"),
- "OVAL":   ("Oval ring",                  "Satin, turning",     "across the ring",          "0.40",  "—",    "edge + centre run",     "0.20", "4.2 wide"),
+ "DOTB":   ("Ring dot (domed)",           "Satin, radial",      "radial from dot centre",   "0.38",  "—",    "edge run",              "0.15", "Ø 12.4"),
+ "OVAL":   ("Oval ring",                  "Satin, turning",     "across the ring",          "0.40",  "—",    "edge + centre run",     "0.20", "4.0 wide"),
  "OVAL-hl":("Oval ring highlight",        "Satin, turning",     "across the ring",          "0.40",  "—",    "none",                  "0.10", "1.1 wide, on top"),
  "FACE":   ("Star face (eyes/centre)",    "Satin dot",          "across dot",               "0.40",  "—",    "none",                  "0.10", "Ø 1.2"),
 }

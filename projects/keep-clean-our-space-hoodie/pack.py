@@ -273,20 +273,24 @@ def hooping_page():
             o.append(t(cx[2], y, f"{sp['sx']:+.0f}" if sp.get("sx") is not None else "—", 1.45, 700, RED)); o.append(t(cx[3], y, f"{sp['sy']:.0f}" if sp.get("sy") is not None else "—", 1.45, 700, RED))
             o.append(t(cx[4], y, "  ".join(f"{nm.split('_')[0]} ({s_['origin'][0]:+.0f}, {s_['origin'][1]:.0f}) {s_['size_mm'][0]:.0f}×{s_['size_mm'][1]:.0f}" for nm, s_ in secs.items()), 1.3))
             fo = r["full"]["origin"]; o.append(t(cx[5], y, f"({fo[0]:+.0f}, {fo[1]:.0f})", 1.4))
-            cut = []
+            cut = []; span = []
             from shapely.geometry import LineString
             for el in ("01", "02", "03", "04"):
-                rs = [q["geom"] for q in A[P] if q["el"] == el and not q.get("nok")]
+                rs = [q["geom"] for q in A[P] if q["el"] == el]
                 if not rs: continue
-                u = unary_union(rs)
-                for ln in ([LineString([(-900, sp["sy"]), (900, sp["sy"])])] if sp.get("sy") is not None else []) + ([LineString([(sp["sx"], -900), (sp["sx"], 900)])] if sp.get("sx") is not None else []):
+                u = unary_union(rs); bb_ = u.bounds
+                for ln, (lo, hi, v) in ((LineString([(-900, sp["sy"]), (900, sp["sy"])]), (bb_[1], bb_[3], sp["sy"])) if sp.get("sy") is not None else (None, (0, 0, None)),
+                                        (LineString([(sp["sx"], -900), (sp["sx"], 900)]), (bb_[0], bb_[2], sp["sx"])) if sp.get("sx") is not None else (None, (0, 0, None))):
+                    if ln is None: continue
                     if u.intersects(ln): cut.append(el)
-            o.append(t(cx[6], y, ", ".join(sorted(set(cut))) or "none", 1.4, 700 if cut else 400, ORANGE if cut else GREEN))
+                    elif lo < v < hi: span.append(el)
+            lab = (", ".join(f"{e} cut" for e in sorted(set(cut))) + ("; " if cut and span else "") + ", ".join(f"{e} spans (parts whole)" for e in sorted(set(span)))) or "none"
+            o.append(t(cx[6], y, lab, 1.35, 700 if (cut or span) else 400, ORANGE if (cut or span) else GREEN))
             ok = bool(secs) and all(v["fits"] for v in secs.values()); o.append(t(cx[7], y, "yes" if ok else "NO", 1.45, 700, GREEN if ok else RED))
             y += 2.95
     y += 2
     for i, l in enumerate(["Split lines are searched where they cut the least art (fronts 15–85 % of the height, sleeves 25–75 % / 15–85 %); whole motifs < 70 mm (stars, dots, bars, glyph strokes)",
-                           "never split — a badge crossed by a split (amber) has its glyphs / dots kept whole on one side; check that joint on the strike-off. Needle start = centre of each file (DST origin):",
+                           "never split. 'spans' = the badge lies across the split line but every part sews whole in one hooping (the glow run is cut with 1.2 overlap): check registration on the strike-off. Needle start = centre of each file (DST origin):",
                            "mark it on the cut piece from the pattern. Registration crosses: stop 1 thread, long 4 mm stitches on bare fabric outside the art; the next section re-registers on them; pick out after."]):
         o.append(t(12, y + i*3.2, l, 1.55, 400, MUTED))
     return o
@@ -345,7 +349,9 @@ def badge_page(el):
     st2 = SR.render([r for r in D[P] if r["el"] in (el, "05")], bb, 3.0, base=kccore.FABRIC); tag3, _ = img_tag(st2, rx + wpair + 4, y + 2, wpair); o.append(tag3)
     o.append(t(rx, y + 1, "MOCKUP (low-res AI render)", 1.6, 700)); o.append(t(rx + wpair + 4, y + 1, "THIS FILE (same scale)", 1.6, 700))
     yy = y + 4 + h2
-    for i, c in enumerate(CHANGES[el]): o.append(KD.auto(rx, yy + i*3.0, c.lstrip("!"), 1.6, ORANGE if c.startswith("!") else INK, 700 if i == 0 else 400))
+    for i, c in enumerate(CHANGES[el]):
+        c = c.replace("{dots}", str(META["badges"]["03"]["dots"])).replace("{cnsp}", str(META["counts"]["cn_sparkles"]))
+        o.append(KD.auto(rx, yy + i*3.0, c.lstrip("!"), 1.6, ORANGE if c.startswith("!") else INK, 700 if i == 0 else 400))
     return o
 
 def text_big(x, y, txt, key, h):
@@ -358,7 +364,7 @@ CHANGES = {
  "02": ["WHAT CHANGED vs MOCKUP", "18 gold stars counted + placed from the mockup (the render hides", "  2 behind 'N'; not added). Text Nunito ExtraBold, 2 lines at 50°.",
         "Badge moved 6–9 toward CF per size: it clears the 15 armhole", "  keep-out of the Drum Island front.", "!Reference: low-res mockup only (no close-up)."],
  "03": ["WHAT CHANGED vs MOCKUP", "!Text: the render shows 7 garbled glyphs (木不要涞球汚染); set as", "!  不要污染地球 (6 characters, brief) — confirm wording.",
-        "22 ring dots + 22 inner sparkles from the mockup. Moved 14 toward", "  CF: clears the 6 welt keep-out (steep slash welt).", "!Reference: low-res mockup only (no close-up)."],
+        "{dots} ring dots + {cnsp} inner sparkles from the mockup. Moved 14 toward", "  CF: clears the 6 welt keep-out (steep slash welt).", "!Reference: low-res mockup only (no close-up)."],
  "04": ["WHAT CHANGED vs MOCKUP", "!Text: the render's Hangul is mirrored + upside down and garbled;", "!  set upright as 우주를 깨끗하게 (brief) — confirm wording.",
         "Oval ring 4.0 gold satin + 1.1 lemon highlight, tilted 6.9°", "  as in the mockup. Decorative marks inside the render are dropped.", "!Reference: low-res mockup only (no close-up)."],
 }
@@ -420,7 +426,7 @@ def stops_page(pieces, page):
             k = s_["col"]; iso, pn = SB.TH[k]["isacord"], SB.TH[k]["polyneon"]
             if s_["stop"] % 2: o.append(f'<rect x="{x0-1}" y="{f(y-2.6)}" width="138" height="{rh}" fill="#F5F2EC"/>')
             o.append(t(hc[0], y, f"{s_['stop']:02d}", 1.5, 700)); o.append(swatch(hc[1], y, k, 2.8, 2.0)); o.append(t(hc[1] + 3.6, y, PAL[k][1], 1.45))
-            o.append(t(hc[2], y, f"{iso[0]} {iso[1]}"[:15], 1.35)); o.append(t(hc[3], y, f"{pn[0]} {pn[1]}"[:15], 1.35))
+            o.append(t(hc[2], y, f"{iso[0]} {iso[1]}"[:20], 1.3)); o.append(t(hc[3], y, f"{pn[0]} {pn[1]}"[:20], 1.3))
             o.append(t(hc[4], y, (", ".join(s_.get("codes", [])) + " · " + "+".join(s_.get("elements", [])))[:34], 1.3, 400, MUTED))
             o.append(t(hc[5], y, f"{s_['stitches']:,}", 1.5, 600)); o.append(t(hc[6], y, f"{s_['trims']}", 1.5)); y += rh
         y += 1
@@ -445,15 +451,16 @@ def region_page():
         o.append(t(cx[0], y, k, 1.65, 700)); o.append(t(cx[1], y, name[:26], 1.6))
         xs = cx[2]
         for c in sorted(s_["cols"], key=lambda c: tech.COLOUR_ORDER.index(c))[:5]: o.append(swatch(xs, y, c, 3.2, 2.2)); xs += 4.2
-        for j, v in enumerate((st, ang, dens, ln, ul, pull, note)): o.append(t(cx[3 + j], y, v[:34] if j == 6 else v[:24], 1.5))
+        for j, v in enumerate((st, ang, dens, ln, ul, pull, note)): o.append(t(cx[3 + j], y, v[:30] if j == 6 else v[:24], 1.45))
         q = WC.get(k, 0.0); o.append(t(cx[10], y, f"{q:.1f}%", 1.55, 600, GREEN if q < 1 else (ORANGE if q < 3.5 else RED)))
         o.append(t(cx[11], y, f"{s_['n']}", 1.55, 400, MUTED)); y += 4.0
     y += 3
     for i, l in enumerate(["Globals: 40wt polyester, 75/11 sharp (80/12 for puff), 2.5 oz black cutaway, no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; trim moves > 2.5 mm on bare fabric.",
                            "Puff (PF-*): satin rows 0.30 apart, no underlay, pull 0.35, sewn over 3 mm foam after the PAUSE; the digitizer adds foam-cutting end caps if the sew-out shows foam at the column ends.",
-                           "Text strokes (TXF / PF-TX): each glyph is split into strokes (skeleton, cut at junctions + corners), one turning satin per stroke; do not re-set the text from another font.",
+                           "Text strokes (TXF / PF-TX): each glyph is split into strokes (skeleton, cut at junctions + corners), one turning satin per stroke; a junction piece that would fan sews as a fixed-angle satin.",
+                           "Do not re-set the text from another font; the digitizer may hand-edit junction pieces of dense CJK glyphs (e.g. 宙, 要, 球) after the sew-out.",
                            "Stitch counts are never estimated per region: per-file and per-stop counts (G4, G5, S1, S2) are read back from the DST files."]):
-        o.append(t(12, y + i*3.3, l, 1.6, 400, MUTED))
+        o.append(KD.auto(12, y + i*3.3, l, 1.6, MUTED))
     return o
 
 def f1_pages():
@@ -462,7 +469,9 @@ def f1_pages():
     th = [dict(name=PAL[k][1], code=f"Isacord {SB.TH[k]['isacord'][0]} / Polyneon {SB.TH[k]['polyneon'][0]}", de=min(SB.TH[k]["isacord"][3], SB.TH[k]["polyneon"][3])) for k in kccore.KC_KEYS]
     pcs = [dict(piece=f"{p} {kccore.PIECE_NAME[p]}", w=CUR[p]["size_mm"][0], h=CUR[p]["size_mm"][1], hoopings=HOOP[p]) for p in P4]
     svgs = FA.requests_page(kccore.NAME, so, th, pcs, page="F1", prof=PROF)
-    extra = ('<text x="16" y="196" font-family="Liberation Sans" font-size="2.4" font-weight="700" fill="#C25000">5  3D puff: can you sew 3 mm foam puff on the JP + EN badges (pause stop marked on S1/S2)? Which foam colours / brands? Price per puff hooping.</text>')
+    extra = (t(12, 177, "5  3D puff (foam)", 3.2, 700) +
+             t(16, 182, "Can you sew 3 mm foam puff on the JP + EN badges? The PAUSE stops are marked on S1 (lay foam / tear foam). Which foam colours / brands do you stock?", 2.4, 400, ORANGE) +
+             t(16, 186, "Price the puff hoopings separately. If puff is not possible, the same files sew flat (dense satin) — tell us and we re-space the puff codes to 0.40.", 2.4, 400, ORANGE))
     return [s.replace("</svg>", extra + "</svg>") for s in svgs]
 
 def build():

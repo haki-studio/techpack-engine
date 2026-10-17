@@ -61,3 +61,16 @@ Chinese phrase, upside-down mirrored Hangul)." Check: the spec page prints the s
   or have > 12 % rows longer than 1.6 × median falls back to a fixed satin at the most "across" angle. Junction crumbs
   (< 1.3 w²) merge into a neighbour. A few CJK junction pieces still sew as fixed-angle satin — the digitizer may hand-
   edit those (noted on R1). Proposed: engine lettering module with these rules + a golden test glyph set.
+
+## 10. Hooded block (origin c026934, engine/hoodie.py): welt position must be overridable — BLOCKER for the pattern stage
+- **Problem:** the merged block reads the welt from `drum.WELT_L_M` (Drum Island welt, 38°, centre ≈ ±175 / 364). This
+  mockup has steep slash welts beside the side seams (58°, centre ±245 / 360, `front.py WELT_*`). With the Drum welt the
+  CN badge (03, FR x −192…−76, y 230…438 at M) sits on top of the pocket opening; every size fails the 6 mm welt keep-out.
+  The stitch files in this delivery were cut against the project welt (the shared working tree still has the pre-merge
+  `pattern.py`, which read `front.WELT_L`).
+- **Proposed fix:** `pattern.draft(size, welt=(centre_xy, angle_deg, length, width))` (and `hoodie.draft(..., welt=...)`),
+  defaulting to `drum.WELT_L_M`; the project passes its `front.WELT_C/WELT_ANG`.
+- **Check:** `emb_place.clearances()` welt ≥ 6 on every size with the hoodie pattern; test that a welt override moves
+  `F01.internal[0]` and the drill holes.
+- **Then (builder):** sync the shared tree, run `pattern_out` for the hoodie block, rebuild `art_size.py` + `kcstitch.py`
+  if the hood changes the front neck line (keep-out 10 from the neck seam), build the T pages.
