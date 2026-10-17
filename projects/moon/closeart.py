@@ -200,8 +200,31 @@ def back_pole():
     vis.append(R("p3", Polygon([(w0 * 0.45, yb - 1), (w0, yb - 1), (w0 * 1.03, hem - 10), (w0 * 0.47, hem - 10)]), "tatami", "auto", "PL-shade"))
     for xg in (-0.45, 0.1):
         vis.append(R("p4", LineString([(w0 * xg, yb), (w0 * xg * 1.02, hem - 12)]).buffer(0.35), "bean", None, "PL-line"))
+    vis += pole_details(f, BPX, 29.0, [528, 599, 673, 748, 815, 957], (760, 860, 673, 860), [699, 744, 789, 840], 492, 1086)
     tips = {k: tuple(float(v) for v in f(*p)) for k, p in BACK_TIPS_CU.items()}
     return vis, tips
+
+def pole_details(f, px, half_w, bands, can_box, can_rings, y0, y1):
+    """close-up details the colour trace can't hold at stitch size: charcoal bands round the pole, the ribbed
+    transformer's rings + vertical ribs, and wood-grain dashes down the pole (all read off the close-up)."""
+    out = []
+    P = lambda x, y: tuple(float(v) for v in f(x, y))
+    for yb in bands:
+        a_, b_ = P(px - half_w, yb), P(px + half_w, yb)
+        out.append(R("p4", LineString([a_, b_]).buffer(1.1, cap_style="flat"), "satin", "auto", "PL-band"))
+    x0, x1, cy0, cy1 = can_box
+    for yr in can_rings:
+        out.append(R("p4", LineString([P(x0, yr), P(x1, yr)]).buffer(0.8, cap_style="flat"), "satin", "auto", "PL-band"))
+    for xr in np.arange(x0 + 5, x1 - 3, 6.0):
+        out.append(R("p4", LineString([P(xr, cy0 + 6), P(xr, cy1 - 6)]).buffer(0.35), "bean", None, "PL-line"))
+    rng = np.random.RandomState(9)
+    for xg in (-0.55, -0.15, 0.3):
+        y = y0 + 20
+        while y < y1 - 20:
+            L = rng.uniform(14, 34)
+            out.append(R("p4", LineString([P(px + xg * half_w, y), P(px + xg * half_w + rng.uniform(-1, 1), y + L)]).buffer(0.35), "bean", None, "PL-line"))
+            y += L + rng.uniform(8, 20)
+    return out
 
 # front close-up pole: x centre 1235 px, top 515, bottom (rib) 1040; welt-side hardware (string + left can) nudged down 7 mm
 FPX_CU, FTOP_CU, FBOT_CU = 1237.0, 510.0, 1020.0
@@ -217,6 +240,7 @@ FRONT_TIPS_CU = {"armL": (1107, 662), "armR": (1353, 603), "pin": (1316, 550), "
 def front_pole():
     f = front_pole_f()
     vis = hardware(CF, (930, 495, 1448, 1020), f, FPX_CU)
+    vis += pole_details(f, FPX_CU, 27.0, [608, 700, 795, 860], (1270, 1345, 690, 860), [720, 765, 810], 515, 1020)
     tips = {k: tuple(float(v) for v in f(*p)) for k, p in FRONT_TIPS_CU.items()}
     return vis, tips
 

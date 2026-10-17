@@ -26,7 +26,7 @@ ORDER = ["m2", "m1", "m3", "m4", "m5", "c3", "c2", "c4", "c1", "c5", "p2", "p1",
 # Two pairs merged in every file (pole dark grey -> charcoal ΔE 10.9, cloud violet -> periwinkle ΔE 9.3) so the moon keeps all
 # 5 close-up tones (fidelity first); the in-between tone comes
 # from the short-stitch density blends at the tone edges instead of a 13th thread.
-FILE_MERGE = {"p3": "p4", "c4": "c3"}
+FILE_MERGE = {"p3": "p2", "c4": "c3"}
 USED = [k for k in ORDER if k not in FILE_MERGE]
 REG_COL = "p2"      # registration crosses (removable runs) in a colour the file already has
 PH_COL = "m2"       # placeholder outline in moon cream: hidden under the 01b moon-in-box fill

@@ -19,10 +19,21 @@ PIECE = {"back": "B01", "box": "B01", "03L": "F01", "03R": "F02", "02L": "F01", 
 NAME = {"back": "01 back scene", "box": "01 LICENSED FIGURE placeholder box (factory insert)", "03L": "03L pole + wires",
         "03R": "03R wires", "02L": "02L chest clouds", "02R": "02R chest clouds", "04R": "04R sleeve clouds", "04L": "04L sleeve clouds"}
 
+class Outline:
+    """art outline: exact distances from the regions themselves (STRtree-free vectorised shapely.distance), a rough
+    union (0.3 mm close, 0.4 simplify) for drawing/bounds. A 1000-region exact union took minutes per size."""
+    def __init__(self, geoms):
+        import shapely
+        self.g = np.array([g for g in geoms if not g.is_empty], dtype=object)
+        self.rough = unary_union([g.simplify(0.2).buffer(0.3) for g in self.g]).buffer(-0.3).simplify(0.4) if len(self.g) else Polygon()
+    def distance(self, other):
+        import shapely
+        return float(shapely.distance(self.g, other).min()) if len(self.g) else 1e9
+    def __getattr__(self, k): return getattr(self.rough, k)
+
 def outline(vis, lines=None):
     rs = [r for r in vis if (lines is None) or ((r["grp"] == "WR") == lines)]
-    if not rs: return Polygon()
-    return unary_union([r["geom"] for r in rs]).simplify(0.05)
+    return Outline([r["geom"] for r in rs])
 
 _G = None
 def graded():
@@ -53,7 +64,7 @@ def place(size):
     res["03L"] = ("F01", outline(A["F03L"])); res["03R"] = ("F02", outline(A["F03R"]))
     G = graded()
     for k in ("02R", "02L", "04R", "04L"):
-        sc = SCALE[grade_of(size, k)]; a = outline(G[k]); c = a.envelope.centroid
+        sc = SCALE[grade_of(size, k)]; a = outline(G[k]).rough; c = a.envelope.centroid
         s_ = affinity.scale(a, sc, sc, origin=(c.x, c.y)); bM = a.bounds; bs = s_.bounds
         if k in ("02R", "02L"):
             # inner edge keeps its M distance from CF; top keeps its M distance below the neck seam x scale

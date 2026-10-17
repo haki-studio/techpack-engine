@@ -190,7 +190,7 @@ def front_clips(size):
         base = P_.difference(sub(["armhole", "shoulder"], KEEP["seam"])).difference(sub(["CF / zip"], KEEP["cf"]))
         base = base.difference(sub(["hem"], KEEP["hem"])).difference(weltg.buffer(KEEP["welt"] + 0.25)).difference(collar.buffer(KEEP["collar"]))
         base = base.difference(sub(["neck"], KEEP["neck"]))
-        out[pc] = (make_valid(base.difference(sub(["side"], KEEP["side"]))).buffer(0), make_valid(base.difference(sub(["side"], KEEP["wrap"]))).buffer(0))
+        out[pc] = (make_valid(base.difference(sub(["side"], KEEP["side"] + 0.3))).buffer(0), make_valid(base.difference(sub(["side"], KEEP["wrap"]))).buffer(0))
     return out
 
 # ================================================================ 04 sleeve clouds (M, sleeve pattern coords; S01 right: front x > 0)
@@ -250,7 +250,7 @@ def absorb_slivers(vis):
     geoms = [v["geom"] for v in vis]; tree = STRtree(geoms); give = {}
     for i, v in enumerate(vis):
         line = v["st"] in ("bean", "run"); h = 0.3 if line else 0.4
-        if line: continue          # line work keeps its own pieces (a wire sliver must never grow a fill past a keep-out)
+        if line or v["grp"] == "WR": continue          # line work keeps its own pieces (a wire sliver must never grow a fill past a keep-out)
         clean = v["geom"].buffer(-h).buffer(h).intersection(v["geom"]); sl = v["geom"].difference(clean)
         if sl.is_empty or sl.area < 0.01: continue
         keep = clean
@@ -260,7 +260,7 @@ def absorb_slivers(vis):
             for j in tree.query(piece.buffer(0.05)):
                 j = int(j)
                 if j == i: continue
-                if vis[j]["st"] in ("bean", "run") and not line: continue
+                if (vis[j]["st"] in ("bean", "run") or vis[j]["grp"] == "WR") and not line: continue
                 L = piece.buffer(0.05).intersection(geoms[j]).area * (1.5 if j > i else 1.0)
                 if L > bl: best, bl = j, L
             if best is None: keep = keep.union(piece)
