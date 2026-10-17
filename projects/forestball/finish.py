@@ -7,7 +7,6 @@ for f_ in sorted(glob.glob("out/0*/**/*.pes", recursive=True)):
     pt = pe.read(f_); lines = [os.path.basename(f_).replace(".pes", ""), "stop  thread", "-" * 60]
     for i, th in enumerate(pt.threadlist, 1):
         d = th.description or ""
-        if "basting" in d.lower() or th.hex_color().upper() == "#00A3FF": d += "  <- water-soluble basting, REMOVE after use"
         lines.append(f"{i:>3}   {th.hex_color()}  {d}")
     open(f_.replace(".pes", "_thread-chart.txt"), "w").write("\n".join(lines) + "\n")
 
@@ -26,8 +25,8 @@ Garment tech pack {fbcore.REV_GAR} + embroidery {fbcore.REV_EMB} - {fbcore.DATE}
 
 LICENSED ELEMENT - READ FIRST
     The orb in the back stream is a LICENSED figure. It is NOT in these files and no lookalike was drawn.
-    Its area is reserved as a placeholder box (01 spec p1, G2, pattern B01 layer 8): the stitch file sews only a blue
-    basting outline of the box as its first stop (water-soluble, remove). The factory digitizer adds the figure from the
+    Its area is reserved as a placeholder box (01 spec p1, G2, pattern B01 layer 8): the stitch file sews only an
+    outline of the box in Stream-light thread as its first stop (factory 12-colour limit: no separate basting colour). The factory digitizer adds the figure from the
     licensor-approved artwork, sized to the box. Licence approval is not verified by Haki tech - confirm before production.
 
 pattern/
@@ -38,12 +37,12 @@ pattern/
     Drum Island pattern (same chart as the plum + pine jacket). Sew + fit a size-M sample before cutting the size set.
 
 elements/01_back-scene/<grade>/            01 back stitch file per art grade (DST + PES), preview, thread chart;
-                                           splits/S1-S4 for a 360 x 360 frame (stop 1 = basting crosses)
+                                           splits/S1-S4 for a 360 x 360 frame (registration crosses in the first thread)
 elements/02_chest-branch/<grade>/          02R + 02L per art grade
     grades: A = XS-S (90 %), B = M-XL (100 %), C = XXL-3XL (108 %)
 elements/*/*_SPEC_*.pdf, *_ART*.svg         element specs + region art with digitizing attributes (size M)
 
-All stitch files: <= 15 threads (15-needle head). Production-intent drafts: the factory digitizer opens them, checks density + pull
+All stitch files: <= 12 thread colours per file (factory limit, incl. outline + crosses). Production-intent drafts: the factory digitizer opens them, checks density + pull
 on 12 oz duck, edits if needed, and sews out before bulk.
 """)
 for z in glob.glob("out/*.zip"): os.remove(z)

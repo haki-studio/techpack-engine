@@ -43,3 +43,22 @@
 9. **Leaves-first stop order (LESSONS B2 applied to leaf sprays):** sewing leaf halves before the twigs/bark cut front trims
    249 → 166 (02R) and 257 → 123 (02L). → Proposed LESSONS row: "small detail motifs that touch a later fill (leaves on twigs) sew
    before it". → Check: trims from the DST read-back before/after.
+
+## Rev B additions
+10. **Registration crosses force a separate thread.** `dst2.make_pattern(reg_marks=...)` emits its own `#00A3FF` basting thread,
+    which now counts against the factory's 12-colour limit. Forestball's `build_dst.crosses_in_first_colour()` removes that
+    thread + the colour change so the crosses sew in the file's first thread. → Fix: `make_pattern(reg_colour=None)` (None = first
+    stop's thread). → Check: `factory.check_threads()` on every split file; stops = colour stops (no extra basting stop).
+11. **Split balance + overhangs.** `split_clip` minimises cut length only (S4 136k vs S1 44k stitches) and whole motifs can
+    overhang the split line by ~50 mm. Forestball wraps `dst2.cut_length` (cut + 2 mm per 1,000 st of imbalance) and cuts any
+    overhang > 8 mm at the line (`trim_protrusions`). → Fix: `split_clip(balance=, max_overhang=)`. → Check: per-section stitches in
+    G5/G6; max overhang per section.
+12. **Chain-stitch vocabulary motifs** (`fmotifs.chain_limb`, `loop_chain`, `hanging_ropes`): braided strands of oval links
+    (each strand its own thread, spiralling), loop chains for free moss strands. Thousands of small regions: the knockout in
+    `build()` becomes the slowest step (~16 min per piece). → Fix: build the knockout with an STRtree per z-band.
+13. **Close-up labels can be wrong:** `inputs/closeups/closeup_front_right_a.png` shows the BACK scene (stream, rocks, rays, even a
+    placeholder box); b + c are the wearer's-right front. → Check: compare each close-up to its mockup crop before tracing.
+14. **Parallel `git pull --rebase --autostash` from another session silently reverted this project's uncommitted work**
+    (16 Oct 20:13: grand-line's commit_project autostash; the re-apply dropped 9 forestball files back to HEAD). Recovered from the
+    dangling autostash commit (`git fsck --lost-found`). → Fix: commit_project.sh should `git add` only its own project and never
+    autostash other projects' files (or each builder works in its own worktree). → Check: `git stash list` / fsck after every pull.

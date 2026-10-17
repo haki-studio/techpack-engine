@@ -83,8 +83,9 @@ add(FM.stream(PH_BOX.buffer(9, join_style="round"), random.Random(17), deep=None
 limbs = []
 def limb(pts_r, grp="TR", moss=(0.0, 1.0), cover=0.72, seed=0, gap_p=0.06, size=1.3):
     rr = [(*P(x, y), r * S) for x, y, r in pts_r]
-    regs, mr, poly, Sm, mg = FM.mossy_limb(rr, random.Random(seed or 50 + len(limbs)), grp=grp, moss=moss, cover=cover, gap_p=gap_p, size=size)
-    add(regs, 5); add(mr, 6); limbs.append((poly, Sm))
+    # Rev B: braided chain-stitch limb (close-up a/b vocabulary): rows of links in royal blue / navy / greens + cream specks
+    regs, poly, Sm = FM.chain_limb(rr, random.Random(seed or 50 + len(limbs)), grp=grp, link=5.4 if grp == "TR" else 3.8)
+    add(regs, 5); limbs.append((poly, Sm))
     return Sm
 
 limb([(150, 245, 9), (160, 220, 7.5), (170, 198, 6), (180, 178, 4.5), (190, 160, 3.2)], grp="LM", seed=13, cover=0.85)

@@ -11,8 +11,9 @@ FABRIC = "#3A463C"                     # washed forest green (mockup median #384
 # ---------------------------------------------------------------- thread palette (13 threads + basting, 40wt polyester) — PROPOSED, read from the mockup
 PAL = {
     "navy":    ("#18222E", "Navy black",     "bark crevices, outlines, twigs, rock shadow"),
+    "royal":   ("#1E4F8A", "Chain blue",     "braided chain bark + moss ropes (close-up b: royal/teal blue)"),
+    "brown":   ("#4E3B2A", "Twig brown",     "twigs (chain stitch), leaf veins"),
     "bark":    ("#2D4862", "Bark blue",      "bark body + chain underside, rock body, stream"),
-    "barklt":  ("#557696", "Bark blue light","bark ridges, rock rims, water mid"),
     "mossdk":  ("#3B4B26", "Moss dark",      "moss underside, lump contours, grass shade"),
     "moss":    ("#55672C", "Moss",           "raised moss on limbs + rocks + strands"),
     "mosslt":  ("#8E9C44", "Moss light",     "moss tops + mottling, leaf shade half, grass light"),
@@ -20,16 +21,18 @@ PAL = {
     "grass":   ("#4F7B3B", "Grass green",    "grass blades, moss mottling (4th moss green)"),
     "sage":    ("#A1A88F", "Sage",           "light rays (sheer run)"),
     "cream":   ("#DAD5B3", "Cream",          "light rays core, water glints, moss-strand twist"),
-    "waterlt": ("#7491B0", "Stream light",   "ripples, ripple rings"),
-    "basting": ("#00A3FF", "Basting (remove)", "licensed-figure placeholder outline (water-soluble, removed)"),
+    "waterlt": ("#7491B0", "Stream light",   "ripples, rock rims, bark ridges, placeholder outline + registration crosses"),
 }
 motifs2.PAL.clear(); motifs2.PAL.update(PAL)
 motifs2.HEX.clear(); motifs2.HEX.update({k: v[0] for k, v in PAL.items()})
 motifs2.FABRIC = FABRIC
-tech.COLOUR_ORDER[:] = ["basting", "sage", "cream", "bark", "waterlt", "navy", "barklt", "mossdk", "moss", "grass", "mosslt", "leaf"]
+tech.COLOUR_ORDER[:] = ["waterlt", "sage", "cream", "bark", "navy", "royal", "brown", "mossdk", "moss", "grass", "mosslt", "leaf"]
 # Rev B thread merges: only pairs that are the same colour in the mockup (and matched the same catalogue thread).
 # Moss vs grass green stay separate (visibly different greens; fidelity first, founder 16 Oct).
-MERGE = {"leafdk": "mosslt", "water": "bark"}
+MERGE = {"leafdk": "mosslt", "water": "bark",
+         # factory limit 12 colours per file incl. basting/registration (16 Oct): the two light blues are one thread,
+         # and the placeholder outline + registration crosses sew in Stream light (a colour every file already uses)
+         "barklt": "waterlt", "basting": "waterlt"}
 def col(c): return MERGE.get(c, c)
 tech.LAYER_NAMES.clear()
 tech.LAYER_NAMES.update({0: "Placeholder outline", 2: "Stream + rocks", 4.5: "Leaves", 5: "Bark + twigs", 6: "Moss",
@@ -57,9 +60,13 @@ tech.RULES.update({
  "WA-glint":  ("Water glints",               "Satin dot", "across",                       "0.42",   "—",    "none",                       "0.10", "≥ 1.2 long"),
  "GR":        ("Grass blade",                "Satin, turning", "across blade",            "0.42",   "—",    "centre run if > 2",          "0.20", "blunt tips ≥ 0.9"),
  "GR-light":  ("Grass blade, light side",    "Satin, turning", "across blade",            "0.42",   "—",    "none",                       "0.15", ""),
+ "CH":        ("Chain link (braided bark)",  "Satin",   "along the link (±36°)",                "0.42",   "—",    "none",                       "0.15", "chain-stitch look: rows of links"),
+ "LF-vein":   ("Leaf centre vein",           "Run (single)", "along the midrib",           "—",      "1.8",  "none",                       "—",    "on top of the leaf"),
+ "BUD":       ("Twig-tip bud",               "Satin",   "along bud",                      "0.42",   "—",    "none",                       "0.10", "navy, at spray tips"),
+ "TW-node":   ("Twig node",                  "Satin dot", "across",                       "0.42",   "—",    "none",                       "0.10", "cream nodes on the brown twig"),
  "LF":        ("Leaf, light half",           "Satin",   "midrib + 45° (feather)",         "0.42",   "—",    "centre run",                 "0.20", ""),
  "LF-dark":   ("Leaf, shade half",           "Satin",   "midrib − 45° (feather)",         "0.42",   "—",    "centre run",                 "0.20", ""),
- "PH":        ("LICENSED FIGURE placeholder",  "Run, basting", "box outline",              "—",      "3.0",  "none",                       "—",    "remove; nothing inside"),
+ "PH":        ("LICENSED FIGURE placeholder",  "Run (single)", "box outline",              "—",      "3.0",  "none",                       "—",    "Stream-light thread; nothing inside"),
  "LP":        ("Lily pad",                   "Satin, turning", "radial from pad centre",  "0.40",   "—",    "edge run + centre run",      "0.20", "split satin if > 7"),
  "LP-vein":   ("Lily pad veins",             "Run (single)", "radial lines",              "—",      "2.0",  "none",                       "—",    ""),
  "BU":        ("Water-lily bud petal",       "Satin",   "along petal",                    "0.40",   "—",    "centre run",                 "0.20", "original motif"),

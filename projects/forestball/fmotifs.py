@@ -124,10 +124,16 @@ def mossy_limb(pts_r, rng, grp="TR", moss=(0.0, 1.0), cover=0.7, size=1.3, gap_p
         mr, mg = moss_regions(S, moss[0], moss[1], rng, size=size, cover=cover, gap_p=gap_p)
     return out, mr, poly, S, mg
 
-def twig(pts, r0=1.2, r1=0.9):
-    """thin dark twig (satin, turning) along pts"""
+def twig(pts, r0=1.2, r1=0.9, nodes=True):
+    """twig in brown (chain look from close-up b) with small cream nodes every ~6 mm"""
     poly, S = sweep(taper(pts, r0, r1))
-    return [R("navy", poly, "satin", "auto", "TW")], poly, S
+    regs = [R("brown", poly, "satin", "auto", "TW")]
+    if nodes:
+        ln = LineString([s_[:2] for s_ in S]); nd = []; t = 3.0
+        while t < ln.length - 2:
+            q = ln.interpolate(t); nd.append(Point(q.x, q.y).buffer(0.65)); t += 6.0
+        if nd: regs.append(R("cream", unary_union(nd).intersection(poly.buffer(0.2)), "satin", "auto", "TW-node"))
+    return regs, poly, S
 
 # ---------------------------------------------------------------- leaves
 def leaf_regs(x, y, L, W, a):
@@ -136,7 +142,10 @@ def leaf_regs(x, y, L, W, a):
     T = lambda g: affinity.translate(affinity.rotate(g, a, origin=(0, 0)), x, y)
     P, U, Lw = T(p), T(upper), T(lower)
     light, dark = (U, Lw) if math.sin(math.radians(a)) >= -0.2 else (Lw, U)
-    return [R("leaf", light, "satin", a + 45, "LF"), R("leafdk", dark, "satin", a - 45, "LF-dark")], P
+    vein = T(LineString([(0.12*L, 0), (0.82*L, 0)]).buffer(0.32, cap_style="round")).intersection(P.buffer(-0.5))
+    dk = "grass" if (int(abs(x*7 + y*13)) % 4 == 0) else "mosslt"        # ~1 in 4 leaves has the dark-green half (close-up b)
+    return [R("leaf", light.difference(vein), "satin", a + 45, "LF"), R(dk, dark.difference(vein), "satin", a - 45, "LF-dark"),
+            R("brown", vein, "run", None, "LF-vein")], P
 
 def leaf_spray(base, ang, length, rng, leaf=10.0, pairs=None, bend=12.0, r0=1.15):
     """pinnate spray: a curved twig from `base` at `ang` (deg), alternate leaves along the outer 70 %, terminal leaf.
@@ -161,6 +170,10 @@ def leaf_spray(base, ang, length, rng, leaf=10.0, pairs=None, bend=12.0, r0=1.15
     ta = math.degrees(math.atan2(e.y - e0.y, e.x - e0.x))
     lr, P = leaf_regs(e.x - math.cos(math.radians(ta))*0.8, e.y - math.sin(math.radians(ta))*0.8, leaf*1.05, leaf*0.55, ta)
     regs += lr; allg.append(P)
+    # tiny navy bud on a short side shoot near the tip (close-up b)
+    q = line.interpolate(Ltot*0.8); bd = affinity.rotate(affinity.scale(Point(q.x, q.y).buffer(1.0), 1.5, 0.9), ta - 50, origin=(q.x, q.y))
+    bd = affinity.translate(bd, math.cos(math.radians(ta - 50))*2.2, math.sin(math.radians(ta - 50))*2.2)
+    regs.append(R("navy", bd, "satin", ta - 50, "BUD")); allg.append(bd)
     return regs, unary_union(allg)
 
 # ---------------------------------------------------------------- sheer light ray (serpentine double run)
@@ -322,7 +335,7 @@ def placeholder(cx, cy, w, h, label="LICENSED FIGURE — placeholder"):
     return b, R("basting", outline, "run", None, "PH")
 
 # ---------------------------------------------------------------- LESSONS A1 check: nothing floats after clipping
-TREE = ("TR", "LM", "TW", "LF", "MS", "HM")
+TREE = ("TR", "LM", "TW", "LF", "MS", "HM", "CH", "BUD")
 def drop_floating(vis, min_bark=150.0, join=0.9):
     """After the keep-out clip, a spray whose twig was cut off would float. Tree pieces (bark, twigs, leaves, moss)
     are grouped into connected clusters (touching within `join` mm); a cluster survives only if it holds at least
@@ -337,7 +350,7 @@ def drop_floating(vis, min_bark=150.0, join=0.9):
     for i, p in pieces:
         k = next(int(j) for j in tr.query(p.representative_point()) if cl[int(j)].contains(p.representative_point()))
         owner.append(k)
-        if vis[i]["grp"].split("-")[0] in ("TR", "LM") and vis[i]["st"] in ("tatami", "satin", "padded"): bark[k] += p.area
+        if vis[i]["grp"].split("-")[0] in ("TR", "LM", "CH") and vis[i]["st"] in ("tatami", "satin", "padded"): bark[k] += p.area
     keep = {}; dropped = 0
     for (i, p), k in zip(pieces, owner):
         if bark[k] >= min_bark: keep.setdefault(i, []).append(p)
@@ -423,3 +436,52 @@ def hanging_ropes(ropes, rng):
         ch = unary_union([edge] + loops).intersection(poly.buffer(-0.05))
         regs.append(R("mosslt" if ri % 2 == 0 else "leaf", ch, "bean", None, "HM-light"))
     return regs, unary_union(allg)
+
+
+# ---------------------------------------------------------------- braided chain-stitch limb (Rev B, close-up b vocabulary)
+CHAIN_UP = ["mosslt", "leaf", "moss", "mosslt", "cream", "grass"]
+CHAIN_MID = ["royal", "moss", "navy", "grass", "royal", "mossdk"]
+CHAIN_LOW = ["royal", "navy", "bark", "royal", "navy"]
+def chain_limb(pts_r, rng, grp="TR", link=3.2, up=None, mid=None, low=None, cream=0.10):
+    """limb (or moss rope) filled with rows of chain links: lanes run along the limb with a slow diagonal drift (braid),
+    each link a small satin oval angled ±28°; colours by lane — top lanes yellow-greens with cream specks, middle royal
+    blue / greens / navy, underside royal blue + navy. A navy base fill sits under the links."""
+    poly, S = sweep(pts_r); N = normals(S)
+    regs = [R("navy", poly, "tatami", "auto", grp)]
+    up = up or CHAIN_UP; mid = mid or CHAIN_MID; low = low or CHAIN_LOW
+    line = LineString([s_[:2] for s_ in S]); L = line.length
+    rs = [s_[2] for s_ in S]; cum = [0.0]
+    for a, b in zip(S, S[1:]): cum.append(cum[-1] + math.hypot(b[0]-a[0], b[1]-a[1]))
+    # braid: n strands spiral along the limb (offset drifts across the width and wraps), each strand keeps its own thread
+    n = max(3, int(round(2*max(rs) / (link*0.75))))
+    strand_col = []
+    for j in range(n):
+        pal = [up, mid, low, mid][j % 4]; strand_col.append(pal[j % len(pal)])
+    period = rng.uniform(70, 95)                    # mm per half twist
+    s = 0.0; step = link*0.55; k = 0
+    while s < L:
+        i = min(range(len(cum)), key=lambda j: abs(cum[j] - s)); x, y, r = S[i]
+        if r < 1.3: s += step; continue
+        p0 = line.interpolate(max(0, s - 0.6)); p1 = line.interpolate(min(L, s + 0.6))
+        ang = math.degrees(math.atan2(p1.y - p0.y, p1.x - p0.x))
+        for j in range(n):
+            u = ((j / n + s / period) % 1.0)
+            o = -0.9 + 1.8*u
+            cx, cy = x + N[i][0]*r*o, y + N[i][1]*r*o
+            rx = link*0.62*rng.uniform(0.9, 1.1); ry = min(link*0.34, r*2.0/n*0.62)*rng.uniform(0.9, 1.1)
+            if ry < 0.6: continue
+            tilt = 38 + rng.uniform(-6, 6)          # links lean along the twist
+            lk = affinity.rotate(affinity.scale(Point(cx, cy).buffer(1.0, quad_segs=8), rx, ry), ang + tilt, origin=(cx, cy))
+            col = strand_col[j]
+            if o > 0.35 and rng.random() < cream: col = "cream"          # cream highlight specks on the top
+            elif rng.random() < 0.08: col = [up, mid, low][rng.randrange(3)][0]
+            regs.append(R(col, lk.intersection(poly), "satin", ang + tilt, "CH"))
+        s += step; k += 1
+    return regs, poly, S
+
+def loop_chain(pts, rng, col, ring=1.2, gap=2.1):
+    """free hanging moss strand drawn as a chain of open loops (bean outline rings) along a wavy line"""
+    ln = LineString(pts); out = []; t = 0.0
+    while t < ln.length:
+        q = ln.interpolate(t); out.append(Point(q.x, q.y).buffer(ring).exterior.buffer(0.33)); t += gap
+    return R(col, unary_union(out), "bean", None, "HM-light")

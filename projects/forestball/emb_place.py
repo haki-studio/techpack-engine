@@ -25,7 +25,7 @@ def outlines():
     for k, vis in (("back", D["back"]), ("02R", F["02R"]), ("02L", F["02L"])):
         out[k] = unary_union([r["geom"].buffer(0.3) for r in vis if r["grp"] != "PH"]).buffer(-0.3).simplify(0.1)
         if k in ("02R", "02L"):     # main-limb bark at the zip, for the per-size zip match marks
-            out["_bark_" + k] = unary_union([r["geom"] for r in vis if r["grp"].split("-")[0] == "TR"]).buffer(0.2).buffer(-0.2)
+            out["_bark_" + k] = unary_union([r["geom"] for r in vis if r["grp"].split("-")[0] in ("TR", "CH") and r["geom"].centroid.y < 260]).buffer(0.6).buffer(-0.6)
     import back as B
     out["_ph"] = B.PH_BOX
     pickle.dump(out, open(cp, "wb")); return out

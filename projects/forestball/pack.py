@@ -50,7 +50,7 @@ def cover(index):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>']
     o.append(t(14, 24, "HAKI STUDIOS", 3.0, 700, MUTED))
     o.append(t(14, 36, f"{fbcore.NAME} — embroidery", 7.0, 700))
-    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island block, size M base · 2 elements, 3 pieces · ≤ 15 threads per file · all dimensions mm", 2.6, 400, MUTED))
+    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island block, size M base · 2 elements, 3 pieces · ≤ 12 thread colours per file (factory limit) · all dimensions mm", 2.6, 400, MUTED))
     o.append(f'<line x1="14" y1="48" x2="{SW-14}" y2="48" stroke="{INK}" stroke-width="0.4"/>')
     fv = SPF.front_view_png(VF, (-325, -110, 325, 540), 2.0)
     tag, h = img_tag(fv, 14, 54, 92); o.append(tag); o.append(t(14, 54 + h + 3.5, "FRONT", 2.2, 700))
@@ -62,7 +62,7 @@ def cover(index):
     keys = ["back", "02R", "02L"]
     tot = sum(CUR[k]["stitches"] for k in keys); trims = sum(CUR[k]["trims_dst"] for k in keys)
     for a, b in [("Stitches per jacket", f"{tot:,}"), ("Trims per jacket", f"{trims:,}"), (f"Hoopings per jacket ({FRAME[0]:.0f} × {FRAME[1]:.0f})", "6: back S1–S4 + 02R + 02L"),
-                 ("Machine time / jacket", f"≈ {sum(mh(CUR[k]) for k in keys):.1f} h at {PROF['spm']} spm incl. trims + changes"), ("Threads", f"{len(PAL) - 1} + 1 placement basting (≤ {PROF['needles']} per file)")]:
+                 ("Machine time / jacket", f"≈ {sum(mh(CUR[k]) for k in keys):.1f} h at {PROF['spm']} spm incl. trims + changes"), ("Threads", f"{len(PAL)} in the palette, ≤ {factory.max_threads(PROF)} per file incl. outline + crosses")]:
         o.append(t(ix, y, a, 1.95, 400, MUTED)); o.append(t(SW - 14, y, b, 1.95, 600, INK, "end")); y += 4
     y += 3
     for l in ["LICENSED element: the stream orb is NOT in these files —", "placeholder box only (G2, element 01 p1). The factory",
@@ -122,8 +122,7 @@ def threads():
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-3)}" width="{SW-22}" height="{f(rh)}" fill="#F5F2EC"/>')
         iso, pn = SB.TH[k]["isacord"], SB.TH[k]["polyneon"]
         o.append(swatch(cx[0], y, k, 4.5, 2.8)); o.append(t(cx[1], y, PAL[k][1], 1.85, 600)); o.append(t(cx[2], y, HEX[k], 1.7, 400, MUTED))
-        if k == "basting":
-            o.append(t(cx[3], y, "water-soluble basting thread, contrast colour — removed after the licensed figure is sewn", 1.7, 600, RED))
+        if False: pass
         else:
             ci = GREEN if iso[3] < 3 else (ORANGE if iso[3] < 5.5 else RED); cp = GREEN if pn[3] < 3 else (ORANGE if pn[3] < 5.5 else RED)
             o.append(t(cx[3], y, f"{iso[0]} {iso[1]}"[:22], 1.7)); o.append(t(cx[4], y, f"{iso[3]:.1f}", 1.7, 600, ci))
@@ -167,7 +166,7 @@ def summary():
           "2. Grading: A 90 % (XS–S), B 100 % (M–XL), C 108 % (XXL–3XL); one file per grade per piece; every size checked on its pattern (T13). The placeholder grades with the art.",
           f"3. Hooping: baseline 6 hoopings on {FRAME[0]:.0f} × {FRAME[1]:.0f} (back S1–S4 + 02R + 02L). A border frame ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f} would take the single back file — option, asked on F1.",
           "4. Shell: washed forest green duck — piece-dyed + pre-washed before embroidery, or garment-washed after? Wash-test the sew-out (cream, leaf yellow-green shift first).",
-          "5. Thread palette read from the mockup (14 + basting) — approve a physical thread board; amber/red ΔE rows picked from the card (G3).",
+          f"5. Thread palette ({len(PAL)} threads, from the mockup + close-ups; ≤ 12 per file) — approve a physical thread board; amber/red ΔE rows from the card (G3).",
           "6. Light rays: specced sheer (serpentine run, rows 1.9 apart) per the brief. Approve on the sew-out — denser would read as solid bands.",
           "7. Back collar fall: art stays 6 below a 45 mm collar fall at CB (proposed) — confirm with the sample collar.",
           "8. Retail name 'Forestball': confirm it is not meant to echo Dragon Ball before retail use.",
@@ -190,7 +189,7 @@ def files_page():
         rb = ALL["grades"]["B"][k]; o.append(t(cx[4], y, f"{rb['stops']}", 1.55)); o.append(t(cx[5], y, f"{rb['threads']}", 1.55))
         o.append(t(cx[6], y, f"{max(ALL['grades'][G][k]['max_stitch'] for G in ALL['grades'] if k in ALL['grades'][G]):.1f}", 1.55))
         y += 3.8
-    y += 3; o.append(t(12, y, f"01 BACK — {FRAME[0]:.0f} × {FRAME[1]:.0f} SPLITS per grade (stop 1 = basting crosses) · baseline: 6 hoopings per jacket (S1–S4 + 02R + 02L) · plan per size: G6", 2.0, 700)); y += 4.5
+    y += 3; o.append(t(12, y, f"01 BACK — {FRAME[0]:.0f} × {FRAME[1]:.0f} SPLITS per grade (registration crosses sewn in each file's first thread) · baseline: 6 hoopings per jacket (S1–S4 + 02R + 02L) · plan per size: G6", 2.0, 700)); y += 4.5
     hd = ["Grade", "S1", "S2", "S3", "S4", f"Fit {FRAME[0]-16:.0f}²", "Cut mm"]; cx2 = [12, 26, 56, 86, 116, 148, 164]
     for x_, h in zip(cx2, hd): o.append(t(x_, y, h, 1.6, 700, MUTED))
     y += 4
@@ -205,13 +204,13 @@ def files_page():
             o.append(t(cx2[5], y, "✓ all" if all(v["fits"] for v in secs.values()) else "CHECK", 1.55, 700, GREEN if all(v["fits"] for v in secs.values()) else RED))
             o.append(t(cx2[6], y, f"{s['cut_mm']:.0f}", 1.55))
         y += 3.8
-    o.append(t(12, y + 1, "▣ = the section that carries the licensed-placeholder basting box (its stop 2, after the crosses).", 1.5, 400, RED)); y += 6
+    o.append(t(12, y + 1, "▣ = the section that carries the licensed-placeholder outline (Stream light, its first stop with the crosses).", 1.5, 400, RED)); y += 6
     o.append(t(12, y, "WHAT IS DIGITIZED", 2.0, 700)); y += 4.2
     for a, b_ in [("Density", "tatami 0.45, satin 0.42, padded moss 1 padding layer (> 3 mm wide), lattice underlay > 60 mm², 7 mm hidden travel."),
                   ("Light rays", "one continuous serpentine run per ray tone (no trims inside a ray), sewn first so every fill covers its travel."),
                   ("Trims", "hidden travel + underpath; objects ordered inside hidden areas; trims counted from the DST read-back."),
-                  ("Threads / stops", "≤ 15 per file (fits a 15-needle head); repeated colours merged into the earliest safe stop."),
-                  ("Placeholder", "basting box outline = first stop; nothing stitched inside; water stops 1 mm outside."),
+                  ("Threads / stops", "≤ 12 colours per file (factory limit, checked on every written file); repeated colours merged into the earliest safe stop."),
+                  ("Placeholder", "box outline in Stream light = first stop; nothing stitched inside; water stops 1 mm outside."),
                   ("Ties", "3-stitch tie-on/off at every trim + colour change; max stitch 7.5 mm."),
                   ("Splits", "split lines balance the stitch load (cut length + 2 mm per 1,000 st of imbalance); no motif reaches > 8 mm past a split line.")]:
         o.append(t(12, y, a, 1.6, 700)); o.append(t(36, y, b_, 1.5)); y += 3.3
@@ -234,16 +233,16 @@ def files_page():
             if tuple(m) in seen: continue
             seen.add(tuple(m)); mx, my = X(m[0]), Y(m[1])
             o.append(f'<path d="M{f(mx-1.4)} {f(my)} H{f(mx+1.4)} M{f(mx)} {f(my-1.4)} V{f(my+1.4)}" stroke="#00A3FF" stroke-width="0.45"/>')
-    o.append(t(bx, by + bh + 3.5, f"Size M splits. Red = split lines ({SPL['cut_mm']:.0f} mm of fill crosses them); blue = file extents; + = basting crosses.", 1.45, 400, MUTED))
+    o.append(t(bx, by + bh + 3.5, f"Size M splits. Red = split lines ({SPL['cut_mm']:.0f} mm of fill crosses them); blue = file extents; + = registration crosses.", 1.45, 400, MUTED))
     sy0 = by + bh + 9; o.append(t(bx, sy0, "SEWING THE SPLIT BACK (baseline)", 2.0, 700))
     for i, st_ in enumerate(["1. Mark CB + both split lines on the cut back (chalk), from B01.",
-                             "2. Hoop S1. Stop 1 = basting crosses. Sew S1.",
+                             "2. Hoop S1. The crosses sew first (first thread). Sew S1.",
                              "3. Re-hoop for S2; align on the shared S1 crosses; sew its",
                              "    crosses over them (check), then S2. Same for S3, S4.",
                              "4. Fills crossing a split overlap 1.2 mm; motifs < 70 mm",
                              "    (leaf sprays, rocks) are never cut between hoopings.",
                              "5. Licensed figure: sewn by the factory after S1–S4, in",
-                             "    the basting box; then remove basting + backing.",
+                             "    the outlined box; then trim backing.",
                              "Every grade has its own S1–S4 (folder <grade>/splits); origins per size: G6."]):
         o.append(t(bx, sy0 + 4 + i*3.1, st_, 1.5, 600 if "Licensed" in st_ else 400, RED if "Licensed" in st_ else INK))
     return o
@@ -274,8 +273,8 @@ def hooping_page():
             ox, oy = org(k, res[k]["centre"]); o.append(t(cx[7 + j], y, f"{ox:+.0f}, {oy:.0f} · {res[k]['stitches']/1000:.0f}k", 1.55))
         y += 4.4
     y += 3
-    for l in ["Values per hooping: origin x, y (mm) · stitches. ▣ = the hooping that carries the licensed-placeholder basting box.",
-              "ORDER: 1 S1 top-left → 2 S2 top-right → 3 S3 bottom-left → 4 S4 bottom-right (back, each re-hooped on the shared basting crosses), 5 02R, 6 02L.",
+    for l in ["Values per hooping: origin x, y (mm) · stitches. ▣ = the hooping that carries the licensed-placeholder outline.",
+              "ORDER: 1 S1 top-left → 2 S2 top-right → 3 S3 bottom-left → 4 S4 bottom-right (back, each re-hooped on the shared registration crosses), 5 02R, 6 02L.",
               "Each back section file contains ONLY its own art (+ crosses); motifs never reach more than 8 mm past a split line (longer overhangs are cut at the line with 1.2 mm fill overlap).",
               "Split lines: x = vertical split, y = horizontal split, in this size's back-pattern coordinates. Mark both on the cut back (chalk) before hooping S1.",
               f"Option (not baseline): a border frame ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f} sews the single back file in one hooping — asked on F1."]:

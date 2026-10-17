@@ -53,7 +53,7 @@ def p_cover(index):
         o.append(t(ix, y, name, 1.95)); o.append(t(SW - 14, y, str(pg), 1.95, 600, MUTED, "end")); y += 3.9
     y += 3; o.append(t(ix, y, "KEY SPECS", 2.4, 700)); y += 4.6
     for a, b in [("Shell", "12 oz cotton duck, washed forest green"), ("Collar", "cotton corduroy, black"), ("Zip", "YKK #5 metal, brass, separating"),
-                 ("Hem / cuffs", "rib knit, black"), ("Embroidery", "2 elements, 3 pieces, ≤ 15 threads per file"), ("Fit", "Drum Island block (boxy, cropped)"), ("Pattern", "XS–3XL first pattern, DXF + 1:1 plot")]:
+                 ("Hem / cuffs", "rib knit, black"), ("Embroidery", "2 elements, 3 pieces, ≤ 12 colours per file"), ("Fit", "Drum Island block (boxy, cropped)"), ("Pattern", "XS–3XL first pattern, DXF + 1:1 plot")]:
         o.append(t(ix, y, a, 1.95, 400, MUTED)); o.append(t(ix + 22, y, b, 1.95, 600)); y += 3.8
     o.append(t(SW - 14, SH - 8, FOOT, 1.8, 400, MUTED, "end"))
     return o
@@ -250,7 +250,7 @@ def p_bom():
         ("Zip", "YKK #5 metal separating, auto-lock, one-way", "antique brass teeth, black tape", "CF", "YKK", "1 × 56 cm (M)", False),
         ("Thread — seams", "Coats Epic 120 (Tex 27) corespun poly/cotton", "tonal to shell", "all seams + overlock", "Coats", "~ 450 m", True),
         ("Thread — topstitch", "Coats Gral 40 (Tex 60) poly", "tonal to shell", "topstitch, bartacks", "Coats", "~ 120 m", True),
-        ("Embroidery thread", "Madeira Polyneon 40 (13 colours + basting, see G3)", "per embroidery spec", "01–02", "Madeira", "per spec", False),
+        ("Embroidery thread", "Madeira Polyneon 40 (12 colours, see G3)", "per embroidery spec", "01–02", "Madeira", "per spec", False),
         ("Embroidery backing", "2.5 oz cutaway", "white", "behind each element", "TBC", "3 pieces", False),
         ("Main label", "woven damask, HAKI logo, 7 × 2 cm, folded", "black / cream", "CB neck facing", "TBC", "1", True),
         ("Size label", "woven, 2 × 1.5 cm", "black / cream", "under main label", "TBC", "1", True),
@@ -352,7 +352,7 @@ def p_colourway():
         o.append(t(cx + 8, 40 + i*5.5, n, 1.85))
     o.append(t(cx, 72, "Lab-dip / strike-off approval", 1.9, 700))
     o.append(t(cx, 75.5, "required for shell, collar and both ribs.", 1.85))
-    o.append(t(cx, 82, "Embroidery: 13 threads + basting,", 1.9, 700)); o.append(t(cx, 85.5, "Madeira Polyneon (G3).", 1.85))
+    o.append(t(cx, 82, "Embroidery: 12 threads (≤ 12/file),", 1.9, 700)); o.append(t(cx, 85.5, "Madeira Polyneon (G3).", 1.85))
     return o
 
 def p_questions():

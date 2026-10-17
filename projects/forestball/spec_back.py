@@ -41,7 +41,7 @@ def header(title, sub, page):
 
 def page1():
     o = header("01 · BACK SCENE — stitch-out preview + placement",
-               "Direct embroidery on the cut back panel · mm, finished size · art 1:1 · x from CB, y down from CB neck seam · size M (grade B) · ART REDRAWN from a low-res mockup (~1 px/mm), no close-ups yet", "p1 / 5")
+               "Direct embroidery on the cut back panel · mm, finished size · art 1:1 · x from CB, y down from CB neck seam · size M (grade B) · ART REDRAWN from the low-res mockup (~1 px/mm); stitch vocabulary from the close-ups", "p1 / 5")
     ppm = 3.2; bx0, by0, bx1, by1 = -305, -30, 305, 590
     img = SR.render(VB, (bx0, by0, bx1, by1), ppm, base=fbcore.FABRIC)
     mask = Image.new("L", img.size, 0); ImageDraw.Draw(mask).polygon([((x-bx0)*ppm, (y-by0)*ppm) for x, y in B.PANEL.exterior.coords], fill=255)
@@ -71,7 +71,7 @@ def page1():
     o.append(t(rx, 72, "BY THE NUMBERS (read from the DST)", 2.6, 700))
     d = CUR.get("back", {})
     nums = [("Stitches, single file", f"{d.get('stitches', 0):,}"), ("Trims (DST read-back)", f"{d.get('trims_dst', 0):,}"),
-            ("Colour stops / threads", f"{d.get('stops', len(STOPS))} / {d.get('threads', '—')} (incl. placeholder basting)"),
+            ("Colour stops / threads", f"{d.get('stops', len(STOPS))} / {d.get('threads', '—')} (factory limit 12, incl. outline + crosses)"),
             ("Max stitch", f"{d.get('max_stitch', 0)} mm"), ("Regions (digitizing objects)", f"{len(VB)}"),
             ("Machine time / head", f"≈ {factory.machine_hours(d.get('stitches', 0), PROF, d.get('trims_dst', 0), d.get('stops', 1) - 1):.1f} h at {PROF['spm']} spm incl. trims + changes")]
     for i, (a, b) in enumerate(nums):
@@ -83,9 +83,9 @@ def page1():
                  ("Box centre", f"x {(PH[0]+PH[2])/2:+.0f}, y {(PH[1]+PH[3])/2:.0f}")]:
         o.append(t(rx, y, a, 1.9, 400, MUTED)); o.append(t(rx + 20, y, b, 1.9, 600)); y += 3.7
     for l in ["Not drawn by Haki: no orb, star or lookalike is in these files.",
-              "Stitch file: stop 1 = blue basting outline of the box (water-",
-              "soluble / remove after); nothing is stitched inside it. Stream",
-              "water runs around the box, 1 mm clear of its outline.",
+              "Stitch file: stop 1 = outline of the box in Stream-light thread",
+              "(a colour the file already uses — factory 12-colour limit);",
+              "nothing stitched inside; water runs round it, 1 mm clear.",
               "Pattern: box drawn on B01 (DXF layer 8). The factory digitizer",
               "adds the figure from the licensor-approved artwork, sized to",
               "the box, sewn after the stream (sits on top of the water edge).",
@@ -177,7 +177,7 @@ def thread_match(o, sx, ty, keys):
 
 def page4():
     o = header("01 · COLOUR STOP SEQUENCE + THREADS",
-               "Sewing order, back to front: placeholder basting → light rays → stream → grass behind → rocks → leaves → bark + twigs → moss → bark line work → grass in front (leaves before twigs: their travel hides under the twig). Fills before the lines on them.", "p4 / 5")
+               "Sewing order, back to front: placeholder outline → light rays → stream → grass behind → rocks → leaves → bark + twigs → moss → bark line work → grass in front (leaves before twigs: their travel hides under the twig). Fills before the lines on them.", "p4 / 5")
     stops_table(o, STOPS, 12, 30.5, "BACK PANEL (single file, size M)")
     sx = 204; yb = thread_match(o, sx, 33, [k for k in PAL])
     for i, l in enumerate(["ΔE < 3 green: close match. 3–5.5 amber,", "> 5.5 red: pick from the physical card.",
@@ -198,8 +198,9 @@ def page5():
     tag, hh = SHT.embed("inputs/back.png", (60, 60, 670, 720), 52, 14, my + 3); o.append(tag)
     o.append(t(14, my, "MOCKUP", 2.4, 700))
     o.append(t(70, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
-    ch = ["Reference: art REDRAWN from the low-res mockup (back.png ≈ 1 px/mm,",
-          "  read at 4x) — motif counts matched, not traced; close-ups may follow.",
+    ch = ["Reference: REDRAWN from the low-res mockup (≈ 1 px/mm, read at 4x);",
+          "  file 'closeup_front_right_a' shows this BACK scene — used for texture",
+          "  (chain limb, mossy mounds, rays), not positions; no back close-up asked.",
           "Rev B: 6 broad sheer rays over the art, chain-bark underside, 4-green",
           "  mottled moss lumps, mounds merged into a bank, denser grass.",
           "Composition re-traced from the mockup: mossy limb from the left,"
@@ -218,15 +219,15 @@ def page5():
     for i, c in enumerate(ch): o.append(t(70, my + 4.5 + i*3.3, c, 1.8, 600 if "LICENSED" in c else 400, RED if "LICENSED" in c else INK))
     px = 190
     o.append(t(px, my, "PRODUCTION", 2.4, 700))
-    pn = [f"Hoop: 4 × {FRAME[0]:.0f}² split files S1–S4 with basting",
-          "  registration crosses (G5, origins per size G6).",
+    pn = [f"Hoop: 4 × {FRAME[0]:.0f}² split files S1–S4 with",
+          "  registration crosses in the first thread (G5, G6).",
           f"  Option: border frame ≥ {BB[2]-BB[0]+14:.0f} × {BB[3]-BB[1]+14:.0f} (single file).",
           "Embroider the cut back panel flat, BEFORE side,",
           "  shoulder and armhole seams.",
           "Canvas: 75/11 sharp, 2.5 oz cutaway, no topping.",
           "Padded moss: one padding layer only (stiffness).",
-          "Stop 1 basting box: remove after the licensed",
-          "  figure is sewn (factory, licensor art).",
+          "Stop 1 = placeholder outline (Stream light); the",
+          "  licensed figure is sewn over it (licensor art).",
           "Washed shell: confirm dye route; wash-test the",
           "  sew-out (cream + leaf greens shift first).",
           "Lining: cut after the embroidered panel is pressed",

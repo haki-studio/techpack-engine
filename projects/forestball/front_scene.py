@@ -17,8 +17,9 @@ def add(regs, layer, el="02"):
 limbs = []
 def limb(pts_r, grp="TR", cover=0.9, seed=0, size=1.4):
     rr = [(*P(x, y), r * (1.35 if grp == 'TR' else 1.0)) for x, y, r in pts_r]
-    regs, mr, poly, Sm, mg = FM.mossy_limb(rr, random.Random(seed or 60 + len(limbs)), grp=grp, cover=cover, size=size)
-    add(regs, 5); add(mr, 6); limbs.append((poly, Sm))
+    # Rev B (close-up b): braided chain-stitch limb — rows of links in royal blue / navy / greens, cream specks on top
+    regs, poly, Sm = FM.chain_limb(rr, random.Random(seed or 60 + len(limbs)), grp=grp, link=5.0 if grp == "TR" else 3.6)
+    add(regs, 5); limbs.append((poly, Sm))
 
 # side limbs first, main limb last (covers their bases)
 limb([(300, 282, 6), (292, 252, 5), (285, 225, 4.2), (282, 200, 3.4)], grp="LM", seed=21, cover=0.8)
@@ -47,17 +48,18 @@ for ti, ln in enumerate(twig_lines):
     while s_ < ln.length - 5:
         p0 = ln.interpolate(s_); p1 = ln.interpolate(min(ln.length, s_ + 1.0))
         ta = math.degrees(math.atan2(p1.y - p0.y, p1.x - p0.x))
-        add(FM.leaf_spray((p0.x, p0.y), ta + side * g.uniform(35, 60), g.uniform(22, 30), g, leaf=9.5)[0], 7)
+        add(FM.leaf_spray((p0.x, p0.y), ta + side * g.uniform(35, 60), g.uniform(26, 36), g, leaf=11.0)[0], 7)
         side = -side; s_ += g.uniform(7, 9.5)
     e = ln.interpolate(ln.length); e0 = ln.interpolate(ln.length - 2)
-    add(FM.leaf_spray((e.x, e.y), math.degrees(math.atan2(e.y - e0.y, e.x - e0.x)), 22, g, leaf=9.5)[0], 7)
+    add(FM.leaf_spray((e.x, e.y), math.degrees(math.atan2(e.y - e0.y, e.x - e0.x)), 28, g, leaf=11.0)[0], 7)
 # sprays straight off the main limb (mockup: leaves all along the limb), bases snapped to the bark (LESSONS A1)
-SPR = [((215, 190), -70), ((255, 245), 140), ((282, 262), -60), ((345, 310), -80), ((360, 330), 120), ((405, 345), -70),
+SPR = [((215, 190), -70), ((255, 245), 140), ((282, 262), -60), ((230, 215), -100), ((262, 240), -40), ((320, 300), 120), ((340, 300), -50),
+       ((300, 290), 150), ((250, 250), 110), ((380, 330), 100), ((205, 180), 160), ((345, 310), -80), ((360, 330), 120), ((405, 345), -70),
        ((465, 372), -60), ((500, 400), 100), ((520, 402), -80), ((560, 415), -50), ((185, 160), -100)]
 SUPPORT = unary_union([BARK] + [l.buffer(1.0) for l in twig_lines])
 for i, ((bx, by), ang) in enumerate(SPR):
     a, _ = nearest_points(SUPPORT, Point(P(bx, by)))
-    add(FM.leaf_spray((a.x, a.y), ang, 26, random.Random(600 + i), leaf=9.5)[0], 7)
+    add(FM.leaf_spray((a.x, a.y), ang, 32, random.Random(600 + i), leaf=11.0)[0], 7)
 
 # hanging moss over the wearer's right shoulder: strands hang FROM the main limb (anchors on its underside)
 main_poly = limbs[-1][0]
@@ -71,7 +73,20 @@ ROPES = [  # px (front.png) + radius mm, traced from the 4x crop: 3 ropes bend o
     ([(200, 150, 10), (192, 190, 11.5), (186, 230, 12), (180, 280, 11.5), (172, 330, 10.5), (164, 380, 9), (158, 415, 6.5), (156, 440, 4)], "bark"),
     ([(226, 168, 7), (215, 215, 8), (206, 260, 8), (198, 305, 7.5), (192, 350, 6.5), (190, 385, 4.5), (192, 405, 3)], "navy"),
     ([(150, 152, 5), (143, 200, 6), (133, 250, 6), (128, 300, 5.5), (128, 345, 4.5), (132, 380, 3)], "bark")]
-HM, HMU = FM.hanging_ropes([([(*P(x, y), r) for x, y, r in pts], c) for pts, c in ROPES], random.Random(9))
+ROPE_UP = ["leaf", "mosslt", "leaf", "moss"]; ROPE_MID = ["royal", "leaf", "mosslt", "navy", "royal"]; ROPE_LOW = ["navy", "royal", "mossdk"]
+HM = []; rope_lines = []
+for ri, (pts, c) in enumerate(ROPES):
+    rr = [(*P(x, y), r) for x, y, r in pts]
+    regs, rp, rS = FM.chain_limb(rr, random.Random(70 + ri), grp="HM", link=4.2, up=ROPE_UP, mid=ROPE_MID, low=ROPE_LOW, cream=0.04)
+    HM += regs; rope_lines.append((rp, rS))
+# free looping chain strands (close-up c texture): thin loop chains hanging along + below the ropes, yellow-green + blue
+gl = random.Random(91)
+for k in range(16):
+    rp, rS = rope_lines[k % len(rope_lines)]
+    j = gl.randint(2, max(3, len(rS) // 2)); x0, y0, r0 = rS[j]; side = gl.choice((-1, 1))
+    L = gl.uniform(60, 150); ph = gl.uniform(0, 6.3); dx0 = side * r0 * gl.uniform(0.4, 1.1)
+    pts = [(x0 + dx0 + 3.0*math.sin(ph + t*7) + side*t*gl.uniform(2, 8), y0 + t*L) for t in np.linspace(0, 1, 30)]
+    HM.append(FM.loop_chain(pts, gl, ["leaf", "mosslt", "royal", "leaf", "moss"][k % 5], ring=gl.uniform(0.9, 1.4)))
 add(HM, 6)          # sews with the limb moss (same threads, fewer stops)
 # moss highlights on the strands (light run of the mockup's yellow-green chain stitch)
 ANCH = anchors

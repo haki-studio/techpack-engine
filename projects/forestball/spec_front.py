@@ -62,7 +62,7 @@ def clearances(p):
 
 def page1():
     o = header("02 · CHEST MOSSY BRANCH (split at zip) — stitch-out preview + placement",
-               "Direct embroidery on both cut front panels, before zip + welts · registered across the CF zip · mm · art 1:1 · size M (grade B) · ART REDRAWN from a low-res mockup, no close-ups yet", "p1 / 5")
+               "Direct embroidery on both cut front panels, before zip + welts · registered across the CF zip · mm · art 1:1 · size M (grade B) · 02R TRACED from close-up b (≈5 px/mm), placed on the mockup; 02L redrawn from the mockup in the same stitch vocabulary", "p1 / 5")
     bbox = (-325, -110, 325, 540); ppm = 2.6
     fv = front_view_png(VIS, bbox, ppm)
     w_mm = 152; s = w_mm / (bbox[2] - bbox[0]); ax, ay = 12, 29
@@ -150,7 +150,12 @@ def page5():
     tag, hh = SHT.embed("inputs/front.png", (60, 60, 690, 500), 56, 14, my + 3); o.append(tag)
     o.append(t(14, my, "MOCKUP", 2.4, 700))
     o.append(t(76, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
-    for i, c in enumerate(["Composition traced from the mockup: mossy limb from the wearer's",
+    for i, c in enumerate(["Rev B reference: 02R traced from close-up b (5 px/mm): braided chain-",
+                           "  stitch limb (royal blue/navy/greens, cream specks), brown chain twigs",
+                           "  with cream nodes, two-tone leaves + vein, navy tip buds; hanging moss",
+                           "  = chain-link ropes + free looping strands (texture from close-up c).",
+                           "  Mockup decides placement + scale; 02L redrawn from the mockup.",
+                           "Composition traced from the mockup: mossy limb from the wearer's",
                            "  right shoulder across the zip to the left chest, upper twig on",
                            "  02L, leaf sprays all along; moss hanging over the right shoulder.",
                            "Zip: the mockup runs the branch over the zip — impossible.",

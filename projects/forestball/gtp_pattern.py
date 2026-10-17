@@ -229,7 +229,7 @@ def p_inside():
 OPS = [("Cutting", "Cut shell, collar, lining, rib, pocketing, fusing; drill welt + embroidery marks", "Cutting table", 6.0),
        ("Fusing", "Fuse top collar, facings, back neck facing, welts", "Fusing press", 2.5),
        ("Embroidery", "01 back, 02R, 02L — flat on cut pieces; licensed figure by factory (machine time separate, see G4)", "Multi-head (15 needle)", 8.0),
-       ("Embroidery finish", "Trim backing to 5 mm, remove basting (split files), press from wrong side", "Hand / press", 6.0),
+       ("Embroidery finish", "Trim backing to 5 mm, remove registration crosses if visible (split files), press from wrong side", "Hand / press", 6.0),
        ("Welt pockets", "Mark, set welt + bags both fronts, bartack ×4", "Lockstitch + bartack", 9.0),
        ("Shoulders", "Join shoulders (5-thread), press to back, 6 mm topstitch", "Safety stitch + lockstitch", 2.5),
        ("Sleeves", "Set sleeves; 6 mm armhole topstitch on body", "Safety stitch + lockstitch", 6.0),
