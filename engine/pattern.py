@@ -36,7 +36,7 @@ HOOD = dict(height=340.0,        # side panel flat: hood neck point at CF -> cro
             face_opening=760.0,  # CF -> CF along the face edge (side + centre-panel end + side)
             grade_height=6.0, grade_width=4.0, grade_face=10.0,   # per size step from M
             centre_w=100.0,      # centre panel width (constant, straight grain)
-            neck_rise=40.0,      # side panel: CB end of the neck seam sits this much above the CF end
+            neck_rise=30.0,      # side panel: CB end of the neck seam sits this much above the CF end
             neck_bow=10.0,       # neck edge bows out (convex) - mate of the scooped body neck
             face_lean=25.0, face_bow=6.0,   # face edge: top set back / bowed forward
             cf_set=0.0,          # hood neck starts this far back from the CF sew line (0 = hood fronts meet at the zip)

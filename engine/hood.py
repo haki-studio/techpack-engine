@@ -19,10 +19,12 @@ def bezier(p0, c0, c1, p1, n=40):
     p0, c0, c1, p1 = (np.array(v, float) for v in (p0, c0, c1, p1))
     return [tuple(v) for v in ((1-t)**3*p0 + 3*(1-t)**2*t*c0 + 3*(1-t)*t**2*c1 + t**3*p1)]
 
-def hermite(p0, t0, p1, t1, n=40, a=0.42):
-    """cubic from p0 to p1 leaving along unit t0, arriving along unit t1; handles = a × chord"""
-    L = math.hypot(p1[0]-p0[0], p1[1]-p0[1])
-    return bezier(p0, (p0[0] + t0[0]*L*a, p0[1] + t0[1]*L*a), (p1[0] - t1[0]*L*a, p1[1] - t1[1]*L*a), p1, n)
+def hermite(p0, t0, p1, t1, n=40, a=0.42, b=None):
+    """cubic from p0 to p1 leaving along unit t0, arriving along unit t1; handles = a (start) / b (end) × chord"""
+    L = math.hypot(p1[0]-p0[0], p1[1]-p0[1]); b = a if b is None else b
+    return bezier(p0, (p0[0] + t0[0]*L*a, p0[1] + t0[1]*L*a), (p1[0] - t1[0]*L*b, p1[1] - t1[1]*L*b), p1, n)
+
+CORNER = 0.15   # short handles where the centre seam leaves the neck / meets the face edge: square corner, no S-wave
 
 def unit(v):
     L = math.hypot(*v) or 1.0; return (v[0]/L, v[1]/L)
@@ -58,7 +60,9 @@ def side_panel(neck_len, d, curve, alen):
     t_nb = (dn[1], -dn[0])                                          # 90 deg to the neck, pointing up
     df = unit((face[1][0] - face[0][0], face[1][1] - face[0][1]))
     t_tf = (-df[1], df[0])                                          # 90 deg to the face edge, travelling forward
-    back = hermite(NB, t_nb, bk, (0, -1)) + hermite(bk, (0, -1), cr, (-1, 0))[1:] + hermite(cr, (-1, 0), TF, t_tf)[1:]
+    # corner segments sampled densely: with short handles the curve turns fast, and the polyline's first/last chord
+    # is what the factory's CAD sees (pattern_out.hood_checks measures exactly that)
+    back = hermite(NB, t_nb, bk, (0, -1), n=160, a=CORNER, b=0.5) + hermite(bk, (0, -1), cr, (-1, 0))[1:] + hermite(cr, (-1, 0), TF, t_tf, n=160, b=CORNER)[1:]
     return neck, back, face
 
 def _inside_offset(pts, dist, poly):

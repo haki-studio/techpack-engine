@@ -12,6 +12,14 @@
 | Placement per size + keep-out solver | half generic (rules are data, pieces named per garment) | `projects/*/emb_place.py` |
 | Spec pages, embroidery pack, garment pack | page builders are per project today | `projects/*/spec2.py`, `espec.py`, `pack.py`, `gtp*.py` |
 
+**Hooded variant (Oct 2026):** `pattern.draft(size, variant="hooded", hood={...})` — Drum Island body with the collar
+replaced by a 3-panel hood (shell + sherpa lining + traced facing, `engine/hood.py`) and woven self-fabric hem band +
+cuffs (LESSONS C9–C11). Hood dims are PROPOSED in `pattern.HOOD` (override per project, e.g. from the founder's
+boxy-hoodie files); `pattern.proposed("hooded")` is the open-questions table; `pattern_out.VARIANT = "hooded"` or
+`pattern_out.py qa dxf pdf --hooded` for outputs. Used by red-beast, comet-city, keep-clean-our-space, koi-blossom.
+Open: keep-out lines for hooded art must come from the drafted pieces (C8) — the side seams taper at the hem and the
+sleeves are narrower at the cuff than the block; no hood embroidery keep-outs yet.
+
 ## Next steps
 
 1. **Project config instead of code.** One `project.yaml` per style: POM chart, fabric + trims, palette, element
