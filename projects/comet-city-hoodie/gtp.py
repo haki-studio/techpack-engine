@@ -1,414 +1,370 @@
-"""Garment tech pack pages — Grand Line jacket (Drum Island block), washed navy, front-scene embroidery."""
-import glcore
-import json, math, os, pickle
+"""Garment pages T1-T9 for the Comet City hoodie on block `zip-hoodie` (engine/hoodie.py), adapted from the block's blank
+fit-sample pack (projects/zip-hoodie-block/build.py) + this design's embroidery placement. Every measurement is read from the
+pattern; every embroidery number from the stitch files / emb_place. build(emb_pdf, emb_index, out_pdf) merges T + G pages."""
+import cccore
+import os, math, json, io
 import numpy as np
 import cairosvg
-from PIL import Image
-from shapely.ops import unary_union
-from shapely.geometry import box
+from PIL import Image, ImageFilter
 from pypdf import PdfWriter, PdfReader
+from shapely import affinity
 import sheet as SHT
-from sheet import t, swatch, doc, INK, MUTED, RED, ORANGE, GUIDE, GREEN, SW, SH
+from sheet import t, doc, INK, MUTED, RED, GREEN, SW, SH, dim_h, dim_v
 from render import f
-import drum, techflat as TF
-import specbase as SB
+import drum, pattern as PT, pattern_draw as PD
+import front as F_                    # welt override before any draft
+import hoodie as HD, hflat as HF
+import emb_place as EP, stitchrender as SR, factory as FA
+import pattern_cc as PC
+
+STYLE = cccore.STYLE; REV = cccore.REV_GAR; DATE = cccore.DATE; NAME = cccore.NAME
+FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · GARMENT · {REV} · {DATE}"
+PROP = "#8A5A00"; ALT = "#F5F2EC"
+SIZES = HD.SIZES
+HF.SHELL = "#2A3350"; HF.SHELL_D = "#222A44"; HF.SHERPA = "#F2ECDF"
+def prop(x, y, s, size=1.85): return t(x, y, s + "  [proposed — confirm]", size, 600, PROP)
+def H(title, sub, page): SHT.FOOT = FOOT; return SHT.header(title, sub, page)
+def flat_g(body, b, ox, oy, s): return f'<g transform="translate({f(ox - b[0]*s)} {f(oy - b[1]*s)}) scale({f(s)})">{body}</g>'
+def qty_of(pc):
+    q = pc.qty.split(); return int(q[0]) * (2 if q[1:2] == ["pair"] else 1)
+
+G = {sz: HD.draft(sz) for sz in SIZES}
+MEAS = {sz: HD.measure(sz) for sz in SIZES}
+CH = HD.chart()
+CHECK = {sz: all(abs(MEAS[sz][0][k] / 10 - CH[k][2][SIZES.index(sz)]) <= CH[k][3] for k in CH) for sz in SIZES}
+WALKS_OK = {sz: all(tol is None or abs(a - b) <= tol for _, a, b, tol in MEAS[sz][1]) for sz in SIZES}
+SHAPE_OK = {sz: all(c[1] for c in HD.shape_checks(sz)) for sz in SIZES}
+gM, mM = G["M"]
+CUR = json.load(open("dst_current.json"))
+import pickle
+ART = pickle.load(open("art_M.pkl", "rb"))
+
+def area_m2(codes, g): return sum(PT.cut_poly(g[c]).area * qty_of(g[c]) for c in codes) / 1e6
+
+# ---------------------------------------------------------------- flats with the stitch render in place
+def _sleeve_affine(Fl, P):
+    """S01/S02 pattern coords -> flat sleeve (front view). Centre line -> outer sleeve edge, underarm front -> inner edge."""
+    g, _ = F_.pieces("M"); pc = g["S01"].sew_poly(); b = pc.bounds; ycap, ycuff = b[1], b[3]
+    s = 1 if P == "SL" else -1                         # flat +x = wearer's left
+    sp = np.array([s*Fl.sp[0], Fl.sp[1]]); co = np.array([s*Fl.cs_out[0], Fl.cs_out[1]]); ci = np.array([s*Fl.cs_in[0], Fl.cs_in[1]])
+    Wc = float(np.interp(ycuff - 1, *zip(*[(y, pc.intersection(__import__("shapely").geometry.LineString([(0, y), (400, y)])).bounds[2]) for y in np.linspace(0, ycuff - 1, 20)])))
+    xs = -1 if P == "SL" else 1                        # front half: SL x < 0, SR x > 0
+    src = np.array([[0, ycap], [0, ycuff], [xs*Wc, ycuff]], float); dst = np.array([sp, co, ci])
+    A = np.linalg.solve(np.c_[src, np.ones(3)], dst)   # 3x2
+    return [A[0, 0], A[1, 0], A[0, 1], A[1, 1], A[2, 0], A[2, 1]]
+
+def flat_png(back=False, ppm=3.0, art=True):
+    Fl = HF.Flat("M"); b = HF.bounds(Fl, back); pad = 10
+    body = HF.draw_back(Fl) if back else HF.draw_front(Fl)
+    W, Hh = b[2] - b[0] + 2*pad, b[3] - b[1] + 2*pad
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{b[0]-pad} {b[1]-pad} {W} {Hh}" width="{int(W*ppm)}" height="{int(Hh*ppm)}">'
+           f'<rect x="{b[0]-pad}" y="{b[1]-pad}" width="{W}" height="{Hh}" fill="#fff"/>{body}</svg>')
+    im = Image.open(io.BytesIO(cairosvg.svg2png(bytestring=svg.encode()))).convert("RGBA")
+    if art and not back:
+        rr = SR.Renderer(b[0]-pad, b[1]-pad, b[2]+pad, b[3]+pad, ppm)
+        for P in cccore.SLEEVES:
+            M = _sleeve_affine(Fl, P)
+            for r in ART[P]:
+                g_ = affinity.affine_transform(r["geom"], M)
+                rr.region(dict(r, geom=g_, ang=("auto" if isinstance(r["ang"], tuple) else r["ang"])))
+        for P in cccore.FRONTS:
+            for r in ART[P]:
+                ang = r["ang"]
+                if isinstance(ang, tuple): ang = (ang[0], ang[1], ang[2] + Fl.fnd)
+                rr.region(dict(r, geom=affinity.translate(r["geom"], 0, Fl.fnd), ang=ang))
+        emb = rr.image(); a = emb.split()[3]
+        sh = Image.new("RGBA", emb.size, (0, 0, 0, 0)); sh.putalpha(a.point(lambda v: int(v*0.45))); sh = sh.filter(ImageFilter.GaussianBlur(1.0))
+        base = Image.new("RGBA", emb.size, (0, 0, 0, 0)); base.paste(sh, (1, 2))
+        im = Image.alpha_composite(im, Image.alpha_composite(base, emb))
+        # redraw the zip on top
+        zsvg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{b[0]-pad} {b[1]-pad} {W} {Hh}" width="{int(W*ppm)}" height="{int(Hh*ppm)}">'
+                f'{HF.zip_tape(Fl, Fl.fnd - 2, Fl.hem_edge)}</svg>')
+        im = Image.alpha_composite(im, Image.open(io.BytesIO(cairosvg.svg2png(bytestring=zsvg.encode()))).convert("RGBA"))
+    return im.convert("RGB"), (b[0]-pad, b[1]-pad, b[2]+pad, b[3]+pad)
+
 from specbase import img_tag
-
-REV = glcore.REV_GAR; DATE = glcore.DATE; STYLE = glcore.STYLE; NAME = glcore.NAME
-FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · GARMENT TECH PACK · {REV} · {DATE}"
-PROP = "#8A5A00"        # colour for 'proposed — confirm' text
-
-def header(title, sub, page):
-    SB.FOOT = FOOT
-    return SB.header(title, sub, page)
-
-def prop(x, y, s, size=1.85):
-    return t(x, y, s + "  [proposed — confirm]", size, 600, PROP)
-
-def flat_group(svgbody, b, ox, oy, s, k=None):
-    return f'<g transform="translate({f(ox - b[0]*s)} {f(oy - b[1]*s)}) scale({f(s)})">{svgbody}</g>'
-
-# ---------------------------------------------------------------- embroidery grading
-import pickle as _pk
-from shapely.ops import unary_union as _uu
-def art_box(size, P):
-    D = _pk.load(open(f"front_{size}.pkl", "rb")); return _uu([r["geom"] for r in D[P]]).bounds
-EMB = {P: {"box": art_box("M", P), "ref": "front"} for P in glcore.PIECES}
-GRADE = glcore.GRADE
-
-def callout(x, y, n, tx, ty):
-    return (f'<line x1="{f(x)}" y1="{f(y)}" x2="{f(tx)}" y2="{f(ty)}" stroke="{INK}" stroke-width="0.18"/>'
-            f'<circle cx="{f(x)}" cy="{f(y)}" r="0.6" fill="{INK}"/><circle cx="{f(tx)}" cy="{f(ty)}" r="2.3" fill="#FFFFFF" stroke="{INK}" stroke-width="0.25"/>'
-            + t(tx, ty + 0.8, str(n), 2.0, 700, INK, "middle"))
 
 # ---------------------------------------------------------------- pages
 def p_cover(index):
-    o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>']
-    o.append(t(14, 22, "HAKI STUDIOS", 3.0, 700, MUTED))
-    o.append(t(14, 34, NAME, 7.2, 700))
-    o.append(t(14, 41.5, f"Style {STYLE} · {REV} · {DATE} · sizes XS–3XL · base size M · all dimensions cm unless marked mm", 2.6, 400, MUTED))
-    o.append(f'<line x1="14" y1="45" x2="{SW-14}" y2="45" stroke="{INK}" stroke-width="0.4"/>')
-    fr = Image.open("cover_front.png"); bk = Image.open("cover_back.png")
-    tag, h = img_tag(fr, 14, 52, 88); o.append(tag); o.append(t(14, 52 + h + 4, "FRONT", 2.2, 700))
-    tag, h2 = img_tag(bk, 108, 52, 88); o.append(tag); o.append(t(108, 52 + h2 + 4, "BACK", 2.2, 700))
+    o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>', t(14, 22, "HAKI STUDIOS", 3.0, 700, MUTED), t(14, 34, NAME, 7.0, 700),
+         t(14, 41.5, f"Style {STYLE} · {REV} · {DATE} · sizes XS–3XL · base size M · block zip-hoodie (Drum Island body + hood) · cm unless marked mm", 2.4, 400, MUTED),
+         f'<line x1="14" y1="45" x2="{SW-14}" y2="45" stroke="{INK}" stroke-width="0.4"/>']
+    fr, _ = flat_png(False); bk, _ = flat_png(True, art=False)
+    tag, h = img_tag(fr, 14, 50, 100); o.append(tag); o.append(t(14, 50 + h + 4, "FRONT — 01 front scene + 02 sleeves (stitch render, size M)", 2.0, 700))
+    tag, h2 = img_tag(bk, 118, 50, 80); o.append(tag); o.append(t(118, 50 + h2 + 4, "BACK + HOOD — plain", 2.0, 700)); o.append(prop(118, 50 + h2 + 7.5, "no embroidery on back + hood", 1.7))
     ix = 206; o.append(t(ix, 56, "CONTENTS", 2.8, 700)); y = 62
-    for name, pg in index:
-        o.append(t(ix, y, name, 1.95)); o.append(t(SW - 14, y, str(pg), 1.95, 600, MUTED, "end")); y += 3.9
+    for name, pg in index: o.append(t(ix, y, name, 1.85)); o.append(t(SW - 14, y, str(pg), 1.85, 600, MUTED, "end")); y += 3.7
     y += 3; o.append(t(ix, y, "KEY SPECS", 2.4, 700)); y += 4.6
-    for a, b in [("Shell", "12 oz cotton duck, washed navy"), ("Collar", "cotton corduroy, black"), ("Zip", "YKK #5 metal, brass, separating"),
-                 ("Hem / cuffs", "rib knit, black"), ("Embroidery", "1 element (front scene), 2 pieces, 12 threads"), ("Fit", "Drum Island block (boxy, cropped)"), ("Pattern", "XS–3XL, Drum Island pattern, DXF + 1:1 plot")]:
-        o.append(t(ix, y, a, 1.95, 400, MUTED)); o.append(t(ix + 22, y, b, 1.95, 600)); y += 3.8
+    for a, b_, p in [("Body + sleeve", "Drum Island jacket — approved fit, unchanged", False), ("Hood", "3 panels, sherpa-lined (cream), no drawcord", True),
+                     ("Hem / cuffs", f"self fabric + elastic ({HD.hcm('S','M')/10:.1f} / {HD.hcm('T','M')/10:.1f} cm)", True), ("Zip", "2-way separating, YKK #5 metal, brass", True),
+                     ("Shell", "12 oz cotton duck, washed navy", True), ("Lining", "plaid flannel body · taffeta sleeves · sherpa hood", True),
+                     ("Embroidery", f"2 elements, 4 pieces, {len({c for p in CUR for c in CUR[p]['colours']})} threads (G pages)", False),
+                     ("Pattern", "XS–3XL, DXF (AAMA) + 1:1 plot", False)]:
+        o.append(t(ix, y, a, 1.9, 400, MUTED)); o.append(t(ix + 23, y, b_, 1.8, 600, PROP if p else INK)); y += 3.7
     o.append(t(SW - 14, SH - 8, FOOT, 1.8, 400, MUTED, "end"))
     return o
 
-def p_flats(F):
-    o = header("TECHNICAL FLATS — front + back (size M)", "Line drawing to scale (0.13:1). Dashed grey = topstitching. Red dashed boxes = embroidery placement (see embroidery section).", "T2")
-    b = TF.bounds_front(F); s = 0.122
-    TF.K = 1.0 / (s * 6); TF.LBL = 2.6 / s
-    fb = [(*EMB[e]["box"], "01") for e in glcore.PIECES]
-    fb = [(x0, y0 + F.fnd, x1, y1 + F.fnd, lab) for x0, y0, x1, y1, lab in fb]
-    bb = []
-    o.append(flat_group(TF.draw_front(F, fb), b, 12, 32, s))
-    o.append(flat_group(TF.draw_back(F, bb), b, 12 + (b[2]-b[0])*s + 8, 32, s))
-    o.append(t(12 + (b[2]-b[0])*s/2, 32 + (b[3]-b[1])*s + 5, "FRONT", 2.3, 700, INK, "middle"))
-    o.append(t(12 + (b[2]-b[0])*s*1.5 + 8, 32 + (b[3]-b[1])*s + 5, "BACK", 2.3, 700, INK, "middle"))
-    X = lambda x: 12 + (x - b[0]) * s; Y = lambda y: 32 + (y - b[1]) * s
-    BX = lambda x: X(x) + (b[2]-b[0])*s + 8
-    cl = [(X(-90), Y(40), 1, X(-330), 36), (X(0), Y(330), 2, X(70), 124), (X(-175), Y(F.fnd + 365), 3, X(-430), Y(F.fnd + 330)),
-          (X(-150), Y(F.hem_seam + 25), 4, X(-150), 124), (X(-470), Y(620), 5, X(-500), 124), (X(-200), Y(60), 6, X(-480), Y(60)),
-          (BX(0), Y(150), 7, BX(150), Y(150))]
-    for x, y, n, tx, ty in cl: o.append(callout(x, y, n, tx, ty))
-    lx = 12; ly = 136
-    notes = [("1", "Collar: black cotton corduroy, point collar, 6 mm edge topstitch; under collar same corduroy; collar band interlined."),
-             ("2", "CF: YKK #5 metal separating zip, antique brass, auto-lock slider; tape enclosed, 10 mm topstitch each side."),
-             ("3", "Hand-warmer welt pockets ×2: welt 1.4 × 13 cm, diagonal; bartack both ends; cotton twill pocket bag."),
-             ("4", "Hem: rib knit, black, finished height 5.5 cm; joined with 4-thread overlock, topstitched 5 mm on body."),
-             ("5", "Cuffs: rib knit, black, finished height 7.5 cm, folded double; seam inside."),
-             ("6", "Shoulder: 5-thread safety stitch, pressed to back, 6 mm single-needle topstitch on back."),
-             ("7", "Back + sleeves: plain, no embroidery. One-piece back panel, no yoke; 6 mm armhole topstitch on the body."),
-             ("8", "Embroidery 01 front scene: both cut front panels, flat, before welts + zip; horizon + rays match across the zip.")]
-    for i, (n, s_) in enumerate(notes):
-        o.append(f'<circle cx="{f(lx + 2.3)}" cy="{f(ly + i*4.0 - 0.7)}" r="1.9" fill="#FFF" stroke="{INK}" stroke-width="0.25"/>' + t(lx + 2.3, ly + i*4.0, n, 1.7, 700, INK, "middle"))
-        o.append(t(lx + 6, ly + i*4.0, s_, 1.9))
+NOTES = [("1", "Hood: 3 panels — side pair + 10 cm centre panel. Washed navy duck outside, cream sherpa inside, bagged at the face edge; 6 mm topstitch. No drawcord. Plain (no embroidery).", True),
+         ("2", "Hood neck: shell hood to body neckline, sherpa hood to the front facings + back neck facing. Embroidery keeps 10 mm clear of the neck seam.", True),
+         ("3", "Zip: 2-way separating, YKK #5 metal, brass, two pullers (mockup). Embroidery 01 stops 15 mm each side of CF; FR + FL meet at the zip.", True),
+         ("4", "Welt pockets at the mockup position (21.8 cm from CF, 35.2 cm below the neck, 54°), Drum Island welt 1.4 × 13; embroidery keeps 6 mm clear.", True),
+         ("5", f"Hem band: self fabric, {HD.hcm('S','M')/10:.1f} cm finished, folded; {HD.EL_HEM_W/10:.0f} cm elastic, flat {HD.FLAT/10:.0f} cm each side of the zip. Not embroidered.", True),
+         ("6", f"Cuff band: self fabric, {HD.hcm('T','M')/10:.1f} cm finished, folded, closed into a loop. Not embroidered (02 stops 10 mm above the cuff seam).", True),
+         ("7", "Embroidery 01 front scene (FR + FL) + 02 sleeves (SR + SL): direct embroidery on the cut panels, before any seam (G pages).", False),
+         ("8", "Lining: cotton flannel body (plaid, as mockup), polyester taffeta sleeves; hood fully lined in sherpa. Labels on the back neck facing.", True)]
+
+def p_flats():
+    o = H("FLATS + CONSTRUCTION", "Size M. Body and sleeve are the approved Drum Island jacket; numbered notes = hoodie + design specifics.", "T2")
+    fr, bb = flat_png(False); bk, bb2 = flat_png(True, art=False)
+    tag, h = img_tag(fr, 12, 30, 98); o.append(tag); tag, h2 = img_tag(bk, 114, 30, 86); o.append(tag)
+    Fl = HF.Flat("M"); s1 = 98 / (bb[2] - bb[0]); s2 = 86 / (bb2[2] - bb2[0])
+    def cxy(i, x, y):
+        b_, s_, ox = (bb, s1, 12) if i == 0 else (bb2, s2, 114); return ox + (x - b_[0]) * s_, 30 + (y - b_[1]) * s_
+    calls = [(1, (0, -(HD.hcm("Q", "M") - 120)), "1"), (0, (Fl.b.neck2 * 0.6, Fl.fnd * 0.55), "2"), (0, (0, Fl.hem_seam - 60), "3"),
+             (0, (230, 430), "4"), (0, (-200, Fl.hem_seam + 25), "5"), (0, (Fl.cuff_out[0] - 30, Fl.cuff_out[1] - 20), "6"), (0, (-150, 250), "7"), (1, (0, 280), "8")]
+    for i, (x, y), n in calls:
+        X, Y = cxy(i, x, y)
+        o.append(f'<circle cx="{f(X)}" cy="{f(Y)}" r="2.4" fill="#FFFFFF" stroke="{INK}" stroke-width="0.3"/>' + t(X, Y + 0.85, n, 2.1, 700, INK, "middle"))
+    y = 34; tx = 206
+    for n, s_, p in NOTES:
+        o.append(f'<circle cx="{tx}" cy="{f(y - 0.8)}" r="2.0" fill="#FFFFFF" stroke="{INK}" stroke-width="0.25"/>' + t(tx, y, n, 1.8, 700, INK, "middle"))
+        words = s_.split(); line, lines = "", []
+        for w in words:
+            if len(line) + len(w) > 52: lines.append(line); line = w
+            else: line = (line + " " + w).strip()
+        lines.append(line)
+        for j, l in enumerate(lines): o.append(t(tx + 4, y + j * 3.0, l, 1.6, 400, PROP if p else INK))
+        y += 3.0 * len(lines) + 2.2
+    o.append(t(tx, y + 2, "Amber = proposed by Haki tech design — confirm.", 1.6, 600, PROP))
     return o
 
-def p_details(F):
-    o = header("DETAILS — collar, cuff, hem rib, welt pocket, zip, inside", "Construction details at larger scale. Values marked [proposed] are not on the fit chart — confirm with the pattern maker.", "T3")
-    # A collar (front view of collar + stand), fitted into an 88 x 52 box
-    col = F.collar_front(); neck = drum.curve((0, F.fnd), F.hps, 26, 14)
-    stand = TF.Polygon(neck + drum.curve(F.hps, (-F.hps[0], 0), 22, 16)[1:] + [(-x, y) for x, y in neck][::-1][1:]).buffer(0)
-    U = col.union(stand); cb = U.bounds; s = min(88 / (cb[2]-cb[0]), 52 / (cb[3]-cb[1])); TF.K = 1.0 / (s * 3)
-    o.append(t(14, 32, "A · COLLAR", 2.5, 700))
-    body = (f'<path d="{TF.poly_path(stand)}" fill="#141414" stroke="{TF.INK}" stroke-width="{f(0.5*TF.K)}"/>'
-            f'<path d="{TF.poly_path(col)}" fill="{TF.CORD}" stroke="{TF.INK}" stroke-width="{f(0.7*TF.K)}"/>{TF.cord_lines(col, 90, 2.2)}'
-            f'{TF.topstitch(col, 6, "3 2", 0.5, "#6A6A6A")}')
-    o.append(f'<g transform="translate({f(18 - cb[0]*s)} {f(36 - cb[1]*s)}) scale({f(s)})">{body}</g>')
-    ys = 36 + (cb[3]-cb[1])*s + 6
-    for i, l in enumerate(["Collar height at CB (M): 10.0 ± 0.3", "Collar point (neck point → tip): 8.5 ± 0.3", "Neck opening seam-to-seam: 20.0 ± 0.5",
-                           "Upper + under collar: 14-wale cotton corduroy, black", "Collar band: woven fusible interlining", "Edge topstitch 6 mm, tonal Tex 60"]):
-        o.append(t(14, ys + i*3.5, l, 1.8) if i < 3 else prop(14, ys + i*3.5, l, 1.8))
-    # B cuff + hem rib
-    bx = 112
-    o.append(t(bx, 32, "B · CUFF + HEM RIB", 2.5, 700))
-    o.append(f'<rect x="{bx}" y="37" width="40" height="15" fill="{TF.CUFF}" stroke="{INK}" stroke-width="0.3"/>')
-    for k in range(40): o.append(f'<line x1="{f(bx + k + 0.5)}" y1="37" x2="{f(bx + k + 0.5)}" y2="52" stroke="#4A4A4A" stroke-width="0.12"/>')
-    o.append(t(bx + 44, 42, "Cuff: 7.5 finished, folded double", 1.8)); o.append(prop(bx + 44, 45.5, "1×1 rib, black, 95/5 cotton/elastane", 1.75))
-    o.append(f'<rect x="{bx}" y="57" width="40" height="11" fill="{TF.RIBC}" stroke="{INK}" stroke-width="0.3"/>')
-    for k in range(40): o.append(f'<line x1="{f(bx + k + 0.5)}" y1="57" x2="{f(bx + k + 0.5)}" y2="68" stroke="#4A4A4A" stroke-width="0.12"/>')
-    o.append(t(bx + 44, 61, "Hem: 5.5 finished, folded double", 1.8)); o.append(prop(bx + 44, 64.5, "1×1 rib, black (as cuffs)", 1.75))
-    o.append(t(bx, 74, "Cuff opening (relaxed, ½): XS 14 → 3XL 17", 1.8)); o.append(t(bx, 77.5, "Bottom sweep (relaxed, ½): XS 52 → 3XL 70", 1.8))
-    o.append(prop(bx, 81, "Rib cut length = 85% of attached edge (cuff), 90% (hem)", 1.75))
-    # D zip (right column)
-    zx = 214
-    o.append(t(zx, 32, "D · ZIP", 2.5, 700))
-    zl = {sz: round((drum.POM_CM["A"][2][i] - drum.POM_CM["K"][2][i] - 0.5)) for i, sz in enumerate(drum.SIZES)}
-    zrows = [("Type", "YKK #5 metal, separating, one-way"), ("Teeth / slider", "antique brass, auto-lock"),
-             ("Tape", "black"), ("Length XS–M", "  ".join(f"{k} {v}" for k, v in list(zl.items())[:3]) + " cm"),
-             ("Length L–3XL", "  ".join(f"{k} {v}" for k, v in list(zl.items())[3:]) + " cm"),
-             ("Top", "zip garage, 2.5 fold of shell"), ("Setting", "tape enclosed shell/facing, 10 mm topstitch")]
-    for i, (a, b_) in enumerate(zrows):
-        o.append(t(zx, 37 + i*3.6, a, 1.75, 600)); o.append(prop(zx + 20, 37 + i*3.6, b_, 1.7) if i == 5 else t(zx + 20, 37 + i*3.6, b_, 1.75))
-    o.append(t(zx, 37 + 7*3.6, "Length = CF length (A − K) − 0.5, rounded.", 1.7, 400, MUTED))
-    # C welt pocket
-    wy = 106
-    o.append(t(14, wy, "C · WELT POCKET (×2)", 2.5, 700))
-    o.append(f'<rect x="16" y="{wy+5}" width="70" height="8" fill="#2E3550" stroke="{INK}" stroke-width="0.35"/>'
-             f'<rect x="17" y="{wy+6}" width="68" height="6" fill="none" stroke="{MUTED}" stroke-width="0.2" stroke-dasharray="1 0.6"/>'
-             f'<rect x="15" y="{wy+4}" width="2" height="10" fill="{INK}"/><rect x="85" y="{wy+4}" width="2" height="10" fill="{INK}"/>')
-    o.append(t(16, wy + 18, "shown 0.5:1, drawn horizontal — sewn at 38° (see T2)", 1.7, 400, MUTED))
-    o.append(prop(16, wy + 21.5, "Position from the mockup: centre 20.5 from CF, 34.7 below the CF neck (M)", 1.65))
-    for i, l in enumerate(["Welt 1.4 wide × 13.0 long", "Bartack both ends, 10 mm, tonal", "Edge topstitch 2 mm around welt"]):
-        o.append(t(94, wy + 5 + i*3.5, l, 1.8))
-    o.append(prop(94, wy + 5 + 3*3.5, "Pocket bag: cotton twill 8 oz, depth 18, French seams", 1.75))
-    o.append(t(94, wy + 5 + 4*3.5, "Embroidery 01 stays 6 mm clear of the welt box", 1.8, 600, ORANGE))
-    # E inside
-    iy = 146
-    o.append(t(14, iy, "E · INSIDE", 2.5, 700))
-    ins = [("Lining", "body: 100% cotton flannel; sleeves: polyester taffeta for easy on/off", True),
-           ("Facing", "shell canvas facing at CF, 6 cm wide; zip set between shell + facing", True),
-           ("Hanger loop", "6 cm self-fabric loop at CB neck, under the main label", True),
-           ("Embroidery backing", "cutaway trimmed to 5 mm; front lining covers the back of the front scene", False),
-           ("Labels", "main + size at CB neck facing; care/content wearer's left inside side seam, 10 above hem (T8)", False)]
-    for i, (a, b_, pp) in enumerate(ins):
-        o.append(t(14, iy + 6 + i*3.7, a, 1.85, 600)); o.append(prop(44, iy + 6 + i*3.7, b_, 1.8) if pp else t(44, iy + 6 + i*3.7, b_, 1.85))
-    return o
-
-def p_pom(F):
-    o = header("MEASUREMENTS — points of measure + size chart (cm)", "Garment measured flat, buttoned/zipped, relaxed. Chart from the Drum Island fit block (pattern maker notes 23 Sep). Tolerance applies to all sizes.", "T4")
-    b = TF.bounds_front(F); s = 0.095; TF.K = 1.0 / (s * 6)
-    ox, oy = 14, 34
-    o.append(flat_group(TF.draw_front(F), b, ox, oy, s))
+def p_pom():
+    o = H("SIZE CHART + MEASUREMENT CHECK", "Chart in cm. Body + sleeve rows are the approved Drum Island chart, unchanged. Hood + band rows are the zip-hoodie block (proposed). ½ = half measurement, flat.", "T3")
+    Fl = HF.Flat("M"); b = HF.bounds(Fl); s = 62 / (b[2] - b[0]); ox, oy = 12, 34
+    o.append(flat_g(HF.draw_front(Fl), b, ox, oy, s))
     X = lambda x: ox + (x - b[0]) * s; Y = lambda y: oy + (y - b[1]) * s
-    def mline(x1, y1, x2, y2, lab, dx=0, dy=-1.2):
-        return (f'<line x1="{f(X(x1))}" y1="{f(Y(y1))}" x2="{f(X(x2))}" y2="{f(Y(y2))}" stroke="{RED}" stroke-width="0.3"/>'
-                f'<circle cx="{f(X(x1))}" cy="{f(Y(y1))}" r="0.55" fill="{RED}"/><circle cx="{f(X(x2))}" cy="{f(Y(y2))}" r="0.55" fill="{RED}"/>'
-                + t((X(x1) + X(x2))/2 + dx, (Y(y1) + Y(y2))/2 + dy, lab, 2.1, 700, RED, "middle"))
-    o.append(mline(F.hps[0] + 2, 0, F.hps[0] + 2, F.hem_edge, "A", 3, 0))
-    o.append(mline(-F.ua[0], F.ua[1] + 4, F.ua[0], F.ua[1] + 4, "B"))
-    o.append(mline(-F.sp[0], F.sp[1], F.sp[0], F.sp[1], "C", 14, -1.2))
-    o.append(mline(-F.sweep2 + 4, F.hem_edge - 2, F.sweep2 - 4, F.hem_edge - 2, "D", 0, 3.2))
-    o.append(mline(F.sp[0], F.sp[1], F.ua[0], F.ua[1], "E", 3, 0))
-    sp = np.array(F.sp); cu = np.array(F.cuff_out)
-    o.append(mline(-sp[0], sp[1], -cu[0], cu[1], "G", -3, 0))
-    ci = np.array(F.cuff_in); o.append(mline(-cu[0], cu[1] - 2, -ci[0], ci[1] - 2, "H", -3, 3))
-    ua = np.array(F.ua); cin = np.array(F.cuff_seam_in); bic0 = ua + (cin - ua) / np.linalg.norm(cin - ua) * 25
-    out0 = np.array(F.sp); u = np.array(F.sdir)
-    foot = out0 + u * np.dot(bic0 - out0, u)
-    o.append(mline(bic0[0], bic0[1], foot[0], foot[1], "F", 3, 0))
-    o.append(mline(-F.hps[0], -3, F.hps[0], -3, "J", 0, -1.2))
-    o.append(mline(-4, 0, -4, F.fnd, "K", -4, 2))
-    # chart
-    tx = 132; ty = 34
-    cols = ["POM", "Description", "How to measure", "Tol ±"] + drum.SIZES
-    cx = [tx, tx + 6, tx + 30, tx + 70, tx + 81, tx + 90, tx + 99, tx + 108, tx + 117, tx + 126, tx + 135]
-    for x, h in zip(cx, cols): o.append(t(x, ty, h, 1.8, 700, MUTED if h != "M" else INK))
-    rh = 5.0
-    for i, (k, (name, how, vals, tol)) in enumerate(drum.POM_CM.items()):
-        y = ty + 5 + i*rh
-        if i % 2 == 0: o.append(f'<rect x="{tx-1}" y="{f(y-3.3)}" width="{SW - tx - 11}" height="{rh}" fill="#F5F2EC"/>')
-        o.append(f'<rect x="{f(cx[6]-1)}" y="{f(y-3.3)}" width="9" height="{rh}" fill="#FFF3D6"/>')
-        o.append(t(cx[0], y, k, 1.9, 700, RED)); o.append(t(cx[1], y, name, 1.85, 600)); o.append(t(cx[2], y, how, 1.6, 400, MUTED))
-        o.append(t(cx[3], y, f"{tol:g}", 1.8))
-        for j, v in enumerate(vals): o.append(t(cx[4 + j], y, f"{v:g}", 1.85, 700 if j == 2 else 400))
-    y = ty + 5 + len(drum.POM_CM)*rh + 3
-    o.append(t(tx, y, "Shaded M = base size, sample size. J, K, L, M, N, P are fixed across sizes (per fit chart).", 1.75, 400, MUTED))
-    o.append(prop(tx, y + 3.6, "Rib heights (hem 5.5, cuff 7.5) and shoulder drop (4.5) are not on the chart", 1.75))
-    o.append(t(tx, y + 7.2, "Body length A includes the hem rib. Chest B measured 2.5 below armhole.", 1.75, 400, MUTED))
+    o.append(dim_v(Y(0), Y(Fl.hem_edge), X(Fl.ua[0] + 22), "A", 1.8, side=1))
+    o.append(dim_h(X(-Fl.ua[0]), X(Fl.ua[0]), Y(Fl.ua[1] + 6), "B", 1.8))
+    o.append(dim_h(X(-Fl.sp[0]), X(Fl.sp[0]), Y(Fl.sp[1] - 4), "C", 1.8))
+    o.append(dim_v(Y(-(HD.hcm("Q", "M") - 70)), Y(0), X(-Fl.b.neck2 - 90), "Q", 1.8))
+    o.append(dim_v(Y(Fl.hem_seam), Y(Fl.hem_edge), X(-Fl.sweep2 - 14), "S", 1.6))
+    tb = 12; ty = oy + (b[3] - b[1]) * s + 8
+    for j, l in enumerate(["D ½ hem, relaxed (elastic) · E armhole, straight · F ½ bicep", "G sleeve length incl. cuff band · H ½ cuff, relaxed (elastic)",
+                           "J neck width · K / L front / back neck drop · P shoulder fwd", "R hood width · T cuff band height"]):
+        o.append(t(tb, ty + j * 3, l, 1.45, 400, MUTED))
+    hd = ["", "Point of measure", "How measured"] + SIZES + ["Tol", "Source"]; cx = [80, 85, 128, 168, 177, 186, 195, 204, 213, 223, 233, 243]
+    for x_, h_ in zip(cx, hd): o.append(t(x_, 31, h_, 1.6, 700, MUTED))
+    order = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "P", "Q", "R", "S", "T"]
+    for i, k in enumerate(order):
+        nm, how, vals, tol, src = CH[k]; y = 35.5 + i * 4.1; pr = src == "PROPOSED"
+        if i % 2 == 0: o.append(f'<rect x="79" y="{f(y - 2.9)}" width="{SW - 90}" height="4.1" fill="{ALT}"/>')
+        col = PROP if pr else INK
+        o.append(t(cx[0], y, k, 1.7, 700, col)); o.append(t(cx[1], y, nm[:34], 1.55, 600, col)); o.append(t(cx[2], y, how[:52], 1.3, 400, MUTED))
+        for j, v in enumerate(vals): o.append(t(cx[3 + j], y, f"{v:g}", 1.55, 600 if SIZES[j] == "M" else 400, col))
+        o.append(t(cx[10], y, f"±{tol:g}", 1.45, 400, MUTED)); o.append(t(cx[11], y, "proposed" if pr else "jacket", 1.45, 600, col))
+    y = 35.5 + len(order) * 4.1 + 4
+    o.append(t(80, y, "PATTERN CHECK — every size measured off the drafted pattern pieces vs this chart", 1.9, 700)); y += 4.2
+    for j, sz in enumerate(SIZES):
+        ok = CHECK[sz] and WALKS_OK[sz] and SHAPE_OK[sz]
+        o.append(t(cx[3 + j], y, "pass" if ok else "FAIL", 1.6, 700, GREEN if ok else RED))
+    o.append(t(80, y, "chart · seam walks · shape checks", 1.5, 400, MUTED))
+    y += 6
+    for l in ["Hood height (Q) and width (R) include 1.5 cm for the sherpa pile (~8 mm).",
+              "D and H are relaxed: the elastic sets them. Extended = the body hem / sleeve opening of the jacket.",
+              "The pattern is drafted, not fitted: sew + fit a blank (or this design) in M before cutting the size set (LESSONS C7)."]:
+        o.append(t(80, y, l, 1.55, 400, MUTED)); y += 3.2
     return o
 
-def p_grade():
-    o = header("GRADING — increments + embroidery grading", "Body grades from the fit chart. Embroidery is graded in three art sizes so every element keeps its seam clearances on every size.", "T5")
-    tx = 14; ty = 32
-    o.append(t(tx, ty, "A · GRADE INCREMENTS (cm, size to size)", 2.4, 700))
-    cols = ["POM", "Description"] + [f"{a}→{b}" for a, b in zip(drum.SIZES, drum.SIZES[1:])]
-    cx = [tx, tx + 7] + [tx + 34 + 13*i for i in range(6)]
-    for x, h in zip(cx, cols): o.append(t(x, ty + 5, h, 1.75, 700, MUTED))
-    for i, (k, (name, how, vals, tol)) in enumerate([kv for kv in drum.POM_CM.items() if len(set(kv[1][2])) > 1]):
-        y = ty + 9.5 + i*4.2
-        if i % 2 == 0: o.append(f'<rect x="{tx-1}" y="{f(y-3)}" width="113" height="4.2" fill="#F5F2EC"/>')
-        o.append(t(cx[0], y, k, 1.85, 700, RED)); o.append(t(cx[1], y, name, 1.8))
-        for j in range(6): o.append(t(cx[2 + j], y, f"{vals[j+1] - vals[j]:+.1f}", 1.8))
-    o.append(t(tx, ty + 9.5 + 8*4.2 + 2, "Increments are uneven by design (fit chart) — grade nests from the chart, not a fixed rule.", 1.75, 400, MUTED))
-    gx = 136
-    o.append(t(gx, ty, "B · EMBROIDERY GRADING (01 front scene)", 2.4, 700))
-    o.append(t(gx, ty + 4.5, "3 art grades, scaled about the CF neck point so the horizon + rays meet at CF on every size.", 1.75, 400, MUTED))
-    o.append(t(gx, ty + 7.8, "One stitch file per size per piece: art re-clipped to that size's own keep-outs (pattern T13).", 1.75, 400, MUTED))
-    hd = ["Size", "Art", "Scale", "FR art box", "FL art box", "Horizon y at CF"]
-    hx = [gx, gx + 10, gx + 18, gx + 30, gx + 62, gx + 94]
-    for x, h in zip(hx, hd): o.append(t(x, ty + 13, h, 1.75, 700, MUTED))
-    hz = json.load(open("scene_meta.json"))["horizon"]
-    for i, sz in enumerate(drum.SIZES):
-        g, sc = GRADE[sz]; y = ty + 17.5 + i*4.4
-        if i % 2 == 0: o.append(f'<rect x="{gx-1}" y="{f(y-3.1)}" width="{SW - gx - 11}" height="4.4" fill="#F5F2EC"/>')
-        o.append(t(hx[0], y, sz, 1.9, 700)); o.append(t(hx[1], y, g, 1.9, 700, RED)); o.append(t(hx[2], y, f"{sc*100:.0f}%", 1.85))
-        for j, P in enumerate(glcore.PIECES):
-            b = art_box(sz, P); o.append(t(hx[3 + j], y, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.75))
-        o.append(t(hx[5], y, f"{hz*sc:.0f} mm below CF neck", 1.75))
-    y = ty + 17.5 + 7*4.4 + 2
-    o.append(t(gx, y, "Art boxes in mm, measured from each size's own art (after keep-out clipping).", 1.75, 400, MUTED))
-    o.append(t(gx, y + 3.3, "Bigger sizes keep more cloud at the side seams (the art is composed past the M keep-outs).", 1.75, 400, MUTED))
-    o.append(t(gx, y + 8, "C · PLACEMENT REFERENCE PER SIZE", 2.4, 700))
-    pl = ["The per-size stitch files are already in each size's pattern coordinates: origin = centre of the art box ((+) on the pattern, DXF",
-          "   layer 8 = art outline, box, centre). Zip edge of the art 15 mm from CF on every size; horizon match mark at CF (G2).",
-          "Hoop each cut front panel flat; mark CF, the horizon line and the welt box (drill holes) before hooping.",
-          "Keep-outs held on every size: CF/zip 15 · side, armhole, shoulder 15 · hem seam 10 · welt 6 · collar lying flat 6 (T13)."]
-    for i, l in enumerate(pl): o.append(t(gx, y + 12.5 + i*3.6, l, 1.7))
+def _draw(o, g, codes, x0, y0, wmax, s, lw=0.3, tm=1.2, gap=4, emb=None):
+    x, y, rowh = x0, y0, 0.0
+    for code in codes:
+        pc = g[code]; b = PT.cut_poly(pc).bounds; w, h = (b[2] - b[0]) * s, (b[3] - b[1]) * s
+        if x + w > x0 + wmax: x = x0; y += rowh + gap; rowh = 0
+        X = (lambda xx0, b0: (lambda q: xx0 + (q - b0) * s))(x, b[0]); Y = (lambda yy0, b1: (lambda q: yy0 + (q - b1) * s))(y, b[1])
+        o += PD.piece_svg(pc, X, Y, s, label=True, size="M", lw=lw, text_mm=tm, emb=(emb or {}).get(code, ()))
+        x += w + gap; rowh = max(rowh, h)
+    return y + rowh
+
+def p_pieces():
+    o = H("PATTERN — pieces + cut list (size M)", "Seam allowance included; dashed = sew line; slits = notches; ⊕ = drill holes; outlined areas = embroidery placement (DXF layer 8).", "T4")
+    em = PC.emb_marks("M")
+    y1 = _draw(o, gM, ["B01", "F01", "F02", "S01", "S02"], 12, 30, 190, 0.075, 0.32, 1.2, emb=em)
+    y2 = _draw(o, gM, ["H01", "H02", "H03", "H04", "K01", "K02", "L01", "L02", "L03"], 12, y1 + 5, 190, 0.05, 0.26, 0.85, 8)
+    _draw(o, gM, ["R01", "R02", "P01", "P02", "P03", "P04"], 12, y2 + 5, 190, 0.05, 0.26, 1.0, 4)
+    tx = 206; o.append(t(tx, 31, "CUT LIST — per hoodie", 2.3, 700))
+    hd = ["Code", "Piece", "Cut", "Material", "Emb."]; cx = [tx, tx + 9, tx + 37, tx + 48, tx + 76]
+    for x_, h_ in zip(cx, hd): o.append(t(x_, 35.5, h_, 1.55, 700, MUTED))
+    rows = [c for c in HD.ORDER if not c.startswith("I")]
+    embc = {v: k for k, v in cccore.PIECE_CODE.items()}
+    for i, code in enumerate(rows):
+        pc = gM[code]; y = 39.5 + i * 3.4; new = code.startswith("H") or code in ("R01", "R02")
+        if i % 2 == 0: o.append(f'<rect x="{tx - 1}" y="{f(y - 2.4)}" width="{SW - tx - 11}" height="3.4" fill="{ALT}"/>')
+        col = PROP if new else INK
+        o.append(t(cx[0], y, code, 1.45, 700, col)); o.append(t(cx[1], y, pc.name.replace(" (wearer's)", "")[:21], 1.42, 400, col))
+        o.append(t(cx[2], y, pc.qty.replace(" (2 pairs)", ""), 1.42)); o.append(t(cx[3], y, pc.material.split(" — ")[0][:16], 1.4))
+        if code in embc: o.append(t(cx[4], y, embc[code], 1.42, 700, "#0A84D6"))
+    y = 39.5 + len(rows) * 3.4 + 2
+    for l in ["Amber = zip-hoodie block parts (hood, bands); rest = jacket pattern.", "Blue = embroidered piece (cut first, embroider flat, then sew).",
+              "SA 1.0 cm; band joins + hems 0.8; hood face edge 0.6.", "Hood lining (H03/H04) cut in sherpa.",
+              "Files: DXF per size + all sizes (AAMA layers), 1:1 plot PDF size M."]:
+        o.append(t(tx, y, l, 1.45, 400, MUTED)); y += 3.2
     return o
 
-def thread_qty():
-    """top thread per jacket from the size-M DSTs: sewn length x 1.4 (take-up), in metres + 5,000 m cones"""
-    import pyembroidery as pe, math
-    cur = json.load(open("dst_current.json")); L = 0.0
-    for P in glcore.PIECES:
-        p = pe.read(cur[P]["file"] + ".dst"); prev = None
-        for x, y, c in p.stitches:
-            k = c & pe.COMMAND_MASK
-            if k == pe.STITCH:
-                if prev: L += math.hypot(x - prev[0], y - prev[1]) / 10000.0
-                prev = (x, y)
-            else: prev = None
-    m = L * 1.4
-    return f"≈ {m:,.0f} m top + {m*0.45:,.0f} m bobbin (≈ {5000/m:.0f} jackets / 5,000 m cone avg)"
+def p_hood():
+    o = H("HOOD + BANDS — detail and per-size table", "Hood side + centre panel at 1:4 (size M) with seam lengths; elastic and band lengths per size. All values read from the pattern.", "T5")
+    s = 0.25; Hd = mM["hood"]
+    for code, ox, oy in (("H01", 18, 40), ("H02", 112, 40)):
+        pc = gM[code]; b = PT.cut_poly(pc).bounds
+        X = (lambda b0: (lambda q: ox + (q - b0) * s))(b[0]); Y = (lambda b1: (lambda q: oy + (q - b1) * s))(b[1])
+        o += PD.piece_svg(pc, X, Y, s, label=True, size="M", lw=0.4, text_mm=1.6)
+        if code == "H01":
+            for e in pc.edges:
+                p, _ = PT.at(e.pts, e.length / 2)
+                o.append(t(X(p[0]) + (3 if e.name != "face edge" else -3), Y(p[1]) + (4 if e.name == "neck" else 0), f"{e.name} {e.length/10:.1f}", 1.5, 600, "#0A84D6", "start" if e.name != "face edge" else "end"))
+        else:
+            o.append(t(ox + HD.CW * s + 8, oy + 20, f"{HD.CW/10:.0f} × {Hd['seam']/10:.1f} cm", 1.6, 600, "#0A84D6"))
+    hd = ["Size", "Q hood ht", "R hood wd", "Side neck", "Centre seam", "Face edge", "Hem band cut", "Hem elastic", "Cuff band cut", "Cuff elastic", "Zip"]
+    cx = [150, 160, 172, 184, 196, 209, 221, 236, 250, 264, 278]
+    o.append(t(150, 33, "PER SIZE (cm) — cut lengths are sew-line lengths; elastic = relaxed cut length", 1.8, 700))
+    for x_, h_ in zip(cx, hd): o.append(t(x_, 38, h_, 1.35, 700, MUTED))
+    for i, sz in enumerate(SIZES):
+        g, mt = G[sz]; y = 42.5 + i * 4.0; Hs = mt["hood"]
+        if i % 2 == 0: o.append(f'<rect x="149" y="{f(y - 2.8)}" width="{SW - 160}" height="4" fill="{ALT}"/>')
+        zip_l = g["F01"].edges[0].length + mt["hem_h"] - 5
+        vals = [sz, Hs["Q"], Hs["R"], Hs["Ls"], Hs["seam"], Hs["face_len"], mt["hem_band"], mt["el_hem"], mt["sleeve_open"], mt["el_cuff"] + 15, zip_l]
+        for j, v in enumerate(vals): o.append(t(cx[j], y, v if isinstance(v, str) else f"{v/10:.1f}", 1.5, 700 if j == 0 or sz == "M" else 400))
+    y = 42.5 + 7 * 4.0 + 4
+    o.append(t(150, y, "SEAM WALKS — size M", 1.8, 700)); y += 4
+    for nm, a, b_, tol in MEAS["M"][1]:
+        ok = tol is None or abs(a - b_) <= tol
+        o.append(t(150, y, nm, 1.45)); o.append(t(250, y, f"{a/10:.1f} / {b_/10:.1f}", 1.45, 600)); o.append(t(275, y, "ease" if tol is None else ("ok" if ok else "CHECK"), 1.45, 700, GREEN if ok else RED)); y += 3.2
+    y = 150
+    o.append(t(14, y, "BANDS", 2.0, 700)); y += 4
+    for l in [f"Hem band R01: cut {mM['hem_band']/10:.1f} × {2*mM['hem_h']/10:.0f} cm + SA, folded at {mM['hem_h']/10:.1f} cm. Elastic {HD.EL_HEM_W/10:.0f} cm wide, {mM['el_hem']/10:.1f} cm relaxed,",
+              f"   stitched in the fold; first + last {HD.FLAT/10:.0f} cm (at the zip) without elastic so the zip lies flat. Relaxed ½ hem = chart D.",
+              f"Cuff band R02 (×2): cut {mM['sleeve_open']/10:.1f} × {2*mM['cuff_h']/10:.0f} cm + SA, closed into a loop, folded. Elastic loop {HD.EL_CUFF_W/10:.1f} cm wide,",
+              f"   {mM['el_cuff']/10:.1f} cm + 1.5 cm overlap. Relaxed ½ cuff = chart H; gather ratio {mM['el_cuff']/mM['sleeve_open']:.2f}.",
+              "Hood: shell + sherpa sewn separately, bagged at the face edge, turned, 6 mm topstitch through all layers (sherpa side down)."]:
+        o.append(t(14, y, l, 1.55, 400, PROP if l.startswith(("Hem", "Cuff", "Hood")) else INK)); y += 3.3
+    return o
 
 def p_bom():
-    o = header("BILL OF MATERIALS", "Per jacket, size M. Fabric consumption = pattern piece area ÷ (150 cm width × 80 % marker efficiency) — replace with the factory's marker. Threads: G3.", "T6")
-    import gtp_pattern as GP
-    C = GP.consumption("M")
-    hd = ["#", "Component", "Material / spec", "Colour", "Placement", "Supplier", "Qty (M)"]
-    cx = [12, 18, 48, 124, 168, 222, 258]
-    for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.8, 700, MUTED))
-    rows = [
-        ("Shell", "12 oz (407 g/m²) 100% cotton duck canvas, 150 cm, washed", "washed navy ≈ #252B3B", "body, sleeves, welts, facing", "TBC", f"{C['Shell']:.2f} m", False),
-        ("Collar", "14-wale cotton corduroy, 8 oz", "black", "upper + under collar", "TBC", f"{C['Collar']:.2f} m", True),
-        ("Hem rib", "1×1 rib, 95/5 cotton/elastane, 400 g/m²", "black", "hem band", "TBC", f"{C['Hem rib']/1000:.2f} m (1 × {C['Hem rib']/10:.0f} cm cut)", True),
-        ("Cuff rib", "1×1 rib, 95/5 cotton/elastane, 400 g/m²", "black", "cuffs ×2", "TBC", f"{C['Cuff rib']/1000:.2f} m", True),
-        ("Body lining", "100% cotton flannel, 180 g/m²", "navy solid", "body", "TBC", f"{C['Body lining']:.2f} m", True),
-        ("Sleeve lining", "polyester taffeta 210T", "navy", "sleeves", "TBC", f"{C['Sleeve lining']:.2f} m", True),
-        ("Pocket bag", "8 oz cotton twill", "navy", "welt pockets ×2", "TBC", f"{C['Pocket bag']:.2f} m", True),
-        ("Interlining", "woven fusible, 60 g/m²", "charcoal", "top collar, facings, welts", "TBC", f"{C['Interlining']:.2f} m", True),
-        ("Zip", "YKK #5 metal separating, auto-lock, one-way", "antique brass teeth, black tape", "CF", "YKK", "1 × 56 cm (M)", False),
-        ("Thread — seams", "Coats Epic 120 (Tex 27) corespun poly/cotton", "tonal navy", "all seams + overlock", "Coats", "~ 450 m", True),
-        ("Thread — topstitch", "Coats Gral 40 (Tex 60) poly", "tonal navy", "topstitch, bartacks", "Coats", "~ 120 m", True),
-        ("Embroidery thread", "Madeira Polyneon 40 (12 colours, see G3)", "per embroidery spec", "01 front scene", "Madeira", thread_qty(), False),
-        ("Embroidery backing", "2.5 oz cutaway", "black / charcoal", "behind FR + FL", "TBC", "2 pieces", False),
-        ("Main label", "woven damask, HAKI logo, 7 × 2 cm, folded", "black / cream", "CB neck facing", "TBC", "1", True),
-        ("Size label", "woven, 2 × 1.5 cm", "black / cream", "under main label", "TBC", "1", True),
-        ("Care / content label", "printed satin, multi-page", "white", "wearer's left inside side seam", "TBC", "1", True),
-        ("Hangtag + string", "350 gsm board, cotton string, brass-tone barb", "cream / black", "through main label loop", "TBC", "1", True),
-        ("Polybag", "LDPE 40 µm, self-seal, suffocation warning", "clear", "packing", "TBC", "1", True),
-    ]
-    for i, (comp, mat, colr, plc, sup, qty, pp) in enumerate(rows):
-        y = 35.5 + i*4.55
-        if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-3.1)}" width="{SW-22}" height="4.55" fill="#F5F2EC"/>')
-        o.append(t(cx[0], y, f"{i+1:02d}", 1.75, 700)); o.append(t(cx[1], y, comp, 1.85, 600))
-        o.append(t(cx[2], y, mat, 1.75, 600 if pp else 400, PROP if pp else INK))
-        o.append(t(cx[3], y, colr, 1.7)); o.append(t(cx[4], y, plc, 1.7)); o.append(t(cx[5], y, sup, 1.7, 400, MUTED)); o.append(t(cx[6], y, qty, 1.75, 600))
-    y = 35.5 + len(rows)*4.55 + 2
-    o.append(t(12, y, "Amber rows = proposed by Haki tech design, not yet specified — confirm material, weight and supplier. Shell (12 oz duck, navy), black collar/rib and zip are from the client notes.", 1.75, 600, PROP))
-    o.append(t(12, y + 3.5, "Shell fabric: pre-shrunk / garment-wash tested before embroidery (dense embroidery shrinks panels 1.5–2.5%).", 1.75, 400, MUTED))
+    o = H("BILL OF MATERIALS", "Per hoodie, size M. Fabric = pattern piece area ÷ (150 cm usable width × 80 % marker efficiency) — replace with the factory's marker.", "T6")
+    shell = [c for c in HD.ORDER if gM[c].material.startswith("Shell")]; sher = ["H03", "H04"]
+    flan = [c for c in HD.ORDER if "flannel" in gM[c].material]; taf = [c for c in HD.ORDER if "taffeta" in gM[c].material]
+    pock = [c for c in HD.ORDER if gM[c].category == "POCKETING"]; fus = [c for c in HD.ORDER if c.startswith("I")]
+    m = lambda codes: area_m2(codes, gM) / (1.5 * 0.8)
+    zip_l = gM["F01"].edges[0].length + mM["hem_h"] - 5
+    import pack as _pk
+    cols = _pk.USED
+    hoops = sum(len(CUR[p]["splits"]["sections"]) or 1 for p in CUR)
+    rows = [("Shell", "12 oz cotton duck canvas, washed navy (pre-washed before embroidery)", f"{m(shell):.2f} m", True),
+            ("Hood lining", "Sherpa 280 g/m² polyester, cream", f"{m(sher):.2f} m", True),
+            ("Body lining", "Cotton flannel, plaid (navy / green, as mockup)", f"{m(flan):.2f} m", True), ("Sleeve lining", "Polyester taffeta 210T, navy", f"{m(taf):.2f} m", True),
+            ("Pocketing", "8 oz cotton twill", f"{m(pock):.2f} m", True), ("Fusing", "Woven fusible 60 g/m² (facings, welts)", f"{m(fus):.2f} m", False),
+            ("Zip", f"YKK #5 metal, brass, 2-way separating, {zip_l/10:.0f} cm (M)", "1", True),
+            ("Elastic — hem", f"{HD.EL_HEM_W/10:.0f} cm woven elastic, {mM['el_hem']/10:.1f} cm (M)", "1", True),
+            ("Elastic — cuff", f"{HD.EL_CUFF_W/10:.1f} cm woven elastic, {(mM['el_cuff']+15)/10:.1f} cm (M)", "2", True),
+            ("Embroidery thread", f"40wt polyester, {len(cols)} colours (G3) — FR + FL + SR + SL", f"{sum(CUR[p]['stitches'] for p in CUR):,} stitches (M)", True),
+            ("Embroidery backing", f"2.5 oz cutaway, black — {hoops} hoopings per jacket (G6)", "~ 1.1 m", True),
+            ("Thread — seams", "Coats Epic 120 (Tex 27), navy", "~ 450 m", False), ("Thread — topstitch", "Coats Gral 40 (Tex 60), tonal navy", "~ 140 m", False),
+            ("Labels", "Main + size on back neck facing; care label left side seam lining", "1 set", False)]
+    hd = ["Item", "Description", "Qty / consumption"]; cx = [12, 52, 200]
+    for x_, h_ in zip(cx, hd): o.append(t(x_, 33, h_, 1.8, 700, MUTED))
+    for i, (a, b_, q, p) in enumerate(rows):
+        y = 38 + i * 4.4
+        if i % 2 == 0: o.append(f'<rect x="11" y="{f(y - 3.0)}" width="{SW - 22}" height="4.4" fill="{ALT}"/>')
+        o.append(t(cx[0], y, a, 1.75, 700)); o.append(t(cx[1], y, b_ + ("  [proposed — confirm]" if p else ""), 1.7, 400, PROP if p else INK)); o.append(t(cx[2], y, q, 1.75, 600))
+    y = 38 + len(rows) * 4.4 + 5
+    o.append(t(12, y, "ZIP LENGTH PER SIZE (cm, hem-band edge to CF neck − 0.5)", 1.9, 700)); y += 4.4
+    for j, sz in enumerate(SIZES):
+        g, mt = G[sz]; o.append(t(12 + j * 22, y, f"{sz}  {(g['F01'].edges[0].length + mt['hem_h'] - 5)/10:.0f}", 1.8, 600))
     return o
 
-def p_construction():
-    o = header("CONSTRUCTION — seams, stitches, assembly order", "SPI = stitches per inch. Seam allowance (SA) in cm. 'Topstitch' = tonal Tex 60 unless noted.", "T7")
-    hd = ["Seam / operation", "Stitch type", "SPI", "SA", "Finish / topstitch"]
-    cx = [12, 62, 104, 114, 124]
-    for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.8, 700, MUTED))
-    rows = [("Shoulder", "5-thread safety stitch (ISO 516)", "11", "1.0", "pressed to back; 6 mm single-needle topstitch on back"),
-            ("Armhole — front", "5-thread safety stitch", "11", "1.0", "pressed to body; 6 mm topstitch on body"),
-            ("Armhole — back", "5-thread safety stitch", "11", "1.0", "pressed to body; 6 mm topstitch on body"),
-            ("Side seam + underarm", "5-thread safety stitch, one pass", "11", "1.0", "pressed to back, no topstitch"),
-            ("CF zip", "lockstitch (ISO 301)", "10", "1.0", "tape enclosed shell + facing; 10 mm topstitch"),
-            ("Collar edge", "lockstitch, turned + pressed", "12", "0.6", "6 mm edge topstitch"),
-            ("Collar to neck", "lockstitch, collar sandwiched by facing", "11", "1.0", "stitch-in-ditch at back neck"),
-            ("Welt pockets", "lockstitch, welt + facing", "11", "—", "2 mm edge topstitch; 10 mm bartack ×2 each end"),
-            ("Pocket bag", "French seam", "12", "0.5", "—"),
-            ("Hem rib", "4-thread overlock, stretched to body", "11", "0.8", "5 mm topstitch on body"),
-            ("Cuff rib", "4-thread overlock, stretched to sleeve", "11", "0.8", "seam inside, no topstitch"),
-            ("Lining seams", "4-thread overlock", "12", "1.0", "lining bagged to facing + rib seams"),
-            ("Bartacks", "bartack 28 stitches", "—", "—", "welt ends, hanger loop"),
-            ("Embroidery", "multi-head embroidery", "—", "—", "flat on cut panels, BEFORE any seam (see embroidery section)")]
-    for i, r in enumerate(rows):
-        y = 35.5 + i*4.4
-        if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-3)}" width="185" height="4.4" fill="#F5F2EC"/>')
-        for j, v in enumerate(r): o.append(t(cx[j], y, v, 1.8, 600 if j == 0 else 400, ORANGE if "wrap" in r[0] and j == 4 else INK))
-    o.append(prop(12, 35.5 + len(rows)*4.4 + 2, "Seam types + SPI are a standard workwear proposal — confirm against the factory's capability", 1.8))
-    ax = 204
-    o.append(t(ax, 31, "ASSEMBLY ORDER", 2.4, 700))
-    steps = ["Cut shell; mark welts, embroidery placement, notches.",
-             "Embroider 01 front scene on both fronts flat.",
-             "Trim backing to 5 mm; press from the wrong side.",
-             "Make welt pockets on both fronts; bartack.",
-             "Join shoulders; topstitch.",
-             "Set sleeves; topstitch armholes.",
-             "Close side + underarm seams.",
-             "Make collar; attach with facing; topstitch.",
-             "Set CF zip between shell + facing; zip garage.",
-             "Attach cuff ribs; attach hem rib; topstitch.",
-             "Bag lining; hanger loop; labels.",
-             "Final press (no iron on embroidery face).",
-             "QC: measure to T4, embroidery to placement ±2.",
-             "Hangtag, fold, polybag (T8)."]
-    for i, s_ in enumerate(steps): o.append(t(ax, 36 + i*3.9, f"{i+1:02d}  {s_}", 1.8))
+def p_placement():
+    o = H("EMBROIDERY PLACEMENT ON THE PATTERN — every size, every keep-out", "Measured on each size's drafted pattern pieces (sew lines) from the per-size art (emb_place.py). mm. Min = keep-out.", "T7")
+    pieces = cccore.PIECES
+    o.append(t(12, 31, "CLEARANCE TO EACH KEEP-OUT (mm) — fronts: CF zip, armhole, shoulder, side, hem band, hood neck, welt; sleeves: cap, underarm front/back, cuff band", 1.8, 700))
+    y = 37; allok = True
+    for P in pieces:
+        mn = EP.mins(P); keys = list(mn)
+        o.append(t(12, y, f"{P} — {cccore.PIECE_NAME[P]} ({cccore.PIECE_CODE[P]})", 1.8, 700)); y += 3.6
+        cx = [12] + [32 + 24*i for i in range(len(keys))]
+        o.append(t(cx[0], y, "Size", 1.5, 700, MUTED))
+        for i, k in enumerate(keys): o.append(t(cx[i + 1], y, f"{k} (min {mn[k]:.0f})", 1.45, 700, MUTED))
+        y += 3.4
+        for j, sz in enumerate(SIZES):
+            c = EP.clearances(sz)[P]
+            if j % 2 == 0: o.append(f'<rect x="11" y="{f(y - 2.4)}" width="{SW - 22}" height="3.2" fill="{ALT}"/>')
+            o.append(t(cx[0], y, sz, 1.45, 700))
+            for i, k in enumerate(keys):
+                ok = c[k] >= mn[k] - 0.3; allok &= ok
+                o.append(t(cx[i + 1], y, f"{c[k]:.1f}", 1.45, 600 if not ok else 400, GREEN if ok else RED))
+            y += 3.2
+        y += 2.2
+    o.append(t(12, y + 1, f"Result: {'ALL KEEP-OUTS PASS on every size' if allok else 'KEEP-OUT FAILURE — see red'}.", 2.0, 700, GREEN if allok else RED))
+    o.append(t(12, y + 5, "Fronts: graded A 92 % (XS–S) / B 100 % (M–XL) / C 108 % (XXL–3XL) about the CF neck; the city band slides to each size's hem-band seam. Sleeves graded about the cuff seam.", 1.6, 400, MUTED))
+    o.append(t(12, y + 8.4, "The art outline, art box, split line and every needle start are on DXF layer 8 / 13 of each size's pattern file.", 1.6, 400, MUTED))
     return o
 
-def p_labels():
-    o = header("LABELS, TRIM PLACEMENT + PACKAGING", "Label artwork supplied separately by Haki. Positions measured on the finished garment.", "T8")
-    rows = [("Main label", "CB neck facing, 1.0 below the collar seam, centred; sewn on 2 short ends"),
-            ("Size label", "folded, centred under the main label, caught in the bottom seam of the main label"),
-            ("Hanger loop", "6 cm self-fabric loop at CB neck, above the main label"),
-            ("Care / content", "wearer's left inside side seam, 10 cm above the hem-rib seam, caught in the lining seam"),
-            ("Hangtag", "through the main-label hanger loop with cotton string + barb; never through the embroidery")]
-    for i, (a, b) in enumerate(rows):
-        o.append(t(14, 34 + i*4.2, a, 1.9, 600)); o.append(t(46, 34 + i*4.2, b, 1.9))
-    o.append(t(14, 60, "CARE / CONTENT LABEL TEXT", 2.4, 700))
-    care = ["Shell: 100% cotton · Collar: 100% cotton · Rib: 95% cotton 5% elastane · Lining: 100% cotton / sleeve lining 100% polyester",
-            f"Embroidery: 100% polyester · Made in [country] · Style {STYLE} · Size [ ]",
-            "Machine wash cold, inside out, gentle · Do not bleach · Tumble dry low · Cool iron on reverse, never on embroidery · Do not dry clean",
-            "Care symbols (ISO 3758): wash 30 °C gentle · no bleach · tumble low · iron 1 dot · no dry clean"]
-    for i, c in enumerate(care): o.append(prop(14, 65 + i*3.7, c, 1.8) if i < 2 else t(14, 65 + i*3.7, c, 1.85))
-    o.append(t(14, 86, "PACKAGING", 2.4, 700))
-    pk = ["Fold: zip closed, sleeves folded back across the body, folded once at the waist — front embroidery facing the tissue.",
-          "Acid-free tissue sheet over the front embroidery and in the fold to stop thread abrasion.",
-          "Polybag: LDPE 40 µm self-seal, printed suffocation warning; size sticker + barcode bottom right.",
-          "Carton: 5-ply export carton, max 12 units, size-ratio packing per PO; carton mark per Haki shipping guide."]
-    for i, p_ in enumerate(pk): o.append(t(14, 91 + i*3.8, p_, 1.85))
-    o.append(prop(14, 91 + 4*3.8, "Fold dimensions ≈ 35 × 45 cm; tissue + hangtag spec", 1.8))
-    o.append(t(14, 115, "QC CHECKPOINTS", 2.4, 700))
-    qc = ["Measurements to T4 tolerance on 2 pcs/size/colour per lot.", "Embroidery: placement ±2 mm, rotation ±3°, no loose jumps, backing trimmed, no puckering > 1 mm.",
-          "Zip runs smoothly full length, auto-lock holds; welt corners clean, bartacks secure.", "No needle holes or stitch marks on the corduroy collar; rib recovery after 10 stretches."]
-    for i, q in enumerate(qc): o.append(t(14, 120 + i*3.8, q, 1.85))
+def p_fit():
+    o = H("SAMPLE CHECKS + OPEN QUESTIONS", "The body is the approved jacket; the zip-hoodie block (hood, bands) has no fitted sample yet — check it on this design's first sample.", "T8")
+    checks = ["Hood on the head (zip closed): crown clears the head by 2–3 cm with the sherpa; face opening doesn't pull at forehead or chin.",
+              "Hood down: lies flat on the back, centre panel straight, no drag lines from the neck seam toward the shoulders.",
+              "Neck seam: hood sits on the neckline without rippling; embroidery 01 stays ≥ 10 mm below the hood seam.",
+              "Hem band: gathers even, none in the 6 cm next to the zip; the railing + bicycle sit just above the band seam (≥ 10 mm).",
+              "Cuff band: gathers even; sleeve art ends ≥ 10 mm above the cuff seam; plants read the right way up on the worn sleeve.",
+              "Zip: comet, top rail and kerb line meet across the zip (±1 mm) when closed.",
+              "Embroidery: no puckering on the washed duck around the dense city + comet; backing trimmed; no show-through.",
+              "Same as the jacket (should already pass): chest, shoulder, armhole, sleeve pitch, welt position, body length."]
+    o.append(t(12, 34, "CHECK ON THE SAMPLE", 2.4, 700)); y = 40
+    for c in checks:
+        o.append(f'<rect x="12" y="{f(y - 2.2)}" width="2.6" height="2.6" fill="none" stroke="{INK}" stroke-width="0.25"/>'); o.append(t(16.5, y, c, 1.7)); y += 4.2
+    y += 4; o.append(t(12, y, "OPEN QUESTIONS — confirm before the sample", 2.4, 700)); y += 6
+    qs = ["1. IP: the comet-over-city-with-figure composition evokes the film 'Your Name' — our own skyline, comet and figure pose; founder to decide.",
+          "2. Back + hood plain; sleeves embroidered on the front half only (as visible on the mockup). Confirm, or add back / hood / full-sleeve art.",
+          "3. Hood size 36 × 26 cm (M) incl. sherpa allowance, no drawcord; hem/cuff bands 5.5 / 5 cm with elastic (zip-hoodie block, proposed).",
+          "4. Zip: 2-way separating YKK #5 metal, brass (mockup shows two pullers).",
+          "5. Shell: 12 oz washed navy duck, pre-washed before embroidery; lining: plaid flannel (body), taffeta (sleeves), cream sherpa (hood).",
+          "6. Welts at the mockup position (21.8 cm from CF, 35.2 cm below the neck, 54°) — the zip-hoodie block default welt is moved for this design.",
+          "7. Sample size M first (blank fit of the hoodie block is still pending); then the size set."]
+    for q in qs: o.append(t(12, y, q, 1.7, 400, PROP)); y += 4.2
     return o
 
-def p_colourway():
-    o = header("COLOURWAY + ARTWORK — washed navy, sunrise over a sea of clouds", "Garment colours and the embroidery in place (stitch preview, size M). Embroidery detail: following section.", "T9")
-    fr = Image.open("cover_front.png"); bk = Image.open("cover_back.png")
-    tag, h = img_tag(fr, 14, 30, 100); o.append(tag); tag, h2 = img_tag(bk, 120, 30, 100); o.append(tag)
-    cx = 228; o.append(t(cx, 33, "GARMENT COLOURS", 2.3, 700))
-    cols = [(glcore.FABRIC, "Shell — washed navy duck"), ("#1E1E1E", "Collar — black corduroy"), ("#262626", "Hem + cuff rib — black"),
-            ("#A07C3C", "Zip — antique brass, black tape")]
-    for i, (h_, n) in enumerate(cols):
-        o.append(f'<rect x="{cx}" y="{f(37 + i*5.5)}" width="6" height="4" rx="0.5" fill="{h_}" stroke="#BBB" stroke-width="0.2"/>')
-        o.append(t(cx + 8, 40 + i*5.5, n, 1.85))
-    o.append(t(cx, 66, "Lab-dip / strike-off approval", 1.9, 700))
-    o.append(t(cx, 69.5, "required for shell, collar and both ribs.", 1.85))
-    o.append(t(cx, 76, "Embroidery: 12 threads,", 1.9, 700)); o.append(t(cx, 79.5, "Madeira Polyneon (G3).", 1.85))
-    o.append(prop(cx, 86, "Shell piece-dyed + washed BEFORE", 1.75)); o.append(t(cx, 89.5, "embroidery (garment dye would", 1.75, 600, PROP)); o.append(t(cx, 93, "shift thread shades) — T10 Q1", 1.75, 600, PROP))
+def p_revisions():
+    o = H("REVISION LOG + SAMPLE TRACKER", "Every change, newest last.", "T9")
+    revs = [("Rev A", DATE, "Comet City hooded jacket on the zip-hoodie block (Drum Island body + 3-panel sherpa hood + self-fabric bands). Embroidery: 01 front scene "
+                            "(FR + FL, split at the zip) + 02 sleeves (SR + SL), redrawn from the low-res mockup. Pattern XS–3XL with embroidery placement, DXF + 1:1 plot.")]
+    y = 36
+    for rv, dt, ch in revs:
+        o.append(t(12, y, rv, 1.8, 700)); o.append(t(36, y, dt, 1.7))
+        words = ch.split(); line, lines = "", []
+        for w in words:
+            if len(line) + len(w) > 150: lines.append(line); line = w
+            else: line = (line + " " + w).strip()
+        lines.append(line)
+        for j, l in enumerate(lines): o.append(t(60, y + j * 3.2, l, 1.7))
+        y += 3.2 * len(lines) + 4
+    y += 4; o.append(t(12, y, "SAMPLE TRACKER", 2.4, 700)); y += 5
+    for i, sname in enumerate(["Embroidery strike-off, size M (F1)", "First sample, size M (hoodie block fit + embroidery)", "Size set", "Approved for bulk"]):
+        yy = y + i * 9
+        o.append(f'<rect x="11" y="{f(yy - 4)}" width="{SW - 22}" height="9" fill="{ALT if i % 2 == 0 else "#FFFFFF"}" stroke="#DDD" stroke-width="0.2"/>')
+        o.append(t(13, yy + 1, sname, 1.8, 600))
     return o
 
-def p_questions():
-    o = header("OPEN QUESTIONS — garment", "Everything marked [proposed — confirm] in this pack, in one place. Embroidery questions are on G4.", "T10")
-    qs = ["1. Shell: 12 oz duck washed navy — piece-dyed + washed before embroidery (assumed) or garment-dyed after? Send a lab-dip / Pantone reference.",
-          "2. Collar corduroy weight + wale (proposed 14-wale, 8 oz, black); zip tape colour (black proposed).",
-          "3. Rib: fibre (proposed 95/5 cotton/elastane), heights (hem 5.5, cuff 7.5 — not on the fit chart), black.",
-          "4. Pattern (T11–T13) is the Drum Island first pattern: shoulder slope 4.5, cap ease 1.2, facings, rib heights proposed — sample + fit M first.",
-          "5. Welt pockets: Drum Island welt 1.4 × 13 cm moved to the mockup position (20.5 from CF, 34.7 below the neck, 38°). Confirm.",
-          "6. Lining: navy flannel body + taffeta sleeves proposed. Quilted or unlined alternative?",
-          "7. Zip garage at collar + auto-lock slider — confirm. Zip lengths per size on T3 assume CF length − 0.5 cm.",
-          "8. Seam types + SPI (T7) are a standard proposal — factory to confirm capability (5-thread safety stitch, bartack).",
-          "9. Labels + packaging artwork, country of origin, care-symbol set, carton marks.",
-          "10. Embroidery grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per front piece. OK?",
-          "11. Frame: each front piece needs 2 hoopings on the assumed 360 × 360 frame (split files) — or one hooping on a ≥ 300 × 520 frame (full files). Which?",
-          "12. Product name: 'Grand Line' is a One Piece term — internal slug only? Confirm the retail name before labels/hangtags.",
-          "13. Inside: pocket bags free-hanging + bound (proposed); inside chest pocket — add one? (T14)"]
-    for i, q in enumerate(qs): o.append(t(14, 34 + i*4.6, q, 2.0))
-    return o
-
-PAGES = ["T1 Cover + contents", "T2 Technical flats", "T3 Construction details", "T4 Measurements + size chart",
-         "T5 Grading + embroidery grading", "T6 Bill of materials", "T7 Seams, stitches, assembly", "T8 Labels, packaging, QC",
-         "T9 Colourway + artwork", "T10 Open questions — garment", "T11 Pattern — pieces + cut list", "T12 Pattern — grade nests + measurement check",
-         "T13 Pattern — embroidery placement per size", "T14 Inside view", "T15 Operations + time estimate", "T16 Revision log + sample tracker"]
+PAGES = ["T1 Cover", "T2 Flats + construction", "T3 Size chart + measurement check", "T4 Pattern pieces + cut list", "T5 Hood + bands detail",
+         "T6 Bill of materials", "T7 Embroidery placement + keep-outs, all sizes", "T8 Sample checks + open questions", "T9 Revision log + sample tracker"]
 
 def build(emb_pdf, emb_pages, out_pdf):
-    F = TF.Flat("M")
-    index = [(n, i + 1) for i, n in enumerate(PAGES)] + [("EMBROIDERY SECTION (G1–G5 + element 01)", len(PAGES) + 1)] + emb_pages
-    import gtp_pattern as GP
-    pages = [p_cover(index), p_flats(F), p_details(F), p_pom(F), p_grade(), p_bom(), p_construction(), p_labels(), p_colourway(), p_questions(),
-             GP.p_pattern_pieces(), GP.p_pattern_grade(), GP.p_pattern_emb(), GP.p_inside(), GP.p_operations(), GP.p_revisions()]
-    w = PdfWriter()
+    for sz in SIZES: assert CHECK[sz] and WALKS_OK[sz] and SHAPE_OK[sz], f"pattern QA failed for {sz}"
+    index = [(n, i + 1) for i, n in enumerate(PAGES)] + [("EMBROIDERY SECTION (G1–G6, specs, F1)", len(PAGES) + 1)] + emb_pages
+    pages = [p_cover(index), p_flats(), p_pom(), p_pieces(), p_hood(), p_bom(), p_placement(), p_fit(), p_revisions()]
+    w = PdfWriter(); os.makedirs("out/pages", exist_ok=True)
     for i, pg in enumerate(pages, 1):
-        svg = doc(pg); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"T{i}.pdf")
+        svg = doc(pg); pdf = f"out/pages/T{i}.pdf"
+        cairosvg.svg2pdf(bytestring=svg.encode(), write_to=pdf)
         cairosvg.svg2png(bytestring=svg.encode(), write_to=f"prev_T{i}.png", output_width=2400)
-        w.append(PdfReader(f"T{i}.pdf"))
-    if emb_pdf: w.append(PdfReader(emb_pdf))
+        w.append(PdfReader(pdf))
+    w.append(PdfReader(emb_pdf))
     w.write(out_pdf)
     return len(pages)
