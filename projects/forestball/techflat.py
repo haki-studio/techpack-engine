@@ -137,7 +137,8 @@ def draw_front(F, emb_boxes=(), callouts=True):
     o.append(topstitch(col, 4, "1.4 0.9", 0.25, "#777777"))
     for (x0, y0, x1, y1, lab) in emb_boxes:
         o.append(f'<rect x="{f(x0)}" y="{f(y0)}" width="{f(x1-x0)}" height="{f(y1-y0)}" fill="none" stroke="#C0392B" stroke-width="{f(0.5*K)}" stroke-dasharray="3 2"/>')
-        o.append(f'<circle cx="{f(x0)}" cy="{f(y0)}" r="{f(LBL)}" fill="#C0392B"/><text x="{f(x0)}" y="{f(y0 + LBL*0.36)}" font-size="{f(LBL)}" font-weight="700" fill="#FFF" text-anchor="middle" font-family="Noto Sans CJK JP">{lab}</text>')
+        by_ = y1 if lab == "02R" else y0          # 02R badge at the box's lower corner: keeps the shoulder callouts clear
+        o.append(f'<circle cx="{f(x0)}" cy="{f(by_)}" r="{f(LBL)}" fill="#C0392B"/><text x="{f(x0)}" y="{f(by_ + LBL*0.36)}" font-size="{f(LBL)}" font-weight="700" fill="#FFF" text-anchor="middle" font-family="Noto Sans CJK JP">{lab}</text>')
     return "".join(o)
 
 def draw_back(F, emb_boxes=()):

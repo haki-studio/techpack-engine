@@ -228,7 +228,7 @@ def p_inside():
 # ---------------------------------------------------------------- operations / SMV
 OPS = [("Cutting", "Cut shell, collar, lining, rib, pocketing, fusing; drill welt + embroidery marks", "Cutting table", 6.0),
        ("Fusing", "Fuse top collar, facings, back neck facing, welts", "Fusing press", 2.5),
-       ("Embroidery", "01 back, 02R, 02L — flat on cut pieces; licensed figure by factory (machine time separate, see G4)", "Multi-head (15 needle)", 8.0),
+       ("Embroidery", "01 back, 02R, 02L — flat on cut pieces; licensed figure by factory (machine time separate, see G4)", "Multi-head (12 colours/file)", 8.0),
        ("Embroidery finish", "Trim backing to 5 mm, remove registration crosses if visible (split files), press from wrong side", "Hand / press", 6.0),
        ("Welt pockets", "Mark, set welt + bags both fronts, bartack ×4", "Lockstitch + bartack", 9.0),
        ("Shoulders", "Join shoulders (5-thread), press to back, 6 mm topstitch", "Safety stitch + lockstitch", 2.5),
@@ -254,9 +254,11 @@ def p_operations():
         o.append(t(cx[3], y, mc, 1.7, 400, MUTED)); o.append(t(cx[4], y, f"{smv:.1f}", 1.8, 600))
     tot = sum(x[3] for x in OPS); y = 36 + len(OPS)*4.6 + 1
     o.append(t(cx[3], y, "TOTAL (sewing + finishing)", 1.8, 700)); o.append(t(cx[4], y, f"{tot:.0f} min", 1.8, 700))
-    emb = json.load(open("dst_results_B.json")) if os.path.exists("dst_results_B.json") else {}
-    st = sum(v.get("stitches", 0) for k, v in emb.items() if k in ("back", "02R", "02L"))
-    o.append(t(12, y + 6, f"Embroidery machine time, size M: ≈ {st/1000:.0f}k stitches → ≈ {st/750/60:.1f} h per head at 750 spm + colour changes + hooping (3 hoopings, or 6 with the split back; licensed figure extra).", 1.75, 600))
+    import factory
+    cur = json.load(open("dst_current.json")) if os.path.exists("dst_current.json") else {}
+    st = sum(v["stitches"] for k, v in cur.items() if v)
+    mh = sum(factory.machine_hours(v["stitches"], None, trims=v["trims_dst"], colour_changes=v["stops"] - 1) for k, v in cur.items() if v)
+    o.append(t(12, y + 6, f"Embroidery machine time, size M: {st:,} stitches → ≈ {mh:.1f} h per head (factory.machine_hours: spm + trims + colour changes; G4) + 6 hoopings; licensed figure extra.", 1.75, 600))
     o.append(GT.prop(12, y + 10, "SMVs are estimates — replace with the factory's time study at the sample stage", 1.75))
     return o
 

@@ -44,3 +44,9 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - Back collar fall: art stays 6 mm below the collar lying flat on the back (collar fall ≈ 60 mm below the CB neck seam).
 - Back > 360 frame → 4 hoopings (360 × 360 splits with basting crosses) per grade.
 - Pattern: Drum Island pattern unchanged (same chart, welt 1.4 × 13 cm, same welt position); collar black corduroy, hem + cuff rib black.
+
+## Rev B changes (17 Oct)
+- Fidelity first (founder): stitch count / trims are reported, not limits. 02R traced from close-up b (5 px/mm); close-up c = moss/chain texture only;
+  close-up "a" turned out to show the BACK scene (used for texture only). Back + 02L redrawn from the mockup in the close-up vocabulary.
+- Factory limit 12 colours per file (incl. registration / placeholder outline): palette 12 threads; light blues merged, basting thread removed —
+  the licensed-box outline and registration crosses sew in Stream light. Hooping baseline 6 on 360 x 360 (factory.json).

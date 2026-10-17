@@ -167,7 +167,7 @@ def summary():
           f"3. Hooping: baseline 6 hoopings on {FRAME[0]:.0f} × {FRAME[1]:.0f} (back S1–S4 + 02R + 02L). A border frame ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f} would take the single back file — option, asked on F1.",
           "4. Shell: washed forest green duck — piece-dyed + pre-washed before embroidery, or garment-washed after? Wash-test the sew-out (cream, leaf yellow-green shift first).",
           f"5. Thread palette ({len(PAL)} threads, from the mockup + close-ups; ≤ 12 per file) — approve a physical thread board; amber/red ΔE rows from the card (G3).",
-          "6. Light rays: specced sheer (serpentine run, rows 1.9 apart) per the brief. Approve on the sew-out — denser would read as solid bands.",
+          "6. Light rays: specced sheer (serpentine run, rows 2.6 apart, sewn last over the art) per the brief. Approve on the sew-out — denser would read as solid bands.",
           "7. Back collar fall: art stays 6 below a 45 mm collar fall at CB (proposed) — confirm with the sample collar.",
           "8. Retail name 'Forestball': confirm it is not meant to echo Dragon Ball before retail use.",
           "9. DST/PES are production-intent drafts: the factory digitizer opens them, checks density + pull on 12 oz duck and edits before sew-out."]
@@ -189,7 +189,8 @@ def files_page():
         rb = ALL["grades"]["B"][k]; o.append(t(cx[4], y, f"{rb['stops']}", 1.55)); o.append(t(cx[5], y, f"{rb['threads']}", 1.55))
         o.append(t(cx[6], y, f"{max(ALL['grades'][G][k]['max_stitch'] for G in ALL['grades'] if k in ALL['grades'][G]):.1f}", 1.55))
         y += 3.8
-    y += 3; o.append(t(12, y, f"01 BACK — {FRAME[0]:.0f} × {FRAME[1]:.0f} SPLITS per grade (registration crosses sewn in each file's first thread) · baseline: 6 hoopings per jacket (S1–S4 + 02R + 02L) · plan per size: G6", 2.0, 700)); y += 4.5
+    y += 3; o.append(t(12, y, f"01 BACK — {FRAME[0]:.0f} × {FRAME[1]:.0f} SPLITS per grade · crosses in each file's first thread · 6 hoopings/jacket (plan: G6)", 2.0, 700))
+    y += 4.5
     hd = ["Grade", "S1", "S2", "S3", "S4", f"Fit {FRAME[0]-16:.0f}²", "Cut mm"]; cx2 = [12, 26, 56, 86, 116, 148, 164]
     for x_, h in zip(cx2, hd): o.append(t(x_, y, h, 1.6, 700, MUTED))
     y += 4
@@ -207,7 +208,7 @@ def files_page():
     o.append(t(12, y + 1, "▣ = the section that carries the licensed-placeholder outline (Stream light, its first stop with the crosses).", 1.5, 400, RED)); y += 6
     o.append(t(12, y, "WHAT IS DIGITIZED", 2.0, 700)); y += 4.2
     for a, b_ in [("Density", "tatami 0.45, satin 0.42, padded moss 1 padding layer (> 3 mm wide), lattice underlay > 60 mm², 7 mm hidden travel."),
-                  ("Light rays", "one continuous serpentine run per ray tone (no trims inside a ray), sewn first so every fill covers its travel."),
+                  ("Light rays", "one continuous serpentine run per ray tone (no trims inside a ray), sewn LAST as a sheer overlay across limb + rocks."),
                   ("Trims", "hidden travel + underpath; objects ordered inside hidden areas; trims counted from the DST read-back."),
                   ("Threads / stops", "≤ 12 colours per file (factory limit, checked on every written file); repeated colours merged into the earliest safe stop."),
                   ("Placeholder", "box outline in Stream light = first stop; nothing stitched inside; water stops 1 mm outside."),

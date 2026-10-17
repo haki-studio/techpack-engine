@@ -82,7 +82,9 @@ def page1():
         o.append(t(rx, yy, f"Piece {p}", 1.85, 400, MUTED))
         o.append(t(rx + 48, yy, f"{d.get('stitches', 0):,} st · {d.get('trims_dst', 0)} trims · {d.get('stops', 0)} stops · {d.get('threads', 0)} threads", 1.85, 600)); yy += 3.5
     tot = sum(CUR.get(p, {}).get("stitches", 0) for p in PIECES)
-    o.append(t(rx, yy, "Est. run time / head", 1.85, 400, MUTED)); o.append(t(rx + 48, yy, f"≈ {tot/750:.0f} min at 750 spm + stops (both pieces)", 1.85, 600)); yy += 5
+    import factory
+    mh = sum(factory.machine_hours(CUR[p]["stitches"], None, trims=CUR[p]["trims_dst"], colour_changes=CUR[p]["stops"] - 1) for p in PIECES)
+    o.append(t(rx, yy, "Machine time / head", 1.85, 400, MUTED)); o.append(t(rx + 48, yy, f"≈ {mh:.1f} h incl. trims + colour changes (both pieces)", 1.85, 600)); yy += 5
     for l in ["!Zip: art stops 15 each side of CF (teeth + tape + topstitch).", "The main limb is cut on the same y band each side so it reads",
               "as one branch passing behind the zip (marks below).",
               "!Hanging moss (02R) hangs from the main limb; strands end",
@@ -115,9 +117,9 @@ def page2():
         o.append(t(xcur, 30 + hh + 3.2, f"Piece {p} (shown {scale:.2f}:1)", 1.9, 700)); xcur += wmm + 6
     zx = 192; o.append(t(zx, 32, "DETAIL CROPS (shown 2:1)", 2.4, 700)); yy = 35
     b = BBs["02R"]
-    for c, cap in [((b[0] + 5, b[1] + 40, b[0] + 50, b[1] + 65), "Hanging moss: turning satin strands + light run"),
-                   ((-120, 120, -75, 145), "Main limb: tatami along, padded moss across"),
-                   ((60, 170, 105, 195), "Limb moss: padded across, lit top + lump runs")]:
+    for c, cap in [((b[0] + 5, b[1] + 40, b[0] + 50, b[1] + 65), "Hanging moss: chain-link ropes + loop strands"),
+                   ((-120, 120, -75, 145), "Leaf sprays (two-tone satin + vein) on brown chain twigs"),
+                   ((60, 170, 105, 195), "Braided chain-stitch limb (links along the twist)")]:
         im = direction_map(ALL, c, 14, label_min=30, label_mm=1.2)
         wmm = (c[2]-c[0])*2; tag, hh = img_tag(im, zx, yy, wmm, 90); o.append(tag)
         o.append(f'<rect x="{zx}" y="{f(yy)}" width="{f(wmm)}" height="{f(hh)}" fill="none" stroke="#BBB" stroke-width="0.2"/>')
@@ -133,8 +135,8 @@ def page3():
 
 def page4():
     o = header("02 · COLOUR STOP SEQUENCE + THREADS", "Order: leaves → bark + twigs → moss + hanging moss → bark line work (leaves first so their travel hides under the twigs). Thread codes = shared jacket palette (G3).", "p4 / 5")
-    SPB.stops_table(o, STOPS["02R"], 12, 30.5, "PIECE 02R", width=134)
-    SPB.stops_table(o, STOPS["02L"], 152, 30.5, "PIECE 02L", width=134)
+    SPB.stops_table(o, STOPS["02R"], 12, 30.5, "PIECE 02R", width=134, dst=CUR.get("02R", {}).get("file"))
+    SPB.stops_table(o, STOPS["02L"], 152, 30.5, "PIECE 02L", width=134, dst=CUR.get("02L", {}).get("file"))
     return o
 
 def page5():

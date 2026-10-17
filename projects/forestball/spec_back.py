@@ -54,8 +54,8 @@ def page1():
     o.append(dim_h(X(BB[0]), X(BB[2]), Y(BB[1]) - 2.2, f"art {BB[2]-BB[0]:.0f}", 1.9, col=GUIDE))
     o.append(dim_v(Y(BB[1]), Y(BB[3]), X(BB[0]) - 3, f"{BB[3]-BB[1]:.0f}", 1.9, col=GUIDE))
     o.append(f'<rect x="{f(X(PH[0]))}" y="{f(Y(PH[1]))}" width="{f((PH[2]-PH[0])*s)}" height="{f((PH[3]-PH[1])*s)}" fill="#FFFFFF" fill-opacity="0.35" stroke="{RED}" stroke-width="0.35"/>')
-    lx, ly = ax + w_mm + 2.5, Y(PH[1]) - 14          # label outside the art, leader to the box
-    o.append(f'<line x1="{f(X(PH[2]))}" y1="{f(Y(PH[1]))}" x2="{f(lx - 0.5)}" y2="{f(ly + 1)}" stroke="{RED}" stroke-width="0.3"/>')
+    lx, ly = X(PH[0]) - 24, Y(PH[3]) + 8              # label below-left of the box, inside the preview
+    o.append(f'<line x1="{f(X(PH[0]))}" y1="{f(Y(PH[3]))}" x2="{f(lx + 17.5)}" y2="{f(ly - 3.2)}" stroke="{RED}" stroke-width="0.3"/>')
     o.append(f'<rect x="{f(lx - 0.5)}" y="{f(ly - 3.2)}" width="18" height="8.2" fill="#FFFFFF" stroke="{RED}" stroke-width="0.3"/>')
     o.append(t(lx + 0.6, ly, "LICENSED", 2.1, 700, RED)); o.append(t(lx + 0.6, ly + 3.4, "placeholder", 2.0, 600, RED))
     o.append(t(ax, ay + h + 4, "Stitch-out preview, back panel, size M (shown 0.25:1). Each region drawn with its own thread rows at its specified angle. Red box = licensed-figure placeholder.", 1.8, 400, MUTED))
@@ -73,7 +73,7 @@ def page1():
     nums = [("Stitches, single file", f"{d.get('stitches', 0):,}"), ("Trims (DST read-back)", f"{d.get('trims_dst', 0):,}"),
             ("Colour stops / threads", f"{d.get('stops', len(STOPS))} / {d.get('threads', '—')} (factory limit 12, incl. outline + crosses)"),
             ("Max stitch", f"{d.get('max_stitch', 0)} mm"), ("Regions (digitizing objects)", f"{len(VB)}"),
-            ("Machine time / head", f"≈ {factory.machine_hours(d.get('stitches', 0), PROF, d.get('trims_dst', 0), d.get('stops', 1) - 1):.1f} h at {PROF['spm']} spm incl. trims + changes")]
+            ("Machine time / head", f"≈ {factory.machine_hours(d.get('stitches', 0), PROF, trims=d.get('trims_dst', 0), colour_changes=d.get('stops', 1) - 1):.1f} h at {PROF['spm']} spm incl. trims + changes")]
     for i, (a, b) in enumerate(nums):
         o.append(t(rx, 77 + i*3.7, a, 1.9, 400, MUTED)); o.append(t(rx + 44, 77 + i*3.7, b, 1.9, 600))
     y = 104
@@ -141,12 +141,16 @@ def page3():
     yb, tot = region_table(o, VB, QA)
     o.append(t(12, yb + 2, "Globals: 40wt polyester, 75/11 sharp needle, 2.5 oz cutaway, no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; trims at exposed moves > 2.5.", 1.75, 400, MUTED))
     o.append(t(12, yb + 5.2, "Width = share of area narrower than its minimum (fill/satin 0.8, line 0.6) for > 2.5 mm, on the art. Green < 1%; amber = tapered tips (grass, twig ends) the digitizer absorbs.", 1.75, 400, MUTED))
-    o.append(t(12, yb + 8.4, "Light rays (LR): serpentine single run, rows 1.9 apart — a sheer veil, not a fill. Each tone is one continuous object so the ray has no trims inside it.", 1.75, 600, INK))
+    o.append(t(12, yb + 8.4, "Light rays (LR): serpentine single run, rows 2.6 apart, sewn last over the art — a sheer veil, not a fill. Each tone is one continuous object so the ray has no trims inside it.", 1.75, 600, INK))
     return o
 
-def stops_table(o, stops, x0, y0, title, width=185, sews=True):
+def stops_table(o, stops, x0, y0, title, width=185, sews=True, dst=None):
+    """stop table; stitch column read from the DST per stop (engine readback.dst) when the stop count matches"""
+    import readback
+    per = readback.dst(dst + ".dst")["per_stop"] if dst else []
+    use_dst = len(per) == len(stops)
     o.append(t(x0, y0, title, 2.2, 700))
-    hdr = ["Stop", "Thread", "Isacord", "Madeira Polyneon", "Sews", "Est. st."]; cx = [x0, x0 + 10, x0 + 36, x0 + 62, x0 + 92, x0 + width - 16]
+    hdr = ["Stop", "Thread", "Isacord", "Madeira Polyneon", "Sews", "DST st." if use_dst else "Est. st."]; cx = [x0, x0 + 10, x0 + 36, x0 + 62, x0 + 92, x0 + width - 16]
     for x, h in zip(cx, hdr): o.append(t(x, y0 + 4, h, 1.7, 700, MUTED))
     rh = min(3.3, 140 / max(1, len(stops)))
     for i, s in enumerate(stops):
@@ -158,7 +162,8 @@ def stops_table(o, stops, x0, y0, title, width=185, sews=True):
         else:
             o.append(t(cx[2], y, f"{iso[0]} {iso[1]}"[:18], 1.5)); o.append(t(cx[3], y, f"{pn[0]} {pn[1]}"[:20], 1.5))
         lay = tech.LAYER_NAMES.get(s["layers"][0], "")
-        o.append(t(cx[4], y, (lay + ": " + ", ".join(s["groups"]))[:48], 1.45, 400, MUTED)); o.append(t(cx[5], y, f"{s['st']:,.0f}", 1.55))
+        o.append(t(cx[4], y, (lay + ": " + ", ".join(s["groups"]))[:48], 1.45, 400, MUTED))
+        o.append(t(cx[5], y, f"{per[i]['stitches']:,}" if use_dst else f"{s['st']:,.0f}", 1.55))
 
 def thread_match(o, sx, ty, keys):
     o.append(t(sx, ty, "THREAD MATCH (ΔE2000)", 2.2, 700)); o.append(t(sx, ty + 3.6, "Target / Isacord / Polyneon", 1.6, 600, MUTED))
@@ -178,7 +183,7 @@ def thread_match(o, sx, ty, keys):
 def page4():
     o = header("01 · COLOUR STOP SEQUENCE + THREADS",
                "Sewing order, back to front: placeholder outline → light rays → stream → grass behind → rocks → leaves → bark + twigs → moss → bark line work → grass in front (leaves before twigs: their travel hides under the twig). Fills before the lines on them.", "p4 / 5")
-    stops_table(o, STOPS, 12, 30.5, "BACK PANEL (single file, size M)")
+    stops_table(o, STOPS, 12, 30.5, "BACK PANEL (single file, size M)", dst=CUR.get("back", {}).get("file"))
     sx = 204; yb = thread_match(o, sx, 33, [k for k in PAL])
     for i, l in enumerate(["ΔE < 3 green: close match. 3–5.5 amber,", "> 5.5 red: pick from the physical card.",
                            "Chart RGB; screens + dye lots vary —", "approve a thread board before sampling."]):

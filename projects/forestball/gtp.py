@@ -72,7 +72,7 @@ def p_flats(F):
     X = lambda x: 12 + (x - b[0]) * s; Y = lambda y: 32 + (y - b[1]) * s
     BX = lambda x: X(x) + (b[2]-b[0])*s + 8
     cl = [(X(-90), Y(40), 1, X(-330), 36), (X(0), Y(330), 2, X(70), 124), (X(-175), Y(F.fnd + 365), 3, X(-430), Y(F.fnd + 330)),
-          (X(-150), Y(F.hem_seam + 25), 4, X(-150), 124), (X(-470), Y(620), 5, X(-500), 124), (X(-215), Y(F.sp[1] - 2), 6, X(-470), Y(F.sp[1] + 30)),
+          (X(-150), Y(F.hem_seam + 25), 4, X(-150), 124), (X(-470), Y(620), 5, X(-500), 124), (X(-(F.hps[0] + F.sp[0]) / 2), Y((F.hps[1] + F.sp[1]) / 2 + 3), 6, X(-470), Y(F.sp[1] + 75)),
           (BX(0), Y(150), 7, BX(150), Y(150)), (BX(275), Y(180), 8, BX(450), Y(120))]
     for x, y, n, tx, ty in cl: o.append(callout(x, y, n, tx, ty))
     lx = 12; ly = 136
@@ -368,7 +368,7 @@ def p_questions():
           "9. Labels + packaging artwork, country of origin, care-symbol set, carton marks.",
           "10. Embroidery grading: A 90% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per grade per piece. OK?",
           "11. Garment wash after embroidery? If yes: wash test on the sew-out first (whites + golds grey first).",
-          f"12. Factory frame + machine: border frame ≥ {EMB['01']['box'][2]-EMB['01']['box'][0]+14:.0f} × {EMB['01']['box'][3]-EMB['01']['box'][1]+14:.0f} for the single-file back, else 4 × 360² splits; heads need ≥ 15 needles.",
+          f"12. Factory frame + machine: border frame ≥ {EMB['01']['box'][2]-EMB['01']['box'][0]+14:.0f} × {EMB['01']['box'][3]-EMB['01']['box'][1]+14:.0f} for the single-file back, else 4 × 360² splits; files are ≤ 12 colours (factory limit, confirmed).",
           "13. Inside: pocket bags free-hanging + bound (proposed); inside chest pocket — add one? (T14)",
           "14. LICENSED stream figure (back): placeholder box only in this pack — licensor art, digitizing and licence approval to confirm (G4 Q1)."]
     for i, q in enumerate(qs): o.append(t(14, 34 + i*4.6, q, 2.0))

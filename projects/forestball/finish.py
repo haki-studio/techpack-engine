@@ -12,9 +12,9 @@ for f_ in sorted(glob.glob("out/0*/**/*.pes", recursive=True)):
 
 PKG = "out/pkg"; shutil.rmtree(PKG, ignore_errors=True); os.makedirs(f"{PKG}/elements")
 for e in ("01_back-scene", "02_chest-branch"):
-    shutil.copytree(f"out/{e}", f"{PKG}/elements/{e}", ignore=shutil.ignore_patterns("summary.json", "result.json"))
+    shutil.copytree(f"out/{e}", f"{PKG}/elements/{e}", ignore=shutil.ignore_patterns("summary.json", "result.json", "*RevA*"))
 shutil.copytree("out/pattern", f"{PKG}/pattern")
-full = glob.glob("out/HAKI_FB_Forestball_FULL-TECHPACK_*.pdf")
+full = glob.glob(f"out/HAKI_FB_Forestball_FULL-TECHPACK_{fbcore.REV_GAR.replace(' ', '')}.pdf")
 for pdf in full: shutil.copy(pdf, PKG)
 A = json.load(open("dst_all.json"))
 open(f"{PKG}/README.txt", "w").write(f"""HAKI STUDIOS - {fbcore.NAME} (style {fbcore.STYLE})
