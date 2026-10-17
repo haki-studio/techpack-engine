@@ -54,6 +54,66 @@ sheet.FONT = "Liberation Sans"
 PUFF_SP = 0.30          # puff satin row spacing (dense, cuts the foam at the column ends)
 PUFF = True             # region codes starting PF- are built as puff satin (no underlay, dense, +pull)
 
+TEXT_CODES = ("TXF", "PF-TX")
+def stroke_satin(p, sp, pull):
+    """satin for one text stroke: rows perpendicular to the smoothed centreline, a row that would cross the previous one
+    (tight inner curve / junction blob) is skipped, so the satin never fans; short blobs get a fixed satin across their
+    long axis. Rows > 7 mm are split (split satin)."""
+    import dst2, math
+    import numpy as np
+    from shapely.geometry import LineString
+    w = 2 * p.area / max(p.length, 1e-6)
+    line = dst2.centreline(p) if p.area > 1.0 else None
+    if line is not None:
+        line = line.simplify(max(0.25, 0.35 * w))
+    if line is None or line.length < 1.6 * max(w, 1.0):
+        mrr = p.minimum_rotated_rectangle; cs = list(mrr.exterior.coords)
+        e0 = (cs[1][0]-cs[0][0], cs[1][1]-cs[0][1]); e1 = (cs[2][0]-cs[1][0], cs[2][1]-cs[1][1])
+        e = e0 if math.hypot(*e0) >= math.hypot(*e1) else e1
+        return dst2.fixed_satin(p, math.degrees(math.atan2(e[1], e[0])) + 90, sp=sp, pull=pull)
+    pp = p.buffer(pull, join_style="round") if pull else p
+    L = line.length; n = max(2, int(L / sp)); out = []; prev = None; flip = False; rows = []
+    for k in range(n + 1):
+        s = L * k / n; c = line.interpolate(s)
+        a_ = line.interpolate(max(0, s - max(0.8, w*0.6))); b_ = line.interpolate(min(L, s + max(0.8, w*0.6)))
+        th = math.atan2(b_.y - a_.y, b_.x - a_.x) + math.pi/2; R = 30.0
+        seg = LineString([(c.x - R*math.cos(th), c.y - R*math.sin(th)), (c.x + R*math.cos(th), c.y + R*math.sin(th))]).intersection(pp)
+        segs = [g for g in getattr(seg, "geoms", [seg]) if g.geom_type == "LineString" and not g.is_empty]
+        if not segs: continue
+        sg = min(segs, key=lambda g: g.distance(c))
+        A, B = sg.coords[0], sg.coords[-1]
+        if prev is not None:
+            if math.hypot(A[0]-prev[0][0], A[1]-prev[0][1]) > math.hypot(B[0]-prev[0][0], B[1]-prev[0][1]): A, B = B, A
+            if LineString([A, B]).crosses(LineString(prev)): continue
+            ma, mb = math.dist(A, prev[0]), math.dist(B, prev[1])
+            if min(ma, mb) < 0.12 and max(ma, mb) > 4 * sp: continue        # pivoting round an inner corner = a fan
+        prev = (A, B); rows.append((A, B))
+        d = math.hypot(B[0]-A[0], B[1]-A[1])
+        row = [A] + (dst2.sub(A, B, d / math.ceil(d / 6.0)) if d > 7.0 else [B])
+        out += row if not flip else row[::-1]; flip = not flip
+    # coverage check: rows (as 2 x spacing bands) must cover the stroke; else a fixed satin at the most "across" angle
+    from shapely.ops import unary_union
+    cov = unary_union([LineString(r_).buffer(max(sp, 0.35), cap_style="flat") for r_ in rows]).intersection(p).area / max(p.area, 1e-9) if rows else 0
+    # fan check: the satin may turn at most ~60 deg while travelling one stroke width along the centreline (a tighter
+    # turn pivots the rows round the inner edge)
+    ds = []
+    for (a1, b1), (a2, b2) in zip(rows, rows[1:]):
+        t1 = math.atan2(b1[1]-a1[1], b1[0]-a1[0]); t2 = math.atan2(b2[1]-a2[1], b2[0]-a2[0])
+        ds.append(math.degrees(abs((t2 - t1 + math.pi/2) % math.pi - math.pi/2)))
+    k = max(2, int(math.ceil(w / sp)))
+    fan = max([sum(ds[i:i+k]) for i in range(max(1, len(ds) - k + 1))] or [0])
+    lens = sorted(math.dist(a_, b_) for a_, b_ in rows) or [0]
+    med = lens[len(lens)//2]; longf = sum(1 for v in lens if v > 1.6 * med) / max(1, len(lens))
+    if cov < 0.95 or fan > 75 or (ds and max(ds) > 20) or longf > 0.12:
+        best = None
+        for a in range(0, 180, 15):
+            segs = [g for g in dst2.SR.hatch(pp, a, 1.0) if g.length > 0]
+            if not segs: continue
+            m = max(g.length for g in segs) + 0.3 * sum(g.length for g in segs) / len(segs)
+            if best is None or m < best[0]: best = (m, a)
+        if best: return dst2.fixed_satin(p, best[1], sp=sp, pull=pull)
+    return out
+
 def patch_dst2():
     """call after `import dst2`: pull comp for this project's codes, no colour merge, puff satin builder."""
     import dst2
@@ -64,11 +124,22 @@ def patch_dst2():
         _orig = dst2.build_object
         def build_object(r, earlier_tones):
             code = tech.rule_for(r["grp"])
+            if code == "TXF" and r["st"] == "satin":          # flat text: centre-run underlay + stroke satin
+                pull = dst2.pull_for(code); blocks = []
+                for p in dst2.polys(r["geom"]):
+                    if p.area < 0.06: continue
+                    ln = dst2.centreline(p) if (p.area > 1.0 and 2*p.area/max(p.length, 1e-6) >= 1.6) else None
+                    if ln is not None: blocks.append(dst2.path_resample(list(ln.coords), 2.0))
+                    blocks.append(stroke_satin(p, 0.40, pull))
+                return [b for b in blocks if len(b) > 1]
             if not (PUFF and code.startswith("PF-") and r["st"] == "satin"):
                 return _orig(r, earlier_tones)
             pull = dst2.pull_for(code); blocks = []
             for p in dst2.polys(r["geom"]):
                 if p.area < 0.06: continue
+                if isinstance(r["ang"], tuple):
+                    blocks.append(dst2.radial_satin(p, r["ang"][1], r["ang"][2], sp=PUFF_SP, pull=pull)); continue
+                if code in TEXT_CODES: blocks.append(stroke_satin(p, PUFF_SP, pull)); continue
                 line = dst2.centreline(p) if dst2.is_elongated(p) else None
                 if line is not None: blocks.append(dst2.turning_satin(p, line, sp=PUFF_SP, pull=pull))
                 else:

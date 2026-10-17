@@ -1,5 +1,5 @@
 """Per-size production stitch files for the four pieces (FR, FL fronts; SR, SL sleeves): full file + hoop splits for the
-factory frame (factory.json). usage: python3 build_size.py SIZE [FR FL SR SL] [nosplit] [splitsonly]
+factory frame (factory.json). usage: python3 kcstitch.py SIZE [FR FL SR SL] [nosplit] [splitsonly]
 Stop order: all flat stops first, then (fronts) one machine PAUSE to lay 3 mm puff foam, then the puff stops (region codes
 PF-*). merge_stops runs separately on the flat and the puff block so nothing puff is pulled in front of the foam.
 Every number written to result_<piece>.json is read back from the DST (readback.dst, LESSONS B8/B20)."""
@@ -28,13 +28,16 @@ _ns = dict(vars(dst2)); exec(_src, _ns); split_clip_wide = _ns["split_clip"]
 
 def is_puff(r): return tech.rule_for(r["grp"]).startswith("PF-") and kccore.PUFF
 
+def is_top(r): return r["layer"] >= 30 and not is_puff(r)      # details sewn ON the puff (star centre), after the foam is torn
 def stops_for(vis):
-    flat = [r for r in vis if not is_puff(r)]; puff = [r for r in vis if is_puff(r)]
-    st_f = tech.stops(flat) if flat else []; st_p = tech.stops(puff) if puff else []
-    n0 = len(st_f) + len(st_p)
-    st_f = dst2.merge_stops(st_f) if st_f else []; st_p = dst2.merge_stops(st_p) if st_p else []
-    for s in st_p: s["puff"] = True
-    return st_f + st_p, n0
+    blocks = [[r for r in vis if not is_puff(r) and not is_top(r)], [r for r in vis if is_puff(r)], [r for r in vis if is_top(r)]]
+    out = []; n0 = 0
+    for bi, rs in enumerate(blocks):
+        if not rs: continue
+        st = tech.stops(rs); n0 += len(st); st = dst2.merge_stops(st)
+        for s in st: s["puff"] = bi == 1; s["top"] = bi == 2
+        out += st
+    return out, n0
 
 def reg_in_first_colour(pat):
     """factory limit (12 colours incl. registration): the crosses sew at the start of stop 1 in stop 1's thread"""
@@ -50,7 +53,7 @@ def sews(stops, basting=False):
     for s in stops:
         out.append(dict(col=s["col"], codes=sorted({tech.rule_for(r["grp"]) for r in s["regions"]}),
                         types=sorted({r["st"] for r in s["regions"]}), objects=len(s["regions"]),
-                        elements=sorted({r["el"] for r in s["regions"]}), puff=bool(s.get("puff"))))
+                        elements=sorted({r["el"] for r in s["regions"]}), puff=bool(s.get("puff")), top=bool(s.get("top"))))
     if basting and out: out[0]["codes"] = ["REG crosses"] + out[0]["codes"]
     return out
 
@@ -61,6 +64,8 @@ def record(base, stops, extra, basting=False):
     for ps, si in zip(rb["per_stop"], info): ps.update(si)
     fp = [ps["stop"] for ps in rb["per_stop"] if ps.get("puff")]
     rb["foam_pause_before_stop"] = fp[0] if fp else None
+    tp = [ps["stop"] for ps in rb["per_stop"] if ps.get("top")]
+    rb["foam_tear_before_stop"] = tp[0] if tp else None
     rb.update(extra, file=base); return rb
 
 def runs_exposed(stops, st):

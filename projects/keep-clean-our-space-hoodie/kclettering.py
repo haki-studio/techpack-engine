@@ -141,11 +141,68 @@ def _cut_ring(p):
     for q in parts: out += _cut_ring(q) if q.interiors else [q]
     return out
 
-def strokes(geom, ppm=24.0, join_angle=150.0, spur_k=1.25, min_area=0.15):
-    """split a glyph outline into satin strokes. Returns a list of polygons that tile the glyph exactly."""
+def strokes(geom, ppm=24.0, join_angle=150.0, spur_k=1.25, min_area=0.15, corner=50.0):
+    """split a glyph outline into satin strokes. Returns a list of polygons that tile the glyph exactly.
+    Strokes that turn a sharp corner (L, 冖, ㄱ) are cut on the mitre so a turning satin never fans round a corner."""
     out = []
     for P in _polys(geom):
-        out += _strokes_one(P, ppm, join_angle, spur_k, min_area)
+        qs = []
+        for q in _strokes_one(P, ppm, join_angle, spur_k, min_area):
+            qs += split_corners(q, corner)
+        out += [r for q in merge_small(qs, P) for r in split_corners(q, corner)]
+    return out
+
+def merge_small(pieces, P, k=1.3):
+    """junction crumbs (area < k * stroke width^2) join the neighbour they share the longest edge with (if the union is
+    one polygon); every crumb is tried once."""
+    wg = 2 * P.area / max(P.length, 1e-6) * 1.15
+    ps = [p for p in pieces if not p.is_empty]
+    crumbs = sorted([i for i, q in enumerate(ps) if q.area < k * wg * wg], key=lambda i: ps[i].area)
+    dead = set()
+    for i in crumbs:
+        if i in dead: continue
+        q = ps[i]; best = None
+        for j, r in enumerate(ps):
+            if j == i or j in dead: continue
+            if q.distance(r) > 0.05: continue
+            L = q.buffer(0.05).intersection(r.buffer(0.05)).area
+            if L > 0 and (best is None or L > best[0]): best = (L, j)
+        if best is None: continue
+        j = best[1]; m = unary_union([ps[j], q.buffer(0.02)]).intersection(P).buffer(0)
+        if m.geom_type != "Polygon": continue
+        ps[j] = m; dead.add(i)
+    return [q for i, q in enumerate(ps) if i not in dead]
+
+def split_corners(p, corner=50.0, depth=0):
+    import dst2
+    if depth > 4 or p.area < 3 or not dst2.is_elongated(p): return [p]
+    line = dst2.centreline(p)
+    if line is None: return [p]
+    w = max(0.8, 2 * p.area / max(p.length, 1e-6) * 1.3)
+    ln = line.simplify(max(0.3, 0.45 * w)); cs = list(ln.coords)
+    best = None
+    for i in range(1, len(cs) - 1):
+        a = np.array(cs[i]) - np.array(cs[i-1]); b = np.array(cs[i+1]) - np.array(cs[i])
+        la, lb = np.linalg.norm(a), np.linalg.norm(b)
+        if la < 0.6*w or lb < 0.6*w: continue
+        a /= la; b /= lb; ang = math.degrees(math.acos(max(-1, min(1, float(np.dot(a, b))))))
+        if ang > corner and (best is None or ang > best[0]): best = (ang, i, a, b)
+    if best is None: return [p]
+    _, i, a, b = best; c = np.array(cs[i]); d = a - b; d /= max(np.linalg.norm(d), 1e-9); R = 3 * w + 5
+    cut = LineString([tuple(c - d*R), tuple(c + d*R)])
+    try:
+        parts = [q for q in shp_split(p, cut).geoms if q.area > 0.05]
+    except Exception:
+        return [p]
+    if len(parts) < 2: return [p]
+    if len(parts) > 2:      # the mitre also clipped a far part of the polygon: keep the two pieces at the corner, give the rest back
+        parts.sort(key=lambda q: q.distance(Point(*c)))
+        main = parts[:2]; rest = parts[2:]
+        for r in rest:
+            k = min((0, 1), key=lambda j: main[j].distance(r)); main[k] = main[k].union(r).buffer(0)
+        parts = [q for m in main for q in _polys(m)]
+    out = []
+    for q in parts: out += split_corners(q, corner, depth + 1)
     return out
 
 def _strokes_one(P, ppm, join_angle, spur_k, min_area):

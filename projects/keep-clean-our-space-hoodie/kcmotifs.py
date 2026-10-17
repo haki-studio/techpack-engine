@@ -80,7 +80,8 @@ def star5_outline(cx, cy, size, w, col, grp="STR5-o", unit=None, rot=0.0, eyes=T
     R_ = size / 2
     g = star5_geom(cx, cy, R_, rot, round_=0.3)
     ring = g.difference(g.buffer(-w)).buffer(0)
-    regs = [R(col, p, "satin", "auto", grp, unit=unit, kob=0.5) for p in polys(ring)]
+    import kclettering as KL          # a closed ring is cut into strokes (one turning satin per side)
+    regs = [R(col, q, "satin", "auto", grp, unit=unit, kob=0.5) for p in polys(ring) for q in KL.split_corners(KL._cut_ring(p)[0]) + [x for r_ in KL._cut_ring(p)[1:] for x in KL.split_corners(r_)]]
     if eyes:
         e = max(0.65, R_ * 0.10)
         for dx in (-0.2, 0.2):
