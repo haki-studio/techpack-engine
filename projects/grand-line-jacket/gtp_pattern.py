@@ -28,21 +28,29 @@ def consumption(size="M", width=1500.0, eff=0.80):
     return out
 
 def _draw_pieces(o, g, codes, x0, y0, wmax, s, size, em=None, lw=0.5, tm=1.6, gap=4):
+    """pieces in rows; labels BELOW each piece (never over the art), column width = max(piece, label)"""
     x, y, rowh = x0, y0, 0.0
     for code in codes:
         pc = g[code]; b = PT.cut_poly(pc).bounds; w, h = (b[2]-b[0])*s, (b[3]-b[1])*s
-        if x + w > x0 + wmax: x = x0; y += rowh + gap; rowh = 0
-        X = (lambda xx0, b0: (lambda q: xx0 + (q - b0)*s))(x, b[0]); Y = (lambda yy0, b1: (lambda q: yy0 + (q - b1)*s))(y, b[1])
-        o += PD.piece_svg(pc, X, Y, s, label=True, size=size, emb=(em or {}).get(code, ()), lw=lw, text_mm=tm)
-        x += w + gap; rowh = max(rowh, h)
+        lines = [(pc.code + " " + pc.name.replace(" (wearer's)", ""), 700), (f"size {size} · cut {pc.qty}", 400), (pc.material.split(" — ")[-1] if "—" in pc.material else pc.material, 400)]
+        if pc.fuse: lines.append(("+ fuse", 600))
+        lab_w = max(len(l) for l, _ in lines) * tm * 0.5
+        cw = max(w, lab_w); lh = len(lines) * tm * 1.25 + 1.0
+        if x + cw > x0 + wmax: x = x0; y += rowh + gap; rowh = 0
+        ox = x + (cw - w) / 2
+        X = (lambda xx0, b0: (lambda q: xx0 + (q - b0)*s))(ox, b[0]); Y = (lambda yy0, b1: (lambda q: yy0 + (q - b1)*s))(y, b[1])
+        o += PD.piece_svg(pc, X, Y, s, label=False, size=size, emb=(em or {}).get(code, ()), lw=lw, text_mm=tm)
+        for i, (l, wt) in enumerate(lines):
+            o.append(t(x + cw/2, y + h + 1.0 + (i + 1)*tm*1.2, l.replace("&", "+"), tm, wt, INK, "middle"))
+        x += cw + gap; rowh = max(rowh, h + lh)
     return y + rowh
 
 def p_pattern_pieces():
     o = GT.header("PATTERN — pieces + cut list (size M, sample size)", "Drum Island first pattern, drafted from its fit chart (T4); welts at this jacket's position. Seam allowance included; dashed = sew line; slits = notches; (+) = drill holes; pink = embroidery placement.", "T11")
     g, mt = PT.draft("M"); em = PO.emb_marks("M")
-    y1 = _draw_pieces(o, g, ["B01", "F01", "F02", "S01"], 12, 30, 190, 0.085, "M", em, lw=0.35, tm=1.4)
-    y2 = _draw_pieces(o, g, ["C01", "C02", "K01", "K02", "L01", "L02", "L03"], 12, y1 + 6, 190, 0.06, "M", None, lw=0.28, tm=1.15, gap=3)
-    _draw_pieces(o, g, ["R01", "R02", "P01", "P02", "P03", "P04"], 12, y2 + 6, 190, 0.06, "M", None, lw=0.28, tm=1.1, gap=4)
+    y1 = _draw_pieces(o, g, ["B01", "F01", "F02", "S01"], 12, 30, 190, 0.078, "M", em, lw=0.35, tm=1.4)
+    y2 = _draw_pieces(o, g, ["C01", "C02", "K01", "K02", "L01", "L02", "L03"], 12, y1 + 3, 190, 0.05, "M", None, lw=0.28, tm=1.1, gap=3)
+    _draw_pieces(o, g, ["R01", "R02", "P01", "P02", "P03", "P04"], 12, y2 + 3, 190, 0.05, "M", None, lw=0.28, tm=1.05, gap=3)
     tx = 206; o.append(t(tx, 31, "CUT LIST — per jacket", 2.3, 700))
     hd = ["Code", "Piece", "Cut", "Material", "Fuse"]; cx = [tx, tx + 9, tx + 36, tx + 47, tx + 73]
     for x_, h in zip(cx, hd): o.append(t(x_, 35.5, h, 1.6, 700, MUTED))
@@ -66,7 +74,7 @@ def p_pattern_pieces():
 def p_pattern_grade():
     o = GT.header("PATTERN — grade nests + measurement check (XS–3XL)", "Each size drafted from its own fit-chart values (not a fixed grade rule). Measured off the pattern pieces vs the chart; seam walks below.", "T12")
     cols = ["#9C9C9C", "#7E7E7E", "#1A1A1A", "#5A5A5A", "#3A3A3A", "#2A2A2A", "#111111"]
-    nests = [("B01", "Back", 0.072, (14, 32)), ("F01", "Front left", 0.072, (64, 32)), ("S01", "Sleeve", 0.072, (92, 32)), ("C02", "Under collar", 0.072, (138, 36))]
+    nests = [("B01", "Back", 0.068, (14, 38)), ("F01", "Front left", 0.068, (64, 38)), ("S01", "Sleeve", 0.068, (92, 38)), ("C02", "Under collar", 0.068, (138, 46))]
     for code, nm, s, (ox, oy) in nests:
         for i, sz in enumerate(PT.SIZES):
             g, mt = PT.draft(sz); pc = g[code]
@@ -79,7 +87,7 @@ def p_pattern_grade():
             X = lambda q: ox + 22*(code != "F01" and code != "C02") + (q - ax)*s + (0 if code != "C02" else 22)
             Y = lambda q: oy + (q - ay)*s + (46 if code in ("B01", "F01") else 0)
             o.append(f'<path d="{PD.path_d([(X(x), Y(y)) for x, y in sew])}" fill="none" stroke="{cols[i]}" stroke-width="{0.22 if sz != "M" else 0.4}"/>')
-        o.append(t(ox, oy - 2, f"{nm} — sew lines", 1.7, 700))
+        o.append(t(ox, 31, f"{nm} — sew lines", 1.7, 700))
     o.append(t(14, 84, "Nests shown at 0.07:1; heaviest line = M. Body aligned on CB/CF + hem seam; sleeve on cap top; collar on CB neck.", 1.55, 400, MUTED))
     # measurement table
     rows = PO.qa_table(); ty = 92
@@ -228,7 +236,7 @@ def p_inside():
 # ---------------------------------------------------------------- operations / SMV
 OPS = [("Cutting", "Cut shell, collar, lining, rib, pocketing, fusing; drill welt + embroidery marks", "Cutting table", 6.0),
        ("Fusing", "Fuse top collar, facings, back neck facing, welts", "Fusing press", 2.5),
-       ("Embroidery", "01 front scene FR + FL — flat on the cut fronts, 2 hoopings each on 360² (machine time separate, G4)", "Multi-head (15 needle)", 6.0),
+       ("Embroidery", "01 front scene FR + FL — flat on the cut fronts, 2 hoopings each on the factory frame (machine time separate, G4)", "Multi-head (15 needle)", 6.0),
        ("Embroidery finish", "Trim backing to 5 mm, remove basting (split files), press from wrong side", "Hand / press", 6.0),
        ("Welt pockets", "Mark, set welt + bags both fronts, bartack ×4", "Lockstitch + bartack", 9.0),
        ("Shoulders", "Join shoulders (5-thread), press to back, 6 mm topstitch", "Safety stitch + lockstitch", 2.5),
@@ -254,9 +262,10 @@ def p_operations():
         o.append(t(cx[3], y, mc, 1.7, 400, MUTED)); o.append(t(cx[4], y, f"{smv:.1f}", 1.8, 600))
     tot = sum(x[3] for x in OPS); y = 36 + len(OPS)*4.6 + 1
     o.append(t(cx[3], y, "TOTAL (sewing + finishing)", 1.8, 700)); o.append(t(cx[4], y, f"{tot:.0f} min", 1.8, 700))
-    cur = json.load(open("dst_current.json"))
+    cur = json.load(open("dst_current.json")); import factory as _FA
     st = sum(cur[P]["stitches"] for P in glcore.PIECES)
-    o.append(t(12, y + 6, f"Embroidery machine time, size M: {st:,} stitches (read from the DST) → ≈ {st/750/60:.1f} h per head at 750 spm + colour changes + hooping (2 pieces × 2 hoopings on 360²).", 1.75, 600))
+    hrs = sum(_FA.machine_hours(s["stitches"], trims=s["trims"], colour_changes=s["stops"] - 1) for P in glcore.PIECES for s in cur[P]["splits"]["sections"].values())
+    o.append(t(12, y + 6, f"Embroidery machine time, size M: {st:,} stitches (DST) → {hrs:.1f} h per head incl. trims + colour changes (factory.machine_hours), + 4 hoopings.", 1.75, 600))
     o.append(GT.prop(12, y + 10, "SMVs are estimates — replace with the factory's time study at the sample stage", 1.75))
     return o
 
@@ -264,7 +273,7 @@ def p_operations():
 REVS = [("Garment Rev A", "16 Oct 2026", "First garment pack for the Grand Line jacket on the Drum Island block + pattern: flats, details, size chart, grading, BOM, construction, labels, "
                                           "colourway, pattern XS–3XL (DXF + 1:1 plot), embroidery placement per size, inside view, operations, this log. Welts moved to the mockup position."),
         ("Embroidery Rev A", "16 Oct 2026", "01 front scene (sunrise over a sea of clouds) on FR + FL: art composed from the mockup, 12 threads, per-size stitch files XS–3XL "
-                                             "+ 360² hoop splits; horizon + ray match marks at CF.")]
+                                             "+ hoop splits; horizon + ray match marks at CF.")]
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]
 
 def p_revisions():

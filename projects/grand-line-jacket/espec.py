@@ -97,8 +97,10 @@ def build(cfg, F, vis_all):
     yy += 3
     o.append(t(rx, yy, "BY THE NUMBERS", 2.4, 700)); yy += 4.6
     for p in pieces:
-        o.append(t(rx, yy, f"Piece {p}", 1.9, 400, MUTED)); o.append(t(rx + 50, yy, f"{DSTN.get(p, TOT[p]):,.0f} stitches · {_r[p]['trims_dst']} trims (DST) · {_r[p]['stops']} stops · {len(V[p])} objects", 1.9, 600)); yy += 3.6
-    o.append(t(rx, yy, "Est. run time / head", 1.9, 400, MUTED)); o.append(t(rx + 50, yy, f"≈ {sum(DSTN.get(p, TOT[p]) for p in pieces)/750:.0f} min at 750 spm + stops", 1.9, 600)); yy += 6
+        o.append(t(rx, yy, f"Piece {p}", 1.9, 400, MUTED)); o.append(t(rx + 50, yy, f"{_r[p]['stitches']:,} stitches · {_r[p]['trims']} trims · {_r[p]['stops']} stops (DST read-back)", 1.9, 600)); yy += 3.6
+    import factory as _FA
+    _mh = sum(_FA.machine_hours(_r[p]["stitches"], trims=_r[p]["trims"], colour_changes=_r[p]["stops"] - 1) for p in pieces)
+    o.append(t(rx, yy, "Machine time / head", 1.9, 400, MUTED)); o.append(t(rx + 50, yy, f"{_mh:.1f} h incl. trims + colour changes ({_FA.load()['spm']} spm, factory.json), + hooping", 1.9, 600)); yy += 6
     for line_ in cfg.get("p1_notes", []):
         col = ORANGE if line_.startswith("!") else MUTED
         o.append(t(rx, yy, line_.lstrip("!"), 1.8, 600 if col == ORANGE else 400, col)); yy += 3.3
@@ -133,7 +135,7 @@ def build(cfg, F, vis_all):
     for r in ALL:
         k = tech.rule_for(r["grp"]); st_ = stats.setdefault(k, dict(st=0, n=0, cols=set()))
         st_["st"] += tech.stitches(r); st_["n"] += 1; st_["cols"].add(r["col"])
-    hdr = ["Code", "Region", "Thread(s)", "Stitch", "Angle", "Dens.", "Len.", "Underlay", "Pull", "Notes", "Width", "Obj.", "Top st."]
+    hdr = ["Code", "Region", "Thread(s)", "Stitch", "Angle", "Dens.", "Len.", "Underlay", "Pull", "Notes", "Width", "Obj.", ""]
     cx = [12, 29, 66, 92, 124, 157, 166, 175, 214, 222, 251, 263, 272]
     y0 = 31
     for x, hd in zip(cx, hdr): o.append(t(x, y0, hd, 1.75, 700, MUTED))
@@ -150,35 +152,30 @@ def build(cfg, F, vis_all):
             o.append(t(cx[3 + j], y, v if (j != 6 or len(v) <= 26) else v[:26].rsplit(' ', 1)[0] + '…', 1.6))
         q = WC.get(k, 0.0); qc = GREEN if q < 1.0 else (ORANGE if q < 3.5 else RED)
         o.append(t(cx[10], y, f"{q:.1f}%", 1.6, 600, qc))
-        o.append(t(cx[11], y, f"{s_['n']}", 1.6, 400, MUTED)); o.append(t(cx[12], y, f"{s_['st']:,.0f}", 1.6, 600))
+        o.append(t(cx[11], y, f"{s_['n']}", 1.6, 400, MUTED))
     yb = y0 + 3.6 + len(order)*rh + 2
-    o.append(t(cx[11] - 4, yb, "TOTAL", 1.8, 700)); o.append(t(cx[12], yb, f"{sum(TOT.values()):,.0f}", 1.8, 700))
     o.append(t(12, yb + 4.5, "Globals: 40wt polyester, 75/11 sharp needle, 2.5 oz cutaway backing, no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; trim jumps > 2.0.", 1.75, 400, MUTED))
-    o.append(t(12, yb + 7.6, "Top st. = area estimate per code (±20 %) for comparing codes only; the real counts (p1, G4, G5) are read from the DST files.", 1.75, 400, MUTED))
+    o.append(t(12, yb + 7.6, "Stitch counts are not estimated per region: per-file and per-stop counts (p1, p4, G4, G5) are read back from the DST files.", 1.75, 400, MUTED))
     pages.append(o)
 
-    # ---------------- p4 colour stops
-    o = header(f"{n} · COLOUR STOP SEQUENCE + THREADS", "Sky glow → sun glitter + sea dashes → sea field → horizon + rays → sun + burst → cloud rims, shade, bodies, edges → islets → stars. Size M files.", "p4 / 5")
-    colx = [12, 150] if len(pieces) == 2 else [12]
+    # ---------------- p4 colour stops: every number read back from the size-M DST (readback.dst per_stop, LESSONS B20)
+    o = header(f"{n} · COLOUR STOP SEQUENCE + THREADS (size M, read back from the DST)", "Stitches / trims / jumps per stop counted in the written .dst. 'Sews' = every region code in that stop; each fill object also carries its own underlay + edge run.", "p4 / 5")
+    colx = [12, 154] if len(pieces) == 2 else [12]
     for ci, p in enumerate(pieces):
-        x0 = colx[ci]
-        o.append(t(x0, 30.5, f"PIECE {p}", 2.2, 700))
-        hc = [x0, x0 + 9, x0 + 34, x0 + 58, x0 + 84, x0 + 112]
-        for x, hd in zip(hc, ["Stop", "Thread", "Isacord", "Polyneon", "Sews", "Stitches"]): o.append(t(x, 34.5, hd, 1.65, 700, MUTED))
-        rh = min(3.3, 150 / max(1, len(STOPS[p])))
-        for i, s_ in enumerate(STOPS[p]):
-            y = 38 + i*rh; k = s_["col"]; iso, pn = SB.TH[k]["isacord"], SB.TH[k]["polyneon"]
-            if i % 2 == 0: o.append(f'<rect x="{x0-1}" y="{f(y-2.4)}" width="134" height="{f(rh)}" fill="#F5F2EC"/>')
-            o.append(t(hc[0], y, f"{i+1:02d}", 1.6, 700)); o.append(swatch(hc[1], y, k, 3.2, 2.2)); o.append(t(hc[1] + 4.2, y, PAL[k][1], 1.55))
-            o.append(t(hc[2], y, f"{iso[0]} {iso[1]}"[:20], 1.5)); o.append(t(hc[3], y, f"{pn[0]} {pn[1]}"[:20], 1.5))
-            o.append(t(hc[4], y, ", ".join(s_["groups"])[:24], 1.45, 400, MUTED)); o.append(t(hc[5], y, f"{s_['st']:,.0f}", 1.55))
-    if len(pieces) == 1:
-        sx = 160; used = sorted({r["col"] for r in ALL}, key=lambda c: tech.COLOUR_ORDER.index(c))
-        o.append(t(sx, 30.5, "THREADS USED (ΔE2000 to target)", 2.2, 700))
-        for i, k in enumerate(used):
-            y = 36 + i*3.3; iso, pn = SB.TH[k]["isacord"], SB.TH[k]["polyneon"]
-            o.append(swatch(sx, y, k, 3.2, 2.2)); o.append(t(sx + 5, y, PAL[k][1], 1.6))
-            o.append(t(sx + 30, y, f"Isacord {iso[0]}  ΔE {iso[3]:.1f}", 1.55)); o.append(t(sx + 62, y, f"Polyneon {pn[0]}  ΔE {pn[3]:.1f}", 1.55))
+        x0 = colx[ci]; ps = _r[p]["per_stop"]
+        o.append(t(x0, 30.5, f"PIECE {p} — {os.path.basename(_r[p]['file'])}.dst", 2.0, 700))
+        hc = [x0, x0 + 7, x0 + 29, x0 + 47, x0 + 66, x0 + 113, x0 + 126]
+        for x, hd in zip(hc, ["Stop", "Thread", "Isacord", "Polyneon", "Sews (region codes)", "Stitches", "Trims"]): o.append(t(x, 34.5, hd, 1.55, 700, MUTED))
+        rh = min(4.6, 150 / max(1, len(ps)))
+        for i, s_ in enumerate(ps):
+            y = 38.5 + i*rh; k = s_["col"]; iso, pn = SB.TH[k]["isacord"], SB.TH[k]["polyneon"]
+            if i % 2 == 0: o.append(f'<rect x="{x0-1}" y="{f(y-2.4)}" width="138" height="{f(rh)}" fill="#F5F2EC"/>')
+            o.append(t(hc[0], y, f"{s_['stop']:02d}", 1.55, 700)); o.append(swatch(hc[1], y, k, 2.8, 2.0)); o.append(t(hc[1] + 3.6, y, PAL[k][1], 1.45))
+            o.append(t(hc[2], y, f"{iso[0]} {iso[1]}"[:15], 1.4)); o.append(t(hc[3], y, f"{pn[0]} {pn[1]}"[:15], 1.4))
+            o.append(t(hc[4], y, ", ".join(s_["codes"])[:40], 1.35, 400, MUTED)); o.append(t(hc[5], y, f"{s_['stitches']:,}", 1.5, 600)); o.append(t(hc[6], y, f"{s_['trims']}", 1.5))
+        y = 38.5 + len(ps)*rh + 1.5
+        o.append(t(hc[4], y, "FILE TOTAL (sum of stops)", 1.55, 700)); o.append(t(hc[5], y, f"{sum(q['stitches'] for q in ps):,}", 1.55, 700)); o.append(t(hc[6], y, f"{sum(q['trims'] for q in ps)}", 1.55, 700))
+        o.append(t(hc[4], y + 3.2, f"= DST {_r[p]['stitches']:,} stitches / {_r[p]['trims']} trims", 1.45, 400, MUTED))
     pages.append(o)
 
     # ---------------- p5 1:1 details + mockup + changes
@@ -192,6 +189,7 @@ def build(cfg, F, vis_all):
     tag, hh = SHT.embed("inputs/front.png", cfg["mock_crop"], 56, 14, my + 3); o.append(tag)
     o.append(t(14, my, "MOCKUP", 2.4, 700))
     o.append(t(76, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
+    o.append(t(14, my + 62, cfg.get("reference", ""), 1.7, 600, ORANGE))
     for i, c in enumerate(cfg["changes"]): o.append(t(76, my + 4.5 + i*3.3, c, 1.85))
     o.append(t(196, my, "PRODUCTION", 2.4, 700))
     for i, c in enumerate(cfg["production"]): o.append(t(196, my + 4.5 + i*3.3, c, 1.85))

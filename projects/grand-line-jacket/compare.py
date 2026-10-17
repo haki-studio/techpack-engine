@@ -11,8 +11,14 @@ ZOOMS = {"FR": [((-270, 70, -200, 130), "bank top: lobe rows + tones"), ((-220, 
          "FL": [((20, 150, 90, 210), "sun, burst, glow"), ((190, 100, 260, 160), "bank top: lobe rows + tones"),
                 ((30, 220, 100, 280), "glitter path + sea dashes"), ((80, 340, 150, 400), "bottom islet + lower sea")]}
 
+import front as F
+from PIL import ImageDraw as _ID
 def pair(bb, ppm, vis):
     st = SR.render(vis, bb, ppm, base=glcore.FABRIC)
+    d_ = _ID.Draw(st)
+    for s_ in "RL":           # welt boxes of this size (keep-out holes are the pockets)
+        w_ = F.keep_geoms(size, s_)["welt"]
+        d_.polygon([((x - bb[0])*ppm, (y - bb[1])*ppm) for x, y in w_.exterior.coords], fill=(30, 35, 52), outline=(120, 130, 150))
     mk = MM.warp(bb, ppm / 4.0).resize(st.size, Image.LANCZOS).filter(ImageFilter.UnsharpMask(2, 60, 2))
     return mk, st
 

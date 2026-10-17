@@ -39,3 +39,11 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - Thread palette: 12 colours read from the mockup (Madeira Polyneon / Isacord matched by ΔE2000) — physical thread board to approve.
 - Mockup dashed rays → continuous gold bean lines (dashes cost ~2 trims each); dark lobe edges + sea field are digitizing choices to keep trims ~250 per piece.
 - Shell piece-dyed and pre-washed before embroidery (not garment-dyed after).
+
+## Rev B changes (16 Oct 2026, reviewer + Devin "fidelity first")
+- Layout from the mockup, look/texture from `inputs/closeups/` (ChatGPT close-ups, ~4.5 px/mm). Close-ups each draw a half sun; only ONE sun is built (on FL, rays continue on FR).
+- Clouds: florets with fan satin, 4 tones + cream rims, no dark outline; banks end in whole lobes inside the tightest keep-out of all sizes.
+- Sea: continuous field of varied-length dashes in 4 teals (no solid slab), perspective rows down to the welts; rays dashed (4.6 / 2.6).
+- Sun: fine satin rays with dot ends, dense radial hairline glow. Stars: 43 from the mockup, gold.
+- Cost (stitches, trims, stops, time) is reported, not limited; clean-up after the sew-out.
+- Frame read from `factory.json` (360 × 360, PROPOSED).

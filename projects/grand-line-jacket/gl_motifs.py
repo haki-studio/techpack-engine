@@ -58,7 +58,7 @@ def pack_lobes(C, R0, rng, rjit=0.22, dy=0.62, dx=1.18, inset=0.5, rmin=2.6):
     for l in lobes: l.append(l[1] + rng.uniform(-0.25, 0.25)*R0)       # z: lower = in front
     return lobes
 
-def lobe_regions(lobes, tone_of, flat_y=None, grp="CL", unit=None, base_bottom=True, gap=0.5, scale=True):
+def lobe_regions(lobes, tone_of, flat_y=None, grp="CL", unit=None, base_bottom=True, gap=0.0, scale=True):
     """Mockup-style cumulus: each lobe's visible dome (the lobes in front cut it back by a `gap` of bare fabric, the dark
     line between lobes in the mockup) -> lit rim along the top, body, darker shade band where the front lobe overlaps it,
     and rows of short dark scale dashes following the dome (the mockup's stitch texture), sewn on top (overlay)."""
@@ -70,14 +70,14 @@ def lobe_regions(lobes, tone_of, flat_y=None, grp="CL", unit=None, base_bottom=T
     discs.sort(key=lambda t: -t[0])                     # front first
     regs = []; front = Polygon()
     for z, cx, cy, r, d in discs:
-        V = (d.difference(front.buffer(gap)) if not front.is_empty else d).buffer(0)
+        V = (d.difference(front.buffer(gap) if gap else front) if not front.is_empty else d).buffer(0)
         V = smooth(V, 0.3)
         if V.area < 2.5:
             front = front.union(d); continue
         tone = tone_of(V, (cx, cy, r))
         bcol, rcol, scol, dcol = TONES[tone]
-        wr = min(2.4, max(1.1, 0.26*r)); ws = min(1.6, max(1.0, 0.15*r))
-        shade = V.intersection(front.buffer(gap + ws)) if not front.is_empty else Polygon()
+        wr = min(3.2, max(1.2, 0.32*r)); ws = min(3.0, max(1.2, 0.3*r))
+        shade = V.intersection(front.buffer(gap + ws)) if not front.is_empty else Polygon()   # darker base where the front lobe sits
         if base_bottom:
             shade = shade.union(V.intersection(box(cx - 2*r, cy + max(0.45*r, 0.9*r*EY - ws), cx + 2*r, cy + 2*r)))
         shade = smooth(shade.intersection(V), 0.4) if r >= 3.5 else Polygon()
@@ -124,7 +124,7 @@ def star(cx, cy, Lv, Lh, w0, kind, unit, rot=0.0):
         return [R("gl_pale", Point(cx, cy).buffer(max(0.75, Lv/2), quad_segs=10), "satin", "auto", "DOT", unit=unit, kob=0.5)]
     cd = max(0.8, w0*0.75)
     if kind == "cross":                         # small cross: one thread, arms overlap at the centre
-        col = "gl_pale"
+        col = "gl_gold"
         return [R(col, taper_arm(cx, cy, a + rot, L, w0, 0.9, 0.0).union(Point(cx, cy).buffer(w0*0.62)), "satin", "auto", "STAR", unit=unit, kob=0.5)
                 for L, a in ((Lv, -90), (Lh, 0), (Lv, 90), (Lh, 180))]
     arms = []
@@ -135,7 +135,7 @@ def star(cx, cy, Lv, Lh, w0, kind, unit, rot=0.0):
             arms.append(taper_arm(cx, cy, a + rot, Lh*0.42, w0*0.8, 0.9, cd*0.6))
     centre = Point(cx, cy).buffer(cd + 0.2, quad_segs=12)
     for g in arms:
-        regs.append(R("gl_pale", g.difference(centre), "satin", "auto", "STAR", unit=unit, kob=0.5))
+        regs.append(R("gl_gold", g.difference(centre), "satin", "auto", "STAR", unit=unit, kob=0.5))
     regs.append(R("gl_pale", centre, "satin", "auto", "STAR-c", unit=unit, kob=0.5))   # same thread: arms + centre chain
     return regs
 

@@ -119,7 +119,7 @@ def tone_of(V, lobe):
     r, g, b = v[k].mean(axis=0); lum = l[k].mean()
     if r > g + 2: return "cream" if lum > 165 else "sand"
     if lum > 185: return "cream"
-    return "sage" if (g - b) > 7 else "slate"
+    return "sage" if (g - b) > -2 else "slate"
 def tone_islet(V, lobe):                                  # islets are cream with sand undersides (the sea shows through the samples)
     rb, gb, bb_ = sample_bright(V); lb = 0.3*rb + 0.59*gb + 0.11*bb_
     return "cream" if lb > 150 else "sand"
@@ -171,7 +171,7 @@ for i, C in enumerate(BANKS):
     side = "R" if C.centroid.x < 0 else "L"
     lim = LIM_ALL[side].buffer(-1.0)        # whole lobes, 1.2 inside the M keep-out (grades shift it a little)
     ch = colheight(C)
-    Rf = lambda x, y, ch=ch: float(np.clip(0.15*ch(x), 4.2, 10.0))          # florets: the mockup lobes are ~6-17 mm
+    Rf = lambda x, y, ch=ch: float(np.clip(0.17*ch(x), 5.0, 12.0))          # florets: the mockup lobes are ~6-17 mm
     rng = random.Random(100 + i)
     lobes = pack_var(C, Rf, rng, lim=lim)
     flat = HORIZON + 0.5 if C.bounds[3] < HORIZON + 6 else None
@@ -212,16 +212,21 @@ add(GM.sun(*SUN, flat_y=HORIZON + 0.6), 15)
 add(GM.burst(*SUN, BURST, 8.4, 1.05, 0.82), 15)                                     # hairline satin rays
 add(GM.burst(*SUN, [(-178.5, 62), (-1.5, 62)], 8.4, 1.1, 0.82, col="gl_pale"), 15)   # flare along the horizon
 GLOW_ENV = affinity.scale(Point(SUN[0], HORIZON).buffer(1.0, quad_segs=48), 96, 90, origin=(SUN[0], HORIZON)).intersection(box(-400, -400, 400, HORIZON - 1.5))
-HALO = affinity.scale(Point(SUN[0], HORIZON).buffer(1.0, quad_segs=48), 74, 70, origin=(SUN[0], HORIZON)).intersection(box(-400, -400, 400, HORIZON - 1.2)).difference(Point(SUN).buffer(8.0))
-add([GM.R("gl_deep", HALO, "tatami", ("radial", SUN[0], SUN[1]), "GLW-fill", kob=0.0)], 10.5)    # dark-teal glow behind the sun
-for a in np.arange(-175, -3, 8.0):                     # fine radial glow lines (mockup: radiating texture in the halo)
-    t = math.radians(a); L = 40 + 45*abs(math.sin(t*3.1))
-    ln = LineString([(SUN[0] + 10*math.cos(t), SUN[1] + 10*math.sin(t)), (SUN[0] + L*math.cos(t), SUN[1] + L*math.sin(t))])
-    add([GM.R("gl_teal", ln.buffer(0.33, cap_style="round").intersection(GLOW_ENV), "run", None, "GLW", kob=0.0, ko=False)], 11)
-
+GLOW_ENV2 = affinity.scale(Point(SUN[0], HORIZON).buffer(1.0, quad_segs=64), 105, 95, origin=(SUN[0], HORIZON)).intersection(box(-400, -400, 400, HORIZON - 1.2))
+for k, a in enumerate(np.arange(-178.5, -1.0, 1.5)):   # dense radial hairline glow behind the sun (close-ups)
+    t = math.radians(a); r0 = 9.0 + (k % 3) * 7.0
+    L1 = 34 + 16*abs(math.sin(t*2.3 + 0.7)); L2 = L1 + 12 + 16*abs(math.sin(t*3.7))
+    for (ra, rb, col, lay) in ((r0, L1, "gl_teal", 11), (L1 - 6, L2, "gl_deep", 10.8)):
+        ln = LineString([(SUN[0] + ra*math.cos(t), SUN[1] + ra*math.sin(t)), (SUN[0] + rb*math.cos(t), SUN[1] + rb*math.sin(t))])
+        g_ = ln.buffer(0.22, cap_style="round").intersection(GLOW_ENV2)
+        if not g_.is_empty: add([GM.R(col, g_, "run", None, "GLW", kob=0.0)], lay)
+# dot ends on the longer burst rays (close-ups)
+for a, L in BURST:
+    if L >= 40:
+        t = math.radians(a); add([GM.R("gl_gold", Point(SUN[0] + (L + 2.2)*math.cos(t), SUN[1] + (L + 2.2)*math.sin(t)).buffer(0.9, quad_segs=10), "satin", "auto", "DOT", kob=0.4)], 15)
 
 # ================================================================ sea: horizon line, dash field, glitter path
-add([GM.R("gl_foam", LineString([(-300, HORIZON + 0.6), (300, HORIZON + 0.6)]).buffer(0.45), "bean", None, "HZ", kob=0.3)], 13)
+add([GM.R("gl_pale", LineString([(-300, HORIZON + 0.6), (300, HORIZON + 0.6)]).buffer(0.45), "bean", None, "HZ", kob=0.3)], 13)
 SEAISH = (TEAL | LIGHT) & (YMM > HORIZON + 0.5) & ~ndi.binary_dilation(cl_mask, structure=disk(1.5))
 # the mockup's own welts (drawn 18-40 mm from where the pattern puts them): their dark pixels are not "no sea"
 MOCK_WELTS = unary_union([LineString([MM.P(128, 566), MM.P(250, 453)]).buffer(17), LineString([MM.P(622, 566), MM.P(500, 453)]).buffer(17)])
@@ -241,22 +246,12 @@ _sp = mask_polys(_sm, min_area=200, simplify=0.8)
 SEA_SIL = unary_union([Polygon(p.buffer(3.0).buffer(-3.0).exterior) if p.buffer(3.0).buffer(-3.0).geom_type == 'Polygon' else p for p in _sp]).intersection(box(-400, HORIZON + 1.0, 400, 600)).difference(CLOUD_U).buffer(0)
 SIL_IN = prepared.prep(SEA_SIL.buffer(-0.3))
 def sea_col(lv):
-    if lv < 34: return None                        # navy shows (gap in the mockup)
+    if lv < 30: return None                        # navy shows (gap in the mockup)
     return "gl_deep" if lv < 56 else ("gl_teal" if lv < 80 else ("gl_tealt" if lv < 115 else "gl_foam"))
-GROUND = SEA_SIL.intersection(box(-400, HORIZON + 1.0, 400, HORIZON + 92.0))
-_lim = unary_union([LIM_ALL["R"], LIM_ALL["L"]]).buffer(-2.0)
-_cf = box(-36, -500, 36, 900)
-GROUND = unary_union([GROUND.intersection(_lim).buffer(-4.0).buffer(4.0), GROUND.intersection(_lim).intersection(_cf)])   # rounded ends; straight only at the zip
-GROUND = unary_union([p for p in GM.polys(GROUND.buffer(-1.5).buffer(1.5)) if p.area > 150])
-_cells = []
-for cy_ in np.arange(HORIZON + 1.0, HORIZON + 92.0, 30.0):
-    for cx_ in np.arange(-400, 400, 45.0):
-        _cells += [g for g in GM.polys(GROUND.intersection(box(cx_, cy_, cx_ + 45.0, cy_ + 30.0))) if g.area > 4]
-add([GM.R("gl_deep", g, "tatami", 0.0, "SEA-field", kob=0.0) for g in _cells], 12, z=12*100000 - 1)   # mockup: dark teal between the dashes
 rng = random.Random(7); sea_bars = 0; y = HORIZON + 1.9; rows = 0
 while y < 470:
     t = min(1.0, (y - HORIZON) / 210.0)
-    hgt = 1.45 + 0.75*t; vgap = (0.35 if y < HORIZON + 92 else 0.6) + 1.7*t          # perspective: rows open up toward the viewer
+    hgt = 1.45 + 0.75*t; vgap = 0.6 + 0.9*t          # perspective: rows open up toward the viewer
     x = -300 + rng.uniform(0, 5)
     while x < 300:
         L = rng.uniform(4, 26) * (1.3 - 0.5*t)
@@ -264,12 +259,11 @@ while y < 470:
         if (x < 15.5 and x1 > -15.5) or (GLITTER_X[0] - 2 < x1 and x < GLITTER_X[1] + 2 and y < 400) or not SIL_IN.contains(LineString([(x, y), (x1, y)])):
             x += rng.uniform(1.2, 3.0); continue
         col = sea_col(lum_at(x, x1, y, 75))
-        if col == "gl_deep" and y < HORIZON + 92: col = None      # the ground is deep teal already
         if col and x1 - x >= 3.0:
             bar = LineString([(x + hgt/2, y), (x1 - hgt/2, y)]).buffer(hgt/2, cap_style="round")
             add([GM.R(col, bar, "tatami", 0.0, "SEA-hl" if col == "gl_foam" else "SEA", kob=0.0)], 12)
             sea_bars += 1
-        x = x1 + (rng.uniform(0.5, 1.0) if y < HORIZON + 92 else rng.uniform(0.7, 1.4) + 1.6*t*rng.random())
+        x = x1 + rng.uniform(0.6, 1.1) + 1.2*t*rng.random()
     y += hgt + vgap; rows += 1
 
 y = HORIZON + 2.2                                      # glitter path under the sun

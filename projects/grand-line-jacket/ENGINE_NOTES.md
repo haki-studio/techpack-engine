@@ -63,3 +63,13 @@ Problems hit while building this product, worked around in project code only. Ea
 - **Workaround:** `build_size.cap_stitches()` splits any stitch > 7.4 mm in the pattern before `dst2.write`.
 - **Proposed fix:** split at > 7.4 in `make_pattern` (and in `turning_satin` / `fixed_satin`, which split at 7.0 already), or round first.
 - **Check:** `verify()` max_stitch ≤ 7.5 on every file of a scaled (108 %) test design.
+
+## 8. split_clip y-search range is fixed at 40-60 % of the height (Rev B)
+- **Problem:** on tall front pieces the best split (least art cut) can be outside 40-60 %; the reviewer saw the split go through the densest cloud bank.
+- **Workaround:** `build_size.py` execs a copy of `split_clip` with the search widened to 12-88 % (77 candidates); still frame-checked. Asserts if the engine source changes.
+- **Proposed fix:** `split_clip(..., y_range=(0.12, 0.88), n=77)` parameters; optional penalty for cutting fills of given codes (clouds).
+- **Check:** G6 "cloud crossed by split" column; test a design whose bare band is at 25 % height.
+
+## 9. Fidelity-first trims (Rev B)
+- A dash-field sea with no ground fill and soft-edged florets cost FR M 283 → ~950 trims. The B14 tricks (dark connected fill sewn last) conflict with "no slab".
+- **Proposed fix:** native dashed-run / chained-dash object: consecutive dashes on a row joined by a hidden underpath under the *next* row's dashes, or a 0.4 mm single-run link under a later bean ray. Then dash seas sew as chains, not islands.

@@ -235,6 +235,21 @@ def p_grade():
     for i, l in enumerate(pl): o.append(t(gx, y + 12.5 + i*3.6, l, 1.7))
     return o
 
+def thread_qty():
+    """top thread per jacket from the size-M DSTs: sewn length x 1.4 (take-up), in metres + 5,000 m cones"""
+    import pyembroidery as pe, math
+    cur = json.load(open("dst_current.json")); L = 0.0
+    for P in glcore.PIECES:
+        p = pe.read(cur[P]["file"] + ".dst"); prev = None
+        for x, y, c in p.stitches:
+            k = c & pe.COMMAND_MASK
+            if k == pe.STITCH:
+                if prev: L += math.hypot(x - prev[0], y - prev[1]) / 10000.0
+                prev = (x, y)
+            else: prev = None
+    m = L * 1.4
+    return f"≈ {m:,.0f} m top + {m*0.45:,.0f} m bobbin (≈ {5000/m:.0f} jackets / 5,000 m cone avg)"
+
 def p_bom():
     o = header("BILL OF MATERIALS", "Per jacket, size M. Fabric consumption = pattern piece area ÷ (150 cm width × 80 % marker efficiency) — replace with the factory's marker. Threads: G3.", "T6")
     import gtp_pattern as GP
@@ -254,7 +269,7 @@ def p_bom():
         ("Zip", "YKK #5 metal separating, auto-lock, one-way", "antique brass teeth, black tape", "CF", "YKK", "1 × 56 cm (M)", False),
         ("Thread — seams", "Coats Epic 120 (Tex 27) corespun poly/cotton", "tonal navy", "all seams + overlock", "Coats", "~ 450 m", True),
         ("Thread — topstitch", "Coats Gral 40 (Tex 60) poly", "tonal navy", "topstitch, bartacks", "Coats", "~ 120 m", True),
-        ("Embroidery thread", "Madeira Polyneon 40 (12 colours, see G3)", "per embroidery spec", "01 front scene", "Madeira", "per spec", False),
+        ("Embroidery thread", "Madeira Polyneon 40 (12 colours, see G3)", "per embroidery spec", "01 front scene", "Madeira", thread_qty(), False),
         ("Embroidery backing", "2.5 oz cutaway", "black / charcoal", "behind FR + FL", "TBC", "2 pieces", False),
         ("Main label", "woven damask, HAKI logo, 7 × 2 cm, folded", "black / cream", "CB neck facing", "TBC", "1", True),
         ("Size label", "woven, 2 × 1.5 cm", "black / cream", "under main label", "TBC", "1", True),
@@ -372,7 +387,7 @@ def p_questions():
           "8. Seam types + SPI (T7) are a standard proposal — factory to confirm capability (5-thread safety stitch, bartack).",
           "9. Labels + packaging artwork, country of origin, care-symbol set, carton marks.",
           "10. Embroidery grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per front piece. OK?",
-          "11. Frame: each front piece needs 2 hoopings on 360 × 360 (split files) — or one hooping on a ≥ 300 × 520 frame (full files). Which?",
+          "11. Frame: each front piece needs 2 hoopings on the assumed 360 × 360 frame (split files) — or one hooping on a ≥ 300 × 520 frame (full files). Which?",
           "12. Product name: 'Grand Line' is a One Piece term — internal slug only? Confirm the retail name before labels/hangtags.",
           "13. Inside: pocket bags free-hanging + bound (proposed); inside chest pocket — add one? (T14)"]
     for i, q in enumerate(qs): o.append(t(14, 34 + i*4.6, q, 2.0))

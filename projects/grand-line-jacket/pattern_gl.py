@@ -22,6 +22,25 @@ import pattern_out as PO
 PO.STYLE = glcore.STYLE
 PO.EMB_ON = {"F01": ["FL"], "F02": ["FR"]}
 PO.EMB_NAME = {"FL": "01 front scene FL", "FR": "01 front scene FR"}
+import json as _json, os as _os
+_emb0 = PO.emb_marks
+def emb_marks(size, pl=None):
+    """art outline + box + centre, plus the needle start of every split file (DXF layer 13 points, layer 8 crosses)"""
+    out = _emb0(size, pl)
+    for P, code in (("FL", "F01"), ("FR", "F02")):
+        rp = f"out/01_front-scene/{size}/result_{P}.json"
+        if not _os.path.exists(rp): continue
+        r = _json.load(open(rp))
+        lst = [m for m in out.get(code, []) if not m[0].endswith(" centre")]
+        lst.append((f"01 {P} full file start", [tuple(r["full"]["origin"])], "cross"))
+        for nm, s in r.get("splits", {}).get("sections", {}).items():
+            lst.append((f"01 {P} {nm} start", [tuple(s["origin"])], "cross"))
+        sy = r.get("splits", {}).get("sy")
+        if sy is not None:
+            b = r["full"]["art_box"]; lst.append((f"01 {P} split line", [(b[0] - 5, sy), (b[2] + 5, sy)], "line"))
+        out[code] = lst
+    return out
+PO.emb_marks = emb_marks
 
 if __name__ == "__main__":
     import drum
