@@ -28,6 +28,52 @@ PROPOSED = {"Shoulder slope (HPS→shoulder point)": "4.5 cm", "Shoulder seam fo
             "Front facing": "6 cm at CF, 4 cm on shoulder", "Back neck facing depth": "6.5 cm", "Welt": "1.6 × 14 cm",
             "Pocket bag": "18 × 20 cm", "Back lining CB pleat": "2 cm"}
 
+# ---------------------------------------------------------------- HOODED variant (collar -> 3-panel hood, rib -> self-fabric bands)
+VARIANTS = ("default", "hooded")
+# Hood dims at size M + grade per size step. ALL PROPOSED. Override per project: draft(size, "hooded", hood={...}) or HOOD.update(...)
+HOOD = dict(height=340.0,        # side panel flat: hood neck point at CF -> crown
+            width=255.0,         # side panel flat: face edge -> back of the head, widest
+            face_opening=760.0,  # CF -> CF along the face edge (side + centre-panel end + side)
+            grade_height=6.0, grade_width=4.0, grade_face=10.0,   # per size step from M
+            centre_w=100.0,      # centre panel width (constant, straight grain)
+            neck_rise=40.0,      # side panel: CB end of the neck seam sits this much above the CF end
+            neck_bow=10.0,       # neck edge bows out (convex) - mate of the scooped body neck
+            face_lean=25.0, face_bow=6.0,   # face edge: top set back / bowed forward
+            cf_set=0.0,          # hood neck starts this far back from the CF sew line (0 = hood fronts meet at the zip)
+            facing_w=30.0,       # finished hood facing (shell) at the face opening
+            toc=3.0,             # sherpa turn-of-cloth per centre seam (full at the crown, 0 at the neck)
+            sa_lining=12.0)      # sherpa seam allowance
+BAND = dict(hem=55.0, cuff=60.0)  # hooded: finished self-fabric hem band / cuff heights (folded double), PROPOSED
+_GRADE = {"height": "grade_height", "width": "grade_width", "face_opening": "grade_face"}
+
+def hood_dims(size, hood=None):
+    """HOOD (+ overrides) graded to `size`"""
+    d = dict(HOOD); d.update(hood or {})
+    k = SIZES.index(size) - SIZES.index("M")
+    for key, gk in _GRADE.items(): d[key] = d[key] + k * d[gk]
+    return d
+
+def proposed(variant="default", hood=None):
+    """the PROPOSED table for a variant (pages print every entry amber "[proposed — confirm]")"""
+    if variant == "default": return PROPOSED
+    d = hood_dims("M", hood)
+    out = {k: v for k, v in PROPOSED.items() if k not in ("Collar neck rise at front", "Hem rib / cuff rib finished", "Shell sleeve opening")}
+    out.update({
+        "Hood height (CF neck point to crown, flat)": f"{d['height']/10:.1f} cm (M), ±{d['grade_height']/10:.1f} cm per size",
+        "Hood width (face edge to back, flat)": f"{d['width']/10:.1f} cm (M), ±{d['grade_width']/10:.1f} cm per size",
+        "Hood face opening (CF to CF along the edge)": f"{d['face_opening']/10:.1f} cm (M), ±{d['grade_face']/10:.1f} cm per size",
+        "Hood centre panel width": f"{d['centre_w']/10:.1f} cm",
+        "Hood neck rise / neck bow": f"{d['neck_rise']/10:.1f} / {d['neck_bow']/10:.1f} cm",
+        "Hood face edge lean / bow": f"{d['face_lean']/10:.1f} / {d['face_bow']/10:.1f} cm",
+        "Hood start at CF": f"{d['cf_set']/10:.1f} cm back from the CF sew line (hood fronts meet at the zip)",
+        "Hood facing (shell)": f"{d['facing_w']/10:.1f} cm finished",
+        "Sherpa lining turn-of-cloth": f"{d['toc']/10:.1f} cm per centre seam at the crown, 0 at the neck",
+        "Sherpa seam allowance": f"{d['sa_lining']/10:.1f} cm",
+        "Hem band / cuff finished (self-fabric, folded)": f"{BAND['hem']/10:.1f} / {BAND['cuff']/10:.1f} cm",
+        "Shell sleeve opening": "= cuff length (woven cuff, no ease); half opening = chart H",
+        "Side seam taper at hem": "side seams taper in to 1/2 sweep D at the hem (woven band, no ease)"})
+    return out
+
 # ---------------------------------------------------------------- geometry helpers
 def alen(pts): return sum(math.hypot(b[0]-a[0], b[1]-a[1]) for a, b in zip(pts, pts[1:]))
 def at(pts, s):
@@ -150,14 +196,35 @@ def collar_edges(Ln, M, N, extra=0.0):
     neck_full = mirror(rev(neckR)) + neckR[1:]                     # front L end -> CB -> front R end
     return neck_full, [E, T], rev(outerR) + mirror(outerR)[1:], [mirror([T])[0], mirror([E])[0]], neckR
 
-def draft(size):
+def _welt_ref():
+    """the welt reference (front.WELT_L): the project's front.py if it defines one, else Drum Island's (the block's own
+    welt) - so a new project on this block (e.g. the hooded ones) can draft before it has any art code."""
+    try:
+        import front as FR
+        if hasattr(FR, "WELT_L"): return FR
+    except ImportError:
+        pass
+    from types import SimpleNamespace          # same construction as projects/drum-island-plum-pine/front.py (mockup px -> mm)
+    P = lambda px, py: ((px - 448) * 0.80, (py - 190) * 0.736)
+    return SimpleNamespace(WELT_L=LineString([P(600, 630), P(720, 750)]).buffer(16 * 0.77 / 2, cap_style="flat", join_style="mitre"))
+
+def draft(size, variant="default", hood=None):
+    """pieces {code: Piece}, meta. variant "hooded": collar -> 3-panel hood with sherpa lining + facing,
+    rib hem/cuffs -> self-fabric bands (woven: band = seam it joins, 1:1). hood = overrides for HOOD."""
+    if variant not in VARIANTS: raise ValueError(f"variant {variant!r} not in {VARIANTS}")
+    hooded = variant == "hooded"
     b = drum.Block(size); g = {}
     n2, sh2, ch2, drop = b.neck2, b.sh2, b.chest2, b.drop
+    hx = ch2                                     # half hem width at the side seam (= chest: straight side seam)
+    cuff_h, cuff_ratio = CUFF_RIB, CUFF_RATIO
+    if hooded:
+        hx = drum.m("D", size) / 2               # woven band can't pull the hem in: side seam tapers to 1/2 sweep D
+        cuff_h, cuff_ratio = BAND["cuff"], 1.0   # woven cuff = shell opening; half opening = chart H
     # ------------------------------------------------ BACK (one piece, cut 1 — embroidered, not cut on fold)
     hps_b = (n2, -b.bnd - FWD); sp_b = (sh2, b.b_sp[1] - FWD)
     neck_bR = drum.curve((0, 0), hps_b, -6, 30)
     arm_bR = [sp_b] + drum.curve(b.b_sp, b.b_ua, -18, 50)          # 10 mm forward extension, then the block armhole
-    hem_b = b.b_hem
+    hem_b = b.b_hem if not hooded else b.b_hem_edge - BAND["hem"]
     ua_b = arm_bR[-1]
     back_neck = mirror(rev(neck_bR)) + neck_bR[1:]
     arm_len_b = alen(arm_bR)
@@ -165,9 +232,9 @@ def draft(size):
         Edge("neck", rev(back_neck), SA_STD, [alen(back_neck)/2]),                       # from HPS R via CB to HPS L
         Edge("shoulder L", [mirror([hps_b])[0], mirror([sp_b])[0]], SA_STD),
         Edge("armhole L", mirror(arm_bR), SA_STD, [arm_len_b - 100, arm_len_b - 106]),
-        Edge("side L", [mirror([ua_b])[0], (-ch2, hem_b)], SA_STD),
-        Edge("hem", [(-ch2, hem_b), (ch2, hem_b)], SA_HEM, [ch2]),
-        Edge("side R", [(ch2, hem_b), ua_b], SA_STD),
+        Edge("side L", [mirror([ua_b])[0], (-hx, hem_b)], SA_STD),
+        Edge("hem", [(-hx, hem_b), (hx, hem_b)], SA_HEM, [hx]),
+        Edge("side R", [(hx, hem_b), ua_b], SA_STD),
         Edge("armhole R", rev(arm_bR), SA_STD, [100, 106]),
         Edge("shoulder R", [sp_b, hps_b], SA_STD)],
         grain=((0, 60), (0, hem_b - 60)), note="CB marked by notches; embroidery 01 sewn on the cut piece")
@@ -177,18 +244,18 @@ def draft(size):
     arm_f_old = drum.curve(b.f_sp, b.f_ua, -22, 60)
     sp_f, s0 = line_x(hps_f, (hps_f[0] + (sh2 - n2), hps_f[1] + drop), arm_f_old)
     arm_f = [sp_f] + cut_curve_from(arm_f_old, s0)[1:]
-    ua_f = arm_f[-1]; hem_f = b.f_hem; arm_len_f = alen(arm_f)
+    ua_f = arm_f[-1]; hem_f = b.f_hem if not hooded else b.f_hem_edge - BAND["hem"]; arm_len_f = alen(arm_f)
     def front(side):
         X = (lambda pts: list(pts)) if side > 0 else mirror
         return [Edge("CF / zip", X([(0, hem_f), (0, 0)]), SA_STD),
                 Edge("neck", X(neck_f), SA_STD),
                 Edge("shoulder", X([hps_f, sp_f]), SA_STD),
                 Edge("armhole", X(arm_f), SA_STD, [arm_len_f - 80]),
-                Edge("side", X([ua_f, (ch2, hem_f)]), SA_STD),
-                Edge("hem", X([(ch2, hem_f), (0, hem_f)]), SA_HEM)]
+                Edge("side", X([ua_f, (hx, hem_f)]), SA_STD),
+                Edge("hem", X([(hx, hem_f), (0, hem_f)]), SA_HEM)]
     # welt pocket per size: keeps its distance above the hem seam, x graded with the chest
     wl_m = drum.Block("M"); kx = ch2 / wl_m.chest2
-    import front as FR
+    FR = _welt_ref()
     wc = FR.WELT_L.centroid; c = np.array(FR.WELT_L.exterior.coords)
     u = c[1] - c[2]; u = u / np.linalg.norm(u)
     if u[1] < 0: u = -u
@@ -205,8 +272,8 @@ def draft(size):
     g["B01"] = back
     # ------------------------------------------------ SLEEVE (right sleeve: back of cap on the left, x < 0)
     AH = arm_len_b + arm_len_f; target = AH + CAP_EASE
-    Lc = m_G = drum.m("G", size) - CUFF_RIB                      # cap top -> cuff seam along the sleeve centre
-    Hh = drum.m("H", size); Ww = Hh * CUFF_RATIO                    # half-width of the sleeve at the cuff seam (= 1/2 shell opening)
+    Lc = m_G = drum.m("G", size) - cuff_h                        # cap top -> cuff seam along the sleeve centre
+    Hh = drum.m("H", size); Ww = Hh * cuff_ratio                   # half-width of the sleeve at the cuff seam (= 1/2 shell opening)
     F = drum.m("F", size)                                           # half bicep, 25 mm below underarm
     def cap(W, h, pb=0.92, pf=1.08, n=80):
         us = np.linspace(0, 1, n)
@@ -238,7 +305,7 @@ def draft(size):
     # ------------------------------------------------ COLLAR (top + under), neck edge = back neck + front neck
     Ln = alen(neck_bR) + alen(neck_f)
     Mc, Nc = drum.m("M", size), drum.m("N", size)
-    for code, nm, extra, qty in (("C01", "TOP COLLAR", 2.0, "1"), ("C02", "UNDER COLLAR", 0.0, "1")):
+    for code, nm, extra, qty in (("C01", "TOP COLLAR", 2.0, "1"), ("C02", "UNDER COLLAR", 0.0, "1")) if not hooded else ():
         neck_full, frontR, outer, frontL, neckR = collar_edges(Ln, Mc, Nc, extra)
         nb = alen(neck_bR)
         nk = alen(neck_full) / 2
@@ -262,15 +329,15 @@ def draft(size):
                      grain=((0, 8), (0, BFACING_D - 8)), fuse=True, note="main + size label 1 cm below collar seam")
     # ------------------------------------------------ LINING: front, back (CB pleat), sleeve
     lin_f = [Edge("facing join", rev(inner), SA_STD), Edge("shoulder", [q0, sp_f], SA_STD), Edge("armhole", arm_f, SA_STD, [arm_len_f - 80]),
-             Edge("side", [ua_f, (ch2, hem_f)], SA_STD), Edge("hem", [(ch2, hem_f), (FACING_W, hem_f)], SA_STD)]
+             Edge("side", [ua_f, (hx, hem_f)], SA_STD), Edge("hem", [(hx, hem_f), (FACING_W, hem_f)], SA_STD)]
     g["L01"] = Piece("L01", "FRONT LINING", "1 pair", "Lining — cotton flannel", lin_f, grain=((170, 120), (170, hem_f - 60)), category="LINING")
     bR = [(x + PLEAT/2, y) for x, y in binner if x >= 0]; bL = [(x - PLEAT/2, y) for x, y in binner if x <= 0]
     shift = lambda pts, d: [(x + d, y) for x, y in pts]
     lin_b = [Edge("facing join", rev(bL) + rev(bR), SA_STD), Edge("shoulder R", shift([qb, sp_b], PLEAT/2), SA_STD),
              Edge("armhole R", shift(arm_bR, PLEAT/2), SA_STD, [arm_len_b - 100, arm_len_b - 106]),
-             Edge("side R", shift([ua_b, (ch2, hem_b)], PLEAT/2), SA_STD),
-             Edge("hem", [(ch2 + PLEAT/2, hem_b), (-ch2 - PLEAT/2, hem_b)], SA_STD, [ch2 + PLEAT/2]),
-             Edge("side L", shift([(-ch2, hem_b), mirror([ua_b])[0]], -PLEAT/2), SA_STD),
+             Edge("side R", shift([ua_b, (hx, hem_b)], PLEAT/2), SA_STD),
+             Edge("hem", [(hx + PLEAT/2, hem_b), (-hx - PLEAT/2, hem_b)], SA_STD, [hx + PLEAT/2]),
+             Edge("side L", shift([(-hx, hem_b), mirror([ua_b])[0]], -PLEAT/2), SA_STD),
              Edge("armhole L", shift(rev(mirror(arm_bR)), -PLEAT/2), SA_STD, [100, 106]),
              Edge("shoulder L", shift([mirror([sp_b])[0], mirror([qb])[0]], -PLEAT/2), SA_STD)]
     # reorder so edges chain: start after 'facing join' which runs L->R
@@ -289,9 +356,16 @@ def draft(size):
         internal = [("FOLD", fold)] if fold else []
         return Piece(code, name, qty, mat, e, gr, category=cat, internal=internal, fuse=fuse, note=note)
     D = drum.m("D", size)
-    g["R01"] = rect("R01", "HEM RIB", "1", "Rib knit 1×1 — tan", 2*D, 2*HEM_RIB, (SA_HEM, SA_STD, SA_HEM, SA_STD), grain_v=True, cat="RIB",
+    if hooded:      # self-fabric bands, woven: each band = the seam it joins (no negative ease), folded double
+        hem_len = 2 * alen([(hx, hem_f), (0, hem_f)]) + 2 * hx
+        g["R01"] = rect("R01", "HEM BAND", "1", "Shell — 12 oz duck", hem_len, 2*BAND["hem"], (SA_HEM, SA_STD, SA_HEM, SA_STD), grain_v=False, cat="BAND",
+                        fold=[(0, BAND["hem"]), (hem_len, BAND["hem"])], note="self-fabric, folded double; = body hem 1:1 (woven); ends into the zip")
+        g["R02"] = rect("R02", "CUFF", "2", "Shell — 12 oz duck", Ww*2, 2*BAND["cuff"], (SA_HEM, SA_HEM, SA_HEM, SA_HEM), grain_v=False, cat="BAND",
+                        fold=[(0, BAND["cuff"]), (Ww*2, BAND["cuff"])], note="self-fabric, folded double; = sleeve opening 1:1 (woven); closed into a loop")
+    else:
+      g["R01"] = rect("R01", "HEM RIB", "1", "Rib knit 1×1 — tan", 2*D, 2*HEM_RIB, (SA_HEM, SA_STD, SA_HEM, SA_STD), grain_v=True, cat="RIB",
                     fold=[(0, HEM_RIB), (2*D, HEM_RIB)], note="folded double; wales run across the height; ends into the zip")
-    g["R02"] = rect("R02", "CUFF RIB", "2", "Rib knit 1×1 — dark brown", Hh*2, 2*CUFF_RIB, (SA_HEM, SA_HEM, SA_HEM, SA_HEM), cat="RIB",
+      g["R02"] = rect("R02", "CUFF RIB", "2", "Rib knit 1×1 — dark brown", Hh*2, 2*CUFF_RIB, (SA_HEM, SA_HEM, SA_HEM, SA_HEM), cat="RIB",
                     fold=[(0, CUFF_RIB), (Hh*2, CUFF_RIB)], note="folded double; closed into a loop")
     g["P01"] = rect("P01", "WELT", "2", "Shell — 12 oz duck", WELT_L, 2*WELT_W, (SA_STD,)*4, grain_v=False, fold=[(0, WELT_W), (WELT_L, WELT_W)], fuse=True)
     bag = [(0, 0), (BAG_W, 0)] + [(BAG_W - 40 + 40*math.cos(a), BAG_D - 40 + 40*math.sin(a)) for a in np.linspace(0, math.pi/2, 10)] + \
@@ -301,14 +375,57 @@ def draft(size):
                       Edge("side L", [bag[-1], bag[0]], 5.0)], grain=((BAG_W/2, 20), (BAG_W/2, BAG_D - 20)), category="POCKETING")
     g["P03"] = rect("P03", "ZIP GARAGE", "2", "Shell — 12 oz duck", 50, 60, (SA_STD,)*4, fold=[(0, 30), (50, 30)], note="proposed — confirm (T10 Q6)")
     g["P04"] = rect("P04", "HANGER LOOP", "1", "Shell — 12 oz duck", 25, 140, (0, 0, 0, 0), note="folded in 4, edge-stitched")
-    for code in ("C01", "K01", "K02", "P01"):       # fusing = cut line inset 3 mm
+    for code in ("C01", "K01", "K02", "P01") if not hooded else ("K01", "K02", "P01"):       # fusing = cut line inset 3 mm
         pc = g[code]
         g["I" + code] = Piece("I" + code, "FUSING — " + pc.name, pc.qty, "Woven fusible 60 g/m²", pc.edges, pc.grain, category="FUSING")
         g["I" + code].inset = 3.0
     meta = dict(AH=AH, cap=capT, cap_top=s_top, cap_b=capb_len, cap_f=capf_len, cap_h=h, W=W, Ww=Ww, Lu=Lu, Ln=Ln, arm_b=arm_len_b, arm_f=arm_len_f,
                 hps_b=hps_b, sp_b=sp_b, ua_b=ua_b, hps_f=hps_f, sp_f=sp_f, ua_f=ua_f, hem_b=hem_b, hem_f=hem_f,
                 welt_c=(wcx, wcy), welt_u=tuple(u), neck_b=alen(neck_bR), neck_f=alen(neck_f), block=b)
+    if hooded:
+        meta.update(variant=variant, hem_band=BAND["hem"], cuff_band=cuff_h, hx=hx, **draft_hood(g, size, alen(neck_bR), alen(neck_f), hood))
     return g, meta
+
+def draft_hood(g, size, neck_b, neck_f, hood=None):
+    """adds the hood pieces H01-H05 to g; returns hood meta. neck_b / neck_f = body back-neck half / front neck (sew line)."""
+    import hood as HD
+    d = hood_dims(size, hood); cw, sal = d["centre_w"], d["sa_lining"]
+    neck_len = neck_f + neck_b - cw / 2 - d["cf_set"]          # side panel neck seam: CF (less cf_set) -> centre panel
+    hps = neck_f - d["cf_set"]                                  # shoulder-seam notch on the hood neck (arc from the CF end)
+    if neck_len <= hps + 10: raise ValueError("hood centre panel wider than the back neck")
+    neck, back, face = HD.side_panel(neck_len, d, drum.curve, alen)
+    Lb, Lf = alen(back), alen(face)
+    i_cr = min(range(len(back)), key=lambda i: back[i][1]); crown_s = alen(back[:i_cr + 1])   # NB -> crown
+    side = [Edge("neck", neck, SA_STD, [hps]), Edge("centre seam", back, SA_STD, [crown_s, Lb - 60]), Edge("face", face, SA_EDGE, [Lf / 2])]
+    gx = neck[-1][0] * 0.5
+    gr = ((gx, -40), (gx, -d["height"] + 60))
+    g["H01"] = Piece("H01", "HOOD SIDE", "1 pair", "Shell — 12 oz duck", side, grain=gr, note="mirror for the pair; neck notch = shoulder seam")
+    def centre(code, name, L, mat, sa, cat, crown):
+        e = [Edge("face end", [(-cw/2, 0), (cw/2, 0)], sa if cat == "LINING" else SA_EDGE, [cw/2]),
+             Edge("side R", [(cw/2, 0), (cw/2, L)], sa, [L - crown, 60] if crown else []),
+             Edge("neck end", [(cw/2, L), (-cw/2, L)], sa, [cw/2]),
+             Edge("side L", [(-cw/2, L), (-cw/2, 0)], sa, [crown, L - 60] if crown else [])]
+        return Piece(code, name, "1", mat, e, grain=((0, 30), (0, L - 30)), category=cat, note="notches: CB neck, top centre, crown")
+    g["H02"] = centre("H02", "HOOD CENTRE PANEL", Lb, "Shell — 12 oz duck", SA_STD, "SHELL", crown_s)
+    # sherpa lining = same panels less the facing band at the face, with turn-of-cloth on the centre seam;
+    # facing (shell) = that band, traced off the hood so both its edges match by construction
+    ln, lb, lf, (fn, fj, fs, ff) = HD.lining_panel(neck, back, face, d)
+    LbL, LfL, Ls = alen(lb), alen(lf), alen(fs); cut_front = alen(fn)
+    g["H03"] = Piece("H03", "HOOD FACING SIDE", "1 pair", "Shell — 12 oz duck",
+                     [Edge("neck", fn, SA_STD), Edge("lining join", fj, sal), Edge("centre seam", fs, SA_STD), Edge("face", ff, SA_EDGE, [Lf / 2])],
+                     grain=((ff[len(ff)//2][0] + d["facing_w"] / 2, ff[len(ff)//2][1] - 60), (ff[len(ff)//2][0] + d["facing_w"] / 2, ff[len(ff)//2][1] + 60)),
+                     note="mirror for the pair; turned to the inside at the face opening")
+    g["H04"] = Piece("H04", "HOOD FACING CENTRE", "1", "Shell — 12 oz duck",
+                     [Edge("face end", [(-cw/2, 0), (cw/2, 0)], SA_EDGE, [cw/2]), Edge("side R", [(cw/2, 0), (cw/2, Ls)], SA_STD),
+                      Edge("lining join", [(cw/2, Ls), (-cw/2, Ls)], sal, [cw/2]), Edge("side L", [(-cw/2, Ls), (-cw/2, 0)], SA_STD)],
+                     grain=((-cw/2 + 15, Ls/2), (cw/2 - 15, Ls/2)), note="joins the two facing sides; notch = top centre")
+    g["H05"] = Piece("H05", "HOOD SIDE LINING", "1 pair", "Sherpa — cream (pile 4–6 mm)",
+                     [Edge("neck", ln, sal, [hps - cut_front] if hps > cut_front + 5 else []),
+                      Edge("centre seam", lb, sal), Edge("facing join", lf, sal)], grain=gr, category="LINING", note="mirror for the pair; pile runs down (crown -> neck)")
+    g["H06"] = centre("H06", "HOOD CENTRE LINING", LbL, "Sherpa — cream (pile 4–6 mm)", sal, "LINING", None)
+    return dict(hood=d, hood_neck=2 * neck_len + cw, hood_face=2 * Lf + cw, hood_side_neck=neck_len, hood_back=Lb, hood_face_side=Lf, hood_crown_s=crown_s,
+                hood_lining_neck=2 * alen(ln) + cw, hood_lining_face=2 * LfL + cw, hood_lining_back=LbL, hood_facing_neck=2 * cut_front,
+                hood_facing_seam=Ls, hood_pts=dict(neck=neck, back=back, face=face))
 
 def cut_poly(pc):
     P = pc.cut()
@@ -317,6 +434,10 @@ def cut_poly(pc):
 
 ORDER = ["B01", "F01", "F02", "S01", "S02", "C01", "C02", "K01", "K02", "P01", "P02", "P03", "P04", "R01", "R02",
          "L01", "L02", "L03", "IC01", "IK01", "IK02", "IP01"]
+ORDER_HOODED = ["B01", "F01", "F02", "S01", "S02", "H01", "H02", "H03", "H04", "K01", "K02", "P01", "P02", "P03", "P04", "R01", "R02",
+                "L01", "L02", "L03", "H05", "H06", "IK01", "IK02", "IP01"]
+def order(variant="default"): return ORDER_HOODED if variant == "hooded" else ORDER
+PROPOSED_HOODED = proposed("hooded")       # with the default HOOD; after overriding, call proposed("hooded", hood)
 
 if __name__ == "__main__":
     g, m = draft("M")
