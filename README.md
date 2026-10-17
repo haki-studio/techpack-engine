@@ -4,7 +4,7 @@ Haki Studios' tech pack generator: garment mockups + a fit chart in, factory pac
 
 What it produces for a garment:
 - **Embroidery**: stitchable region art (SVG with digitizing attributes), production-intent **DST + PES** stitch
-  files (hidden travel, turning satin, underlay, pull compensation, density blends, merged colour stops, ≤ 15
+  files (hidden travel, turning satin, underlay, pull compensation, density blends, merged colour stops, ≤ 12
   threads), graded art sizes, per-size files where art wraps across a seam, **360 × 360 hoop splits** with basting
   registration crosses, thread charts (Madeira Polyneon / Isacord, ΔE2000 matched).
 - **Pattern**: every piece XS–3XL drafted from the POM chart — seam allowances, notches, grain, drill holes,
