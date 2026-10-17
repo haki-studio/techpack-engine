@@ -42,7 +42,7 @@ GL_RULES = {
  "SEA-hl":   ("Sea highlight bar",        "Tatami, horizontal", "0° (along bar)",         "0.45", "3.5", "edge run",                "0.15", "foam / pale"),
  "HZ":       ("Horizon line",             "Bean (triple run)",  "follows line",           "—",    "2.2", "none",                    "—",    "0.8 line"),
  "GLT":      ("Sun glitter bar",          "Tatami, horizontal", "0° (along bar)",         "0.45", "3.5", "edge run",                "0.15", "column under the sun"),
- "RAY":      ("Dashed sun ray",           "Bean (triple run)",  "follows line",           "—",    "2.0", "none",                    "—",    "dash 4.6 / gap 2.6, 0.85 line"),
+ "RAY":      ("Dashed hairline sun ray",  "Run (double)",       "follows the ray",        "—",    "2.0", "none",                    "—",    "dash 4.2 / gap 2.4, slight curve"),
  "SUN":      ("Sun core",                 "Satin, radial",      "radial from sun centre", "0.40", "—",   "centre run",              "0.15", "Ø 9"),
  "SUN-ring": ("Sun ring",                 "Satin, radial",      "radial from sun centre", "0.40", "—",   "edge run",                "0.15", ""),
  "BURST":    ("Sunburst ray",             "Satin, tapered",     "across ray",             "0.42", "—",   "centre run",              "0.15", "≥ 0.9 wide, blunt tip"),

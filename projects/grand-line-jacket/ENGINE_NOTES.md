@@ -73,3 +73,13 @@ Problems hit while building this product, worked around in project code only. Ea
 ## 9. Fidelity-first trims (Rev B)
 - A dash-field sea with no ground fill and soft-edged florets cost FR M 283 → ~950 trims. The B14 tricks (dark connected fill sewn last) conflict with "no slab".
 - **Proposed fix:** native dashed-run / chained-dash object: consecutive dashes on a row joined by a hidden underpath under the *next* row's dashes, or a 0.4 mm single-run link under a later bean ray. Then dash seas sew as chains, not islands.
+
+## 10. PROCESS: a parallel builder's autostash reset this project's uncommitted files (Rev C, 22:27)
+- **Problem:** `commit_project.sh` runs `git pull --rebase --autostash` in the ONE shared working tree. Another builder's pull stashed every
+  uncommitted file in the repo (all projects) and the stash was not re-applied (a stale `.git/rebase-merge/` was left behind), so
+  grand-line-jacket's scene.py / build_size.py / gl_motifs.py / compare.py silently went back to the Rev B commit while builds were running.
+  Recovered from the dangling autostash commit e71be49 (`git fsck --lost-found`).
+- **Proposed fix:** one git worktree per builder (like plm-wt.sh), or `commit_project.sh` commits with `git commit -- projects/<slug>` and
+  pulls with `--no-autostash` (abort if the tree is dirty outside the project); never autostash other projects' files.
+- **Check:** two builders with uncommitted edits commit at the same time; both trees keep their edits.
+- Also seen: background jobs of this project killed externally ("Terminated") at the same time (E2/E6).
