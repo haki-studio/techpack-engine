@@ -63,11 +63,8 @@ effect is on record.
 | C5 | 108 % art outgrew the XL shoulder; 04 boxed in by welt + hem on XXL/3XL. | Grade per element with overrides; XL uses B (100 %); 04 stays 100 % on XXL/3XL; per-size nudge solver (smallest move that restores every keep-out). | T13 table "all pass". |
 | C6 | Values not on the fit chart (shoulder slope, rib heights, cap ease, facing widths). | Mark as PROPOSED everywhere they appear; list on the open-questions page. | `pattern.PROPOSED`. |
 | C7 | Pattern is drafted, not fitted. | Say so on the pattern pages; first sample in M before cutting the size set. | T11 footer. |
-<<<<<<< Updated upstream
 | C8 | Front art clipped against the block's shoulder line sat ~5 mm from the real seam: the pattern moves the front shoulder 10 mm forward (Forestball, Oct 2026). | Take keep-out lines (shoulder, armhole, side) from the drafted pattern piece, never from the block. | `emb_place.clearances()` measures on the pattern pieces; shoulder ≥ 15 on every size. |
-=======
-| C8 | A new garment type (zip hoodie) had no spec. | Derive it from an APPROVED block with an explicit delta list (`engine/hoodie.py`: same body + sleeve as Drum Island; hood + elastic bands are the only new parts, all PROPOSED). Inherited pieces must stay byte-identical to the parent block; sew a BLANK fit sample of the new block before any embroidered sample; every design of that type then uses the block. | `test_hoodie_inherits_jacket_body`, `test_hoodie_measurements_match_chart`. |
->>>>>>> Stashed changes
+| C9 | A new garment type (zip hoodie) had no spec. | Derive it from an APPROVED block with an explicit delta list (`engine/hoodie.py`: same body + sleeve as Drum Island; hood + elastic bands are the only new parts, all PROPOSED). Inherited pieces must stay byte-identical to the parent block; sew a BLANK fit sample of the new block before any embroidered sample; every design of that type then uses the block. | `test_hoodie_inherits_jacket_body`, `test_hoodie_measurements_match_chart`. |
 
 ## D. Documents
 

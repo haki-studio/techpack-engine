@@ -1,5 +1,5 @@
 """Zip hoodie block (engine/hoodie.py): derived from the approved Drum Island jacket — every size on the hoodie chart,
-seam walks equal, shapes valid, and the inherited body/sleeve pieces identical to the jacket's (LESSONS C8)."""
+seam walks equal, shapes valid, and the inherited body/sleeve pieces identical to the jacket's (LESSONS C9)."""
 import pytest, drum, pattern as PT, hoodie as HD
 
 @pytest.mark.parametrize("size", drum.SIZES)
