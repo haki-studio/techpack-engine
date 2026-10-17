@@ -54,24 +54,26 @@ def build(size):
         for r in its: groups.setdefault(r["cluster"] or r["unit"], []).append(r)
         out, moves, leafmoves, dropped = [], {}, {}, []
         for gk, regs in groups.items():
-            fitted, mv = fit_group(regs, lim)
+            is_cl = regs[0]["cluster"] is not None
+            fitted, mv = (None, None) if is_cl else fit_group(regs, lim)
             if fitted is not None:
                 out += fitted
                 if mv != (0.0, 0.0, 1.0): moves[gk] = tuple(round(v, 2) for v in mv)
                 continue
-            # cluster that does not fit as a whole: best whole-cluster fit for its core (flowers + stems), then each leaf
-            # on its own (moved inward along its axis / nudged, never cut)
+            if not is_cl: dropped.append(gk); continue
+            # flower cluster: fit its core (flowers + stems) as one, then each leaf on its own (nudged / shrunk, never cut)
             core = [r for r in regs if r["unit"].split("_")[-1].startswith(("flower", "stem"))]
             cf, mv = fit_group(core, lim, 24.0)
             if cf is None:
                 cf, mv = core, (0.0, 0.0, 1.0); dropped.append(gk + " core (does not fit)")
-            out += cf; moves[gk] = tuple(round(v, 2) for v in mv)
+            out += cf
+            if mv != (0.0, 0.0, 1.0): moves[gk] = tuple(round(v, 2) for v in mv)
             leaves = {}
             for r in regs:
-                if r not in core: leaves.setdefault(r["unit"], []).append(xform(r, mv[2], 0, 0, 0, 0) if False else r)
+                if r not in core: leaves.setdefault(r["unit"], []).append(r)
+            c0 = unary_union([r["geom"] for r in core]).centroid
             for lu, lr in leaves.items():
-                # apply the cluster move first (leaves stay with their stems), then fit the leaf alone
-                c0 = unary_union([r["geom"] for r in regs]).centroid
+                # apply the core move first (leaves stay with their stems), then fit the leaf alone
                 lr = [xform(r, mv[2], c0.x, c0.y, mv[0], mv[1]) for r in lr]
                 lf, lmv = fit_group(lr, lim, 14.0)
                 if lf is None: dropped.append(lu)

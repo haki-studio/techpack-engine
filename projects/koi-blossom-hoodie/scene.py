@@ -8,7 +8,7 @@ import math, random, pickle, json
 import numpy as np
 from shapely.geometry import Point
 from shapely.ops import unary_union
-import mockmap as MM, front as F, kb_motifs as KM
+import mockmap as MM, front as F, kb_motifs as KM, kbvis
 
 G_M, MT_M = F.pieces("M")
 S = MM.S                                   # mm per mockup px for motif sizes (fronts + sleeves)
@@ -31,7 +31,7 @@ def add(P, regs, zbase, layer, unit, kind, cluster=None, ko=True):
     UNITS[unit] = dict(kind=kind, piece=P, cluster=cluster)
     for r in regs:
         if r["geom"].is_empty: continue
-        r = dict(r)
+        r = dict(r, geom=kbvis.fix(r["geom"]))
         sub = r.get("sub", 0)
         r["z"] = zbase + sub + len(ITEMS[P]) * 1e-4
         lay = layer
@@ -59,7 +59,7 @@ koi_info = []
 for i, (hd, tl, pat, bend) in enumerate(KOI):
     P = piece_of(*hd)
     a, L, A = ang_of(P, tl, hd)
-    Lpx = math.hypot(hd[0] - tl[0], hd[1] - tl[1]); Lmm = max(52.0, Lpx * S * 1.04)      # tails read short in the render
+    Lpx = math.hypot(hd[0] - tl[0], hd[1] - tl[1]); Lmm = max(50.0, Lpx * S * 0.98)      # tails read short in the render
     c = np.array(to_mm(P, (hd[0] + tl[0]) / 2, (hd[1] + tl[1]) / 2))
     u = f"koi{i}"
     regs, sil = KM.koi(c[0], c[1], Lmm, a, rng, pattern=pat, bend=bend, unit=u)
@@ -69,7 +69,7 @@ for i, (hd, tl, pat, bend) in enumerate(KOI):
 # leaf = (base px, tip px, tone, bend); flower = (centre px, R px, tones, rot, n)
 CLUSTERS = {
  "FR_vine": dict(
-    flowers=[((195, 438), 44, "light", -95, 6), ((222, 500), 30, "mid", -60, 5)],
+    flowers=[((195, 438), 46, "pale", -95, 5), ((222, 500), 31, "mid", -60, 5)],
     stems=[([(208, 512), (186, 545), (168, 585), (150, 625), (138, 665), (128, 708)], 2.6, 1.3, "kb_navy"),
            ([(171, 580), (194, 561), (215, 547), (238, 541)], 1.6, 1.0, "kb_cobalt"),
            ([(150, 626), (170, 616), (186, 606)], 1.4, 1.0, "kb_cobalt"),
@@ -80,7 +80,13 @@ CLUSTERS = {
             ((194, 563), (222, 574), "ice", -0.06), ((212, 547), (228, 522), "ice", 0.05), ((150, 622), (130, 642), "royal", 0.05),
             ((168, 612), (196, 600), "cobalt", -0.06), ((160, 618), (192, 630), "cobalt", 0.06), ((140, 652), (172, 646), "ice", -0.08),
             ((139, 660), (124, 628), "sky", 0.06), ((134, 690), (150, 714), "cobalt", 0.05), ((131, 682), (117, 703), "royal", -0.05),
-            ((142, 666), (162, 690), "navy", 0.06), ((182, 548), (170, 520), "blue", -0.06), ((236, 540), (252, 528), "sky", 0.04)]),
+            ((142, 666), (162, 690), "navy", 0.06), ((182, 548), (170, 520), "blue", -0.06), ((236, 540), (252, 528), "sky", 0.04),
+            # denser vine (mockup: dark leaves fill the stem from the lilies to below the welt)
+            ((190, 540), (165, 525), "cobalt", 0.05), ((176, 568), (148, 556), "royal", -0.05), ((172, 584), (150, 590), "navy", 0.05),
+            ((158, 612), (140, 600), "cobalt", -0.05), ((146, 640), (124, 650), "royal", 0.05), ((143, 646), (160, 662), "cobalt", -0.05),
+            ((133, 676), (148, 690), "royal", 0.05), ((130, 700), (116, 720), "cobalt", -0.05), ((129, 706), (142, 728), "navy", 0.05),
+            ((200, 522), (230, 508), "royal", 0.05), ((165, 470), (140, 455), "cobalt", -0.06), ((170, 405), (160, 380), "royal", 0.06),
+            ((200, 470), (215, 450), "cobalt", 0.05), ((228, 528), (250, 552), "royal", -0.05), ((180, 520), (162, 545), "navy", 0.05)]),
  "FR_bot": dict(
     flowers=[((326, 745), 26, "mid", -100, 5)],
     stems=[([(300, 738), (316, 752), (330, 758)], 1.6, 1.0, "kb_navy")],
@@ -88,13 +94,14 @@ CLUSTERS = {
             ((338, 762), (350, 772), "cobalt", 0.04)]),
  "FL_bot": dict(
     flowers=[((482, 735), 40, "light", -85, 6), ((560, 744), 27, "dark", -70, 6)],
-    stems=[([(470, 762), (510, 776), (560, 772)], 1.8, 1.1, "kb_navy"),
-           ([(565, 742), (586, 720), (596, 690), (598, 660), (592, 628)], 2.0, 1.0, "kb_cobalt")],
+    stems=[([(470, 758), (510, 767), (556, 765)], 1.8, 1.1, "kb_navy"),
+           ([(568, 742), (594, 726), (601, 695), (601, 660), (594, 628)], 2.0, 1.0, "kb_cobalt")],
     leaves=[((448, 738), (397, 728), "sky", -0.06), ((446, 722), (413, 705), "blue", 0.06), ((456, 706), (424, 690), "blue", -0.05),
             ((462, 722), (458, 690), "royal", 0.06), ((452, 760), (410, 762), "royal", 0.05), ((466, 768), (440, 776), "cobalt", -0.04),
-            ((500, 768), (540, 760), "ice", -0.06), ((592, 640), (590, 612), "royal", 0.05), ((594, 662), (570, 660), "blue", -0.05),
-            ((596, 662), (612, 646), "blue", 0.05), ((590, 694), (574, 684), "ice", 0.05), ((598, 700), (612, 716), "royal", -0.05),
-            ((578, 764), (602, 748), "royal", 0.05), ((548, 770), (520, 780), "ice", -0.05), ((586, 724), (604, 734), "cobalt", 0.04)]),
+            ((500, 768), (540, 760), "ice", -0.06), ((594, 650), (588, 615), "royal", 0.05), ((594, 668), (566, 656), "blue", -0.05),
+            ((597, 664), (614, 640), "blue", 0.05), ((591, 700), (568, 684), "ice", 0.05), ((597, 702), (614, 722), "royal", -0.05),
+            ((590, 628), (578, 606), "cobalt", 0.04), ((599, 708), (612, 690), "sky", -0.04),
+            ((578, 764), (602, 748), "royal", 0.05), ((548, 770), (520, 780), "ice", -0.05), ((596, 726), (612, 738), "cobalt", 0.04)]),
  "SR_cuff": dict(
     flowers=[((45, 868), 25, "mid", -80, 6)],
     stems=[([(45, 870), (48, 842), (55, 815)], 1.5, 1.0, "kb_cobalt")],

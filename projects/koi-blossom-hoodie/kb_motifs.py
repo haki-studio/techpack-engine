@@ -1,3 +1,5 @@
+import warnings
+warnings.filterwarnings('ignore', category=RuntimeWarning)
 """Koi blossom motif library (units mm, y down). Every motif returns a list of region dicts
 (col, geom, st, ang, grp, sub) in local z order (first = sewn/stacked lowest) plus its silhouette.
 Detail level follows the close-up (inputs/closeup_mockup_koi.png): long-and-short tone steps are built as 2-4 tone
@@ -30,11 +32,11 @@ def jag_cut(t_of, n, amp, lo=-50.0, hi=50.0, period=1.6, phase=0.0, rng=None):
     return Polygon([(-500, lo)] + pts + [(-500, hi)]).buffer(0)
 
 # ================================================================ koi (top view)
-RED_PATTERNS = [
-    [(0.12, 0.27, 0.0), (0.36, 0.58, 0.05)],                       # head patch + long back patch
-    [(0.20, 0.44, -0.05), (0.50, 0.63, 0.1)],                      # big shoulder patch + tail-root patch
-    [(0.10, 0.24, 0.0), (0.30, 0.43, -0.1), (0.48, 0.60, 0.1)],    # three-step kohaku
-    [(0.16, 0.50, 0.0)],                                           # one long patch
+RED_PATTERNS = [     # (s0, s1, lateral offset as a fraction of W): long patches along the back, as in the close-up
+    [(0.13, 0.33, -0.08), (0.38, 0.62, -0.06)],                    # shoulder patch + long back patch
+    [(0.16, 0.46, -0.06), (0.51, 0.64, 0.02)],                     # long shoulder patch + tail-root patch
+    [(0.12, 0.30, -0.04), (0.36, 0.62, -0.08)],                    # head-to-shoulder + long back patch
+    [(0.15, 0.58, -0.06)],                                         # one long patch
 ]
 
 def koi_profile(L, W):
@@ -48,7 +50,7 @@ def koi_profile(L, W):
 def koi(cx, cy, L, ang, rng, pattern=0, bend=0.0, unit=None):
     """koi centred at (cx, cy), head pointing along `ang` (deg, y down), body length L (head tip to tail tip).
     bend: lateral curvature (mm at the tail tip, + = toward local +y)."""
-    W = 0.22 * L; h = koi_profile(L, W)
+    W = 0.20 * L; h = koi_profile(L, W)
     X = lambda s: L/2 - s*L                       # local x: head tip at +L/2
     def spine(s): return bend * (s**2)            # lateral offset of the spine
     ss = np.linspace(0, 0.70, 60)
@@ -58,7 +60,7 @@ def koi(cx, cy, L, ang, rng, pattern=0, bend=0.0, unit=None):
     regs = []
     # tail: forked fan from the peduncle, two lobes
     s0 = 0.66; px0 = X(s0); oy = spine(s0)
-    tip = 0.165*L; lob = []
+    tip = 0.13*L; lob = []
     for sg in (-1, 1):
         root = [(px0 + 0.5, oy - 0.04*L*sg*0), (px0, oy + 0.045*L*sg)]
         outer = [(X(0.80), oy + sg*0.10*L + spine(0.8) - oy), (X(0.93), oy + sg*0.15*L + spine(0.93) - oy), (X(1.0), oy + sg*tip + spine(1.0) - oy)]
@@ -77,7 +79,7 @@ def koi(cx, cy, L, ang, rng, pattern=0, bend=0.0, unit=None):
     regs.append(R("kb_grey", ray_u, "run", None, "KO-ray", 2))
     # fins: pectoral pair at s 0.24, pelvic pair at s 0.47 (fan shapes swept back), cream with grey rays
     fin_rays = []
-    for s_f, fl, fw, back in ((0.24, 0.20*L, 0.10*L, 48), (0.47, 0.12*L, 0.065*L, 55)):
+    for s_f, fl, fw, back in ((0.24, 0.13*L, 0.065*L, 55), (0.47, 0.085*L, 0.045*L, 60)):
         for sg in (-1, 1):
             bx, by = X(s_f), spine(s_f) + sg*h(s_f)*0.85
             a = math.radians(180 - back) if sg > 0 else math.radians(180 + back)
@@ -102,10 +104,10 @@ def koi(cx, cy, L, ang, rng, pattern=0, bend=0.0, unit=None):
     # red patches (kohaku)
     pat = RED_PATTERNS[pattern % len(RED_PATTERNS)]; reds = []
     for a0, a1, off in pat:
-        sc = (a0 + a1)/2; hl = (a1 - a0)*L/2; hw = h(sc)*0.92
+        sc = (a0 + a1)/2; hl = (a1 - a0)*L/2*1.08; hw = h(sc)*0.66
         pts = []
         for k in range(28):
-            th = 2*math.pi*k/28; rr = 1 + 0.13*math.sin(3*th + rng.uniform(0, 6)) + rng.uniform(-0.05, 0.05)
+            th = 2*math.pi*k/28; rr = 1 + 0.07*math.sin(3*th + rng.uniform(0, 6)) + rng.uniform(-0.03, 0.03)
             pts.append((X(sc) + hl*math.cos(th)*rr, spine(sc) + off*W + hw*math.sin(th)*rr))
         reds.append(Polygon(pts).buffer(0))
     red = unary_union(reds).intersection(body.buffer(-0.7))
@@ -125,58 +127,70 @@ def koi(cx, cy, L, ang, rng, pattern=0, bend=0.0, unit=None):
     return out, T(sil, cx, cy, ang)
 
 # ================================================================ lily / clematis flower
+FTONES = {  # base, lit half, shade half, lit tip, shade tip, highlight streak
+    "pale":  ("kb_royal", "kb_ice", "kb_sky", "kb_white", "kb_white", "kb_white"),
+    "light": ("kb_royal", "kb_sky", "kb_blue", "kb_ice", "kb_sky", "kb_white"),
+    "mid":   ("kb_cobalt", "kb_sky", "kb_royal", "kb_ice", "kb_blue", "kb_ice"),
+    "dark":  ("kb_navy", "kb_blue", "kb_cobalt", "kb_sky", "kb_royal", "kb_sky"),
+}
 TONES = {   # base, mid, tip, rim highlight
     "light": ("kb_royal", "kb_sky", "kb_ice", "kb_white"),
     "mid":   ("kb_cobalt", "kb_blue", "kb_sky", "kb_ice"),
     "dark":  ("kb_navy", "kb_cobalt", "kb_royal", "kb_sky"),
-    "pale":  ("kb_blue", "kb_ice", "kb_white", "kb_white"),
+    "pale":  ("kb_royal", "kb_ice", "kb_white", "kb_sky"),
 }
 
-def petal_shape(Lp, Wp, r0=0.0, curl=0.0, tip_pow=0.62):
+def petal_shape(Lp, Wp, r0=0.0, curl=0.0, tip_pow=0.85):
     t = np.linspace(0, 1, 40)
-    half = Wp/2 * np.sin(np.pi * np.clip(t, 0, 1)**tip_pow)**0.75
+    half = Wp/2 * np.sin(np.pi * np.clip(t, 0, 1)**tip_pow)**0.6
     half[0] = Wp*0.12
     xs = r0 + t*Lp; cy = curl * t**2 * Lp
     return Polygon(np.r_[np.c_[xs, cy - half], np.c_[xs, cy + half][::-1]]).buffer(0)
 
-def flower(cx, cy, Rr, rot, rng, tones="light", n=6, cup=True, unit=None, petal_w=0.56, lens=None):
-    """open lily / clematis: n pointed petals with base / mid / tip tones (zig-zag long-and-short boundaries) and a
-    lit rim stroke on one side, cream inner cup, navy eye with cream stamen dots. Petals are stitched radially."""
-    base_c, mid_c, tip_c, rim_c = TONES[tones]
+def flower(cx, cy, Rr, rot, rng, tones="light", n=6, cup=True, unit=None, petal_w=0.62, lens=None):
+    """open lily (close-up): n ovate pointed petals arranged unevenly, each split on its midrib into a lit half and a shade
+    half (the close-up's two-tone petals, stitched feathered at +-40 deg to the midrib), a darker base step and a lit tip
+    step (zig-zag long-and-short boundaries), a highlight streak on the lit half; centre = navy eye with radiating cream
+    stamen dashes on a dark cup."""
+    base_c, lit_c, shade_c, lit_tip, shade_tip, rim_c = FTONES[tones]
     regs = []; sils = []
-    order = list(range(n)); order = order[1::2] + order[0::2]           # back ring first, front ring on top
+    order = list(range(n)); rng.shuffle(order)
+    gaps = [rng.uniform(0.6, 1.4) for _ in range(n)]; tot = sum(gaps); acc = 0.0; angs = []
+    for gp in gaps: angs.append(rot + 360.0*acc/tot); acc += gp
     for z, k in enumerate(order):
-        a = rot + 360.0/n*k + rng.uniform(-8, 8)
-        Lp = Rr * (lens[k] if lens else rng.uniform(0.82, 1.05)); Wp = Rr*petal_w*rng.uniform(0.85, 1.12)
-        curl = rng.uniform(-0.08, 0.08)
-        p = petal_shape(Lp, Wp, Rr*0.06, curl)
-        t1 = Rr*0.06 + Lp*rng.uniform(0.30, 0.40); t2 = Rr*0.06 + Lp*rng.uniform(0.66, 0.76)
-        b1 = jag_cut(lambda y: t1 + 0.0*y, 0, Lp*0.05, -Wp, Wp, period=1.7, rng=rng)
-        b2 = jag_cut(lambda y: t2, 0, Lp*0.05, -Wp, Wp, period=1.7, rng=rng)
-        base = p.intersection(b1); mid = p.intersection(b2).difference(b1); tip = p.difference(b2)
-        sd = 1 if rng.random() < 0.5 else -1                              # lit side
-        rim = p.intersection(Polygon([(Rr*0.06 + Lp*0.28, sd*Wp*0.18), (Rr*0.06 + Lp*0.95, sd*Wp*0.05), (Rr*0.06 + Lp*0.95, sd*Wp), (Rr*0.06 + Lp*0.28, sd*Wp)])).buffer(-0.15)
-        rim = rim.intersection(p.buffer(-0.0)).difference(p.buffer(-Wp*0.17)) if rim.area > 0 else rim
-        midrib = line_poly([(Rr*0.06 + Lp*0.22, curl*0.05*Lp), (Rr*0.06 + Lp*0.62, curl*0.38*Lp)], 0.9).intersection(p.buffer(-0.6))
-        parts = [(base_c, base, "FL-base"), (mid_c, mid, "FL-petal"), (tip_c, tip, "FL-tip")]
-        for col, g, grp in parts:
-            regs.append(dict(col=col, geom=T(g.difference(rim), cx, cy, a), st="satin", ang=("radial", cx, cy), grp=grp, sub=10 + 3*z))
-        if not rim.is_empty and rim.area > 1.0:
-            regs.append(dict(col=rim_c, geom=T(rim, cx, cy, a), st="satin", ang=("radial", cx, cy), grp="FL-hl", sub=11 + 3*z))
-        if Lp > 16 and not midrib.is_empty:
-            regs.append(dict(col=mid_c if tones != "pale" else "kb_sky", geom=T(midrib, cx, cy, a), st="satin", ang=("radial", cx, cy), grp="FL-hl", sub=12 + 3*z))
+        a = angs[k]
+        Lp = Rr * (lens[k] if lens else rng.uniform(0.68, 1.08)); Wp = Rr*petal_w*rng.uniform(0.78, 1.25)
+        curl = rng.uniform(-0.16, 0.16); r0 = Rr*0.05
+        p = petal_shape(Lp, Wp, r0, curl)
+        sd = 1 if rng.random() < 0.5 else -1
+        mid = [(r0 + Lp*t, curl*(t**2)*Lp) for t in np.linspace(0, 1, 20)]
+        lit = p.intersection(Polygon(mid + [(r0 + Lp + 5, sd*60), (r0 - 5, sd*60)]).buffer(0))
+        shd = p.difference(lit)
+        b1 = jag_cut(lambda y: r0 + Lp*0.30, 0, Lp*0.05, -Wp, Wp, period=1.7, rng=rng)
+        b2 = jag_cut(lambda y: r0 + Lp*0.74, 0, Lp*0.04, -Wp, Wp, period=1.7, rng=rng)
+        base = p.intersection(b1); tipz = p.difference(b2)
+        streak = line_poly([(r0 + Lp*0.40, curl*0.16*Lp + sd*Wp*0.20), (r0 + Lp*0.78, curl*0.6*Lp + sd*Wp*0.12)], max(1.0, Wp*0.07)).intersection(lit.buffer(-0.5))
+        fa = sd * 40.0
+        parts = [(base_c, base.intersection(lit), "FL-base", a + fa), (base_c, base.intersection(shd), "FL-base", a - fa),
+                 (lit_c, lit.difference(base).difference(tipz), "FL-petal", a + fa), (shade_c, shd.difference(base).difference(tipz), "FL-petal", a - fa),
+                 (lit_tip, tipz.intersection(lit), "FL-tip", a + fa), (shade_tip, tipz.intersection(shd), "FL-tip", a - fa)]
+        for col, g, grp, an in parts:
+            g = g.difference(streak).buffer(0)
+            if not g.is_empty: regs.append(dict(col=col, geom=T(g, cx, cy, a), st="satin", ang=an, grp=grp, sub=10 + 3*z))
+        if not streak.is_empty and streak.area > 0.8 and Lp > 12:
+            regs.append(dict(col=rim_c, geom=T(streak, cx, cy, a), st="satin", ang=a + fa, grp="FL-hl", sub=11 + 3*z))
         sils.append(T(p, cx, cy, a))
-    if cup:
-        cr = Rr*0.24
-        for k in range(5):
-            a = rot + 36 + 72*k + rng.uniform(-10, 10)
-            cp = petal_shape(cr, cr*0.75, Rr*0.05, 0, tip_pow=1.1).buffer(0.3).buffer(-0.3)
-            col = "kb_white" if k % 2 == 0 else "kb_cream"
-            regs.append(dict(col=col, geom=T(cp, cx, cy, a), st="satin", ang=("radial", cx, cy), grp="FL-cup", sub=60 + k))
-    eye = Point(cx, cy).buffer(Rr*0.11)
+    eye = Point(cx, cy).buffer(Rr*0.10)
     regs.append(dict(col="kb_navy", geom=eye, st="satin", ang=("radial", cx, cy), grp="FL-eye", sub=70))
-    dots = [Point(cx + Rr*0.15*math.cos(math.radians(rot + 40*k)), cy + Rr*0.15*math.sin(math.radians(rot + 40*k))).buffer(0.75) for k in range(9)]
-    regs.append(dict(col="kb_white", geom=unary_union(dots), st="satin", ang="auto", grp="FL-stamen", sub=71))
+    if cup:
+        dashes = []
+        for k in range(8):
+            a = math.radians(rot + 45*k + rng.uniform(-8, 8)); r1 = Rr*rng.uniform(0.22, 0.30)
+            dashes.append(line_poly([(cx + Rr*0.11*math.cos(a), cy + Rr*0.11*math.sin(a)), (cx + r1*math.cos(a), cy + r1*math.sin(a))], max(1.4, Rr*0.07)))
+        st_u = unary_union(dashes).difference(eye.buffer(-Rr*0.03))
+        regs.append(dict(col="kb_white", geom=st_u, st="satin", ang=("radial", cx, cy), grp="FL-stamen", sub=72))
+        cupz = Point(cx, cy).buffer(Rr*0.25).difference(st_u).difference(eye)
+        regs.append(dict(col=base_c if tones != "dark" else "kb_royal", geom=cupz, st="satin", ang=("radial", cx, cy), grp="FL-cup", sub=69))
     for r in regs: r["unit"] = unit; r["geom"] = r["geom"].buffer(0)
     return regs, unary_union(sils + [eye]).buffer(0.3)
 
