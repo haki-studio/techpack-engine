@@ -40,3 +40,13 @@ Problems hit while building this product, worked around in project code only. Ea
 ## 6. Hooded variant
 - `front.pieces()` calls `pattern.draft(size, variant="hooded")` and falls back to the Drum Island draft (TypeError). Keep-outs,
   placement and per-size art read the pattern, so re-running `art_size.py` + `run_sizes.sh` after the PR lands re-fits everything.
+
+## 7. Parallel builders: autostash pull reverted uncommitted project files (process lesson, E-section)
+- **Problem:** between my first commit and my next, `scene.py`, `kb_motifs.py`, `art_size.py` and `kbvis.py` were silently reset on
+  disk to the committed version (an autostash `git pull --rebase` in a shared checkout restores files when the stash pop
+  conflicts or another session's rebase is half-done). Stitch files built after that came from the old art; caught only because
+  the M counts were identical to the earlier run. Also: `.git/rebase-merge` (autostash) left by another session now blocks
+  `commit_project.sh`'s pull, so pushes fail (local main ahead 6 / behind 4 at delivery).
+- **Proposed fix:** one git worktree per product (as PLM does), or `commit_project.sh` commits *before* pulling and never autostashes
+  other projects' files; refuse to run when `.git/rebase-merge` exists and say so.
+- **Check:** builders hash their source files at start of a stitch build and refuse if art_<size>.pkl is older than scene/motif sources.
