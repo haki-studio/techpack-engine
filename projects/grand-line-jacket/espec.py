@@ -213,7 +213,7 @@ def build(cfg, F, vis_all):
         open(f"{OUT}/HAKI_GRLN_{n}_{cfg['slug']}_{p}_M_ART+guides.svg", "w").write(SB.production_svg(V[p], STOPS[p], Wd, Hd, ox, oy, gd))
     full = _SRR(ALL, (UB[0]-6, UB[1]-6, UB[2]+6, UB[3]+6), 7)
     full.save(f"{OUT}/HAKI_GRLN_{n}_{cfg['slug']}_M_STITCH-PREVIEW.png")
-    json.dump(dict(stitches=TOT, stops={p: len(STOPS[p]) for p in pieces}, objects={p: len(V[p]) for p in pieces},
+    json.dump(dict(stitches_dst={p: _r[p]["stitches"] for p in pieces}, stops_dst={p: _r[p]["stops"] for p in pieces}, objects={p: len(V[p]) for p in pieces},
                    bbox={p: BBs[p] for p in pieces}, width=WC, colours=sorted({r["col"] for r in ALL})),
               open(f"{OUT}/summary.json", "w"), default=float)
     return dict(TOT=TOT, STOPS=STOPS, BBs=BBs, WC=WC)

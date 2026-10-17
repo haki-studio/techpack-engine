@@ -236,8 +236,8 @@ def p_inside():
 # ---------------------------------------------------------------- operations / SMV
 OPS = [("Cutting", "Cut shell, collar, lining, rib, pocketing, fusing; drill welt + embroidery marks", "Cutting table", 6.0),
        ("Fusing", "Fuse top collar, facings, back neck facing, welts", "Fusing press", 2.5),
-       ("Embroidery", "01 front scene FR + FL — flat on the cut fronts, 2 hoopings each on the factory frame (machine time separate, G4)", "Multi-head (15 needle)", 6.0),
-       ("Embroidery finish", "Trim backing to 5 mm, remove basting (split files), press from wrong side", "Hand / press", 6.0),
+       ("Embroidery", "01 front scene FR + FL — flat on the cut fronts, 2 hoopings each on the factory frame (machine time separate, G4)", "Multi-head (12 needle)", 6.0),
+       ("Embroidery finish", "Trim backing to 5 mm, pick out the registration crosses (split files), press from wrong side", "Hand / press", 6.0),
        ("Welt pockets", "Mark, set welt + bags both fronts, bartack ×4", "Lockstitch + bartack", 9.0),
        ("Shoulders", "Join shoulders (5-thread), press to back, 6 mm topstitch", "Safety stitch + lockstitch", 2.5),
        ("Sleeves", "Set sleeves; 6 mm armhole topstitch", "Safety stitch + lockstitch", 5.0),
@@ -277,7 +277,11 @@ REVS = [("Garment Rev A", "16 Oct 2026", "First garment pack for the Grand Line 
         ("Garment + Embroidery Rev B", "16 Oct 2026", "Independent review + founder 'fidelity first': art rebuilt from Devin's close-ups (layout from the mockup) - 4-tone florets with "
                                              "fan satin and no outline, banks ending in whole lobes, 11 islets, 43 stars, dashed rays, dash-field sea to the welts (no slab), fine sun "
                                              "with hairline glow. Every per-file / per-stop number read back from the DST. Max 12 colours per file (registration in stop 1's thread). "
-                                             "G6 hooping table, F1 factory requests, T11/T12 layout, BOM thread metres.")]
+                                             "G6 hooping table, F1 factory requests, T11/T12 layout, BOM thread metres."),
+        ("Garment + Embroidery Rev C", "16 Oct 2026", "Second review: broad billowing banks with sage / slate tops and cream bases, short-stitch tatami florets (no fan satin), no dark "
+                                             "shadow thread (11 threads); 26 islets + horizon islets; 22-ray sun with dot ends + 2nd ring; dense teal hairline glow crossing onto FR; "
+                                             "dense dash sea to the welt clearance with faded edges, tapering glitter; hairline curved dashed rays; 43 stars kept (10 nudged inside the "
+                                             "keep-outs). PR #1 router; exposed moves > 2 mm trimmed. Split search 30-88 % (no near-empty hooping).")]
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]
 
 def p_revisions():

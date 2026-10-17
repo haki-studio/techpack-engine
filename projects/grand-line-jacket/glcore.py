@@ -23,7 +23,7 @@ GL_PAL = {   # key: (hex, name, use)
     "gl_gold":   ("#D6B06A", "Star gold",     "ray lines, star arms, sunburst"),
     "gl_pale":   ("#F7EDD2", "Sun pale",      "sun core, glitter path, star sparkle"),
 }
-GL_KEYS = list(GL_PAL)
+GL_KEYS = [k for k in GL_PAL if k != "gl_shadow"]      # Rev C: cloud shadow thread removed (review C2) -> 11 threads
 FABRIC = "#252B3B"          # washed navy duck (mockup sample)
 for k, v in GL_PAL.items():
     motifs2.PAL[k] = v; motifs2.HEX[k] = v[0]; motifs.HEX[k] = v[0]
@@ -77,6 +77,7 @@ def patch_dst2():
     for k, v in GL_RULES.items():
         dst2.PULL[k] = float(v[6]) if v[6] not in ("—", "") else 0.0
     dst2.COL_MERGE.clear()          # 12 threads: nothing to merge
+    dst2.TRIM_MIN = 2.0             # review C2: an exposed move > 2 mm is trimmed, never left as a float
     return dst2
 
 STYLE = "HK-JK-GRLN-NV"
@@ -87,4 +88,4 @@ PIECE_NAME = {"FR": "wearer's right front", "FL": "wearer's left front"}
 PIECE_CODE = {"FR": "F02", "FL": "F01"}        # pattern piece codes (pattern.py)
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
-REV_EMB = "Rev B"; REV_GAR = "Rev B"; DATE = "16 Oct 2026"
+REV_EMB = "Rev C"; REV_GAR = "Rev C"; DATE = "16 Oct 2026"

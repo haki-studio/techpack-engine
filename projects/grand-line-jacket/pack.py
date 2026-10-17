@@ -34,7 +34,7 @@ def cover(index):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>']
     o.append(t(14, 24, "HAKI STUDIOS", 3.0, 700, MUTED))
     o.append(t(14, 36, "Grand Line jacket · washed navy — embroidery", 7.0, 700))
-    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island block, size M base · 1 element (01 front scene), 2 pieces · 12 threads · all dimensions mm", 2.6, 400, MUTED))
+    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island block, size M base · 1 element (01 front scene), 2 pieces · 11 threads · all dimensions mm", 2.6, 400, MUTED))
     o.append(f'<line x1="14" y1="48" x2="{SW-14}" y2="48" stroke="{INK}" stroke-width="0.4"/>')
     fv = espec.front_view_png(F, VF, (-325, -105, 325, 560), 2.2, list(VF))
     tag, h = img_tag(fv, 14, 54, 110); o.append(tag); o.append(t(14, 54 + h + 3.5, "FRONT (size M stitch render). Back + sleeves: no embroidery.", 2.2, 700))
@@ -46,7 +46,7 @@ def cover(index):
     o.append(t(ix, y, "TOTALS, SIZE M (read from the DST files)", 2.4, 700)); y += 5
     for a, b in [("Stitches per jacket", f"{TOT:,}"), ("Trims per jacket", f"{TRIMS:,}"),
                  ("Hoopings per jacket", f"4 on {FR_S} (2 per piece), or 2 on a ≥ 300 × 520 frame"),
-                 ("Machine time / jacket", f"{MH_SPLIT:.1f} h split files ({MH:.1f} h full files), incl. trims + colour changes"), ("Threads", "12 (40wt polyester), ≤ 15 per file")]:
+                 ("Machine time / jacket", f"{MH_SPLIT:.1f} h split files ({MH:.1f} h full files), incl. trims + colour changes"), ("Threads", "11 in use (40wt polyester); factory max 12 per file")]:
         o.append(t(ix, y, a, 2.0, 400, MUTED)); o.append(t(SW - 14, y, b, 1.9, 600, INK, "end")); y += 4
     o.append(t(SW - 14, SH - 8, SB.FOOT, 1.9, 400, MUTED, "end"))
     return o
@@ -95,7 +95,7 @@ def overview():
     return o
 
 def threads():
-    o = hdr("THREAD + TRIM SUMMARY", "One palette for the whole jacket — 12 threads. Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target.", "G3")
+    o = hdr("THREAD + TRIM SUMMARY", "One palette for the whole jacket — 11 threads (factory limit 12 per file). Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target.", "G3")
     use = {k: {} for k in glcore.GL_KEYS}
     for p in P2:
         for c in CUR[p]["colours"]: use[c][p] = use[c].get(p, 0) + 1
@@ -186,11 +186,13 @@ def files_page():
             y += 3.5
     y += 3
     o.append(t(12, y, "WHAT IS DIGITIZED", 2.0, 700)); y += 4.2
-    notes = [("Sea", "light dashes (foam / light teal / teal, tatami 0°) sewn first; the dark sea field (tatami 0°, 45 × 30 cells) last, around them."),
-             ("Clouds", "per bank: lit rims → shade bands → lobe bodies (turning satin) → dark edge band on top; neighbouring lobes touch, no fabric gaps."),
-             ("Sun + rays", "radial satin sun, tapered satin burst; rays + horizon are 0.8 bean lines sewn over the sea (no knockout)."),
-             ("Stars", "single-thread crosses + dots; big sparkles gold arms + pale centre. Halo: run-stitch arcs."),
-             ("Ties", "3-stitch tie-on/off at every trim + colour change; max sewn stitch ≤ 7.5 mm; ≤ 15 threads per file.")]
+    notes = [("Order", "one stop per thread, as on the spec p4 stop table: sea deep → sea teal → sea light → sea foam → sun pale → star gold → slate → sage →"),
+             ("", "sage light → sand → cream, then the cloud scale dashes (slate, sage, sand) on top of the lighter lobe bodies."),
+             ("Sea", "horizontal tatami dashes in 4 teals, darkest first (stop 1); glitter column in pale / foam; no ground fill (navy shows between)."),
+             ("Clouds", "short-stitch tatami florets following each lobe: rim, body, shade per lobe, sage / slate tops, cream bases; scale dashes on top."),
+             ("Sun + rays", "radial satin sun + 2 rings, 22 tapered satin rays with dot ends; hairline dashed run rays (4.2 / 2.4) over the sea."),
+             ("Glow + stars", "radial hairline run glow in sea teal / light; stars tapered satin arms, 8-point big stars, satin dots."),
+             ("Ties", f"3-stitch tie-on/off at every trim + colour change; max sewn stitch < 7.5 mm; ≤ {FA.max_threads(PROF)} thread colours per file.")]
     for a, b_ in notes:
         o.append(t(12, y, a, 1.6, 700)); o.append(t(30, y, b_, 1.5)); y += 3.3
     # split diagram (size M, FR)
@@ -249,7 +251,7 @@ def hooping_page():
             ok = all(v["fits"] for v in secs.values()); o.append(t(cx[9], y, "yes" if ok else "NO", 1.5, 700, GREEN if ok else RED))
             y += 3.6
     y += 3
-    notes = ["The split line is chosen where it cuts the least art inside the frame (searched 12–88 % of the art height). Where it still crosses a cloud",
+    notes = ["The split line is chosen where it cuts the least art inside the frame (searched 30–88 % of the art height, so no hooping is nearly empty). Where it still crosses a cloud",
              "bank (amber), lobes under 70 mm go whole to one file and larger fills overlap 1.2 mm — check that joint on the strike-off photos.",
              "Needle start = centre of each file's design (origin of the DST/PES). Mark it on the cut panel from the pattern (DXF layer 13 + layer 8 cross).",
              "Registration crosses sew at the start of stop 1 in that stop's thread (factory: max 12 colours per file, no separate basting thread);",

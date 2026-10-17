@@ -21,11 +21,11 @@ def smooth(g, d=0.35):
     return g.buffer(d, join_style="round").buffer(-2*d, join_style="round").buffer(d, join_style="round")
 
 # ---------------------------------------------------------------- cloud lobes ("scale packing")
-TONES = {   # lobe class -> (body, rim, shade, scale-dash colour)
+TONES = {   # lobe class -> (body, rim, shade, scale-dash colour). No dark outline / shadow thread (review C2).
     "cream": ("gl_cream", "gl_pale", "gl_sand", "gl_sand"),
     "sand":  ("gl_sand", "gl_cream", "gl_sage", "gl_sage"),
-    "sage":  ("gl_sage", "gl_sagelt", "gl_slate", "gl_slate"),
-    "slate": ("gl_slate", "gl_sagelt", "gl_shadow", "gl_shadow"),
+    "sage":  ("gl_sage", "gl_sagelt", "gl_slate", "gl_slate"),   # sage florets with pale highlight rims (close-ups)
+    "slate": ("gl_slate", "gl_sagelt", "gl_sage", "gl_sage"),
 }
 EX, EY = 1.16, 0.9                                   # lobes a little wider than tall (cumulus domes)
 def ell(cx, cy, r): return affinity.scale(Point(cx, cy).buffer(1.0, quad_segs=24), r*EX, r*EY, origin=(cx, cy))
@@ -76,7 +76,7 @@ def lobe_regions(lobes, tone_of, flat_y=None, grp="CL", unit=None, base_bottom=T
             front = front.union(d); continue
         tone = tone_of(V, (cx, cy, r))
         bcol, rcol, scol, dcol = TONES[tone]
-        wr = min(3.2, max(1.2, 0.32*r)); ws = min(3.0, max(1.2, 0.3*r))
+        wr = min(3.0, max(1.2, 0.3*r)); ws = min(1.8, max(0.9, 0.17*r))
         shade = V.intersection(front.buffer(gap + ws)) if not front.is_empty else Polygon()   # darker base where the front lobe sits
         if base_bottom:
             shade = shade.union(V.intersection(box(cx - 2*r, cy + max(0.45*r, 0.9*r*EY - ws), cx + 2*r, cy + 2*r)))
@@ -87,9 +87,9 @@ def lobe_regions(lobes, tone_of, flat_y=None, grp="CL", unit=None, base_bottom=T
         bc = body.buffer(-0.42).buffer(0.42).intersection(body); sl = body.difference(bc)
         if not sl.is_empty and sl.area > 0.01 and not shade.is_empty:
             body = bc; shade = shade.union(sl).buffer(0)
-        fan = ("radial", cx, cy + 0.55*r)                 # fan stitching from the floret base, as in the mockup
-        for col, g, gg, sb in ((rcol, rim, grp + "-rim", "rim"), (bcol, body, grp, "body"), (scol, shade, grp + "-shade", "shade")):
-            if not g.is_empty: regs.append(R(col, g, "satin", fan, gg, unit=unit, sub=sb))
+        jit = ((cx * 7.31 + cy * 3.17) % 40.0) - 20.0      # per-lobe angle: rows follow the dome, no fan "hedgehog"
+        for col, g, gg, sb, an in ((rcol, rim, grp + "-rim", "rim", jit * 0.5), (bcol, body, grp, "body", jit), (scol, shade, grp + "-shade", "shade", -jit * 0.6)):
+            if not g.is_empty: regs.append(R(col, g, "tatami", an, gg, unit=unit, sub=sb))
         if scale and r >= 5.0 and not body.is_empty:          # scale rows: dashed arcs inside the body
             inner = body.buffer(-0.7)
             for k, fr in enumerate((0.78, 0.55) if r >= 7 else (0.68,)):
@@ -121,18 +121,18 @@ def star(cx, cy, Lv, Lh, w0, kind, unit, rot=0.0):
     """4-point sparkle. kind: 'dot' | 'cross' | 'sparkle' | 'big'"""
     regs = []
     if kind == "dot":
-        return [R("gl_pale", Point(cx, cy).buffer(max(0.75, Lv/2), quad_segs=10), "satin", "auto", "DOT", unit=unit, kob=0.5)]
+        return [R("gl_gold", Point(cx, cy).buffer(max(0.75, Lv/2), quad_segs=10), "satin", "auto", "DOT", unit=unit, kob=0.5)]
     cd = max(0.8, w0*0.75)
     if kind == "cross":                         # small cross: one thread, arms overlap at the centre
         col = "gl_gold"
-        return [R(col, taper_arm(cx, cy, a + rot, L, w0, 0.9, 0.0).union(Point(cx, cy).buffer(w0*0.62)), "satin", "auto", "STAR", unit=unit, kob=0.5)
+        return [R(col, taper_arm(cx, cy, a + rot, L, w0, 0.8, 0.0).union(Point(cx, cy).buffer(w0*0.62)), "satin", "auto", "STAR", unit=unit, kob=0.5)
                 for L, a in ((Lv, -90), (Lh, 0), (Lv, 90), (Lh, 180))]
     arms = []
     for k, (L, a) in enumerate(((Lv, -90), (Lh, 0), (Lv, 90), (Lh, 180))):
-        arms.append(taper_arm(cx, cy, a + rot, L, w0, 0.9, cd*0.6))
+        arms.append(taper_arm(cx, cy, a + rot, L, w0, 0.8, cd*0.6))          # tapered to a 0.8 tip
     if kind == "big":
         for a in (45, 135, 225, 315):
-            arms.append(taper_arm(cx, cy, a + rot, Lh*0.42, w0*0.8, 0.9, cd*0.6))
+            arms.append(taper_arm(cx, cy, a + rot, Lh*0.62, w0*0.9, 0.8, cd*0.6))
     centre = Point(cx, cy).buffer(cd + 0.2, quad_segs=12)
     for g in arms:
         regs.append(R("gl_gold", g.difference(centre), "satin", "auto", "STAR", unit=unit, kob=0.5))
@@ -173,3 +173,14 @@ def arc_line(cx, cy, r, a0, a1, w=0.5, col="gl_deep", grp="GLW"):
     n = max(8, int(abs(a1 - a0) * r / 3))
     pts = [(cx + r*math.cos(math.radians(a)), cy + r*math.sin(math.radians(a))) for a in np.linspace(a0, a1, n)]
     return R(col, LineString(pts).buffer(w/2, cap_style="round"), "run", None, grp, kob=0.0)
+
+
+def hair_dashes(pts, dash=4.2, gap=2.4, w=0.45, col="gl_gold", grp="RAY", phase=0.0, kob=0.3):
+    """dashed hairline along a polyline (double-run line art, dash / gap by arc length)"""
+    from shapely.ops import substring
+    ln = LineString(pts); L = ln.length; s = -phase; out = []
+    while s < L:
+        a, b = max(0.0, s), min(L, s + dash)
+        if b - a > 1.0: out.append(R(col, substring(ln, a, b).buffer(w/2, cap_style="round"), "run", None, grp, kob=kob))
+        s += dash + gap
+    return out

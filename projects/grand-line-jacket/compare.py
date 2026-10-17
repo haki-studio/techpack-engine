@@ -43,6 +43,10 @@ if __name__ == "__main__":
     print(sheet("FR"), sheet("FL"))
     bb = (-300, -60, 300, 480); ppm = 2.0
     st = SR.render(D["FR"] + D["FL"], bb, ppm, base=glcore.FABRIC); mk = MM.warp(bb, ppm)
+    _d = ImageDraw.Draw(st)
+    for s_ in "RL":
+        w_ = F.keep_geoms(size, s_)["welt"]; _d.polygon([((x - bb[0])*ppm, (y - bb[1])*ppm) for x, y in w_.exterior.coords], fill=(30, 35, 52), outline=(120, 130, 150))
+    _d.rectangle([(-6 - bb[0])*ppm, (0 - bb[1])*ppm, (6 - bb[0])*ppm, (480 - bb[1])*ppm], fill=(160, 125, 60))
     W, H = st.size; out = Image.new("RGB", (W*2 + 20, H + 30), (255, 255, 255)); out.paste(mk, (0, 30)); out.paste(st, (W + 20, 30))
     d = ImageDraw.Draw(out); d.text((10, 8), "MOCKUP (mapped to size M mm)", fill=(0, 0, 0)); d.text((W + 30, 8), f"STITCH RENDER size {size}", fill=(0, 0, 0))
     out.save(f"out/compare_{size}.png"); st.save(f"out/render_{size}.png")
