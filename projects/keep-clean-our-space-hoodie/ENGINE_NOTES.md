@@ -34,7 +34,7 @@ Problems hit on this product, worked around in project code only. Each: problem 
 ## 4. Stars in keep-outs: nudge, don't drop
 - Dropping whole stars that land in a keep-out lost ~40 % of the mockup's front star count (the AI render's sleeves /
   side seams sit where the Drum Island keep-outs are). `art_size.place_stars()` moves each to the nearest free spot
-  inside the clip (≤ 22 mm, ≥ 2.5 mm from other stars). Proposed: `qa.place_whole(motifs, clip, max_move)` in the engine.
+  inside the clip (≤ 8 mm, ≥ 2.5 mm from other stars). Proposed: `qa.place_whole(motifs, clip, max_move)` in the engine.
 
 ## 5. Small dots vanish in `clean_vis`
 - `clean_vis(min_area=1.5)` drops satin dots < Ø 1.38 mm (house spec min dot is 1.1). Dots set to ≥ Ø 1.45 here.

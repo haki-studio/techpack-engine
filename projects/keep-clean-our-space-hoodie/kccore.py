@@ -15,7 +15,7 @@ KC_PAL = {   # key: (hex, name, use)
     "kc_red":   ("#EC3135", "Signal red",    "CN text, JP hearts + red bars + red star"),
     "kc_blue":  ("#1F8DE3", "Electric blue", "JP blue bars, CN blue dots"),
     "kc_white": ("#F1F0EA", "Star white",    "star speckles, KR text, CN ring sparkles"),
-    "kc_glow":  ("#1E5B4F", "Glow green",    "sheer neon halo behind the JP text + CN dots"),
+    "kc_glow":  ("#1E5B4F", "Glow green",    "sheer neon halo behind the JP + EN text and the CN dot ring"),
 }
 KC_KEYS = list(KC_PAL)
 FABRIC = "#191C24"          # washed black duck (mockup median #13161D, lifted for the render)

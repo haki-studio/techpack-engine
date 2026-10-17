@@ -65,13 +65,18 @@ def place_front(size, P):
             if best: break
         if best is None: best = (0.0, 0.0); moves[el] = "NO FIT"
         else: moves[el] = (round(best[0], 1), round(best[1], 1))
-        for r in rs: out.append(dict(r, geom=tf(r["geom"], *best)))
+        for r in rs:
+            r2 = dict(r, geom=tf(r["geom"], *best))
+            if isinstance(r["ang"], tuple):          # radial satin centre moves with the badge
+                c = affinity.translate(affinity.scale(Point(r["ang"][1], r["ang"][2]), s, s, origin=(ax, ay)), tx - ax + best[0], ty - ay + best[1])
+                r2["ang"] = (r["ang"][0], c.x, c.y)
+            out.append(r2)
     badges = unary_union([r["geom"] for r in out if not r.get("nok")]).buffer(2.0)
     stars = [r for r in its if (r.get("unit") or "").startswith("05")]
     kept, dropped, nudged = place_stars(stars, clip, badges, lambda c: (c.x*kx, c.y*ky), out)
     return out, clip, dict(moves=moves, stars=kept, stars_dropped=dropped, stars_nudged=nudged, scale=s, grade=grade)
 
-def place_stars(stars, clip, avoid, mapf, out, max_move=22.0, gap=2.5):
+def place_stars(stars, clip, avoid, mapf, out, max_move=8.0, gap=2.5):
     """move each star to its mapped position; a star that lands in a keep-out (or on a badge) is moved to the nearest
     free spot inside the clip (<= max_move mm, >= gap from other stars) so the mockup's star COUNT is kept (A2)."""
     from shapely.ops import nearest_points

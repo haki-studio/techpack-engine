@@ -22,18 +22,36 @@ def text_path(x, y, s, key, h, fill="#1A1A1A", anchor="start"):
     g = unary_union([affinity.translate(gg, dx, dy) for _, gg in gl])
     return f'<path d="{geom_to_path(g)}" fill="{fill}" fill-rule="evenodd"/>'
 
+from PIL import ImageFont
+_FD = os.path.expanduser("~/.local/share/fonts")
+_LF = {False: ImageFont.truetype(os.path.join(_FD, "LiberationSans-Regular.ttf"), 100), True: ImageFont.truetype(os.path.join(_FD, "LiberationSans-Bold.ttf"), 100)}
 def mixed(x, y, parts, size=2.2, fill="#1A1A1A", w=400):
     """[(text, key|None), ...] on one line: Latin parts as SVG text, CJK parts as outlines. Returns svg + end x."""
     from sheet import t
     o = []; cx = x
     for s, key in parts:
         if key is None:
-            o.append(t(cx, y, s, size, w, fill)); cx += len(s) * size * 0.50
+            o.append(t(cx, y, s, size, w, fill)); cx += _LF[w >= 600].getlength(s) / 100.0 * size
         else:
             h = size * 1.05; gl = KL.set_line(key, s, h, tracking=h*0.04)
             if gl:
-                b = KL.ink_bounds(gl); o.append(text_path(cx, y + 0.1*size, s, key, h, fill)); cx += (b[2] - b[0]) + size*0.3
+                b = KL.ink_bounds(gl); o.append(text_path(cx + size*0.15, y + 0.1*size, s, key, h, fill)); cx += (b[2] - b[0]) + size*0.3
     return "".join(o), cx
+
+def auto(x, y, s, size=2.2, fill="#1A1A1A", w=400):
+    """one line of text, CJK / Hangul runs set as font outlines (jp / cn / kr picked per run)"""
+    import re
+    parts = []
+    for seg in re.split(r"([\u3000-\u9fff\uac00-\ud7af]+)", s):
+        if not seg: continue
+        if re.match(r"[\u3000-\u9fff\uac00-\ud7af]", seg):
+            if re.match(r"[\uac00-\ud7af]", seg): key = "kr"
+            else:
+                jp_ok = all(ord(c) in KL.font("jp").getBestCmap() for c in seg)
+                key = "jp" if (jp_ok and not any(c in seg for c in "不要污染地球")) else "cn"
+            parts.append((seg, key))
+        else: parts.append((seg, None))
+    return mixed(x, y, parts, size, fill, w)[0]
 
 def load():
     CUR = json.load(open("dst_current.json")); ALL = json.load(open("dst_all.json")); META = json.load(open("scene_meta.json"))

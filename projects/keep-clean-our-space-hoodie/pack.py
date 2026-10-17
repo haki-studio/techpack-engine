@@ -219,15 +219,7 @@ def summary():
           "7. Badge grade: A 92 % / B 100 % / C 106 %; badges keep their shape and move with the panel. Or one badge size for all sizes?",
           "8. Close-ups: art is redrawn from the ~1 px/mm mockup (inputs/closeup_request.md has the prompts). Close-ups would let us match star shapes / glow exactly.",
           "9. DST/PES are production-intent drafts: the factory digitizer checks density, pull and puff end caps on the washed duck and edits before the sew-out."]
-    for i, q in enumerate(qs):
-        parts = []; cur = ""; import re
-        for seg in re.split(r"([　-鿿가-힯]+)", q):
-            if not seg: continue
-            if re.match(r"[　-鿿가-힯]", seg):
-                key = "kr" if re.match(r"[가-힯]", seg) else ("cn" if any(c in seg for c in "不要污染地球") else "jp")
-                parts.append((seg, key))
-            else: parts.append((seg, None))
-        svg, _ = KD.mixed(12, qy + 5 + i*3.9, parts, 1.75); o.append(svg)
+    for i, q in enumerate(qs): o.append(KD.auto(12, qy + 5 + i*3.9, q, 1.75))
     return o
 
 # ================================================================ G5 files
@@ -348,11 +340,12 @@ def badge_page(el):
     # mockup vs art (same scale)
     import compare as CP
     mk = CP.mock_local(el, bb, 3.0)
-    tag2, h2 = img_tag(mk, rx, y + 2, 52); o.append(tag2)
-    st2 = SR.render([r for r in D[P] if r["el"] in (el, "05")], bb, 3.0, base=kccore.FABRIC); tag3, _ = img_tag(st2, rx + 56, y + 2, 52); o.append(tag3)
-    o.append(t(rx, y + 1, "MOCKUP (low-res AI render)", 1.6, 700)); o.append(t(rx + 56, y + 1, "THIS FILE (same scale)", 1.6, 700))
+    room = SH - 14 - (y + 4) - len(CHANGES[el]) * 3.0; wpair = min(52, room * mk.width / mk.height)
+    tag2, h2 = img_tag(mk, rx, y + 2, wpair); o.append(tag2)
+    st2 = SR.render([r for r in D[P] if r["el"] in (el, "05")], bb, 3.0, base=kccore.FABRIC); tag3, _ = img_tag(st2, rx + wpair + 4, y + 2, wpair); o.append(tag3)
+    o.append(t(rx, y + 1, "MOCKUP (low-res AI render)", 1.6, 700)); o.append(t(rx + wpair + 4, y + 1, "THIS FILE (same scale)", 1.6, 700))
     yy = y + 4 + h2
-    for i, c in enumerate(CHANGES[el]): o.append(t(rx, yy + i*3.0, c, 1.6, 400, ORANGE if c.startswith("!") else INK).replace(">!", ">"))
+    for i, c in enumerate(CHANGES[el]): o.append(KD.auto(rx, yy + i*3.0, c.lstrip("!"), 1.6, ORANGE if c.startswith("!") else INK, 700 if i == 0 else 400))
     return o
 
 def text_big(x, y, txt, key, h):
@@ -374,7 +367,7 @@ def star_page():
     o = hdr("E05 · STAR FIELD — white speckles on both fronts and all round both sleeves",
             "Direct embroidery on the cut pieces · 4-point sparkles + satin dots · positions from the mockup, star size constant over sizes", "E05")
     from sheet import t as T_
-    hd = ["Size", "FR stars", "FL stars", "SR stars", "SL stars", "moved out of a keep-out", "dropped (no free spot ≤ 22)"]
+    hd = ["Size", "FR stars", "FL stars", "SR stars", "SL stars", "moved out of a keep-out", "dropped (no free spot ≤ 8)"]
     cx = [14, 30, 48, 66, 84, 104, 146]
     for x_, h in zip(cx, hd): o.append(t(x_, 32, h, 1.6, 700, MUTED))
     for i, sz in enumerate(kccore.SIZES):
@@ -386,7 +379,7 @@ def star_page():
     y = 36.5 + 7*3.6 + 3
     c = META["counts"]
     lines = [f"Fronts: {c['FR_field']} + {c['FL_field']} speckles detected on the mockup fronts (white specks, badges excluded) and mapped to the Drum Island panel;",
-             "  a speckle that lands in a keep-out is moved to the nearest free spot (≤ 22 mm) so the mockup's star count is kept (A2).",
+             "  a speckle that lands in a keep-out is moved to the nearest free spot (≤ 8 mm; further would line stars up along the keep-out edge) so the mockup's star count is kept (A2).",
              f"Sleeves: front half mapped from the mockup sleeves ({c['SR_front_mapped']} + {c['SL_front_mapped']}); back half seeded at the same density + size mix " + PROP + ".",
              "Size: speck extent ≥ 5 px → sparkle span 3.6–8.0 mm; smaller → satin dot Ø 1.45 / 1.7 / 2.0. One thread (Star white).",
              "Each speckle is an island on bare fabric: 1 trim each (jumps < 2.5 mm are kept as jumps). Trims are reported, not reduced (fidelity first)."]
@@ -477,9 +470,9 @@ def build():
              ("E01", badge_page("01")), ("E02", badge_page("02")), ("E03", badge_page("03")), ("E04", badge_page("04")), ("E05", star_page()),
              ("S1", stops_page(["FR", "FL"], "S1")), ("S2", stops_page(["SR", "SL"], "S2")), ("R1", region_page())]
     names = {"G1": "Cover + contents", "G2": "Placement overview", "G3": "Thread + trim summary", "G4": "Stitch summary + open questions",
-             "G5": "Production stitch files + hoop splits", "G6": "Hooping table", "E01": "01 JP badge 宇宙をきれいに", "E02": "02 EN badge KEEP CLEAN OUR SPACE",
-             "E03": "03 CN badge", "E04": "04 KR oval", "E05": "05 Star field", "S1": "Stop sequence FR + FL", "S2": "Stop sequence SR + SL", "R1": "Region stitch table"}
-    index = [(f"{k} {names[k]}".replace(" 宇宙をきれいに", ""), i + 1) for i, (k, _) in enumerate(pages)] + [("F1 Factory requests", len(pages) + 1)]
+             "G5": "Production stitch files + hoop splits", "G6": "Hooping table", "E01": "JP badge (FR chest)", "E02": "EN badge (FL chest)",
+             "E03": "CN badge (FR lower)", "E04": "KR oval (FL lower)", "E05": "Star field (fronts + sleeves)", "S1": "Stop sequence FR + FL", "S2": "Stop sequence SR + SL", "R1": "Region stitch table"}
+    index = [(f"{k} {names[k]}", i + 1) for i, (k, _) in enumerate(pages)] + [("F1 Factory requests", len(pages) + 1)]
     pages[0] = ("G1", cover(index))
     w = PdfWriter(); os.makedirs("out/pages", exist_ok=True)
     for k, o in pages:

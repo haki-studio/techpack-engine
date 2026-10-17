@@ -91,9 +91,9 @@ for P in which:
         json.dump(res, open(rp, "w"), default=float, indent=1)
     if "nosplit" not in sys.argv:
         for wm in (70.0, 55.0, 40.0):
-            sp = split_clip_wide(vis, FRAME, whole_max=wm)
+            sp = split_clip_wide(vis, FRAME, whole_max=wm, ext=10.5)
             if all(sp["fits"].values()): break
-        marks = dst2.split_marks(sp, ext=12.0)
+        marks = dst2.split_marks(sp, ext=4.0)          # crosses 4 mm outside the art (wide 3XL fronts fit the frame; Grand Line note 3)
         names = {(0, 0): "S1", (0, 1): "S2", (1, 0): "S1b", (1, 1): "S2b"}
         if sp["sx"] is not None:
             names = {(0, 0): "S1_top-left", (1, 0): "S2_top-right", (0, 1): "S3_bottom-left", (1, 1): "S4_bottom-right"}
