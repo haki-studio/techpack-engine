@@ -43,7 +43,11 @@ three times over in project code, so this is the next engine work, in this order
 4. **Pattern config**: materials, welt size/position, style code, embroidery-piece map (`pattern_gl.py`, `pattern_moon.py`, `pattern_fb.py`);
    `pattern.keepout_lines(size, piece)` (LESSONS C8).
 5. **QA**: `drop_floating` into `qa.py` (A8); `absorb_slivers` with line regions keeping their slivers (B19); seam-wrap helper (`scene.seam_check`).
-6. **Hidden-travel router**: merge later-stop masks before insetting; native overlay (`ko=False`) regions; dashed-run stitch; auto-section fills with many holes (B14).
+6. **Hidden-travel router** — done (LESSONS B21-B24): merged later-stop mask, coarse routing of big windows, cell-by-cell
+   tatami rows (replaces "auto-section fills with many holes"), `OWN_HALO`, `exposed_travel()` QA. Still open: native
+   overlay (`ko=False`) regions belong in the scene builders' visibility step (not `dst2`); a dashed-run stitch needs a
+   design decision (each dash on bare fabric is a trim or a float). Remaining trims are mostly islands on bare fabric
+   (`stats["why"]["island"]`) — art/colour-order work (B14), not router work.
 7. **Motif library** (with a render test each): clouds/sparkles/sun/sea (`grand-line-jacket/gl_motifs.py`), moss/limb/rock/leaf spray/
    light ray/stream/grass (`forestball/fmotifs.py`), cloud/moon/pole/wires (`moon/moonmotifs.py`).
 8. Fonts: `get_fonts.sh` installs Noto Sans CJK; `sheet.py` warns when `fc-match` falls back.
