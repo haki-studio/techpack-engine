@@ -103,7 +103,7 @@ def overview():
     return o
 
 def threads():
-    o = hdr("G3 · THREAD + TRIM SUMMARY", "14-tone palette from the close-ups; every file ≤ 12 colours (manufacturer): violet → periwinkle, pole dark grey → pole grey in the files. Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target from the mockup.", "G3")
+    o = hdr("G3 · THREAD + TRIM SUMMARY", "14-tone palette from the close-ups; every file ≤ 12 colours (manufacturer): violet → periwinkle, pole light grey → cloud white-pink. Approve a thread board before sampling.", "G3")
     use = {k: collections.Counter() for k in PAL}
     for e, nm, k, piece, r in ELEMENTS:
         for hx, n in per_colour(r["file"]).items():

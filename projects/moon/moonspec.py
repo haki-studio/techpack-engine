@@ -128,8 +128,8 @@ PROD = ["Embroider the cut pieces flat, BEFORE any seam.",
 CFG = {
  "01": dict(slug="back-scene", title="BACK SCENE — moon, clouds, pole + wires, licensed-figure placeholder", pieces=["back"],
             sub="Direct embroidery on the cut back panel · ONE FILE PER SIZE (+ 6 frame-split files, 3 × 2) + 01b moon-in-box · mm, finished size · art 1:1 · x from CB, y down from CB neck seam",
-            crops=[(-75, 185, -25, 235, "Moon body, maria, craters (low density)"), (-215, 280, -165, 330, "Cloud crown: caps, scallops, shadow"),
-                   (-20, 360, 30, 410, "Pole top, crossarm, insulator"), (10, 395, 60, 445, "Transformer can + wires")],
+            crops=[(-75, 185, -25, 235, "Moon tones, craters, star-burst rays"), (-215, 280, -165, 330, "Cloud crown: caps, scallops, shadow"),
+                   (-25, 352, 25, 402, "Pole top, crossarm, insulators"), (5, 392, 55, 442, "Ribbed transformer + wires")],
             dm=[(-90, 180, -20, 230, "Moon: horizontal tatami, maria at 30°"), (-230, 270, -150, 320, "Cloud: horizontal tatami, turning satin caps"), (-20, 360, 60, 410, "Pole: tatami along the pole, satin hardware")],
             mock=(150, 200, 560, 720), mock_src="inputs/back.png"),
  "02": dict(slug="chest-clouds", title="CHEST CLOUDS (02R wearer's right · 02L wearer's left)", pieces=["02R", "02L"],
@@ -361,7 +361,9 @@ def build(n):
             y = 38 + i * rh; hx = thr[min(i, len(thr) - 1)].hex_color().upper(); k = H2K.get(hx)
             if i % 2 == 0: o.append(f'<rect x="{x0-1}" y="{f(y-2.4)}" width="134" height="{f(rh)}" fill="#F5F2EC"/>')
             o.append(t(hc[0], y, f"{i+1:02d}", 1.55, 700))
-            if k:
+            if p == "back" and i == rb["stops"] - 1:
+                o.append(swatch(hc[1], y, k, 3.2, 2.2)); o.append(t(hc[1] + 4.2, y, "PLACEHOLDER outline — run in Moon cream, covered by 01b", 1.45, 600, RED))
+            elif k:
                 iso, pn = SB.TH[k]["isacord"], SB.TH[k]["polyneon"]
                 o.append(swatch(hc[1], y, k, 3.2, 2.2)); o.append(t(hc[1] + 4.2, y, PAL[k][1][:16], 1.45))
                 o.append(t(hc[2], y, f"{iso[0]}", 1.45)); o.append(t(hc[3], y, f"{pn[0]}", 1.45))

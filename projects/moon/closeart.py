@@ -170,7 +170,7 @@ def hardware(img, box_px, f, pole_x, open_r=5, up=2, exclude=None):
     T = tones(POLE + NAVY)
     tr = TR.trace(img, box_px, T, keep=POLE, line_tone="p4", line_w_px=2.4, mask=mask, up=up, sigma=0.4, majority=3, min_px=4)
     lab2, up = tr["_lab"]; names = [t[0] for t in T]
-    lab2 = np.where(np.isin(lab2, [names.index(x) for x in NAVY]), names.index("p4"), lab2)    # dark shadows inside hardware = charcoal
+    lab2 = np.where(np.isin(lab2, [names.index(x) for x in NAVY]), names.index("p3"), lab2)    # dark shadows inside hardware = pole dark grey (charcoal stays for the traced outlines)
     vis = []
     for nn in POLE:
         g = map_geom(TR.polys_of(lab2 == names.index(nn), up, box_px, 4), f).buffer(0)
