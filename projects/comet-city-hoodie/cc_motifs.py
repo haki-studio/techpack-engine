@@ -237,3 +237,155 @@ def figure(fx, fy, H=118.0, unit="figure", wk=1.0):
     fold([(-18.5, 40), (19.5, 40)], 0.8)                                                                  # jacket hem band
     fold([(0.5, 30), (0.5, 4)])                                                                           # leg gap
     return out
+
+
+# ================================================================ Rev B motifs (review 17 Oct: solid silhouettes, glows)
+def star_b(cx, cy, kind, col, unit, k=1.0, glow=None, rot=0.0):
+    """star with size factor k and an optional soft glow (short diagonal rays in `glow`, lilac / azure)"""
+    regs = star(cx, cy, kind, col, unit, k=k, rot=rot)
+    if glow and kind in ("sparkle", "big", "cross"):
+        Lv, Lh, w0, Ld = STAR_SIZE[kind]
+        L = max(1.8, 0.42 * Lh * k) if kind != "big" else 0.0
+        if L:
+            cd = 1.0
+            for a in (45, 135, 225, 315):
+                g = taper_arm(cx, cy, a + rot, L + cd, 1.0, 0.8, cd)
+                regs.append(R(glow, g, "satin", "auto", "STAR", unit=unit, kob=0.4))
+    return regs
+
+def falling_star(cx, cy, r=6.0, unit="redstar"):
+    """bright red-white starburst: 8 red rays, 8 short white rays between them, white core with halo ring"""
+    regs = []
+    core = Point(cx, cy).buffer(2.0, quad_segs=14)
+    for k, a in enumerate(range(0, 360, 45)):
+        L = r if k % 2 == 0 else r * 0.66
+        regs.append(R("cc_red", taper_arm(cx, cy, a - 90, L, 1.6 if k % 2 == 0 else 1.2, 0.8, 1.6).difference(core.buffer(0.3)), "satin", "auto", "RSTAR", unit=unit, kob=0.4))
+    for a in range(0, 360, 45):
+        regs.append(R("cc_white", taper_arm(cx, cy, a - 67.5, r * 0.45, 1.0, 0.8, 1.6).difference(core.buffer(0.3)), "satin", "auto", "RSTAR", unit=unit, kob=0.4))
+    regs.append(R("cc_white", core, "satin", ("radial", cx, cy), "STAR-c", unit=unit, kob=0.4))
+    return regs
+
+def bicycle_b(rx, ry, r=26.0, wb=96.0, unit="bike"):
+    """side view, facing +x; rear hub (rx, ry). Dark solid: night tyres + frame, dusk spokes, ice glints on the frame + rims."""
+    P = lambda x, y: (rx + x, ry + y)
+    out = []
+    def tube(pts, w, col="cc_night", grp="BIKE"):
+        out.append(R(col, LineString([P(*p) for p in pts]).buffer(w/2, cap_style="round", join_style="round"), "satin", "auto", grp, unit=unit, kob=0.5))
+    s = r / 22.0
+    for hx in (0.0, wb):
+        c = Point(P(hx, 0))
+        out.append(R("cc_night", c.buffer(r).difference(c.buffer(r - 2.8)), "satin", ("radial", *P(hx, 0)), "BIKE", unit=unit, kob=0.5))
+        out.append(R("cc_dusk", c.buffer(r - 2.8).difference(c.buffer(r - 3.8)), "satin", ("radial", *P(hx, 0)), "BIKE", unit=unit, kob=0.0))
+        arc = [(hx + (r - 0.6)*math.cos(math.radians(a)), (r - 0.6)*math.sin(math.radians(a))) for a in np.linspace(200, 290, 14)]
+        out.append(R("cc_ice", LineString([P(*p) for p in arc]).buffer(0.45, cap_style="round"), "satin", "auto", "BIKE", unit=unit, kob=0.0))
+        for k in range(12):
+            a = math.radians(k * 30 + 7)
+            out.append(R("cc_dusk", LineString([P(hx + 2.0*math.cos(a), 2.0*math.sin(a)), P(hx + (r - 3.8)*math.cos(a), (r - 3.8)*math.sin(a))]).buffer(0.3, cap_style="flat"),
+                         "run", None, "BIKE", unit=unit, kob=0.0))
+        out.append(R("cc_ice", c.buffer(1.6), "satin", "auto", "BIKE", unit=unit, kob=0.2))
+    C = (41.0*s, 2.0); Sd = (23.0*s, -33.0*s); Ht = (72.0*s, -33.0*s); Hb = (75.0*s, -20.0*s); Fh = (wb, 0.0)
+    for a, b in ((C, (0, 0)), ((0, 0), Sd), (C, Sd), (Sd, Ht), (C, Hb), (Ht, Hb), (Hb, Fh)):
+        tube([a, b], 1.7)
+    tube([Ht, (71.0*s, -41.0*s), (80.0*s, -43.0*s), (84.0*s, -41.0*s)], 1.6)
+    out.append(R("cc_night", LineString([P(14.0*s, -37.0*s), P(28.0*s, -37.5*s)]).buffer(1.5, cap_style="round"), "satin", "auto", "BIKE", unit=unit, kob=0.5))
+    tube([(23.0*s, -33.0*s), (22.0*s, -37.0*s)], 1.6)
+    out.append(R("cc_night", Point(P(*C)).buffer(3.0), "satin", "auto", "BIKE", unit=unit, kob=0.5))
+    # glints: thin ice lines along the top of the top tube + seat stay, and the saddle top
+    for a, b in ((Sd, Ht), ((0, 0), Sd)):
+        ax, ay = a; bx, by = b; nx, ny = -(by - ay), (bx - ax); L = math.hypot(nx, ny); nx, ny = nx / L * -0.55, ny / L * -0.55
+        out.append(R("cc_ice", LineString([P(ax + (bx-ax)*0.1 + nx, ay + (by-ay)*0.1 + ny), P(ax + (bx-ax)*0.85 + nx, ay + (by-ay)*0.85 + ny)]).buffer(0.4, cap_style="round"), "satin", "auto", "BIKE", unit=unit, kob=0.0))
+    out.append(R("cc_ice", LineString([P(15.0*s, -38.3*s), P(26.0*s, -38.8*s)]).buffer(0.4, cap_style="round"), "satin", "auto", "BIKE", unit=unit, kob=0.0))
+    return out
+
+def figure_b(fx, fy, H=118.0, unit="figure", wk=1.22):
+    """solid figure seen from behind (our pose: arms down, hands loose at the sides, head tilted up), spiky hair,
+    hood lying on the shoulders, raglan jacket. Night fill, azure rim light, dusk raglan seams. Nothing shows through."""
+    k = H / 118.0
+    P = lambda x, y: (fx + x*k*wk, fy - y*k)
+    def poly(pts): return Polygon([P(*p) for p in pts]).buffer(0)
+    hc = (0.5, 104.0); hr = 10.0
+    head = Point(P(*hc)).buffer(hr*k, quad_segs=24)
+    spikes = []
+    for i, a in enumerate(np.linspace(15, 165, 11)):
+        L = hr * (1.30 + 0.12 * ((i * 7) % 3)); t = math.radians(a)
+        tip = (hc[0] + L*math.cos(t), hc[1] + L*math.sin(t))
+        b1 = (hc[0] + (hr - 1)*math.cos(t - 0.16), hc[1] + (hr - 1)*math.sin(t - 0.16))
+        b2 = (hc[0] + (hr - 1)*math.cos(t + 0.16), hc[1] + (hr - 1)*math.sin(t + 0.16))
+        spikes.append(poly([b1, tip, b2]))
+    hair = unary_union([head] + spikes).buffer(0.25*k).buffer(-0.25*k)
+    neck = poly([(-4, 95), (5, 95), (4.5, 88), (-3.5, 88)])
+    hood = poly([(-13, 91), (-6, 95), (6, 95), (14, 91), (12, 84), (0, 81), (-11, 84)])
+    torso = poly([(-15, 87), (-20, 82), (-21.5, 68), (-20.5, 44), (-19, 37), (20, 37), (21.5, 44), (22.5, 68), (21, 82), (16, 87), (6, 89), (-5, 89)])
+    armL = poly([(-20, 82), (-25, 74), (-26.5, 58), (-25.5, 44), (-24.5, 40), (-20.5, 40), (-21, 50), (-21.5, 62), (-20, 72)])
+    armR = poly([(21, 82), (26, 74), (27.5, 58), (26.5, 44), (25.5, 40), (21.5, 40), (22, 50), (22.5, 62), (21, 72)])
+    handL = Point(P(-23.0, 37.5)).buffer(2.6*k, quad_segs=12); handR = Point(P(23.5, 37.5)).buffer(2.6*k, quad_segs=12)
+    legs = poly([(-17, 38), (17, 38), (16, 0), (2.5, 0), (1.5, 26), (-0.5, 26), (-1.5, 0), (-15.5, 0)])
+    body = unary_union([hair, neck, hood, torso, armL, armR, handL, handR, legs]).buffer(0.3).buffer(-0.3)
+    rimz = body.difference(body.buffer(-1.0))
+    rim = rimz.intersection(box(fx - 80, fy - 200, fx + 80, fy - 44*k))          # rim light on hair, shoulders, arms (not hands / legs)
+    out = [R("cc_night", body.difference(rim).buffer(0), "tatami", 90.0, "FIG", unit=unit, kob=0.7),
+           R("cc_azure", rim.buffer(0), "satin", "auto", "FIG-rim", unit=unit, kob=0.0)]
+    for pts in (((-13, 88), (-17, 70), (-19, 50)), ((14, 88), (18, 70), (20, 50))):                 # raglan seams
+        out.append(R("cc_dusk", LineString([P(*p) for p in pts]).buffer(0.35*k, cap_style="round"), "run", None, "FIG-line", unit=unit, kob=0.0))
+    out.append(R("cc_dusk", LineString([P(-12, 87), P(-5, 83), P(0, 82), P(6, 83), P(13, 87)]).buffer(0.35*k), "run", None, "FIG-line", unit=unit, kob=0.0))
+    return out
+
+def lamp_b(x, y_top, y_bot, unit="lamp"):
+    """slim post + lantern head: night, gold glass, ice rim light down the left edge + head outline"""
+    head_w, head_h = 10.5, 30.0
+    lant = box(x - head_w/2, y_top + 4, x + head_w/2, y_top + 4 + head_h)
+    capg = Polygon([(x - head_w/2 - 1.5, y_top + 4.5), (x + head_w/2 + 1.5, y_top + 4.5), (x, y_top)])
+    neck = box(x - 2.2, y_top + 4 + head_h, x + 2.2, y_top + 8 + head_h)
+    pole = box(x - 1.8, y_top + 8 + head_h, x + 1.8, y_bot)
+    base = box(x - 3.2, y_bot - 6, x + 3.2, y_bot)
+    body = unary_union([lant, capg, neck, pole, base]).buffer(0)
+    glass = box(x - head_w/2 + 2.0, y_top + 8, x + head_w/2 - 2.0, y_top + head_h)
+    rim = body.difference(body.buffer(-0.9)).intersection(box(x - 20, y_top - 5, x - 0.2, y_bot + 1)).difference(glass.buffer(0.6))
+    return [R("cc_night", body.difference(glass.buffer(0.35)).difference(rim).buffer(0), "satin", "auto", "LAMP", unit=unit, kob=0.8),
+            R("cc_gold", glass, "satin", 90.0, "LAMP-l", unit=unit, kob=0.0),
+            R("cc_ice", rim.buffer(0), "satin", "auto", "LAMP", unit=unit, kob=0.0)]
+
+def bush_b(cx, base_y, w, h, rng, unit="bush"):
+    """soft dark bush: night mound of overlapping domes + leaf-shaped highlight dabs (royal / azure / dusk) on the upper part"""
+    domes = []
+    n = max(4, int(w / 9))
+    for i in range(n):
+        x = cx - w/2 + w * (i + 0.5) / n + rng.uniform(-2, 2)
+        r = rng.uniform(0.45, 0.65) * h * (1.0 - 0.5 * abs((i + 0.5)/n - 0.5))
+        domes.append(Point(x, base_y - r * 0.8).buffer(r, quad_segs=16))
+    mound = unary_union(domes).intersection(box(cx - w, base_y - 2*h, cx + w, base_y)).buffer(0)
+    out = [R("cc_night", mound, "tatami", 75.0, "BUSH", unit=unit, kob=0.6)]
+    b = mound.bounds; dabs = {"cc_royal": [], "cc_azure": [], "cc_dusk": []}
+    for _ in range(int(mound.area / 4)):
+        x, y = rng.uniform(b[0], b[2]), rng.uniform(b[1], b[3])
+        if not mound.buffer(-1.6).contains(Point(x, y)): continue
+        tfrac = (y - b[1]) / max(1, b[3] - b[1])
+        if rng.random() < tfrac * 0.55: continue                      # highlights on the upper part
+        L = rng.uniform(2.8, 4.6); a = rng.uniform(-150, -30)
+        leaf = affinity.rotate(affinity.scale(Point(x, y).buffer(1.0, quad_segs=8), L/2, 0.75), a, origin=(x, y))
+        c = "cc_royal" if rng.random() < 0.6 else ("cc_azure" if rng.random() < 0.4 else "cc_dusk")
+        dabs[c].append(leaf)
+    for c, ls in dabs.items():
+        g = unary_union(ls).intersection(mound.buffer(-0.4)).buffer(0)
+        if not g.is_empty: out.append(R(c, g, "satin", "auto", "BUSH-hl", unit=unit, kob=0.0))
+    return out
+
+def fern(base, ang, L, col, col_hl, unit, rng, droop=0.25):
+    """single arching fern frond: thin rib, many short narrow leaflets alternating light / dark"""
+    return pinna(base, ang, L, L*0.22, col, col_hl, unit, droop, rng, grp="LF")
+
+def broad_leaf(base, ang, L, col, col_hl, unit, curl=0.15):
+    """broad tropical leaf (monstera / banana-like): wide serrated blade, light half"""
+    return frond(base, ang, L, L*0.55, col, col_hl, grp="LF", unit=unit, curl=curl, n_teeth=max(3, int(L/4.5)))
+
+def sprig(base, ang, L, col, unit, rng):
+    """small sprig: 3-5 tiny leaves on a short stem"""
+    out = []
+    a = math.radians(ang); ux, uy = math.cos(a), math.sin(a)
+    stem = LineString([base, (base[0] + ux*L, base[1] + uy*L)])
+    out.append(R(col, stem.buffer(0.5, cap_style="round"), "satin", "auto", "LF", unit=unit, kob=0.3))
+    for k in range(rng.randint(3, 5)):
+        t = 0.35 + 0.65*k/4; p = (base[0] + ux*L*t, base[1] + uy*L*t); s = 1 if k % 2 else -1
+        la = ang + s*rng.uniform(35, 60)
+        out += frond(p, la, L*0.38, L*0.2, col, None, unit=unit, curl=0.0, n_teeth=2)
+    return out
