@@ -40,64 +40,9 @@ polys = TA.polys; width = TA.width; map_geom = TA.map_geom
 # ================================================================ moon
 CU_MOON = (724.5, 295.5, 275.0)
 def moon():
-    cx, cy, r = CU_MOON
-    box_px = (int(cx - r - 4), max(0, int(cy - r - 4)), int(cx + r + 4), int(cy + r + 4))
-    def mask(rc, up, b):
-        rr, cc = rc; X = cc / up + b[0]; Y = rr / up + b[1]; return np.hypot(X - cx, Y - cy) < r
-    T = tones(MOON + ["m5b"] + CLOUD + POLE + NAVY)
-    tr = TR.trace(CB, box_px, T, keep=MOON + ["m5b"], mask=mask, up=2, sigma=4.0, majority=21, min_px=40)
-    lab, up = tr["_lab"]; names = [t[0] for t in T]
-    # figure, pole top and cloud overlaps are not moon: re-assign them to moon cream (they sit under the box / clouds)
-    sink = np.isin(lab, [names.index(n) for n in CLOUD + POLE + NAVY]) & (lab >= 0)
-    sink = ndi.binary_dilation(sink, structure=morphology.disk(3 * up)) & (lab >= 0)
-    lab2 = np.where(sink, names.index("m2"), lab)        # under the figure / clouds: moon cream (box area, covered anyway)
-    lab2 = np.where(lab2 == names.index("m5b"), names.index("m5"), lab2)        # darkest = crater dark tone (+ its thin rays as lines)
-    k = TA.MOON_R_PX * TA.K / r
-    f = lambda x, y: ((np.asarray(x) - cx) * k, 244 + (np.asarray(y) - cy) * k)
-    disc = Point(0, 244).buffer(TA.MOON_R_PX * TA.K, 360)
-    G = {n: map_geom(TR.polys_of(lab2 == names.index(n), up, box_px, 24), f).buffer(0).buffer(0.6).buffer(-0.6).intersection(disc) for n in MOON}
-    rim = disc.difference(disc.buffer(-2.5))
-    vis = []
-    for n in ("m2", "m1", "m3"):           # body tones: concentric directional rows (15° sectors), as the close-up's thread texture
-        g = G[n].union(rim) if n == "m3" else G[n].difference(rim)
-        for kk in range(24):
-            a0, a1 = math.radians(kk * 15), math.radians((kk + 1) * 15)
-            sec = Polygon([(0, 244)] + [(400 * math.cos(a), 244 + 400 * math.sin(a)) for a in np.linspace(a0, a1, 6)])
-            q = g.intersection(sec)
-            if not q.is_empty and q.area > 0.5: vis.append(R(n, q, "tatami", math.degrees((a0 + a1) / 2) + 90, CODE[n]))
-    for n in ("m4", "m5"):                 # craters + maria: each patch its own stitch direction (along its long axis)
-        for p in polys(G[n].difference(rim)):
-            if p.area < 0.8: continue
-            vis.append(R(n, p, "satin" if width(p) < 2.6 else "tatami", "auto", CODE[n]))
-    # small oval craters (the close-up's crater "bubbles"): local dark blobs at 2-8 px scale -> satin oval in crater
-    # light + a lighter rim run (highlight) on the upper-left side, each at its own angle
-    from skimage import measure as _ms
-    Lm = np.asarray(CB.convert("L")).astype(float)
-    dog = ndi.gaussian_filter(Lm, 7) - ndi.gaussian_filter(Lm, 2)
-    yy_, xx_ = np.mgrid[0:Lm.shape[0], 0:Lm.shape[1]]
-    inside = np.hypot(xx_ - cx, yy_ - cy) < r - 10
-    figz = (np.abs(xx_ - 725) < 85) & (yy_ > 300)                     # figure: never traced
-    bl = ndi.binary_opening((dog > 8) & inside & ~figz, iterations=2)
-    nb = 0
-    for rp in _ms.regionprops(_ms.label(bl)):
-        if not (40 <= rp.area <= 450) or rp.major_axis_length > 1.8 * max(rp.minor_axis_length, 1) or rp.solidity < 0.85: continue
-        yc, xc = rp.centroid; X0, Y0 = f(xc, yc); X0, Y0 = float(X0), float(Y0)
-        a_ = max(1.4, rp.major_axis_length / 2 * k); b_ = max(1.0, rp.minor_axis_length / 2 * k)
-        ell = affinity.rotate(affinity.scale(Point(X0, Y0).buffer(1, 24), a_, b_), -math.degrees(rp.orientation) + 90, origin=(X0, Y0))
-        vis.append(R("m4", ell, "satin", "auto", "MN-crater"))
-        rim_ = ell.buffer(0.5).exterior.intersection(box(X0 - 20, Y0 - 20, X0 + 20, Y0 + 0.3 * b_))
-        if not rim_.is_empty and rim_.length > 2: vis.append(R("m1", rim_.buffer(0.3, cap_style="round"), "run", None, "MN-ray"))
-        nb += 1
-    # star-burst craters (3 in the close-up): rays drawn as run lines from each crater centre (the close-up's dark dashes
-    # between stitches are thread texture, not art — not traced)
-    rng = np.random.RandomState(5)
-    for (sx, sy, R0) in ((650, 118, 34), (650, 224, 38), (848, 235, 42)):
-        X0, Y0 = f(sx, sy); X0, Y0 = float(X0), float(Y0)
-        for kk in range(9):
-            a = 2 * math.pi * kk / 9 + rng.uniform(-0.2, 0.2); L1 = R0 * k * rng.uniform(0.7, 1.1)
-            ln = LineString([(X0 + 2.0 * math.cos(a), Y0 + 2.0 * math.sin(a)), (X0 + L1 * math.cos(a), Y0 + L1 * math.sin(a))]).intersection(disc.buffer(-2))
-            if not ln.is_empty and ln.length > 2.5: vis.append(R("m5", ln.buffer(0.32, cap_style="round"), "run", None, "MN-ray"))
-        vis.append(R("m4", Point(X0, Y0).buffer(1.8), "satin", "auto", "MN-crater"))
+    """Rev C: stitch-structure moon (moon2.py): direction-field ground, ~470 raised oval cells, traced star craters."""
+    import moon2
+    vis, disc, n = moon2.build(CB)
     return vis, disc
 
 # ================================================================ clouds
@@ -108,8 +53,12 @@ def cloud_comps(img, box_px, sinks, up=2):
     bg = ndi.grey_dilation(ndi.grey_erosion(a_, size=61), size=61)
     con = np.kron((a_ - bg) > 25, np.ones((up, up), bool))[:lab.shape[0], :lab.shape[1]]
     cm = np.isin(lab, [names.index(n) for n in CLOUD[:4]]) & con
-    cm = ndi.binary_fill_holes(ndi.binary_closing(cm, iterations=3 * up))
-    U = TR.polys_of(cm, up, box_px, 20).buffer(2).buffer(-2)
+    # tails: thin bright-blue strokes that the tone majority filter drops -> add them from the raw colour
+    raw = np.asarray(img.crop(box_px).convert("RGB")).astype(float)
+    tail = (raw[..., 2] > raw[..., 0] + 12) & (raw.mean(2) > 95) & ((a_ - bg) > 30)
+    tail = np.kron(ndi.binary_opening(tail, iterations=1), np.ones((up, up), bool))[:lab.shape[0], :lab.shape[1]]
+    cm = ndi.binary_fill_holes(ndi.binary_closing(cm | tail, iterations=up))
+    U = TR.polys_of(cm, up, box_px, 20).buffer(1).buffer(-1)
     # no fabric holes inside a cloud: dark gaps take the nearest cloud tone
     lab = TR.fill_inside(lab, [names.index(n) for n in CLOUD], cm)
     G = {n: TR.polys_of(lab == names.index(n), up, box_px, 6) for n in CLOUD}
@@ -130,8 +79,8 @@ def place(c, centre_mm, s, flipx=False):
     sx = -s if flipx else s
     f = lambda x, y: (centre_mm[0] + (np.asarray(x) - cx) * sx, centre_mm[1] + (np.asarray(y) - cy) * s)
     sil = map_geom(c["px"], f).buffer(0)
-    sil = unary_union([Polygon(p.exterior) for p in polys(sil)]).buffer(1.6).buffer(-2.0).buffer(0.4).simplify(0.3)
-    return MM.cloud_texture(sil)
+    sil = MM.profile_sil(MM.smooth_sil(unary_union([Polygon(p.exterior) for p in polys(sil)]), r=max(0.6, 1.2 * abs(s)), keep_frac=0.01).buffer(-0.6))
+    return MM.cloud_contour(sil)
 
 def mm_bbox(vis): return unary_union([r["geom"] for r in vis]).bounds
 
@@ -195,16 +144,9 @@ BACK_TIPS_CU = {"armL": (590, 652), "armR": (938, 585), "pinA": (828, 540), "pin
 def back_pole():
     f, kx, ky, top = back_pole_f()
     fig = lambda xx, yy: (yy < BTOP + 4) & (np.abs(xx - BPX) < 130)       # the figure sits above the pole top: never traced
-    vis = hardware(CB, (420, int(BTOP) - 20, 1040, 1086), f, BPX, exclude=fig)
-    # the close-up ends above the hem: extend the pole body to 10 above the hem seam (mockup: pole runs into the rib)
-    yb = float(f(0, 1086)[1]); hem = PT.draft("M")[1]["hem_b"]
-    w0 = 58 * kx / 2
-    ext = Polygon([(-w0, yb - 1), (w0, yb - 1), (w0 * 1.03, hem - 10), (-w0 * 1.03, hem - 10)])
-    vis.append(R("p2", ext, "tatami", "auto", "PL"))
-    vis.append(R("p3", Polygon([(w0 * 0.45, yb - 1), (w0, yb - 1), (w0 * 1.03, hem - 10), (w0 * 0.47, hem - 10)]), "tatami", "auto", "PL-shade"))
-    for xg in (-0.45, 0.1):
-        vis.append(R("p4", LineString([(w0 * xg, yb), (w0 * xg * 1.02, hem - 12)]).buffer(0.35), "bean", None, "PL-line"))
-    vis += pole_details(f, BPX, 29.0, [528, 599, 673, 748, 815, 957], (760, 860, 673, 860), [699, 744, 789, 840], 492, 1086)
+    import polepar
+    hem = PT.draft("M")[1]["hem_b"]; ybot = BTOP + (hem - 10 - top) / ky          # pole runs to 10 above the hem seam
+    vis = polepar.back(f, ybot)                  # Rev C: clean stitch objects at the close-up positions (A13)
     tips = {k: tuple(float(v) for v in f(*p)) for k, p in BACK_TIPS_CU.items()}
     return vis, tips
 
@@ -237,14 +179,13 @@ def front_pole_f():
     def f(x, y):
         x = np.asarray(x, float); y = np.asarray(y, float)
         X = P["cx"] + (x - FPX_CU) * kx; Y = P["y0"] + (y - FTOP_CU) * ky
-        return X, Y + np.where((x < 1185) & (y > 700), 7.0, 0.0)
+        return X, Y
     return f
-FRONT_TIPS_CU = {"armL": (1107, 662), "armR": (1353, 603), "pin": (1316, 550), "strL": (952, 762), "strL2": (956, 770),
-                 "canL": (1176, 885), "canR": (1345, 700), "pole": (1265, 830), "poleL": (1210, 900), "bracket": (1350, 935)}
+FRONT_TIPS_CU = {"armL": (1107, 662), "armR": (1353, 603), "pin": (1316, 550), "strL": (962, 785), "strL2": (966, 792),
+                 "canL": (1176, 905), "canR": (1345, 700), "pole": (1265, 830), "poleL": (1210, 900), "bracket": (1350, 935)}
 def front_pole():
     f = front_pole_f()
-    vis = hardware(CF, (930, 495, 1448, 1020), f, FPX_CU)
-    vis += pole_details(f, FPX_CU, 27.0, [608, 700, 795, 860], (1270, 1345, 690, 860), [720, 765, 810], 515, 1020)
+    import polepar; vis = polepar.front(f)
     tips = {k: tuple(float(v) for v in f(*p)) for k, p in FRONT_TIPS_CU.items()}
     return vis, tips
 

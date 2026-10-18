@@ -1,17 +1,17 @@
 """Package: recompress the merged PDF + element specs, collect stitch files, pattern, art, README -> zip."""
 import os, shutil, glob, subprocess, json
-OUT = "out/HAKI_Drum-Island_moon_FULL-TECHPACK_RevB.pdf"
+OUT = "out/HAKI_Drum-Island_moon_FULL-TECHPACK_RevC.pdf"
 def shrink(p):
     subprocess.run(["python3" if False else os.environ.get("PYBIN", "python"), "shrink.py", p, p + ".tmp", "3000", "82"], check=True); os.replace(p + ".tmp", p)
-for p in [OUT] + glob.glob("out/0*/*SPEC_RevB.pdf"): shrink(p)
+for p in [OUT] + glob.glob("out/0*/*SPEC_RevC.pdf"): shrink(p)
 PKG = "out/pkg"; shutil.rmtree(PKG, ignore_errors=True); os.makedirs(f"{PKG}/elements")
 for e in ("01_back-scene", "02_chest-clouds", "03_lower-front", "04_sleeve-clouds"):
     shutil.copytree(f"out/{e}", f"{PKG}/elements/{e}", ignore=shutil.ignore_patterns("summary.json", "result.json"))
 shutil.copytree("out/pattern", f"{PKG}/pattern"); shutil.copy(OUT, PKG)
 open(f"{PKG}/README.txt", "w").write("""HAKI STUDIOS - Drum Island Jacket, MOON colourway (style HK-JK-DRUM-MOON)
-Garment tech pack Rev B + embroidery Rev B - 16 Oct 2026
+Garment tech pack Rev C + embroidery Rev C - 17 Oct 2026
 
-HAKI_Drum-Island_moon_FULL-TECHPACK_RevB.pdf
+HAKI_Drum-Island_moon_FULL-TECHPACK_RevC.pdf
     T1-T16 garment pages (flats, details, size chart, grading, BOM, construction, labels, colourway, open questions,
     pattern T11-T13, inside view, operations, revision log), then embroidery G1-G5 + element specs 01-04.
 
@@ -32,12 +32,12 @@ elements/01_back-scene/by-size/<size>/     01 back stitch file for that size (DS
 elements/03_lower-front/by-size/<size>/    03L (pole + wires) + 03R (wires) for that size - wires meet the side seams
 elements/02_chest-clouds/grade-<A|B|C>/    02R/02L per art grade: A = XS-S, B = M-XL, C = XXL-3XL
 elements/04_sleeve-clouds/grade-<A|B|C>/   04R/04L per grade; the full-sleeve file + _S1/_S2 split files (2 hoopings per sleeve)
-elements/*/*_SPEC_RevB.pdf, *_ART*.svg     element specs + region art with digitizing attributes (size M / grade B)
+elements/*/*_SPEC_RevC.pdf, *_ART*.svg     element specs + region art with digitizing attributes (size M / grade B)
 
 All stitch files: <= 12 thread colours per file incl. registration + placeholder (manufacturer limit), max stitch 7.5 mm, trims counted from the DST. They are
 production-intent drafts: the factory digitizer opens them, checks density + pull on 12 oz duck, edits if needed,
 and sews out before bulk. Thread colours, densities and every [proposed - confirm] item: see T10 + G4.
 """)
 for z in glob.glob("out/*.zip"): os.remove(z)
-subprocess.run(f"cd {PKG} && zip -qr ../HAKI_Drum-Island_moon_RevB_files.zip .", shell=True, check=True)
-print("pdf MB", round(os.path.getsize(OUT) / 1e6, 1), "zip MB", round(os.path.getsize("out/HAKI_Drum-Island_moon_RevB_files.zip") / 1e6, 1))
+subprocess.run(f"cd {PKG} && zip -qr ../HAKI_Drum-Island_moon_RevC_files.zip .", shell=True, check=True)
+print("pdf MB", round(os.path.getsize(OUT) / 1e6, 1), "zip MB", round(os.path.getsize("out/HAKI_Drum-Island_moon_RevC_files.zip") / 1e6, 1))

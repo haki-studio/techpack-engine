@@ -22,7 +22,7 @@ import readback, factory, sheet as _SH
 import pyembroidery as pe
 from shapely.strtree import STRtree
 
-REV = "Rev B"; DATE = "16 Oct 2026"
+REV = "Rev C"; DATE = "17 Oct 2026"
 PROP = "#8A5A00"
 RES_M = json.load(open("out/results/size_M.json")); RES_B = json.load(open("out/results/grade_B.json"))
 CLR = json.load(open("out/results/clearances.json"))
@@ -342,7 +342,7 @@ def build(n):
     tot = sum(res_of(p)["stitches"] for p in pieces)
     o.append(t(12, yb, f"Stitches in the production files ({', '.join(pieces)}, M / grade B): {tot:,} (DST read-back). 40wt polyester, 75/11 sharp, 2.5 oz cutaway, no topping.", 1.7, 600))
     o.append(t(12, yb + 3.4, "DST mm/mm² = thread length the file actually sews per mm² of each code (underlay + top rows + blends + hidden travel that lies under it), read back", 1.6, 400, MUTED))
-    o.append(t(12, yb + 6.6, "from the DST. One 0.45 tatami layer alone is ≈ 2.2 mm/mm². Rev B is fidelity-first (client direction): density is reported, not limited — clean up after the sew-out.", 1.6, 600, PROP))
+    o.append(t(12, yb + 6.6, "from the DST. One 0.45 tatami layer alone is ≈ 2.2 mm/mm². Rev C is fidelity-first (client direction): density is reported, not limited — clean up after the sew-out.", 1.6, 600, PROP))
     if any(v >= 1.0 for v in WC.values()):
         o.append(t(12, yb + 9.8, "Amber width = short tapered ends (wisp tips, cap tips, crater slivers) under 0.8 for < 2.5 mm; the digitizer drops or widens them.", 1.6, 400, ORANGE))
     pages.append(o)

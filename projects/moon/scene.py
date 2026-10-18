@@ -17,7 +17,7 @@ import math, random
 import shapely
 import numpy as np
 from shapely.geometry import Point, Polygon, LineString, box
-from shapely.ops import unary_union
+from shapely.ops import unary_union, substring
 from shapely import affinity
 from shapely.validation import make_valid
 import moonpal
@@ -56,15 +56,30 @@ def tf_regs(regs, sc, anchor_from, anchor_to, dx=0.0):
         g = affinity.scale(r["geom"], sc, sc, origin=anchor_from)
         g = affinity.translate(g, anchor_to[0] - anchor_from[0] + dx, anchor_to[1] - anchor_from[1])
         ang = r["ang"]
+        if isinstance(ang, tuple):        # radial centre moves with the art
+            px = anchor_to[0] + (ang[1] - anchor_from[0]) * sc + dx; py = anchor_to[1] + (ang[2] - anchor_from[1]) * sc
+            ang = (ang[0], px, py)
         out.append(dict(r, geom=g if r["st"] in ("bean", "run") else g.buffer(0), ang=ang))
     return out
 
 WIRE_W = 1.6
 def cord(p0, p1, sag):
-    """wire as a twisted-cord satin column (1.6 mm, turning satin along the sag curve) + a wrap at the insulator end"""
-    pts = MM.wire_pts(p0, p1, sag)
-    return [dict(col="p2", geom=LineString(pts).buffer(WIRE_W / 2, cap_style="flat"), st="satin", ang="auto", grp="WR"),
-            dict(col="p1", geom=Point(p0).buffer(1.6, 16), st="satin", ang="auto", grp="PL-hl")]
+    """wire as a twisted rope (close-up): the 1.6 mm cord cut into 2.2 mm twists, each a satin at 55° to the wire,
+    a charcoal shade run along its lower edge, and a wrap at the insulator end (LESSONS A13)"""
+    pts = MM.wire_pts(p0, p1, sag, n=max(20, int(math.dist(p0, p1) / 2)))
+    ln = LineString(pts); L = ln.length; out = []
+    k = 0; s = 0.0
+    while s < L - 0.3:
+        e = min(L, s + 2.2)
+        seg = substring(ln, s, e)
+        if seg.length > 0.2:
+            a, b = seg.coords[0], seg.coords[-1]; tang = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0]))
+            out.append(dict(col="p2", geom=seg.buffer(WIRE_W / 2 + 0.05, cap_style="flat"), st="satin", ang=tang + 55, grp="WR"))
+        s = e; k += 1
+    shade = ln.parallel_offset(WIRE_W * 0.32, "right")
+    if not shade.is_empty: out.append(dict(col="p4", geom=shade.buffer(0.25, cap_style="flat"), st="run", ang=None, grp="WR"))
+    out.append(dict(col="p1", geom=Point(p0).buffer(1.6, 16), st="satin", ang="auto", grp="PL-hl"))
+    return out
 
 class Items(list):
     def add(self, regs, layer, el=None):
@@ -102,14 +117,17 @@ def back_art(size="M"):
     P = lambda x, y: (A1[0] + (x - A0[0]) * sc, A1[1] + (y - A0[1]) * sc)
     it = Items()
     cb, cw = back_clips("M")
-    it.add(tf_regs(T_["moon"], sc, A0, A1), L_MOON, "01")
+    mv = tf_regs(T_["moon"], sc, A0, A1)
+    it.add([r for r in mv if r.get("under")], L_MOON, "01")          # ground tiles first
+    it.add([r for r in mv if not r.get("under")], L_MDET, "01")      # then maria, stars, raised cells on top
     # wires (behind the clouds and the hardware), to the agreed heights at this size's side seams + 3 drop wires
     tips = {k: P(*v) for k, v in T_["back_tips"].items()}
     xs = mt["block"].chest2
     seamL = lambda h: (-xs, mt["hem_b"] - h * sc); seamR = lambda h: (xs, mt["hem_b"] - h * sc)
     W = [("armL", seamL(H_LEFT[0])), ("strL", seamL(H_LEFT[1])), ("strL2", seamL(H_LEFT[2])), ("canL", seamL(H_LEFT[3])),
          ("pinA", seamR(H_RIGHT[0])), ("pinB", seamR(H_RIGHT[1])), ("armR", seamR(H_RIGHT[2])), ("canR", seamR(H_RIGHT[3])), ("insR", seamR(H_RIGHT[4])),
-         ("strL2", (P(TA.BX(205), 0)[0], mt["hem_b"] - 4)), ("canL", (P(TA.BX(300), 0)[0], mt["hem_b"] - 4)), ("insR", (P(TA.BX(445), 0)[0], mt["hem_b"] - 4))]
+         ("strL2", (P(TA.BX(205), 0)[0], mt["hem_b"] - 4)), ("canL", (P(TA.BX(300), 0)[0], mt["hem_b"] - 4)), ("insR", (P(TA.BX(445), 0)[0], mt["hem_b"] - 4)),
+         ("canR", (P(TA.BX(250), 0)[0], mt["hem_b"] - 4))]          # close-up: second wire crossing the pole from the right
     wires, ends = [], []
     for a, b in W:
         p0 = tips[a]; span = abs(b[0] - p0[0])
@@ -131,7 +149,7 @@ def back_art(size="M"):
 def moon_in_box(size="M"):
     """01b: our moon fill inside the placeholder box (same traced tones + concentric rows), to sew before the figure"""
     it, BOX, info = back_art(size)
-    vis = [dict(r, geom=r["geom"].intersection(BOX)) for r in it if r["el"] == "01" and r["layer"] == L_MOON]
+    vis = [dict(r, geom=r["geom"].intersection(BOX)) for r in it if r["el"] == "01" and r["layer"] in (L_MOON, L_MDET)]
     return [v for v in vis if not v["geom"].is_empty and v["geom"].area > 0.3], BOX
 
 def back_clips(size):
@@ -223,7 +241,10 @@ def build(items, clip, wire_clip=None, knock=None):
     idx = [i for i, g in enumerate(G) if not g.is_empty]
     tree = STRtree([G[i] for i in idx]); vis = []
     for n, i in enumerate(idx):
-        later = [G[idx[j]] for j in tree.query(G[i]) if idx[j] > i]
+        mn = items[i]["grp"].startswith("MN")
+        # moon objects sit ON each other (raised cells / stars on a continuous ground, LESSONS A13): only non-moon art
+        # (clouds, pole, wires) knocks the moon out; everything else keeps painter's-order knockout
+        later = [G[idx[j]] for j in tree.query(G[i]) if idx[j] > i and not (mn and items[idx[j]]["grp"].startswith("MN"))]
         g = G[i]
         if later:
             try: g = g.difference(unary_union(later))
@@ -299,7 +320,7 @@ def art_for_size(size):
     itb, BOX, info = back_art(size)
     cb, cw = back_clips(size)
     vb = build(itb, cb, cw, knock=BOX)
-    mib = [dict(r, geom=r["geom"].intersection(BOX)) for r in build([r for r in itb if r["layer"] == L_MOON], cb)]
+    mib = [dict(r, geom=r["geom"].intersection(BOX)) for r in build([r for r in itb if r["layer"] in (L_MOON, L_MDET)], cb)]
     mib = [r for r in mib if not r["geom"].is_empty and r["geom"].area > 0.3]
     itf, finfo = front_art(size)
     fc = front_clips(size)

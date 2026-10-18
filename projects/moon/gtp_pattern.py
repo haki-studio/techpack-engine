@@ -255,15 +255,20 @@ def p_operations():
         o.append(t(cx[3], y, mc, 1.7, 400, MUTED)); o.append(t(cx[4], y, f"{smv:.1f}", 1.8, 600))
     tot = sum(x[3] for x in OPS); y = 36 + len(OPS)*4.6 + 1
     o.append(t(cx[3], y, "TOTAL (sewing + finishing)", 1.8, 700)); o.append(t(cx[4], y, f"{tot:.0f} min", 1.8, 700))
+    import readback, factory
     r = json.load(open("out/results/size_M.json")); gB = json.load(open("out/results/grade_B.json"))
-    st = r["back"]["stitches"] + r["03L"]["stitches"] + r["03R"]["stitches"] + sum(gB[k]["stitches"] for k in ("02R", "02L", "04R", "04L"))
-    o.append(t(12, y + 6, f"Embroidery machine time, size M: {st/1000:.0f}k stitches (DST) → ≈ {st/750/60:.1f} h per head at 750 spm + colour changes + hooping (02 + 03: 4 hoopings, 04: per sleeve split, back: 6 splits + 01b).", 1.75, 600))
+    files = [r[k]["file"] for k in ("back", "moonbox", "03L", "03R")] + [gB[k]["file"] for k in ("02R", "02L", "04R", "04L")]
+    rbs = [readback.dst(f_ + ".dst") for f_ in files]
+    st = sum(x["stitches"] for x in rbs); tr = sum(x["trims"] for x in rbs)
+    mh = sum(factory.machine_hours(x["stitches"], None, x["trims"], x["stops"] - 1) for x in rbs)
+    o.append(t(12, y + 6, f"Embroidery machine time, size M (DST read-back, same files as G4): {st:,} stitches, {tr:,} trims → ≈ {mh:.1f} h per head (factory.machine_hours incl. trims + colour changes), excl. hooping.", 1.75, 600))
     o.append(GT.prop(12, y + 10, "SMVs are estimates — replace with the factory's time study at the sample stage", 1.75))
     return o
 
 # ---------------------------------------------------------------- revision log + sample tracker
 REVS = [("Garment Rev B", "16 Oct 2026", "Wire notches (W = height above hem) on B01/F01/F02 side seams + zip-end notches (Z) in every size DXF; T12 ratio ranges from the files; T13 + 04L; 12-colour files."),
-        ("Embroidery Rev B", "16 Oct 2026", "Fidelity first (founder): art traced from the close-ups (moon tones, craters + rays, seigaiha clouds, pole hardware), satin cord wires, box tightened to 68 × 79, 01b moon-in-box, 3 × 2 splits with moon + pole whole, ≤ 12 colours per file, per-stop numbers via readback.dst."),
+        ("Embroidery Rev B", "16 Oct 2026", "Close-up tone regions traced and filled with uniform tatami (reviewed: fidelity failed — read as flat patches); 12-colour files, wire notches, 3 × 2 splits, 01b moon-in-box, box 68 × 79."),
+        ("Embroidery Rev C", "17 Oct 2026", "Stitch structure traced from the close-ups (LESSONS A13): moon = direction-field ground + ~470 raised oval cells + traced star craters; clouds = domed silhouettes with contour scallop rows, lobe rims and cap tones; pole hardware as clean slats / rings / discs / coils; wires as twisted rope."),
         ("Garment Rev A", "16 Oct 2026", "Moon colourway on the Drum Island pattern (unchanged from plum + pine Rev B): washed navy duck, navy-black corduroy + rib. "
                                           "Side seams carry the wire wraps: no side-seam topstitch; back armhole topstitched on the body."),
         ("Embroidery Rev A", "16 Oct 2026", "First release: 01 back scene per size + 360² splits (4; 3XL 6) with the licensed-figure placeholder box; 02 chest clouds A/B/C; "

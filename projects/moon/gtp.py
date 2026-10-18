@@ -14,7 +14,7 @@ import drum, techflat as TF
 import specbase as SB
 from specbase import img_tag
 
-REV = "Rev B"; DATE = "16 Oct 2026"; STYLE = "HK-JK-DRUM-MOON"; NAME = "Drum Island Jacket — Moon"
+REV = "Rev C"; DATE = "17 Oct 2026"; STYLE = "HK-JK-DRUM-MOON"; NAME = "Drum Island Jacket — Moon"
 FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · GARMENT TECH PACK · {REV} · {DATE}"
 PROP = "#8A5A00"        # colour for 'proposed — confirm' text
 

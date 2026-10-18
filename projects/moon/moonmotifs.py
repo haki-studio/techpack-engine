@@ -262,3 +262,127 @@ def cloud_texture(sil, ppm=4.0, scale_r=3.8, rng_seed=0):
         L = unary_union([s.buffer(0.35, cap_style="round") for s in lines])
         regs.append(R("c5", L, "bean", None, "CL-line"))
     return regs
+
+# ================================================================ Rev C: contour-following cloud (LESSONS A13)
+def cloud_contour(sil, row=2.6, scale=4.2, ppm=4.0):
+    """Cloud from a traced silhouette, built like the close-ups are sewn:
+    tone bands top -> bottom (white-pink cap along every upward-facing edge, lavender, periwinkle, indigo underside);
+    scallop rows = inward offsets of the silhouette every `row` mm, each offset's upward-facing parts cut into arcs of
+    ~`scale` mm that bulge outward (fish scales that follow the cloud's own contour, not a global grid)."""
+    from shapely.geometry import MultiPolygon
+    from shapely import contains_xy
+    from scipy import ndimage as ndi
+    from skimage import measure as _ms
+    if sil.is_empty: return []
+    x0, y0, x1, y1 = sil.bounds; W = int((x1 - x0) * ppm) + 3; H = int((y1 - y0) * ppm) + 3
+    yy, xx = np.mgrid[0:H, 0:W]; X = x0 + (xx + 0.5) / ppm; Y = y0 + (yy + 0.5) / ppm
+    m = contains_xy(sil, X, Y)
+    top = np.where(m.any(0), m.argmax(0), H); bot = np.where(m.any(0), H - 1 - m[::-1].argmax(0), 0)
+    t = (yy - top[None, :]) / np.maximum(bot - top, 1)[None, :]
+    dist = ndi.distance_transform_edt(m) / ppm
+    gy = ndi.gaussian_filter(m.astype(float), 2.0); up = np.gradient(gy, axis=0) > 0.02      # boundary facing up
+    up = ndi.binary_dilation(up, iterations=int(2.0 * ppm))
+    lab = np.zeros(m.shape, int)
+    lab[m] = 3
+    lab[m & (t < 0.42)] = 2
+    lab[m & (t > 0.74)] = 5
+    lab[m & up & (dist < 2.2) & (t < 0.75)] = 1
+    lab = ndi.median_filter(lab, size=5)
+    names = {1: ("c1", "CL-hl"), 2: ("c2", "CL-top"), 3: ("c3", "CL"), 5: ("c5", "CL-shade")}
+    regs = []
+    for v, (n, code) in names.items():
+        mm_ = (lab == v) & m
+        if not mm_.any(): continue
+        g = Polygon()
+        for cnt in _ms.find_contours(np.pad(mm_, 1).astype(float), 0.5):
+            if len(cnt) < 4: continue
+            g = g.symmetric_difference(Polygon([(x0 + (c - 0.5) / ppm, y0 + (r - 0.5) / ppm) for r, c in cnt]).buffer(0))
+        g = g.buffer(0.35).intersection(sil)          # tones overlap 0.35 mm: no fabric between them
+        for p in _polys(g):
+            if p.area < 0.8: continue
+            w = 2 * p.area / max(p.length, 1e-6)
+            regs.append(R(n, p, "satin" if w < 2.6 else "tatami", "auto" if w < 2.6 else 0, code))
+    # contour scallop rows
+    arcs = []
+    k = 1
+    while True:
+        inner = sil.buffer(-row * k + 0.6, join_style=1)
+        if inner.is_empty or inner.area < 4: break
+        for p in _polys(inner):
+            from shapely.geometry.polygon import orient as _orient
+            ring = LineString(_orient(p, 1.0).exterior.coords)
+            L = ring.length; n = max(3, int(L / scale))
+            pts = [ring.interpolate(L * i / n) for i in range(n + 1)]
+            for a_, b_ in zip(pts, pts[1:]):
+                mx, my = (a_.x + b_.x) / 2, (a_.y + b_.y) / 2
+                dx, dy = b_.x - a_.x, b_.y - a_.y; dl = math.hypot(dx, dy) or 1
+                nx, ny = dy / dl, -dx / dl                     # outward normal (exterior is CCW after buffer)
+                if not sil.contains(Point(mx + nx * 0.6, my + ny * 0.6)) and sil.contains(Point(mx - nx * 0.6, my - ny * 0.6)): pass
+                if ny > -0.25: nx, ny = 0.0, -1.0              # down/side-facing rows: scales still bulge up (close-up)
+                h = dl * 0.32
+                arc = [(a_.x + dx * s_ + nx * h * math.sin(math.pi * s_), a_.y + dy * s_ + ny * h * math.sin(math.pi * s_)) for s_ in np.linspace(0, 1, 7)]
+                arcs.append(LineString(arc))
+        k += 1
+    # lobes: peaks of the top contour -> one dome per peak; its rim inside the cloud = an indigo shading arc between lobes
+    lobes = []
+    xs = np.arange(x0, x1, 0.5); tops = []
+    for x in xs:
+        seg = sil.intersection(LineString([(x, y0 - 1), (x, y1 + 1)])); tops.append(seg.bounds[1] if not seg.is_empty else np.nan)
+    tops = np.array(tops)
+    for i in range(3, len(xs) - 3):
+        if np.isnan(tops[i]): continue
+        w = tops[max(0, i - 12):i + 13]
+        if tops[i] <= np.nanmin(w) + 1e-6:
+            lobes.append((xs[i], tops[i]))
+    lob_lines = []
+    for lx, ly in lobes:
+        seg = sil.intersection(LineString([(lx, ly - 1), (lx, y1 + 1)])); h = seg.bounds[3] - ly if not seg.is_empty else 0
+        rr = max(3.0, min(14.0, h * 0.45)); cx_, cy_ = lx, ly + rr
+        arc = LineString([(cx_ + rr * math.cos(a), cy_ + rr * math.sin(a)) for a in np.linspace(1.08 * math.pi, 1.92 * math.pi, 16)])   # dome rim (upper arc)
+        lob_lines.append(arc)
+    if arcs or lob_lines:
+        inner = sil.buffer(-0.8)
+        tone_of = lambda pt: {1: "c1", 2: "c1", 3: "c2", 5: "c3"}.get(int(lab[min(H - 1, max(0, int((pt.y - y0) * ppm))), min(W - 1, max(0, int((pt.x - x0) * ppm)))]), "c2")
+        crest = {}
+        for a in arcs:
+            crest.setdefault(tone_of(a.interpolate(0.5, normalized=True)), []).append(a.buffer(0.45, cap_style="round"))
+        for n, gs in crest.items():
+            g = unary_union(gs).intersection(inner)
+            for p in _polys(g):
+                if p.area > 0.5: regs.append(R(n, p, "satin", "auto", "CL-top"))
+        shade = unary_union([affinity.translate(a, 0, 1.0).buffer(0.3, cap_style="round") for a in arcs] +
+                            [l.buffer(0.35, cap_style="round") for l in lob_lines]).intersection(inner)
+        if not shade.is_empty: regs.append(R("c5", shade, "bean", None, "CL-line"))
+    return regs
+
+def smooth_sil(g, r=2.5, keep_frac=0.02):
+    """domed cumulus silhouette: close + open by r, drop tiny detached bits, keep tails attached"""
+    g = g.buffer(r).buffer(-2 * r).buffer(r).simplify(0.25)
+    ps = _polys(g)
+    if not ps: return Polygon()
+    big = max(p.area for p in ps)
+    return unary_union([Polygon(p.exterior) for p in ps if p.area >= keep_frac * big]).buffer(0)
+
+def profile_sil(g, step=0.5, s_top=1.2, s_bot=3.5, min_h=0.9):
+    """domed cumulus from a traced (jagged, holey) mask: per column top + bottom edge, top smoothed lightly (keeps the
+    lobes), bottom smoothed strongly (flat base), tails kept where the column is at least min_h tall."""
+    from scipy import ndimage as ndi
+    out = []
+    for p in _polys(g.buffer(0)):
+        x0, y0, x1, y1 = p.bounds
+        xs = np.arange(x0, x1 + step, step); top = []; bot = []
+        for x in xs:
+            seg = p.intersection(LineString([(x, y0 - 1), (x, y1 + 1)]))
+            if seg.is_empty: top.append(np.nan); bot.append(np.nan); continue
+            b = seg.bounds; top.append(b[1]); bot.append(b[3])
+        top = np.array(top); bot = np.array(bot); ok = ~np.isnan(top)
+        if ok.sum() < 6: continue
+        top = np.interp(xs, xs[ok], top[ok]); bot = np.interp(xs, xs[ok], bot[ok])
+        top = ndi.gaussian_filter1d(top, s_top / step); bot = ndi.gaussian_filter1d(bot, s_bot / step)
+        keep = (bot - top) >= min_h
+        if keep.sum() < 4: continue
+        i0, i1 = np.argmax(keep), len(keep) - np.argmax(keep[::-1]) - 1
+        xs_, t_, b_ = xs[i0:i1 + 1], top[i0:i1 + 1], np.maximum(bot[i0:i1 + 1], top[i0:i1 + 1] + min_h)
+        poly = Polygon(list(zip(xs_, t_)) + list(zip(xs_[::-1], b_[::-1]))).buffer(0)
+        if not poly.is_empty: out.append(poly)
+    return unary_union(out).buffer(0.3).buffer(-0.3) if out else Polygon()

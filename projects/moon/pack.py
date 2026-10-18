@@ -1,4 +1,4 @@
-"""Embroidery pack G1–G5 + element specs -> out/HAKI_moon_EMBROIDERY-PACK_RevB.pdf.
+"""Embroidery pack G1–G5 + element specs -> out/HAKI_moon_EMBROIDERY-PACK_RevC.pdf.
 All counts from out/results/all.json (DST/PES read-back); stitches per thread colour counted from the PES files."""
 import os, json, glob, pickle, collections
 import cairosvg
@@ -15,7 +15,7 @@ from specbase import img_tag
 import drum, emb_place as EP, moonstitch as MS, factory, readback, sheet as _SH
 import techflat as TF
 
-REV = "Rev B"; DATE = "16 Oct 2026"
+REV = "Rev C"; DATE = "17 Oct 2026"
 SB.FOOT = f"HAKI STUDIOS · Drum Island jacket · moon · EMBROIDERY · {REV} · {DATE}"; _SH.FOOT = SB.FOOT
 PROF = factory.load()
 def hours(r): return factory.machine_hours(r["stitches"], PROF, trims=r["trims_dst"], colour_changes=max(0, r["stops"] - 1))
@@ -30,7 +30,7 @@ ELEMENTS = [("01", "Back scene + placeholder", "back", "back panel B01", M["back
             ("02", "Chest clouds", "02R", "wearer's right front F02", B["02R"]), ("02", "Chest clouds", "02L", "wearer's left front F01", B["02L"]),
             ("03", "Lower front pole + wires", "03L", "wearer's left front F01", M["03L"]), ("03", "Lower front wires", "03R", "wearer's right front F02", M["03R"]),
             ("04", "Sleeve clouds", "04R", "right sleeve S01", B["04R"]), ("04", "Sleeve clouds", "04L", "left sleeve S02", B["04L"])]
-OUT_PDF = "out/HAKI_moon_EMBROIDERY-PACK_RevB.pdf"
+OUT_PDF = "out/HAKI_moon_EMBROIDERY-PACK_RevC.pdf"
 HEX2KEY = {v[0].upper(): k for k, v in PAL.items()}
 
 def per_colour(base):
@@ -140,7 +140,7 @@ def threads():
 
 EMB_Q = ["1. Licensed figure: licence confirmed by client 2026-10-16. Placeholder box 68 × 79 mm (M) = mockup figure + 3 mm, on the pole top, centred on CB;",
          "    nothing of ours inside it. Moon-in-box: Haki supplies 01b (our moon fill in the box) [proposed — confirm]; the factory digitizer adds the figure on top.",
-         "2. Rev B is FIDELITY-FIRST (client direction 2026-10-16): art traced from the close-ups at production density; stitch count, trims, density and run time",
+         "2. Rev C is FIDELITY-FIRST (client direction 2026-10-16): art traced from the close-ups at production density; stitch count, trims, density and run time",
          "    are reported, not limited. Clean-up (density, trims, stops) after the size-M sew-out — see F1.",
          "3. Grading: A 92 % (XS–S), B 100 % (M–XL), C 108 % (XXL–3XL) for motifs; 01 back + 03 lower fronts one file per size (wires meet the side seams).",
          "4. Wires wrap back ↔ front across the SIDE SEAMS only (mockup draws them over the hanging sleeves); side seams not topstitched — confirm (Q3, client).",
@@ -203,7 +203,7 @@ def files_page():
         o.append(t(cx2[5], y, ("2 × 360²: " + " · ".join(f"{v['size'][0]:.0f}×{v['size'][1]:.0f}" for v in rb["sections"].values())) if "sections" in rb else "1 × 360²", 1.45))
         y += 3.8
     y += 3; o.append(t(12, y, "WHAT IS DIGITIZED", 2.0, 700)); y += 4.2
-    notes = [("Density", "production density everywhere (tatami 0.45, satin 0.42) — Rev B fidelity first; DST mm/mm² per code on each element p3."),
+    notes = [("Density", "production density everywhere (tatami 0.45, satin 0.42) — Rev C fidelity first; DST mm/mm² per code on each element p3."),
              ("Travel", "hidden travel under later fills + underpath (engine PR #1); trims only where a move is exposed (> 2.5 mm)."),
              ("Wires", "satin cord 1.6 mm with a wrap at each insulator; ends 3 mm short of every side seam (both pieces), 15 from CF."),
              ("Placeholder", "01 last stop = outline of the licensed-figure box in Moon cream (covered by 01b moon-in-box); nothing else inside it."),
@@ -255,8 +255,8 @@ def f1_pages():
 
 def build():
     pages = {"G2": overview(), "G3": threads(), "G4": summary(), "G5": files_page()}
-    el = [("01 Back scene", glob.glob("out/01_back-scene/*SPEC_RevB.pdf")[0]), ("02 Chest clouds", glob.glob("out/02_*/*SPEC_RevB.pdf")[0]),
-          ("03 Lower front pole + wires", glob.glob("out/03_*/*SPEC_RevB.pdf")[0]), ("04 Sleeve clouds", glob.glob("out/04_*/*SPEC_RevB.pdf")[0])]
+    el = [("01 Back scene", glob.glob("out/01_back-scene/*SPEC_RevC.pdf")[0]), ("02 Chest clouds", glob.glob("out/02_*/*SPEC_RevC.pdf")[0]),
+          ("03 Lower front pole + wires", glob.glob("out/03_*/*SPEC_RevC.pdf")[0]), ("04 Sleeve clouds", glob.glob("out/04_*/*SPEC_RevC.pdf")[0])]
     index = [("G1 Cover + contents", 1), ("G2 Placement overview", 2), ("G3 Thread + trim summary", 3), ("G4 Stitch summary + open questions", 4), ("G5 Production stitch files + hoop splits", 5), ("F1 Factory requests", 6)]
     pg = 7
     for name, path in el:

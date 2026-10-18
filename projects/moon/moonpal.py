@@ -6,10 +6,10 @@ import motifs2, motifs, tech
 
 FABRIC = "#25304D"          # washed navy 12 oz duck (mockup sample) — PROPOSED, lab dip to confirm
 PAL = {   # key: (hex, name, use) — Rev B: from the close-ups (inputs/closeups), k-means of moon / cloud / pole pixels. PROPOSED
-    "m1": ("#F7E6CC", "Moon highlight",    "lightest moon face"),
-    "m2": ("#F1D7B0", "Moon cream",        "moon body"),
-    "m3": ("#DFC195", "Moon pale gold",    "warm tone, rim"),
-    "m4": ("#C2A985", "Moon crater light", "crater + mare light tone"),
+    "m1": ("#F7E6CA", "Moon highlight",    "lightest moon face"),
+    "m2": ("#F2D2A0", "Moon cream",        "moon body"),
+    "m3": ("#E5BE85", "Moon pale gold",    "warm tone, rim"),
+    "m4": ("#CFA872", "Moon crater light", "crater + mare light tone"),
     "m5": ("#9A8E74", "Moon crater dark",  "crater + mare dark tone (grey-green taupe), rays"),
     "c1": ("#DCCFE2", "Cloud white-pink",  "highlight tops"),
     "c2": ("#A9A1C8", "Cloud lavender",    "light band"),
