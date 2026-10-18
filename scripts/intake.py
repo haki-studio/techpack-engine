@@ -70,7 +70,10 @@ def apply(plan_path):
         os.makedirs(I, exist_ok=True)
         for k, im in enumerate(pr.get("images", [])):
             src = os.path.join(ROOT, im["src"]) if not os.path.isabs(im["src"]) else im["src"]
-            out = os.path.join(I, im.get("as") or f"mockup_{k+1}.png")
+            name = im.get("as") or f"mockup_{k+1}.png"
+            if os.path.basename(name).startswith("closeup") and os.sep not in name:   # detail views go where builders look (A12)
+                name = os.path.join("closeups", name)
+            out = os.path.join(I, name); os.makedirs(os.path.dirname(out), exist_ok=True)
             if im.get("crop"): crop(src, *im["crop"], out)
             else: shutil.copy(src, out)
             used.add(src)

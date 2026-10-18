@@ -32,6 +32,8 @@ images and watch.
    - **IP flags**: anything that looks like an existing character, logo or franchise creature (e.g. a known
      game/anime creature) → flag it; that element gets an original replacement, never a lookalike. Public-domain
      art (e.g. Hokusai's Great Wave) is fine to reference.
+   - **detail views inside a mockup image** (a close-up panel beside the jacket): crop each one with `"as": "closeup_<what>.png"` —
+     intake puts it in `inputs/closeups/`, where builders trace from it (LESSONS A12). Say in the brief that it exists.
    - low-resolution source (the usual case: AI renders ~1–1.5k px for the whole garment) → there are no originals.
      Write `projects/<slug>/inputs/closeup_request.md` (one prompt per decorated panel, template in
      `techpack-pipeline` §0b) and, in step 4, ask Devin to run those prompts in the same image tool and drop the results
