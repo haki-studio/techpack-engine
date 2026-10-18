@@ -78,8 +78,8 @@ def overview():
     for m in D["info"]["marks"]:
         o.append(f'<circle cx="{f(X(m["x"]))}" cy="{f(Y(m["y"]))}" r="0.8" fill="#00A3FF"/>')
     o.append(t(ax, ay + h + 3.5, "FRONT, size M. Red = art boxes; blue dots = CF match marks; dashed blue = hoop split lines (G6).", 1.75, 700))
-    sv = sleeves_png(); tag2, h2 = img_tag(sv, ax, ay + h + 8, 118); o.append(tag2)
-    o.append(t(ax, ay + h + 8 + h2 + 3.2, "SLEEVES flat, size M (left sleeve S02 left, right sleeve S01 right): art on the front-facing half.", 1.75, 700))
+    SLV_Y = 128; sv = sleeves_png(); tag2, h2 = img_tag(sv, 140, SLV_Y, 104); o.append(tag2)
+    o.append(t(140, SLV_Y + h2 + 3.2, "SLEEVES flat, size M (left sleeve S02 left, right sleeve S01 right): art on the front-facing half.", 1.75, 700))
     tx = 140; ty = 30
     o.append(t(tx, ty, "ART BOX PER SIZE (mm) — fronts x/y from CF/neck, sleeves x/y from centre line/underarm", 2.0, 700))
     hd = ["Size", "Art", "FR x", "FR y", "FL x", "FL y", "SR x", "SR y", "SL x", "SL y"]
@@ -93,7 +93,7 @@ def overview():
             b = pl[p][1].bounds
             o.append(t(cx[2 + 2*j], y, f"{b[0]:+.0f}…{b[2]:+.0f}", 1.45)); o.append(t(cx[3 + 2*j], y, f"{b[1]:.0f}…{b[3]:.0f}", 1.45))
     ky = ty + 9.5 + 7*4.0 + 5
-    o.append(t(tx, ky, "KEEP-OUTS (all sizes, measured on the pattern pieces — T13)", 2.1, 700))
+    o.append(t(tx, ky, "KEEP-OUTS (all sizes, measured on the pattern pieces — T7)", 2.1, 700))
     ko = [f"CF zip: {F.KEEP_CF:.0f} each side of CF (teeth + tape + topstitch)", f"Armhole, shoulder, side seams: {F.KEEP_SEAM:.0f} · hem-band seam: {F.KEEP_HEM:.0f}",
           f"Hood neck seam: {F.KEEP_NECK:.0f} [proposed] · welt pocket box: {F.KEEP_WELT:.0f}",
           f"Sleeves: cap {F.SKEEP['cap']:.0f}, underarm seams {F.SKEEP['underarm front']:.0f}, cuff seam {F.SKEEP['cuff']:.0f}; art on the front half + {F.SLEEVE_BACK_REACH:.0f} past the centre line",
@@ -165,7 +165,7 @@ def summary():
     qs = [f"1. IP: the comet-over-city-with-figure scene evokes the film 'Your Name' (CoMix Wave). We drew our own skyline, comet bundle and figure pose — founder to decide.",
           f"2. Frame: every piece needs 2 hoopings on {FR_S} (split S1/S2 with registration crosses, G5/G6). A larger frame removes the joins — what frames does the factory have?",
           "3. Back + hood: the mockup shows only the front; plain back and hood assumed. Sleeves: art on the front-facing half only, back half plain. Confirm.",
-          "4. Hood pattern: the hooded block is being added to the engine; the body pieces (fronts, sleeves) and their keep-outs are the Drum Island block (neck keep-out 10 for the hood seam).",
+          "4. Hood block not chosen yet (founder): files are on the zip-hoodie block (main). Fronts identical either way; sleeves +2.5 cm (5 cm cuff band) — 02 re-clips if that changes.",
           "5. Thread board: all targets are read from a low-res AI mockup — approve physical colours (G3), esp. the comet blues/violets and window gold on navy.",
           "6. Grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per piece; fronts scale about the CF neck so the comet + rail meet at the zip.",
           "7. Welts: at the mockup position (centre 21.8 cm from CF, 35.2 cm below the neck, 54°), Drum Island welt 1.4 × 13. Confirm.",

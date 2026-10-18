@@ -101,6 +101,11 @@ def p_cover(index):
                      ("Embroidery", f"2 elements, 4 pieces, {len({c for p in CUR for c in CUR[p]['colours']})} threads (G pages)", False),
                      ("Pattern", "XS–3XL, DXF (AAMA) + 1:1 plot", False)]:
         o.append(t(ix, y, a, 1.9, 400, MUTED)); o.append(t(ix + 23, y, b_, 1.8, 600, PROP if p else INK)); y += 3.7
+    y += 3
+    for l in ["PATTERN STAGE WAITING: the founder has not yet chosen the hood block (zip-hoodie block on main",
+              "vs the hooded-variant PR). T3-T7 + the DXF are drafted on the zip-hoodie block [proposed — confirm].",
+              "Fronts are identical on both; sleeve length / cuff band depend on the choice (02 re-clip, see T8)."]:
+        o.append(t(ix, y, l, 1.55, 700, PROP)); y += 3.1
     o.append(t(SW - 14, SH - 8, FOOT, 1.8, 400, MUTED, "end"))
     return o
 
@@ -222,7 +227,7 @@ def p_hood():
                 p, _ = PT.at(e.pts, e.length / 2)
                 o.append(t(X(p[0]) + (3 if e.name != "face edge" else -3), Y(p[1]) + (4 if e.name == "neck" else 0), f"{e.name} {e.length/10:.1f}", 1.5, 600, "#0A84D6", "start" if e.name != "face edge" else "end"))
         else:
-            o.append(t(ox + HD.CW * s + 8, oy + 20, f"{HD.CW/10:.0f} × {Hd['seam']/10:.1f} cm", 1.6, 600, "#0A84D6"))
+            o.append(t(ox, oy + (b[3] - b[1]) * s + 5, f"{HD.CW/10:.0f} × {Hd['seam']/10:.1f} cm", 1.6, 600, "#0A84D6"))
     hd = ["Size", "Q hood ht", "R hood wd", "Side neck", "Centre seam", "Face edge", "Hem band cut", "Hem elastic", "Cuff band cut", "Cuff elastic", "Zip"]
     cx = [150, 160, 172, 184, 196, 209, 221, 236, 250, 264, 278]
     o.append(t(150, 33, "PER SIZE (cm) — cut lengths are sew-line lengths; elastic = relaxed cut length", 1.8, 700))
@@ -258,6 +263,7 @@ def p_bom():
     import pack as _pk
     cols = _pk.USED
     hoops = sum(len(CUR[p]["splits"]["sections"]) or 1 for p in CUR)
+    BACKING = sum((s_["size_mm"][0] + 60) * (s_["size_mm"][1] + 60) for p in CUR for s_ in CUR[p]["splits"]["sections"].values()) / 1e6   # m² = m at 100 cm width
     rows = [("Shell", "12 oz cotton duck canvas, washed navy (pre-washed before embroidery)", f"{m(shell):.2f} m", True),
             ("Hood lining", "Sherpa 280 g/m² polyester, cream", f"{m(sher):.2f} m", True),
             ("Body lining", "Cotton flannel, plaid (navy / green, as mockup)", f"{m(flan):.2f} m", True), ("Sleeve lining", "Polyester taffeta 210T, navy", f"{m(taf):.2f} m", True),
@@ -266,7 +272,7 @@ def p_bom():
             ("Elastic — hem", f"{HD.EL_HEM_W/10:.0f} cm woven elastic, {mM['el_hem']/10:.1f} cm (M)", "1", True),
             ("Elastic — cuff", f"{HD.EL_CUFF_W/10:.1f} cm woven elastic, {(mM['el_cuff']+15)/10:.1f} cm (M)", "2", True),
             ("Embroidery thread", f"40wt polyester, {len(cols)} colours (G3) — FR + FL + SR + SL", f"{sum(CUR[p]['stitches'] for p in CUR):,} stitches (M)", True),
-            ("Embroidery backing", f"2.5 oz cutaway, black — {hoops} hoopings per jacket (G6)", "~ 1.1 m", True),
+            ("Embroidery backing", f"2.5 oz cutaway, black, 100 cm wide — {hoops} hoopings per jacket (G6), each split file + 30 per side", f"{BACKING:.2f} m", True),
             ("Thread — seams", "Coats Epic 120 (Tex 27), navy", "~ 450 m", False), ("Thread — topstitch", "Coats Gral 40 (Tex 60), tonal navy", "~ 140 m", False),
             ("Labels", "Main + size on back neck facing; care label left side seam lining", "1 set", False)]
     hd = ["Item", "Description", "Qty / consumption"]; cx = [12, 52, 200]
@@ -327,7 +333,9 @@ def p_fit():
           "4. Zip: 2-way separating YKK #5 metal, brass (mockup shows two pullers).",
           "5. Shell: 12 oz washed navy duck, pre-washed before embroidery; lining: plaid flannel (body), taffeta (sleeves), cream sherpa (hood).",
           "6. Welts at the mockup position (21.8 cm from CF, 35.2 cm below the neck, 54°) — the zip-hoodie block default welt is moved for this design.",
-          "7. Sample size M first (blank fit of the hoodie block is still pending); then the size set."]
+          "7. Sample size M first (blank fit of the hoodie block is still pending); then the size set.",
+          "8. HOOD BLOCK (founder): zip-hoodie block (main, used here) vs hooded-variant PR. Fronts identical; zip-hoodie sleeves are 2.5 cm longer (5 cm",
+          "    cuff band vs 7.5 cm rib). If the other block is chosen: re-run sleeve art + 02 files + these pages (about 1 h); 01 files stay."]
     for q in qs: o.append(t(12, y, q, 1.7, 400, PROP)); y += 4.2
     return o
 

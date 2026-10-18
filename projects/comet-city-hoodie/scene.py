@@ -120,8 +120,29 @@ for (sx, sy) in ((409, 580), (397, 589), (411, 591), (396, 604)):
     add([CM.R("cc_red", Point(P(sx, sy)).buffer(0.75, quad_segs=8), "satin", "auto", "DOT", kob=0.3)], "meteor", Z["meteor"], unit="redstar")
 
 # ================================================================ clouds + horizon haze (mockup tone areas, 3 tones)
+STARS_PX = [
+ # FR (wearer's right front)
+ (196.7, 309.5, "cross", "cc_white"), (227.5, 313.7, "dot", "cc_white"), (208.7, 327.5, "big", "cc_lilac"), (187, 329.5, "dot", "cc_lilac"),
+ (272.5, 329.5, "sparkle", "cc_azure"), (297.5, 323.7, "dot", "cc_white"), (243.7, 357, "cross", "cc_white"), (192, 363.7, "sparkle", "cc_lilac"),
+ (176.5, 367.5, "dot", "cc_white"), (181.5, 368.0, "dot", "cc_white"), (246, 380, "sparkle", "cc_azure"), (270, 375, "dot", "cc_white"),
+ (297.5, 374.5, "sparkle", "cc_azure"), (243, 420.5, "cross", "cc_white"), (291, 439.5, "dot", "cc_white"), (326, 479, "sparkle", "cc_white"),
+ (226, 491, "cross", "cc_white"), (186, 497, "dot", "cc_white"), (206, 504.5, "sparkle", "cc_white"), (257.5, 540.5, "dot", "cc_white"),
+ (287, 549.5, "cross", "cc_white"), (314.5, 549, "dot", "cc_white"), (206, 574, "dot", "cc_white"), (180, 580, "sparkle", "cc_white"),
+ (132.5, 582.5, "dot", "cc_white"), (340, 590.5, "cross", "cc_white"), (308, 580, "dot", "cc_white"), (327, 605, "dot", "cc_white"),
+ # FL (wearer's left front)
+ (480.5, 309.5, "dot", "cc_white"), (469, 333, "big", "cc_azure"), (539, 323, "dot", "cc_white"), (525, 330, "dot", "cc_white"),
+ (478.5, 347.5, "dot", "cc_white"), (434, 379, "dot", "cc_white"), (408.5, 407.5, "cross", "cc_white"), (550, 398.7, "sparkle", "cc_white"),
+ (565, 405, "sparkle", "cc_lilac"), (533.5, 412, "dot", "cc_white"), (482, 461, "cross", "cc_white"), (565, 459, "big", "cc_white"),
+ (573.5, 419, "dot", "cc_white"), (483.5, 422.5, "dot", "cc_white"), (465, 482, "dot", "cc_white"), (530, 484, "sparkle", "cc_white"),
+ (512, 496, "dot", "cc_white"), (413, 539, "dot", "cc_white"), (393, 547.5, "dot", "cc_white"), (391, 556, "dot", "cc_white"),
+ (428, 552, "cross", "cc_azure"), (496, 565, "dot", "cc_white"), (530, 574, "cross", "cc_white"), (542, 588, "dot", "cc_white"),
+ (572, 584, "dot", "cc_white"), (602, 586, "cross", "cc_white"), (424, 597.5, "dot", "cc_white"), (450, 607, "dot", "cc_white"),
+ (453, 541, "dot", "cc_white"), (396, 570, "dot", "cc_white"), (391, 585, "dot", "cc_white"),
+]
+_STAR_R = {"big": 9.0, "sparkle": 6.5, "cross": 4.0, "dot": 2.6}
 STREAK_U = unary_union([COMET_U.buffer(2.0), COMET_U.buffer(9.0).intersection(box(-400, -100, 400, 190))] + [r["geom"].buffer(1.2) for r in items if r["grp"] in ("MET", "RSTAR", "DOT", "STAR-c")] +
-                       [Point(P(_x, _y)).buffer(8.0) for _x, _y in ((403.5, 597.5),)])
+                       [Point(P(_x, _y)).buffer(8.0) for _x, _y in ((403.5, 597.5),)] +
+                       [Point(P(_x, _y)).buffer(_STAR_R[_k]) for _x, _y, _k, _c in STARS_PX])     # stars + their glow are not clouds
 streakm = rast([STREAK_U])
 Ls = ndi.gaussian_filter(LUM, 0.35*PPM)
 # no seam topstitching / welt pockets / zip tape from the mockup: cloud tones only 20 inside the side + armhole seams,
@@ -165,25 +186,6 @@ for g in mask_polys(pink, min_area=1.6, simplify=0.2):
     add([CM.R("cc_rose", g.buffer(0.3), "tatami", 0.0, "GLOW", kob=0.0)], "glow", Z["glow"])
 
 # ================================================================ stars (every mockup star, from the 4x zooms)
-STARS_PX = [
- # FR (wearer's right front)
- (196.7, 309.5, "cross", "cc_white"), (227.5, 313.7, "dot", "cc_white"), (208.7, 327.5, "big", "cc_lilac"), (187, 329.5, "dot", "cc_lilac"),
- (272.5, 329.5, "sparkle", "cc_azure"), (297.5, 323.7, "dot", "cc_white"), (243.7, 357, "cross", "cc_white"), (192, 363.7, "sparkle", "cc_lilac"),
- (176.5, 367.5, "dot", "cc_white"), (181.5, 368.0, "dot", "cc_white"), (246, 380, "sparkle", "cc_azure"), (270, 375, "dot", "cc_white"),
- (297.5, 374.5, "sparkle", "cc_azure"), (243, 420.5, "cross", "cc_white"), (291, 439.5, "dot", "cc_white"), (326, 479, "sparkle", "cc_white"),
- (226, 491, "cross", "cc_white"), (186, 497, "dot", "cc_white"), (206, 504.5, "sparkle", "cc_white"), (257.5, 540.5, "dot", "cc_white"),
- (287, 549.5, "cross", "cc_white"), (314.5, 549, "dot", "cc_white"), (206, 574, "dot", "cc_white"), (180, 580, "sparkle", "cc_white"),
- (132.5, 582.5, "dot", "cc_white"), (340, 590.5, "cross", "cc_white"), (308, 580, "dot", "cc_white"), (327, 605, "dot", "cc_white"),
- # FL (wearer's left front)
- (480.5, 309.5, "dot", "cc_white"), (469, 333, "big", "cc_azure"), (539, 323, "dot", "cc_white"), (525, 330, "dot", "cc_white"),
- (478.5, 347.5, "dot", "cc_white"), (434, 379, "dot", "cc_white"), (408.5, 407.5, "cross", "cc_white"), (550, 398.7, "sparkle", "cc_white"),
- (565, 405, "sparkle", "cc_lilac"), (533.5, 412, "dot", "cc_white"), (482, 461, "cross", "cc_white"), (565, 459, "big", "cc_white"),
- (573.5, 419, "dot", "cc_white"), (483.5, 422.5, "dot", "cc_white"), (465, 482, "dot", "cc_white"), (530, 484, "sparkle", "cc_white"),
- (512, 496, "dot", "cc_white"), (413, 539, "dot", "cc_white"), (393, 547.5, "dot", "cc_white"), (391, 556, "dot", "cc_white"),
- (428, 552, "cross", "cc_azure"), (496, 565, "dot", "cc_white"), (530, 574, "cross", "cc_white"), (542, 588, "dot", "cc_white"),
- (572, 584, "dot", "cc_white"), (602, 586, "cross", "cc_white"), (424, 597.5, "dot", "cc_white"), (450, 607, "dot", "cc_white"),
- (453, 541, "dot", "cc_white"), (396, 570, "dot", "cc_white"), (391, 585, "dot", "cc_white"),
-]
 LIM_ALL = {}
 for _s in "RL":
     _g = CLIP_M[_s]

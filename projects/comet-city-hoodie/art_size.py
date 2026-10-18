@@ -114,14 +114,14 @@ def build(size):
     # CF match marks: where the top rail, the kerb line and the comet spine meet the zip keep-out line on both sides
     import mockmap as MM
     marks = []
-    for nm, dy in (("top rail", 0.0), ("kerb", 47.5)):
+    for nm, dpx in (("top rail", 0.0), ("kerb", 47.5)):          # mockup px below the top rail
         for xx in (-F.KEEP_CF, F.KEEP_CF):
-            px = MM.Pinv(xx, 0)[0]; y = MM.P(px, 720.0 + (px - 130.0)*7/470 + dy)[1]
-            marks.append(dict(name=nm, x=xx*s, y=y*s + dy))
+            px = MM.Pinv(xx / s, 0)[0]; y = MM.P(px, 720.0 + (px - 130.0)*7/470 + dpx)[1]
+            marks.append(dict(name=nm, x=xx, y=y*s + dy))            # city band: graded + slid to this size's hem
     sp = np.array(META.get("spine", []))
     if len(sp):
         for xx in (-F.KEEP_CF, F.KEEP_CF):
-            i = int(np.argmin(np.abs(sp[:, 0] - xx))); marks.append(dict(name="comet core", x=xx*s, y=float(sp[i, 1])*s))
+            i = int(np.argmin(np.abs(sp[:, 0] - xx / s))); marks.append(dict(name="comet core", x=xx, y=float(sp[i, 1])*s))
     res["info"]["marks"] = marks
     pickle.dump(res, open(f"art_{size}.pkl.tmp", "wb")); os.replace(f"art_{size}.pkl.tmp", f"art_{size}.pkl")   # atomic: builds may be reading
     print(size, grade, s, {P: (res["info"][P]["objects"], round(res["info"][P]["area"]), [round(v) for v in res["info"][P]["bbox"]], res["info"][P]["n_dropped"])

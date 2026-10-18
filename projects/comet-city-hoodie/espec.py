@@ -21,7 +21,9 @@ def _SRR(vis, bbox, ppm, **kw):
 
 def width_check(vis):
     groups = {}
-    for r in vis: groups.setdefault(tech.rule_for(r["grp"]), []).append(r)
+    for r in vis:
+        if r["st"] == "run": continue        # single run-stitch lines (spokes, folds): one needle line, the polygon width is drawing only
+        groups.setdefault(tech.rule_for(r["grp"]) + (" (bean)" if r["st"] == "bean" and tech.rule_for(r["grp"]) == "BIKE" else ""), []).append(r)
     out = {}
     for code, rs in groups.items():
         line = rs[0]["st"] in ("bean", "run")
@@ -81,7 +83,7 @@ def build(cfg, F, vis_all):
     if cfg.get("view"): fv, bbox, ppm, vcap = cfg["view"](V)
     else:
         bbox = (-325, -105, 325, 560); ppm = 2.6
-        fv = front_view_png(F, vis_all, bbox, ppm, pieces); vcap = "Front view, size M (shown 0.23:1). Gold bar = zip at CF, dark = welt boxes; the hood is sewn to the neck line (top)."
+        fv = front_view_png(F, {p: vis_all[p] for p in pieces}, bbox, ppm, pieces); vcap = "Front view, size M (shown 0.23:1). Gold bar = zip at CF, dark = welt boxes; the hood is sewn to the neck line (top)."
     w_mm = min(152, 150 * (bbox[2] - bbox[0]) / (bbox[3] - bbox[1])); s = w_mm / (bbox[2] - bbox[0]); ax, ay = 12, 29
     tag, h = img_tag(fv, ax, ay, w_mm); o.append(tag)
     X = lambda x: ax + (x - bbox[0])*s; Y = lambda y: ay + (y - bbox[1])*s
@@ -151,11 +153,12 @@ def build(cfg, F, vis_all):
             o.append(swatch(xs, y, c, 3.2, 2.2)); xs += 4.2
         for j, v in enumerate((st, ang, dens, ln, ul, pull, note)):
             o.append(t(cx[3 + j], y, v if (j != 6 or len(v) <= 26) else v[:26].rsplit(' ', 1)[0] + '…', 1.6))
-        q = WC.get(k, 0.0); qc = GREEN if q < 1.0 else (ORANGE if q < 3.5 else RED)
+        q = max(WC.get(k, 0.0), WC.get(k + " (bean)", 0.0)); qc = GREEN if q < 1.0 else (ORANGE if q < 3.5 else RED)
         o.append(t(cx[10], y, f"{q:.1f}%", 1.6, 600, qc))
         o.append(t(cx[11], y, f"{s_['n']}", 1.6, 400, MUTED))
     yb = y0 + 3.6 + len(order)*rh + 2
     o.append(t(12, yb + 4.5, "Globals: 40wt polyester, 75/11 sharp needle, 2.5 oz cutaway backing, no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; trim jumps > 2.0.", 1.75, 400, MUTED))
+    o.append(t(12, yb + 10.7, "Width = share of the code's area under its minimum (satin/fill 0.8, bean 0.6); single run-stitch lines are not width-checked. Amber/red on LF/CL = tapered leaflet tips + cloud edges.", 1.75, 400, MUTED))
     o.append(t(12, yb + 7.6, "Stitch counts are not estimated per region: per-file and per-stop counts (p1, p4, G4, G5) are read back from the DST files.", 1.75, 400, MUTED))
     pages.append(o)
 
