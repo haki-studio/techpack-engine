@@ -16,7 +16,7 @@ def polys(g):
     return [p for p in getattr(g, "geoms", []) if p.geom_type == "Polygon"]
 
 # ---------------------------------------------------------------- sakura
-def floret(cx, cy, d, rot, col, centre="cf_rose", unit=None):
+def floret(cx, cy, d, rot, col, centre="cf_cream", unit=None):
     """5-petal cherry floret, each petal notched at the tip; one radial satin + a centre dot (overlay on the blossom ground)"""
     r = d / 2; pets = []
     for k in range(5):
@@ -39,8 +39,14 @@ def petal(cx, cy, L, ang, col, unit=None):
         x = L / 2 * math.cos(t); y = W / 2 * math.sin(t) * (0.55 + 0.45 * (1 + math.cos(t)) / 2)
         pts.append((x, y))
     p = Polygon(pts).difference(Point(L / 2 + 0.15, 0).buffer(L * 0.14))
+    out = []
+    if L >= 4.0:      # deeper-rose base at the stalk end (close-up strip, panel 2)
+        base = p.intersection(box(-L / 2 - 1, -W, -L / 2 + 1.5, W))
+        if base.area > 0.8:
+            out.append(R("cf_rose", affinity.translate(affinity.rotate(base, ang, origin=(0, 0)), cx, cy).buffer(0), "satin", ang + 90, "PT", unit=unit))
+            p = p.difference(base.buffer(0.05))
     p = affinity.translate(affinity.rotate(p, ang, origin=(0, 0)), cx, cy)
-    return [R(col, p.buffer(0), "satin", ang + 90, "PT", unit=unit)]
+    return [R(col, p.buffer(0), "satin", ang + 90, "PT", unit=unit)] + out
 
 # ---------------------------------------------------------------- original castle (IP: not the mockup's castle)
 def _roof(cx, top, bot, w_top, w_eave, lift=3.0, n=24):

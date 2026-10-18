@@ -148,7 +148,11 @@ def p_pattern_emb():
     rules = ["Every size has its own stitch files (art graded A/B/C, then re-clipped 0.4 inside every keep-out), so every size passes by construction — measured here, not assumed.",
              "Armholes + sleeve caps are wrap seams (3 mm); collar = collar lying flat (front: point collar shape, back: 70 below the neck).",
              f"Result: {'ALL SIZES PASS' if allok else 'CHECK RED CELLS'}."]
-    for i, l in enumerate(rules): o.append(t(12, y + i*3.3, l, 1.5, 700 if i == 2 else 400, (GREEN if allok else RED) if i == 2 else MUTED))
+    import check_dst as CD
+    nbad = sum(sum(CD.offenders(sz, P)[0].values()) for sz in PT.SIZES for P in cfcore.PIECES)
+    rules.append(f"Stitch-level check (check_dst.py): every sewn stitch of all 35 full DST files placed on its pattern piece — {nbad} stitches inside a keep-out" + (" — PASS." if nbad == 0 else " — FAIL."))
+    allok &= nbad == 0
+    for i, l in enumerate(rules): o.append(t(12, y + i*3.3, l, 1.5, 700 if i >= 2 else 400, (GREEN if allok else RED) if i >= 2 else MUTED))
     return o
 
 # ---------------------------------------------------------------- inside view

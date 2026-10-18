@@ -22,7 +22,7 @@ def flat(up=1):
         im = Image.open("inputs/flat.png").convert("RGB")
         im = Image.fromarray(no_background(np.array(im)))
         if up > 1: im = im.resize((im.width * up, im.height * up), Image.LANCZOS)
-        _IM[up] = np.array(im).astype(np.float32)
+        _IM[up] = with_closeups(np.array(im).astype(np.float32), up)
     return _IM[up]
 
 BG_AS = (45, 55, 68)          # background (studio white around the garment) is read as bare navy shell, never as cloud
@@ -36,6 +36,29 @@ def no_background(a):
     bg = np.isin(lab, list(edge))
     bg = ndi.binary_dilation(bg, iterations=2) & (lum > 150)
     out = a.copy(); out[bg] = BG_AS; return out
+
+# Detail close-ups (inputs/closeup_mockup_strip.png = the 4 panels under the mockup; LESSONS A12). The panels are AI
+# re-renders, not exact crops (template matching scores ~0.45 at wrong places), so they are registered by hand on matched
+# features; only panels whose composition matches a mockup area are traced (the rest are motif references, see specs):
+#   falls panel (strip x 786-1146): fall top (240, 150) -> mockup back (991, 370) px, fall foot (245, 320) -> (1000, 505),
+#   summit (205, 45) -> (968, 277): similarity scale 0.82 (the panel has ~1.2x the mockup's pixel density, much sharper).
+CLOSEUPS = {"falls": dict(box=(786, 0, 1146, 334), s=0.82, a_panel=(240.0, 150.0), a_flat=(991.0, 370.0), ell=(972.0, 400.0, 88.0, 128.0), feather=0.35)}
+def with_closeups(a, up):
+    from scipy import ndimage as ndi
+    S = Image.open("inputs/closeup_mockup_strip.png").convert("RGB")
+    for k, c in CLOSEUPS.items():
+        pan = S.crop(c["box"]); s = c["s"] * up
+        W, H = int(round(pan.width * s)), int(round(pan.height * s))
+        p = np.asarray(pan.resize((W, H), Image.LANCZOS)).astype(np.float32)
+        x0 = int(round((c["a_flat"][0] - c["s"] * c["a_panel"][0]) * up)); y0 = int(round((c["a_flat"][1] - c["s"] * c["a_panel"][1]) * up))
+        # only the matched motif (the mountain + fall): elliptical mask in mockup px, soft edge (last 35 % of the radius)
+        ex, ey, rx, ry = c["ell"]; yy, xx = np.mgrid[0:H, 0:W]
+        d = np.sqrt((((x0 + xx) / up - ex) / rx) ** 2 + (((y0 + yy) / up - ey) / ry) ** 2)
+        m = np.clip((1 - d) / c["feather"], 0, 1).astype(np.float32)[..., None]
+        ys, xs = slice(max(0, y0), min(a.shape[0], y0 + H)), slice(max(0, x0), min(a.shape[1], x0 + W))
+        py, px = slice(ys.start - y0, ys.stop - y0), slice(xs.start - x0, xs.stop - x0)
+        a[ys, xs] = a[ys, xs] * (1 - m[py, px]) + p[py, px] * m[py, px]
+    return a
 
 # ---------------------------------------------------------------- body affine maps (mm -> px in flat.png)
 BODY = {"F": dict(ox=413.0, oy=150.0, sx=1.28, sy=1.14), "B": dict(ox=357.0 + 768, oy=75.0, sx=1.26, sy=1.12)}

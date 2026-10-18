@@ -4,8 +4,8 @@ import cfcore
 import sys, pickle
 import espec
 
-REF = ("Art redrawn from the low-res mockup (~1.2 mm per px, flat.png) + its 4-panel detail strip: tones + layout traced from a ×4 Lanczos upscale, "
-       "florets / petals / castle drawn as motifs. No original artwork or per-panel close-ups.")
+REF = ("Art traced from the low-res mockup (~1.2 mm/px) + the founder's 4 detail close-ups (closeup_mockup_strip.png, LESSONS A12): waterfall-mountain "
+       "close-up registered onto the back (scale 0.82) and traced; blossom, cloud/petal + castle close-ups (re-rendered, not registrable) = motif references.")
 PROD_COMMON = ["Embroider the cut panel flat, BEFORE any seam.", "Navy 12 oz duck: 75/11 sharp, 2.5 oz cutaway,",
                "  no topping. Pre-wash the shell first.", "≤ 12 threads per file (factory limit), 40wt.",
                "Frame (factory.json): split files + registration", "  crosses sewn in stop 1's thread (G5 / G6).",
@@ -26,6 +26,8 @@ CFG = {
                      "Bare navy shell where the mockup shows fabric", "  (upper back between the clouds).",
                      "Blossom masses: tone ground + ~1 floret / 22 mm²", "  (5-petal satin, Ø 3.6–5.6) on top, as the close-up.",
                      "Falling petals redrawn as notched petal satins.", "Mockup CB fold line is not art: filled across.",
+                     "Left waterfall mountain traced from the founder's", "  close-up (sharper rock strata + fall streaks).",
+                     "Floret centres cream, petal bases deep rose (close-ups).",
                      "Thread merges for 12 colours: moss light → leaf", "  green, sky light → sky, vermilion → blossom deep,",
                      "  bark tan → bark dark, gold → cloud cream (p4)."],
             production=PROD_COMMON, reference=REF),
@@ -43,7 +45,7 @@ CFG = {
             mock_crop=(175, 150, 655, 600),
             changes=["Layout + tones traced from the mockup (fronts).", "IP (brief): castle redrawn as an original design —",
                      "  3 tiers, navy tiled roofs with sky tile lines + gold", "  eaves, white walls, windows, chidori gables, stone",
-                     "  base (no red balcony, no gold horns).", "  Tree: left half of the ring removed (filled with the",
+                     "  base (no red balcony, no gold horns); roof tile rows +", "  gold eave studs follow the castle close-up.", "  Tree: left half of the ring removed (filled with the",
                      "  sky / cloud around it); fall under the castle removed.", "Welts at the mockup position (T3); art clears 6.",
                      "Merges (12 colours): FR moss light → green, bark tan →", "  bark dark, sky light → sky, pink → pale, cream → white;",
                      "  FL pinks → pink, moss light → green, cream → white,", "  sky light → sky (p4)."],

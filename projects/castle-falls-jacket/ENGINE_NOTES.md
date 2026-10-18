@@ -63,3 +63,20 @@ Problems hit while building this product, worked around in project code only. Ea
 - A tone-for-tone trace of a dense AI render is very dense and has many trims (each traced tone island that later fills cannot
   hide is a trim). See G4 for the size-M numbers. Clean-up ideas for after the strike-off: merge tone islands < 6 mm² into their
   neighbour (now 2.5 mm²), drop the 90° lattice underlay under traced fills (density), order traced tones dark → light per area.
+
+## 10. Stitch-level keep-out gate (new check, proposed LESSON)
+- **Problem:** the art-outline clearance check (`emb_place`) passed while the FR stitch files of every size had ~11,000 stitches
+  inside the welt keep-out (an earlier art build of FR filled the welt hole; the files were built from it, the outline check was
+  run on a later, clean rebuild of the art). The documents would have certified files that sew over the pocket opening.
+- **Fix (project):** `check_dst.py` reads every full DST back, places it by its origin on that size's pattern piece and counts
+  stitches inside every keep-out (min - 0.5 mm). Run after every build; the pipeline (`run_all.sh`) stops on a failure.
+- **Proposed engine fix + LESSON (A13/B25):** "Keep-outs are certified on the stitch files, not the art": `qa.dst_keepouts(dst,
+  origin, keepout_lines)` + a test; packs print its result on T13.
+
+## 11. Detail close-ups that are re-renders (LESSONS A12)
+- Template matching of the strip panels against the mockup scored ~0.45 at wrong places: the panels are re-rendered
+  compositions, not crops. Only the waterfall-mountain panel matched a mockup area well enough to register by hand
+  (3 features, similarity scale 0.82) — it is blended into the source (`mockmap.CLOSEUPS`, elliptical feathered mask) and traced.
+  The castle (IP-redrawn), blossom and cloud/petal panels became motif references (floret centres, petal bases, roof tiles).
+- **Proposed:** `engine/closeup.py: register(panel, mockup, points)` + the feathered composite; reviewer overlay of the panel
+  on the trace.

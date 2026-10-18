@@ -159,7 +159,7 @@ def build(P):
                     col = {"cf_rose": "cf_pink", "cf_pink": "cf_pinklt", "cf_pinklt": "cf_pinklt"}.get(tone, "cf_pink")
                     if tone == "cf_pinklt" and rng.random() < 0.35: col = "cf_white"
                     d = rng.uniform(3.6, 5.6)
-                    add(CM.floret(cx, cy, d, rng.uniform(0, 72), col, "cf_rose" if col != "cf_white" else "cf_pink", unit=f"fl{nflor}"), 17)
+                    add(CM.floret(cx, cy, d, rng.uniform(0, 72), col, "cf_cream" if col != "cf_white" else "cf_rose", unit=f"fl{nflor}"), 17)   # cream stamen centres (close-up strip, panel 4)
                     nflor += 1
                 x += step
             y += step * 0.866; row += 1
