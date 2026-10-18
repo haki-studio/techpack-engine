@@ -1,0 +1,14 @@
+{
+ "FR": {
+  "matches": 613,
+  "inliers": 72,
+  "resid_mm_median": 0.84,
+  "resid_mm_p90": 1.71
+ },
+ "FL": {
+  "matches": 505,
+  "inliers": 9,
+  "resid_mm_median": 0.57,
+  "resid_mm_p90": 2.0
+ }
+}

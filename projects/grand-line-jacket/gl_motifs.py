@@ -58,7 +58,7 @@ def pack_lobes(C, R0, rng, rjit=0.22, dy=0.62, dx=1.18, inset=0.5, rmin=2.6):
     for l in lobes: l.append(l[1] + rng.uniform(-0.25, 0.25)*R0)       # z: lower = in front
     return lobes
 
-def lobe_regions(lobes, tone_of, flat_y=None, grp="CL", unit=None, base_bottom=True, gap=0.0, scale=True):
+def lobe_regions(lobes, tone_of, flat_y=None, grp="CL", unit=None, base_bottom=True, gap=0.0, scale=False, fan=False):
     """Mockup-style cumulus: each lobe's visible dome (the lobes in front cut it back by a `gap` of bare fabric, the dark
     line between lobes in the mockup) -> lit rim along the top, body, darker shade band where the front lobe overlaps it,
     and rows of short dark scale dashes following the dome (the mockup's stitch texture), sewn on top (overlay)."""
@@ -87,8 +87,10 @@ def lobe_regions(lobes, tone_of, flat_y=None, grp="CL", unit=None, base_bottom=T
         bc = body.buffer(-0.42).buffer(0.42).intersection(body); sl = body.difference(bc)
         if not sl.is_empty and sl.area > 0.01 and not shade.is_empty:
             body = bc; shade = shade.union(sl).buffer(0)
-        jit = ((cx * 7.31 + cy * 3.17) % 40.0) - 20.0      # per-lobe angle: rows follow the dome, no fan "hedgehog"
-        for col, g, gg, sb, an in ((rcol, rim, grp + "-rim", "rim", jit * 0.5), (bcol, body, grp, "body", jit), (scol, shade, grp + "-shade", "shade", -jit * 0.6)):
+        jit = ((cx * 7.31 + cy * 3.17) % 40.0) - 20.0
+        fa = ("radial", cx, cy + 0.75*r)                       # Rev D: short tatami fanned from the lobe base (follows the dome)
+        for col, g, gg, sb, an in ((rcol, rim, grp + "-rim", "rim", fa if fan else jit * 0.5), (bcol, body, grp, "body", fa if fan else jit),
+                                   (scol, shade, grp + "-shade", "shade", fa if fan else -jit * 0.6)):
             if not g.is_empty: regs.append(R(col, g, "tatami", an, gg, unit=unit, sub=sb))
         if scale and r >= 5.0 and not body.is_empty:          # scale rows: dashed arcs inside the body
             inner = body.buffer(-0.7)

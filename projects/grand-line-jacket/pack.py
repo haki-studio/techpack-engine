@@ -26,6 +26,9 @@ BB = {p: unary_union([r["geom"] for r in VF[p]]).bounds for p in P2}
 OUT_PDF = f"out/HAKI_GRLN_EMBROIDERY-PACK_{REV.replace(' ', '')}.pdf"
 SPEC = glob.glob("out/01_front-scene/*SPEC_*.pdf")
 def hdr(title, sub, page): return SB.header(title, sub, page)
+NTH = len({c for p in P2 for c in CUR[p]["colours"]})                   # threads used, from the files
+_HAIR_A = sum(r["geom"].area for p in P2 for r in VF[p] if r["st"] == "run"); _ALL_A = sum(r["geom"].area for p in P2 for r in VF[p])
+HAIR_PCT = 100 * _HAIR_A / max(_ALL_A, 1)
 TOT = sum(CUR[p]["stitches"] for p in P2); TRIMS = sum(CUR[p]["trims"] for p in P2)
 MH = sum(mh(CUR[p]) for p in P2)                                   # full files (one hooping each)
 MH_SPLIT = sum(mh(s) for p in P2 for s in CUR[p]["splits"]["sections"].values())
@@ -34,7 +37,7 @@ def cover(index):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>']
     o.append(t(14, 24, "HAKI STUDIOS", 3.0, 700, MUTED))
     o.append(t(14, 36, "Grand Line jacket · washed navy — embroidery", 7.0, 700))
-    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island block, size M base · 1 element (01 front scene), 2 pieces · 11 threads · all dimensions mm", 2.6, 400, MUTED))
+    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island block, size M base · 1 element (01 front scene), 2 pieces · {NTH} threads · all dimensions mm", 2.6, 400, MUTED))
     o.append(f'<line x1="14" y1="48" x2="{SW-14}" y2="48" stroke="{INK}" stroke-width="0.4"/>')
     fv = espec.front_view_png(F, VF, (-325, -105, 325, 560), 2.2, list(VF))
     tag, h = img_tag(fv, 14, 54, 110); o.append(tag); o.append(t(14, 54 + h + 3.5, "FRONT (size M stitch render). Back + sleeves: no embroidery.", 2.2, 700))
@@ -46,7 +49,7 @@ def cover(index):
     o.append(t(ix, y, "TOTALS, SIZE M (read from the DST files)", 2.4, 700)); y += 5
     for a, b in [("Stitches per jacket", f"{TOT:,}"), ("Trims per jacket", f"{TRIMS:,}"),
                  ("Hoopings per jacket", f"4 on {FR_S} (2 per piece), or 2 on a ≥ 300 × 520 frame"),
-                 ("Machine time / jacket", f"{MH_SPLIT:.1f} h split files ({MH:.1f} h full files), incl. trims + colour changes"), ("Threads", "11 in use (40wt polyester); factory max 12 per file")]:
+                 ("Machine time / jacket", f"{MH_SPLIT:.1f} h split files ({MH:.1f} h full files), incl. trims + colour changes"), ("Threads", f"{NTH} in use (40wt polyester); factory max 12 per file")]:
         o.append(t(ix, y, a, 2.0, 400, MUTED)); o.append(t(SW - 14, y, b, 1.9, 600, INK, "end")); y += 4
     o.append(t(SW - 14, SH - 8, SB.FOOT, 1.9, 400, MUTED, "end"))
     return o
@@ -95,7 +98,7 @@ def overview():
     return o
 
 def threads():
-    o = hdr("THREAD + TRIM SUMMARY", "One palette for the whole jacket — 11 threads (factory limit 12 per file). Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target.", "G3")
+    o = hdr("THREAD + TRIM SUMMARY", f"One palette for the whole jacket — {NTH} threads (factory limit 12 per file). Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target.", "G3")
     use = {k: {} for k in glcore.GL_KEYS}
     for p in P2:
         for c in CUR[p]["colours"]: use[c][p] = use[c].get(p, 0) + 1
@@ -143,12 +146,12 @@ def summary():
             v = wc[wk]; o.append(t(cx[9], y, ("fills/satins < 1 %" if v < 1 else f"worst {wk} {v:.1f}% (tapered ends)") + f"; hairline runs: {', '.join(HAIR)}", 1.6, 600, GREEN if v < 1 else ORANGE))
     y = 36 + len(P2)*4.6 + 1
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.9, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.9, 700)); o.append(t(cx[8], y, f"{MH:.1f} h", 1.9, 700))
-    o.append(t(12, y + 4.5, "Width check = share of a code's area below its minimum width (fill/satin 0.8, bean 0.6). Hairline runs (glow, scale dashes) are single-run lines by design (fidelity) — check on the sew-out.", 1.7, 400, MUTED))
-    o.append(t(12, y + 7.8, f"Run time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one hooping (split files: {MH_SPLIT:.1f} h per jacket). Rev B is built for fidelity; cost is cleaned up after the sew-out.", 1.7, 400, MUTED))
+    o.append(t(12, y + 4.5, f"Width check: fills + satins are at or above the 0.8 mm minimum except tapered ends. Hairline runs (sky-glow lines, dashed rays, glitter centre line) are INTENTIONALLY 0.45 mm, under the 0.6 mm line minimum: {HAIR_PCT:.1f} % of the stitched area. Check them on the sew-out.", 1.6, 600, ORANGE))
+    o.append(t(12, y + 7.8, f"Run time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one hooping (split files: {MH_SPLIT:.1f} h per jacket). Rev D traces the clouds from the close-ups; cost is reported, cleaned up after the sew-out.", 1.7, 400, MUTED))
     qy = y + 16
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
     qs = [f"1. Frame: each piece is ~420–505 tall → 2 hoopings on {FR_S} (split S1/S2, registration crosses, G5/G6), or 1 hooping on a ≥ 300 × 520 frame (full files). Which?",
-          "2. Thread board: all 12 targets are read from a low-res AI mockup — approve physical colours (G3), especially sea teals vs the navy shell.",
+          f"2. Thread board: all {NTH} targets are read from the mockup + close-ups — approve physical colours (G3), especially sea teals vs the navy shell.",
           "3. Shell dye: embroidery assumes piece-dyed, pre-washed navy duck. If the jacket is garment-dyed/washed after embroidery, wash-test the sew-out first.",
           "4. Grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per piece, scaled about the CF neck so the horizon meets at CF. OK?",
           "5. Zip: art stops 15 each side of CF (assumes ≤ 12 tape + 10 mm topstitch). Confirm tape width.",
@@ -186,12 +189,12 @@ def files_page():
             y += 3.5
     y += 3
     o.append(t(12, y, "WHAT IS DIGITIZED", 2.0, 700)); y += 4.2
-    notes = [("Order", "one stop per thread, as on the spec p4 stop table: sea deep → sea teal → sea light → sea foam → sun pale → star gold → slate → sage →"),
-             ("", "sage light → sand → cream, then the cloud scale dashes (slate, sage, sand) on top of the lighter lobe bodies."),
-             ("Sea", "horizontal tatami dashes in 4 teals, darkest first (stop 1); glitter column in pale / foam; no ground fill (navy shows between)."),
-             ("Clouds", "short-stitch tatami florets following each lobe: rim, body, shade per lobe, sage / slate tops, cream bases; scale dashes on top."),
-             ("Sun + rays", "radial satin sun + 2 rings, 22 tapered satin rays with dot ends; hairline dashed run rays (4.2 / 2.4) over the sea."),
-             ("Glow + stars", "radial hairline run glow in sea teal / light; stars tapered satin arms, 8-point big stars, satin dots."),
+    notes = [("Order", "one stop per thread, as on the spec p4 stop table: sea deep → sea teal → sea light → sea foam → sun pale → star gold → cloud shadow →"),
+             ("", "slate → sage → sage light → sand → cream (dark cloud tones first, cream highlights last, on top)."),
+             ("Sea", "horizontal tatami dashes in 4 teals, irregular length / thickness / spacing; glitter column pale / foam + hairline centre line."),
+             ("Clouds", "traced from the close-ups: 7 tone regions, short tatami per 5 mm cell at the close-up's own stitch angle; whole lobes at keep-outs."),
+             ("Sun + rays", "small radial satin half-sun + 1 thin ring, 20 tapered satin rays with dot ends; hairline dashed run rays over the sea."),
+             ("Glow + stars", "sparse radial hairline runs (sea teal, outer part sea deep); stars pale cream, tapered satin arms, satin dots."),
              ("Ties", f"3-stitch tie-on/off at every trim + colour change; max sewn stitch < 7.5 mm; ≤ {FA.max_threads(PROF)} thread colours per file.")]
     for a, b_ in notes:
         o.append(t(12, y, a, 1.6, 700)); o.append(t(30, y, b_, 1.5)); y += 3.3

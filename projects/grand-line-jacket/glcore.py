@@ -23,7 +23,7 @@ GL_PAL = {   # key: (hex, name, use)
     "gl_gold":   ("#D6B06A", "Star gold",     "ray lines, star arms, sunburst"),
     "gl_pale":   ("#F7EDD2", "Sun pale",      "sun core, glitter path, star sparkle"),
 }
-GL_KEYS = [k for k in GL_PAL if k != "gl_shadow"]      # Rev C: cloud shadow thread removed (review C2) -> 11 threads
+GL_KEYS = list(GL_PAL)      # Rev D: 12 threads (cloud shadow is back as the lobe shadow band traced from the close-ups)
 FABRIC = "#252B3B"          # washed navy duck (mockup sample)
 for k, v in GL_PAL.items():
     motifs2.PAL[k] = v; motifs2.HEX[k] = v[0]; motifs.HEX[k] = v[0]
@@ -53,6 +53,7 @@ GL_RULES = {
  "ISL-rim":  ("Islet lobe rim (light)",   "Satin",              "across rim",             "0.42", "—",   "none",                    "0.15", ""),
  "ISL-shade":("Islet shade band",         "Satin",              "across band",            "0.42", "—",   "none",                    "0.15", ""),
  "ISL-edge": ("Islet edge (dark)",        "Satin",              "across band",            "0.42", "—",   "none",                    "0.15", ""),
+ "GLT-line": ("Glitter centre line",      "Run (double)",       "vertical",               "—",    "2.0", "none",                    "—",    "hairline over the glitter"),
  "SEA-field":("Sea ground (dark teal)",   "Tatami, horizontal", "0°",                     "0.45", "3.5", "edge run + 90° lattice",  "0.20", "between the dashes, upper sea"),
  "CL-scale": ("Cloud scale dashes",       "Run (double)",       "follows the lobe dome",  "—",    "2.0", "none",                    "—",    "2.6 dash / 1.7 gap, on top"),
  "ISL-scale":("Islet scale dashes",       "Run (double)",       "follows the lobe dome",  "—",    "2.0", "none",                    "—",    "on top"),
@@ -88,4 +89,4 @@ PIECE_NAME = {"FR": "wearer's right front", "FL": "wearer's left front"}
 PIECE_CODE = {"FR": "F02", "FL": "F01"}        # pattern piece codes (pattern.py)
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
-REV_EMB = "Rev C"; REV_GAR = "Rev C"; DATE = "16 Oct 2026"
+REV_EMB = "Rev D"; REV_GAR = "Rev D"; DATE = "17 Oct 2026"

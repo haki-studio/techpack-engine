@@ -278,10 +278,12 @@ REVS = [("Garment Rev A", "16 Oct 2026", "First garment pack for the Grand Line 
                                              "fan satin and no outline, banks ending in whole lobes, 11 islets, 43 stars, dashed rays, dash-field sea to the welts (no slab), fine sun "
                                              "with hairline glow. Every per-file / per-stop number read back from the DST. Max 12 colours per file (registration in stop 1's thread). "
                                              "G6 hooping table, F1 factory requests, T11/T12 layout, BOM thread metres."),
-        ("Garment + Embroidery Rev C", "16 Oct 2026", "Second review: broad billowing banks with sage / slate tops and cream bases, short-stitch tatami florets (no fan satin), no dark "
-                                             "shadow thread (11 threads); 26 islets + horizon islets; 22-ray sun with dot ends + 2nd ring; dense teal hairline glow crossing onto FR; "
-                                             "dense dash sea to the welt clearance with faded edges, tapering glitter; hairline curved dashed rays; 43 stars kept (10 nudged inside the "
-                                             "keep-outs). PR #1 router; exposed moves > 2 mm trimmed. Split search 30-88 % (no near-empty hooping).")]
+        ("Garment + Embroidery Rev C", "16 Oct 2026", "Second review: cloud banks still generated (procedural lobes, opened outlines); 26-29 islets from the mockup; 22-ray sun + "
+                                             "2nd ring; dense teal hairline glow; denser sea to the welt clearance; hairline dashed rays; all 43 stars kept. "
+                                             "Exposed travel > 2 mm trimmed. Clouds still failed review (towers, tones, fish-scale texture)."),
+        ("Garment + Embroidery Rev D", "17 Oct 2026", "Clouds TRACED from the close-ups (registered, colour-clustered into 7 tones, stitch angle from the close-up texture, "
+                                             "whole lobes at the keep-outs). Smaller sun (1 ring, 20 rays), faint glow, narrow glitter + centre line, pale stars, "
+                                             "irregular sea; sea connectors > 0.8 mm trimmed. 12 threads. Compare sheets drawn from the shipped DSTs.")]
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]
 
 def p_revisions():

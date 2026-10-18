@@ -68,7 +68,8 @@ def trim_exposed(pat, stops, runs, origin, limit=2.0, forgive=0.8, tol=0.3):
             hits = [h for h in tree.query(ln2.buffer(tol), predicate="intersects") if ix[h] >= si]
             bare = ln2.difference(unary_union([gs[h].buffer(tol, 4) for h in hits])) if hits else ln2
             if not bare.is_empty: e = max(g.length for g in getattr(bare, "geoms", [bare]))
-        bad.append(e > limit)
+        sea = stops[si]["col"] in ("gl_deep", "gl_teal", "gl_tealt", "gl_foam")
+        bad.append(e > (0.8 if sea else limit))            # Rev D item 10: in the sea any visible connector > 0.8 mm is trimmed
     import pyembroidery as pe
     ox, oy = origin; S = pat.stitches; out = []; k = 0; ri = 0; n_fix = 0; U = dst2.U
     def at(k, tr):
