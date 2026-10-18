@@ -66,7 +66,7 @@ def p_pattern_pieces():
 def p_pattern_grade():
     o = GT.header("PATTERN — grade nests + measurement check (XS–3XL)", "Each size drafted from its own fit-chart values (not a fixed grade rule). Measured off the pattern pieces vs the chart; seam walks below.", "T12")
     cols = ["#9C9C9C", "#7E7E7E", "#1A1A1A", "#5A5A5A", "#3A3A3A", "#2A2A2A", "#111111"]
-    nests = [("B01", "Back", 0.068, (14, 36)), ("F01", "Front left", 0.068, (64, 36)), ("S01", "Sleeve", 0.068, (92, 36)), ("C02", "Under collar", 0.068, (150, 36))]
+    nests = [("B01", "Back", 0.068, (14, 36)), ("F01", "Front left", 0.068, (64, 36)), ("S01", "Sleeve", 0.068, (92, 36)), ("C02", "Under collar", 0.068, (150, 46))]
     for code, nm, s, (ox, oy) in nests:
         for i, sz in enumerate(PT.SIZES):
             g, mt = PT.draft(sz); pc = g[code]
