@@ -26,7 +26,7 @@ for sz in glcore.SIZES:
 json.dump(allr, open("dst_all.json", "w"), default=float, indent=1)
 cur = {P: dict(allr["M"][P]["full"], splits=allr["M"][P].get("splits")) for P in glcore.PIECES if P in allr.get("M", {})}
 json.dump(cur, open("dst_current.json", "w"), default=float, indent=1)
-json.dump(pickle.load(open("scene.pkl", "rb"))["meta"], open("scene_meta.json", "w"), default=float, indent=1)
+json.dump({k: v for k, v in pickle.load(open("scene.pkl", "rb"))["meta"].items() if k != "sea_des"}, open("scene_meta.json", "w"), default=float, indent=1)
 for sz, d in allr.items():
     print(sz, {P: (v["full"]["stitches"], v["full"]["trims"], v["full"]["stops"], v["full"]["max_stitch"],
                    [(k, s["stitches"], s["trims"], s["fits"]) for k, s in v.get("splits", {}).get("sections", {}).items()]) for P, v in d.items()})

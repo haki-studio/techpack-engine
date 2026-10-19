@@ -221,32 +221,28 @@ for i, (cx, base, w, h, bx) in enumerate(ISL):
     if O is None or O.is_empty or O.area < 8: continue
     if O.intersects(TRACED_U): continue                                                 # traced from the close-up already
     ISL_REF.append(O.wkt)                                                            # mockup silhouette, for qa.motif_match (A14)
-    moved = (0.0, 0.0); sc = 1.0; a0_ = O.area
-    if not lim.contains(O):              # keep the mockup position: cut at the keep-out (all sizes) and round the cut edge
+    moved = (0.0, 0.0); a0_ = O.area
+    if not lim.contains(O):              # keep the mockup position (never moved): cut at the keep-out, round the cut, keep every part
+        ob0 = O.bounds; rr_ = min(2.5, 0.25*min(ob0[2] - ob0[0], ob0[3] - ob0[1]))
         Oc = O.intersection(lim).buffer(0)
-        if not Oc.is_empty: Oc = max(GM.polys(Oc), key=lambda q: q.area).buffer(-2.5).buffer(2.5).intersection(lim)
-        if not Oc.is_empty and Oc.area >= 0.6*a0_:
-            O = max(GM.polys(Oc), key=lambda q: q.area)
-        else:                            # small islet mostly in a keep-out: nudge it out the shortest way, unchanged
-            best = None
-            for rr in np.arange(1, 40, 1.0):
-                for th in np.linspace(0, 2*math.pi, 36, endpoint=False):
-                    if lim.contains(affinity.translate(O, rr*math.cos(th), rr*math.sin(th))): best = (rr*math.cos(th), rr*math.sin(th)); break
-                if best: break
-            if not best: continue
-            moved = best; O = affinity.translate(O, *best)
+        Oc = unary_union([q for q in GM.polys(Oc.buffer(-rr_).buffer(rr_).intersection(lim)) if q.area >= 4.0]) if not Oc.is_empty else Oc
+        if Oc.is_empty or Oc.area < 0.25*a0_:
+            islet_info.append(dict(side=side, mm=(round((ob0[0]+ob0[2])/2, 1), round(ob0[3], 1)), w=round(ob0[2]-ob0[0], 1), h=round(ob0[3]-ob0[1], 1),
+                                   dropped="in the keep-out (< 25 % sewable)", traced=True))
+            continue
+        O = Oc
     cut_pct = round(100*(1 - O.area/a0_), 1)
     ob = O.bounds; w2, h2 = ob[2] - ob[0], ob[3] - ob[1]; base2 = ob[3]
     rng = random.Random(300 + i)
     Rf = lambda x, y, h2=h2, w2=w2: float(np.clip(0.42*min(h2, w2/2.2), 1.8, 5.5))
     lobes = pack_var(O, Rf, rng, dy=0.5, dx=0.85, inset=0.55, rmin=1.6, lim=O.buffer(0.35))
-    if not lobes: lobes = [[(ob[0]+ob[2])/2, base2 - h2*0.5, max(1.8, h2*0.5), base2]]
+    if not lobes: lobes = [[(ob[0]+ob[2])/2, base2 - h2*0.5, max(1.2, h2*0.5), base2]]
     regs, sil = GM.lobe_regions(lobes, tone_islet, flat_y=base2 + 0.1, grp="ISL", unit=f"islet{i}", fan=True)
     base_fill = O.difference(sil).buffer(0)          # the traced outline is fully stitched: sand between / under the domes
     if not base_fill.is_empty and base_fill.area > 0.8:
         regs = [GM.R("gl_sand", base_fill, "tatami", 0.0, "ISL", unit=f"islet{i}")] + regs
     for r in regs:
-        r["geom"] = r["geom"].intersection(O.buffer(0.2)).buffer(0)
+        r["geom"] = r["geom"].intersection(O.buffer(-0.25)).buffer(0)       # pull comp + thread width give the 0.25 back
         if not r["geom"].is_empty and r["geom"].area > 0.2: add([r], 17, z=17*100000 + len(items), unit=f"islet{i}", kgrp=f"islet{i}")
     islet_info.append(dict(side=side, mm=(round((ob[0]+ob[2])/2, 1), round(base2, 1)), w=round(w2, 1), h=round(h2, 1), moved=[round(float(v), 1) for v in moved],
                            cut_pct=cut_pct, lobes=len(lobes), traced=True))
@@ -328,6 +324,22 @@ for _y in np.arange(HORIZON + 1.0, 600, 2.0):
         _ext.append(box(hb[0], _y, -15.6, _y + 2.0) if _s == "R" else box(15.6, _y, hb[2], _y + 2.0))
 SEA_EXT = unary_union([SEA_SIL] + _ext).buffer(0.5).buffer(-0.5)
 SIL_EDGE = SEA_EXT.boundary.difference(box(-19, -1000, 19, 1000))      # no fade at the zip keep-out
+# Rev E2 (A14/A15): WHERE the sea is stitched is traced from the mockup: sea pixels (teal, or the bright glitter under the sun),
+# closed over 3 mm (the navy between the mockup's own dashes), the zip-shadow band filled where the row is sea just outside it
+_teal = (TEAL | LIGHT) & PANEL & ~ZIP & ~WELTM & (YMM > HORIZON + 1.0) & ~ndi.binary_dilation(cl_mask, structure=disk(1.0))
+SEA_DES = ndi.binary_closing(_teal, structure=np.ones((int(3*PPM), int(3*PPM))))
+_zb = (np.abs(XMM) > 15.6) & (np.abs(XMM) < 40) & (YMM > HORIZON + 1.0)
+for _sgn in (-1, 1):
+    _cols = (np.sign(XMM[0]) == _sgn) & (np.abs(XMM[0]) > 40) & (np.abs(XMM[0]) < 70)
+    _rowsea = SEA_DES[:, _cols].mean(1) > 0.5
+    SEA_DES |= _zb & (np.sign(XMM) == _sgn) & _rowsea[:, None]
+# the mockup's welts are garment details (A15): fill their area from the sea around them (our welts sit 18 mm closer to CF and
+# have their own keep-out, applied per size in art_size)
+_wfill = ndi.binary_dilation(SEA_DES & ~WELTM, structure=disk(9.0), iterations=2) & WELTM & (YMM > HORIZON + 1.0)
+SEA_DES |= _wfill
+def des_frac(x0, x1, y):
+    py = int((y - BB[1])*PPM); a = max(0, int((x0 - BB[0])*PPM)); b = min(W, max(a + 1, int((x1 - BB[0])*PPM)))
+    return float(SEA_DES[py, a:b].mean()) if 0 <= py < H and b > a else 0.0
 _ROW = {}
 def row_ref(side, y):
     """the row's own sea brightness (70th pct of the mockup sea away from the zip), used where the mockup's zip shadow reads dark"""
@@ -366,20 +378,17 @@ while y < 470:
         L = min(40.0, rng.lognormvariate(math.log(11), 0.65)) * (1.3 - 0.5*t) * (1 - 0.35*t)      # irregular, shorter toward the hem
         hgt = hgt0 * rng.uniform(0.75, 1.25)                                            # and thicknesses
         x1 = x + L; mid = Point((x + x1)/2, y)
-        if (x < 15.5 and x1 > -15.5) or (SUN[0] - glit_half(y) < x1 and x < SUN[0] + glit_half(y) and y < 405) or not SEA_EXT.contains(mid):
-            x += rng.uniform(1.0, 2.5); continue
-        d = SIL_EDGE.distance(mid)                                   # fade toward the sea's outer edge
-        if d < 16:
-            if rng.random() > 0.25 + 0.75*(d/16): x = x1 + rng.uniform(1, 4); continue
-            x1 = x + L*(0.35 + 0.65*d/16)
+        if x < -15.6 < x1: x1 = -15.6; mid = Point((x + x1)/2, y)              # Rev E2: a dash reaching the zip ends at the keep-out (was dropped)
+        if (x < 15.5 and x1 > -15.5) or (SUN[0] - glit_half(y) < x1 and x < SUN[0] + glit_half(y) and y < 405) or des_frac(x, x1, y) < 0.5:
+            x += rng.uniform(1.0, 2.5); continue                     # the mockup's sea layout (incl. its fade) decides where dashes go
         lv = lum_at(x, x1, y, 75)
         if abs(mid.x) < 40:                                              # Rev E2 (A15): zip-shadow band -> the row's own sea brightness
             rf = row_ref("R" if mid.x < 0 else "L", y)
             if rf is not None: lv = max(lv, 0.92*rf)
         lv = lv + (14 if t < 0.2 else 0) - 26*t                          # Rev E: bright near the horizon, darker toward the hem
-        col = "gl_deep" if y < HORIZON + 5.0 else sea_col(lv)               # dark band right under the horizon line
+        col = "gl_deep" if y < HORIZON + 5.0 else (sea_col(lv) or "gl_deep")    # dark band under the horizon; traced sea is never left bare
         if col and x1 - x >= 3.0: sea_bars += place_dash(x, x1, y, hgt, col, "SEA-hl" if col == "gl_foam" else "SEA")
-        x = x1 + rng.uniform(0.5, 1.2) + (2.5*rng.random() if rng.random() < 0.25 else 0) + 1.0*t*rng.random()
+        x = x1 + rng.uniform(0.5, 1.2) + (1.3*rng.random() if rng.random() < 0.25 else 0) + 0.6*t*rng.random()    # gaps < 3.1 mm
     y += hgt0 + vgap; rows += 1
 # glitter column: narrow, tapering, broken bars laid ON the sea (sewn after it, layer 12.5)
 y = HORIZON + 2.0
@@ -403,7 +412,7 @@ ray_info = []
 for i, a_ in enumerate(RAYS):
     t = math.radians(a_); ux, uy = math.cos(t), math.sin(t)
     r0 = max((HORIZON + 3.0 - SUN[1]) / max(uy, 1e-3), 10.0)
-    far = LineString([(SUN[0] + ux*r0, SUN[1] + uy*r0), (SUN[0] + ux*700, SUN[1] + uy*700)]).intersection(SEA_EXT.buffer(2.0))
+    far = LineString([(SUN[0] + ux*r0, SUN[1] + uy*r0), (SUN[0] + ux*700, SUN[1] + uy*700)]).intersection(SEA_SIL.buffer(2.0))
     segs = [far] if far.geom_type == "LineString" else [g for g in getattr(far, "geoms", []) if g.geom_type == "LineString"]
     segs = [g for g in segs if g.length > 8]
     if not segs: continue
@@ -428,19 +437,51 @@ STARS_PX = {
            (272, 298), (272, 313), (487, 183), (457, 222), (555, 224), (459, 278), (517, 275), (499, 291), (486, 309), (596, 273)],
 }
 SIZE = {"big": 16.0, "med": 10.5, "small": 4.0, "dot": 1.2}
-stars = []; star_moved = 0
+stars = []; star_moved = 0; star_trace = []
+import startrace as STR
 for kind, pts in STARS_PX.items():
     for px, py in pts:
-        cx, cy = MM.P(px, py); side = "R" if cx < 0 else "L"
-        inner = LIM_ALL[side].buffer(-(SIZE[kind] + 1.5))
-        if not inner.is_empty and not inner.contains(Point(cx, cy)):
+        cx, cy = MM.P(px, py)
+        m = STR.measure(cx, cy, kind); cx, cy = m["cx"], m["cy"]          # Rev E2 (A14): centre + arm lengths traced from the mockup
+        if kind == "dot":
+            core = sorted(m["arms"])[1:3]; dia = float(np.clip(2*np.mean(core) - 1.2, 1.5, 3.2)); ext = dia/2
+        else:
+            Lv, Lh = max(m["Lv"], 2.0), max(m["Lh"], 2.0); ext = max(Lv, Lh)
+        side = "R" if cx < 0 else "L"; ocx, ocy = cx, cy
+        inner = LIM_ALL[side].buffer(-(ext + 1.0))
+        # Rev E2 (A14): sizes FITTED so the star seen at the mockup's resolution matches the mockup's own star (startrace.fit)
+        u = f"star{len(stars)}"
+        geo = lambda regs: [r["geom"] for r in regs]
+        # params: arm lengths (+ diagonal) and the arm root width (fitted too, 0.9-1.6 mm: review E9 asked for slim arms; tips taper to 0.65)
+        if kind == "big":
+            mk = lambda x_, y_, p: geo(GM.star(x_, y_, p[0], p[1], float(np.clip(p[3], 0.9, 1.6)), "big", u, Ld=p[2])); p0 = [Lv, Lh, max(m["Ld"], 2.0), 1.25]
+        elif kind == "med":   mk = lambda x_, y_, p: geo(GM.star(x_, y_, p[0], p[1], float(np.clip(p[2], 0.9, 1.6)), "sparkle", u)); p0 = [Lv, Lh, 1.1]
+        elif kind == "small": mk = lambda x_, y_, p: geo(GM.star(x_, y_, p[0], p[1], float(np.clip(p[2], 0.9, 1.6)), "cross", u)); p0 = [Lv, Lh, 1.0]
+        else:                 mk = lambda x_, y_, p: geo(GM.star(x_, y_, p[0], 0, 0, "dot", u)); p0 = [dia]
+        pf, (fx_, fy_), iou_ = STR.fit(cx, cy, kind, mk, p0)
+        if kind == "dot": pf = [float(np.clip(pf[0], 1.4, 4.0))]
+        cx, cy = fx_, fy_; nL = {"big": 3, "med": 2, "small": 2, "dot": 1}[kind]
+        ext = max(pf[:nL]) if kind != "dot" else pf[0]/2
+        inner = LIM_ALL[side].buffer(-(ext + 1.0)); mv = 0.0
+        shrunk = 1.0; pf0 = list(pf)
+        while kind != "dot" and not inner.is_empty and not inner.contains(Point(cx, cy)) and shrunk > 0.55:   # keep-out wins: shorter arms first
+            shrunk = round(shrunk - 0.05, 2); pf = [v*shrunk for v in pf0[:nL]] + pf0[nL:]
+            ext = max(pf[:nL]); inner = LIM_ALL[side].buffer(-(ext + 1.0))
+        if not inner.is_empty and not inner.contains(Point(cx, cy)):          # then nudge <= 3 mm, else not sewn (listed)
             from shapely.ops import nearest_points
-            q = nearest_points(inner, Point(cx, cy))[0]; cx, cy = q.x, q.y; star_moved += 1
-        u = f"star{len(stars)}"; stars.append((cx, cy, kind))
-        if kind == "big":     regs = GM.star(cx, cy, 16.0, 10.0, 1.25, "big", u)       # Rev E: slimmer arms
-        elif kind == "med":   regs = GM.star(cx, cy, 10.5, 6.0, 1.1, "sparkle", u)
-        elif kind == "small": regs = GM.star(cx, cy, 4.0, 3.0, 1.0, "cross", u)
-        else:                 regs = GM.star(cx, cy, 2.3, 0, 0, "dot", u)
+            q = nearest_points(inner, Point(cx, cy))[0]; mv = math.hypot(q.x - cx, q.y - cy)
+            if mv > 3.0:
+                star_trace.append(dict(kind=kind, mm=(round(cx, 1), round(cy, 1)), dropped=f"in the keep-out ({mv:.0f} mm from sewable)", fit_iou=round(iou_, 2), moved_mm=0.0))
+                continue
+            cx, cy = q.x, q.y; star_moved += 1
+        stars.append((cx, cy, kind))
+        wf = float(np.clip(pf[-1], 0.9, 1.6)) if kind != "dot" else 0.0
+        if kind == "big":     regs = GM.star(cx, cy, pf[0], pf[1], wf, "big", u, Ld=pf[2])
+        elif kind == "med":   regs = GM.star(cx, cy, pf[0], pf[1], wf, "sparkle", u)
+        elif kind == "small": regs = GM.star(cx, cy, pf[0], pf[1], wf, "cross", u)
+        else:                 regs = GM.star(cx, cy, pf[0], 0, 0, "dot", u)
+        Lv, Lh = pf[0], (pf[1] if len(pf) > 1 else pf[0]); dia = pf[0]
+        star_trace.append(dict(kind=kind, mm=(round(cx, 1), round(cy, 1)), Lv=round(Lv, 1), Lh=round(Lh, 1), w=round(wf, 2), fit_iou=round(iou_, 2), traced_at=(round(ocx, 1), round(ocy, 1)), moved_mm=round(mv, 1), arm_scale_keepout=shrunk))
         add(regs, 18, unit=u)
 
 for r in items:                                                   # Rev D: stars pale cream (close-up), not gold
@@ -453,7 +494,7 @@ for r in items:
     r["vlayer"] = r["layer"]
     r["layer"] = (40 if r.get("sub") == "scale" else 20) + SEW.index(r["col"])
 
-META = dict(islet_ref=ISL_REF, horizon=HORIZON, sun=SUN, rays=ray_info, burst=BURST, banks=bank_info, islets=islet_info, n_islets=len(islet_info), n_stars=len(stars),
+META = dict(sea_des=dict(mask=SEA_DES, x0=BB[0], y0=BB[1], ppm=PPM), star_trace=star_trace, islet_ref=ISL_REF, horizon=HORIZON, sun=SUN, rays=ray_info, burst=BURST, banks=bank_info, islets=islet_info, n_islets=len(islet_info), n_stars=len(stars),
             star_moved=star_moved, skirt=skirt, sea_bars=sea_bars, sea_rows=rows, mock_map=dict(cfx=MM.CFX, necky=MM.NECKY, sx=MM.SX, sy=MM.SY))
 pickle.dump(dict(items=items, meta=META), open("scene.pkl", "wb"))
 print("items", len(items), "banks", [(b["side"], b["lobes"]) for b in bank_info], "islets", len(islet_info),

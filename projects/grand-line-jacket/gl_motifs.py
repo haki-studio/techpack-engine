@@ -119,7 +119,7 @@ def taper_arm(cx, cy, ang, L, w0, w1=0.9, r0=0.0):
            (p1[0] - nx*w1/2, p1[1] - ny*w1/2), (p0[0] - nx*w0/2, p0[1] - ny*w0/2)]
     return Polygon(pts).union(Point(*p1).buffer(w1/2, quad_segs=6))
 
-def star(cx, cy, Lv, Lh, w0, kind, unit, rot=0.0):
+def star(cx, cy, Lv, Lh, w0, kind, unit, rot=0.0, Ld=None):
     """4-point sparkle. kind: 'dot' | 'cross' | 'sparkle' | 'big'"""
     regs = []
     if kind == "dot":
@@ -134,7 +134,7 @@ def star(cx, cy, Lv, Lh, w0, kind, unit, rot=0.0):
         arms.append(taper_arm(cx, cy, a + rot, L, w0, 0.65, cd*0.6))         # Rev E2: tapered to a 0.65 tip (fine-detail satin)
     if kind == "big":
         for a in (45, 135, 225, 315):
-            arms.append(taper_arm(cx, cy, a + rot, Lh*0.62, w0*0.8, 0.65, cd*0.6))
+            arms.append(taper_arm(cx, cy, a + rot, Ld if Ld else Lh*0.62, w0*0.8, 0.65, cd*0.6))
     centre = Point(cx, cy).buffer(cd + 0.2, quad_segs=12)
     for g in arms:
         regs.append(R("gl_gold", g.difference(centre), "satin", "auto", "STAR", unit=unit, kob=0.5))

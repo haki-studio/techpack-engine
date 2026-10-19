@@ -65,7 +65,31 @@ def sheet(P):
         for (X, Y) in ((10, 30), (W + 30, 30)):
             d.rectangle([X + (zb[0]-b[0])*ppm, Y + (zb[1]-b[1])*ppm, X + (zb[2]-b[0])*ppm, Y + (zb[3]-b[1])*ppm], outline=(255, 60, 60), width=2)
         y += hh + 30
+    if P == "FL":     # founder 19 Oct: the zip-side column from the horizon to the hem (sea must run to the CF keep-out)
+        cb = (8, 188, 88, 476); cp = 2.6
+        a, s_ = pair(cb, cp, vis); ext = Image.new("RGB", (out.width + 2*a.width + 40, out.height), (255, 255, 255)); ext.paste(out, (0, 0))
+        xx = out.width + 10; ext.paste(a, (xx, 30)); ext.paste(s_, (xx + a.width + 10, 30)); out = ext; d = ImageDraw.Draw(out)
+        d.text((xx, 10), f"zip-side column x {cb[0]}..{cb[2]}, y {cb[1]}..{cb[3]} (mockup | DST)", fill=(0, 0, 0))
+        for (X, Y) in ((10, 30), (W + 30, 30)):
+            d.rectangle([X + (cb[0]-b[0])*ppm, Y + (cb[1]-b[1])*ppm, X + (cb[2]-b[0])*ppm, Y + (cb[3]-b[1])*ppm], outline=(40, 160, 255), width=2)
+    qa_table(out, P, 10, H + 50)
     out.save(f"out/compare_{P}.png"); return out.size
+
+def qa_table(out, P, x, y):
+    """LESSONS A14/A15 gate tables (out/qa_fidelity.json, from the shipped DSTs) printed on the sheet"""
+    if not os.path.exists("out/qa_fidelity.json"): return
+    q = json.load(open("out/qa_fidelity.json"))[P]; d = ImageDraw.Draw(out)
+    d.text((x, y), f"FIDELITY GATES {P} (shipped DST vs reference; qa.motif_match IoU >= 0.70, w/h >= 80 %; qa.uncovered gaps >= 25 mm2)", fill=(0, 0, 0)); y += 16
+    for fam, ref in (("islets", "mockup-traced"), ("banks", "close-up"), ("stars", "mockup")):
+        rows = q[fam]; bad = [r for r in rows if not r["ok"]]
+        d.text((x, y), f"{fam:7s} ({ref}): {len(rows) - len(bad)}/{len(rows)} pass" + ("" if not bad else "  FAIL: " + "; ".join(f"({r['x_mm']:.0f},{r['y_mm']:.0f}) IoU {r['iou']} w {r['w_ratio']} h {r['h_ratio']}" for r in bad[:4])),
+               fill=(0, 120, 0) if not bad else (200, 0, 0)); y += 14
+        for k in range(0, len(rows), 6):
+            d.text((x + 14, y), "   ".join(f"({r['x_mm']:.0f},{r['y_mm']:.0f}) {r['iou']:.2f}/{r['w_ratio']:.2f}/{r['h_ratio']:.2f}" for r in rows[k:k+6]), fill=(70, 70, 70)); y += 12
+    g = q["sea_gaps"]; un = [r for r in g if r["why"] == "UNEXPLAINED"]
+    d.text((x, y), f"sea coverage: {len(g)} gaps >= 25 mm2, {len(un)} unexplained", fill=(0, 120, 0) if not un else (200, 0, 0)); y += 14
+    for r in g[:6]:
+        d.text((x + 14, y), f"({r['x_mm']:.0f},{r['y_mm']:.0f}) {r['w_mm']}x{r['h_mm']} mm, {r['area_mm2']} mm2: {r['why']}", fill=(70, 70, 70)); y += 12
 
 if __name__ == "__main__":
     print(sheet("FR"), sheet("FL"))
