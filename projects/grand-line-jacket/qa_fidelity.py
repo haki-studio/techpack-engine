@@ -119,11 +119,15 @@ def run():
         design &= clip & ~clouds
         cover = ndi.binary_closing(lab > 0, structure=np.ones((int(3*PPM), int(3*PPM))))   # same 3 mm texture closing as the design
         gaps = qa.uncovered(design, cover, PPM)
+        gapm = ndi.binary_opening(design & ~cover, structure=qa.disk(1.0, PPM)); dko = ndi.distance_transform_edt(clip) / PPM
         for g in gaps:
             gx, gy = g["x_mm"] + x0, g["y_mm"] + y0
-            g["x_mm"], g["y_mm"] = round(gx, 1), round(gy, 1)
-            g["why"] = ("glitter core: broken pale bars over the sea (gaps between bars)" if (P == "FL" and abs(gx - META["sun"][0]) < 10 and gy < 405)
-                        else "UNEXPLAINED")
+            c0, r0 = int((g["x_mm"] - g["w_mm"]/2)*PPM), int((g["y_mm"] - g["h_mm"]/2)*PPM)
+            gm_ = gapm[r0:r0 + int(g["h_mm"]*PPM) + 1, c0:c0 + int(g["w_mm"]*PPM) + 1]; dk_ = dko[r0:r0 + gm_.shape[0], c0:c0 + gm_.shape[1]]
+            near_ko = float((dk_[gm_] < 3.0).mean()) if gm_.any() else 0.0
+            g["x_mm"], g["y_mm"] = round(gx, 1), round(gy, 1); g["near_keepout"] = round(near_ko, 2)
+            # Rev E3: only a keep-out explains a gap (dashes stop at the keep-out clearance); the glitter now lies ON the sea
+            g["why"] = ("keep-out edge: dashes end at the keep-out clearance" if near_ko >= 0.6 else "UNEXPLAINED")
         for rows in (rows_i, rows_b, rows_s, other_s):
             for r in rows: r["x_mm"] = round(r["x_mm"] + x0, 1); r["y_mm"] = round(r["y_mm"] + y0, 1)
         res[P] = dict(islets=rows_i, islets_in_keepout=isl_keepout, banks=rows_b, stars=rows_s, bright_not_star=other_s, sea_gaps=gaps)

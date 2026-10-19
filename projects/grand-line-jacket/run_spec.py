@@ -5,7 +5,8 @@ import front as F, espec
 D = pickle.load(open("front_M.pkl", "rb")); VIS = {"FR": D["FR"], "FL": D["FL"]}
 M = json.load(open("scene_meta.json"))
 _ns = [s for s in M.get("star_trace", []) if s.get("dropped")] + [s for s in M.get("islets", []) if s.get("dropped")]
-NOT_SEWN = (f"{len(_ns)} motifs inside keep-outs not sewn (G4)" if _ns else "all mockup stars sewn")
+_cut = [s for s in M.get("star_trace", []) if s.get("cut_by_keepout")]
+NOT_SEWN = (f"{len(_ns)} wholly inside keep-outs not sewn, " if _ns else "") + (f"{len(_cut)} cut at a keep-out (G4)" if _cut else "none cut")
 
 def clear_rows(p):
     import emb_place as EP
@@ -34,7 +35,7 @@ CFG = dict(id="01", slug="front-scene", short="front scene", title="FRONT SCENE 
             "  tones by thread family (>= 18 mm2), sage top / cream base.",
             "Islets: every silhouette traced from the mockup, lobe rows",
             "  inside it; cut (never moved) at keep-outs (A14).",
-            "Stars: centre, arm lengths + root width fitted to the mockup;",
+            "Stars: centre, EACH arm length, diagonals, root width fitted;",
             "  " + NOT_SEWN + ".",
             "Sea: dash layout traced from the mockup; zip shadow + mockup",
             "  welts filled from the row (A15); glitter = broken bars ON it.",

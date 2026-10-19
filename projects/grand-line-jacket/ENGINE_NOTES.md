@@ -128,3 +128,31 @@ Problems hit while building this product, worked around in project code only. Ea
 - **Fix:** scale per row smoothed (25 mm) and clamped >= 95 % of the median; anything past the keep-out or the close-up border is
   cut back 11 mm and regrown with whole round lobes of varied radius/depth.
 - **Check:** max |scale/median - 1| reported in closetrace info; no straight run > 15 mm on any bank edge (silhouette test).
+
+## 16. Stars fitted with a symmetric parametric shape fail the A14 gate (Rev E3)
+- **Problem:** `startrace.fit` fitted (Lv, Lh, width) with up = down and left = right. The mockup's stars are not symmetric
+  (one arm runs 30 % longer), several "medium" stars carry short diagonals, and small dots are elliptical, so 14 of 23 gated
+  stars stayed at IoU 0.28-0.69 however well the centre was found. Stars near a keep-out were shrunk (to 55 %) or dropped whole,
+  which the gate then also failed.
+- **Fix (project):** `startrace.fit_free`: every arm its own length, 4 diagonals (0 allowed) + their angle offset, root width,
+  elliptical dots; candidate steps per parameter (factor or offset) + finer centre search per round; the reference blob is cut
+  to the sewable area like the gate. Stars are CUT by each size's keep-outs in art_size (never shrunk, moved or dropped).
+- **Proposed engine fix:** `motifs.star_free(cx, cy, arms[], diag[], w)` + a generic `qa.fit_to_reference(make, params, steps)`
+  using the same observation operator as `qa.motif_match`.
+- **Check:** fit IoU per star in scene_meta.star_trace; the qa_fidelity star table (IoU >= 0.70, w/h >= 80 %) on the compare sheet.
+
+## 17. Opening a whole traced islet to round a keep-out cut ate its thin foam tail (Rev E3)
+- **Problem:** an islet that touched the welt keep-out was `buffer(-r).buffer(r)` with r = 2.4 mm over its whole outline, which
+  removed the 2 mm-tall foam tail the mockup draws beside the cloud (A14 gate: width 70 %).
+- **Fix:** round only inside a band around the keep-out edge; the rest of the traced outline is kept exactly.
+- **LESSON proposal (A14 addendum):** morphological clean-up of a traced outline is local to the edge it fixes.
+- **Check:** qa_fidelity islet rows w/h ratio >= 0.8 on every islet touching a keep-out.
+
+## 18. dst2.centreline() of a satin arm notched on both sides returns a 1.8 mm stub (Rev E3)
+- **Problem:** a 16 mm star arm whose root was knocked out by two diagonal arms (exact in-unit knockout) skeletonised into
+  pieces; centreline() returned a 1.8 mm path, so turning_satin sewed the arm as a short wedge (10 stitches). Every number
+  passed; only the A14 star gate (height 0.64) and a macro render showed it.
+- **Fix (project):** diagonals sewn first (lower z) so the main arms stay whole; the diagonals lose their root instead.
+- **Proposed engine fix:** in build_object, if centreline().length < 0.6 x the polygon's long side (minimum_rotated_rectangle),
+  fall back to fixed_satin at auto_angle (or the longest skeleton path of the largest component); log it.
+- **Check:** unit test: a tapered 16 x 1.2 mm arm with two 0.5 mm notches at its root -> centreline >= 14 mm.

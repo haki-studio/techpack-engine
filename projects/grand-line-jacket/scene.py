@@ -228,7 +228,10 @@ for i, (cx, base, w, h, bx) in enumerate(ISL):
     if not lim.contains(O):              # keep the mockup position (never moved): cut at the keep-out, round the cut, keep every part
         ob0 = O.bounds; rr_ = min(2.5, 0.25*min(ob0[2] - ob0[0], ob0[3] - ob0[1]))
         Oc = O.intersection(lim).buffer(0)
-        Oc = unary_union([q for q in GM.polys(Oc.buffer(-rr_).buffer(rr_).intersection(lim)) if q.area >= 4.0]) if not Oc.is_empty else Oc
+        if not Oc.is_empty:              # Rev E3: round the cut ONLY near the keep-out edge (an opening of the whole islet ate its thin foam tails)
+            band = lim.boundary.buffer(rr_ + 1.5)
+            Oc = unary_union([Oc.difference(band), Oc.buffer(-rr_).buffer(rr_).intersection(band).intersection(Oc.buffer(0.01))]).buffer(0)
+            Oc = unary_union([q for q in GM.polys(Oc.intersection(lim)) if q.area >= 4.0])
         if Oc.is_empty or Oc.area < 0.25*a0_:
             islet_info.append(dict(side=side, mm=(round((ob0[0]+ob0[2])/2, 1), round(ob0[3], 1)), w=round(ob0[2]-ob0[0], 1), h=round(ob0[3]-ob0[1], 1),
                                    dropped="in the keep-out (< 25 % sewable)", traced=True))
@@ -385,7 +388,7 @@ while y < 470:
         if des_frac(x, x1, y) < 0.5:                                 # a shorter dash where the mockup's sea patch is short
             for f_ in (0.5, 0.3):
                 if L*f_ >= 3.0 and des_frac(x, x + L*f_, y) >= 0.5: x1 = x + L*f_; mid = Point((x + x1)/2, y); break
-        if (x < 15.5 and x1 > -15.5) or (SUN[0] - glit_half(y) < x1 and x < SUN[0] + glit_half(y) and y < 405) or des_frac(x, x1, y) < 0.5:
+        if (x < 15.5 and x1 > -15.5) or des_frac(x, x1, y) < 0.5:          # Rev E3 (founder a): the sea runs UNDER the glitter too
             x += rng.uniform(0.8, 1.6); continue                     # the mockup's sea layout (incl. its fade) decides where dashes go
         lv = lum_at(x, x1, y, 75)
         if abs(mid.x) < 40:                                              # Rev E2 (A15): zip-shadow band -> the row's own sea brightness
@@ -396,6 +399,42 @@ while y < 470:
         if col and x1 - x >= 3.0: sea_bars += place_dash(x, x1, y, hgt, col, "SEA-hl" if col == "gl_foam" else "SEA")
         x = x1 + rng.uniform(0.5, 1.2) + (1.3*rng.random() if rng.random() < 0.25 else 0) + 0.6*t*rng.random()    # gaps < 3.1 mm
     y += hgt0 + vgap; rows += 1
+# Rev E3 (A15): fill pass. Wherever the traced design sea (SEA_DES) is still bare after the rows (a mockup sea patch that fell
+# between two rows, or a dash that ended short), add dashes along that patch's own rows, so no traced sea is left bare.
+def _sea_cover():
+    im = Image.new("L", (W, H), 0); d = ImageDraw.Draw(im)
+    for r in items:
+        if r["layer"] != 12: continue
+        for p in GM.polys(r["geom"]): d.polygon([((x - BB[0])*PPM, (y - BB[1])*PPM) for x, y in p.exterior.coords], fill=255)
+    return ndi.binary_closing(np.array(im) > 0, structure=np.ones((int(3*PPM), int(3*PPM))))
+sea_fill = 0
+for _pass in range(2):
+    _gap = SEA_DES & ~_sea_cover() & (np.abs(XMM) > 16.0) & (YMM > HORIZON + 1.5) & ~ndi.binary_dilation(cl_mask, structure=disk(1.5))
+    _gap = ndi.binary_opening(_gap, structure=disk(0.5))
+    _lab, _n = ndi.label(_gap)
+    for _k, _sl in enumerate(ndi.find_objects(_lab), 1):
+        _m = _lab[_sl] == _k
+        if _m.sum() / PPM**2 < 6.0: continue
+        _ys = np.nonzero(_m.any(1))[0]; _y0 = BB[1] + (_sl[0].start + _ys[0]) / PPM; _y1 = BB[1] + (_sl[0].start + _ys[-1] + 1) / PPM
+        _nr = max(1, int(round((_y1 - _y0) / 2.6)))
+        for _j in range(_nr):
+            yy = _y0 + (_y1 - _y0) * (_j + 0.5) / _nr; ry = int((yy - BB[1])*PPM) - _sl[0].start
+            ry = min(max(ry, 0), _m.shape[0] - 1); cols = np.nonzero(_m[ry])[0]
+            if not len(cols): continue
+            # runs of bare pixels on this row
+            brk = np.nonzero(np.diff(cols) > 2)[0]; starts = np.r_[cols[0], cols[brk + 1]]; ends = np.r_[cols[brk], cols[-1]]
+            for a_, b_ in zip(starts, ends):
+                xa = BB[0] + (_sl[1].start + a_) / PPM - 0.8; xb = BB[0] + (_sl[1].start + b_ + 1) / PPM + 0.8
+                if xb - xa < 3.0: xa, xb = (xa + xb)/2 - 1.6, (xa + xb)/2 + 1.6
+                t = min(1.0, (yy - HORIZON) / 210.0); hgt = min(1.5 + 0.8*t, max(1.4, (_y1 - _y0) / _nr - 0.3))
+                lv = lum_at(xa, xb, yy, 75)
+                if abs((xa + xb)/2) < 40:
+                    rf = row_ref("R" if xa < 0 else "L", yy)
+                    if rf is not None: lv = max(lv, 0.92*rf)
+                lv = lv + (14 if t < 0.2 else 0) - 26*t
+                col = "gl_deep" if yy < HORIZON + 5.0 else (sea_col(lv) or "gl_deep")
+                sea_fill += place_dash(xa, xb, yy, hgt, col, "SEA")
+print("sea fill dashes", sea_fill)
 # glitter column: narrow, tapering, broken bars laid ON the sea (sewn after it, layer 12.5)
 y = HORIZON + 2.0
 while y < 405:
@@ -434,7 +473,7 @@ for i, a_ in enumerate(RAYS):
         if q.area > 0.6: add([GM.R("gl_gold", q, "bean", None, "RAY", kob=0.3)], 14)
     ray_info.append(dict(angle=a_, start=pA, end=pB))
 
-# ================================================================ stars (every mockup star; nudged inside the keep-outs, never dropped)
+# ================================================================ stars (every mockup star traced; cut by the keep-outs, never moved)
 STARS_PX = {
  "big":   [(216.7, 223.3), (501.7, 218.3)],
  "med":   [(298, 300), (310, 277), (288, 245), (254, 198), (180, 193), (530, 172), (435, 248), (585, 248), (461, 303)],
@@ -445,50 +484,67 @@ STARS_PX = {
 SIZE = {"big": 16.0, "med": 10.5, "small": 4.0, "dot": 1.2}
 stars = []; star_moved = 0; star_trace = []
 import startrace as STR
+def star_free(cx, cy, p, kind, u):
+    """Rev E3 (A14): a star with its OWN arm lengths (up, right, down, left [, 4 diagonals + diagonal angle offset]) and root width
+    p[-1], all fitted to the mockup's star. Same stitch build as GM.star (tapered satin arms, pale centre)."""
+    w0 = float(np.clip(p[-1], 0.9, 1.6)); R_ = GM.R
+    if kind == "dot":                              # Rev E3: elliptical dot (width, height fitted)
+        return [R_("gl_gold", affinity.scale(Point(cx, cy).buffer(1.0, quad_segs=10), max(0.55, p[0]/2), max(0.55, p[1]/2)), "satin", "auto", "DOT", unit=u, kob=0.5)]
+    L4 = p[:4]; ang4 = (-90, 0, 90, 180)
+    MINA = 1.6                                     # Rev E3: what clean_vis keeps (satin part >= 1.5 mm2): the fit sees only sewable arms
+    if kind in ("cross", "small"):                 # small cross: one thread, each arm overlaps the centre (no sliver arms)
+        cc = Point(cx, cy).buffer(w0*0.62)
+        arms = [GM.taper_arm(cx, cy, a, L, w0, 0.8, 0.0) for L, a in zip(L4, ang4)]
+        arms = [g for g in arms if g.difference(cc).area >= MINA]
+        if not arms: return [R_("gl_gold", cc.buffer(0.3), "satin", "auto", "DOT", unit=u, kob=0.5)]
+        return [R_("gl_gold", g.union(cc), "satin", "auto", "STAR", unit=u, kob=0.5) for g in arms]
+    cd = max(0.8, w0*0.75); arms = [GM.taper_arm(cx, cy, a, L, w0, 0.65, cd*0.6) for L, a in zip(L4, ang4)]
+    if kind in ("big", "med"):                     # Rev E3: the mockup's medium stars carry short diagonals too (fitted, 0 = none)
+        off = p[8]
+        # Rev E3: diagonals FIRST (lower z): the main arms knock them out at the root, so a main arm is never notched by two
+        # diagonals (a notched arm broke the engine's centreline: the down arm sewed as a 1.8 mm wedge, ENGINE_NOTES 18)
+        arms = [GM.taper_arm(cx, cy, a + (off if a in (45, 225) else -off), L, w0*0.8, 0.65, cd*0.6) for L, a in zip(p[4:8], (225, 315, 45, 135)) if L >= 1.6] + arms
+    centre = Point(cx, cy).buffer(cd + 0.2, quad_segs=12)
+    arms = [g.difference(centre) for g in arms]; arms = [g for g in arms if g.area >= MINA]
+    return [R_("gl_gold", g, "satin", "auto", "STAR", unit=u, kob=0.5) for g in arms] + \
+           [R_("gl_pale", centre, "satin", "auto", "STAR-c", unit=u, kob=0.5)]
+MUL = (0.6, 0.8, 0.9, 1.1, 1.25, 1.5, 2.0)
 for kind, pts in STARS_PX.items():
     for px, py in pts:
         cx, cy = MM.P(px, py)
         m = STR.measure(cx, cy, kind); cx, cy = m["cx"], m["cy"]          # Rev E2 (A14): centre + arm lengths traced from the mockup
-        if kind == "dot":
-            core = sorted(m["arms"])[1:3]; dia = float(np.clip(2*np.mean(core) - 1.2, 1.5, 3.2)); ext = dia/2
-        else:
-            Lv, Lh = max(m["Lv"], 2.0), max(m["Lh"], 2.0); ext = max(Lv, Lh)
         side = "R" if cx < 0 else "L"; ocx, ocy = cx, cy
-        inner = LIM_ALL[side].buffer(-(ext + 1.0))
-        # Rev E2 (A14): sizes FITTED so the star seen at the mockup's resolution matches the mockup's own star (startrace.fit)
         u = f"star{len(stars)}"
         geo = lambda regs: [r["geom"] for r in regs]
-        # params: arm lengths (+ diagonal) and the arm root width (fitted too, 0.9-1.6 mm: review E9 asked for slim arms; tips taper to 0.65)
-        if kind == "big":
-            mk = lambda x_, y_, p: geo(GM.star(x_, y_, p[0], p[1], float(np.clip(p[3], 0.9, 1.6)), "big", u, Ld=p[2])); p0 = [Lv, Lh, max(m["Ld"], 2.0), 1.25]
-        elif kind == "med":   mk = lambda x_, y_, p: geo(GM.star(x_, y_, p[0], p[1], float(np.clip(p[2], 0.9, 1.6)), "sparkle", u)); p0 = [Lv, Lh, 1.1]
-        elif kind == "small": mk = lambda x_, y_, p: geo(GM.star(x_, y_, p[0], p[1], float(np.clip(p[2], 0.9, 1.6)), "cross", u)); p0 = [Lv, Lh, 1.0]
-        else:                 mk = lambda x_, y_, p: geo(GM.star(x_, y_, p[0], 0, 0, "dot", u)); p0 = [dia]
-        pf, (fx_, fy_), iou_ = STR.fit(cx, cy, kind, mk, p0)
-        if kind == "dot": pf = [float(np.clip(pf[0], 1.4, 4.0))]
-        cx, cy = fx_, fy_; nL = {"big": 3, "med": 2, "small": 2, "dot": 1}[kind]
-        ext = max(pf[:nL]) if kind != "dot" else pf[0]/2
-        inner = LIM_ALL[side].buffer(-(ext + 1.0)); mv = 0.0
-        shrunk = 1.0; pf0 = list(pf)
-        while kind != "dot" and not inner.is_empty and not inner.contains(Point(cx, cy)) and shrunk > 0.55:   # keep-out wins: shorter arms first
-            shrunk = round(shrunk - 0.05, 2); pf = [v*shrunk for v in pf0[:nL]] + pf0[nL:]
-            ext = max(pf[:nL]); inner = LIM_ALL[side].buffer(-(ext + 1.0))
-        if not inner.is_empty and not inner.contains(Point(cx, cy)):          # then nudge <= 3 mm, else not sewn (listed)
-            from shapely.ops import nearest_points
-            q = nearest_points(inner, Point(cx, cy))[0]; mv = math.hypot(q.x - cx, q.y - cy)
-            if mv > 3.0:
-                star_trace.append(dict(kind=kind, mm=(round(cx, 1), round(cy, 1)), dropped=f"in the keep-out ({mv:.0f} mm from sewable)", fit_iou=round(iou_, 2), moved_mm=0.0))
-                continue
-            cx, cy = q.x, q.y; star_moved += 1
+        if kind == "dot":
+            core = sorted(m["arms"])[1:3]; dia = float(np.clip(2*np.mean(core) - 1.2, 1.5, 3.2))
+            p0 = [dia, dia, 1.0]; steps = [MUL, MUL, (1.0,)]; lo = [1.1, 1.1, 1.0]; hi = [5.0, 5.0, 1.0]
+        else:
+            up, dn, lf, rt = [max(a_, 2.0) for a_ in m["arms"]]
+            Lv, Lh = max(m["Lv"], 2.0), max(m["Lh"], 2.0)
+            arm0 = [min(up, 1.35*Lv), min(rt, 1.35*Lh), min(dn, 1.35*Lv), min(lf, 1.35*Lh)]   # each arm its own (neighbour run-ins capped)
+            w0 = {"big": 1.25, "med": 1.1, "small": 1.0}[kind]
+            if kind in ("big", "med"):
+                Ld = max(m["Ld"], 2.0) if kind == "big" else 0.35*min(Lv, Lh)
+                DADD = tuple(("add", d_) for d_ in (-3.0, -1.5, -0.7, 0.7, 1.5, 3.0))
+                p0 = arm0 + [Ld]*4 + [0.0, w0]; steps = [MUL]*4 + [MUL if kind == "big" else DADD]*4 + [tuple(("add", d_) for d_ in (-12, -6, -3, 3, 6, 12)), MUL]
+                lo = [1.5]*4 + [1.5 if kind == "big" else 0.0]*4 + [-20.0, 0.9]; hi = [2.5*v for v in arm0] + [max(2.5*Ld, 6.0)]*4 + [20.0, 1.6]
+            else:
+                p0 = arm0 + [w0]; steps = [MUL]*5; lo = [1.2]*4 + [0.9]; hi = [2.5*v for v in arm0] + [1.6]
+        mk = lambda x_, y_, p, kind=kind, u=u: geo(star_free(x_, y_, p, kind, u))
+        pf, (fx_, fy_), iou_ = STR.fit_free(cx, cy, mk, p0, steps, lo, hi, clip=CLIP_M[side].buffer(-1.0))
+        cx, cy = fx_, fy_
+        # Rev E3 (A14): a star at a keep-out is CUT by the keep-out per size (art_size), never shrunk, moved or dropped
+        regs = star_free(cx, cy, pf, kind, u)
+        if not any(r["geom"].intersects(LIM_ALL[side].buffer(-0.5)) for r in regs) and not any(r["geom"].intersects(CLIP_M[side]) for r in regs):
+            star_trace.append(dict(kind=kind, mm=(round(cx, 1), round(cy, 1)), dropped="fully inside the keep-out", fit_iou=round(iou_, 2), moved_mm=0.0))
+            continue
         stars.append((cx, cy, kind))
-        wf = float(np.clip(pf[-1], 0.9, 1.6)) if kind != "dot" else 0.0
-        if kind == "big":     regs = GM.star(cx, cy, pf[0], pf[1], wf, "big", u, Ld=pf[2])
-        elif kind == "med":   regs = GM.star(cx, cy, pf[0], pf[1], wf, "sparkle", u)
-        elif kind == "small": regs = GM.star(cx, cy, pf[0], pf[1], wf, "cross", u)
-        else:                 regs = GM.star(cx, cy, pf[0], 0, 0, "dot", u)
-        Lv, Lh = pf[0], (pf[1] if len(pf) > 1 else pf[0]); dia = pf[0]
-        star_trace.append(dict(kind=kind, mm=(round(cx, 1), round(cy, 1)), Lv=round(Lv, 1), Lh=round(Lh, 1), w=round(wf, 2), fit_iou=round(iou_, 2), traced_at=(round(ocx, 1), round(ocy, 1)), moved_mm=round(mv, 1), arm_scale_keepout=shrunk))
-        add(regs, 18, unit=u)
+        cut = not all(CLIP_M[side].buffer(-0.4).contains(r["geom"]) for r in regs)
+        star_trace.append(dict(kind=kind, mm=(round(cx, 1), round(cy, 1)), arms=[round(v, 1) for v in pf[:-1]], w=round(float(pf[-1]), 2), fit_iou=round(iou_, 2),
+                               traced_at=(round(ocx, 1), round(ocy, 1)), moved_mm=0.0, cut_by_keepout=bool(cut),
+                               Lv=round(max(pf[0], pf[2]) if kind != "dot" else pf[0], 1), Lh=round(max(pf[1], pf[3]) if kind != "dot" else pf[0], 1)))
+        add(regs, 18, unit=u, kgrp=u)        # Rev E3: arms of one star knock each other out exactly (the kob gap cut small arms to slivers)
 
 for r in items:                                                   # Rev D: stars pale cream (close-up), not gold
     if r["layer"] == 18: r["col"] = "gl_gold"                       # Rev E: warm gold-cream (#E3C890), centres included
@@ -501,7 +557,7 @@ for r in items:
     r["layer"] = (40 if r.get("sub") == "scale" else 20) + SEW.index(r["col"])
 
 META = dict(sea_des=dict(mask=SEA_DES, x0=BB[0], y0=BB[1], ppm=PPM), star_trace=star_trace, islet_ref=ISL_REF, horizon=HORIZON, sun=SUN, rays=ray_info, burst=BURST, banks=bank_info, islets=islet_info, n_islets=len(islet_info), n_stars=len(stars),
-            star_moved=star_moved, skirt=skirt, sea_bars=sea_bars, sea_rows=rows, mock_map=dict(cfx=MM.CFX, necky=MM.NECKY, sx=MM.SX, sy=MM.SY))
+            star_moved=star_moved, skirt=skirt, sea_bars=sea_bars, sea_fill=sea_fill, sea_rows=rows, mock_map=dict(cfx=MM.CFX, necky=MM.NECKY, sx=MM.SX, sy=MM.SY))
 pickle.dump(dict(items=items, meta=META), open("scene.pkl", "wb"))
 print("items", len(items), "banks", [(b["side"], b["lobes"]) for b in bank_info], "islets", len(islet_info),
       {s: sum(1 for i in islet_info if i["side"] == s) for s in "RL"}, "skirt", skirt, "stars", len(stars), "moved", star_moved,

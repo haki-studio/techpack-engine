@@ -92,3 +92,39 @@ def fit(cx, cy, kind, make, p0):
                 s = score(pc, *best[2])
                 if s > best[0]: best = (s, pc, best[2])
     return best[1], best[2], float(best[0])
+
+def fit_free(cx, cy, make, p0, steps, lo, hi, R=22.0, clip=None):
+    """Rev E3 (A14): free fit. Each parameter has its own candidate steps ('mul' factors or 'add' offsets) and bounds, so every
+    arm gets its own length and the diagonals their own angle (the mockup's stars are not symmetric). clip (shapely, optional):
+    the sewable area; the reference blob is cut to it, exactly like the gate. Returns (params, centre, iou)."""
+    bb = (cx - R, cy - R, cx + R, cy + R); ppm = PPM_OBS
+    a = np.array(MM.warp(bb, ppm)).astype(np.float32); lum = a @ np.array([0.3, 0.59, 0.11])
+    bg = float(np.percentile(lum, 30)); pk_ = ndi.maximum_filter(lum, size=int(8*ppm))
+    ref = halfmax(lum, bg) & ((pk_ - bg) > 0.35*(lum.max() - bg))
+    lab, n = ndi.label(ref); c = int(R*ppm)
+    if not n: return list(p0), (cx, cy), 0.0
+    if lab[c, c]: k = lab[c, c]
+    else:
+        ys, xs = np.nonzero(lab); i = np.argmin((ys - c)**2 + (xs - c)**2); k = lab[ys[i], xs[i]]
+    ref = lab == k
+    cm = _raster([clip], bb, ppm) > 0.5 if clip is not None else np.ones_like(ref)
+    ref = ref & cm
+    def score(pc, x_, y_):
+        o = halfmax(observe(_raster([g.buffer(GROW) for g in make(x_, y_, pc)], bb, ppm)), 0.0) & cm
+        ol, _ = ndi.label(o); keep = np.unique(ol[ref & (ol > 0)]); o = np.isin(ol, keep) & (ol > 0)
+        return (ref & o).sum() / max((ref | o).sum(), 1)
+    best = [score(p0, cx, cy), list(p0), (cx, cy)]
+    def centre(d):
+        for dx in (-d, 0, d):
+            for dy in (-d, 0, d):
+                s = score(best[1], best[2][0] + dx, best[2][1] + dy)
+                if s > best[0]: best[:] = [s, list(best[1]), (best[2][0] + dx, best[2][1] + dy)]
+    centre(0.8)
+    for it in range(4):
+        for j in range(len(p0)):
+            for f in steps[j]:
+                pc = list(best[1]); pc[j] = float(np.clip(pc[j] + f[1] if isinstance(f, tuple) else pc[j]*f, lo[j], hi[j]))      # ('add', v) = offset, float = factor
+                s = score(pc, *best[2])
+                if s > best[0]: best[:] = [s, pc, best[2]]
+        centre(0.4)
+    return best[1], best[2], float(best[0])
