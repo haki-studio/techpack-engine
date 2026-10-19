@@ -228,14 +228,21 @@ def vectorize(sp, lab, Lsrc, bb, closeup=None):
     return regs, st
 
 def drop_specks(regs, amax=8.0, gap=1.5):
-    """A8 + review item 7: islands < 8 mm2 with no other object within 1.5 mm are render noise, not thread"""
-    tree = shapely.STRtree([r["geom"] for r in regs]); out = []; nd = 0
-    for i, r in enumerate(regs):
-        if r["geom"].area < amax and r["st"] != "bean":
-            hits = [j for j in tree.query(r["geom"].buffer(gap)) if j != i and regs[j]["st"] != "bean"]
-            if not hits: nd += 1; continue
-        out.append(r)
-    return out, nd
+    """A8 + review item 7: clusters of objects (members within 1.5 mm of each other) whose TOTAL area is < 8 mm2 are
+    render noise on bare fabric (highlights read as cream / red), not thread - a speck and its own under-edge count as one"""
+    geoms = [r["geom"] for r in regs]; tree = shapely.STRtree(geoms)
+    n = len(regs); parent = list(range(n))
+    def find(i):
+        while parent[i] != i: parent[i] = parent[parent[i]]; i = parent[i]
+        return i
+    for i, g in enumerate(geoms):
+        for j in tree.query(g.buffer(gap)):
+            j = int(j)
+            if j != i and geoms[j].distance(g) <= gap: parent[find(i)] = find(j)
+    area = {}
+    for i, g in enumerate(geoms): area[find(i)] = area.get(find(i), 0.0) + g.area
+    out = [r for i, r in enumerate(regs) if area[find(i)] >= amax]
+    return out, n - len(out)
 
 def preview(regs, bb, path, ppm=2.0):
     import stitchrender as SR

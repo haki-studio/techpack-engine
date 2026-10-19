@@ -57,3 +57,12 @@ Each: problem → proposed fix → check.
 ## 9. Registration crosses must never sew in an art thread that shows (cream)
 - Rev A sewed them "in stop 1's thread"; Rev B sews them as their own first stop in Deep crimson (already in every file, so the
   12-colour count is unchanged). **Engine:** `make_pattern(reg_marks=..., reg_col=...)` instead of a WSB thread.
+
+## 10. `pattern.py` now places the welt from block data only (`drum.WELT_L_M`, commit c026934)
+- **Problem:** a project that moves the welt (here: PROPOSED 45 out / 27.5 down so it clears the beast's jaw) no longer gets
+  it on the pattern: `keep_geoms()` read the block welt and the keep-out cut a 6 mm slot through the throat (found on the
+  Rev B compare sheet). The DXF welt will also be at the block position.
+- **Project fix:** `front.welt_for()` = the project welt shifted by the block's own size grading of the welt position.
+- **Proposed engine fix:** `pattern.draft(size, welt=<polygon at M>)` (or read `front.WELT_L` when the project defines it),
+  graded the same way; the DXF welt box + drills follow it.
+- **Check:** `emb_place.clearances()` welt ≥ 6 on every size AND the DXF welt box == the keep-out welt.

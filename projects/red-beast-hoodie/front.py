@@ -49,9 +49,17 @@ def keep_geoms(size, side):
     """named keep-out references for one front piece of one size, from that size's pattern (sew lines, LESSONS C8)."""
     g, mt = pieces(size); pc = g["F02" if side == "R" else "F01"]
     out = {e.name: LineString(e.pts) for e in pc.edges}
-    out["welt"] = Polygon(pc.internal[0][1]).buffer(0)
+    out["welt"] = welt_for(size, side, Polygon(pc.internal[0][1]).buffer(0))
     out["panel"] = pc.sew_poly()
     return out
+
+def welt_for(size, side, block_welt):
+    """the PROPOSED moved welt on this size: this jacket's welt (welt.json: mockup angle 61.6 deg, moved clear of the jaw) shifted by
+    the block's own grading of the welt position (engine pattern.py, drum.WELT_L_M) from M to this size. Since commit c026934 the engine pattern no longer reads the project WELT_L, so the
+    move is applied here (ENGINE_NOTES 10) - otherwise the keep-out sits under the jaw again."""
+    gM, _ = pieces("M"); bM = Polygon(gM["F02" if side == "R" else "F01"].internal[0][1]).buffer(0).centroid
+    bS = block_welt.centroid                      # the block's grading of the welt position, this size vs M
+    return affinity.translate(WELT_R if side == "R" else WELT_L, bS.x - bM.x, bS.y - bM.y)
 
 def clip_for(size, side):
     """area art may occupy on one front piece of one size (all keep-outs removed)."""

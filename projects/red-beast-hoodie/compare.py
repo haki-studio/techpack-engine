@@ -55,7 +55,7 @@ def dst_img(pieces, bb, ppm, xform=None, ss=2):
             c = tuple(int(HEX[col][i:i+2], 16) for i in (1, 3, 5)) if col in HEX else (0, 160, 255)
             A = ((a[0]-bb[0])*S, (a[1]-bb[1])*S); B = ((b[0]-bb[0])*S, (b[1]-bb[1])*S)
             k = rng.uniform(0.82, 1.08)
-            d.line([A, B], fill=tuple(int(v*0.55) for v in c), width=lw)
+            d.line([A, B], fill=tuple(int(v*0.7) for v in c), width=lw)
             d.line([A, B], fill=tuple(min(255, int(v*k)) for v in c), width=lw2)
     return im.resize((W, H), Image.LANCZOS)
 
