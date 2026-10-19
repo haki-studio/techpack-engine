@@ -223,7 +223,7 @@ def back_clips(size):
         return unary_union([edge(g, "B01", n).buffer(k) for n in names])
     base = P_.difference(minus(["armhole L", "armhole R", "shoulder L", "shoulder R"], KEEP["seam"])).difference(minus(["neck"], KEEP["neck"]))
     base = base.difference(minus(["hem"], KEEP["hem"]))
-    art = base.difference(minus(["side L", "side R"], KEEP["side"]))
+    art = base.difference(minus(["side L", "side R"], KEEP["side"] + 0.3))      # +0.3: pull comp on clipped edges stays >= 15 (M side_L 14.9)
     wire = base.difference(minus(["side L", "side R"], KEEP["wrap"]))
     return make_valid(art).buffer(0), make_valid(wire).buffer(0)
 

@@ -207,7 +207,7 @@ def files_page():
         o.append(t(cx2[5], y, ("2 × 360²: " + " · ".join(f"{v['size'][0]:.0f}×{v['size'][1]:.0f}" for v in rb["sections"].values())) if "sections" in rb else "1 × 360²", 1.45))
         y += 3.8
     y += 3; o.append(t(12, y, "WHAT IS DIGITIZED", 2.0, 700)); y += 4.2
-    notes = [("Density", "production density everywhere (tatami 0.45, satin 0.42) — Rev C fidelity first; DST mm/mm² per code on each element p3."),
+    notes = [("Density", "production density everywhere (tatami 0.45, moon flow rows 0.40, satin 0.42) — Rev C fidelity first; DST mm/mm² per code on each element p3."),
              ("Travel", "hidden travel under later fills + underpath (engine PR #1); trims only where a move is exposed (> 2.5 mm)."),
              ("Wires", "satin cord 1.6 mm with a wrap at each insulator; ends 3 mm short of every side seam (both pieces), 15 from CF."),
              ("Placeholder", "01 last stop = outline of the licensed-figure box in Moon cream (covered by 01b moon-in-box); nothing else inside it."),

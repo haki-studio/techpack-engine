@@ -46,13 +46,13 @@ def install():
     # layers (sew order, back to front)
     tech.LAYER_NAMES.update({11: "Moon", 12: "Moon craters", 13: "Moon crater centres", 14: "Wires", 15: "Pole", 16: "Pole hardware"})
     R = {
-     "MN":        ("Moon body (cream)",          "Tatami", "turning: rows concentric (15° sectors)", "0.45", "3.5", "edge run + tatami 90° @ 2.0", "0.20", "traced tonal region"),
-     "MN-hl":     ("Moon highlight",             "Tatami", "concentric (15° sectors)", "0.45", "3.5", "edge run (+ lattice if > 60 mm²)", "0.20", "short-stitch blend 1.0"),
-     "MN-warm":   ("Moon warm tone + rim",       "Tatami", "concentric (15° sectors)", "0.45", "3.5", "edge run (+ lattice if > 60 mm²)", "0.20", "short-stitch blend 1.0"),
-     "MN-crater": ("Crater / mare light",        "Tatami", "concentric (15° sectors)", "0.45", "3.5", "edge run",                      "0.20", "short-stitch blend 1.0"),
-     "MN-mare":   ("Crater / mare dark",         "Tatami", "concentric (15° sectors)", "0.45", "3.5", "edge run",                      "0.20", "short-stitch blend 1.0"),
+     "MN":        ("Moon body (cream)",          "Flow tatami (ground) / satin (cells)", "along the close-up swirl (streamlines)", "0.40", "3.5", "edge run + 45° lattice @ 2.0 (> 60 mm²)", "0.20", "traced tone region; cells satin on top"),
+     "MN-hl":     ("Moon highlight",             "Flow tatami / satin", "along the swirl; cells: long axis", "0.40", "3.5", "edge run + lattice (> 60 mm²)", "0.20", "tones overlap 0.3"),
+     "MN-warm":   ("Moon warm tone + rim",       "Flow tatami / radial satin rim", "swirl; rim radial", "0.40", "3.5", "edge run + lattice (> 60 mm²)", "0.20", "tones overlap 0.3"),
+     "MN-crater": ("Crater / mare light",        "Flow tatami / satin", "swirl; cells: long axis", "0.40", "3.5", "edge run",                      "0.20", "tones overlap 0.3"),
+     "MN-mare":   ("Crater / mare dark (star craters)", "Flow tatami / radial satin (stars)", "swirl; stars radial", "0.40", "3.5", "edge run",     "0.20", "traced star outlines"),
      "MN-ray":    ("Crater rays + rim strokes",  "Run (single)",      "follows line", "—", "2.0", "none",                      "—",    "0.6 line, sewn on top"),
-     "CL":        ("Cloud body (periwinkle)",    "Tatami / satin < 3", "0° (horizontal banding)", "0.45", "3.5", "edge run + tatami 90° @ 2.0", "0.25", "traced band"),
+     "CL":        ("Cloud body (periwinkle)",    "Satin scales + flow tatami", "scales along the close-up rows", "0.42 / 0.45", "3.5", "edge run (tatami)", "0.25", "scallop rows, top row first"),
      "CL-top":    ("Cloud light band (lavender)", "Tatami / satin < 3", "0°",     "0.45", "3.5", "edge run",                      "0.25", "blend 1.0"),
      "CL-hl":     ("Cloud highlight (white)",    "Tatami / satin < 3", "0°",     "0.45", "3.5", "edge run",                      "0.20", "blend 1.0"),
      "CL-mid":    ("Cloud lower band (violet)",  "Tatami / satin < 3", "0°",     "0.45", "3.5", "edge run",                      "0.25", "blend 1.0"),
