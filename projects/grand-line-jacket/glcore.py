@@ -42,7 +42,7 @@ GL_RULES = {
  "SEA-hl":   ("Sea highlight bar",        "Tatami, horizontal", "0° (along bar)",         "0.45", "3.5", "edge run",                "0.15", "foam / pale"),
  "HZ":       ("Horizon line",             "Bean (triple run)",  "follows line",           "—",    "2.2", "none",                    "—",    "0.8 line"),
  "GLT":      ("Sun glitter bar",          "Tatami, horizontal", "0° (along bar)",         "0.45", "3.5", "edge run",                "0.15", "column under the sun"),
- "RAY":      ("Dashed hairline sun ray",  "Run (double)",       "follows the ray",        "—",    "2.0", "none",                    "—",    "dash 4.2 / gap 2.4, slight curve"),
+ "RAY":      ("Sun ray over the sea",     "Bean (triple run)",  "follows the ray",        "—",    "2.0", "none",                    "—",    "solid 0.6 line, slight curve (approved)"),
  "SUN":      ("Sun core",                 "Satin, radial",      "radial from sun centre", "0.40", "—",   "centre run",              "0.15", "Ø 9"),
  "SUN-ring": ("Sun ring",                 "Satin, radial",      "radial from sun centre", "0.40", "—",   "edge run",                "0.15", ""),
  "BURST":    ("Sunburst ray",             "Satin, tapered",     "across ray",             "0.42", "—",   "centre run",              "0.15", "≥ 0.9 wide, blunt tip"),
@@ -89,4 +89,4 @@ PIECE_NAME = {"FR": "wearer's right front", "FL": "wearer's left front"}
 PIECE_CODE = {"FR": "F02", "FL": "F01"}        # pattern piece codes (pattern.py)
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
-REV_EMB = "Rev E"; REV_GAR = "Rev E"; DATE = "18 Oct 2026"
+REV_EMB = "Rev E"; REV_GAR = "Rev E"; DATE = "19 Oct 2026"

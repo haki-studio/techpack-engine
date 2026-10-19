@@ -146,7 +146,7 @@ def summary():
             v = wc[wk]; o.append(t(cx[9], y, ("fills/satins < 1 %" if v < 1 else f"worst {wk} {v:.1f}% (tapered ends)") + f"; hairline runs: {', '.join(HAIR)}", 1.6, 600, GREEN if v < 1 else ORANGE))
     y = 36 + len(P2)*4.6 + 1
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.9, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.9, 700)); o.append(t(cx[8], y, f"{MH:.1f} h", 1.9, 700))
-    o.append(t(12, y + 4.5, f"Width check: fills + satins are at or above the 0.8 mm minimum except tapered ends. Hairline runs (sky-glow lines, dashed rays, short sun rays) are INTENTIONALLY 0.45 mm, under the 0.6 mm line minimum: {HAIR_PCT:.1f} % of the stitched area. Check them on the sew-out.", 1.6, 600, ORANGE))
+    o.append(t(12, y + 4.5, f"Width check: fills + satins are at or above the 0.8 mm minimum except tapered ends. Hairline runs (sky-glow lines, short sun rays) are INTENTIONALLY 0.45 mm, under the 0.6 mm line minimum: {HAIR_PCT:.1f} % of the stitched area. Check them on the sew-out.", 1.6, 600, ORANGE))
     o.append(t(12, y + 7.8, f"Run time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one hooping (split files: {MH_SPLIT:.1f} h per jacket). Rev E: clouds traced from the close-ups; cost is reported, cleaned up after the sew-out.", 1.7, 400, MUTED))
     qy = y + 16
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
@@ -155,8 +155,8 @@ def summary():
           "3. Shell dye: embroidery assumes piece-dyed, pre-washed navy duck. If the jacket is garment-dyed/washed after embroidery, wash-test the sew-out first.",
           "4. Grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per piece, scaled about the CF neck so the horizon meets at CF. OK?",
           "5. Zip: art stops 15 each side of CF (assumes ≤ 12 tape + 10 mm topstitch). Confirm tape width.",
-          "6. Welts: placed at the mockup position (moved 18 toward CF), Drum Island welt size 1.4 × 13. Confirm before the art is frozen.",
-          "7. Fidelity first (Devin): dashed rays, dash-field sea, soft florets and hairline glow are built as in the close-ups; trims + run time are reported, clean up after the sew-out.",
+          "6. Welts: at the mockup position/angle (moved 18 toward CF), Drum Island welt 1.4 × 13 — APPROVED (Devin, 19 Oct 2026).",
+          "7. Rays over the sea: SOLID 0.6 mm bean lines instead of the mockup's dashes — APPROVED (Devin, 19 Oct 2026). Dash-field sea, traced lobes, hairline glow as in the close-ups; cost reported.",
           "8. Reference: clouds traced from the AI close-ups, regrown with whole lobes at the keep-outs (traced area outside the keep-outs, replaced by edge lobes: " + ", ".join(f"F{b_['side']} {b_['lost_to_keepout_mm2']:,} mm2" for b_ in META["banks"]) + "); layout from the mockup.",
           "9. Name: 'Grand Line' is a One Piece term (Shueisha/Toei) — internal slug only; the art itself is generic (no characters/logos).",
           "10. DST/PES are production-intent drafts: the factory digitizer checks density + pull on 12 oz duck and edits before the sew-out."]
@@ -189,12 +189,12 @@ def files_page():
             y += 3.5
     y += 3
     o.append(t(12, y, "WHAT IS DIGITIZED", 2.0, 700)); y += 4.2
-    notes = [("Order", "one stop per thread, as on the spec p4 stop table: sea deep → sea teal → sea light → sea foam → sun pale → star gold → cloud shadow →"),
-             ("", "slate → sage → sage light → sand → cream (dark cloud tones first, cream highlights last, on top)."),
-             ("Sea", "horizontal tatami dashes in 4 teals, irregular length / thickness / spacing; glitter column pale / foam + hairline centre line."),
-             ("Clouds", "traced from the close-ups: 7 tone regions, short tatami per 5 mm cell at the close-up's own stitch angle; whole lobes at keep-outs."),
-             ("Sun + rays", "small radial satin half-sun + 1 thin ring, 20 tapered satin rays with dot ends; hairline dashed run rays over the sea."),
-             ("Glow + stars", "sparse radial hairline runs (sea teal, outer part sea deep); stars pale cream, tapered satin arms, satin dots."),
+    notes = [("Order", "as on the spec p4 stop table (read from the DST): sea deep → sea teal → sea light → sea foam → sun pale → star gold → cloud shadow →"),
+             ("", "slate → sage → sage light → sand → cream, then the cloud arc rows (repeat stops in threads already in the file)."),
+             ("Sea", "horizontal tatami dashes in 4 teals, irregular length / thickness / spacing, darker + shorter toward the hem; glitter: broken pale / foam bars, no centre line."),
+             ("Clouds", "traced from the close-ups: tone regions by thread family (≥ 18 mm2), concentric tatami rows per lobe, arc rows on sage / slate, whole lobes at keep-outs."),
+             ("Sun + rays", "small radial satin half-sun (no ring), 20 hairline rays (long: gold bean + dot end, short: pale run); solid 0.6 mm bean rays over the sea (approved)."),
+             ("Glow + stars", "sparse radial hairline runs (sea teal, outer part sea deep); stars warm gold-cream, slim tapered satin arms (0.65 tips), satin dots."),
              ("Ties", f"3-stitch tie-on/off at every trim + colour change; max sewn stitch < 7.5 mm; ≤ {FA.max_threads(PROF)} thread colours per file.")]
     for a, b_ in notes:
         o.append(t(12, y, a, 1.6, 700)); o.append(t(30, y, b_, 1.5)); y += 3.3

@@ -47,3 +47,7 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - Sun: fine satin rays with dot ends, dense radial hairline glow. Stars: 43 from the mockup, gold.
 - Cost (stitches, trims, stops, time) is reported, not limited; clean-up after the sew-out.
 - Frame read from `factory.json` (360 × 360, PROPOSED).
+
+## Founder decisions (19 Oct 2026, via coordinator)
+- Rays over the sea: SOLID lines instead of the mockup's dashes — APPROVED (built as continuous 0.6 mm bean lines, cut at the clouds).
+- Welt pockets at the mockup position/angle (centre 205 mm from CF, 347 mm below the CF neck seam, 38°) — APPROVED.

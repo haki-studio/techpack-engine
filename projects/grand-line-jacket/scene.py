@@ -343,7 +343,7 @@ while y < 405:
     y += hgt + 0.7 + 1.1*t
 # Rev E: glitter centre line removed (read as a ladder)
 
-# ================================================================ hairline dashed rays, slightly curved, to the welts
+# ================================================================ solid hairline rays (approved 2026-10-19), slightly curved, to the welts
 RAYS = [8.0, 20.0, 42.0, 68.0, 88.0, 125.5, 142.0, 162.0, 171.0, 176.5]
 ray_info = []
 for i, a_ in enumerate(RAYS):
@@ -359,9 +359,10 @@ for i, a_ in enumerate(RAYS):
     if nx * (1 if a_ < 90 else -1) < 0: nx, ny = -nx, -ny
     pts = [(pA[0] + (pB[0]-pA[0])*s_ + nx*0.018*Lr*4*s_*(1-s_), pA[1] + (pB[1]-pA[1])*s_ + ny*0.018*Lr*4*s_*(1-s_)) for s_ in np.linspace(0, 1, 40)]
     side_pts = [p for p in pts]
-    for r in GM.hair_dashes(side_pts, 4.2, 2.4, 0.45, phase=(i*1.7) % 6.6):
-        r["geom"] = r["geom"].difference(CLOUD_U)
-        if r["geom"].area > 0.3: add([r], 14)
+    # Devin 2026-10-19: SOLID rays approved instead of the mockup's dashes -> one continuous 0.6 mm bean line per ray, cut at clouds
+    g_ = LineString(side_pts).buffer(0.3, cap_style="round").difference(CLOUD_U.buffer(0.3))
+    for q in GM.polys(g_):
+        if q.area > 0.6: add([GM.R("gl_gold", q, "bean", None, "RAY", kob=0.3)], 14)
     ray_info.append(dict(angle=a_, start=pA, end=pB))
 
 # ================================================================ stars (every mockup star; nudged inside the keep-outs, never dropped)
