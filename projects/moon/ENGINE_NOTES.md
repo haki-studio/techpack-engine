@@ -16,3 +16,13 @@ For the coordinator to merge into `engine/` / `LESSONS.md`. Nothing in `engine/`
 
 New motifs (proposed for the library, with a render test): `moonmotifs.cloud` (scalloped Japanese cloud), `moon`,
 `pole` / `crossarm` / `insulator` / `string_insulator` / `can` / `bracket`, `wire`.
+
+## Rev C (19 Oct 2026) — new from the Rev B review fixes
+
+| # | Problem | Proposed fix | Check |
+|---|---|---|---|
+| 10 | A direction-field ground cut into 7 mm tiles (one tatami angle per tile) showed every tile seam + navy gaps between tiles on the DST render (moon Rev C WIP; review item 3). | **Flow-row fill** as an engine stitch type: evenly spaced streamlines (Jobard–Lefer, `moon3.streamlines`, dsep = row spacing) of the reference's structure-tensor field, clipped per object and sewn as staggered tatami rows along each streamline (`moonpal.flow_blocks`, region key `rows`). Rows must be transformed with the geometry everywhere the art is moved/scaled (`scene.tf_regs`, `scene.fit`, `build_grade`). | DST render at 8 px/mm: no navy between rows/tones; rows follow the close-up swirl (compare sheet). Test idea: flow fill of a disc with a concentric field -> stitches per mm² within 5 % of plain tatami. |
+| 11 | Cloud texture from tone clustering alone reads as camouflage blotches; global seigaiha grids read as print (A13). | **Scale-row motif** (`cloud3.cloud`): satin fish scales laid along streamlines of the reference stitch direction (row 2.6 mm, scale 9.5 × 3.0 mm), sewn top row first so lower scales overlap, tone sampled from the reference under each scale, dark gap run on the arch + light rim run inside. | Compare sheet: scallop rows follow each cloud's own contour; scale count per cloud reported. |
+| 12 | Close-up colour masks: a lavender mask (b − r > 14) dropped the pale pink-white caps (b ≈ r); a loose mask picked up white studio background and light topstitching. | Cloud mask = b − r > −16, lum 62–238; remove thin vertical strokes (opened core + elongation test) before tracing. | Mask overlay image per close-up in the build log (out/_wip/mask_ov.png). |
+| 13 | The heavy-slot limiter (`scripts/heavy.sh`) is not FIFO and had 25–50 waiters during this run; a 1-minute test stitch waited > 10 min. | Queue (ticket file) so jobs run in arrival order, or a separate small-job slot for test stitches < 2 min. | `heavy.sh` waiters served in order. |
+| 14 | `factory.machine_hours` was called with different stop counts (JSON stops incl. basting vs read-back stops) on T15 and G4 -> 8.8 h vs 10.0 h for the same files (review item 7). | `collect.py` overwrites stitches / trims / stops / max stitch in every results JSON from `readback.dst`; one hours function for all pages. | T15 total == G4 total (this build). |

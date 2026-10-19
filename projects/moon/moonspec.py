@@ -22,7 +22,7 @@ import readback, factory, sheet as _SH
 import pyembroidery as pe
 from shapely.strtree import STRtree
 
-REV = "Rev C"; DATE = "17 Oct 2026"
+REV = "Rev C"; DATE = "19 Oct 2026"
 PROP = "#8A5A00"
 RES_M = json.load(open("out/results/size_M.json")); RES_B = json.load(open("out/results/grade_B.json"))
 CLR = json.load(open("out/results/clearances.json"))
@@ -83,39 +83,39 @@ def piece_view(p, ppm=2.2, highlight=True):
     return PV.piece_img(VIS[p], poly, ppm, extra), poly.bounds
 
 CHANGES = {
- "01": ["Source: art redrawn from Devin's close-up (inputs/closeups/closeup_back.png,",
-        "  1448 px; moon 550 px) on top of the low-res mockup: shapes + tones traced",
-        "  from the close-up, placement + size from the mockup (mockup wins).",
-        "Moon: 5 close-up tones (cream, highlight, pale gold, crater light, crater",
-        "  grey-green) traced patch by patch, warm 2.5 mm rim, concentric rows in",
-        "  15° sectors (thread texture follows the disc), craters each at their own",
-        "  angle, star-burst rays + rim strokes as run lines (in the close-up).",
-        "Clouds: each cloud from the close-up (scale rows = indigo lines, 5 tones,",
-        "  white-pink tops, tapering wisps), placed + sized on the mockup cloud.",
-        "Pole: every part traced from the close-up (wood grain lines, bands, crossarm,",
-        "  2 pin insulators, ribbed transformer + small can, coiled string, bracket);",
-        "  pole body extended to 10 above the hem (close-up ends above it).",
-        "Licensed figure in the close-up NOT traced: box 68 × 79 (fig + 3 mm).",
-        "Wires: satin cord 1.6, 12 wires, wraps at the insulators; side-seam wrap."],
- "02": ["Source: close-up closeup_front.png (clouds 3 per panel incl. the wisp by",
-        "  the zip), each cloud placed + sized on its mockup cloud (mockup wins).",
-        "Every lobe + scale row traced: 5 tones, indigo scallop lines, white-pink",
-        "  tops, tapering tails. Clouds that cross a seam in the mockup are moved",
-        "  the smallest distance that clears the 15 mm keep-outs."],
- "03": ["Source: close-up closeup_front.png (pole + hardware traced), mockup",
-        "  placement: pole outside the welt, 15 off the side seam, 10 above hem.",
-        "Hardware: pole grain, bands, crossarm, pin insulator, ribbed transformer,",
-        "  small can, coiled string insulator (+7 mm to clear the welt), bracket.",
-        "Wires: 12 (5 across the zip to the wearer's right side seam, 4 to the left",
-        "  side seam, 3 drops), satin cord 1.6 with wraps. Where a wire passes a welt",
-        "  pocket it stops 6 short of the welt box both sides (behind the pocket).",
-        "Every wire meets its back (01) partner at the side seam (same height)."],
+ "01": ["Source: Devin's close-up inputs/closeups/closeup_back.png (1448 px, AI",
+        "  render, ~0.44 mm/px) = tracing reference; ONE registration for the whole",
+        "  back (moon centre + radius), checked against the mockup layout.",
+        "Rev C moon = the close-up's STITCH STRUCTURE: ground sewn as tatami rows",
+        "  ALONG the close-up's swirl (streamlines 0.45 apart, no tiles, no gaps);",
+        "  5 warm tones incl. the grey-green maria under it; every raised oval cell",
+        "  (clusters + rim ring) its own satin + light rim + shadow run; the 3 star",
+        "  craters filled grey-green stars with pale centre ring; 2.2 radial rim.",
+        "Clouds: close-up silhouettes (domes + whole tails), scallop rows of satin",
+        "  scales along the close-up stitch direction, tones pale caps -> indigo.",
+        "Pole: tatami along the pole, bark highlights, grain, curved ring clamps,",
+        "  slatted drum, can, shaped pin insulators, coil + cone insulators.",
+        "Wires: twisted rope satin + shade run, layout as the close-up (5 to the",
+        "  wearer's left seam, 2 from the wrap to the right, 2nd crossing wire).",
+        "Licensed figure NOT traced: box 68 x 79 [proposed — confirm]."],
+ "02": ["Source: close-up closeup_front.png. Rev C: every front cloud placed by",
+        "  ONE fitted close-up -> garment mapping (the two right clouds overlap as",
+        "  in the close-up: no hole between them); built like 01 (scallop rows,",
+        "  pale caps -> indigo, whole tails); wisps by the zip kept. Clouds that",
+        "  run into a seam keep-out are moved the smallest distance (max 90 mm)."],
+ "03": ["Source: close-up closeup_front.png, mockup placement (pole outside the",
+        "  welt, 15 off the side seam, foot 10 above the hem seam).",
+        "Hardware as 01: grain + clamps, cap, crossarm + braces, pin insulator,",
+        "  slatted drum, can, spool + coil, cone insulator.",
+        "Wires: 5 to the wearer's-left side seam + 2 across the zip to the right",
+        "  side seam, at the BACK close-up's heights (the front close-up shows 3 / 4:",
+        "  the two renders disagree) [proposed — confirm]; its other left-going wires",
+        "  drop to the hem. Wires stop 6 short of the welt boxes (behind the pocket)."],
  "04": ["Source: close-up closeup_sleeves.png — 4 views (R back half, R front half,",
-        "  L front half, L back half, read from the cap seams): cloud count +",
-        "  position per view kept (fraction along the sleeve + across the view).",
-        "Every lobe + scale row traced, same 5 tones as 01/02.",
-        "15 clear of the cap + underarm seams, 10 above the cuff seam (moved",
-        "  the smallest distance where a close-up cloud sat on a seam)."]}
+        "  L front half, L back half): cloud count + position per view kept.",
+        "Built like 01 (scallop rows, pale caps, whole tails). A cloud cut by the",
+        "  sleeve edge in the close-up view ends at the sleeve top crease.",
+        "15 clear of the cap + underarm seams, 10 above the cuff seam."]}
 PROD = ["Embroider the cut pieces flat, BEFORE any seam.",
         "40wt polyester (Madeira Polyneon), 75/11 sharp,",
         "  2.5 oz cutaway (black/navy on the dark duck).",
@@ -269,7 +269,7 @@ def build(n):
     for p in pieces:
         r = res_of(p)
         o.append(t(rx, yy, f"{p} ({'size M' if p in RES_M else 'grade B'})", 1.8, 400, MUTED))
-        o.append(t(rx + 44, yy, f"{r['stitches']:,} st · {r['trims_dst']} trims · {r['stops']} stops · {r['threads']} threads · {r['stitches']/750:.0f} min", 1.8, 600)); yy += 3.5
+        o.append(t(rx + 44, yy, f"{r['stitches']:,} st · {r['trims_dst']} trims · {r['stops']} stops · {r['threads']} threads · {factory.machine_hours(r['stitches'], None, r['trims_dst'], max(0, r['stops'] - 1)) * 60:.0f} min", 1.8, 600)); yy += 3.5
         if "sections" in r:
             o.append(t(rx + 44, yy, "hoopings: " + " · ".join(f"{k[:2]} {v['stitches']/1000:.0f}k ({v['size'][0]:.0f}×{v['size'][1]:.0f})" for k, v in r["sections"].items()) + ("  fit 360²" if all(v["fits"] for v in r["sections"].values()) else "  CHECK"), 1.7, 400, MUTED)); yy += 3.5
     if n == "01":

@@ -3,21 +3,24 @@
 import json, os, drum, factory, readback
 LIM = factory.max_threads()
 out = {"sizes": {}, "grades": {}}; bad = []
+def RB(v):
+    """every document number = the DST read-back (LESSONS B20): stitches, trims, stops, max stitch"""
+    rb = readback.dst(v["file"] + ".dst"); v.update(stitches=rb["stitches"], trims_dst=rb["trims"], stops=rb["stops"], max_stitch=rb["max_stitch"]); return rb
 for sz in drum.SIZES:
     r = json.load(open(f"out/results/size_{sz}.json")); out["sizes"][sz] = r
     for k in ("back", "moonbox", "03L", "03R"):
-        v = r[k]; rb = readback.dst(v["file"] + ".dst"); v["trims_dst"] = rb["trims"]; v["stitches"] = rb["stitches"]
+        v = r[k]; rb = RB(v)
         if rb["max_stitch"] >= 7.5 or factory.check_threads(v["file"] + ".pes") > LIM: bad.append((sz, k, rb["max_stitch"], v["threads"]))
     for nm, v in r["splits"]["sections"].items():
-        rb = readback.dst(v["file"] + ".dst")
+        rb = RB(v)
         if not v["fits"] or rb["max_stitch"] >= 7.5 or factory.check_threads(v["file"] + ".pes") > LIM: bad.append((sz, nm, v["size"], v["fits"]))
 for G in "ABC":
     r = json.load(open(f"out/results/grade_{G}.json")); out["grades"][G] = r
     for k, v in r.items():
-        rb = readback.dst(v["file"] + ".dst")
+        rb = RB(v)
         if rb["max_stitch"] >= 7.5 or factory.check_threads(v["file"] + ".pes") > LIM: bad.append((G, k, rb["max_stitch"]))
         for nm, sv in v.get("sections", {}).items():
-            if not sv["fits"] or readback.dst(sv["file"] + ".dst")["max_stitch"] >= 7.5: bad.append((G, k, nm))
+            if not sv["fits"] or RB(sv)["max_stitch"] >= 7.5: bad.append((G, k, nm))
 json.dump(out, open("out/results/all.json", "w"), default=float, indent=1)
 for sz, r in out["sizes"].items():
     sp = r["splits"]

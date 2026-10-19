@@ -15,7 +15,7 @@ from specbase import img_tag
 import drum, emb_place as EP, moonstitch as MS, factory, readback, sheet as _SH
 import techflat as TF
 
-REV = "Rev C"; DATE = "17 Oct 2026"
+REV = "Rev C"; DATE = "19 Oct 2026"
 SB.FOOT = f"HAKI STUDIOS · Drum Island jacket · moon · EMBROIDERY · {REV} · {DATE}"; _SH.FOOT = SB.FOOT
 PROF = factory.load()
 def hours(r): return factory.machine_hours(r["stitches"], PROF, trims=r["trims_dst"], colour_changes=max(0, r["stops"] - 1))
@@ -30,6 +30,10 @@ ELEMENTS = [("01", "Back scene + placeholder", "back", "back panel B01", M["back
             ("02", "Chest clouds", "02R", "wearer's right front F02", B["02R"]), ("02", "Chest clouds", "02L", "wearer's left front F01", B["02L"]),
             ("03", "Lower front pole + wires", "03L", "wearer's left front F01", M["03L"]), ("03", "Lower front wires", "03R", "wearer's right front F02", M["03R"]),
             ("04", "Sleeve clouds", "04R", "right sleeve S01", B["04R"]), ("04", "Sleeve clouds", "04L", "left sleeve S02", B["04L"])]
+# every per-file number on G1-G5 / cover / F1 from the DST read-back (LESSONS B20) — the same numbers T15 prints
+def _rb(r):
+    b = readback.dst(r["file"] + ".dst"); return dict(r, stitches=b["stitches"], trims_dst=b["trims"], stops=b["stops"], max_stitch=b["max_stitch"])
+ELEMENTS = [(e, nm, k, pc, _rb(r)) for e, nm, k, pc, r in ELEMENTS]
 OUT_PDF = "out/HAKI_moon_EMBROIDERY-PACK_RevC.pdf"
 HEX2KEY = {v[0].upper(): k for k, v in PAL.items()}
 

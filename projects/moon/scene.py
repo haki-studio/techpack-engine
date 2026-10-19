@@ -368,7 +368,9 @@ def wire_angles(back_geo, front_geo, xs):
 
 def graded_art():
     """02 + 04 at M (clipped to the M pattern); per-size placement in emb_place."""
+    # graded art is clipped 2.5 mm (02) / 1.0 mm (04) INSIDE the M keep-outs: grade A (92 %) on XS and pull comp on the
+    # satin edges must still clear 15 mm on every size (Rev C: XS 02R 13.1 / M 04L 14.8 failed with the plain M clip)
     fc = front_clips("M"); it = chest_art()
-    out = {"02R": build(it, fc["F02"][0]), "02L": build(it, fc["F01"][0])}
-    for k in ("04R", "04L"): out[k] = build(sleeve_art(k), sleeve_clip("M", k))
+    out = {"02R": build(it, fc["F02"][0].buffer(-2.5)), "02L": build(it, fc["F01"][0].buffer(-2.5))}
+    for k in ("04R", "04L"): out[k] = build(sleeve_art(k), sleeve_clip("M", k).buffer(-1.0))
     return out

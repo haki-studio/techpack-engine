@@ -9,7 +9,7 @@ for e in ("01_back-scene", "02_chest-clouds", "03_lower-front", "04_sleeve-cloud
     shutil.copytree(f"out/{e}", f"{PKG}/elements/{e}", ignore=shutil.ignore_patterns("summary.json", "result.json"))
 shutil.copytree("out/pattern", f"{PKG}/pattern"); shutil.copy(OUT, PKG)
 open(f"{PKG}/README.txt", "w").write("""HAKI STUDIOS - Drum Island Jacket, MOON colourway (style HK-JK-DRUM-MOON)
-Garment tech pack Rev C + embroidery Rev C - 17 Oct 2026
+Garment tech pack Rev C + embroidery Rev C - 19 Oct 2026
 
 HAKI_Drum-Island_moon_FULL-TECHPACK_RevC.pdf
     T1-T16 garment pages (flats, details, size chart, grading, BOM, construction, labels, colourway, open questions,
