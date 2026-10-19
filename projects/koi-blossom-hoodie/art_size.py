@@ -56,6 +56,7 @@ def build(size):
         for gk, regs in groups.items():
             is_cl = regs[0]["cluster"] is not None
             fitted, mv = (None, None) if is_cl else fit_group(regs, lim)
+            if fitted is None and not is_cl: fitted, mv = fit_group(regs, lim, 32.0)      # Rev B: wider search before giving up (no motif dropped)
             if fitted is not None:
                 out += fitted
                 if mv != (0.0, 0.0, 1.0): moves[gk] = tuple(round(v, 2) for v in mv)

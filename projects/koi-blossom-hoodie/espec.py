@@ -195,7 +195,9 @@ def build(cfg, vis_all):
     for i, c in enumerate(cfg["changes"]): o.append(t(76, my + 4.5 + i*3.2, c, 1.8))
     o.append(t(196, my, "PRODUCTION", 2.4, 700))
     for i, c in enumerate(cfg["production"]): o.append(t(196, my + 4.5 + i*3.2, c, 1.8))
-    o.append(t(14, SH - 12, cfg.get("reference", ""), 1.8, 600, ORANGE))
+    import textwrap
+    _rl = textwrap.wrap(cfg.get("reference", ""), 175)
+    for i, l in enumerate(_rl): o.append(t(14, SH - 9 - 3.0 * (len(_rl) - i), l, 1.75, 600, ORANGE))
     pages.append(o)
 
     w = PdfWriter()

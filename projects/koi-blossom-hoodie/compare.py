@@ -93,6 +93,7 @@ def closeup_motif(mot, bb, ppm):
         a0 = math.atan2(*(hd - tl)[::-1]); s = info["L"] / t["L"]; th = -math.radians(info["ang"])
         dx, dy = XX - info["c"][0], YY - info["c"][1]
         u = (dx * math.cos(th) - dy * math.sin(th)) / s; v = (dx * math.sin(th) + dy * math.cos(th)) / s
+        v = v / KT.LAT
         if info["mirror"]: v = -v
         cx = mid[0] + u * math.cos(a0) - v * math.sin(a0); cy = mid[1] + u * math.sin(a0) + v * math.cos(a0)
     out = np.full((Hh, W, 3), 245, np.float32); ok = (cx >= 0) & (cy >= 0) & (cx < CU.shape[1] - 1) & (cy < CU.shape[0] - 1)
@@ -128,8 +129,8 @@ ZOOMS = {"01": [("FR", (-245, 78, -125, 198), "FR big lily (close-up flower 1) +
                 ("FR", (-120, 190, -30, 280), "FR koi (close-up koi 4)", "koi4"),
                 ("FR", (-250, 260, -150, 360), "FR vine leaves (lit edges)", None),
                 ("FR", (-100, 400, -10, 490), "FR hem lily + dark leaves", None),
-                ("FL", (55, 365, 215, 500), "FL hem lily pair (big lily + dark flower)", None),
-                ("FL", (170, 330, 265, 480), "FL dark flower + side vine", None),
+                ("FL", (60, 360, 230, 490), "FL hem lily pair (big lily + dark flower)", None),
+                ("FL", (160, 355, 265, 470), "FL dark flower + side vine", None),
                 ("FL", (75, 205, 175, 305), "FL koi school", None)],
          "02": [("SR", (20, 55, 110, 145), "SR top koi", None), ("SR", (25, 330, 115, 420), "SR koi + petals", None),
                 ("SR", (15, 375, 125, 465), "SR cuff flower cluster", None), ("SL", (-115, 245, -25, 335), "SL long koi", None),

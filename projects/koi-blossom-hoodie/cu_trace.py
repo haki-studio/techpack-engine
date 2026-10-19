@@ -177,7 +177,7 @@ def trace_koi():
         sil = mask_poly(comp, simp=0.7)
         sil = max(polys(sil), key=lambda p: p.area)
         # body = the opened silhouette in front of the peduncle; tail = beyond; fins = the rest
-        r_open = max(2, int(0.055 * L))
+        r_open = max(2, int(0.06 * L))
         core = ndi.binary_opening(comp & (s < 0.72), structure=np.ones((3, 3)), iterations=r_open)
         core_l, nc = ndi.label(core)
         if nc > 1:
@@ -185,7 +185,12 @@ def trace_koi():
         body = max(polys(mask_poly(ndi.binary_dilation(core, iterations=1) & comp, simp=0.9)), key=lambda p: p.area).buffer(1.2).buffer(-1.2)
         tail = unary_union(polys(mask_poly(comp & (s >= 0.62), simp=0.6))).difference(body.buffer(0.5)).buffer(0)
         tail = max(polys(tail), key=lambda p: p.area) if polys(tail) else Polygon()
-        fins = [p for p in polys(sil.difference(body.buffer(0.4)).difference(tail.buffer(0.4)).buffer(-0.6).buffer(0.6)) if p.area > 0.0012 * L * L]
+        cand = [p for p in polys(sil.difference(body.buffer(0.4)).difference(tail.buffer(0.4)).buffer(-0.6).buffer(0.6)) if p.area > 0.0012 * L * L]
+        # pieces at the head end are head, not fins: give them back to the body
+        sof = lambda p: ((p.centroid.x - hd_[0]) * u[0] + (p.centroid.y - hd_[1]) * u[1]) / L
+        fins = [p for p in cand if sof(p) > 0.16]
+        head_bits = [p for p in cand if sof(p) <= 0.16]
+        if head_bits: body = max(polys(unary_union([body] + [p.buffer(0.6) for p in head_bits]).buffer(0.8).buffer(-0.8)), key=lambda p: p.area)
         # red patches: traced red pixels, crisp angular (simplified), 2 largest
         reds = sorted(polys(mask_poly(ndi.binary_opening(red_m & comp, iterations=1), simp=2.2, min_area=20, smooth=0)), key=lambda p: -p.area)[:2]
         reds = [p.buffer(-0.5, join_style=2).buffer(0.5, join_style=2) for p in reds]
@@ -212,6 +217,7 @@ def trace_petals(exclude):
         if xs.min() < 3 or ys.min() < 3 or xs.max() > W - 4 or ys.max() > H - 4: continue
         p = max(polys(mask_poly(m, simp=0.7)), key=lambda q: q.area)
         if p.intersects(ex): continue
+        if p.area / max(p.convex_hull.area, 1) < 0.86: continue          # lumpy / two-petal blobs: not a clean petal template
         if ys.max() < 120 and xs.min() > 400: continue          # garment seam / topstitching at the top right
         mrr = p.minimum_rotated_rectangle; cs = np.array(mrr.exterior.coords)
         e = [np.hypot(*(cs[i + 1] - cs[i])) for i in range(2)]

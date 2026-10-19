@@ -67,6 +67,8 @@ def lily(name, x, y, R, rot=0.0, mirror=False, shift=0, unit=None, rng=None):
 
 KOI_NAMES = sorted(TPL["koi"])
 
+LAT = 0.85      # koi slimmed across the spine to the mockup's proportions (the close-up koi are ~15 % stockier)
+
 def koi(k, x, y, L, ang, mirror=False, unit=None):
     """koi template k (0-3) centred at (x, y), head toward `ang` (deg), length L (head tip -> tail tip, mm)"""
     t = TPL["koi"][KOI_NAMES[k % len(KOI_NAMES)]]
@@ -77,7 +79,7 @@ def koi(k, x, y, L, ang, mirror=False, unit=None):
     def X(g):
         g = affinity.translate(g, -mid[0], -mid[1]); g = affinity.rotate(g, -a0, origin=(0, 0))
         if mirror: g = affinity.scale(g, 1, -1, origin=(0, 0))
-        g = affinity.scale(g, s, s, origin=(0, 0)); g = affinity.rotate(g, ang, origin=(0, 0))
+        g = affinity.scale(g, s, s * LAT, origin=(0, 0)); g = affinity.rotate(g, ang, origin=(0, 0))
         g = affinity.translate(g, x, y)
         return g if g.geom_type == 'Point' else g.buffer(0)
     P = lambda p: (lambda q: (q.x, q.y))(X(Point(p)))
@@ -102,7 +104,10 @@ def koi(k, x, y, L, ang, mirror=False, unit=None):
         for q in picked[:6]:
             e = (root[0] + (q.x - root[0]) * 0.85, root[1] + (q.y - root[1]) * 0.85)
             rays.append(line_poly([at(0.70), e], 0.65))
-    fins = [X(f) for f in t["fins"]]
+    fins = []
+    for f0 in t["fins"]:          # traced fin outline, scaled 1.35 about its root to the mockup's fin size (fan fins read larger there)
+        fx = X(f0); rt = min(fx.exterior.coords, key=lambda p: body.distance(Point(p)))
+        fins.append(affinity.scale(fx, 1.35, 1.35, origin=rt).buffer(0))
     for fn in fins:
         if fn.area < 1.5: continue
         b = fn.exterior.interpolate(fn.exterior.project(body.centroid)) if False else None
@@ -120,9 +125,13 @@ def koi(k, x, y, L, ang, mirror=False, unit=None):
         if not rg.is_empty: regs.append(dict(col="kb_grey", geom=rg, st="run", ang=None, grp="KO-ray", sub=2, ko=False))
     # body: white, sewn along the spine (one direction); traced pearl shading
     regs.append(dict(col="kb_white", geom=body, st="tatami", ang=ang, grp="KO", sub=3))
-    grey = X(t["grey"]).intersection(body).buffer(0)
+    grey = X(t["grey"]).buffer(-0.5).buffer(0.8).intersection(body.buffer(-0.3)).buffer(0)      # clean shading shapes, no speckle
+    grey = unary_union([q for q in polys(grey) if q.area > 4.0]) if not grey.is_empty else grey
     if not grey.is_empty: regs.append(dict(col="kb_cream", geom=grey, st="tatami", ang=ang, grp="KO-shade", sub=4))
-    reds = [X(r).intersection(body.buffer(-0.5)).buffer(0) for r in t["reds"]]
+    def crisp(r):        # one clean angular object per patch: no hooks / necks (opening 1.6 mm), straight-ish edges
+        q = r.buffer(-1.6, join_style=2).buffer(1.6, join_style=2).simplify(0.45).buffer(0)
+        ps = polys(q); return max(ps, key=lambda p: p.area) if ps else r
+    reds = [crisp(X(r).intersection(body.buffer(-0.5)).buffer(0)) for r in t["reds"]]
     red_u = unary_union(reds)
     # scale rows: cream chevron double runs across the back between the head and the peduncle (on white, not on red)
     W = 2 * max(body.distance(Point(at(0.35))), 1.0) + 0.21 * L

@@ -46,6 +46,12 @@ def cover(index):
     tag, h = img_tag(a, 14, 54, 92); o.append(tag); o.append(t(14, 54 + h + 3.5, "FRONT (size M stitch render)", 2.0, 700))
     tag, h2 = img_tag(b, 110, 62, 86); o.append(tag); o.append(t(110, 62 + h2 + 3.5, "SLEEVES (pattern pieces, front half embroidered)", 2.0, 700))
     o.append(t(14, 54 + h + 8, "Back + hood: no embroidery [proposed — confirm, the mockup shows the front only].", 1.9, 600, ORANGE))
+    REG = json.load(open("trace/closeup_reg.json"))
+    gl = [f"REFERENCE: lilies, koi + petals traced from the AI close-up of the FR upper panel (registered, drift {REG['projective']['mean_mm']} mm -> positions",
+          "from the mockup). NO close-up for: FR hem lily, the whole FL panel, both sleeves — redrawn from the low-res mockup with the traced templates.",
+          f"GRADING [proposed — confirm]: XS–S 92 %, M–XL 100 % (L + XL sew the M art: FR {ALL['L']['FR']['full']['size_mm'][0]:.0f} × {ALL['L']['FR']['full']['size_mm'][1]:.0f}, "
+          f"{ALL['L']['FR']['full']['stitches']:,} / {ALL['XL']['FR']['full']['stitches']:,} st, only re-fitted to their keep-outs), XXL–3XL 108 %."]
+    for i, l in enumerate(gl): o.append(t(14, 54 + h + 12 + i*3.4, l, 1.75, 600, ORANGE if i == 2 else INK))
     ix = 204
     o.append(t(ix, 58, "CONTENTS", 2.8, 700)); y = 64
     for name, pg in index:
@@ -149,7 +155,7 @@ def summary():
     y = 36 + len(PS)*4.6 + 1
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.9, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.9, 700)); o.append(t(cx[9], y, f"{MH:.1f} h", 1.9, 700))
     o.append(t(12, y + 4.5, f"Split files ({HOOPS} hoopings per jacket): {MH_SPLIT:.1f} h per jacket. Width check = share of a code's area below its minimum width (satin 0.8, run 0.6). Fin/tail rays + leaf midribs are single-run lines by design.", 1.65, 400, MUTED))
-    o.append(t(12, y + 7.8, "Rev A is built for fidelity (LESSONS A11): trims, stops and run time are reported, not limited — clean-up after the strike-off.", 1.65, 400, MUTED))
+    o.append(t(12, y + 7.8, f"{REV} is built for fidelity (LESSONS A11): trims, stops and run time are reported, not limited — clean-up after the strike-off.", 1.65, 400, MUTED))
     qy = y + 15
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
     qs = [f"1. Frame: on {FR_S} the taller pieces need 2 hoopings (split S1/S2 with registration crosses, G5/G6); a larger / jacket frame removes the joins — which frames do you have?",
@@ -157,10 +163,11 @@ def summary():
           "3. Shell: assumed washed navy 12 oz duck, piece-dyed and pre-washed before embroidery. If the jacket is garment-washed after embroidery, wash-test the sew-out.",
           "4. Back, hood and the back half of the sleeves: the mockup shows the front only — assumed plain. Confirm (or send a back / hood mockup).",
           "5. Hem band + cuffs: the mockup flowers run over the band / cuff seams; the art stops 10 above them (band + cuffs not embroidered). OK, or embroider the band?",
-          "6. Grading: A 92 % (XS–S) · B 100 % (M–XL) · C 108 % (XXL–3XL), one file per size per piece, re-fitted to each size's keep-outs. OK?",
+          f"6. Grading: A 92 % (XS–S) · B 100 % (M–XL) · C 108 % (XXL–3XL). L + XL sew the M art at 100 % (FR {ALL['L']['FR']['full']['stitches']:,} / {ALL['XL']['FR']['full']['stitches']:,} st vs M {ALL['M']['FR']['full']['stitches']:,}) — OK, or scale L/XL (e.g. 104 %)?",
+          "6b. Zip: the mockup lilies touch the zip; the art keeps 15 off CF on both fronts (FR hem lily moved ~15 mm). OK?",
           "7. Hood pattern: the hooded Drum Island variant is not drafted yet — pattern + garment pages (T*) follow; placements here use the Drum Island body.",
           "8. Welt pockets: at the mockup position and angle (60°), Drum Island welt size 1.4 × 13. Confirm before the art is frozen.",
-          "9. Reference: art redrawn from the low-res mockup + one AI close-up (upper right front) — not originals. Real artwork or more close-ups would improve the sleeves + FL.",
+          "9. Reference: lilies + koi traced from ONE AI close-up (FR upper); FL, the FR hem lily and the sleeves are redrawn from the low-res mockup with those templates. Close-ups of FL + sleeves (closeup_request.md) would let us trace them too.",
           "10. DST/PES are production-intent drafts: the factory digitizer checks density + pull on the shell and edits before the strike-off."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i*3.6, q, 1.75))
     return o
@@ -189,7 +196,7 @@ def files_page():
                 o.append(t(cx[3], y, "pending", 1.4, 400, MUTED)); allfit = False
             y += 3.05
     y += 2.5
-    notes = [("Order", "per piece: stems → leaves (dark tones first) → lilies (base → lit → tips → streaks) → petals → koi (fins + tail → rays → body → shading → red → eyes)."),
+    notes = [("Order", "per piece: stems → leaves (dark tones first) → lilies (petal tones dark → light → throat → stamen lines → anthers) → petals → koi (fins + tail → rays → body → shading → scale rows → red → eyes)."),
              ("Ties", f"3-stitch tie-on/off at every trim + colour change; max sewn stitch ≤ 7.5 mm; ≤ {FA.max_threads(PROF)} thread colours per file (registration in stop 1's thread).")]
     for a, b_ in notes:
         o.append(t(12, y, a, 1.5, 700)); o.append(t(24, y, b_, 1.4)); y += 3.1

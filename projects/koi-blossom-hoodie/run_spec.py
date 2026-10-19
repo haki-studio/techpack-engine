@@ -7,8 +7,13 @@ C = META["counts"]
 CUR = json.load(open("dst_current.json"))
 def hoops(P): return len(CUR[P]["splits"]["sections"])
 def n(P, k): return C[P][k]
-REF = ("Art redrawn, not traced: layout counted from the low-res mockup (inputs/front.png, ~1 px per mm); motif look from the AI close-up "
-       "of the upper right front (inputs/closeup_mockup_koi.png). No original artwork exists — send it if it does.")
+REG = json.load(open("trace/closeup_reg.json"))
+REF = {"01": ("Rev B: motif STRUCTURE traced from the AI close-up of the upper wearer's-right front (inputs/closeup_mockup_koi.png, registered on the mockup, "
+              f"mean drift {REG['projective']['mean_mm']} mm): lily petal outlines + tone regions, throats, anthers, koi silhouettes, red patches, fins, tails, free-petal shapes. "
+              "Positions + sizes from the low-res mockup (inputs/front.png, ~1 px/mm). Close-up covers FR upper only (2 lilies, 4 koi): the FR hem lily, the FL panel "
+              "and its 7 koi + 2 lilies have NO close-up and reuse the traced templates (redrawn from the low-res mockup). No original artwork exists."),
+       "02": ("Rev B: NO close-up of the sleeves — redrawn from the low-res mockup (inputs/front.png, ~1 px/mm, front view only) using the koi, lily and petal "
+              "templates traced from the front close-up (inputs/closeup_mockup_koi.png). A sleeve close-up (inputs/closeup_request.md) would let us trace them.")}
 PROD = ["Embroider the cut panels flat, BEFORE zip, welts,",
         "  side seams, sleeve seams and hem band / cuffs.",
         "12 threads, 40wt polyester (G3); stop order p4.",
@@ -30,8 +35,8 @@ CFG = {
              "!  so the two halves need no match marks.",
              "!Hem band: art stops 10 above the band seam (G2).",
              f"!Hoopings on the factory frame (size M): FR {hoops('FR')}, FL {hoops('FL')} (G5/G6)."],
-   dm_crops=[("FR", (-225, 105, -170, 135), "Lily: two-tone petals, zig-zag tone steps, stamens"),
-             ("FR", (-115, 110, -60, 140), "Koi: body satin, red patches, fins + tail rays"),
+   dm_crops=[("FR", (-225, 105, -170, 135), "Lily: traced petals + tone regions, throat, anthers"),
+             ("FR", (-115, 110, -60, 140), "Koi: body along the spine, scale rows, 2 red patches, fins + tail rays"),
              ("FL", (100, 380, 155, 410), "Lily cluster at the hem band, leaves")],
    crops=[("FR", (-220, 100, -165, 160), "Lily, size M 1:1"), ("FR", (-120, 100, -70, 160), "Koi pair + petals"),
           ("FL", (60, 210, 115, 270), "Koi school"), ("FL", (95, 380, 150, 440), "Hem-band lily")],
@@ -46,8 +51,9 @@ CFG = {
             "  render draws them under the sleeve).",
             "Welts at the mockup position + angle (60°), Drum Island",
             "  size 1.4 × 13; art keeps 6 clear on every size.",
-            "Long-and-short shading = 2–4 tone bands per petal / leaf."],
-   production=PROD, reference=REF),
+            "Rev B: lilies, koi + free petals traced from the close-up",
+            "  (petal shapes, tones, red patches, fins, tails; A12/A13)."],
+   production=PROD, reference=REF["01"]),
  "02": dict(id="02", short="sleeve koi", title="SLEEVES — koi, lilies + petals",
    sub="Direct embroidery on the front half of both cut sleeves (S01 wearer's right, S02 wearer's left) · mm, finished size · art files 1:1",
    coords="PLACEMENT (sleeve pattern coords: x from the sleeve centre line, y down from the underarm line)",
@@ -70,7 +76,7 @@ CFG = {
             "Cuff: the mockup lily runs over the cuff seam; the",
             "  cluster ends 10 above it.",
             "Back half of the sleeves: plain [proposed — confirm]."],
-   production=PROD, reference=REF)}
+   production=PROD, reference=REF["02"])}
 
 if __name__ == "__main__":
     for el in (sys.argv[1:] or ["01", "02"]):
