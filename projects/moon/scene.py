@@ -59,7 +59,10 @@ def tf_regs(regs, sc, anchor_from, anchor_to, dx=0.0):
         if isinstance(ang, tuple):        # radial centre moves with the art
             px = anchor_to[0] + (ang[1] - anchor_from[0]) * sc + dx; py = anchor_to[1] + (ang[2] - anchor_from[1]) * sc
             ang = (ang[0], px, py)
-        out.append(dict(r, geom=g if r["st"] in ("bean", "run") else g.buffer(0), ang=ang))
+        d_ = dict(r, geom=g if r["st"] in ("bean", "run") else g.buffer(0), ang=ang)
+        if r.get("rows") is not None:          # moon flow rows (moon3) move with their region
+            d_["rows"] = affinity.translate(affinity.scale(r["rows"], sc, sc, origin=anchor_from), anchor_to[0] - anchor_from[0] + dx, anchor_to[1] - anchor_from[1])
+        out.append(d_)
     return out
 
 WIRE_W = 1.6

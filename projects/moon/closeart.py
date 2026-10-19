@@ -41,8 +41,8 @@ polys = TA.polys; width = TA.width; map_geom = TA.map_geom
 CU_MOON = (724.5, 295.5, 275.0)
 def moon():
     """Rev C: stitch-structure moon (moon2.py): direction-field ground, ~470 raised oval cells, traced star craters."""
-    import moon2
-    vis, disc, n = moon2.build(CB)
+    import moon3
+    vis, disc, n = moon3.build(CB)
     return vis, disc
 
 # ================================================================ clouds
@@ -251,7 +251,7 @@ def build_all():
 
 def load():
     p = "close_M.pkl"
-    srcs = ["inputs/closeups/closeup_back.png", "inputs/closeups/closeup_front.png", "inputs/closeups/closeup_sleeves.png", "closeart.py", "trace.py"]
+    srcs = ["inputs/closeups/closeup_back.png", "inputs/closeups/closeup_front.png", "inputs/closeups/closeup_sleeves.png", "closeart.py", "trace.py", "moon3.py", "cloud3.py", "polepar.py"]
     if os.path.exists(p) and all(os.path.getmtime(p) > os.path.getmtime(s) for s in srcs if os.path.exists(s)):
         return pickle.load(open(p, "rb"))
     d = build_all(); pickle.dump(d, open(p, "wb")); return d

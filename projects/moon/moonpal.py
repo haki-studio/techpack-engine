@@ -83,5 +83,52 @@ def patch_dst2():
                 try: return _h(shapely.set_precision(make_valid(p).buffer(0), 0.01).buffer(0), ang, sp)
                 except Exception: return []
         SR.hatch = hatch; SR._moon_safe = True
+    if not getattr(dst2, "_moon_rows", False):
+        _bo = dst2.build_object
+        def build_object(r, earlier_tones):
+            if r.get("rows") is None: return _bo(r, earlier_tones)
+            return flow_blocks(dst2, r)
+        dst2.build_object = build_object; dst2._moon_rows = True
     dst2.BLEND.update({"MN-hl": 1.0, "MN-warm": 1.0, "MN-crater": 1.0, "MN-mare": 1.0, "CL-top": 1.0, "CL-hl": 1.0, "CL-mid": 1.0})
     return dst2
+
+def flow_blocks(dst2, r, L=3.5, sp=0.45):
+    """Rev C moon ground (moon3.py): tatami rows ALONG precomputed streamlines (r['rows']) clipped to this object,
+    edge run + light 45° lattice underlay first, rows chained nearest-end-first (reversing as needed), 3.5 mm stitches
+    staggered by row like tatami. Rows are 0.45 mm apart (= dst2.SP_TAT)."""
+    import math
+    from shapely.geometry import LineString
+    p = r["geom"]; out = []
+    if p.is_empty or p.area < 0.06: return out
+    for q in dst2.polys(p):
+        out += dst2.edge_run(q, 0.6)
+        if q.area > dst2.LATTICE_MIN: out += dst2.join_rows(dst2.tatami_rows(q.buffer(-0.8), 45, 2.0, 4.0))
+    ml = r["rows"].intersection(p.buffer(0.2))
+    segs = [g for g in getattr(ml, "geoms", [ml]) if g.geom_type == "LineString" and g.length > 0.6]
+    if not segs: return [b for b in out if len(b) > 1]
+    ends = [(s.coords[0], s.coords[-1]) for s in segs]; used = [False] * len(segs); order = []
+    import numpy as np
+    from scipy.spatial import cKDTree
+    E = np.array([e for a_b in ends for e in a_b]); tree = cKDTree(E)
+    pos = ends[0][0]
+    for _ in range(len(segs)):
+        k = 8; j = None
+        while j is None:
+            dd, ii = tree.query(pos, k=min(k, len(E)))
+            for i_ in np.atleast_1d(ii):
+                if not used[i_ // 2]: j = int(i_); break
+            if j is None:
+                if k >= len(E):
+                    j = next(2 * i for i, u in enumerate(used) if not u)
+                k *= 4
+        si = j // 2; used[si] = True
+        cs = list(segs[si].coords)
+        if j % 2 == 1: cs = cs[::-1]
+        order.append(cs); pos = cs[-1]
+    rows = []
+    for n, cs in enumerate(order):
+        ln = LineString(cs); D = ln.length; off = (n % 3) * L / 3
+        ts = [0.0] + [t for t in np.arange(off if off > 0.4 else L, D - 0.4, L)] + [D]
+        rows.append([ln.interpolate(t).coords[0] for t in ts])
+    out += dst2.join_rows(rows)
+    return [b for b in out if len(b) > 1]
