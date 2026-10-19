@@ -121,3 +121,42 @@ def stitch_report(vis):
                          n_long=agg["n_long"], small_holes=agg["small_holes"], merges=agg["merges"],
                          stitches=stitches))
     return rows
+
+
+# ---------------------------------------------------------------- fidelity gates (LESSONS A14, A15)
+def motif_match(ref, out, ppm, min_mm2=4.0, iou_min=0.70, ratio_min=0.80, pad_mm=3.0):
+    """Every motif in the reference vs what was stitched, one row per motif (LESSONS A14).
+    ref, out: bool masks on the SAME garment-mm grid (ppm px per mm). ref = the motif family traced from the mockup /
+    close-up (e.g. the cream islet pixels); out = the same family rendered from the shipped DST. A motif passes when the
+    stitched shape overlapping it has IoU >= iou_min and keeps >= ratio_min of the reference width AND height (a
+    generated stand-in of the right size but the wrong silhouette fails here, a flattened one fails on height)."""
+    lab, n = ndi.label(ref); rows = []; pad = int(round(pad_mm * ppm))
+    for k, sl in enumerate(ndi.find_objects(lab), 1):
+        y0, y1 = max(0, sl[0].start - pad), min(ref.shape[0], sl[0].stop + pad)
+        x0, x1 = max(0, sl[1].start - pad), min(ref.shape[1], sl[1].stop + pad)
+        r = lab[y0:y1, x0:x1] == k; area = r.sum() / ppm**2
+        if area < min_mm2: continue
+        ol, _ = ndi.label(out[y0:y1, x0:x1]); keep = np.unique(ol[r & (ol > 0)])
+        o = np.isin(ol, keep) & (ol > 0)
+        iou = (r & o).sum() / max((r | o).sum(), 1)
+        def ext(m, ax):
+            idx = np.nonzero(m.any(axis=ax))[0]; return (idx[-1] - idx[0] + 1) / ppm if len(idx) else 0.0
+        wr, hr = ext(o, 0) / max(ext(r, 0), 1e-9), ext(o, 1) / max(ext(r, 1), 1e-9)
+        ok = iou >= iou_min and min(wr, 1/max(wr, 1e-9)) >= ratio_min and min(hr, 1/max(hr, 1e-9)) >= ratio_min
+        rows.append(dict(motif=k, x_mm=round((x0 + x1) / 2 / ppm, 1), y_mm=round((y0 + y1) / 2 / ppm, 1),
+                         area_mm2=round(float(area), 1), iou=round(float(iou), 2), w_ratio=round(float(wr), 2), h_ratio=round(float(hr), 2), ok=bool(ok)))
+    return rows
+
+
+def uncovered(ref, out, ppm, min_mm2=25.0, open_mm=1.0):
+    """Areas the reference says are embroidered but the shipped DST leaves bare (LESSONS A15), largest first.
+    ref = design-coverage mask from the mockup AFTER garment details (zip shadow, folds, seams, welts) are masked out;
+    out = stitched coverage rendered from the DST. Gaps narrower than open_mm (normal knockouts/rows) are ignored."""
+    gap = ndi.binary_opening(ref & ~out, structure=disk(open_mm, ppm)) if open_mm > 0 else ref & ~out
+    lab, _ = ndi.label(gap); rows = []
+    for k, sl in enumerate(ndi.find_objects(lab), 1):
+        a = (lab[sl] == k).sum() / ppm**2
+        if a >= min_mm2:
+            rows.append(dict(x_mm=round((sl[1].start + sl[1].stop) / 2 / ppm, 1), y_mm=round((sl[0].start + sl[0].stop) / 2 / ppm, 1),
+                             w_mm=round((sl[1].stop - sl[1].start) / ppm, 1), h_mm=round((sl[0].stop - sl[0].start) / ppm, 1), area_mm2=round(float(a), 1)))
+    return sorted(rows, key=lambda r: -r["area_mm2"])
