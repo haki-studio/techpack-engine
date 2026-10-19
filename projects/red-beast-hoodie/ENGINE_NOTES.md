@@ -28,3 +28,32 @@ Each: problem → proposed fix → check.
 ## 4. `tech.stops` / colour order still patched in place (ROADMAP step 1) — same as Grand Line ENGINE_NOTES 1 (`rbcore.py`).
 
 ## 5. split_clip search range — same as Grand Line ENGINE_NOTES 8 (build_size.py patches xs + ys to 12–88 %).
+
+# Rev B additions (19 Oct 2026, independent review of Rev A)
+
+## 6. Satin ALONG a stroke (long-and-short hair) is not reachable through `build_object`
+- **Problem:** every elongated satin is turned across its centreline (`is_elongated` → `turning_satin`), so a hair stroke
+  can only be a cord; `fixed_satin` (stitches along a fixed angle) is used only for non-elongated shapes and zig-zags row to
+  row in hatch-list order — on a shape with a hole or a concave bay one row's end jumps to the next row's start ACROSS the
+  gap (found on Rev B teeth: 25 mm cream stitches across the black mouth in the DST read-back).
+- **Project fix:** `rbcore.patch_dst2()` wraps `build_object`: regions with `fixed=True` sew satin rows along `ang`, ordered
+  with `chain_rows` (cell by cell), split at ≤ 6 mm when > 7, + a centre-run underlay along the stroke when ≥ 1.8 mm wide.
+- **Proposed engine fix:** `st="satin"` + numeric `ang` + `r["along"]=True` → that path in `build_object`; and make
+  `fixed_satin` use `chain_rows` too.
+- **Check:** a 20 × 10 mm ring sewn as fixed satin: no read-back stitch longer than the ring's own width crosses the hole.
+
+## 7. Stroke tiling + cords + streaks (`strokes.py`) — candidates for `engine/trace.py`
+- `stroke_tiles` (evenly spaced streamlines of a structure-tensor flow field, random lengths, nearest-line tiles) turned
+  tone regions into stroke objects (LESSONS A13); `cords` (skeleton, spur pruning + width law, geodesic tip taper) turned
+  4–5 mm flat ribbons into 2.5–3 mm cords; `streaks` (bundle PCA + across-profile peaks) gives one tapered column per streak.
+- **Check proposal:** synthetic tests — a 40 × 20 mm blob with a 30° field → tiles 1.5–3 mm wide, angles 30 ± 5°; a
+  Y-shaped 4 mm ribbon → 3 branches ≤ 3 mm wide; 10 parallel 1.5 mm lines → 10 streaks.
+
+## 8. Split search should weight outline colours
+- **Problem:** the split line crossed 28–56 mm of cream cord (a visible step where the two hoopings meet).
+- **Project fix:** `build_size.split_clip_wide` counts the cut through cream ×40 (`CREAM_W`). **Engine:** `split_clip(weights={col: w})`.
+- **Check:** cream crossed per split in the result json (`cream_cut_mm`), shown on G6.
+
+## 9. Registration crosses must never sew in an art thread that shows (cream)
+- Rev A sewed them "in stop 1's thread"; Rev B sews them as their own first stop in Deep crimson (already in every file, so the
+  12-colour count is unchanged). **Engine:** `make_pattern(reg_marks=..., reg_col=...)` instead of a WSB thread.

@@ -128,7 +128,7 @@ def threads():
         o.append(t(cx[9], y, " / ".join(str(use[k].get(p, 0)) for p in P4), 1.75, 600))
     yb = 36 + len(rbcore.RB_KEYS)*rh + 3
     o.append(t(12, yb, "ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — amber/red rows must be picked from the physical card. All targets are PROPOSED (read from the mockup).", 1.8, 600, ORANGE))
-    o.append(t(12, yb + 3.5, "Shadow black on washed black duck reads as texture, not colour (as in the mockup's detail panel): judge it on the strike-off, in raking light.", 1.8, 400, MUTED))
+    o.append(t(12, yb + 3.5, "Black ground strokes on washed black duck read as texture, not colour (as in the close-up detail panel): judge them on the strike-off, in raking light.", 1.8, 400, MUTED))
     o.append(t(12, yb + 10, "TRIMS + CONSUMABLES (per jacket)", 2.2, 700))
     fw, fh = FW, FH
     tr = [("Backing", "2.5 oz cutaway, black, cut 30 larger than each hooping; trim to 5 from stitching after embroidery (dense head: consider 3 oz on FL)"),
@@ -154,8 +154,8 @@ def summary():
         o.append(t(cx[10], y, f"{hoopings(p)}", 1.8))
     y = 36 + len(P4)*4.6 + 1
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.9, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.9, 700)); o.append(t(cx[9], y, f"{MH:.1f} h", 1.9, 700)); o.append(t(cx[10], y, f"{NH}", 1.9, 700))
-    o.append(t(12, y + 4.5, f"Width check (spec p3): worst region code has {WMAX:.1f} % of its area under 0.8 mm (hair tips grown to ≥ 1.0 mm along their skeleton). Max sewn stitch over every file of every size: {MAXST:.2f} mm (limit 7.5).", 1.7, 400, MUTED))
-    o.append(t(12, y + 7.8, f"Machine time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one hooping (split files: {MH_SPLIT:.1f} h per jacket). Rev A is built for fidelity: trims + time are reported, cleaned up after the sew-out.", 1.7, 400, MUTED))
+    o.append(t(12, y + 4.5, f"Width check (spec p3): worst region code has {WMAX:.1f} % of its area under 0.8 mm (strands grown to ≥ 1.0 mm along their skeleton). Max sewn stitch over every file of every size: {MAXST:.2f} mm (limit 7.5).", 1.7, 400, MUTED))
+    o.append(t(12, y + 7.8, f"Machine time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one hooping (split files: {MH_SPLIT:.1f} h per jacket). Rev B is built for fidelity: trims + time are reported, cleaned up after the sew-out.", 1.7, 400, MUTED))
     qy = y + 15
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
     qs = [f"1. Welt pockets [PROPOSED]: the render draws the FL welt under the beast's lower jaw. Both welts moved {WELT['move_mm'][0]:.0f} mm out + {WELT['move_mm'][1]:.1f} mm down (same angle + length). OK, or move the art?",
@@ -166,8 +166,9 @@ def summary():
           "6. Thread board: all targets read from an AI mockup — approve physical colours (G3). Shadow black is black-on-black texture: keep it, or drop it to save stitches?",
           "7. Shell: washed black 12 oz duck assumed, washed before embroidery. If garment-washed after embroidery, wash-test the sew-out (dense FL head).",
           "8. Grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per piece, fronts scaled about the CF neck so the halves meet at the zip.",
-          "9. Fidelity first: hair strokes, black ground and 4-thread texture built as in the detail panel; stitches + trims are reported, cleaned up after the sew-out.",
-          "10. DST/PES are production-intent drafts: the factory digitizer checks density + pull on the shell and edits before the sew-out."]
+          "9. Reference per part: head (FL) traced from the close-up detail panel; mane, lightning, streaks (FR + fronts) and both sleeves from the low-res mockup only. Close-ups requested (inputs/closeup_request.md).",
+          "10. Fidelity first (Rev B): every stroke, cord, tooth and streak is its own object; stitches + trims are reported, cleaned up after the sew-out.",
+          "11. DST/PES are production-intent drafts: the factory digitizer checks density + pull on the shell and edits before the sew-out."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i*3.6, q, 1.75))
     return o
 
@@ -199,11 +200,11 @@ def files_page():
     y += 2.5
     o.append(t(12, y, f"All files: max sewn stitch {maxst:.2f} mm (limit 7.5) · ≤ {FA.max_threads(PROF)} thread colours per file (factory.check_threads on every PES) · every split section fits {FR_S} − 16: {'yes' if allfit else 'CHECK'}.", 1.55, 700, GREEN if allfit else RED))
     bx = 214; o.append(t(bx, 31.5, "WHAT IS DIGITIZED", 2.0, 700)); yy = 35.5
-    notes = ["Order per file: red hair strokes + streaks →", "crimson shadow strokes → black ground →", "cream outlines, teeth + lightning (on top).",
-             "", "Thin strokes: satin columns turning along", "each skeleton branch (forks = separate", "columns), ≥ 1.0 wide, split satin > 7.",
-             "", "Wide masses: tatami along the traced stroke", "flow, 14 mm cells with their own angle", "(long-and-short look), lattice underlay > 60 mm².",
+    notes = ["Order per file: red strokes + streaks →", "crimson shade strokes + cord under-edges →", "black ground strokes → cream cords + teeth", "→ white tooth edges (on top).",
+             "", "Hair / shade / black: one object per", "stroke (1.5–3 wide, 5–12 long, staggered),", "satin ALONG the traced flow, split ≤ 6.",
+             "Cords: satin across, 2.5–3 wide (detail", "lines ≥ 1.2), one column per branch.", "Teeth: one object each, satin along the", "tooth; streaks: tapered pointed columns.",
              "", "Ties: 3-stitch tie-on/off at every trim +", "colour change; trims on jumps ≥ 2.5 mm.",
-             "", "SEWING A SPLIT PIECE", "1. Mark CF / sleeve centre + split line.", "2. Hoop S1; stop 1 opens with the", "   registration crosses (stop-1 thread).",
+             "", "SEWING A SPLIT PIECE", "1. Mark CF / sleeve centre + split line.", "2. Hoop S1; stop 1 opens with the", "   registration crosses (own stop, crimson).",
              "3. Re-hoop for S2, align on the crosses.", "4. Fills crossing the split overlap 1.2;", "   motifs < 70 go whole to one file.", "5. Pick out the crosses after S2."]
     for l in notes:
         o.append(t(bx, yy, l, 1.55, 700 if l.startswith("SEWING") else 400)); yy += 3.1
@@ -246,8 +247,10 @@ def hooping_page():
     notes = ["The split line is chosen where it cuts the least art inside the frame (searched 12–88 % of the art height). Where it crosses a cream",
              "outline (amber), fills larger than 70 mm overlap 1.2 mm across the line — check that joint on the strike-off photos.",
              "Machine time + trims per piece = sum over its hoopings (split files), factory.machine_hours; hooping time not included.",
-             "Registration crosses sew at the start of stop 1 in that stop's thread (factory: max 12 colours per file, no separate basting thread);",
-             "long 4 mm stitches on bare fabric 12 mm outside the art — S2 re-registers on the crosses S1 sewed; pick them out after S2."]
+             "Registration crosses sew as stop 1 in Deep crimson (a thread already in the file: colours per file unchanged, max 12; never cream);",
+             "long 4 mm stitches on bare fabric 12 mm outside the art — S2 re-registers on the crosses S1 sewed; pick them out after S2.",
+             "Head alignment across a split: cords + teeth must meet within ±0.5 mm, fills within ±1.0 mm (the 1.2 mm overlap hides up to 1 mm) [PROPOSED tolerance].",
+             "The split line search counts a cut through cream cord 40× (Rev B): the 'cream crossed' column is what is left after that."]
     for i, l in enumerate(notes): o.append(t(12, y + i*3.3, l, 1.55, 400, MUTED))
     return o
 

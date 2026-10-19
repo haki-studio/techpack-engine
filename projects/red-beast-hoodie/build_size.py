@@ -22,26 +22,48 @@ for a in ("ys", "xs"):
     old = f"{a} = np.linspace(b[{ax}] + (b[{ax2}]-b[{ax}])*0.40, b[{ax}] + (b[{ax2}]-b[{ax}])*0.60, 21)"
     assert old in _src, "engine split_clip changed: update the search patch"
     _src = _src.replace(old, f"{a} = np.linspace(b[{ax}] + (b[{ax2}]-b[{ax}])*0.12, b[{ax}] + (b[{ax2}]-b[{ax}])*0.88, 77)")
-_ns = dict(vars(dst2)); exec(_src, _ns); split_clip_wide = _ns["split_clip"]
+_ns = dict(vars(dst2)); exec(_src, _ns); _split_clip = _ns["split_clip"]
+# Rev B (review item 10): the split line must avoid the cream cords + teeth - a cut cord shows as a step when the two
+# hoopings meet. Cut length through cream counts CREAM_W times, so the search moves the line off the outline/teeth.
+CREAM_W = 40.0
+_cut0 = dst2.cut_length
+def split_clip_wide(vis, frame, **kw):
+    import shapely
+    cg = [p for r in vis if r["col"] in ("rb_cream", "rb_white") for p in dst2.polys(r["geom"])]
+    ct = shapely.STRtree(cg) if cg else None
+    def cut_w(GS, line, tree=None):
+        return _cut0(GS, line, tree) + (CREAM_W*_cut0(cg, line, ct) if cg else 0.0)
+    _ns["cut_length"] = cut_w
+    try: return _split_clip(vis, frame, **kw)
+    finally: _ns["cut_length"] = _cut0
 
-def reg_in_first_colour(pat):
-    """factory limit (12 colours incl. registration): the crosses sew at the start of stop 1 in stop 1's thread"""
+def cream_cut(vis, sy):
+    from shapely.geometry import LineString
+    if sy is None: return 0.0
+    u = [p for r in vis if r["col"] in ("rb_cream", "rb_white") for p in dst2.polys(r["geom"])]
+    ln = LineString([(-1e4, sy), (1e4, sy)])
+    return round(sum(p.intersection(ln).length for p in u), 1)
+
+REG_COL = "rb_crimson"
+def reg_in_dark_thread(pat):
+    """factory limit (12 colours incl. registration, B5): the crosses sew as their own first stop in Deep crimson (a thread
+    of this jacket, dark on washed black, never cream - review item 10). Distinct colours per file stay <= 5."""
     if len(pat.threadlist) < 2 or pat.threadlist[0].catalog_number != "WSB": return pat
-    import pyembroidery as pe
-    pat.threadlist.pop(0)
-    for i, (x, y, c) in enumerate(pat.stitches):
-        if (c & pe.COMMAND_MASK) == pe.COLOR_CHANGE: del pat.stitches[i]; break
+    import specbase as SB_
+    from motifs2 import PAL as PAL_
+    th = pat.threadlist[0]; th.set_hex_color(HEXC[REG_COL]); pn = SB_.TH[REG_COL]["polyneon"]
+    th.description = f"{PAL_[REG_COL][1]} - REGISTRATION crosses, pick out after the last hooping"; th.catalog_number = pn[0]; th.brand = "Madeira Polyneon"
     return pat
+from motifs2 import HEX as HEXC
 
 def stops_for(vis):
     st = tech.stops(vis); n0 = len(st); return dst2.merge_stops(st), n0
 
 def sews(stops, basting=False):
-    out = []
+    out = [dict(col=REG_COL, codes=["REG crosses (basting, remove)"], types=["run"], objects=0)] if basting else []
     for s in stops:
         out.append(dict(col=s["col"], codes=sorted({tech.rule_for(r["grp"]) for r in s["regions"]}),
                         types=sorted({r["st"] for r in s["regions"]}), objects=len(s["regions"])))
-    if basting and out: out[0]["codes"] = ["REG crosses"] + out[0]["codes"]
     return out
 
 def record(base, stops, extra, basting=False):
@@ -82,14 +104,14 @@ for P in which:
             if all(sp["fits"].values()): break
         marks = dst2.split_marks(sp)
         names = {(0, 0): "S1_top", (0, 1): "S2_bottom", (1, 0): "S1b_right", (1, 1): "S2b_right"}
-        spl = dict(frame=FRAME, sx=sp["sx"], sy=sp["sy"], cut_mm=sp["cut"], whole_max=wm, sections={})
+        spl = dict(frame=FRAME, sx=sp["sx"], sy=sp["sy"], cut_mm=sp["cut"], cream_cut_mm=cream_cut(vis, sp["sy"]), whole_max=wm, sections={})
         for key in sorted(sp["secs"], key=lambda k: (k[1], k[0])):
             sv = sp["secs"][key]; t = time.time(); stops, n0 = stops_for(sv)
             bb = unary_union([r["geom"] for r in sv] + [Point(m).buffer(6) for m in marks[key]]).bounds
             cc = ((bb[0]+bb[2])/2, (bb[1]+bb[3])/2)
             pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=marks[key])
             base = f"{OUT}/splits/{rbcore.fname(P, size, names[key])}"; os.makedirs(os.path.dirname(base), exist_ok=True)
-            dst2.write(reg_in_first_colour(pat), base); dst2.render(base, base + "_preview.png", bg=(43, 48, 57), s=0.5)
+            dst2.write(reg_in_dark_thread(pat), base); dst2.render(base, base + "_preview.png", bg=(43, 48, 57), s=0.5)
             r = record(base, stops, dict(bbox=bb, origin=cc, marks=marks[key], secs=round(time.time()-t)), basting=True)
             r["fits"] = r["size_mm"][0] <= FRAME[0] - 16 and r["size_mm"][1] <= FRAME[1] - 16
             spl["sections"][names[key]] = r

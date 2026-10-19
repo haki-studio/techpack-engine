@@ -74,6 +74,7 @@ def bg_mask(px, py):
 # open mouth between the upper and lower teeth (front mm, read off the registered close-up): black thread ground
 MOUTH = [(6, 211), (60, 206), (126, 220), (168, 241), (216, 256), (228, 274), (210, 295), (168, 304), (120, 286), (75, 268), (30, 244), (5, 235)]
 
+DIM_RED = 16.0
 def trace_front():
     X, Y = grid(SPACES["F"]); fx, fy = MM.Pinv(X, Y)
     rgbm = MM.sample("front", fx, fy)
@@ -95,6 +96,10 @@ def trace_front():
     rgbc = MM.sample("closeup_mockup_head", np.where(inc, cx, 0), np.where(inc, cy, 0))
     labc, Lc = classify(rgbc, TH["close"], sigma=0.7)
     labc = black_in_envelope(labc, Lc, TH["close"], inc)
+    # Rev B (review item 2): dim red stitches inside the black ground (throat, jaw) are crimson shade strokes, not black
+    sm = np.stack([ndi.gaussian_filter(rgbc[..., c], 0.8) for c in range(3)], -1)
+    rsc = sm[..., 0] - np.maximum(sm[..., 1], sm[..., 2])
+    labc[(labc == 3) & (rsc > DIM_RED)] = 2
     lab = np.where(inc, labc, labm); lab[~valid] = 9
     lab[welt & (lab == 4)] = 0
     lab[(lab == 0) & shapely.contains_xy(Polygon(MOUTH), X, Y)] = 3                                                # welt-edge highlights are not thread
