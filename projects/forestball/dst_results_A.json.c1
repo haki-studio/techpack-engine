@@ -1,0 +1,163 @@
+{
+ "02R": {
+  "stitches": 81731,
+  "trims": 1475,
+  "jumps": 1476,
+  "colour_changes": 10,
+  "max_stitch": 7.42,
+  "size": [
+   241.7,
+   304.2
+  ],
+  "travel": 5851,
+  "stops": 11,
+  "stops_before_merge": 11,
+  "centre": [
+   -149.4,
+   114.20218052755119
+  ],
+  "threads": 11,
+  "size_art": [
+   241.38000000000002,
+   304.13455995522116
+  ],
+  "file": "out/02_chest-branch/A_XS-S/HAKI_FB_02_chest-branch_02R_A-XS-S",
+  "worst": [
+   [
+    "TMS",
+    442
+   ],
+   [
+    "THS",
+    108
+   ],
+   [
+    "TBS",
+    80
+   ],
+   [
+    "TTS",
+    69
+   ],
+   [
+    "TLS",
+    23
+   ],
+   [
+    "TB",
+    23
+   ]
+  ],
+  "secs": 28
+ },
+ "02L": {
+  "stitches": 37437,
+  "trims": 882,
+  "jumps": 883,
+  "colour_changes": 9,
+  "max_stitch": 7.02,
+  "size": [
+   233.8,
+   259.9
+  ],
+  "travel": 2124,
+  "stops": 10,
+  "stops_before_merge": 10,
+  "centre": [
+   144.925,
+   142.9158249471185
+  ],
+  "threads": 10,
+  "size_art": [
+   233.32500000000002,
+   259.6500000000001
+  ],
+  "file": "out/02_chest-branch/A_XS-S/HAKI_FB_02_chest-branch_02L_A-XS-S",
+  "worst": [
+   [
+    "TMS",
+    265
+   ],
+   [
+    "TBS",
+    44
+   ],
+   [
+    "TTS",
+    43
+   ],
+   [
+    "THS",
+    40
+   ],
+   [
+    "TLS",
+    23
+   ],
+   [
+    "TB",
+    4
+   ]
+  ],
+  "secs": 13
+ },
+ "back": {
+  "stitches": 402298,
+  "trims": 6152,
+  "jumps": 6153,
+  "colour_changes": 17,
+  "max_stitch": 7.45,
+  "size": [
+   510.8,
+   514.3
+  ],
+  "travel": 27217,
+  "stops": 18,
+  "stops_before_merge": 20,
+  "centre": [
+   0.0,
+   288.3778471590698
+  ],
+  "threads": 12,
+  "size_art": [
+   510.3,
+   514.1198751136743
+  ],
+  "file": "out/01_back-scene/A_XS-S/HAKI_FB_01_back-scene_A-XS-S",
+  "worst": [
+   [
+    "TMS",
+    1778
+   ],
+   [
+    "THS",
+    287
+   ],
+   [
+    "TTS",
+    222
+   ],
+   [
+    "TBS",
+    201
+   ],
+   [
+    "TLS",
+    136
+   ],
+   [
+    "WAS",
+    115
+   ],
+   [
+    "TB",
+    37
+   ],
+   [
+    "LR",
+    23
+   ]
+  ],
+  "secs": 179
+ }
+}

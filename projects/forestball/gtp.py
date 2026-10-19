@@ -368,7 +368,7 @@ def p_questions():
           "9. Labels + packaging artwork, country of origin, care-symbol set, carton marks.",
           "10. Embroidery grading: A 90% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per grade per piece. OK?",
           "11. Garment wash after embroidery? If yes: wash test on the sew-out first (whites + golds grey first).",
-          f"12. Factory frame + machine: border frame ≥ {EMB['01']['box'][2]-EMB['01']['box'][0]+14:.0f} × {EMB['01']['box'][3]-EMB['01']['box'][1]+14:.0f} for the single-file back, else 4 × 360² splits; files are ≤ 12 colours (factory limit, confirmed).",
+          f"12. Factory frame + machine: border frame ≥ {json.load(open('dst_current.json'))['back']['size'][0]+14:.0f} × {json.load(open('dst_current.json'))['back']['size'][1]+14:.0f} for the single-file back, else 4 × 360² splits; files are ≤ 12 colours (factory limit, confirmed).",
           "13. Inside: pocket bags free-hanging + bound (proposed); inside chest pocket — add one? (T14)",
           "14. LICENSED stream figure (back): placeholder box only in this pack — licensor art, digitizing and licence approval to confirm (G4 Q1)."]
     for i, q in enumerate(qs): o.append(t(14, 34 + i*4.6, q, 2.0))

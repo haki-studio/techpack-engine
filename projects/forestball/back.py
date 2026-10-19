@@ -32,7 +32,7 @@ SH_L = LineString([(-BLK.b_hps[0], BLK.b_hps[1]), (-BLK.b_sp[0], BLK.b_sp[1])])
 SH_R = LineString([(BLK.b_hps[0], BLK.b_hps[1]), (BLK.b_sp[0], BLK.b_sp[1])])
 NECK = LineString(drum.curve((-BLK.neck2, -BLK.bnd), (0, 0), 6, 12)[:-1] + drum.curve((0, 0), (BLK.neck2, -BLK.bnd), -6, 12))
 KEEP_SIDE, KEEP_ARM, KEEP_SH, KEEP_HEM, KEEP_COLLAR = 15.0, 15.0, 15.0, 10.0, 6.0
-CLIP_MARGIN = 0.6                        # clip 0.6 mm inside every keep-out so the pattern check reads >= 15.0, not 14.7 (Rev B)
+CLIP_MARGIN = 1.0                        # clip 0.6 mm inside every keep-out so the pattern check reads >= 15.0, not 14.7 (Rev B)
 COLLAR_FALL = 45.0                       # PROPOSED: back collar lying flat covers ~45 mm below the CB neck seam
 _nk = list(NECK.coords)
 COLLAR_B = Polygon(_nk + [(x, y + COLLAR_FALL * (1 - 0.35 * abs(x) / BLK.neck2)) for x, y in _nk[::-1]]).buffer(0)

@@ -1,0 +1,175 @@
+{
+ "02R": {
+  "stitches": 95917,
+  "trims": 1622,
+  "jumps": 1623,
+  "colour_changes": 18,
+  "max_stitch": 7.03,
+  "size": [
+   258.3,
+   319.9
+  ],
+  "travel": 7814,
+  "stops": 19,
+  "stops_before_merge": 20,
+  "centre": [
+   -144.29950133396514,
+   122.23748032724882
+  ],
+  "threads": 10,
+  "size_art": [
+   257.99900266793026,
+   320.02256558649765
+  ],
+  "file": "out/02_chest-branch/B_M-XL/HAKI_FB_02_chest-branch_02R_B-M-XL",
+  "worst": [
+   [
+    "CH",
+    383
+   ],
+   [
+    "LF-vein",
+    125
+   ],
+   [
+    "TW",
+    72
+   ],
+   [
+    "TW-node",
+    44
+   ],
+   [
+    "LF",
+    26
+   ],
+   [
+    "BUD",
+    24
+   ],
+   [
+    "HM",
+    20
+   ],
+   [
+    "HM-light",
+    19
+   ]
+  ],
+  "secs": 84
+ },
+ "02L": {
+  "stitches": 55807,
+  "trims": 1187,
+  "jumps": 1188,
+  "colour_changes": 12,
+  "max_stitch": 7.02,
+  "size": [
+   268.9,
+   309.0
+  ],
+  "travel": 3942,
+  "stops": 13,
+  "stops_before_merge": 13,
+  "centre": [
+   149.5751117437935,
+   172.70054127867064
+  ],
+  "threads": 9,
+  "size_art": [
+   268.6497765124129,
+   309.2000884163298
+  ],
+  "file": "out/02_chest-branch/B_M-XL/HAKI_FB_02_chest-branch_02L_B-M-XL",
+  "worst": [
+   [
+    "LF-vein",
+    150
+   ],
+   [
+    "CH",
+    114
+   ],
+   [
+    "TW",
+    87
+   ],
+   [
+    "TW-node",
+    62
+   ],
+   [
+    "LF",
+    41
+   ],
+   [
+    "BUD",
+    38
+   ],
+   [
+    "LF-dark",
+    36
+   ]
+  ],
+  "secs": 33
+ },
+ "back": {
+  "stitches": 413780,
+  "trims": 5780,
+  "jumps": 5781,
+  "colour_changes": 29,
+  "max_stitch": 7.34,
+  "size": [
+   568.2,
+   553.1
+  ],
+  "travel": 38930,
+  "stops": 30,
+  "stops_before_merge": 30,
+  "centre": [
+   0.13107976544924327,
+   297.9998016469803
+  ],
+  "threads": 12,
+  "size_art": [
+   568.0621595308985,
+   552.9619099960395
+  ],
+  "file": "out/01_back-scene/B_M-XL/HAKI_FB_01_back-scene_B-M-XL",
+  "worst": [
+   [
+    "CH",
+    441
+   ],
+   [
+    "LF-vein",
+    364
+   ],
+   [
+    "GR",
+    217
+   ],
+   [
+    "RM-lump",
+    212
+   ],
+   [
+    "TW",
+    190
+   ],
+   [
+    "TW-node",
+    159
+   ],
+   [
+    "LF",
+    113
+   ],
+   [
+    "BUD",
+    88
+   ]
+  ],
+  "secs": 388
+ }
+}

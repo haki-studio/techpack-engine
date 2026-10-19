@@ -30,10 +30,11 @@ QA = json.load(open("qa_width.json"))["back"]
 from shapely.ops import nearest_points as _np
 def _ctr(x, y, w, h): return (x - w/2, y - h/2, x + w/2, y + h/2)
 LIMB = B.P(270, 340)
-_lr = unary_union([r["geom"] for r in VB if r["grp"] == "LR"]); _lf = unary_union([r["geom"] for r in VB if r["grp"] == "LF"])
+_lr = unary_union([r["geom"] for r in VB if r["grp"] == "LR"]); _lf = unary_union([r["geom"] for r in VB if r["grp"] in ("TL", "TLS")])
 RAYLEAF = _np(_lr, _lf)[1].coords[0]
 ROCK = B.P(215, 650)
 PHC = ((PH[0]+PH[2])/2, (PH[1]+PH[3])/2)
+DSZ = tuple(CUR.get("back", {}).get("size", (BB[2]-BB[0], BB[3]-BB[1])))      # art box = DST extent (one figure everywhere)
 LIC = "LICENSED FIGURE — placeholder only. Nothing stitched inside; the factory digitizer adds it from the licensor-approved artwork."
 
 def header(title, sub, page):
@@ -51,8 +52,8 @@ def page1():
     tag, h = img_tag(bg, ax, ay, w_mm); o.append(tag)
     X = lambda x: ax + (x - bx0)*s; Y = lambda y: ay + (y - by0)*s
     o.append(f'<rect x="{f(X(BB[0]))}" y="{f(Y(BB[1]))}" width="{f((BB[2]-BB[0])*s)}" height="{f((BB[3]-BB[1])*s)}" fill="none" stroke="{GUIDE}" stroke-width="0.25" stroke-dasharray="1.2 0.8"/>')
-    o.append(dim_h(X(BB[0]), X(BB[2]), Y(BB[1]) - 2.2, f"art {BB[2]-BB[0]:.0f}", 1.9, col=GUIDE))
-    o.append(dim_v(Y(BB[1]), Y(BB[3]), X(BB[0]) - 3, f"{BB[3]-BB[1]:.0f}", 1.9, col=GUIDE))
+    o.append(dim_h(X(BB[0]), X(BB[2]), Y(BB[1]) - 2.2, f"art {DSZ[0]:.0f}", 1.9, col=GUIDE))
+    o.append(dim_v(Y(BB[1]), Y(BB[3]), X(BB[0]) - 3, f"{DSZ[1]:.0f}", 1.9, col=GUIDE))
     o.append(f'<rect x="{f(X(PH[0]))}" y="{f(Y(PH[1]))}" width="{f((PH[2]-PH[0])*s)}" height="{f((PH[3]-PH[1])*s)}" fill="#FFFFFF" fill-opacity="0.35" stroke="{RED}" stroke-width="0.35"/>')
     lx, ly = X(PH[0]) - 24, Y(PH[3]) + 8              # label below-left of the box, inside the preview
     o.append(f'<line x1="{f(X(PH[0]))}" y1="{f(Y(PH[3]))}" x2="{f(lx + 17.5)}" y2="{f(ly - 3.2)}" stroke="{RED}" stroke-width="0.3"/>')
@@ -61,7 +62,7 @@ def page1():
     o.append(t(ax, ay + h + 4, "Stitch-out preview, back panel, size M (shown 0.25:1). Each region drawn with its own thread rows at its specified angle. Red box = licensed-figure placeholder.", 1.8, 400, MUTED))
     rx = 172
     o.append(t(rx, 33, "PLACEMENT", 2.6, 700))
-    facts = [("Art box (back panel)", f"{BB[2]-BB[0]:.0f} × {BB[3]-BB[1]:.0f}"), ("Left edge → CB", f"{-BB[0]:.0f} left of CB"),
+    facts = [("Art box (back panel, DST)", f"{DSZ[0]:.0f} × {DSZ[1]:.0f}"), ("Left edge → CB", f"{-BB[0]:.0f} left of CB"),
              ("Right edge → CB", f"{BB[2]:.0f} right of CB"), ("Top of art → CB neck seam", f"{BB[1]:.0f} down"),
              ("Bottom of art → hem-rib seam", f"{B.HEM - BB[3]:.0f} above"), ("Side seams + armholes", f"≥ {B.KEEP_SIDE:.0f} clear (nothing wraps)"),
              ("Shoulder seams / collar", f"≥ {B.KEEP_SH:.0f} / ≥ {B.KEEP_COLLAR:.0f} below the collar (fall {B.COLLAR_FALL:.0f}, proposed)"),
@@ -115,8 +116,8 @@ def region_table(o, vis, qa_, y0=31):
     stats = {}
     for r in vis:
         k = tech.rule_for(r["grp"]); s = stats.setdefault(k, dict(st=0, n=0, cols=set()))
-        s["st"] += tech.stitches(r); s["n"] += 1; s["cols"].add(r["col"])
-    hdr = ["Code", "Region", "Thread(s)", "Stitch", "Angle", "Dens.", "Len.", "Underlay", "Pull", "Notes", "Width", "Obj.", "Est. st."]
+        s["st"] += r["geom"].area; s["n"] += 1; s["cols"].add(r["col"])
+    hdr = ["Code", "Region", "Thread(s)", "Stitch", "Angle", "Dens.", "Len.", "Underlay", "Pull", "Notes", "Width", "Obj.", "Area mm²"]
     cx = [12, 29, 66, 92, 124, 157, 166, 175, 214, 222, 251, 263, 272]
     for x, h in zip(cx, hdr): o.append(t(x, y0, h, 1.75, 700, MUTED))
     order = [k for k in tech.RULES if k in stats]; rh = min(3.62, 130 / max(1, len(order)))
@@ -137,11 +138,11 @@ def region_table(o, vis, qa_, y0=31):
 
 def page3():
     o = header("01 · REGION STITCH TABLE — digitizing parameters per region code",
-               "Density = row spacing (mm). Pull comp = added width per side (mm). Est. st. = area estimate (the DST count on p1 is the real number). Width = share of the code's area below its minimum.", "p3 / 5")
+               "Density = row spacing (mm). Pull comp = added width per side (mm). Area = art area per code (stitch counts: DST, p1 + p4). Width = share of the code's area below its minimum.", "p3 / 5")
     yb, tot = region_table(o, VB, QA)
     o.append(t(12, yb + 2, "Globals: 40wt polyester, 75/11 sharp needle, 2.5 oz cutaway, no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; trims at exposed moves > 2.5.", 1.75, 400, MUTED))
     o.append(t(12, yb + 5.2, "Width = share of area narrower than its minimum (fill/satin 0.8, line 0.6) for > 2.5 mm, on the art. Green < 1%; amber = tapered tips (grass, twig ends) the digitizer absorbs.", 1.75, 400, MUTED))
-    o.append(t(12, yb + 8.4, "Light rays (LR): serpentine single run, rows 2.6 apart, sewn last over the art — a sheer veil, not a fill. Each tone is one continuous object so the ray has no trims inside it.", 1.75, 600, INK))
+    o.append(t(12, yb + 8.4, "Light rays (LR): serpentine single run, rows 2.3 apart (≈ 28 % cover), sewn last over the art — a sheer veil, not a fill. Each tone is one continuous object so the ray has no trims inside it.", 1.75, 600, INK))
     return o
 
 def stops_table(o, stops, x0, y0, title, width=185, sews=True, dst=None):
@@ -203,30 +204,27 @@ def page5():
     tag, hh = SHT.embed("inputs/back.png", (60, 60, 670, 720), 52, 14, my + 3); o.append(tag)
     o.append(t(14, my, "MOCKUP", 2.4, 700))
     o.append(t(70, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
-    ch = ["Reference: REDRAWN from the low-res mockup (≈ 1 px/mm, read at 4x);",
-          "  file 'closeup_front_right_a' shows this BACK scene — used for texture",
-          "  (chain limb, mossy mounds, rays), not positions; no back close-up asked.",
-          "Rev B: 6 broad sheer rays over the art, chain-bark underside, 4-green",
-          "  mottled moss lumps, mounds merged into a bank, denser grass.",
-          "Composition re-traced from the mockup: mossy limb from the left,"
-          "  trunk down the right, upper twigs + ~35 leaf sprays, 4 light rays,",
-          "  stream, 9 mossy rocks, grass in front and behind.",
+    import json as _js
+    _rc = _js.load(open("rays_cover.json"))["ray_cover_pct"]; _rg = _js.load(open("inputs/closeup_reg.json"))["BACK"]
+    ch = ["Rev C: TRACED, not generated (LESSONS A12). Close-up 'closeup_front_",
+          f"  right_a' shows this BACK scene: SIFT projective fit on the mockup",
+          f"  ({_rg['inliers']} inliers, median {_rg['resid_px_median']} mm); every pixel -> nearest of",
+          "  the 12 threads; stitch angle = the close-up's own strand direction.",
+          "  Pool + outside the close-up: mockup read at x4 (no new geometry).",
+          "Traced: twisted chain limb + trunk with navy crevices, moss + cream",
+          "  highlights, root loops round the pool, mossy bank, rapids, grass.",
+          f"Light rays: {len(_rc)} broad bands traced from the close-up (25-45 mm),",
+          f"  sheer overlay sewn LAST, {min(_rc):.0f}-{max(_rc):.0f} % cover, cream core + sage edges.",
           "ORB in the stream: LICENSED — not drawn. Marked placeholder box",
-          f"  {PH[2]-PH[0]:.0f} × {PH[3]-PH[1]:.0f} at the mockup position; water continues round it.",
-          "Sides + armholes: mockup art runs into the seams. Pulled 15 inside",
-          "  (outer art compressed inward); nothing wraps onto the sleeves.",
-          "Bottom: mockup runs into the rib. Stops 10 above the hem seam.",
-          "Light rays: sheer serpentine run sewn LAST over the art (sage + cream).",
-          "Moss: mockup chain-stitch texture → raised padded lumps + dark",
-          "  underside + lit top + navy/olive lump runs (mottled).",
-
-          "Clip check: sprays cut off from their twig by a keep-out are removed."]
+          f"  {PH[2]-PH[0]:.0f} × {PH[3]-PH[1]:.0f}; water + 4 ripple rings continue round it.",
+          "Sides + armholes: art pulled 16 inside (nothing wraps); bottom 11",
+          "  above the hem seam. Leaves/twigs cut by a keep-out are dropped.",]
     for i, c in enumerate(ch): o.append(t(70, my + 4.5 + i*3.3, c, 1.8, 600 if "LICENSED" in c else 400, RED if "LICENSED" in c else INK))
     px = 190
     o.append(t(px, my, "PRODUCTION", 2.4, 700))
     pn = [f"Hoop: 4 × {FRAME[0]:.0f}² split files S1–S4 with",
           "  registration crosses in the first thread (G5, G6).",
-          f"  Option: border frame ≥ {BB[2]-BB[0]+14:.0f} × {BB[3]-BB[1]+14:.0f} (single file).",
+          f"  Option: border frame ≥ {DSZ[0]+14:.0f} × {DSZ[1]+14:.0f} (single file).",
           "Embroider the cut back panel flat, BEFORE side,",
           "  shoulder and armhole seams.",
           "Canvas: 75/11 sharp, 2.5 oz cutaway, no topping.",

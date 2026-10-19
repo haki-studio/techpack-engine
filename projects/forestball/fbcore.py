@@ -5,7 +5,7 @@ Drum Island pattern materials (black corduroy collar, black rib). Nothing in eng
 import motifs2, tech
 
 STYLE = "HK-JK-DRUM-FB"; NAME = "Forestball Jacket"; SLUG = "forestball"
-REV_EMB = "Rev B"; REV_GAR = "Rev B"; DATE = "16 Oct 2026"
+REV_EMB = "Rev C"; REV_GAR = "Rev C"; DATE = "17 Oct 2026"
 FABRIC = "#3A463C"                     # washed forest green (mockup median #38433A..#3D483F)
 
 # ---------------------------------------------------------------- thread palette (13 threads + basting, 40wt polyester) — PROPOSED, read from the mockup
@@ -112,3 +112,59 @@ for _k in ("TR", "LM", "-shade", "-ridge", "TW", "TR-knot"):
     _v = list(tech.RULES[_k])
     _v[3] = {"Tatami": "0.45", "Satin": "0.42"}.get(_v[1], _v[3])
     tech.RULES[_k] = tuple(_v)
+
+# ---------------------------------------------------------------- Rev C thread matching (review item 8)
+# 1) The Ink/Stitch Polyneon palette has names that contradict their RGB (1940 "Fluo Orange" = yellow-green, 1766 "Violet
+#    Blue" = olive, 1812 "Vapor Blue" = grey, 1863 "Cocoa Mulch" = cream): entries whose name names a hue far from their
+#    RGB hue are dropped (untrusted), so no pick rests on them. 2) Every palette thread gets its OWN catalogue code per
+#    brand (Moss and Grass green both took Isacord 5944): conflicts go to the next-best match.
+import colorsys
+_FAM = {"red": (340, 18), "orange": (12, 48), "gold": (35, 60), "yellow": (42, 72), "lime": (60, 110), "green": (65, 170),
+        "teal": (150, 205), "aqua": (160, 210), "turquoise": (150, 205), "blue": (180, 255), "navy": (190, 255),
+        "violet": (245, 300), "purple": (250, 305), "lilac": (245, 300), "lavender": (230, 290), "pink": (295, 350), "rose": (310, 360)}
+def _trusted(name, rgb):
+    r, g, b = [c / 255 for c in rgb]; h, l, s = colorsys.rgb_to_hls(r, g, b); n = name.lower(); hd = h * 360
+    if any(w in n for w in ("brown", "cocoa", "chocolate", "coffee", "mocha")) and l > 0.55: return False
+    words = [w for w in _FAM if w in n]
+    if not words: return True
+    if s < 0.18 or l < 0.10: return l <= 0.25                     # a named hue on a grey swatch: untrusted
+    def inside(rng):
+        a0, a1 = rng
+        return (a0 - 10 <= hd <= a1 + 10) if a0 < a1 else (hd >= a0 - 10 or hd <= a1 + 10)
+    return any(inside(_FAM[w]) for w in words)
+for _br in ("polyneon", "isacord"):
+    tech.TH[_br] = [t for t in tech.TH[_br] if _trusted(t[1], t[2])]
+def _unique_table(keys):
+    out = {k: {} for k in keys}
+    for br in ("isacord", "polyneon"):
+        cand = {}
+        for k in keys:
+            rgb = tuple(int(HEX[k][i:i+2], 16) for i in (1, 3, 5)); L = tech._lab(rgb)
+            cand[k] = sorted((tech.de2000(L, tech._lab(tuple(t[2]))), t[0], t[1], "#%02X%02X%02X" % tuple(t[2])) for t in tech.TH[br])
+        used = set()
+        for k in sorted(keys, key=lambda k_: cand[k_][0][0]):
+            d, code, name, hx = next(c for c in cand[k] if c[1] not in used); used.add(code)
+            out[k][br] = (code, name, hx, d)
+    return out
+HEX = {k: v[0] for k, v in PAL.items()}
+SB.TH.clear(); SB.TH.update(_unique_table(list(PAL)))
+
+# ---------------------------------------------------------------- Rev C traced region codes (trace_fb.py)
+tech.RULES.update({
+ "TB":  ("Traced bark / chain strands",       "Tatami",  "close-up strand direction (8 mm cells)", "0.45", "3.5", "edge run + tatami 90° @ 2.0", "0.25", "navy crevices traced"),
+ "TBS": ("Traced bark strand (narrow)",       "Satin",   "across the strand",          "0.42", "—",   "centre run if > 2",           "0.20", "< 3.2 mm wide"),
+ "TM":  ("Traced moss / grass",               "Tatami",  "close-up strand direction",  "0.45", "3.5", "edge run + tatami 90° @ 2.0", "0.25", "4 greens, traced tones"),
+ "TMS": ("Traced moss / grass (narrow)",      "Satin",   "across the shape",           "0.42", "—",   "centre run if > 2",           "0.20", "grass blades, chain loops"),
+ "TT":  ("Traced twig",                       "Tatami",  "along the twig",             "0.45", "3.5", "edge run",                    "0.20", ""),
+ "TTS": ("Traced twig (narrow)",              "Satin",   "across the twig",            "0.42", "—",   "centre run if > 2",           "0.15", "brown chain twigs"),
+ "TL":  ("Traced leaf",                       "Tatami",  "along the leaf",             "0.45", "3.5", "edge run",                    "0.20", "sews before the twigs"),
+ "TLS": ("Traced leaf (narrow)",              "Satin",   "across the leaf",            "0.42", "—",   "centre run",                  "0.20", "two-tone halves traced"),
+ "TH":  ("Traced highlight",                  "Tatami",  "close-up direction",         "0.45", "3.5", "edge run",                    "0.20", "cream / light-blue specks"),
+ "THS": ("Traced highlight (narrow)",         "Satin",   "across",                     "0.42", "—",   "none",                        "0.10", "cream specks, rapids"),
+ "WAS": ("Stream detail (narrow)",            "Satin",   "across",                     "0.42", "—",   "none",                        "0.15", "rapids, ledges, glints"),
+ "LR":  ("Light ray (sheer overlay)",         "Run, serpentine", "along the ray",      "2.3 rows", "2.6", "none",                  "—",    "≈ 28 % cover; sewn LAST, over the art"),
+ "RI":  ("Ripple rings (pool)",               "Run (single)", "follows the ring",      "—",    "2.4", "none",                        "—",    "round the licensed placeholder"),
+})
+for _k in ("TB", "TBS", "TM", "TMS", "TT", "TTS", "TL", "TLS", "TH", "THS", "WAS"):
+    pass
+tech.COLOUR_ORDER[:] = [c for c in tech.COLOUR_ORDER if c in PAL]

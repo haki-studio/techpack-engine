@@ -1,0 +1,171 @@
+{
+ "02R": {
+  "stitches": 109314,
+  "trims": 1791,
+  "jumps": 1792,
+  "colour_changes": 10,
+  "max_stitch": 7.33,
+  "size": [
+   290.0,
+   365.3
+  ],
+  "travel": 6954,
+  "stops": 11,
+  "stops_before_merge": 11,
+  "centre": [
+   -149.4,
+   114.20218052755119
+  ],
+  "threads": 11,
+  "size_art": [
+   289.656,
+   364.9614719462654
+  ],
+  "file": "out/02_chest-branch/C_XXL-3XL/HAKI_FB_02_chest-branch_02R_C-XXL-3XL",
+  "worst": [
+   [
+    "TMS",
+    482
+   ],
+   [
+    "TBS",
+    109
+   ],
+   [
+    "THS",
+    109
+   ],
+   [
+    "TTS",
+    74
+   ],
+   [
+    "TLS",
+    33
+   ],
+   [
+    "TB",
+    7
+   ],
+   [
+    "TM",
+    3
+   ]
+  ],
+  "secs": 37
+ },
+ "02L": {
+  "stitches": 52035,
+  "trims": 1072,
+  "jumps": 1073,
+  "colour_changes": 9,
+  "max_stitch": 7.25,
+  "size": [
+   280.4,
+   311.9
+  ],
+  "travel": 3076,
+  "stops": 10,
+  "stops_before_merge": 10,
+  "centre": [
+   144.925,
+   142.9158249471185
+  ],
+  "threads": 10,
+  "size_art": [
+   279.99,
+   311.58000000000004
+  ],
+  "file": "out/02_chest-branch/C_XXL-3XL/HAKI_FB_02_chest-branch_02L_C-XXL-3XL",
+  "worst": [
+   [
+    "TMS",
+    282
+   ],
+   [
+    "TBS",
+    52
+   ],
+   [
+    "TTS",
+    44
+   ],
+   [
+    "THS",
+    41
+   ],
+   [
+    "TLS",
+    25
+   ],
+   [
+    "TM",
+    5
+   ],
+   [
+    "TB",
+    4
+   ]
+  ],
+  "secs": 16
+ },
+ "back": {
+  "stitches": 539426,
+  "trims": 7377,
+  "jumps": 7378,
+  "colour_changes": 17,
+  "max_stitch": 7.4,
+  "size": [
+   612.8,
+   617.1
+  ],
+  "travel": 35391,
+  "stops": 18,
+  "stops_before_merge": 20,
+  "centre": [
+   -2.842170943040401e-14,
+   288.3778471590698
+  ],
+  "threads": 12,
+  "size_art": [
+   612.3600000000001,
+   616.9438501364092
+  ],
+  "file": "out/01_back-scene/C_XXL-3XL/HAKI_FB_01_back-scene_C-XXL-3XL",
+  "worst": [
+   [
+    "TMS",
+    1895
+   ],
+   [
+    "THS",
+    318
+   ],
+   [
+    "TBS",
+    260
+   ],
+   [
+    "TTS",
+    241
+   ],
+   [
+    "TLS",
+    181
+   ],
+   [
+    "WAS",
+    153
+   ],
+   [
+    "TB",
+    32
+   ],
+   [
+    "LR",
+    23
+   ]
+  ],
+  "secs": 258
+ }
+}

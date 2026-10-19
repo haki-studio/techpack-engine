@@ -92,7 +92,7 @@ def overview():
     tx = 252; o.append(t(tx, 30, "ART BOXES", 2.2, 700)); y = 34.5
     for (e, name, piece, v, k), b in zip(PIECES, BB):
         o.append(t(tx, y, f"{e} {piece}"[:30], 1.6, 600)); y += 3.0
-        o.append(t(tx + 2, y, f"{b[2]-b[0]:.0f}×{b[3]-b[1]:.0f} · x {b[0]:+.0f}…{b[2]:+.0f}", 1.5, 400, MUTED)); y += 3.0
+        o.append(t(tx + 2, y, f"{CUR[k]['size'][0]:.0f}×{CUR[k]['size'][1]:.0f} · x {b[0]:+.0f}…{b[2]:+.0f}", 1.5, 400, MUTED)); y += 3.0
         o.append(t(tx + 2, y, f"y {b[1]:.0f}…{b[3]:.0f}", 1.5, 400, MUTED)); y += 4
     o.append(t(tx, y, "PLACEHOLDER (01)", 1.7, 700, RED)); y += 3.2
     o.append(t(tx, y, f"{PH[2]-PH[0]:.0f}×{PH[3]-PH[1]:.0f} · x {PH[0]:+.0f}…{PH[2]:+.0f}", 1.5, 400, RED)); y += 3.0
@@ -135,7 +135,7 @@ def threads():
     for i, (a, b) in enumerate([("Backing", "2.5 oz cutaway, cut 30 larger than each art box; trim to 5 from stitching after embroidery"),
                                 ("Topping", "none (canvas surface is firm)"), ("Needles", "75/11 sharp (canvas); change every 8 h on the back scene"),
                                 ("Bobbin", "60wt white polyester pre-wound (black bobbin optional under the dark moss)"),
-                                ("Frames", f"baseline {FRAME[0]:.0f} × {FRAME[1]:.0f} (factory.json): 01 back = 4 split files S1–S4 (G5), 02R / 02L one hooping each; a border frame ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f} would take the single back file (option, ask on F1)"),
+                                ("Frames", f"baseline {FRAME[0]:.0f} × {FRAME[1]:.0f} (factory.json): 01 back = 4 split files S1–S4 (G5), 02R / 02L one hooping each; a border frame ≥ {CUR['back']['size'][0]+14:.0f} × {CUR['back']['size'][1]+14:.0f} would take the single back file (option, ask on F1)"),
                                 ("Patches / labels", "none on this garment — all artwork is direct embroidery")]):
         o.append(t(12, yb + 11.5 + i*3.6, a, 1.85, 600)); o.append(t(42, yb + 11.5 + i*3.6, b, 1.85))
     return o
@@ -150,7 +150,7 @@ def summary():
         d = CUR[k]; y = 36 + i*4.6
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-3)}" width="{SW-22}" height="4.6" fill="#F5F2EC"/>')
         o.append(t(cx[0], y, f"{e} {name}", 1.8, 600)); o.append(t(cx[1], y, piece[:34], 1.7))
-        o.append(t(cx[2], y, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.8)); o.append(t(cx[3], y, f"{d['stitches']:,}", 1.8, 600))
+        o.append(t(cx[2], y, f"{d['size'][0]:.0f} × {d['size'][1]:.0f}", 1.8)); o.append(t(cx[3], y, f"{d['stitches']:,}", 1.8, 600))
         o.append(t(cx[4], y, f"{d['trims_dst']:,}", 1.8)); o.append(t(cx[5], y, f"{d['stops']}", 1.8)); o.append(t(cx[6], y, f"{d['threads']}", 1.8))
         o.append(t(cx[7], y, f"{mh(d):.2f} h", 1.8))
         q = QA[k]; wk = max(q, key=lambda c: q[c]["long_pct"]); wv = q[wk]["long_pct"]
@@ -164,10 +164,10 @@ def summary():
     qs = [f"1. LICENSED orb: placeholder box {PH[2]-PH[0]:.0f} × {PH[3]-PH[1]:.0f} at the mockup position (stream). Confirm final size + position from the licensor-approved art, who digitizes it, and that",
           "    the licence approval is in place before production (not verified by Haki tech). The figure's stitch file is NOT part of this pack.",
           "2. Grading: A 90 % (XS–S), B 100 % (M–XL), C 108 % (XXL–3XL); one file per grade per piece; every size checked on its pattern (T13). The placeholder grades with the art.",
-          f"3. Hooping: baseline 6 hoopings on {FRAME[0]:.0f} × {FRAME[1]:.0f} (back S1–S4 + 02R + 02L). A border frame ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f} would take the single back file — option, asked on F1.",
+          f"3. Hooping: baseline 6 hoopings on {FRAME[0]:.0f} × {FRAME[1]:.0f} (back S1–S4 + 02R + 02L). A border frame ≥ {CUR['back']['size'][0]+14:.0f} × {CUR['back']['size'][1]+14:.0f} would take the single back file — option, asked on F1.",
           "4. Shell: washed forest green duck — piece-dyed + pre-washed before embroidery, or garment-washed after? Wash-test the sew-out (cream, leaf yellow-green shift first).",
           f"5. Thread palette ({len(PAL)} threads, from the mockup + close-ups; ≤ 12 per file) — approve a physical thread board; amber/red ΔE rows from the card (G3).",
-          "6. Light rays: specced sheer (serpentine run, rows 2.6 apart, sewn last over the art) per the brief. Approve on the sew-out — denser would read as solid bands.",
+          "6. Light rays: 5 broad sheer bands traced from the close-up (rows 2.3 apart, ≈ 28 % cover, sewn last over the art). Approve on the sew-out.",
           "7. Back collar fall: art stays 6 below a 45 mm collar fall at CB (proposed) — confirm with the sample collar.",
           "8. Retail name 'Forestball': confirm it is not meant to echo Dragon Ball before retail use.",
           "9. DST/PES are production-intent drafts: the factory digitizer opens them, checks density + pull on 12 oz duck and edits before sew-out."]
@@ -278,7 +278,7 @@ def hooping_page():
               "ORDER: 1 S1 top-left → 2 S2 top-right → 3 S3 bottom-left → 4 S4 bottom-right (back, each re-hooped on the shared registration crosses), 5 02R, 6 02L.",
               "Each back section file contains ONLY its own art (+ crosses); motifs never reach more than 8 mm past a split line (longer overhangs are cut at the line with 1.2 mm fill overlap).",
               "Split lines: x = vertical split, y = horizontal split, in this size's back-pattern coordinates. Mark both on the cut back (chalk) before hooping S1.",
-              f"Option (not baseline): a border frame ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f} sews the single back file in one hooping — asked on F1."]:
+              f"Option (not baseline): a border frame ≥ {CUR['back']['size'][0]+14:.0f} × {CUR['back']['size'][1]+14:.0f} sews the single back file in one hooping — asked on F1."]:
         o.append(t(12, y, l, 1.65, 600 if l.startswith("ORDER") else 400, INK if l.startswith("ORDER") else MUTED)); y += 3.5
     return o
 
@@ -292,12 +292,12 @@ def f1_pages():
         strike.append(dict(file=os.path.basename(v["file"]) + ".dst", piece=f"01 back hooping {nm[:2]}", stitches=v["stitches"], trims=v["trims_dst"]))
     th = [dict(name=PAL[k][1], code=f"Polyneon {SB.TH[k]['polyneon'][0]} / Isacord {SB.TH[k]['isacord'][0]}",
                de=min(SB.TH[k]["polyneon"][3], SB.TH[k]["isacord"][3])) for k in PAL if k != "basting"]
-    pcs = [dict(piece="01 back scene", w=BB[0][2]-BB[0][0], h=BB[0][3]-BB[0][1], hoopings=len(SPL["sections"]))]
+    pcs = [dict(piece="01 back scene", w=CUR["back"]["size"][0], h=CUR["back"]["size"][1], hoopings=len(SPL["sections"]))]
     return factory.requests_page(f"{fbcore.NAME} ({fbcore.STYLE})", strike, th, pcs, page="F1", prof=PROF)
 
 def build():
     pages = {"G2": overview(), "G3": threads(), "G4": summary(), "G5": files_page(), "G6": hooping_page()}
-    el = [("01 Back scene", glob.glob("out/01_back-scene/*SPEC_*.pdf")[0]), ("02 Chest mossy branch", glob.glob("out/02_*/*SPEC_*.pdf")[0])]
+    el = [("01 Back scene", glob.glob(f"out/01_back-scene/*SPEC_{REV.replace(' ', '')}.pdf")[0]), ("02 Chest mossy branch", glob.glob(f"out/02_*/*SPEC_{REV.replace(' ', '')}.pdf")[0])]
     index = [("G1 Cover + contents", 1), ("G2 Placement overview", 2), ("G3 Thread + trim summary", 3), ("G4 Stitch summary + open questions", 4),
              ("G5 Production stitch files + hoop splits", 5), ("G6 Hooping plan per size", 6), ("F1 Factory requests", 7)]
     pg = 8

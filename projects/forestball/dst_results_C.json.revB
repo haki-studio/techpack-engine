@@ -1,0 +1,179 @@
+{
+ "back": {
+  "stitches": 453608,
+  "trims": 5991,
+  "jumps": 5992,
+  "colour_changes": 29,
+  "max_stitch": 7.42,
+  "size": [
+   613.7,
+   597.2
+  ],
+  "travel": 43114,
+  "stops": 30,
+  "stops_before_merge": 30,
+  "centre": [
+   0.13107976544924327,
+   297.9998016469803
+  ],
+  "threads": 12,
+  "size_art": [
+   613.5070000000001,
+   597.1990000000001
+  ],
+  "file": "out/01_back-scene/C_XXL-3XL/HAKI_FB_01_back-scene_C-XXL-3XL",
+  "worst": [
+   [
+    "CH",
+    443
+   ],
+   [
+    "LF-vein",
+    361
+   ],
+   [
+    "GR",
+    241
+   ],
+   [
+    "RM-lump",
+    216
+   ],
+   [
+    "TW",
+    198
+   ],
+   [
+    "TW-node",
+    154
+   ],
+   [
+    "LF",
+    120
+   ],
+   [
+    "BUD",
+    90
+   ]
+  ],
+  "secs": 547
+ },
+ "02R": {
+  "stitches": 104568,
+  "trims": 1727,
+  "jumps": 1728,
+  "colour_changes": 18,
+  "max_stitch": 7.07,
+  "size": [
+   278.9,
+   345.5
+  ],
+  "travel": 8528,
+  "stops": 19,
+  "stops_before_merge": 20,
+  "centre": [
+   -144.29950133396514,
+   122.23748032724882
+  ],
+  "threads": 10,
+  "size_art": [
+   278.639,
+   345.625
+  ],
+  "file": "out/02_chest-branch/C_XXL-3XL/HAKI_FB_02_chest-branch_02R_C-XXL-3XL",
+  "worst": [
+   [
+    "CH",
+    390
+   ],
+   [
+    "LF-vein",
+    129
+   ],
+   [
+    "TW",
+    77
+   ],
+   [
+    "TW-node",
+    45
+   ],
+   [
+    "LF",
+    25
+   ],
+   [
+    "BUD",
+    24
+   ],
+   [
+    "LF-dark",
+    18
+   ],
+   [
+    "HM",
+    18
+   ]
+  ],
+  "secs": 88
+ },
+ "02L": {
+  "stitches": 60238,
+  "trims": 1353,
+  "jumps": 1354,
+  "colour_changes": 12,
+  "max_stitch": 7.03,
+  "size": [
+   290.5,
+   333.8
+  ],
+  "travel": 4054,
+  "stops": 13,
+  "stops_before_merge": 13,
+  "centre": [
+   149.5751117437935,
+   172.70054127867064
+  ],
+  "threads": 9,
+  "size_art": [
+   290.142,
+   333.93699999999995
+  ],
+  "file": "out/02_chest-branch/C_XXL-3XL/HAKI_FB_02_chest-branch_02L_C-XXL-3XL",
+  "worst": [
+   [
+    "LF-vein",
+    154
+   ],
+   [
+    "CH",
+    144
+   ],
+   [
+    "TW",
+    91
+   ],
+   [
+    "TW-node",
+    63
+   ],
+   [
+    "LF",
+    44
+   ],
+   [
+    "LF-dark",
+    38
+   ],
+   [
+    "BUD",
+    38
+   ],
+   [
+    "TR",
+    1
+   ]
+  ],
+  "secs": 36
+ }
+}

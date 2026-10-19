@@ -1,0 +1,14 @@
+{
+ "BACK": {
+  "matches": 682,
+  "inliers": 16,
+  "resid_px_median": 0.99,
+  "resid_px_p90": 1.51
+ },
+ "02R": {
+  "matches": 293,
+  "inliers": 8,
+  "resid_px_median": 1.9,
+  "resid_px_p90": 88.24
+ }
+}

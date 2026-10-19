@@ -1,0 +1,189 @@
+{
+ "frame": [
+  360.0,
+  360.0
+ ],
+ "sx": 6.26657000000003,
+ "sy": 309.94348,
+ "cut_mm": 834.5078981699012,
+ "whole_max": 70.0,
+ "protrusions_moved": 4,
+ "sections": {
+  "S1_top-left": {
+   "stitches": 64431,
+   "trims": 1205,
+   "jumps": 1206,
+   "colour_changes": 13,
+   "max_stitch": 7.33,
+   "size": [
+    336.8,
+    334.7
+   ],
+   "threads": 10,
+   "stops": 14,
+   "bbox": [
+    -324.622,
+    -18.6,
+    12.267,
+    316.096
+   ],
+   "centre": [
+    -156.1775,
+    148.748
+   ],
+   "marks": [
+    [
+     6.26657000000003,
+     -12.6
+    ],
+    [
+     6.26657000000003,
+     255.7344917647059
+    ],
+    [
+     -318.622,
+     309.94348
+    ],
+    [
+     -89.28889176470588,
+     309.94348
+    ]
+   ],
+   "file": "out/01_back-scene/C_XXL-3XL/splits/HAKI_FB_01_back-scene_C-XXL-3XL_S1_top-left",
+   "placeholder": false,
+   "fits": true
+  },
+  "S2_top-right": {
+   "stitches": 66060,
+   "trims": 1574,
+   "jumps": 1575,
+   "colour_changes": 15,
+   "max_stitch": 7.22,
+   "size": [
+    324.6,
+    334.6
+   ],
+   "threads": 10,
+   "stops": 16,
+   "bbox": [
+    0.26657000000002995,
+    -18.6,
+    324.885,
+    315.943
+   ],
+   "centre": [
+    162.575785,
+    148.67149999999998
+   ],
+   "marks": [
+    [
+     6.26657000000003,
+     -12.6
+    ],
+    [
+     6.26657000000003,
+     255.7344917647059
+    ],
+    [
+     71.94271075630255,
+     309.94348
+    ],
+    [
+     318.885,
+     309.94348
+    ]
+   ],
+   "file": "out/01_back-scene/C_XXL-3XL/splits/HAKI_FB_01_back-scene_C-XXL-3XL_S2_top-right",
+   "placeholder": false,
+   "fits": true
+  },
+  "S3_bottom-left": {
+   "stitches": 134363,
+   "trims": 1605,
+   "jumps": 1606,
+   "colour_changes": 26,
+   "max_stitch": 7.08,
+   "size": [
+    338.8,
+    310.6
+   ],
+   "threads": 12,
+   "stops": 27,
+   "bbox": [
+    -324.622,
+    303.943,
+    14.122,
+    614.599
+   ],
+   "centre": [
+    -155.25,
+    459.271
+   ],
+   "marks": [
+    [
+     6.26657000000003,
+     603.5795794957983
+    ],
+    [
+     6.26657000000003,
+     608.599
+    ],
+    [
+     -318.622,
+     309.94348
+    ],
+    [
+     -89.28889176470588,
+     309.94348
+    ]
+   ],
+   "file": "out/01_back-scene/C_XXL-3XL/splits/HAKI_FB_01_back-scene_C-XXL-3XL_S3_bottom-left",
+   "placeholder": false,
+   "fits": true
+  },
+  "S4_bottom-right": {
+   "stitches": 191156,
+   "trims": 2096,
+   "jumps": 2097,
+   "colour_changes": 29,
+   "max_stitch": 7.34,
+   "size": [
+    324.6,
+    310.6
+   ],
+   "threads": 12,
+   "stops": 30,
+   "bbox": [
+    0.267,
+    303.943,
+    324.885,
+    614.599
+   ],
+   "centre": [
+    162.576,
+    459.271
+   ],
+   "marks": [
+    [
+     6.26657000000003,
+     603.5795794957983
+    ],
+    [
+     6.26657000000003,
+     608.599
+    ],
+    [
+     71.94271075630255,
+     309.94348
+    ],
+    [
+     318.885,
+     309.94348
+    ]
+   ],
+   "file": "out/01_back-scene/C_XXL-3XL/splits/HAKI_FB_01_back-scene_C-XXL-3XL_S4_bottom-right",
+   "placeholder": true,
+   "fits": true
+  }
+ }
+}

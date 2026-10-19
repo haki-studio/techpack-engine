@@ -1,0 +1,189 @@
+{
+ "frame": [
+  360.0,
+  360.0
+ ],
+ "sx": 41.03147999999993,
+ "sy": 342.78993999999994,
+ "cut_mm": 599.2145765852538,
+ "whole_max": 70.0,
+ "protrusions_moved": 5,
+ "sections": {
+  "S1_top-left": {
+   "stitches": 69310,
+   "trims": 1417,
+   "jumps": 1418,
+   "colour_changes": 17,
+   "max_stitch": 7.34,
+   "size": [
+    320.6,
+    317.6
+   ],
+   "threads": 11,
+   "stops": 18,
+   "bbox": [
+    -273.497,
+    31.167,
+    47.031,
+    348.79
+   ],
+   "centre": [
+    -113.233,
+    189.9785
+   ],
+   "marks": [
+    [
+     41.03147999999993,
+     37.167
+    ],
+    [
+     41.03147999999993,
+     273.44692
+    ],
+    [
+     -267.497,
+     342.78993999999994
+    ],
+    [
+     35.846127394957875,
+     342.78993999999994
+    ]
+   ],
+   "file": "out/01_back-scene/A_XS-S/splits/HAKI_FB_01_back-scene_A-XS-S_S1_top-left",
+   "placeholder": false,
+   "fits": true
+  },
+  "S2_top-right": {
+   "stitches": 66937,
+   "trims": 1473,
+   "jumps": 1474,
+   "colour_changes": 19,
+   "max_stitch": 7.03,
+   "size": [
+    238.8,
+    318.2
+   ],
+   "threads": 11,
+   "stops": 20,
+   "bbox": [
+    35.031,
+    31.167,
+    273.759,
+    349.483
+   ],
+   "centre": [
+    154.395,
+    190.325
+   ],
+   "marks": [
+    [
+     41.03147999999993,
+     37.167
+    ],
+    [
+     41.03147999999993,
+     273.44692
+    ],
+    [
+     222.0324413445378,
+     342.78993999999994
+    ],
+    [
+     267.759,
+     342.78993999999994
+    ]
+   ],
+   "file": "out/01_back-scene/A_XS-S/splits/HAKI_FB_01_back-scene_A-XS-S_S2_top-right",
+   "placeholder": false,
+   "fits": true
+  },
+  "S3_bottom-left": {
+   "stitches": 117284,
+   "trims": 1279,
+   "jumps": 1280,
+   "colour_changes": 23,
+   "max_stitch": 7.2,
+   "size": [
+    320.6,
+    228.1
+   ],
+   "threads": 11,
+   "stops": 24,
+   "bbox": [
+    -273.497,
+    336.78993999999994,
+    47.031,
+    564.833
+   ],
+   "centre": [
+    -113.233,
+    450.81147
+   ],
+   "marks": [
+    [
+     41.03147999999993,
+     346.4209157983193
+    ],
+    [
+     41.03147999999993,
+     558.833
+    ],
+    [
+     -267.497,
+     342.78993999999994
+    ],
+    [
+     35.846127394957875,
+     342.78993999999994
+    ]
+   ],
+   "file": "out/01_back-scene/A_XS-S/splits/HAKI_FB_01_back-scene_A-XS-S_S3_bottom-left",
+   "placeholder": false,
+   "fits": true
+  },
+  "S4_bottom-right": {
+   "stitches": 116724,
+   "trims": 1187,
+   "jumps": 1188,
+   "colour_changes": 29,
+   "max_stitch": 7.3,
+   "size": [
+    238.8,
+    229.4
+   ],
+   "threads": 12,
+   "stops": 30,
+   "bbox": [
+    35.031,
+    335.666,
+    273.759,
+    564.833
+   ],
+   "centre": [
+    154.395,
+    450.2495
+   ],
+   "marks": [
+    [
+     41.03147999999993,
+     346.4209157983193
+    ],
+    [
+     41.03147999999993,
+     558.833
+    ],
+    [
+     222.0324413445378,
+     342.78993999999994
+    ],
+    [
+     267.759,
+     342.78993999999994
+    ]
+   ],
+   "file": "out/01_back-scene/A_XS-S/splits/HAKI_FB_01_back-scene_A-XS-S_S4_bottom-right",
+   "placeholder": true,
+   "fits": true
+  }
+ }
+}

@@ -29,8 +29,6 @@ CUR = json.load(open("dst_current.json")) if os.path.exists("dst_current.json") 
 QA = json.load(open("qa_width.json"))
 QA02 = {k: max([QA[p].get(k, {"long_pct": 0}) for p in PIECES], key=lambda d: d["long_pct"]) for p in PIECES for k in QA[p]}
 FOOT = f"HAKI STUDIOS · {fbcore.NAME} · 02 chest branch · {REV} · {DATE}"
-import front_scene as FS
-MARKS = FS.zip_marks()
 
 def header(title, sub, page):
     SB.FOOT = FOOT; return SB.header(title, sub, page)
@@ -55,14 +53,14 @@ def clearances(p):
     mir = (lambda g: g) if side == "R" else F.mirror
     arm = mir(F.ARM_R); sd = mir(F.SIDE_R); col = F.COLLAR_R if side == "R" else F.COLLAR_L; wl = F.WELT_R if side == "R" else F.WELT_L
     cf = LineString([(0, -150), (0, 900)]); hem = LineString([(-400, F.HEM), (400, F.HEM)])
-    return [("Art box " + p, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}"), ("  x range / y range", f"{b[0]:+.0f} to {b[2]:+.0f} / {b[1]:.0f} to {b[3]:.0f}"),
+    return [("Art box " + p + " (DST)", f"{CUR[p]['size'][0]:.0f} × {CUR[p]['size'][1]:.0f}"), ("  x range / y range", f"{b[0]:+.0f} to {b[2]:+.0f} / {b[1]:.0f} to {b[3]:.0f}"),
             ("  → CF (zip centre)", f"{u.distance(cf):.0f}"), ("  → shoulder + armhole seam", f"{u.distance(arm):.0f}"),
             ("  → side seam", f"{u.distance(sd):.0f}"), ("  → collar (lying flat)", f"{u.distance(col):.0f}"),
             ("  → welt pocket", f"{u.distance(wl):.0f}"), ("  → hem seam", f"{u.distance(hem):.0f}")]
 
 def page1():
     o = header("02 · CHEST MOSSY BRANCH (split at zip) — stitch-out preview + placement",
-               "Direct embroidery on both cut front panels, before zip + welts · registered across the CF zip · mm · art 1:1 · size M (grade B) · 02R TRACED from close-up b (≈5 px/mm), placed on the mockup; 02L redrawn from the mockup in the same stitch vocabulary", "p1 / 5")
+               "Direct embroidery on both cut front panels, before zip + welts · registered across the CF zip · mm · art 1:1 · size M (grade B) · 02R TRACED from close-up b (≈5 px/mm) placed by a limb-centreline fit; rope + 02L traced from the mockup x4", "p1 / 5")
     bbox = (-325, -110, 325, 540); ppm = 2.6
     fv = front_view_png(VIS, bbox, ppm)
     w_mm = 152; s = w_mm / (bbox[2] - bbox[0]); ax, ay = 12, 29
@@ -152,11 +150,11 @@ def page5():
     tag, hh = SHT.embed("inputs/front.png", (60, 60, 690, 500), 56, 14, my + 3); o.append(tag)
     o.append(t(14, my, "MOCKUP", 2.4, 700))
     o.append(t(76, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
-    for i, c in enumerate(["Rev B reference: 02R traced from close-up b (5 px/mm): braided chain-",
-                           "  stitch limb (royal blue/navy/greens, cream specks), brown chain twigs",
-                           "  with cream nodes, two-tone leaves + vein, navy tip buds; hanging moss",
-                           "  = chain-link ropes + free looping strands (texture from close-up c).",
-                           "  Mockup decides placement + scale; 02L redrawn from the mockup.",
+    for i, c in enumerate(["Rev C reference: 02R TRACED from close-up b (5 px/mm), placed on the",
+                           "  mockup by a similarity fit of b's limb centreline (5 pairs, ≤ 9 px);",
+                           "  hanging-moss rope + the 40 mm next to the zip + all of 02L traced",
+                           "  from the mockup read at x4 (b drifted there). Tones per pixel from",
+                           "  the 12 threads; stitch angle from the close-up strand direction.",
                            "Composition traced from the mockup: mossy limb from the wearer's",
                            "  right shoulder across the zip to the left chest, upper twig on",
                            "  02L, leaf sprays all along; moss hanging over the right shoulder.",

@@ -1,0 +1,167 @@
+{
+ "02R": {
+  "stitches": 100431,
+  "trims": 1753,
+  "jumps": 1754,
+  "colour_changes": 10,
+  "max_stitch": 7.05,
+  "size": [
+   290.0,
+   365.2
+  ],
+  "travel": 7082,
+  "stops": 11,
+  "stops_before_merge": 11,
+  "centre": [
+   -149.4,
+   114.20218052755119
+  ],
+  "threads": 11,
+  "size_art": [
+   289.656,
+   364.9614719462654
+  ],
+  "file": "out/02_chest-branch/C_XXL-3XL/HAKI_FB_02_chest-branch_02R_C-XXL-3XL",
+  "worst": [
+   [
+    "TMS",
+    461
+   ],
+   [
+    "THS",
+    108
+   ],
+   [
+    "TBS",
+    93
+   ],
+   [
+    "TTS",
+    73
+   ],
+   [
+    "TLS",
+    30
+   ],
+   [
+    "TB",
+    17
+   ],
+   [
+    "TBS/intra",
+    1
+   ]
+  ],
+  "secs": 34
+ },
+ "02L": {
+  "stitches": 45342,
+  "trims": 1057,
+  "jumps": 1058,
+  "colour_changes": 9,
+  "max_stitch": 7.25,
+  "size": [
+   280.4,
+   311.8
+  ],
+  "travel": 2567,
+  "stops": 10,
+  "stops_before_merge": 10,
+  "centre": [
+   144.925,
+   142.9158249471185
+  ],
+  "threads": 10,
+  "size_art": [
+   279.99,
+   311.58000000000004
+  ],
+  "file": "out/02_chest-branch/C_XXL-3XL/HAKI_FB_02_chest-branch_02L_C-XXL-3XL",
+  "worst": [
+   [
+    "TMS",
+    272
+   ],
+   [
+    "TBS",
+    50
+   ],
+   [
+    "TTS",
+    44
+   ],
+   [
+    "THS",
+    42
+   ],
+   [
+    "TLS",
+    24
+   ],
+   [
+    "TB",
+    7
+   ]
+  ],
+  "secs": 17
+ },
+ "back": {
+  "stitches": 495054,
+  "trims": 7284,
+  "jumps": 7285,
+  "colour_changes": 17,
+  "max_stitch": 7.4,
+  "size": [
+   612.8,
+   617.1
+  ],
+  "travel": 33742,
+  "stops": 18,
+  "stops_before_merge": 20,
+  "centre": [
+   0.0,
+   288.3778471590698
+  ],
+  "threads": 12,
+  "size_art": [
+   612.36,
+   616.9438501364092
+  ],
+  "file": "out/01_back-scene/C_XXL-3XL/HAKI_FB_01_back-scene_C-XXL-3XL",
+  "worst": [
+   [
+    "TMS",
+    1893
+   ],
+   [
+    "THS",
+    311
+   ],
+   [
+    "TTS",
+    236
+   ],
+   [
+    "TBS",
+    215
+   ],
+   [
+    "TLS",
+    153
+   ],
+   [
+    "WAS",
+    143
+   ],
+   [
+    "TB",
+    56
+   ],
+   [
+    "LR",
+    23
+   ]
+  ],
+  "secs": 258
+ }
+}

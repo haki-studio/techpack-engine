@@ -25,7 +25,7 @@ def outlines():
     for k, vis in (("back", D["back"]), ("02R", F["02R"]), ("02L", F["02L"])):
         out[k] = unary_union([r["geom"].buffer(0.3) for r in vis if r["grp"] != "PH"]).buffer(-0.3).simplify(0.1)
         if k in ("02R", "02L"):     # main-limb bark at the zip, for the per-size zip match marks
-            out["_bark_" + k] = unary_union([r["geom"] for r in vis if r["grp"].split("-")[0] in ("TR", "CH") and r["geom"].centroid.y < 260]).buffer(0.6).buffer(-0.6)
+            out["_bark_" + k] = unary_union([r["geom"] for r in vis if r["grp"] in ("TB", "TBS", "TM", "TMS", "TH", "THS")]).buffer(1.5).buffer(-1.5)
     import back as B
     out["_ph"] = B.PH_BOX
     pickle.dump(out, open(cp, "wb")); return out
@@ -65,7 +65,9 @@ def place(size, OL=None):
         TF[k] = [sc, c, dx, dy]; res[k] = (PIECE[k], affinity.translate(s_, dx, dy))
     NUDGE = {}
     def ok_for(k, dx, dy):
-        a = res[k][1]; return all(affinity.translate(a, dx, dy).distance(L_) >= v for L_, v in need(k, g))
+        a = res[k][1]; b_ = affinity.translate(a, dx, dy)
+        # +0.5 mm over every seam minimum (pull compensation); the CF edge is placed at 15.3 by construction (x fixed)
+        return all(b_.distance(L_) >= v + (0.0 if i == 0 and k != "back" else 0.5) for i, (L_, v) in enumerate(need(k, g)))
     # back: free nudge
     if ok_for("back", 0, 0): NUDGE["back"] = (0.0, 0.0)
     else:
@@ -78,7 +80,7 @@ def place(size, OL=None):
     # fronts: ONE vertical nudge for both pieces so the limb stays continuous across the zip (Rev B)
     dyf = 0.0
     if not (ok_for("02R", 0, 0) and ok_for("02L", 0, 0)):
-        for d in sorted(np.arange(-30, 30.25, 0.25), key=abs):
+        for d in sorted(np.arange(-45, 45.25, 0.25), key=abs):
             if ok_for("02R", 0, d) and ok_for("02L", 0, d): dyf = float(d); break
     NUDGE["02R"] = NUDGE["02L"] = (0.0, dyf)
     for k in ELEMS:
@@ -91,9 +93,11 @@ def place(size, OL=None):
     for k, xx in (("02R", -15.0), ("02L", 15.0)):
         sc, c, dx, dy = TF[k]
         bk = affinity.translate(affinity.scale(OL["_bark_" + k], sc, sc, origin=c), dx, dy)
-        seg = bk.intersection(LineString([(xx + (0.6 if xx > 0 else -0.6), -200), (xx + (0.6 if xx > 0 else -0.6), 900)]))
-        ys = [q for gg in (getattr(seg, "geoms", None) or [seg]) if not gg.is_empty for q in [c_[1] for c_ in gg.coords]]
-        marks[k] = (min(ys), max(ys)) if ys else None
+        seg = bk.intersection(LineString([(xx + (1.3 if xx > 0 else -1.3), -200), (xx + (1.3 if xx > 0 else -1.3), 900)]))
+        segs = [gg for gg in (getattr(seg, "geoms", None) or [seg]) if not gg.is_empty and gg.geom_type == "LineString"]
+        if segs:      # the limb = the longest run of art on the line just outside the zip keep-out
+            L_ = max(segs, key=lambda q: q.length); ys = [c_[1] for c_ in L_.coords]; marks[k] = (min(ys), max(ys))
+        else: marks[k] = None
     res["_zip"] = marks
     return res, g, mt
 

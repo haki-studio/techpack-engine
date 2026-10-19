@@ -1,0 +1,171 @@
+{
+ "back": {
+  "stitches": 436460,
+  "trims": 6288,
+  "jumps": 6289,
+  "colour_changes": 17,
+  "max_stitch": 7.46,
+  "size": [
+   510.8,
+   514.3
+  ],
+  "travel": 29160,
+  "stops": 18,
+  "stops_before_merge": 20,
+  "centre": [
+   -2.842170943040401e-14,
+   288.3778471590698
+  ],
+  "threads": 12,
+  "size_art": [
+   510.30000000000007,
+   514.1198751136743
+  ],
+  "file": "out/01_back-scene/A_XS-S/HAKI_FB_01_back-scene_A-XS-S",
+  "worst": [
+   [
+    "TMS",
+    1823
+   ],
+   [
+    "THS",
+    289
+   ],
+   [
+    "TBS",
+    227
+   ],
+   [
+    "TTS",
+    225
+   ],
+   [
+    "TLS",
+    162
+   ],
+   [
+    "WAS",
+    117
+   ],
+   [
+    "TB",
+    30
+   ],
+   [
+    "LR",
+    23
+   ]
+  ],
+  "secs": 181
+ },
+ "02R": {
+  "stitches": 88709,
+  "trims": 1443,
+  "jumps": 1444,
+  "colour_changes": 10,
+  "max_stitch": 7.04,
+  "size": [
+   241.8,
+   304.4
+  ],
+  "travel": 6128,
+  "stops": 11,
+  "stops_before_merge": 11,
+  "centre": [
+   -149.4,
+   114.20218052755119
+  ],
+  "threads": 11,
+  "size_art": [
+   241.38000000000002,
+   304.13455995522116
+  ],
+  "file": "out/02_chest-branch/A_XS-S/HAKI_FB_02_chest-branch_02R_A-XS-S",
+  "worst": [
+   [
+    "TMS",
+    444
+   ],
+   [
+    "THS",
+    107
+   ],
+   [
+    "TBS",
+    95
+   ],
+   [
+    "TTS",
+    68
+   ],
+   [
+    "TLS",
+    24
+   ],
+   [
+    "TB",
+    3
+   ],
+   [
+    "TM",
+    2
+   ]
+  ],
+  "secs": 30
+ },
+ "02L": {
+  "stitches": 42162,
+  "trims": 901,
+  "jumps": 902,
+  "colour_changes": 9,
+  "max_stitch": 7.02,
+  "size": [
+   233.8,
+   260.0
+  ],
+  "travel": 2565,
+  "stops": 10,
+  "stops_before_merge": 10,
+  "centre": [
+   144.925,
+   142.9158249471185
+  ],
+  "threads": 10,
+  "size_art": [
+   233.32500000000002,
+   259.6500000000001
+  ],
+  "file": "out/02_chest-branch/A_XS-S/HAKI_FB_02_chest-branch_02L_A-XS-S",
+  "worst": [
+   [
+    "TMS",
+    264
+   ],
+   [
+    "TBS",
+    52
+   ],
+   [
+    "TTS",
+    43
+   ],
+   [
+    "THS",
+    41
+   ],
+   [
+    "TLS",
+    23
+   ],
+   [
+    "TM",
+    7
+   ],
+   [
+    "TB",
+    3
+   ]
+  ],
+  "secs": 13
+ }
+}
