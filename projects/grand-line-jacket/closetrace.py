@@ -1,15 +1,16 @@
-"""Rev D: cloud banks TRACED from Devin's close-ups (LESSONS A12), not generated.
-1. Placement: per-piece affine close-up px -> garment mm (size M), fitted on the horizon line, the bank tops/bottoms and the
-   side banks of the mockup (the mockup wins on placement; the close-up gives shape, tones and stitch direction).
-2. Silhouette: cloud pixels of the close-up (bright, low saturation), holes filled; banks = large components.
-3. Tones: every pixel -> nearest cloud thread in CIELAB (pale, cream, sand, sage light, sage, slate, shadow);
-   navy pinholes inside the silhouette take the nearest cloud tone; majority filter removes islands < ~1 mm.
-4. Stitch direction: structure tensor of the close-up's own stitch texture (strand direction), averaged per 5 mm cell.
-5. Keep-outs: banks are cut 8 mm inside each size-independent keep-out and re-grown with whole round lobes (r 7) along
-   that edge, so no bank ends in a straight clip.
+"""Rev E2: cloud banks TRACED from Devin's close-ups (LESSONS A12/A13), not generated.
+1. Placement: close-up px -> garment mm (size M): the inner bank end sits on the mockup anchor; the scale per row puts the close-up's
+   outer border EDGE_IN inside the keep-out, smoothed over 25 mm and never below 95 % of the median (no squeezed tower lobes).
+2. Silhouette: cloud pixels of the close-up (bright, low saturation), holes filled; banks = large components. Wherever a bank meets
+   the keep-out or the close-up border it is cut back 11 mm and regrown with whole round lobes (r 6-9.5, varied depth).
+3. Tones: per pixel, thread family by hue (warm = cream/sand, green = sage, grey = slate/shadow) + a lightness step, from the
+   close-up smoothed over 1 mm; mode filter 1.6 mm; vertical order per bank (sage top, slate mid, sand/cream base); regions
+   < MIN_REG mm2 merged.
+4. Stitch structure: lobes = luminance watershed of the close-up + the regrown edge lobes; each tone piece of a lobe is filled
+   with concentric rows about that lobe's base (14 deg sectors), arc rows on the sage/slate lobes, a few round pinholes in cream.
 Output: closetrace.pkl {P: {"regions": [...], "info": {...}}} in size-M garment mm."""
 import glcore
-import json, pickle, math
+import json, pickle, math, os
 import numpy as np
 from PIL import Image
 from scipy import ndimage as ndi
@@ -49,7 +50,8 @@ DARKER = {"gl_pale": "gl_cream", "gl_cream": "gl_sand", "gl_sand": "gl_sage", "g
           "gl_slate": "gl_shadow", "gl_shadow": "gl_slate"}
 
 ANCHOR = {"FR": (955.0, -11.0, 0.0), "FL": (360.0, 62.0, None)}       # (u of the inner bank end, its x in mm, u of the outer border)
-SCALE_SMOOTH, SCALE_MIN = 25.0, 0.95     # Rev E2: per-row scale smoothed over 25 mm and never < 95 % of the median (no tower lobes)
+SCALE_SMOOTH, SCALE_MIN = 25.0, 0.95
+MIN_REG = 18.0                  # mm2: smallest tone region (review E1: 15-20)     # Rev E2: per-row scale smoothed over 25 mm and never < 95 % of the median (no tower lobes)
 
 def mapping(P, XX, YY, Wc):
     """garment mm (size M) -> close-up px (U, V). The inner bank end stays on the mockup anchor; the scale per row is the one
@@ -129,19 +131,19 @@ def trace(P, seed=1):
     allowed = inside & inlim
     cut = keep & allowed
     Dal = ndi.distance_transform_edt(np.pad(allowed, 1))[1:-1, 1:-1] / PPM          # mm to the edge of the allowed area
-    contact = cut & (Dal < 1.2) & ndi.binary_dilation(keep & ~allowed, structure=disk(1.6))
+    contact = cut & (Dal < 1.2)                    # the bank runs into the keep-out or off the close-up's border
     Dc = ndi.distance_transform_edt(~contact) / PPM if contact.any() else np.full(cut.shape, 1e9)
     ZR = 11.0
     zone = cut & (Dal < ZR) & (Dc < ZR + 3)
     core = cut & ~zone
     Ds = ndi.gaussian_filter(Dal, 2.0*PPM); gy, gx = np.gradient(Ds)
     cpts = np.argwhere(contact); rng.shuffle(cpts)
-    discs = []; SPC = 8.0
+    discs = []; SPC = 12.5
     for r, c in cpts:
         if any((r - a)**2 + (c - b)**2 < (SPC*PPM)**2 for a, b, _ in discs): continue
         nrm = np.hypot(gx[r, c], gy[r, c])
         if nrm < 1e-6: continue
-        R = rng.uniform(5.5, 9.5); dep = rng.uniform(0.6, 3.8)
+        R = rng.uniform(6.0, 9.5); dep = rng.uniform(0.6, 6.5)
         rc = r + gy[r, c]/nrm*(R + dep)*PPM; cc = c + gx[r, c]/nrm*(R + dep)*PPM
         ri, ci = int(round(rc)), int(round(cc))
         if not (0 <= ri < H and 0 <= ci < W) or not keep[ri, ci]: continue
@@ -165,49 +167,63 @@ def trace(P, seed=1):
     ws_ = watershed(-lum_s, mk, mask=grown & (dlab == 0))
     lobes = np.where(dlab > 0, dlab + nW, ws_)
     lobes = np.where(grown & (lobes == 0), 0, lobes)
-    # ---- tone per lobe from the close-up (bright 60 % of its traced pixels), cool pixels never cream
-    Lab = color.rgb2lab(img)
+    # ---- tones (review E1/E2): every traced pixel -> thread family by hue (warm = cream, green = sage, grey = slate) and a
+    # lightness step, from the close-up smoothed over 1 mm (the dark gaps between strands are not a tone); the one-hot map is
+    # mode-filtered over 1.6 mm and regions < MIN_REG mm2 merge into their neighbour, so tone areas are lobe-sized, not confetti
+    T = {t: k for k, t in enumerate(TONES)}
+    Ls = color.rgb2lab(np.stack([ndi.gaussian_filter(img[..., k], 1.0*PPM) for k in range(3)], -1))
+    L_, a_, b_ = Ls[..., 0], Ls[..., 1], Ls[..., 2]
+    warm = (b_ >= 12.0) & (a_ >= -1.0); green = ~warm & (a_ < -1.5) & (b_ >= 7.0); grey = ~warm & ~green & (b_ < 7.0)
+    lbl = np.full(L_.shape, T["gl_sand"])
+    lbl = np.where(warm, np.where(L_ > 89, T["gl_pale"], np.where(L_ > 74, T["gl_cream"], T["gl_sand"])), lbl)
+    lbl = np.where(green, np.where(L_ > 64, T["gl_sagelt"], T["gl_sage"]), lbl)
+    lbl = np.where(grey, np.where(L_ > 44, T["gl_slate"], T["gl_shadow"]), lbl)
+    rest = ~warm & ~green & ~grey
+    lbl = np.where(rest, np.where(L_ > 66, T["gl_sand"], T["gl_sage"]), lbl)
     srcpix = inside & (lum >= 0.235) & keep
-    nl = int(lobes.max()); tone = {}; cen = {}
-    objs = ndi.find_objects(lobes)
-    for j, sl in enumerate(objs, 1):
-        if sl is None: continue
-        m = lobes[sl] == j
-        ys_, xs_ = np.nonzero(m)
-        cen[j] = (sl[0].start + ys_.mean(), sl[1].start + xs_.mean(), sl[0].start + ys_.min(), sl[0].start + ys_.max())
-        s = m & srcpix[sl]
-        if s.sum() < 0.3*m.sum() or s.sum() < 10: continue
-        l = lum[sl][s]; k = l >= np.percentile(l, 40)
-        tone[j] = tone_of_lab(np.median(Lab[sl][s][k], axis=0))
-    if tone:            # lobes with too little traced pixel (regrown edge discs) take the tone of the nearest traced lobe
-        known = np.array([cen[j][:2] for j in tone]); kj = list(tone)
-        for j in cen:
-            if j not in tone:
-                d = np.hypot(known[:, 0] - cen[j][0], known[:, 1] - cen[j][1]); tone[j] = tone[kj[int(d.argmin())]]
-    # ---- order per bank (review E1): sage on top, slate in the middle, sand / cream at the base
-    gl, ng = ndi.label(grown); tops = {}; sage_lowleft = 0
+    idx = ndi.distance_transform_edt(~srcpix, return_distances=False, return_indices=True)
+    lbl = lbl[idx[0], idx[1]]                                   # pinholes + regrown edge lobes take the nearest traced tone
+    def mode(lbl, sigma_mm):
+        oh = np.stack([ndi.gaussian_filter(((lbl == k) & grown).astype(np.float32), sigma_mm*PPM) for k in range(len(TONES))], -1)
+        return oh.argmax(-1)
+    def merge_small(lbl, min_mm2):
+        for _ in range(4):
+            changed = False
+            for k in range(len(TONES)):
+                lk, nk = ndi.label((lbl == k) & grown)
+                if not nk: continue
+                sz = ndi.sum(np.ones_like(lk), lk, range(1, nk + 1)) / PPM**2
+                small = np.isin(lk, [i + 1 for i, v in enumerate(sz) if v < min_mm2])
+                if small.any():
+                    keepm = grown & ~small
+                    ix = ndi.distance_transform_edt(~keepm, return_distances=False, return_indices=True)
+                    lbl = np.where(small, lbl[ix[0], ix[1]], lbl); changed = True
+            if not changed: break
+        return lbl
+    lbl = mode(lbl, 1.6)
+    # order per bank: sage / slate on top (no cream), sand / cream at the base (no slate; sage only lower-left FR, close-up)
+    gl, ng = ndi.label(grown); sage_lowleft = 0
     for g, sl in enumerate(ndi.find_objects(gl), 1):
         m = gl[sl] == g
-        top = np.where(m.any(0), m.argmax(0), 0) + sl[0].start; bot = np.where(m.any(0), m.shape[0] - 1 - m[::-1].argmax(0), 0) + sl[0].start
-        tops[g] = (sl[1].start, top, bot)
-    for j, (rc, cc, rt, rb) in cen.items():
-        g = gl[int(rc), int(cc)] or gl[int(rt), int(cc)]
-        if not g: continue
-        c0, top, bot = tops[g]; ci = min(max(int(cc) - c0, 0), len(top) - 1)
-        t = (rc - top[ci]) / max(bot[ci] - top[ci], 8*PPM)
-        tn = tone[j]; xmm = x0 + cc / PPM
-        if t < 0.30:
-            tn = {"gl_pale": "gl_sagelt", "gl_cream": "gl_sagelt", "gl_sand": "gl_sage", "gl_shadow": "gl_slate"}.get(tn, tn)
-        elif t > 0.64:
-            lowleft = P == "FR" and xmm < -235
-            tn = {"gl_slate": "gl_sand", "gl_shadow": "gl_sand"}.get(tn, tn)
-            if tn in ("gl_sage", "gl_sagelt"):
-                if lowleft: sage_lowleft += 1
-                else: tn = "gl_cream"
-        else:
-            tn = {"gl_pale": "gl_cream"}.get(tn, tn)
-        tone[j] = tn
-    # ---- polygons per lobe: body + crescent, concentric rows (14 deg sectors), arcs / pinholes
+        top = np.where(m.any(0), m.argmax(0), 0); bot = np.where(m.any(0), m.shape[0] - 1 - m[::-1].argmax(0), 0)
+        rr = np.arange(m.shape[0])[:, None]
+        t = (rr - top[None, :]) / np.maximum(bot - top, 8*PPM)[None, :]
+        sub = lbl[sl]; xcol = x0 + (np.arange(sl[1].start, sl[1].stop) + 0.5) / PPM
+        upper = m & (t < 0.30); lower = m & (t > 0.68)
+        sub = np.where(upper & np.isin(sub, [T["gl_pale"], T["gl_cream"]]), T["gl_sagelt"], sub)
+        sub = np.where(upper & (sub == T["gl_sand"]), T["gl_sage"], sub)
+        sage_ok = (xcol < -235)[None, :] if P == "FR" else np.zeros((1, m.shape[1]), bool)
+        sage_lowleft += int((lower & np.isin(sub, [T["gl_sage"], T["gl_sagelt"]]) & sage_ok).sum())
+        sub = np.where(lower & (sub == T["gl_shadow"]), T["gl_sand"], sub)
+        sub = np.where(lower & (sub == T["gl_slate"]) & ~sage_ok, T["gl_sand"], sub)
+        sub = np.where(lower & np.isin(sub, [T["gl_sage"], T["gl_sagelt"]]) & ~sage_ok, T["gl_cream"], sub)
+        sub = np.where(lower & (sub == T["gl_sand"]) & (L_[sl] > 60), T["gl_cream"], sub)        # clean cream base, sand only in real shadow (E2)
+        lbl[sl] = np.where(m, sub, lbl[sl])
+    lbl = mode(lbl, 1.0)
+    lbl = merge_small(lbl, MIN_REG)
+    if os.environ.get("CT_DEBUG"): np.savez(f"out/ct_debug_{P}.npz", lobes=lobes, img=img, lbl=np.where(grown, lbl, -1), contact=contact, zone=zone, allowed=allowed, keep=keep, dl=dlab)
+    # ---- polygons: tone region x lobe cell; each piece = concentric rows about ITS lobe's base (14 deg sectors, A13);
+    # arc rows on the sage / slate lobes, a few round pinholes in the cream lobes
     def to_poly(mask):
         sub = np.pad(mask, 1); out = []
         for c in measure.find_contours(sub.astype(float), 0.5):
@@ -220,7 +236,7 @@ def trace(P, seed=1):
             g = g.difference(r_) if g.contains(r_.representative_point()) else g.union(r_)
         return g.buffer(0)
     limp = lim.buffer(-0.6)
-    regions = []; arcs = 0; holes = 0; crescents = 0; nlobe = 0
+    regions = []; arcs = 0; holes = 0; nlobe = 0
     def polys_(g): return [g] if g.geom_type == "Polygon" else [q for q in getattr(g, "geoms", []) if q.geom_type == "Polygon"]
     def fan_fill(p, tone_, fx, fy, grp):
         Rm = max(math.hypot(px_ - fx, py_ - fy) for q in polys_(p) for px_, py_ in q.exterior.coords) + 2
@@ -230,45 +246,49 @@ def trace(P, seed=1):
                 if qq.area >= 0.6: regions.append(dict(col=tone_, geom=qq, st="tatami", ang=float(a0 + 7 + 90), grp=grp, ko=True, kob=0.0, unit=None))
         for qq in polys_(p.intersection(box(-400, fy, 400, 900))):
             if qq.area >= 0.6: regions.append(dict(col=tone_, geom=qq, st="tatami", ang=0.0, grp=grp, ko=True, kob=0.0, unit=None))
+    objs = ndi.find_objects(lobes)
     for j, sl in enumerate(objs, 1):
-        if sl is None or j not in tone: continue
-        full = np.zeros_like(grown); full[sl] = lobes[sl] == j
-        if full.sum() / PPM**2 < 2.0: continue
-        p = to_poly(full).buffer(0.5).buffer(-0.5).intersection(limp).buffer(0)
-        if p.is_empty or p.area < 2.0: continue
-        p = p.simplify(0.2); nlobe += 1
-        tn = tone[j]; b_ = p.bounds; hgt = b_[3] - b_[1]
-        fx = (b_[0] + b_[2]) / 2; fy = b_[3] + 0.15*hgt                        # rows are concentric about the lobe base
-        grp = "CL" if tn not in ("gl_slate", "gl_shadow") else "CL-shade"
-        body = p; cres = Polygon()
-        if p.area > 40 and tn != "gl_shadow":                                   # clean darker crescent under the lobe
-            up = affinity.translate(p, 0, -0.26*hgt)
-            cres = p.difference(up).buffer(-0.4).buffer(0.4).intersection(p)
-            if cres.area < 3.0: cres = Polygon()
-            else: body = p.difference(cres).buffer(0); crescents += 1
-        if tn in ("gl_cream", "gl_pale") and p.area > 60 and rng.random() < 0.4:       # a few real round pinholes, in an arc
-            R = 0.55*hgt; nh = int(rng.integers(2, 4)); a0 = rng.uniform(-130, -50 - 12*nh)
-            for k in range(nh):
-                a = math.radians(a0 + 12*k); q = Point(fx + 1.15*R*math.cos(a), fy + R*math.sin(a))
-                if body.buffer(-1.6).contains(q): body = body.difference(q.buffer(0.55, quad_segs=8)); holes += 1
-        fan_fill(body, tn, fx, fy, grp)
-        if not cres.is_empty: fan_fill(cres, DARKER[tn], fx, fy, "CL-shade")
-        if tn in ("gl_sage", "gl_sagelt", "gl_slate") and p.area > 35:           # arc rows (the close-up's stitch rows), sewn on top
-            lg = body.buffer(-0.8); Rr = max(3.0, hgt)
+        if sl is None: continue
+        mj = lobes[sl] == j
+        if mj.sum() / PPM**2 < 2.0: continue
+        ys_, xs_ = np.nonzero(mj)
+        fx = x0 + (sl[1].start + xs_.mean() + 0.5) / PPM
+        ybot = y0 + (sl[0].start + ys_.max() + 1) / PPM; ytop = y0 + (sl[0].start + ys_.min()) / PPM; hgt = ybot - ytop
+        fy = ybot + 0.15*hgt; nlobe += 1
+        sub_l = lbl[sl]
+        dom = TONES[np.bincount(sub_l[mj], minlength=len(TONES)).argmax()]
+        body_all = []
+        for k, tn in enumerate(TONES):
+            mk_ = mj & (sub_l == k)
+            if mk_.sum() / PPM**2 < 1.2: continue
+            full = np.zeros_like(grown); full[sl] = mk_
+            p = to_poly(full).intersection(limp).buffer(0)
+            if p.is_empty or p.area < 1.2: continue
+            p = p.simplify(0.2)
+            if tn in ("gl_cream", "gl_pale") and p.area > 60 and rng.random() < 0.4:      # a few real round pinholes, in an arc
+                R = 0.55*hgt; nh = int(rng.integers(2, 4)); a0 = rng.uniform(-130, -50 - 12*nh)
+                for kk in range(nh):
+                    a = math.radians(a0 + 12*kk); q = Point(fx + 1.15*R*math.cos(a), fy + R*math.sin(a))
+                    if p.buffer(-1.6).contains(q): p = p.difference(q.buffer(0.55, quad_segs=8)); holes += 1
+            fan_fill(p, tn, fx, fy, "CL" if tn not in ("gl_slate", "gl_shadow") else "CL-shade")
+            body_all.append(p)
+        if body_all and dom in ("gl_sage", "gl_sagelt", "gl_slate") and mj.sum() / PPM**2 > 35:     # arc rows, sewn on top
+            lg = unary_union(body_all).buffer(-0.8); Rr = max(3.0, hgt)
             for rad in np.arange(0.38*Rr, 0.95*Rr, 2.7):
                 pts = [(fx + rad*1.15*math.cos(a), fy + rad*math.sin(a)) for a in np.radians(np.linspace(-165, -15, 40))]
                 g_ = LineString(pts).intersection(lg)
                 for gg in ([g_] if g_.geom_type == "LineString" else [x for x in getattr(g_, "geoms", []) if x.geom_type == "LineString"]):
                     if gg.length < 3.0: continue
-                    regions.append(dict(col=DARKER[tn], geom=gg.buffer(0.25, cap_style="round"), st="run", ang=None, grp="CL-scale",
+                    regions.append(dict(col=DARKER[dom], geom=gg.buffer(0.25, cap_style="round"), st="run", ang=None, grp="CL-scale",
                                         ko=False, kob=0.0, unit=None, sub="scale")); arcs += 1
+    crescents = 0
     region = unary_union([r["geom"] for r in regions if r["st"] == "tatami"]).buffer(0)
     info = dict(fit_resid_mm=[round(float(r), 2) for r in res], fit=dict(y=list(map(float, cy))),
                 row_fit=dict(anchor=ANCHOR[P], edge_in=EDGE_IN, scale_mm_per_px=[round(float(sc.min()), 3), round(float(np.median(sc)), 3), round(float(sc.max()), 3)]),
                 kept_mm2=round(region.area), lost_to_keepout_mm2=round(lost_mm2), edge_lobes=len(discs), lobes=nlobe, arcs=arcs, pinholes=holes,
                 crescents=crescents, sage_low_left=sage_lowleft,
                 tone_mm2={t: round(sum(r["geom"].area for r in regions if r["col"] == t and r["st"] == "tatami")) for t in TONES})
-    return dict(regions=regions, info=info, sil=region, region=region, lobe_tone={int(k): v for k, v in tone.items()})
+    return dict(regions=regions, info=info, sil=region, region=region)
 
 def pd_ffill(a):
     a = a.copy(); idx = np.where(~np.isnan(a))[0]

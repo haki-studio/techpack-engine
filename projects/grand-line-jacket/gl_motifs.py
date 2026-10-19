@@ -131,10 +131,10 @@ def star(cx, cy, Lv, Lh, w0, kind, unit, rot=0.0):
                 for L, a in ((Lv, -90), (Lh, 0), (Lv, 90), (Lh, 180))]
     arms = []
     for k, (L, a) in enumerate(((Lv, -90), (Lh, 0), (Lv, 90), (Lh, 180))):
-        arms.append(taper_arm(cx, cy, a + rot, L, w0, 0.8, cd*0.6))          # tapered to a 0.8 tip
+        arms.append(taper_arm(cx, cy, a + rot, L, w0, 0.65, cd*0.6))         # Rev E2: tapered to a 0.65 tip (fine-detail satin)
     if kind == "big":
         for a in (45, 135, 225, 315):
-            arms.append(taper_arm(cx, cy, a + rot, Lh*0.62, w0*0.9, 0.8, cd*0.6))
+            arms.append(taper_arm(cx, cy, a + rot, Lh*0.62, w0*0.8, 0.65, cd*0.6))
     centre = Point(cx, cy).buffer(cd + 0.2, quad_segs=12)
     for g in arms:
         regs.append(R("gl_gold", g.difference(centre), "satin", "auto", "STAR", unit=unit, kob=0.5))

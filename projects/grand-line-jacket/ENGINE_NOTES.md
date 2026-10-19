@@ -111,3 +111,20 @@ Problems hit while building this product, worked around in project code only. Ea
   are preserved; per-stop labels are paired by emitted stitches, never by position or thread list; never `zip()` two lists whose
   lengths are the thing being checked.
 - **Check:** unit test: a pattern with two adjacent stops and a travel run ending at the stop boundary keeps both stops.
+
+## 14. Tone tracing from a stitched close-up: classify by HUE, not nearest palette colour (Rev E2)
+- **Problem:** nearest-thread (CIELAB) per pixel, and k-means of the close-up, both cluster by LIGHTNESS: each satin lobe is lit
+  bright on top and dark at its base, so every lobe split into 3-4 tone bands (confetti, "camouflage"), and the bright-pixel
+  median of a lobe washed every lobe to cream. Watershed lobe cells used as tone units looked like Voronoi tiles.
+- **Fix (project):** smooth the close-up 1 mm (strand gaps are not a tone), classify the thread FAMILY by hue (b*/a*: warm ->
+  cream/sand, green -> sage, grey -> slate/shadow) and only then a lightness step; one-hot mode filter 1.6 mm, vertical order
+  rule per bank, merge regions < 18 mm2. Watershed cells are used only for stitch direction (concentric rows per lobe).
+- **Proposed engine fix:** `qa.trace_tones(img, families, min_region)` with this order (family by hue, then lightness).
+- **Check:** trace sheet of a lobe bank: each traced tone region spans whole lobes; no region < 18 mm2.
+
+## 15. Row-wise fit of a close-up into a curved keep-out squeezes the rows where the keep-out bends (Rev E2)
+- **Problem:** fitting each row of the close-up between the keep-out and the inner anchor compresses the rows at the armhole by
+  ~15 %, so a wide low dome became a 25 x 40 mm tower; the close-up's own border became a straight 120 mm cloud edge.
+- **Fix:** scale per row smoothed (25 mm) and clamped >= 95 % of the median; anything past the keep-out or the close-up border is
+  cut back 11 mm and regrown with whole round lobes of varied radius/depth.
+- **Check:** max |scale/median - 1| reported in closetrace info; no straight run > 15 mm on any bank edge (silhouette test).

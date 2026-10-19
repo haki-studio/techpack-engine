@@ -1,6 +1,6 @@
 """Fidelity sheets: out/compare_FR.png + out/compare_FL.png (mockup crop | stitch render at the same scale, + 4 zoomed pairs,
 mockup zooms Lanczos x4 from the source), and out/compare_<size>.png (both pieces).  usage: python3 compare.py [size]"""
-import glcore, pickle, sys
+import glcore, pickle, sys, math
 from PIL import Image, ImageDraw, ImageFilter
 import stitchrender as SR, mockmap as MM
 
@@ -29,7 +29,7 @@ def dst_render(bb, ppm):
     """stitch-by-stitch render of the shipped DSTs (travel stitches included, jumps/trims not drawn)"""
     x0, y0, x1, y1 = bb; W, H = int((x1-x0)*ppm), int((y1-y0)*ppm)
     im = Image.new("RGB", (W, H), tuple(int(glcore.FABRIC[i:i+2], 16) for i in (1, 3, 5))); d = _ID2.Draw(im)
-    lw = max(1, int(round(0.42*ppm)))
+    lw = max(1, int(math.ceil(0.45*ppm)))          # thread drawn 0.45 mm = the tatami row spacing (full cover)
     for P, (p, cols, (ox, oy), _) in dst_pats().items():
         ci = 0; prev = None
         for x, y, cmd in p.stitches:
@@ -56,7 +56,7 @@ def sheet(P):
     W, H = st.size; zw = 420
     out = Image.new("RGB", (W*2 + 40 + zw*2 + 20, max(H, 4*(zw*6//7 + 30)) + 40), (255, 255, 255))
     out.paste(mk, (10, 30)); out.paste(st, (W + 30, 30)); d = ImageDraw.Draw(out)
-    d.text((10, 10), f"MOCKUP {P} (front.png mapped to size-M mm)", fill=(0, 0, 0)); d.text((W + 30, 10), f"SHIPPED DST {P} size {size} (same scale)", fill=(0, 0, 0))
+    d.text((10, 10), f"MOCKUP {P} (front.png mapped to size-M mm)", fill=(0, 0, 0)); d.text((W + 30, 10), f"SHIPPED DST {P} size {size} (same scale, thread drawn 0.45 mm)", fill=(0, 0, 0))
     x0 = W*2 + 50; y = 30
     for (zb, cap) in ZOOMS[P]:
         zp = zw / (zb[2] - zb[0])
