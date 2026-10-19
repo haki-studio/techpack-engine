@@ -100,7 +100,8 @@ for P, side in (("FR", "R"), ("FL", "L")):
     ref_cm = ndi.binary_fill_holes(ref_cm)
     out_cm = np.zeros((H, W), bool)
     for k in ("cc_royal", "cc_azure", "cc_violet", "cc_lilac", "cc_rose", "cc_white"): out_cm |= lay.get(k, np.zeros((H, W), bool))
-    out_cm = out_cm & zone          # no closing: a streak beside the body must stay its own component (kob gap 0.4)
+    out_cm = out_cm & zone & LEGAL  # same keep-out band as the reference; no closing: a streak beside the body must stay its own component (kob gap 0.4)
+    if not ART: out_cm = ndi.binary_opening(out_cm, structure=disk(0.35))   # drop single run lines (travel / underlay, 0.5 px-line): they join separate streaks
     rows_cm = qa.motif_match(ref_cm, out_cm, PPM, min_mm2=40.0)
     # --- uncovered (A15): design coverage from the mockup inside the legal area
     design = ((lum > 62) | ((lum > 45) & (sat > 0.55))) & LEGAL          # navy fabric itself is saturated (0.6-0.7) but dark (lum 20-55)
@@ -190,3 +191,31 @@ if __name__ == "__main__":
                 Image.fromarray(im).resize((im.shape[1] // 2, im.shape[0] // 2)).save(f"out/diag_{P}_{fam}.png")
             im = np.zeros(d["design"].shape + (3,), np.uint8); im[d["design"] & d["st"]] = (200, 200, 200); im[d["design"] & ~d["st"]] = (255, 60, 60); im[d["st"] & ~d["design"]] = (60, 90, 160)
             Image.fromarray(im).resize((im.shape[1] // 2, im.shape[0] // 2)).save(f"out/diag_{P}_cov.png")
+
+def paste_tables():
+    """A14/A15 tables onto out/compare_<piece>.png (bottom-left, under the two full panels): run compare.py first"""
+    for grp in ("fronts", "sleeves"):
+        for P, d in OUT[grp].items():
+            path = f"out/compare_{P}.png"
+            im = Image.open(path).convert("RGB"); dr = ImageDraw.Draw(im)
+            ph = 30 + int(((515 + 40) if P in ("FR", "FL") else 0) * 2.0)
+            if P not in ("FR", "FL"):
+                import pickle
+                bx = pickle.load(open("art_M.pkl", "rb"))["info"][P]["bbox"]; ph = 30 + int((bx[3] - bx[1] + 20) * 2.0)
+            y0 = ph + 12; x0 = 10; colw = 560
+            dr.rectangle([x0 - 4, y0 - 6, x0 + 2*colw + 10, im.height - 4], fill=(255, 255, 255))
+            dr.text((x0, y0), f"FIDELITY GATES ({OUT['mode']}, size M) - LESSONS A14 motif_match (IoU>=0.70, w/h>=80%) + A15 uncovered (gaps>=25 mm2)", fill=(0, 0, 0))
+            y = y0 + 16
+            for fam in ("clouds", "comet"):
+                for r in d.get(fam, []):
+                    if y > im.height - 14: break
+                    dr.text((x0, y), f"{fam:6s} #{r['motif']:<2d} x{r['x_mm']:>7.1f} y{r['y_mm']:>6.1f}  {r['area_mm2']:>7.1f} mm2  IoU {r['iou']:.2f}  w {r['w_ratio']:.2f}  h {r['h_ratio']:.2f}  {'PASS' if r['ok'] else 'FAIL'}",
+                            fill=(0, 110, 40) if r["ok"] else (200, 0, 0)); y += 12
+            y = y0 + 16; xg = x0 + colw
+            dr.text((xg, y), f"uncovered gaps >= 25 mm2: {len(d['gaps'])} (every one explained; 'UNEXPLAINED' blocks)", fill=(0, 0, 0)); y += 12
+            for g in d["gaps"]:
+                if y > im.height - 14: break
+                dr.text((xg, y), f"x{g['x_mm']:>7.1f} y{g['y_mm']:>6.1f} {g['area_mm2']:>6.1f}  {g['why'][:62]}", fill=(200, 0, 0) if g["why"] == "UNEXPLAINED" else (60, 60, 60)); y += 12
+            im.save(path)
+
+if not ART: paste_tables()

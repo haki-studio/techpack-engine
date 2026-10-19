@@ -89,7 +89,7 @@ _streak_px = (_rgb[..., 2] > _rgb[..., 0] + 35) & (LUM > 62)
 _pts_all = np.c_[XMM[_streak_px], YMM[_streak_px]]
 from scipy.spatial import cKDTree as _KD
 _kd_s = _KD(_pts_all)
-MET_TRACED = []
+MET_TRACED = []; MET_SIL = []
 for i, (h, t, w) in enumerate(METEORS_PX):
     a_, b_ = np.array(P(*h)), np.array(P(*t)); seg = LineString([a_, b_])
     cand = _pts_all[_kd_s.query_ball_point((a_ + b_)/2, np.linalg.norm(b_ - a_)/2 + 6)]
@@ -99,9 +99,18 @@ for i, (h, t, w) in enumerate(METEORS_PX):
         if np.dot(d_, b_ - a_) < 0: d_ = -d_
         pr = (cand - c0) @ d_; pp = (cand - c0) @ np.array([-d_[1], d_[0]])
         hh, tt = c0 + d_*np.percentile(pr, 2), c0 + d_*np.percentile(pr, 98)
-        wd = float(np.clip(2.8 * np.std(pp), 1.6, 4.2))
+        wd = float(np.clip(3.0 * np.std(pp), 1.6, 4.6))
     else:
         hh, tt, wd = a_, b_, w + 1.2
+    # silhouette: the streak's own pixels near the fitted axis (window raster), smoothed - stitched as the meteor's outline
+    _x0, _y0 = min(hh[0], tt[0]) - 6, min(hh[1], tt[1]) - 6; _x1, _y1 = max(hh[0], tt[0]) + 6, max(hh[1], tt[1]) + 6
+    _c0, _c1 = int((_x0 - BB[0])*PPM), int((_x1 - BB[0])*PPM); _r0, _r1 = int((_y0 - BB[1])*PPM), int((_y1 - BB[1])*PPM)
+    _w = _streak_px[_r0:_r1, _c0:_c1].copy()
+    _ax = LineString([hh, tt]).buffer(wd/2 + 1.2)
+    _w &= rast([_ax], (_x0, _y0, _x0 + (_c1 - _c0)/PPM, _y0 + (_r1 - _r0)/PPM), PPM, _w.shape)
+    _w = ndi.binary_opening(ndi.binary_closing(_w, structure=np.ones((3, 3))), structure=np.ones((2, 2)))
+    _sil = unary_union(mask_polys(_w, (_x0, _y0), PPM, min_area=2.0, simplify=0.2, min_hole=99.0)) if _w.any() else Polygon()
+    MET_SIL.append(_sil)
     MET_TRACED.append((tuple(np.round(hh, 1)), tuple(np.round(tt, 1)), round(wd, 2), int(len(cand))))
 
 # ================================================================ comet: traced from the registered close-up
@@ -172,9 +181,11 @@ _cl_lab, _cl_n = ndi.label(_cloudm); _cl_s = ndi.sum(_cloudm, _cl_lab, range(1, 
 _cl_y = np.array([c[0] for c in ndi.center_of_mass(_cloudm, _cl_lab, range(1, _cl_n + 1))]) / CPPM + CB[1] if _cl_n else np.array([])
 # only the cloud bank the comet really passes behind (y > 170 at M): faded comet pixels higher up read as cloud tones = ghost tails
 _cloudm = np.isin(_cl_lab, 1 + np.nonzero((_cl_s >= 25.0) & (_cl_y > 170.0))[0])
-_mcl = _zall & (_ml[..., 0] > 45) & (_ml[..., 0] < 78) & (_mch < 18) & (_py > 170.0)    # the MOCKUP's cloud in front of the comet (A14)
+_mcl = _zall & (_ml[..., 0] > 45) & (_ml[..., 0] < np.where((_py > 185) & (_py < 245), 95, 78)) & (_mch < 18) & (_py > 170.0)    # the MOCKUP's cloud in front of the comet (A14)
 _mcl = ndi.binary_opening(ndi.binary_closing(_mcl, structure=np.ones((3, 3))), structure=np.ones((3, 3)))
 _cloudm = _cloudm | _mcl
+_mcc0 = ndi.binary_closing(_mcand, structure=np.ones((3, 3))) & _zall
+_cloudm |= _zall & (_py > 185.0) & (_py < 245.0) & (_px > 0) & ~_mcc0 & (_ml[..., 0] > 40)   # crossing: everything the mockup shows that is not comet is cloud
 _cloudm &= ~ndi.binary_dilation(_mcand, iterations=2)                 # the mockup shows the comet here: cloud stays off it
 _cl_tone = {c: _cloudm & (_lab == len(COMET_COLS) + i) for i, c in enumerate(CLOUD_COLS)}
 for zz, (col, m) in enumerate((("cc_dusk", _cloudm), ("cc_cloud", _cl_tone["cc_cloud"] | _cl_tone["cc_ice"]), ("cc_ice", _cl_tone["cc_ice"]))):
@@ -202,7 +213,10 @@ _LO = np.interp(_t, _tm, _lo); _HI = np.interp(_t, _tm, _hi)
 _f = (_omm - _LO) / np.maximum(_HI - _LO, 0.5)
 _fe = (0.03 + 0.22*_t**1.5) * np.clip(0.5 + 0.3*np.sin(_s/2.3 + 7.0*_t) + 0.25*np.sin(_s/5.3 + 1.0) + 0.15*np.sin(_s/0.97 + 2.0), 0, 1)      # feather depth (fraction)
 _bodym = _zall & (_f > _fe) & (_f < 1 - _fe) & (_t > 0.015) & (_t < 0.985)
-_bodym = ndi.binary_opening(_bodym | (ndi.binary_closing(_mcand, structure=np.ones((3, 3))) & _zall), structure=np.ones((2, 2)))   # + every mockup comet pixel (A14)
+_mcc = ndi.binary_closing(_mcand, structure=np.ones((3, 3))) & _zall
+_cross = (_py > 185.0) & (_py < 245.0) & (_px > 0)                  # FL cloud crossing: only where the mockup shows the comet between lobes
+_bodym = np.where(_cross, _mcc, _bodym | _mcc)
+_bodym = ndi.binary_opening(_bodym, structure=np.ones((2, 2)))   # + every mockup comet pixel (A14)
 # white core line position across the bundle traced from the close-up (median f of its white/pink pixels per t), smoothed
 _corem = _cu_core & _zall & (_f > 0) & (_f < 1)
 _fc_t, _fc_v = [], []
@@ -276,13 +290,20 @@ for i_ in range(16):                                   # side strands curling of
 # core: white line + pink + lilac strands (own stops)
 for df, L, tc, w, col in ((-0.09, 0.66, 0.46, 1.8, "cc_lilac"), (0.05, 0.6, 0.42, 1.1, "cc_rose"), (0.0, 0.88, 0.44, 1.3, "cc_white")):
     n_str += streak(tc, fcore(tc) + df, L, w, col, grp="COM-core")
+# FL cloud crossing: strands too stay where the mockup shows the comet between the cloud lobes (A14 gate, motif at the zip)
+_XB = box(0.0, 185.0, 400.0, 245.0); _MCC = unary_union(mask_polys(_mcc & (_py > 180) & (_py < 250), CB, CPPM, min_area=1.0, simplify=0.15)).buffer(0.4)
+_cut = _XB.difference(_MCC)
+for r in items:
+    if r["sew"] == "comet" and r["geom"].intersects(_cut): r["geom"] = r["geom"].difference(_cut).buffer(0)
 COMET_U = unary_union([r["geom"] for r in items if r["sew"] == "comet"]).buffer(0)
 
 # ================================================================ meteors (outside the comet zone), falling star
 _mrng = random.Random(8); n_met = 0
 for i, (hh, tt, wd, _n) in enumerate(MET_TRACED):
     seg = LineString([hh, tt])
-    add(CM.meteor(tuple(hh), tuple(tt), w_head=wd, w_tail=max(1.2, wd*0.9), unit=None), "meteor", Z["meteor"] + (1.0 if ZONE.buffer(-3).intersects(seg) else 0), kob=(1.2 if ZONE.intersects(seg) else 0.4), kgrp=f"met{i}"); n_met += 1   # kgrp: head dot + core knock the streak exactly (no ring)   # clipped at keep-outs, not dropped
+    _regs = CM.meteor(tuple(hh), tuple(tt), w_head=wd, w_tail=max(1.2, wd*0.9), unit=None)
+    if not MET_SIL[i].is_empty: _regs[0] = dict(_regs[0], geom=_regs[0]["geom"].intersection(MET_SIL[i].buffer(0.3)).union(MET_SIL[i]).buffer(0))   # traced silhouette (A14)
+    add(_regs, "meteor", Z["meteor"] + (1.0 if ZONE.buffer(-3).intersects(seg) else 0), kob=(2.0 if ZONE.intersects(seg) else 0.4), kgrp=f"met{i}"); n_met += 1   # kgrp: head dot + core knock the streak exactly (no ring)   # clipped at keep-outs, not dropped
 RS = P(403.5, 597.5)
 trail = CM.smooth_pts([P(404.7, 530.0), P(404.3, 560.0), P(403.9, 589.0)], 30)
 _tw = np.linspace(1.6, 2.5, len(trail)); _n3 = len(trail)//3      # mockup trail ~2.5 mm at the star

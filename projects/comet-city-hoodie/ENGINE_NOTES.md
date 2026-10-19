@@ -88,3 +88,18 @@ Problems hit while building this product, worked around in project code only. Ea
   array directly: 38 s. Never vectorize a scalar interp.
 - **E2/E6 hit again:** `pkill -f "cProfile.run"` killed this builder's own shell. LESSONS E2 stands; suggest `scripts/killpid.sh`
   that refuses patterns and takes a PID only.
+
+## 12. A14 / A15 gates in practice (19 Oct) - fidelity.py
+- **Reference masks need the same exclusions as the stitched masks**, or the gate measures the mask, not the art: star / meteor zones,
+  the comet zone, the all-size keep-out band (LIM_ALL, not one size's clip) and the 8.5 mm lobed-bank-end band are applied to BOTH.
+- **Touching neighbours merge in `motif_match`**: a traced meteor beside the comet body counted as one component with the body
+  (IoU 0.11). Fix in the art (1.2 mm kob gap around meteors near the comet - also truer to the mockup) and no closing on the comet out-mask.
+  Proposed engine option: `motif_match(..., out_labels=)` so callers can pass per-object labels instead of connected components.
+- **What the gates found that three reviews missed:** a meteor skipped because its midpoint fell in the comet zone; hand-placed meteors
+  ~2 mm off their streaks (now traced: PCA axis + percentile ends + perpendicular spread); the comet body following the close-up instead
+  of the mockup (placement ref); small clouds dropped by a 30-60 mm2 size filter; the pale walkway below the kerb; sleeve cloud undersides
+  (saturated blue = read as foliage); the hanging sleeve's inner-edge highlight read as cloud when the readable band went to 0.93 W.
+- **Uncovered gaps need a classifier**: photo-render glow around stars/meteors and the bright haze between generated (IP-original)
+  towers are light, not thread. fidelity.py labels every gap (keep-out edge / glow / skyline band / foliage / readable edge) and blocks
+  on any UNEXPLAINED. Proposed: `qa.uncovered(..., explain=callable)` in the engine.
+- **Art-mode iteration**: `python3 fidelity.py art` rasterises art_M.pkl (seconds) - the delivered gate always runs on the DSTs.
