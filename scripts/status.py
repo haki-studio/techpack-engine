@@ -2,7 +2,7 @@
 """Progress of every product: terminal table + status.html (open in a browser; refreshes itself every 15 s).
   status.py            print once and write status.html
   status.py --watch    refresh every 15 s"""
-import os, sys, json, glob, time, html, datetime
+import os, sys, json, glob, time, html, datetime, shutil
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STAGES = ["intake", "inventory", "pattern", "art", "stitch", "qa", "documents", "delivered", "review", "reviewed"]
 
@@ -45,7 +45,7 @@ h2{{font-size:15px;margin:0 0 8px}} h3{{font-size:13px;margin:10px 0 4px;color:v
 .st.done{{background:var(--ok);color:#fff}} .st.cur{{background:var(--acc);color:#fff}}
 img{{width:100%;border-radius:6px;background:#8881}} .noimg{{height:120px;display:grid;place-items:center;color:var(--mut);background:#8881;border-radius:6px}}
 .log,.q{{padding-left:18px;margin:8px 0 0;font-size:12.5px}} .log li{{color:var(--mut)}}
-</style></head><body><h1>Tech pack runs</h1><div class="sub">{len(rows)} products · refreshed {datetime.datetime.now():%H:%M:%S} · updates every 15 s</div>
+</style></head><body><h1>Tech pack runs</h1><div class="sub">{len(rows)} products · disk {shutil.disk_usage(ROOT).free/1e9:.1f} GB free · refreshed {datetime.datetime.now():%H:%M:%S} · updates every 15 s</div>
 <div class="grid">{"".join(cards)}</div></body></html>'''
 
 def once():
