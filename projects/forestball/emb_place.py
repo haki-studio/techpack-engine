@@ -99,7 +99,7 @@ def place(size, OL=None):
             # a fabric gap <= 12 mm between traced links / strands count as one band
             iv = sorted((g_.bounds[1], g_.bounds[3]) for g_ in segs); runs = [list(iv[0])]
             for a_, b_ in iv[1:]:
-                if a_ - runs[-1][1] <= 12.0: runs[-1][1] = max(runs[-1][1], b_)
+                if a_ - runs[-1][1] <= 12.0 * sc: runs[-1][1] = max(runs[-1][1], b_)
                 else: runs.append([a_, b_])
             marks[k] = tuple(max(runs, key=lambda r_: r_[1] - r_[0]))
         else: marks[k] = None

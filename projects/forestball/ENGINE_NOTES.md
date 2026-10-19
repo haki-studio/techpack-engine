@@ -62,3 +62,27 @@
     (16 Oct 20:13: grand-line's commit_project autostash; the re-apply dropped 9 forestball files back to HEAD). Recovered from the
     dangling autostash commit (`git fsck --lost-found`). → Fix: commit_project.sh should `git add` only its own project and never
     autostash other projects' files (or each builder works in its own worktree). → Check: `git stash list` / fsck after every pull.
+
+## Rev C (final) additions — 19 Oct
+15. **Tracing tones from close-ups: plain nearest-thread in Lab collapses mid tones to navy.** The close-ups are photographs of
+    shaded stitches, darker than the thread colours; Rev C WIP mapped 58 % of the back art to navy (limb, bank and fronts read as
+    one dark mass — review items 2-3 "tones washed out / blobs"). Fix (`trace_fb.classify`): lift close-up pixels (gamma 0.6-0.7),
+    weight lightness 0.4-0.5 against hue/chroma, compare with the TRUE thread colours AND the close-up's own fabric colour (sampled
+    median, lifted the same way — close-up c's fabric #263429 is far darker than the mockup's #38433A, so without it dark fabric
+    read as navy art); only unlifted L < 10-14 stays navy; enclosed gaps become crevices only when ringed by limb tones (gaps inside
+    leaf clusters had become navy squares); the stream is not lifted (mid blue body + navy reflections).
+    → Proposed LESSONS row (A14): "close-up tones: lift + hue-weighted match + the close-up's own fabric colour; check the thread
+    histogram of the traced art against a k-means of the close-up". → Check: share of art per thread printed by the trace
+    (navy 58 % → ~25 %); compare sheet.
+16. **A dark thread close to the shell colour disappears.** Moss dark #2E4A3C had the same L as the washed shell (#3A463C, L 28.4):
+    in the DST render the bank read as holes. Now #183A33 (L ~21). → Check: ΔL ≥ 6 between every fill thread and the fabric
+    (`tech.de2000` against `FABRIC`), print it on G3.
+17. **Sheer light rays sew FIRST and are knocked out by the art** (not an overlay on top): they then read as light behind the limb,
+    leaves and bank as in close-up a; soft ends need a SMOOTH row-to-row trim-back (random per row made zig-zag connectors).
+18. **Zip continuity on traced art:** the zip band check must merge runs split by fabric gaps between traced links (≤ 12 mm), and a
+    straight limb crossing the 30 mm zip gap drops (close-up c: 19 mm) — a smooth vertical shear over 70 mm each side closes it.
+19. **Thin twigs from a ×4 mockup read as dashes:** bridge dark fragment endpoints along a sato ridge (≤ 7 mm) and/or hand-trace
+    centrelines on a gridded ×6 crop; sew as one cord (brown satin ~1.3-1.8 mm) with cream nodes (`trace_fb.twig_cords`).
+    → Engine candidate: `motifs.cord_from_ridges()`.
+20. **Pick the close-up by registration quality, not by its label:** close-up c registers on the 02R mockup with 54 SIFT inliers
+    (median 1 px) vs b's 8 — c is the tracing source now; b had drifted.

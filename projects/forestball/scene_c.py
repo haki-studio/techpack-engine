@@ -20,7 +20,9 @@ def norm(regs):
         if r["st"] == "tatami":                        # tatami tracing slivers (< 0.8 mm mean width, < 20 mm²) are not stitchable: dropped
             g = r["geom"]; w_ = 2 * g.area / max(g.length, 1e-6)
             if w_ < 1.0 and g.area < 30: continue
-        if r["st"] == "satin" and r["grp"].startswith("TT"):   # traced twigs thinner than the 0.8 mm satin minimum: thickened to ~1 mm
+        if r["st"] == "satin":   # Rev C final: ANY traced satin strand thinner than the 0.8 mm minimum (twigs, moss strands,
+            # bark slivers) is thickened to ~1 mm (it overlaps its neighbour by <= 0.15 mm), so the width check passes without
+            # dropping the strand
             g = r["geom"]; w_ = 2 * g.area / max(g.length, 1e-6)
             if w_ < 0.9: r = dict(r, geom=g.buffer(0.5 - w_ / 2, quad_segs=4))
         fam = r["grp"].split("-")[0]
@@ -72,6 +74,35 @@ def ray_overlay(clip, voids, sp=2.3, w=0.32, core=0.42, seed=3, under=None, sp_c
         cov.append(sum(r["cov"] for r in regs if r.get("band") == bi))
     return regs, cov
 
+def ray_stripes(clip, voids, under, sp_cream=1.3, sp_sage=1.6, w=0.32, cream_ex=11.0):
+    """Rev C final (founder 19 Oct + LESSONS A14): the rays are the mockup's own light stripes, each traced with its own
+    silhouette and axis (rays_trace2.py) — they fan, end and fade where the mockup's do. Each stripe is filled with run rows
+    ALONG its own axis (1.3 mm apart in bright cream stripes, 1.6 mm in the dimmer sage ones: a sheer veil, ~40-50 % inside
+    a stripe, ~20-30 % over a ray band), one serpentine object per stripe; sewn FIRST, every later object covers it."""
+    R = json.load(open("rays_trace2.json")); regs = []; A_st = 0.0; A_run = 0.0
+    for k, st in enumerate(R["stripes"]):
+        P = Polygon(st["pts"]).buffer(0).intersection(clip).difference(voids)
+        if P.is_empty or P.area < 3: continue
+        d = np.array(st["dir"]); d = d / np.linalg.norm(d); n = np.array([-d[1], d[0]])
+        col = "cream" if st["excess"] >= cream_ex else "sage"; sp = sp_cream if col == "cream" else sp_sage
+        us = [n @ np.array(q) for q in P.exterior.coords]; u0, u1 = min(us), max(us); c = np.array(P.centroid.coords[0])
+        span = max(P.bounds[2] - P.bounds[0], P.bounds[3] - P.bounds[1]) * 1.5 + 10
+        rows = []
+        for u in np.arange(u0 + min(sp, (u1 - u0)) / 2, u1, sp):
+            base = n * u + d * (d @ c)
+            ln = LineString([tuple(base - d * span), tuple(base + d * span)]).intersection(P.buffer(-0.2))
+            for seg in ([ln] if ln.geom_type == "LineString" else list(getattr(ln, "geoms", []))):
+                if seg.geom_type == "LineString" and seg.length >= 4: rows.append(list(seg.coords))
+        if not rows: continue
+        rows.sort(key=lambda cs: n @ np.array(cs[0])); seq = []
+        for i, cs in enumerate(rows): seq += cs if i % 2 == 0 else cs[::-1]
+        g = LineString(seq).buffer(w, cap_style="round", join_style="round").intersection(P.buffer(0.3))
+        A_st += P.area; A_run += g.area
+        g = g.difference(under)
+        parts = [q for q in (list(g.geoms) if hasattr(g, "geoms") else [g]) if q.geom_type == "Polygon" and q.area > 1.5]
+        if parts: regs.append(dict(col=col, geom=unary_union(parts), st="run", ang=None, grp="LR", layer=1, stripe=k))
+    return regs, (A_run / A_st if A_st else 0.0)
+
 def ripple_rings(box_, water, n=4, gap=4.5):
     c = box_.centroid; hw = (box_.bounds[2] - box_.bounds[0]) / 2; hh = (box_.bounds[3] - box_.bounds[1]) / 2
     out = []
@@ -99,11 +130,12 @@ def build_back():
     rings = ripple_rings(B.PH_BOX, water.union(B.STREAM).intersection(B.PH_BOX.buffer(30)))
     ph = [dict(B.PH_OUT, col=fbcore.col("basting"), layer=0)]
     art = unary_union([r["geom"] for r in tr]).buffer(0.6)
-    rays, cov = ray_overlay(B.CLIP, B.VOID, under=art)
-    vis = ph + tr + knockout(rings, B.CLIP)               # traced regions are already disjoint (one tone per pixel)
+    rays, cov = ray_stripes(B.CLIP, B.VOID, under=art)
+    # LESSONS A14: no generated stand-ins — the pool's ripple rings are the ones TRACED from close-up a (no generated rings)
+    vis = ph + tr                                          # traced regions are already disjoint (one tone per pixel)
     vis = dst2.clean_vis([v for v in vis if v["grp"] != "PH"]) + ph
     vis = rays + vis                                       # rays first (layer 1): every later object covers them
-    print("back", len(vis), "regions; ray cover per band %", [round(100 * c) for c in cov], f"{time.time()-t:.0f}s", flush=True)
+    print("back", len(vis), "regions;", len(rays), "ray stripes, cover inside the stripes", round(100 * cov), "%", f"{time.time()-t:.0f}s", flush=True)
     return vis, cov
 
 def build_front():
@@ -116,6 +148,8 @@ if __name__ == "__main__":
     what = sys.argv[1:] or ["back", "front"]
     if "back" in what:
         vb, cov = build_back(); pickle.dump({"back": vb}, open("back_vis.pkl", "wb"))
-        json.dump(dict(ray_cover_pct=[round(100 * c, 1) for c in cov]), open("rays_cover.json", "w"))
+        R = json.load(open("rays_trace2.json")); ax = [st["axis_deg"] for st in R["stripes"]]
+        json.dump(dict(stripes=len(R["stripes"]), sewn=len({r["stripe"] for r in vb if r.get("stripe") is not None}),
+                       axis_deg_min=min(ax), axis_deg_max=max(ax), vp=R["vp"], cover_in_stripes_pct=round(100 * cov, 1)), open("rays_cover.json", "w"))
     if "front" in what:
         pickle.dump(build_front(), open("front_vis.pkl", "wb"))

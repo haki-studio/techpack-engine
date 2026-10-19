@@ -60,7 +60,7 @@ def clearances(p):
 
 def page1():
     o = header("02 · CHEST MOSSY BRANCH (split at zip) — stitch-out preview + placement",
-               "Direct embroidery on both cut front panels, before zip + welts · registered across the CF zip · mm · art 1:1 · size M (grade B) · 02R + zip half of 02L TRACED from close-up c (SIFT fit, 54 inliers); outer 02L from the mockup x4", "p1 / 5")
+               "Direct embroidery on both cut front panels, before zip + welts · registered across the CF zip · mm · art 1:1 · size M (grade B) · 02R TRACED from close-up c (SIFT fit, 54 inliers); 02L + the 40 mm next to the zip from the mockup x4", "p1 / 5")
     bbox = (-325, -110, 325, 540); ppm = 2.6
     fv = front_view_png(VIS, bbox, ppm)
     w_mm = 152; s = w_mm / (bbox[2] - bbox[0]); ax, ay = 12, 29
@@ -151,13 +151,17 @@ def page5():
     o.append(t(14, my, "MOCKUP", 2.4, 700))
     o.append(t(76, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
     for i, c in enumerate(["Rev C reference: 02R TRACED from close-up c, registered on the mockup",
-                           "  by a SIFT projective fit (54 inliers, median ~1 mm); c also covers",
-                           "  the zip half of 02L, so the limb is continuous across the zip. Outer",
-                           "  02L: mockup read at x4. Tones re-calibrated (hue first) to the 12",
-                           "  threads; links + strands sew along their own axis (LESSONS A13).",
+                           "  by a SIFT projective fit (54 inliers, median ~1 mm). Tones re-",
+                           "  calibrated (hue first) to the 12 threads; links + strands sew",
+                           "  along their own axis (LESSONS A13).",
                            "Composition traced from the mockup: mossy limb from the wearer's",
                            "  right shoulder across the zip to the left chest, upper twig on",
                            "  02L, leaf sprays all along; moss hanging over the right shoulder.",
+                           "02L + the 40 mm of 02R next to the zip: mockup x4 (close-up c's",
+                           "  02L part disagrees with the mockup); 10 twig centrelines traced",
+                           "  by hand on a x6 grid + dashes bridged, sewn as brown cords.",
+                           "Generated, not traced (A14): cream nodes on those cords (6.5 apart);",
+                           "  strands < 0.9 wide widened to ~1.0 (satin minimum 0.8).",
                            "Zip: the mockup runs the branch over the zip — impossible.",
                            "  Split into 02R + 02L, each stopping 15 from CF.",
                            "Shoulder: mockup moss touches the armhole/shoulder seams.",

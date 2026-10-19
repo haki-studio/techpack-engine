@@ -142,7 +142,7 @@ def page3():
     yb, tot = region_table(o, VB, QA)
     o.append(t(12, yb + 2, "Globals: 40wt polyester, 75/11 sharp needle, 2.5 oz cutaway, no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; trims at exposed moves > 2.5.", 1.75, 400, MUTED))
     o.append(t(12, yb + 5.2, "Width = share of area narrower than its minimum (fill/satin 0.8, line 0.6) for > 2.5 mm, on the art. Green < 1%; amber = tapered tips (grass, twig ends) the digitizer absorbs.", 1.75, 400, MUTED))
-    o.append(t(12, yb + 8.4, "Light rays (LR): serpentine single run, rows 1.8 apart (cream core) / 2.8 (sage edges), ≈ 25-30 % cover, sewn FIRST and covered by the art (light behind the limb) — a sheer veil, not a fill.", 1.75, 600, INK))
+    o.append(t(12, yb + 8.4, "Light rays (LR): each traced mockup stripe filled with single-run rows along its own axis, 1.3 apart (cream) / 1.6 (sage), sewn FIRST and covered by the art (light behind the limb) — a sheer veil, not a fill.", 1.75, 600, INK))
     return o
 
 def stops_table(o, stops, x0, y0, title, width=185, sews=True, dst=None):
@@ -205,7 +205,7 @@ def page5():
     o.append(t(14, my, "MOCKUP", 2.4, 700))
     o.append(t(70, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
     import json as _js
-    _rc = _js.load(open("rays_cover.json"))["ray_cover_pct"]; _rg = _js.load(open("inputs/closeup_reg.json"))["BACK"]
+    _rc = _js.load(open("rays_cover.json")); _rg = _js.load(open("inputs/closeup_reg.json"))["BACK"]
     ch = ["Rev C: TRACED, not generated (LESSONS A12). Close-up 'closeup_front_",
           f"  right_a' shows this BACK scene: SIFT projective fit on the mockup",
           f"  ({_rg['inliers']} inliers, median {_rg['resid_px_median']} mm); tones re-calibrated (hue first),",
@@ -214,10 +214,12 @@ def page5():
           "Traced: twisted chain limb + trunk with navy crevices, teal + moss",
           "  strands, cream highlights, root loops round the pool, mossy bank,",
           "  rapids + ledges, pool ripples, dense tall grass.",
-          f"Light rays: {len(_rc)} broad bands traced from the close-up (33-44 mm),",
-          f"  sewn FIRST under the art, {min(_rc):.0f}-{max(_rc):.0f} % cover, cream core + sage edges.",
+          f"Light rays: the mockup's {_rc['stripes']} light stripes TRACED one by one (own",
+          f"  axis {_rc['axis_deg_min']:.0f}-{_rc['axis_deg_max']:.0f}°, fanning from beyond the top right),",
+          f"  sewn FIRST under the art, {_rc['cover_in_stripes_pct']:.0f} % cover inside a stripe; end at the bank.",
+          "Generated, not traced (A14): none on the back (pool rings traced).",
           "ORB in the stream: LICENSED — not drawn. Marked placeholder box",
-          f"  {PH[2]-PH[0]:.0f} × {PH[3]-PH[1]:.0f}; water + 4 ripple rings continue round it.",
+          f"  {PH[2]-PH[0]:.0f} × {PH[3]-PH[1]:.0f}; water + the close-up's traced ripples round it.",
           "Sides + armholes: art pulled 16 inside (nothing wraps); bottom 11",
           "  above the hem seam. Leaves a keep-out would cut are left out whole.",]
     for i, c in enumerate(ch): o.append(t(70, my + 4.5 + i*3.3, c, 1.8, 600 if "LICENSED" in c else 400, RED if "LICENSED" in c else INK))
