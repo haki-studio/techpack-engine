@@ -1,5 +1,5 @@
 """Fidelity sheets: out/compare_<piece>.png = the render mapped into that piece's pattern mm (same map the art uses) |
-stitch preview of the region art at the same scale, + 4 zoomed pairs (render zooms Lanczos x4 from the source, which adds
+stitch-by-stitch render of the SHIPPED full DST of that size at the same scale, + 4 zoomed pairs (render zooms Lanczos x4 from the source, which adds
 no detail). Plus out/compare_<size>.png with all five pieces.  usage: ./py.sh compare.py [size]"""
 import wavecore as WC
 import pickle, sys
@@ -34,8 +34,29 @@ def mock(P, bb, ppm):
     wh = Image.new("RGB", im.size, (255, 255, 255)); wh.paste(im, (0, 0), msk)
     return wh
 
+import json, pyembroidery as pe, motifs2
+_PATS = {}
+def dst_pat(P):
+    """the shipped full DST of this size + its origin (result json) + colour per DST stop (read-back record)"""
+    if P not in _PATS:
+        r = json.load(open(f"out/01_wave/{size}/result_{P}.json"))["full"]
+        _PATS[P] = (pe.read(r["file"] + ".dst"), [motifs2.HEX[s["col"]] for s in r["per_stop"]], r["origin"])
+    return _PATS[P]
+def dst_render(P, bb, ppm):
+    """every sewn stitch of the DST drawn as a 0.4 mm line in its stop colour (travel included, jumps/trims not drawn)"""
+    p, cols, (ox, oy) = dst_pat(P); x0, y0, x1, y1 = bb
+    im = Image.new("RGB", (int((x1-x0)*ppm), int((y1-y0)*ppm)), tuple(int(WC.FABRIC[i:i+2], 16) for i in (1, 3, 5)))
+    d = ImageDraw.Draw(im); lw = max(1, int(round(0.4*ppm))); ci = 0; prev = None
+    for x, y, cmd in p.stitches:
+        k = cmd & pe.COMMAND_MASK; q = ((x/10 + ox - x0)*ppm, (y/10 + oy - y0)*ppm)
+        if k == pe.STITCH:
+            if prev is not None: d.line([prev, q], fill=cols[min(ci, len(cols)-1)], width=lw)
+            prev = q
+        elif k == pe.COLOR_CHANGE: ci += 1; prev = None
+        elif k in (pe.TRIM, pe.JUMP): prev = None
+    return im
 def stitch(P, bb, ppm):
-    st = SR.render(D[P], bb, ppm, base=WC.FABRIC)
+    st = dst_render(P, bb, ppm)
     pan = PC.panel(size, P); msk = Image.new("L", st.size, 0); d = ImageDraw.Draw(msk)
     d.polygon([((x - bb[0])*ppm, (y - bb[1])*ppm) for x, y in pan.exterior.coords], fill=255)
     wh = Image.new("RGB", st.size, (255, 255, 255)); wh.paste(st, (0, 0), msk)
@@ -65,14 +86,14 @@ def sheet(P, ppm=1.6):
     out = Image.new("RGB", (W*2 + 40 + zw*2 + 30, max(H + 40, 4*(zw*6//7 + 34) + 30)), (255, 255, 255))
     out.paste(mk, (10, 30)); out.paste(st, (W + 30, 30)); d = ImageDraw.Draw(out)
     d.text((10, 10), f"RENDER {P} {PC.NAME[P]} (mockup mapped to size-{size} pattern mm)", fill=(0, 0, 0))
-    d.text((W + 30, 10), f"STITCH PREVIEW {P} size {size} (same scale; red = keep-out line)", fill=(0, 0, 0))
+    d.text((W + 30, 10), f"SHIPPED DST {P} size {size}, every stitch (same scale; red = keep-out line)", fill=(0, 0, 0))
     x0 = W*2 + 50; y = 30
     for zb in Z:
         zp = zw / (zb[2] - zb[0])
         a = mock(P, zb, zp / 4.0).resize((zw, int((zb[3]-zb[1])*zp)), Image.LANCZOS).filter(ImageFilter.UnsharpMask(2, 60, 2))
         s_ = stitch(P, zb, zp)
         out.paste(a, (x0, y)); out.paste(s_, (x0 + zw + 10, y))
-        d.text((x0, y - 13), f"x {zb[0]:.0f}..{zb[2]:.0f}, y {zb[1]:.0f}..{zb[3]:.0f} mm  (render x4 | stitch preview)", fill=(0, 0, 0))
+        d.text((x0, y - 13), f"x {zb[0]:.0f}..{zb[2]:.0f}, y {zb[1]:.0f}..{zb[3]:.0f} mm  (render x4 | shipped DST)", fill=(0, 0, 0))
         for (X, Y) in ((10, 30), (W + 30, 30)):
             d.rectangle([X + (zb[0]-bb[0])*ppm, Y + (zb[1]-bb[1])*ppm, X + (zb[2]-bb[0])*ppm, Y + (zb[3]-bb[1])*ppm], outline=(255, 60, 60), width=2)
         y += a.height + 34
