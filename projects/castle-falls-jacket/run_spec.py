@@ -4,8 +4,9 @@ import cfcore
 import sys, pickle
 import espec
 
-REF = ("Art traced from the low-res mockup (~1.2 mm/px) + the founder's 4 detail close-ups (closeup_mockup_strip.png, LESSONS A12): waterfall-mountain "
-       "close-up registered onto the back (scale 0.82) and traced; blossom, cloud/petal + castle close-ups (re-rendered, not registrable) = motif references.")
+REF = ("Rev B: mockup (placement + scale) + founder close-ups inputs/closeups/ (front, back left, back right, sleeves; registered by thin-plate spline on matched "
+       "features and traced, LESSONS A12/A13) + reference.png (structure where an AI close-up is garbled). Redrawn from the LOW-RES MOCKUP only (no close-up): "
+       "SL gate tower, village house rows (objects placed on the traced building tones).")
 PROD_COMMON = ["Embroider the cut panel flat, BEFORE any seam.", "Navy 12 oz duck: 75/11 sharp, 2.5 oz cutaway,",
                "  no topping. Pre-wash the shell first.", "≤ 12 threads per file (factory limit), 40wt.",
                "Frame (factory.json): split files + registration", "  crosses sewn in stop 1's thread (G5 / G6).",
@@ -26,7 +27,7 @@ CFG = {
                      "Bare navy shell where the mockup shows fabric", "  (upper back between the clouds).",
                      "Blossom masses: tone ground + ~1 floret / 22 mm²", "  (5-petal satin, Ø 3.6–5.6) on top, as the close-up.",
                      "Falling petals redrawn as notched petal satins.", "Mockup CB fold line is not art: filled across.",
-                     "Left waterfall mountain traced from the founder's", "  close-up (sharper rock strata + fall streaks).",
+                     "Back left + right close-ups registered (TPS) + traced:", "  rope-cord falls (2nd fall kept), strata, clumps, lobes.",
                      "Floret centres cream, petal bases deep rose (close-ups).",
                      "Thread merges for 12 colours: moss light → leaf", "  green, sky light → sky, vermilion → blossom deep,",
                      "  bark tan → bark dark, gold → cloud cream (p4)."],
@@ -36,17 +37,17 @@ CFG = {
             coords="x from CF, + = wearer's left; y down from the CF neck seam",
             p1_notes=["!Zip: art stops 15 each side of CF; the bridge, sky", "!  and clouds continue across it (both halves traced",
                       "!  from the same mockup columns).", "Welt boxes: art 6 clear on every size (T13).",
-                      "!IP: the castle is an original 3-tier design on a stone base;", "!  the tree ring is opened (no closed arch round the",
-                      "!  castle), no fall straight under it (brief, T10 Q1).", "!2 hoopings per piece (split files S1 / S2, G6)."],
+                      "Composition = reference (founder decision 2026-10-19):", "  closed tree arch, castle on the falls rock, karamon gate.",
+                      "!2 hoopings per piece (split files S1 / S2, G6)."],
             dm_crops=[("FL", (60, 180, 110, 220), "castle roof tiles + gold trims"), ("FR", (-180, 235, -130, 275), "pagoda"),
                       ("FL", (130, 400, 180, 440), "bridge + florets")],
             crops=[("FL", (70, 180, 120, 230), "castle top tiers"), ("FR", (-180, 235, -130, 285), "pagoda"),
                    ("FL", (40, 390, 90, 440), "falls beside the castle rock"), ("FR", (-150, 60, -100, 110), "clouds + petals")],
             mock_crop=(175, 150, 655, 600),
-            changes=["Layout + tones traced from the mockup (fronts).", "IP (brief): castle redrawn as an original design —",
-                     "  3 tiers, navy tiled roofs with sky tile lines + gold", "  eaves, white walls, windows, chidori gables, stone",
-                     "  base (no red balcony, no gold horns); roof tile rows +", "  gold eave studs follow the castle close-up.", "  Tree: left half of the ring removed (filled with the",
-                     "  sky / cloud around it); fall under the castle removed.", "Welts at the mockup position (T3); art clears 6.",
+            changes=["Traced from the front close-up (registered TPS) on the", "  mockup layout; composition as reference.png (founder).",
+                     "Castle as objects: 3 tiers, tile-rib roofs, gold eaves +", "  white studs, window bands, gables, shachi, lantern band,",
+                     "  red balustrade; karamon gate at the rock foot.", "Pagoda: 3 tiers, upturned eaves, red bodies, gold rail,", "  ringed gold finial. Falls: rope cords + mist foot.",
+                     "Village: house rows (redrawn, low-res mockup).", "Welts at the mockup position (T3); art clears 6.",
                      "Merges (12 colours): FR moss light → green, bark tan →", "  bark dark, sky light → sky, pink → pale, cream → white;",
                      "  FL pinks → pink, moss light → green, cream → white,", "  sky light → sky (p4)."],
             production=PROD_COMMON, reference=REF),
@@ -62,9 +63,9 @@ CFG = {
             crops=[("SR", (-150, 270, -100, 320), "cherry florets"), ("SR", (0, 150, 50, 200), "cliff foliage"),
                    ("SL", (-175, 260, -125, 310), "gate tower"), ("SL", (50, 110, 100, 160), "clouds + petals")],
             mock_crop=(0, 150, 220, 690),
-            changes=["Front + back halves traced from the two mockup views", "  (fold at the sleeve centre line = the flat-lay edge).",
-                     "The red gate tower beside the left welt sits on the left", "  sleeve in the mockup — kept there (SL front half).",
-                     "Dark strip at the top of the centre fold = the", "  mockup's silhouette edge (bare shell).",
+            changes=["FULL WRAP (Rev B): front + back halves traced from the", "  founder's sleeve close-up (4 views), placed on the mockup.",
+                     "SL back: cliff waterfall (rope cords) as the close-up.", "Gate tower (SL front) redrawn as an object from the",
+                     "  low-res mockup (not in the sleeve close-up).",
                      "Florets + petals as on the back (01).", "Merges (12 colours): sky light → sky, moss light →",
                      "  green, bark tan → bark dark, gold → cream; SR", "  vermilion → blossom deep, SL pink → pale (p4)."],
             production=PROD_COMMON, reference=REF),

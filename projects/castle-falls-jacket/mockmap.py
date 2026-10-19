@@ -22,7 +22,7 @@ def flat(up=1):
         im = Image.open("inputs/flat.png").convert("RGB")
         im = Image.fromarray(no_background(np.array(im)))
         if up > 1: im = im.resize((im.width * up, im.height * up), Image.LANCZOS)
-        _IM[up] = with_closeups(np.array(im).astype(np.float32), up)
+        _IM[up] = with_closeups_tps(np.array(im).astype(np.float32), up) if TPS_ON else with_closeups(np.array(im).astype(np.float32), up)
     return _IM[up]
 
 BG_AS = (45, 55, 68)          # background (studio white around the garment) is read as bare navy shell, never as cloud
@@ -65,6 +65,64 @@ def with_closeups(a, up):
         ys, xs = slice(max(0, y0), min(a.shape[0], y0 + H)), slice(max(0, x0), min(a.shape[1], x0 + W))
         py, px = slice(ys.start - y0, ys.stop - y0), slice(xs.start - x0, xs.stop - x0)
         a[ys, xs] = a[ys, xs] * (1 - m[py, px]) + p[py, px] * m[py, px]
+    return a
+
+# Rev B: the founder's per-panel close-ups (inputs/closeups/, 19 Oct; LESSONS A12). AI re-renders of the same jacket: the motif
+# layout drifts locally, so each is registered by a thin-plate spline on hand-matched features (close-up px -> flat.png px),
+# smoothed so the warp never folds, colour-matched to the mockup under its mask and composited with a feathered edge. The
+# full mockup stays the reference for placement + scale; the close-up gives shapes + stitch structure.
+TPS_ON = True
+CLOSEUPS_TPS = {
+ "front": dict(file="inputs/closeups/closeup_front.png", region=(188, 192, 662, 600), feather=14, pts=[
+    ((838, 225), (482, 283)), ((920, 230), (518, 283)), ((712, 560), (432, 420)), ((1055, 560), (565, 420)),
+    ((910, 830), (493, 518)), ((740, 880), (436, 532)), ((390, 405), (297, 331)), ((305, 665), (268, 451)),
+    ((575, 60), (343, 207)), ((1330, 680), (676, 436)), ((1050, 110), (545, 213)), ((1240, 400), (634, 326)),
+    ((150, 1000), (226, 580)), ((560, 820), (361, 515)), ((1290, 880), (626, 549)),
+    ]),
+ "back_left": dict(file="inputs/closeups/closeup_back_left.png", region=(900, 160, 1180, 590), feather=16, pts=[
+    ((535, 380), (986, 375)), ((650, 790), (1013, 494)), ((840, 625), (1079, 441)), ((880, 815), (1088, 507)),
+    ((430, 110), (966, 275)), ((1160, 490), (1190, 377)), ((1010, 545), (1134, 410)), ((690, 960), (1013, 554)),
+    ((220, 720), (942, 503))]),
+ "back_right": dict(file="inputs/closeups/closeup_back_right.png", region=(1150, 160, 1362, 590), feather=16, pts=[
+    ((30, 500), (1000, 400)), ((260, 640), (1079, 441)), ((280, 850), (1088, 507)), ((600, 430), (1190, 377)),
+    ((740, 525), (1230, 401)), ((430, 540), (1134, 410)), ((1180, 200), (1320, 350)), ((1330, 700), (1310, 530)),
+    ((420, 920), (1128, 538)), ((700, 310), (1225, 339))]),
+}
+def tps_map(pts, smooth=40.0):
+    """flat px -> close-up px (thin-plate spline, smoothed)"""
+    from scipy.interpolate import RBFInterpolator
+    src = np.array([p[0] for p in pts], float); dst = np.array([p[1] for p in pts], float)
+    # anchor the spline with the least-squares affine at the close-up's border (no swirl where no feature was matched)
+    A = np.c_[src, np.ones(len(src))]; M, *_ = np.linalg.lstsq(A, dst, rcond=None)
+    W, H = 1448.0, 1086.0
+    bd = np.array([(x, y) for x in np.linspace(-200, W + 200, 7) for y in np.linspace(-200, H + 200, 6) if x < 0 or x > W or y < 0 or y > H])
+    src = np.r_[src, bd]; dst = np.r_[dst, np.c_[bd, np.ones(len(bd))] @ M]
+    return RBFInterpolator(dst, src, kernel="thin_plate_spline", smoothing=smooth)
+
+def with_closeups_tps(a, up):
+    from scipy.ndimage import map_coordinates, gaussian_filter
+    for k, c in CLOSEUPS_TPS.items():
+        S = np.asarray(Image.open(c["file"]).convert("RGB")).astype(np.float32)
+        f = tps_map(c["pts"]); x0, y0, x1, y1 = c["region"]
+        X0, Y0, X1, Y1 = int(x0 * up), int(y0 * up), int(x1 * up), int(y1 * up)
+        # coarse grid (every 4 output px) -> bilinear
+        gx = np.arange(X0, X1 + 4, 4); gy = np.arange(Y0, Y1 + 4, 4); GX, GY = np.meshgrid(gx, gy)
+        q = f(np.stack([(GX.ravel() + 0.5) / up, (GY.ravel() + 0.5) / up], -1))
+        from scipy.interpolate import RegularGridInterpolator as RGI
+        fx = RGI((gy, gx), q[:, 0].reshape(GX.shape)); fy = RGI((gy, gx), q[:, 1].reshape(GX.shape))
+        YY, XX = np.meshgrid(np.arange(Y0, Y1), np.arange(X0, X1), indexing="ij"); P_ = np.stack([YY.ravel(), XX.ravel()], -1)
+        sx = fx(P_).reshape(YY.shape); sy = fy(P_).reshape(YY.shape)
+        p = np.stack([map_coordinates(S[..., ch], [sy, sx], order=1, mode="nearest") for ch in range(3)], -1)
+        inside = (sx >= 2) & (sy >= 2) & (sx < S.shape[1] - 2) & (sy < S.shape[0] - 2)
+        fr = int(c["feather"] * up); inside[:fr // 2] = inside[-fr // 2:] = False; inside[:, :fr // 2] = inside[:, -fr // 2:] = False
+        m = gaussian_filter(inside.astype(np.float32), c["feather"] * up / 2.5)
+        m = np.clip((m - 0.25) * 1.6, 0, 1)
+        ref = a[Y0:Y1, X0:X1]; sel = m > 0.6
+        art = (ref.max(2) - ref.min(2) > 25) | (ref.mean(2) > 110)        # mockup art pixels (not bare shell) for the colour match
+        sel_r = sel & art
+        p = (p - p[sel].mean(0)) / np.maximum(p[sel].std(0), 1) * ref[sel_r].std(0) + ref[sel_r].mean(0)
+        p = p.clip(0, 255)
+        a[Y0:Y1, X0:X1] = ref * (1 - m[..., None]) + p * m[..., None]
     return a
 
 # ---------------------------------------------------------------- body affine maps (mm -> px in flat.png)
@@ -146,6 +204,47 @@ def piece_px(P, X, Y):
         _, PX[idx], PY[idx] = sleeve_px(P, float(X[idx]), float(Y[idx]))
     return PX, PY
 
+# sleeve close-up (inputs/closeups/closeup_sleeves.png, 19 Oct): 4 straightened panels LEFT FRONT | LEFT BACK | RIGHT FRONT |
+# RIGHT BACK. A sleeve point maps by length fraction (cap top -> cuff seam = panel y 10 -> 860) and lateral fraction (centre
+# fold -> underarm seam = panel centre +- half width); which panel edge is the fold was chosen by correlating both options with
+# the mockup (sleeve_orient.py).
+SLEEVE_CU = dict(file="inputs/closeups/closeup_sleeves.png", cx={("SL", "front"): 180, ("SL", "back"): 535, ("SR", "front"): 900, ("SR", "back"): 1265},
+                 fold_sign={("SL", "front"): -1, ("SL", "back"): -1, ("SR", "front"): -1, ("SR", "back"): 1}, y0=10.0, y1=860.0)
+def sleeve_cu_px(P, X, Y, size="M", fold_sign=None):
+    poly, h, Lu, v_ua, views = _sleeve_model(P, size)
+    fs = fold_sign or SLEEVE_CU["fold_sign"]
+    front = (X > 0) if P == "SR" else (X < 0)
+    v = np.clip((Y + h) / (h + Lu), 0, 1); py = SLEEVE_CU["y0"] + v * (SLEEVE_CU["y1"] - SLEEVE_CU["y0"])
+    hw_pat = np.array([(lambda b: max(abs(b[0]), abs(b[1])) if b else 1.0)(_halfwidth(poly, float(y))) for y in Y[:, 0]])[:, None]
+    u = np.clip(np.abs(X) / hw_pat, 0, 1)
+    hw_px = np.where(py < 600, 158.0, 158.0 - (py - 600) / 260 * 14)
+    px = np.zeros_like(X, dtype=float)
+    for view in ("front", "back"):
+        m = front if view == "front" else ~front
+        cx = SLEEVE_CU["cx"][(P, view)]; s = fs[(P, view)]
+        px = np.where(m, cx + s * (1 - 2 * u) * hw_px * -1, px)       # u=0 fold at the edge cx + s*hw, u=1 underarm at cx - s*hw
+    return px, py, u, front
+
+def sleeve_closeup(P, bbox, ppm, out, fold_sign=None):
+    from scipy.ndimage import map_coordinates
+    x0, y0, x1, y1 = bbox; H, W = out.shape[:2]
+    xs = x0 + (np.arange(W) + 0.5) / ppm; ys = y0 + (np.arange(H) + 0.5) / ppm
+    XX, YY = np.meshgrid(xs, ys)
+    px, py, u, front = sleeve_cu_px(P, XX, YY, fold_sign=fold_sign)
+    S = np.asarray(Image.open(SLEEVE_CU["file"]).convert("RGB")).astype(np.float32)
+    p = np.stack([map_coordinates(S[..., c], [py, px], order=1, mode="nearest") for c in range(3)], -1)
+    poly = _sleeve_model(P)[0]
+    from shapely import contains_xy
+    inside = contains_xy(poly, XX, YY)
+    for fr in (True, False):
+        sel = inside & (front == fr)
+        art = sel & ((out.max(2) - out.min(2) > 25) | (out.mean(2) > 110))
+        if art.sum() < 50: continue
+        q = p[sel]; q = (q - q.mean(0)) / np.maximum(q.std(0), 1) * out[art].std(0) + out[art].mean(0)
+        p[sel] = q
+    w = (inside & (u < 0.985)).astype(np.float32)[..., None]
+    return np.clip(out * (1 - w) + p * w, 0, 255)
+
 def warp(P, bbox, ppm, up=4):
     """RGB float array of the mockup covering bbox (x0, y0, x1, y1) of piece P at ppm px/mm (source upscaled x up, Lanczos)."""
     from scipy.ndimage import map_coordinates
@@ -163,4 +262,5 @@ def warp(P, bbox, ppm, up=4):
         XX, YY = np.meshgrid(xs, ys); px, py = piece_px(P, XX, YY)
     a = flat(up); out = np.zeros((H, W, 3), np.float32)
     for c in range(3): out[..., c] = map_coordinates(a[..., c], [py * up - 0.5 * (up - 1) / up * 0, px * up], order=1, mode="nearest")
+    if P in ("SR", "SL") and TPS_ON: out = sleeve_closeup(P, bbox, ppm, out)
     return out

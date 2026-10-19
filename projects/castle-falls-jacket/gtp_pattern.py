@@ -263,8 +263,12 @@ def p_operations():
 # ---------------------------------------------------------------- revision log + sample tracker
 REVS = [("Garment + Embroidery Rev A", "16 Oct 2026", "First pack for the Castle Falls jacket on the Drum Island block + pattern (collar as the mockup, welts at its position, armholes as wrap seams). "
                                              "Embroidery fidelity first: every mockup tone traced onto the five pattern pieces (back, two fronts, two sleeves) + blossom florets, petals; "
-                                             "original castle + opened tree ring for IP. " + cfcore.board_text() + ", ≤ 12 per file; per-size stitch files XS–3XL + hoop splits for the 360 frame; "
-                                             "every per-file / per-stop number read back from the DST; G6 hooping table, F1 factory requests. Founder close-up strip (LESSONS A12): waterfall mountain registered + traced, floret centres / petal bases / roof tiles from the close-ups; stitch-level keep-out check on all 35 files (fixed a welt overlap on FR).")]
+                                             "original castle + opened tree ring (IP, superseded in Rev B). " + cfcore.board_text() + ", ≤ 12 per file; per-size stitch files XS–3XL + hoop splits for the 360 frame; "
+                                             "every per-file / per-stop number read back from the DST; G6 hooping table, F1 factory requests. Founder close-up strip (LESSONS A12): waterfall mountain registered + traced, floret centres / petal bases / roof tiles from the close-ups; stitch-level keep-out check on all 35 files (fixed a welt overlap on FR)."),
+        ("Embroidery Rev B", "19 Oct 2026", "Independent review (14 items) + founder close-ups + reference.png. Founder decision 2026-10-19: follow the reference composition (closed tree arch, castle as drawn). "
+                             "Close-ups registered (thin-plate spline) and traced; castle, karamon gate, 3-tier pagoda with ringed finial, gate tower and village houses drawn as objects; clouds as lobes "
+                             "(rim / body / shaded underside), pine crowns as clumps, rock + bark rows along the traced direction with strata lines, rope-cord waterfalls with a mist foot, "
+                             "stitched sky inside the art, florets with rose centre ring + cream knot; sleeves full-wrap from the sleeve close-up; compare sheets from the final DSTs.")]
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]
 
 def p_revisions():

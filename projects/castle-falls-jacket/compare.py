@@ -14,7 +14,7 @@ import mockmap as MM, keepout as KO, make_current as MC
 ZOOMS = {   # element -> [(piece, (x0, y0, x1, y1) mm, caption)]
  "01": [("BK", (-215, 260, -135, 340), "left falls + cliff"), ("BK", (-60, 120, 20, 200), "cloud bank + petals"),
         ("BK", (-230, 440, -150, 520), "cherry tree florets"), ("BK", (-60, 470, 20, 550), "village roofs")],
- "02": [("FL", (30, 160, 190, 340), "castle (original design)"), ("FR", (-200, 210, -100, 310), "pagoda"),
+ "02": [("FL", (30, 160, 190, 340), "castle (reference composition)"), ("FR", (-200, 210, -100, 310), "pagoda"),
         ("FL", (120, 390, 200, 470), "bridge + blossom"), ("FR", (-150, 60, -70, 140), "clouds + petals")],
  "03": [("SR", (0, 120, 100, 220), "SR front: cliff foliage"), ("SR", (-170, 250, -70, 350), "SR back: cherry florets"),
         ("SL", (40, 150, 140, 250), "SL back: clouds"), ("SL", (-195, 235, -105, 325), "SL front: gate tower")],

@@ -380,7 +380,7 @@ def p_colourway():
 
 def p_questions():
     o = header("OPEN QUESTIONS — garment", "Everything marked [proposed — confirm] in this pack, in one place. Embroidery questions are on G4.", "T10")
-    qs = ["1. IP: the mockup's castle-on-the-falls inside a giant arching tree reads as One Piece's Wano. Built an original castle + opened tree ring (02). Approve, or confirm a licence.",
+    qs = ["1. IP — CLOSED. Founder decision 2026-10-19: follow the reference composition (castle on the falls inside the closed arching tree, as the mockup + reference.png).",
           "2. Collar vs hood: the mockup shows a navy corduroy point collar (built); the intake note mentioned a hood. Confirm the collar (or send the hood files).",
           "3. Shell: 12 oz duck washed navy — piece-dyed + washed before embroidery (assumed) or garment-dyed after? Lab-dip / Pantone reference.",
           "4. Collar: 14-wale corduroy 8 oz, washed navy; rib 95/5 cotton/elastane navy, hem 5.5 / cuff 7.5 (not on the fit chart).",

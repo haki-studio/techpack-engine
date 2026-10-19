@@ -53,7 +53,7 @@ def cover(index):
     for a, b in [("Stitches", f"{TOT:,}"), ("Trims", f"{TRIMS:,}"), ("Hoopings", f"{HOOP} on {FR_S} (split files)"),
                  ("Machine time / jacket", f"{MH_SPLIT:.1f} h one head (split files)"), ("Threads", f"{len(cfcore.sewn_threads())} sewn (board), ≤ 12 per file")]:
         o.append(t(ix, y, a, 1.9, 400, MUTED)); o.append(t(SW - 14, y, b, 1.9, 600, INK, "end")); y += 3.9
-    o.append(t(ix, y + 2, "Fidelity first (Rev A): cost is reported, not limited —", 1.75, 600, ORANGE))
+    o.append(t(ix, y + 2, "Fidelity first (Rev B): cost is reported, not limited —", 1.75, 600, ORANGE))
     o.append(t(ix, y + 5.3, "clean-up after the strike-off (F1).", 1.75, 600, ORANGE))
     o.append(t(SW - 14, SH - 8, SB.FOOT, 1.9, 400, MUTED, "end"))
     return o
@@ -102,8 +102,8 @@ def threads():
     for j, p in enumerate(PC): o.append(t(cx[8] + 11 + j * 6.5, 31, p, 1.7, 700, MUTED, "middle"))
     SEWN = set(cfcore.sewn_threads())
     TH = SB.TH; rh = 7.4 if False else 6.9
-    rh = 128 / len(cfcore.CF_KEYS)
-    for i, k in enumerate(cfcore.CF_KEYS):
+    BUY = cfcore.sewn_threads(); rh = min(7.2, 128 / len(BUY))
+    for i, k in enumerate(BUY):
         y = 35.5 + i * rh
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-3.0)}" width="{SW-22}" height="{f(rh)}" fill="#F5F2EC"/>')
         iso, pn = TH[k]["isacord"], TH[k]["polyneon"]
@@ -115,8 +115,8 @@ def threads():
         for j, p in enumerate(PC):
             n = use[k].get(p, 0); m = PLAN[p].get(k)
             o.append(t(cx[8] + 11 + j * 6.5, y, str(n) if n else ("→" if m else "·"), 1.6, 600 if n else 400, INK if n else MUTED, "middle"))
-    yb = 35.5 + len(cfcore.CF_KEYS) * rh + 2
-    o.append(t(12, yb, "ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — amber / red rows must be picked from the physical card. All targets are PROPOSED (read from the mockup).  '→' = this tone is sewn in a neighbouring thread on that piece (G5, spec p4).", 1.6, 600, ORANGE))
+    yb = 35.5 + len(BUY) * rh + 2
+    o.append(t(12, yb, ("Not sewn in any file (merged into a neighbour, do NOT buy): " + ", ".join(PAL[k][1] for k in cfcore.CF_KEYS if k not in BUY) + ".  " if len(BUY) < len(cfcore.CF_KEYS) else "") + "ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — amber / red rows must be picked from the physical card. All targets are PROPOSED (read from the mockup).  '→' = this tone is sewn in a neighbouring thread on that piece (G5, spec p4).", 1.6, 600, ORANGE))
     mg = [f"{p}: " + ", ".join(f"{PAL[a][1]}→{PAL[b][1]}" for a, b in PLAN[p].items()) for p in PC]
     o.append(t(12, yb + 3.6, "Per-piece merges (≤ 12 colours): " + "  |  ".join(mg[:3]), 1.4, 400, MUTED)); o.append(t(12, yb + 6.0, "  |  ".join(mg[3:]) + "   ·  '·' = tone not in that piece's art.", 1.4, 400, MUTED))
     o.append(t(12, yb + 9.5, "TRIMS + CONSUMABLES", 2.0, 700))
@@ -146,18 +146,18 @@ def summary():
     y = 36 + len(PC) * 4.6 + 1
     o.append(t(cx[2], y, "TOTAL / JACKET", 1.85, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.85, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.85, 700))
     o.append(t(cx[9], y, f"{MH_FULL:.1f}", 1.85, 700)); o.append(t(cx[10], y, f"{MH_SPLIT:.1f}", 1.85, 700)); o.append(t(cx[11], y, f"{HOOP}", 1.85, 700))
-    o.append(t(12, y + 5, "Fidelity first (founder rule, LESSONS A11): this Rev A matches the mockup tone for tone, so it is very dense and has many trims (every traced tone island).", 1.65, 600, ORANGE))
+    o.append(t(12, y + 5, "Fidelity first (LESSONS A11): tonal trace of the mockup + founder close-ups, with motif references (lobes, clumps, florets, buildings as objects) — very dense, many trims.", 1.65, 600, ORANGE))
     o.append(t(12, y + 8.4, "These numbers are REPORTED, not limits; the clean-up pass (density, trims, stop merges) happens after the size-M strike-off shows what is needed.", 1.65, 600, ORANGE))
     qy = y + 15
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.5, 700))
     qs = [f"1. Frame: on {FR_S} size M needs {HOOP} hoopings (back 4, fronts 2 each, sleeves 4 each; 3XL back 6). Larger frames (e.g. 600 × 400 jacket-back) remove most joins. Which frames exist?",
           "2. Cost: ~" + f"{MH_SPLIT:.0f}" + " h of one head per jacket at the factory speed. Confirm the price basis (F1) before bulk; a clean-up pass can cut trims + density after the sew-out.",
-          "3. IP: the castle + tree are an original redesign (brief). Approve the new castle / opened tree ring, or confirm the mockup composition is licensed.",
+          "3. IP — CLOSED. Founder decision 2026-10-19: follow the reference composition (castle on the falls, closed arching tree, karamon, pagoda, gate tower, bridge).",
           f"4. Thread board: {len(cfcore.sewn_threads())} threads sewn ({len(cfcore.CF_KEYS)} targets read from a low-res AI mockup) — approve physical colours (G3); each file sews ≤ 12 (merges per piece on G3 / spec p4).",
           "5. Armholes as wrap seams (art 3 mm each side, no armhole topstitch) — OK for construction (T7)?",
           "6. Grading A 92 % / B 100 % / C 108 %, one file per size per piece; body about CB/CF + hem, sleeves about the cuff seam. OK?",
           "7. Shell: piece-dyed + pre-washed navy duck assumed. Dense embroidery on all five pieces will shrink panels — measure on the strike-off (F1).",
-          "8. Reference: low-res AI mockup + the founder's 4-panel close-up strip: falls mountain registered + traced (A12); castle / clouds / blossom panels used as motif references. Per-panel close-ups (inputs/closeup_request.md) would sharpen village, pagoda, gate tower.",
+          "8. Reference: mockup (placement + scale) + founder close-ups (inputs/closeups/, registered TPS, traced) + reference.png (structure where the AI close-up is garbled). Gate tower (SL) + village houses are redrawn objects, low-res mockup only.",
           "9. DST/PES are production-intent drafts: the factory digitizer checks density + pull on 12 oz duck and edits before the sew-out."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i * 3.7, q, 1.7))
     return o

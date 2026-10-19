@@ -4,6 +4,10 @@
      the castle are removed (filled from the tones around them), the castle is redrawn (cf_motifs.castle) on a stone base
   3. each tone component -> a region: tatami with the tone class's stitch angle, small/narrow parts satin
   4. overlays: cherry florets packed on the blossom ground, falling petals redrawn as petals
+  Rev B (review, LESSONS A13 — structure, not only tones): continuous stitched sky inside the art (no bare-shell holes),
+  clouds as lobes (lit rim / body / shaded underside, rows fanned per lobe), pine crowns as leaf clumps, rock + trunk regions
+  sewn along the mockup's own stroke direction (structure tensor) with strata / bark lines, waterfalls as rope cords with a
+  mist foot, buildings as objects (castle, karamon gate, pagoda, gate tower, village houses), the FR spire crag redrawn
 usage: python3 scene.py [P ...]  -> scene_<P>.pkl {"items": [...], "info": {...}}  + out/art/scene_<P>.png"""
 import cfcore
 import os, sys, math, pickle, random, time
@@ -12,7 +16,7 @@ from scipy import ndimage as ndi
 from skimage import measure
 from shapely.geometry import Polygon, Point, box
 from shapely.ops import unary_union
-import trace as TRC, mockmap as MM, cf_motifs as CM
+import trace as TRC, mockmap as MM, cf_motifs as CM, cf_motifs2 as M2
 
 TI, TONES = TRC.TI, TRC.TONES
 CLASS = {"cf_white": "cloud", "cf_cream": "cloud", "cf_mist": "cloud", "cf_skylt": "sky", "cf_sky": "sky", "cf_navy": "sky",
@@ -66,6 +70,91 @@ def comp_polys(mask, f, ppm, min_area=2.0):
         if not g.is_empty and g.area >= min_area: out.append(g)
     return out
 
+
+# ---------------------------------------------------------------- Rev B structure (review Rev A items 1-11)
+# objects drawn per piece, mm on the size-M piece, measured on the registered close-up composite (gridwarp.py)
+FALL_OBJ = {   # (top (x, y), bottom (x, y), width top, width bottom); BK: the big fall + the second fall (480-520 mm, item 7)
+ "FL": [((60, 352), (62, 442), 12, 18), ((108, 322), (108, 446), 22, 26), ((165, 322), (167, 455), 12, 16), ((20, 348), (16, 490), 14, 22)],
+ "BK": [((-160, 336), (-143, 462), 22, 28), ((-53, 412), (-50, 478), 12, 16)], "FR": [], "SR": [],
+ "SL": [((116, 150), (130, 292), 20, 30)]}
+PAGODA = {"FR": (-147.0, 206.0, [(267, 284, 62, 300, 34), (301, 314, 70, 330, 36), (331, 346, 79, 364, 40)])}   # FR, measured on the close-up composite
+GATE = {"SL": (-150.0, 228.0)}          # SL front, beside the left welt (mockup + front close-up right edge)
+VILLAGE = {"BK": [(-205, 478, 135, 568)], "FR": [(-300, 405, -60, 512)], "FL": [(0, 478, 40, 512)], "SR": [], "SL": []}
+CLOUD_T = ("cf_white", "cf_cream", "cf_mist")
+FOL_T = ("cf_grndk", "cf_grn", "cf_grnlt")
+
+def _poly_tone(t, g, to_px, keys, default):
+    b = g.bounds; vals = []
+    for x in np.linspace(b[0], b[2], 5):
+        for y in np.linspace(b[1], b[3], 5):
+            c, r = to_px(x, y)
+            if 0 <= r < t.shape[0] and 0 <= c < t.shape[1] and t[r, c] >= 0 and TONES[t[r, c]] in keys: vals.append(TONES[t[r, c]])
+    return max(set(vals), key=vals.count) if vals else default
+
+def revb_structure(P, res, t, f, rng, add, knock):
+    ppm = res["ppm"]; H, W = t.shape; info = {}
+    to_px = lambda x, y: (int((x - res["bbox"][0]) * ppm), int((y - res["bbox"][1]) * ppm))
+    Wp = pickle.load(open("warps_M.pkl", "rb"))[P][1]
+    field = M2.dir_field(Wp[:H, :W], ppm)
+    # 1. sky: bare shell enclosed by the art becomes stitched deep-navy sky (continuous textured fill, item 6)
+    art = t >= 0
+    env = ndi.binary_fill_holes(ndi.binary_closing(art, structure=TRC.disk(24.0), iterations=1)) & ndi.binary_erosion(np.ones_like(art), iterations=2)
+    hole = env & ~art
+    t = t.copy(); t[hole] = TI["cf_navy"]; info["sky_fill_mm2"] = round(float(hole.sum()) / ppm ** 2)
+    # 2. clouds -> lobes (lit rim / body / shaded underside, rows fanned per lobe; item 5)
+    nl = 0
+    cm = np.isin(t, [TI[k] for k in CLOUD_T])
+    for C in comp_polys(cm, f, ppm, 20.0):
+        R0 = max(2.6, min(5.2, math.sqrt(C.area) / 4.5))
+        lobes = M2.pack_lobes(C, R0, rng)
+        def tn(l, C=C):
+            body = _poly_tone(t, Point(l[0], l[1]).buffer(l[2] * 0.7), to_px, CLOUD_T, "cf_cream")
+            return {"cf_white": ("cf_white", None, "cf_mist"), "cf_cream": ("cf_cream", "cf_white", "cf_mist"),
+                    "cf_mist": ("cf_mist", "cf_cream", "cf_slate")}[body]
+        regs, _ = M2.lobe_regions(lobes, tn, C=C.buffer(0.8), grp="CL")
+        add(regs, 12); nl += len(lobes)
+    info["cloud_lobes"] = nl
+    # 3. foliage / pine crowns -> leaf clumps with dark clump edges (item 8)
+    nf = 0
+    fm = np.isin(t, [TI[k] for k in FOL_T])
+    for C in comp_polys(fm, f, ppm, 25.0):
+        lobes = M2.pack_lobes(C, 3.1, rng, rjit=0.28, dy=0.7, dx=1.1, rmin=1.8)
+        def tf(l):
+            body = _poly_tone(t, Point(l[0], l[1]).buffer(l[2] * 0.7), to_px, FOL_T, "cf_grn")
+            return {"cf_grnlt": ("cf_grnlt", None, "cf_grn"), "cf_grn": ("cf_grn", "cf_grnlt", "cf_grndk"), "cf_grndk": ("cf_grndk", "cf_grn", "cf_navy")}[body]
+        regs, _ = M2.lobe_regions(lobes, tf, C=C.buffer(0.6), grp="FOL", ex=1.1, ey=0.85)
+        add(regs, 15); nf += len(lobes)
+    info["foliage_clumps"] = nf
+    # 4. waterfalls as rope cords with a mist foot (item 7)
+    for (a, b, w0, w1) in FALL_OBJ.get(P, []):
+        regs, o = M2.fall(a, b, w0, w1, rng); add(regs, 16)
+    # 5. buildings (items 2-3)
+    if P in PAGODA:
+        regs, k = M2.pagoda(*PAGODA[P]); add([r for r in regs if r.get("ko", True)], 18); add([r for r in regs if not r.get("ko", True)], 19)
+        knock = knock.union(k)
+    if P in GATE:
+        regs, k = M2.gate_tower(*GATE[P]); add([r for r in regs if r.get("ko", True)], 18); add([r for r in regs if not r.get("ko", True)], 19)
+        knock = knock.union(k)
+    # 6. village: rows of small houses where the composite shows buildings (roof navy / wall red + white), item 4
+    nh = 0
+    for (x0, y0, x1, y1) in VILLAGE.get(P, []):
+        bt = {TI[k] for k in ("cf_navy", "cf_red", "cf_white", "cf_gold", "cf_sky", "cf_brown", "cf_cream")}
+        rowy = y1; row = 0
+        while rowy > y0 + 8:
+            w = rng.uniform(13, 19) * (0.75 + 0.25 * (rowy - y0) / max(1, y1 - y0))
+            x = x0 + (w / 2 if row % 2 else 0) + rng.uniform(0, 3)
+            while x < x1 - w / 2:
+                fp = box(x - w / 2, rowy - w * 0.6, x + w / 2, rowy)
+                c0, r0 = to_px(fp.bounds[0], fp.bounds[1]); c1, r1 = to_px(fp.bounds[2], fp.bounds[3])
+                win = t[max(0, r0):r1, max(0, c0):c1]
+                if win.size and np.isin(win, list(bt)).mean() > 0.45 and not knock.intersects(fp):
+                    regs, o = M2.house(x, rowy, w, rng, unit=f"h{P}{nh}")
+                    add([r for r in regs if r.get("ko", True)], 19); add([r for r in regs if not r.get("ko", True)], 20); nh += 1
+                x += w * rng.uniform(1.0, 1.25)
+            rowy -= w * 0.52; row += 1
+    info["houses"] = nh
+    return dict(t=t, knock=knock, info=info, field=field)
+
 def build(P):
     t0 = time.time(); rng = random.Random(7 + cfcore.PIECES.index(P))
     res = TRC.tone_map(P); t = res["t"].astype(int).copy(); ppm = res["ppm"]; f = px_to_mm_grid(res)
@@ -78,27 +167,11 @@ def build(P):
             r.setdefault("ko", True); r.setdefault("unit", None); items.append(r)
     knock = Polygon()
     if P == "FL":
-        X, Y = f(xs_, ys_); PX, PY = MM.body_px("F", X, Y)
-        trunk = np.isin(t, [TI["cf_bark"], TI["cf_brown"]])
-        ring_left = trunk & (PX < 474) & (PY > 212) & (PY < 350)          # left half of the tree ring -> sky / cloud / canopy
-        t = refill(t, ring_left, {"cf_bark", "cf_brown"})
-        fc_t = FALL_TONES | {"cf_navy", "cf_slate"}
-        fall_c = (PX > 492) & (PX < 526) & (PY > 444) & (PY < 530) & np.isin(t, [TI[k] for k in fc_t])
-        t = refill(t, fall_c, fc_t)                                  # no fall straight under the castle
-        info["ip_edit_px"] = int(ring_left.sum() + fall_c.sum())
-        regs, knock, base_bot = CM.castle(108.0, 171.0)
-        regs = [r for r in regs if r.get("ko", True)] + [r for r in regs if not r.get("ko", True)]   # trims / windows / studs above the walls + roofs
-        # the mockup castle (gold horns, roofs, red balcony) is erased everywhere outside the new castle: sky/cloud behind it
-        from shapely.prepared import prep
-        mock_castle = (PX > 420) & (PX < 578) & (PY > 270) & (PY < 456)
-        bld = {"cf_navy", "cf_white", "cf_red", "cf_gold", "cf_bark", "cf_brown", "cf_slate", "cf_rose", "cf_pink", "cf_pinklt", "cf_mist"}
-        kn = np.zeros_like(mock_castle)
-        kb = knock.bounds; sub = (X > kb[0]) & (X < kb[2]) & (Y > kb[1]) & (Y < kb[3])
-        pk = prep(knock); idx = np.nonzero(sub)
-        kn[idx] = [pk.contains(Point(a, b_)) for a, b_ in zip(X[idx][::1], Y[idx][::1])]
-        t = refill(t, mock_castle & ~kn & (np.isin(t, [TI[k] for k in bld | {"cf_grn", "cf_grndk", "cf_grnlt"}]) | (t < 0)), bld | {"cf_grn", "cf_grndk", "cf_grnlt"})
-        horns = (PX > 452) & (PX < 548) & (PY > 272) & (PY < 304) & ~kn & (t >= 0) & ~np.isin(t, [TI["cf_sky"], TI["cf_skylt"], TI["cf_cream"]])
-        t = refill(t, horns, bld | {"cf_grn", "cf_grnlt", "cf_grndk"})
+        # Rev B (founder 19 Oct: follow the reference composition): castle on the falls rock as in the close-up / reference —
+        # 3 tiers, gold shachi + studs, lantern band, red balustrade; karamon gate at the foot. Drawn as objects over the trace.
+        regs, knock, base_bot = M2.castle2(108.0, 168.0)
+        gr, gk = M2.karamon(103.0, 415.0, w=150.0, h=85.0); regs += gr; knock = knock.union(gk)
+        regs = [r for r in regs if r.get("ko", True)] + [r for r in regs if not r.get("ko", True)]
         add(regs, 21)
     if P in ("SR", "SL"):
         # the centre fold is the flat-lay silhouette edge in both views (dark shading, read as bare shell): where the art
@@ -116,6 +189,9 @@ def build(P):
         hair = (np.abs(X) < 2.5) & (t < 0) & (nl & nr)[:, None]
         t = refill(t, hair, set()); info["fold_fill_px"] += int(hair.sum())
     fz = zone_mask(res, P, FALLS[P])
+    rev_b = revb_structure(P, res, t, f, rng, add, knock)
+    t, knock = rev_b["t"], rev_b["knock"]; info.update(rev_b["info"]); field = rev_b["field"]
+    to_px = lambda x, y: (int((x - res["bbox"][0]) * ppm), int((y - res["bbox"][1]) * ppm))
     # ---- traced regions
     for k in TONES:
         mask = t == TI[k]
@@ -135,7 +211,13 @@ def build(P):
                 else:
                     ang = {"sky": rng.uniform(-8, 8), "cloud": rng.uniform(-28, 28), "rock": 90 + rng.uniform(-16, 16),
                            "fol": rng.uniform(0, 180), "bl": rng.uniform(0, 180), "bld": "auto", "trk": rng.uniform(40, 140)}[cls]
+                    if cls in ("rock", "trk") and A >= 12:          # Rev B: rows along the mockup's own strata / bark direction
+                        ang, coh = M2.region_angle(field, g, to_px, default=ang)
                     r = CM.R(k, g, "tatami", ang, "VIL" if cls == "bld" else GRP[cls])
+                    if cls == "rock" and A >= 40 and k in ("cf_slate", "cf_lav"):
+                        add(M2.strata(g, ang, 3.4, ["cf_mist", "cf_bark"], "RK-line", phase=rng.uniform(0, 3.4)), 13)
+                    if cls == "trk" and A >= 30:
+                        add(M2.strata(g, ang, 3.0, ["cf_brown" if k == "cf_bark" else "cf_bark"], "TRK-line", phase=rng.uniform(0, 3.0)), 16)
                 add([r], 11)
     # ---- blossom florets on the blossom ground (overlay), counted from the ground area (~1 floret per 22 mm2)
     blm = np.isin(t, [TI["cf_pinklt"], TI["cf_pink"], TI["cf_rose"]])
@@ -159,7 +241,7 @@ def build(P):
                     col = {"cf_rose": "cf_pink", "cf_pink": "cf_pinklt", "cf_pinklt": "cf_pinklt"}.get(tone, "cf_pink")
                     if tone == "cf_pinklt" and rng.random() < 0.35: col = "cf_white"
                     d = rng.uniform(3.6, 5.6)
-                    add(CM.floret(cx, cy, d, rng.uniform(0, 72), col, "cf_cream" if col != "cf_white" else "cf_rose", unit=f"fl{nflor}"), 17)   # cream stamen centres (close-up strip, panel 4)
+                    add(M2.floret(cx, cy, d, rng.uniform(0, 72), col, unit=f"fl{nflor}"), 17)   # notched petals, rose centre + cream knot, veins (strip panel 4)
                     nflor += 1
                 x += step
             y += step * 0.866; row += 1

@@ -99,7 +99,7 @@ def patch_dst2():
 STYLE = "HK-JK-CSFL-NV"
 NAME = "Castle Falls Jacket — Washed Navy"
 SHORT = "CSFL"
-REV_EMB = "Rev A"; REV_GAR = "Rev A"; DATE = "16 Oct 2026"
+REV_EMB = "Rev B"; REV_GAR = "Rev B"; DATE = "19 Oct 2026"
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
 # elements + pieces

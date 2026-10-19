@@ -210,43 +210,50 @@ def shachi(x, y, s, col="cf_gold", unit=None):
     tail = Polygon([(x - s * 1.4, y - 8.6), (x - s * 4.2, y - 11.2), (x - s * 0.2, y - 10.6), (x + s * 0.8, y - 12.6)]).buffer(0.5)
     return [R(col, unary_union([body, tail]).buffer(0), "satin", "auto", "ORN", unit=unit)]
 
-def castle2(cx, y0, unit=None):
-    """original 3-tier castle (Rev B): per tier a hip roof with tile ribs, curved gold eave + studs, lit white wall with a window
-    band; karahafu (curved gable) on the top tier, two chidori gables on the middle roof, gold shachi; red balustrade with
-    posts below. Returns regions, knockout outline, bottom y."""
+def castle2(cx, y0, unit=None, T=None, bal=(176.0, 24.0)):
+    """3-tier castle as in the founder's front close-up / reference.png (Rev B): per tier a hip roof with tile ribs, curved gold
+    eave + white studs, lit white wall with a window band; karahafu on the top roof, two chidori gables on the middle + lower
+    roofs, gold shachi; the lowest wall is the lantern band; red balustrade with posts below. Returns regions, outline, bottom y."""
     regs = []; outline = []
-    T = [(24.0, 13.0, 34.0, 96.0, 66.0), (28.0, 14.0, 60.0, 140.0, 104.0), (30.0, 13.0, 88.0, 176.0, 136.0)]   # roof h, wall h, ridge w, eave w, wall w
+    T = T or [(32.0, 22.0, 55.0, 132.0, 80.0), (23.0, 17.0, 92.0, 164.0, 106.0), (28.0, 8.0, 116.0, 190.0, 150.0)]   # roof h, wall h, ridge w, eave w, wall w
     y = y0
-    for s in (-1, 1): regs += shachi(cx + s * (T[0][2] / 2 - 2), y + 0.5, s, unit=unit)
+    for s in (-1, 1): regs += shachi(cx + s * (T[0][2] / 2 - 4), y + 0.5, s, unit=unit)
     for i, (rh, wh, rw, ew, ww) in enumerate(T):
-        rr, rp = roof(cx, y, y + rh, rw, ew, lift=3.4, unit=unit); regs += rr; outline.append(rp)
-        if i == 0:      # karahafu: curved (bell) gable on the top roof
-            arc = [(cx + 13 * math.cos(a), y + rh * 0.92 - 9 * math.sin(a) ** 0.8) for a in np.linspace(0, math.pi, 24)]
-            kh = Polygon(arc).buffer(0)
-            regs.append(R("cf_white", kh.buffer(-1.0), "satin", 90.0, "WALL", unit=unit, ko=False))
+        rr, rp = roof(cx, y, y + rh, rw, ew, lift=3.6, unit=unit); regs += rr; outline.append(rp)
+        if i == 0:
+            arc = [(cx + 13 * math.cos(a), y + rh * 0.92 - 10 * math.sin(a) ** 0.8) for a in np.linspace(0, math.pi, 24)]
+            regs.append(R("cf_white", Polygon(arc).buffer(-1.0), "satin", 90.0, "WALL", unit=unit, ko=False))
             regs.append(R("cf_gold", LineString(arc).buffer(0.75), "satin", "auto", "ORN", unit=unit, ko=False))
             for s in (-1, 1): regs.append(R("cf_navy", Point(cx + s * 4.5, y + rh * 0.92 - 3.2).buffer(1.5), "satin", "auto", "WIN", unit=unit, ko=False))
-        if i == 1:      # chidori gables
-            for gx in (cx - 30, cx + 30):
-                gw = 24.0
-                tri = Polygon([(gx - gw / 2, y + rh * 0.88), (gx, y + rh * 0.28), (gx + gw / 2, y + rh * 0.88)])
+        if i >= 1:
+            gw = 26.0 if i == 1 else 30.0
+            for gx in ((cx - 0.0,) if i == 1 else (cx - 36, cx + 36)):
+                tri = Polygon([(gx - gw / 2, y + rh * 0.88), (gx, y + rh * 0.22), (gx + gw / 2, y + rh * 0.88)])
                 regs.append(R("cf_white", tri.buffer(-1.0), "satin", 90.0, "WALL", unit=unit, ko=False))
-                regs.append(R("cf_gold", LineString([(gx - gw / 2, y + rh * 0.88), (gx, y + rh * 0.28), (gx + gw / 2, y + rh * 0.88)]).buffer(0.7), "satin", "auto", "ORN", unit=unit, ko=False))
+                regs.append(R("cf_gold", LineString([(gx - gw / 2, y + rh * 0.88), (gx, y + rh * 0.22), (gx + gw / 2, y + rh * 0.88)]).buffer(0.7), "satin", "auto", "ORN", unit=unit, ko=False))
                 regs.append(R("cf_gold", Point(gx, y + rh * 0.55).buffer(1.1), "satin", "auto", "DOT", unit=unit, ko=False))
         y += rh
-        wr, wp = wall_band(cx, y - 0.6, wh + 0.6, ww, unit=unit); regs += wr; outline.append(wp)
+        if wh >= 12:
+            wr, wp = wall_band(cx, y - 0.6, wh + 0.6, ww, unit=unit); regs += wr; outline.append(wp)
+        else:                                     # lantern band: white plaster with round red lanterns
+            band = box(cx - ww / 2, y - 0.6, cx + ww / 2, y + wh)
+            regs.append(R("cf_white", band, "tatami", 0.0, "WALL", unit=unit)); outline.append(band)
+            n = int(ww / 14)
+            for k in range(n):
+                x = cx - ww / 2 + (k + 0.5) * ww / n
+                regs.append(R("cf_red", Point(x, y + wh / 2).buffer(min(2.6, wh / 2 - 0.4)), "satin", "auto", "DOT", unit=unit, ko=False))
         y += wh
-    # red balustrade (railing): top + bottom rail, posts, dark openings with gold ornaments
-    bw, bh = 150.0, 28.0; bt = y - 0.4
-    bal = box(cx - bw / 2, bt, cx + bw / 2, bt + bh)
-    regs.append(R("cf_red", bal, "tatami", 0.0, "TMB", unit=unit)); outline.append(bal)
+    bw, bh = bal; bt = y - 0.4
+    bal_ = box(cx - bw / 2, bt, cx + bw / 2, bt + bh)
+    regs.append(R("cf_red", bal_, "tatami", 0.0, "TMB", unit=unit)); outline.append(bal_)
     regs.append(R("cf_gold", box(cx - bw / 2, bt + 0.6, cx + bw / 2, bt + 1.6), "satin", 90.0, "ORN", unit=unit, ko=False))
-    np_ = 14; pw = bw / np_
+    np_ = 16; pw = bw / np_
     for k in range(np_):
         x = cx - bw / 2 + k * pw
-        regs.append(R("cf_navy", box(x + 1.6, bt + 5.0, x + pw - 1.6, bt + 12.5), "satin", 90.0, "WIN", unit=unit, ko=False))
-        regs.append(R("cf_gold", Point(x + pw / 2, bt + 8.8).buffer(1.05), "satin", "auto", "DOT", unit=unit, ko=False))
-        regs.append(R("cf_navy", box(x + 2.2, bt + 16.5, x + pw - 2.2, bt + 23.5), "satin", 90.0, "WIN", unit=unit, ko=False))
+        regs.append(R("cf_white", box(x + 1.8, bt + 4.5, x + pw - 1.8, bt + 9.5), "satin", 90.0, "WIN", unit=unit, ko=False))
+        regs.append(R("cf_navy", box(x + 2.2, bt + 13.0, x + pw - 2.2, bt + bh - 3.5), "satin", 90.0, "WIN", unit=unit, ko=False))
+    for k in range(np_ + 1):
+        regs.append(R("cf_gold", Point(cx - bw / 2 + k * pw, bt + 1.6).buffer(1.0), "satin", "auto", "DOT", unit=unit, ko=False))
     regs.append(R("cf_brown", box(cx - bw / 2, bt + bh - 1.4, cx + bw / 2, bt + bh), "satin", 90.0, "TMB", unit=unit, ko=False))
     return regs, unary_union(outline).buffer(0.5), bt + bh
 
@@ -278,10 +285,10 @@ def pagoda(cx, spire_top, tiers, ring_col="cf_gold", unit=None):
     sb = tiers[0][0] + 1.0
     mast = LineString([(cx, spire_top + 2), (cx, sb)]).buffer(0.9, cap_style="flat")
     regs.append(R("cf_brown", mast, "satin", "auto", "TMB", unit=unit))
-    n = int((sb - spire_top - 10) / 4.6)
+    n = int((sb - spire_top - 12) / 6.2)
     for k in range(n):
-        y = spire_top + 6 + k * 4.6
-        regs.append(R(ring_col, affinity.scale(Point(cx, y).buffer(1.0, quad_segs=12), 2.1 - 0.02 * (n - k), 1.0, origin=(cx, y)), "satin", "auto", "ORN", unit=unit))
+        y = spire_top + 9 + k * 6.2
+        regs.append(R(ring_col, affinity.scale(Point(cx, y).buffer(1.0, quad_segs=12), 3.3, 2.5, origin=(cx, y)), "satin", 0.0, "ORN", unit=unit))
     regs.append(R(ring_col, Point(cx, spire_top + 1.8).buffer(1.6), "satin", "auto", "ORN", unit=unit))     # hoju (top jewel)
     regs.append(R(ring_col, box(cx - 3.4, sb - 4.0, cx + 3.4, sb + 0.2), "satin", 90.0, "ORN", unit=unit))  # roban (base)
     outline.append(mast.buffer(1.4))
@@ -350,3 +357,19 @@ def house(cx, base, w, rng, wall=("cf_red", "cf_bark"), unit=None):
     if w >= 10:
         for s in (-1, 1): regs.append(R("cf_navy", box(cx + s * w * 0.2 - 1.0, base - wh + 1.6, cx + s * w * 0.2 + 1.0, base - 0.6), "satin", 90.0, "WIN", unit=unit, ko=False))
     return regs, unary_union([wl, rf]).buffer(0.3)
+
+# ---------------------------------------------------------------- cherry floret (strip panel 4 + sleeve / back close-ups)
+def floret(cx, cy, d, rot, col, unit=None):
+    """5 notched petals, each its own satin sewn ACROSS the petal (radial from the centre), a deep-rose centre ring and a
+    cream knot (stamens); thin rose veins from the centre on the larger florets. Overlays (ko=False) on the blossom ground."""
+    r = d / 2; out = []
+    ring = Point(cx, cy).buffer(max(0.75, d * 0.17), quad_segs=8)
+    for k in range(5):
+        a = math.radians(rot + k * 72); ux, uy = math.cos(a), math.sin(a)
+        c = (cx + ux * r * 0.55, cy + uy * r * 0.55)
+        e = affinity.rotate(affinity.scale(Point(c).buffer(1.0, quad_segs=10), r * 0.50, r * 0.38), math.degrees(a), origin=c)
+        e = e.difference(Point(cx + ux * r * 1.06, cy + uy * r * 1.06).buffer(r * 0.17)).difference(ring.buffer(0.1))
+        if e.area > 0.3: out.append(R(col, e.buffer(0), "satin", ("radial", cx, cy), "BL", unit=unit, ko=False))
+    out.append(R("cf_rose", ring.difference(Point(cx, cy).buffer(max(0.5, d * 0.09))), "satin", ("radial", cx, cy), "BL-c", unit=unit, ko=False))
+    out.append(R("cf_cream", Point(cx, cy).buffer(max(0.55, d * 0.1), quad_segs=6), "satin", "auto", "BL-c", unit=unit, ko=False))
+    return out
