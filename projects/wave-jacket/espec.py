@@ -109,7 +109,7 @@ def p3():
         y = 36 + i * rh
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-3.4)}" width="{SW-22}" height="{f(rh)}" fill="#F5F2EC"/>')
         name, st, ang, dens, ln, ul, pull, note = tech.RULES[k]; s_ = stats[k]
-        o.append(t(cx[0], y, k, 1.7, 700)); o.append(t(cx[1], y, name[:24], 1.55))
+        o.append(t(cx[0], y, k, 1.7, 700)); o.append(t(cx[1], y, name[:30], 1.5))
         xs = cx[2]
         for c in sorted(s_["cols"], key=lambda c: tech.COLOUR_ORDER.index(c))[:7]:
             o.append(swatch(xs, y, c, 3.2, 2.2)); xs += 4.0
@@ -117,7 +117,7 @@ def p3():
             lim = [34, 24, 12, 6, 40, 6, 44][j]
             o.append(t(cx[3 + j], y, v if len(v) <= lim else v[:lim].rsplit(' ', 1)[0] + '…', 1.45))
         q = WCK.get(k, 0.0); qc = GREEN if q < 1.0 else (ORANGE if q < 3.5 else RED)
-        o.append(t(cx[10], y, f"{q:.1f}%", 1.5, 600, qc)); o.append(t(cx[11], y, f"{s_['n']}", 1.5, 400, MUTED))
+        o.append(t(cx[10], y, "single run" if st.startswith("Run") else f"{q:.1f}%", 1.5, 600, MUTED if st.startswith("Run") else qc)); o.append(t(cx[11], y, f"{s_['n']}", 1.5, 400, MUTED))
     yb = 36 + len(order) * rh + 3
     notes = ["Globals: 40wt polyester, 75/11 sharp needle, 2.5 oz cutaway backing (navy / charcoal), no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; exposed moves > 2.0 trimmed.",
              "FOAM: the render's raised looped white curls look like chenille. Rev A digitizes them as padded tatami (1 padding layer) + a scalloped contour 'loop' spiral and curl lines in Foam shade on top,",
@@ -134,8 +134,8 @@ def stops_page(Ps, page):
     for ci, P in enumerate(Ps):
         x0 = 12 + ci * colw; r = CUR[P]; ps = r["per_stop"]
         o.append(t(x0, 30.5, f"{P} — {os.path.basename(r['file'])}.dst", 1.8, 700))
-        hc = [x0, x0 + 6, x0 + 26, x0 + 44, x0 + colw - 22, x0 + colw - 10]
-        for x, hd in zip(hc, ["Stop", "Thread", "Isacord", "Polyneon", "Stitches", "Trims"]): o.append(t(x, 34.5, hd, 1.45, 700, MUTED))
+        hc = [x0, x0 + 6, x0 + 25, x0 + 33, x0 + colw - 22, x0 + colw - 10, x0 + 42]
+        for x, hd in zip(hc, ["Stop", "Thread", "Isacord", "Polyn.", "Stitches", "Trims", "Sews"]): o.append(t(x, 34.5, hd, 1.45, 700, MUTED))
         rh = min(4.4, 140 / max(1, len(ps)))
         for i, s_ in enumerate(ps):
             y = 38.5 + i * rh; k = s_.get("col") or "w1"; iso, pn = SB.TH[k]["isacord"], SB.TH[k]["polyneon"]
@@ -143,7 +143,7 @@ def stops_page(Ps, page):
             o.append(t(hc[0], y, f"{s_['stop']:02d}", 1.45, 700)); o.append(swatch(hc[1], y, k, 2.6, 1.9)); o.append(t(hc[1] + 3.3, y, PAL[k][1][:13], 1.35))
             o.append(t(hc[2], y, f"{iso[0]}", 1.35)); o.append(t(hc[3], y, f"{pn[0]}", 1.35))
             o.append(t(hc[4], y, f"{s_['stitches']:,}", 1.4, 600)); o.append(t(hc[5], y, f"{s_['trims']}", 1.4))
-            o.append(t(hc[2] + 9, y, ", ".join(s_.get("codes", []))[:22], 1.15, 400, MUTED))
+            o.append(t(hc[6], y, ", ".join(s_.get("codes", []))[:24], 1.2, 400, MUTED))
         y = 38.5 + len(ps) * rh + 2
         o.append(t(hc[2], y, "FILE TOTAL (sum of stops)", 1.4, 700)); o.append(t(hc[4], y, f"{sum(q['stitches'] for q in ps):,}", 1.45, 700)); o.append(t(hc[5], y, f"{sum(q['trims'] for q in ps)}", 1.45, 700))
         o.append(t(hc[2], y + 3, f"= DST {r['stitches']:,} st / {r['trims']} trims · {len(set(r['colours']))} threads · max {r['max_stitch']:.2f}", 1.3, 400, MUTED))
@@ -162,9 +162,10 @@ def p6():
     o.append(t(14, my, "REFERENCES", 2.3, 700))
     tag, hh = SHT.embed("inputs/back.png", (0, 230, 620, 740), 46, 14, my + 3); o.append(tag)
     tag2, hh2 = SHT.embed("inputs/closeup_mockup_foam.png", None, 22, 62, my + 3); o.append(tag2)
-    o.append(t(14, my + 3 + max(hh, hh2) + 3, "Render (back) · foam close-up (style reference only)", 1.5, 400, MUTED))
-    o.append(t(14, my + 3 + max(hh, hh2) + 6.5, "Art TRACED from a low-res AI render (~1.4 mm/px), not from originals:", 1.55, 700, ORANGE))
-    o.append(t(14, my + 3 + max(hh, hh2) + 9.5, "positions + tones from the render, curl detail redrawn at stitch scale.", 1.55, 700, ORANGE))
+    o.append(t(14, my + 3 + max(hh, hh2) + 3, "Render (back) · founder's detail close-up (FL shoulder crest)", 1.5, 400, MUTED))
+    o.append(t(14, my + 3 + max(hh, hh2) + 6.5, "Art TRACED from the low-res AI render (~1.4 mm/px), not originals.", 1.55, 700, ORANGE))
+    o.append(t(14, my + 3 + max(hh, hh2) + 9.5, "FL shoulder crest + bands: traced from the close-up, registered", 1.55, 700, ORANGE))
+    o.append(t(14, my + 3 + max(hh, hh2) + 12.5, "onto the render (A12); elsewhere it is the foam texture reference.", 1.55, 700, ORANGE))
     cx = 92
     o.append(t(cx, my, "WHAT CHANGED vs THE RENDER (and why)", 2.3, 700))
     ch = ["Layout: render mapped onto the Drum Island pattern, x 1.45 mm/px,",

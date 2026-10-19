@@ -20,7 +20,7 @@ def draft(size):
         _cache[size] = (g, mt)
     return _cache[size]
 PT.draft = draft
-PT.PROPOSED["Welt"] = "1.4 × 13 cm (Drum Island) at the mockup position: centre 22.1 cm from CF, 34.8 cm below the neck, 39°"
+PT.PROPOSED["Welt"] = "1.4 × 13 cm, Drum Island block position: centre 17.0 cm from CF, 36.8 cm below the CF neck, 43° (render: ~5 cm further out)"
 import pattern_out as PO
 PO.STYLE = WC.STYLE
 PO.EMB_ON = {"B01": ["BK"], "F01": ["FL"], "F02": ["FR"], "S01": ["SR"], "S02": ["SL"]}
@@ -40,8 +40,8 @@ def emb_marks(size, pl=None):
             lst.append((f"01 {P} {nm} start", [tuple(s["origin"])], "cross"))
         sp = r.get("splits", {})
         b = r["full"]["art_box"]
-        if sp.get("sy") is not None: lst.append((f"01 {P} split line", [(b[0] - 5, sp["sy"]), (b[2] + 5, sp["sy"])], "line"))
-        if sp.get("sx") is not None: lst.append((f"01 {P} split line", [(sp["sx"], b[1] - 5), (sp["sx"], b[3] + 5)], "line"))
+        for yv in sp.get("ys") or ([sp["sy"]] if sp.get("sy") is not None else []): lst.append((f"01 {P} split line", [(b[0] - 5, yv), (b[2] + 5, yv)], "line"))
+        for xv in sp.get("xs") or ([sp["sx"]] if sp.get("sx") is not None else []): lst.append((f"01 {P} split line", [(xv, b[1] - 5), (xv, b[3] + 5)], "line"))
         out[code] = lst
     return out
 PO.emb_marks = emb_marks

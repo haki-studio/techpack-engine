@@ -34,3 +34,10 @@ Problem → proposed fix → check. Worked around in project code only.
 - `( nohup ./run_all.sh & )` from the agent's Bash tool kept running although it looked dead (slots were all taken by other products, logs
   stayed empty), and a second launch raced it on the same files. **Proposed:** `heavy.sh` writes a "waiting for slot" line to stderr; run
   scripts take a lock file per project (`flock projects/<slug>/.run.lock`).
+
+## 6. Registering a perspective close-up onto the render (A12)
+- **What worked:** `register_cu.py` — score = NCC of the white (foam) + blue (band) masks of the warped close-up vs the render; coarse
+  grid over rotation / scale / shift, then Powell refinement of an affine and of a full homography (score 0.97 → 1.32 of 2.0). The close-up's
+  classes then replace the render's inside its footprint (`wavetrace.closeup_labels`). A visible seam remains at the footprint edge.
+- **Proposed fix:** `engine/register.py` (mask-NCC homography search) + feathered blending of the two label maps at the footprint edge.
+- **Check:** registering a crop of the render itself (rotated 30°, scaled 3x) recovers the crop box within 2 px.

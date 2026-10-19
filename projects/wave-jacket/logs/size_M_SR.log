@@ -1,9 +1,5 @@
-M SR {'stitches': 138646, 'trims': 808, 'jumps': 1828, 'stops': 13, 'size_mm': (394.7, 478.8), 'max_stitch': 7.42} 57s
-Traceback (most recent call last):
-  File "/mnt/c/Users/devin/Desktop/HakiCode/techpack-engine/projects/wave-jacket/build_size.py", line 108, in <module>
-    pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=marks[key])
-  File "/mnt/c/Users/devin/Desktop/HakiCode/techpack-engine/engine/dst2.py", line 514, in make_pattern
-    cov = Cover(bounds_of([r["geom"] for r in vis]))
-  File "/mnt/c/Users/devin/Desktop/HakiCode/techpack-engine/engine/dst2.py", line 378, in bounds_of
-    return (bs[:, 0].min(), bs[:, 1].min(), bs[:, 2].max(), bs[:, 3].max())
-IndexError: too many indices for array: array is 1-dimensional, but 2 were indexed
+M SR {'stitches': 144096, 'trims': 720, 'jumps': 1657, 'stops': 13, 'size_mm': (430.6, 415.6), 'max_stitch': 7.35} 48s
+M SR S1_top-right {'stitches': 403, 'trims': 11, 'stops': 3, 'size_mm': (248.4, 140.6), 'fits': True} split y 109.8
+M SR S2_bottom-left {'stitches': 68522, 'trims': 338, 'stops': 12, 'size_mm': (214.0, 306.8), 'fits': True} split y 109.8
+M SR S3_bottom-right {'stitches': 75531, 'trims': 380, 'stops': 13, 'size_mm': (248.4, 306.8), 'fits': True} split y 109.8
+DONE M ['SR']

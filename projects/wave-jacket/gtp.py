@@ -135,8 +135,8 @@ def p_details(F):
     o.append(f'<rect x="16" y="{wy+5}" width="70" height="8" fill="#2E3550" stroke="{INK}" stroke-width="0.35"/>'
              f'<rect x="17" y="{wy+6}" width="68" height="6" fill="none" stroke="{MUTED}" stroke-width="0.2" stroke-dasharray="1 0.6"/>'
              f'<rect x="15" y="{wy+4}" width="2" height="10" fill="{INK}"/><rect x="85" y="{wy+4}" width="2" height="10" fill="{INK}"/>')
-    o.append(t(16, wy + 18, "shown 0.5:1, drawn horizontal — sewn at 39° (see T2)", 1.7, 400, MUTED))
-    o.append(prop(16, wy + 21.5, "Position from the mockup: centre 22.1 from CF, 34.8 below the CF neck (M)", 1.65))
+    o.append(t(16, wy + 18, "shown 0.5:1, drawn horizontal — sewn at 43° (see T2)", 1.7, 400, MUTED))
+    o.append(prop(16, wy + 21.5, "Drum Island block position: centre 17.0 from CF, 36.8 below the CF neck (M)", 1.65))
     for i, l in enumerate(["Welt 1.4 wide × 13.0 long", "Bartack both ends, 10 mm, tonal", "Edge topstitch 2 mm around welt"]):
         o.append(t(94, wy + 5 + i*3.5, l, 1.8))
     o.append(prop(94, wy + 5 + 3*3.5, "Pocket bag: cotton twill 8 oz, depth 18, French seams", 1.75))
@@ -378,7 +378,7 @@ def p_questions():
           "2. Collar: the render shows a corduroy collar (navy, proposed 14-wale 8 oz); the intake note mentioned a hood — built with the collar. Confirm.",
           "3. Rib: fibre (proposed 95/5 cotton/elastane), heights (hem 5.5, cuff 7.5 — not on the fit chart), navy.",
           "4. Pattern (T11–T13) is the Drum Island first pattern: shoulder slope 4.5, cap ease 1.2, facings, rib heights proposed — sample + fit M first.",
-          "5. Welt pockets: Drum Island welt 1.4 × 13 cm at the render position (22.1 from CF, 34.8 below the neck, 39°). Confirm.",
+          "5. Welt pockets: Drum Island block welt 1.4 × 13 cm (17.0 from CF, 36.8 below the neck, 43°); the render draws it ~5 cm further out. Confirm.",
           "6. Lining: navy flannel body + taffeta sleeves proposed (covers the embroidery backing on all 5 pieces). Quilted or unlined alternative?",
           "7. Zip garage at collar + auto-lock slider — confirm. Zip lengths per size on T3 assume CF length − 0.5 cm.",
           "8. Seam types + SPI (T7) are a standard proposal — factory to confirm capability (5-thread safety stitch, bartack).",

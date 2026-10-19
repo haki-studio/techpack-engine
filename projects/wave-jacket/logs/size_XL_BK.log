@@ -1,0 +1,6 @@
+XL BK {'stitches': 261804, 'trims': 1293, 'jumps': 3372, 'stops': 13, 'size_mm': (619.6, 522.1), 'max_stitch': 7.35} 103s
+XL BK S1_top-left {'stitches': 116854, 'trims': 552, 'stops': 13, 'size_mm': (323.2, 313.7), 'fits': True} split y 371.8
+XL BK S2_top-right {'stitches': 37548, 'trims': 259, 'stops': 11, 'size_mm': (325.9, 312.3), 'fits': True} split y 371.8
+XL BK S3_bottom-left {'stitches': 17386, 'trims': 133, 'stops': 10, 'size_mm': (322.0, 277.1), 'fits': True} split y 371.8
+XL BK S4_bottom-right {'stitches': 91333, 'trims': 392, 'stops': 11, 'size_mm': (325.6, 276.6), 'fits': True} split y 371.8
+DONE XL ['BK']

@@ -18,17 +18,12 @@ _neck = [(-x, y) for x, y in drum.curve((0, 0), BLK.f_hps, 28, 16)]
 COLLAR_R = Polygon(_neck + [(-176, -76), (-150, -30), (-72, 66), (-14, 22)]).buffer(0)    # collar lying flat (Drum Island)
 COLLAR_L = affinity.scale(COLLAR_R, -1, 1, origin=(0, 0))
 
-# Welt pockets: Drum Island welt size (1.4 x 13 cm, pattern.py WELT_L/WELT_W) at THIS mockup's position + angle
-# (render welt centre (485, 532) px -> 221 / 348 mm, 39 deg; outer end 27 mm from the side seam).
-# pattern.py derives every size's welt box from WELT_L (centre graded with the chest, height kept above the hem).
-WELT_C, WELT_ANG, WELT_LEN, WELT_W = (221.0, 348.0), 39.0, 130.0, 14.0         # wearer's left; right = mirror  [PROPOSED]
-def _welt(side):
-    ux, uy = np.cos(np.radians(WELT_ANG)), np.sin(np.radians(WELT_ANG))
-    c = np.array([WELT_C[0]*side, WELT_C[1]]); u = np.array([ux*side, uy])
-    a, b = c - u*WELT_LEN/2, c + u*WELT_LEN/2          # top-inner -> bottom-outer
-    return LineString([a, b]).buffer(WELT_W/2, cap_style="flat", join_style="mitre")
-WELT_R = _welt(-1)
-WELT_L = _welt(+1)
+# Welt pockets: Drum Island BLOCK welt (engine drum.WELT_L_M, 1.4 x 13 cm, centre 17.0 cm from CF, 36.8 cm below the CF
+# neck, 43 deg). The engine pattern reads the welt from the block (not from this module) since 17 Oct 2026, so the
+# drawings use the same polygon. The render's welt sits ~5 cm further out; the pattern position governs (LESSONS C8).
+WELT_L = Polygon(drum.WELT_L_M).buffer(0)
+WELT_R = affinity.scale(WELT_L, -1, 1, origin=(0, 0))
+WELT_C = (WELT_L.centroid.x, WELT_L.centroid.y)
 
 KEEP_CF, KEEP_SEAM, KEEP_HEM, KEEP_WELT, KEEP_COLLAR = 15.0, 15.0, 10.0, 6.0, 6.0
 KEEP = {"CF / zip": KEEP_CF, "armhole": KEEP_SEAM, "shoulder": KEEP_SEAM, "side": KEEP_SEAM, "hem": KEEP_HEM}

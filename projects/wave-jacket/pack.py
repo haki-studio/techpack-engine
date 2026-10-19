@@ -29,7 +29,7 @@ def hdr(title, sub, page): return SB.header(title, sub, page)
 def secs(r): return (r.get("splits") or {}).get("sections", {}) or {}
 def hoop_files(r):
     """the files a piece is actually sewn from: its split sections, or the full file when it fits one hooping"""
-    s = secs(r); return list(s.values()) if s else [r]
+    s = secs(r); return list(s.values()) if s else [r.get("full", r)]
 TOT = sum(CUR[p]["stitches"] for p in PS); TRIMS = sum(CUR[p]["trims"] for p in PS)
 MH = sum(mh(CUR[p]) for p in PS)
 MH_HOOP = sum(mh(s) for p in PS for s in hoop_files(CUR[p]))
@@ -61,9 +61,10 @@ def overview():
     o = hdr("PLACEMENT OVERVIEW — the wave on the five pieces", "Each piece in its own pattern coords (back: x from CB, + = wearer's right, y from CB neck seam; fronts: x from CF, + = wearer's left, y from CF neck; sleeves: x from the sleeve centre line, y from the underarm line).", "G2")
     from PIL import Image, ImageDraw
     import pickle as pk
-    lay = {"SL": (12, 30, 54), "BK": (70, 30, 100), "SR": (174, 30, 54), "FR": (70, 120, 49), "FL": (121, 120, 49)}
-    for P, (x, y, w) in lay.items():
-        pan = PC.panel("M", P); b = pan.bounds; bb = (b[0] - 4, b[1] - 4, b[2] + 4, b[3] + 4); ppm = 1.4
+    SC = 0.128                                                         # one scale for every piece (mm on page per mm)
+    lay = {"SL": (12, 30), "BK": (82, 30), "SR": (163, 30), "FR": (82, 116), "FL": (125, 116)}
+    for P, (x, y) in lay.items():
+        pan = PC.panel("M", P); b = pan.bounds; bb = (b[0] - 4, b[1] - 4, b[2] + 4, b[3] + 4); ppm = 1.4; w = (bb[2] - bb[0]) * SC
         im = SR.render(VF[P], bb, ppm, base=WC.FABRIC)
         msk = Image.new("L", im.size, 0); ImageDraw.Draw(msk).polygon([((xx - bb[0]) * ppm, (yy - bb[1]) * ppm) for xx, yy in pan.exterior.coords], fill=255)
         wh = Image.new("RGB", im.size, (255, 255, 255)); wh.paste(im, (0, 0), msk)
@@ -73,10 +74,12 @@ def overview():
         ab = BB[P]
         o.append(f'<rect x="{f(X(ab[0]))}" y="{f(Y(ab[1]))}" width="{f((ab[2]-ab[0])*s)}" height="{f((ab[3]-ab[1])*s)}" fill="none" stroke="{GUIDE}" stroke-width="0.3" stroke-dasharray="1.2 0.8"/>')
         sp = CUR[P].get("splits") or {}
-        if sp.get("sy") is not None: o.append(f'<line x1="{f(X(ab[0]-6))}" y1="{f(Y(sp["sy"]))}" x2="{f(X(ab[2]+6))}" y2="{f(Y(sp["sy"]))}" stroke="#0A84FF" stroke-width="0.4" stroke-dasharray="2 1"/>')
-        if sp.get("sx") is not None: o.append(f'<line x1="{f(X(sp["sx"]))}" y1="{f(Y(ab[1]-6))}" x2="{f(X(sp["sx"]))}" y2="{f(Y(ab[3]+6))}" stroke="#0A84FF" stroke-width="0.4" stroke-dasharray="2 1"/>')
+        for yv in sp.get("ys") or ([sp["sy"]] if sp.get("sy") is not None else []):
+            o.append(f'<line x1="{f(X(ab[0]-6))}" y1="{f(Y(yv))}" x2="{f(X(ab[2]+6))}" y2="{f(Y(yv))}" stroke="#0A84FF" stroke-width="0.4" stroke-dasharray="2 1"/>')
+        for xv in sp.get("xs") or ([sp["sx"]] if sp.get("sx") is not None else []):
+            o.append(f'<line x1="{f(X(xv))}" y1="{f(Y(ab[1]-6))}" x2="{f(X(xv))}" y2="{f(Y(ab[3]+6))}" stroke="#0A84FF" stroke-width="0.4" stroke-dasharray="2 1"/>')
         o.append(t(x, y + hh + 3, f"{P} {PC.NAME[P]} ({PC.CODE[P]}) · art {ab[2]-ab[0]:.0f} × {ab[3]-ab[1]:.0f}", 1.6, 700))
-    o.append(t(12, 200, "Red line = keep-out boundary (art may not cross it). Blue dashed box = art box, blue dashed line = hoop split line (G6). Size M, each piece at its own scale.", 1.6, 400, MUTED))
+    o.append(t(12, 199, f"Red line = keep-out boundary (art may not cross it). Blue dashed box = art box, blue dashed lines = hoop split lines (G6). Size M, all pieces at {SC:.3f}:1.", 1.6, 400, MUTED))
     tx = 232; ty = 30
     o.append(t(tx, ty, "ART BOX PER SIZE (w × h mm)", 2.0, 700))
     for j, P in enumerate(PS): o.append(t(tx + 9 + j * 10.5, ty + 5, P, 1.5, 700, MUTED))
@@ -154,7 +157,7 @@ def summary():
           "5. Collar: the render shows a corduroy collar; the intake note mentioned a hood — built with the Drum Island collar. Confirm.",
           "6. Grading: A 92 % (XS–S) · B 100 % (M–XL) · C 108 % (XXL–3XL), one file per size per piece, re-clipped to each size's keep-outs. OK?",
           "7. Shell dye: piece-dyed + pre-washed navy duck assumed. If garment-washed after embroidery, wash-test the sew-out (cream foam!).",
-          "8. Reference: art traced from one low-res AI render (~1.4 mm/px) — close-ups (inputs/closeup_request.md) or originals would sharpen the curl detail.",
+          "8. Reference: traced from the low-res render (~1.4 mm/px) + the founder's shoulder close-up (registered, FL crest). Flat close-ups of the other panels would sharpen the rest.",
           "9. DST/PES are production-intent drafts: the factory digitizer checks density + pull on 12 oz duck and edits before the sew-out."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i * 3.7, q, 1.8))
     return o
@@ -216,7 +219,8 @@ def hooping_page():
             if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-2.1)}" width="{SW-22}" height="2.85" fill="#F5F2EC"/>')
             sp = r.get("splits") or {}; ss = secs(r)
             o.append(t(cx[0], y, sz if P == "BK" else "", 1.4, 700)); o.append(t(cx[1], y, P, 1.4, 600)); o.append(t(cx[2], y, f"{r['hoopings']}", 1.4))
-            sxy = " / ".join("—" if sp.get(k) is None else f"{sp[k]:.0f}" for k in ("sx", "sy")) if ss else "—"
+            xs_ = sp.get("xs") or ([sp["sx"]] if sp.get("sx") is not None else []); ys_ = sp.get("ys") or ([sp["sy"]] if sp.get("sy") is not None else [])
+            sxy = (",".join(f"{v:.0f}" for v in xs_) or "—") + " / " + (",".join(f"{v:.0f}" for v in ys_) or "—") if ss else "—"
             o.append(t(cx[3], y, sxy, 1.4, 700, RED if ss else MUTED))
             if ss:
                 txt = "  ".join(f"{nm.split('_')[0]} ({s_['origin'][0]:+.0f}, {s_['origin'][1]:.0f}) {s_['size_mm'][0]:.0f}×{s_['size_mm'][1]:.0f}" for nm, s_ in ss.items())
@@ -244,8 +248,12 @@ def f1_pages():
     pcs = [dict(piece=f"01 {p} {PC.NAME[p]}", w=CUR[p]["size_mm"][0], h=CUR[p]["size_mm"][1], hoopings=CUR[p]["hoopings"]) for p in PS]
     pages = FA.requests_page(WC.NAME, so, th, pcs, page="F1", prof=PROF)
     # chenille question appended to F1 (quote basis area is the last line)
-    extra = (f'<text x="12" y="196" font-family="{_SH.FONT}" font-size="2.3" font-weight="700" fill="{ORANGE}">'
-             '5  Chenille: do you have chenille / moss-stitch heads? The foam curls could then be sewn as real loops (outlines are in the files).</text>')
+    lines = ["5  Chenille / loop embroidery", "The foam curls in the render look like chenille (raised loops).",
+             "Rev A sews them as padded tatami + a loop-texture spiral on any",
+             "multi-needle head. Do you have chenille / moss-stitch heads?",
+             "If yes, the same foam outlines (region FM in the ART.svg) can",
+             "be sewn as real loops — please quote both ways."]
+    extra = "".join(f'<text x="168" y="{40 + i*4.2:.1f}" font-family="{_SH.FONT}" font-size="{2.6 if i == 0 else 2.3}" font-weight="{700 if i == 0 else 400}" fill="{ORANGE}">{l}</text>' for i, l in enumerate(lines))
     return [pg.replace("</svg>", extra + "</svg>") for pg in pages]
 
 def build():

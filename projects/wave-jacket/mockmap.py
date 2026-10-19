@@ -125,7 +125,7 @@ class SleeveMap:
         g, mt = draft(size)
         sp = np.array(arm_px[0], float); d = np.array(co, float) - sp; Lpx = np.linalg.norm(d); d /= Lpx
         nrm = np.array([-d[1], d[0]])
-        if np.dot(np.array(arm_px[-1]) - sp, nrm) < 0: nrm = -nrm          # lateral axis points to the inner (underarm) side
+        if nrm[0] * (VIEW[view]["cx"] - sp[0]) < 0: nrm = -nrm          # lateral axis points to the inner (underarm) side = toward the body centre
         self.sa = (mt["cap_h"] + mt["Lu"]) / Lpx                             # along: shoulder point -> cuff seam = sleeve length
         self.sc = VIEW[view]["SX"] * g_                                      # across: the body's x scale
         self.o, self.d, self.n, self.top = sp, d, nrm, (0.0, -mt["cap_h"])

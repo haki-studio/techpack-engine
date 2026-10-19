@@ -1,0 +1,36 @@
+XS {'BK': (207555, 1117, 13, 7.36, 4), 'FR': (82591, 484, 11, 7.43, 1), 'FL': (105634, 566, 12, 7.04, 2), 'SR': (128599, 711, 13, 7.39, 3), 'SL': (98129, 616, 17, 7.07, 4)}
+S {'BK': (218274, 1175, 13, 7.44, 4), 'FR': (92249, 530, 11, 7.34, 2), 'FL': (112086, 610, 12, 7.07, 2), 'SR': (125670, 678, 13, 7.28, 3), 'SL': (90533, 565, 17, 7.26, 3)}
+M {'BK': (237785, 1207, 13, 7.38, 4), 'FR': (96155, 499, 11, 7.31, 2), 'FL': (126635, 670, 12, 7.06, 2), 'SR': (144096, 720, 13, 7.35, 3), 'SL': (112367, 625, 17, 7.33, 4)}
+L {'BK': (251214, 1267, 13, 7.47, 4), 'FR': (108330, 545, 11, 7.31, 2), 'FL': (132635, 682, 14, 7.1, 2), 'SR': (143831, 707, 13, 7.08, 3), 'SL': (105935, 590, 17, 7.33, 3)}
+XL {'BK': (261804, 1293, 13, 7.35, 4), 'FR': (113132, 534, 11, 7.2, 2), 'FL': (137993, 714, 14, 7.1, 2), 'SR': (143399, 664, 13, 7.35, 3), 'SL': (91475, 524, 17, 7.26, 4)}
+XXL {'BK': (291889, 1369, 13, 7.34, 4), 'FR': (124099, 561, 11, 7.47, 2), 'FL': (148491, 749, 12, 7.3, 2), 'SR': (164443, 744, 13, 7.3, 3), 'SL': (121209, 683, 17, 7.07, 4)}
+3XL {'BK': (302536, 1420, 13, 7.4, 6), 'FR': (130773, 570, 11, 7.47, 2), 'FL': (154439, 760, 12, 7.28, 2), 'SR': (163463, 703, 13, 7.38, 3), 'SL': (115224, 616, 17, 7.31, 3)}
+ALL SIZES PASS
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+PATTERN QA PASS
+dxf ok
+pdf ok
+front (2043, 1966)
+back (2027, 1915)
+BK (2738, 1398)
+FR (1780, 1398)
+FL (1780, 1398)
+SR (2444, 1398)
+SL (2444, 1398)
+spec pages 6
+pages 13
+garment pages 16 total 29 out/HAKI_WAVE_FULL-TECHPACK_RevA.pdf
+/mnt/c/Users/devin/Desktop/HakiCode/techpack-engine/projects/wave-jacket/shrink.py:11: DeprecationWarning: remove_identicals is deprecated and will be removed in pypdf 7.0.0. Use remove_duplicates instead.
+  w.compress_identical_objects(remove_identicals=True, remove_orphans=True)
+/mnt/c/Users/devin/Desktop/HakiCode/techpack-engine/projects/wave-jacket/shrink.py:11: DeprecationWarning: remove_orphans is deprecated and will be removed in pypdf 7.0.0. Use remove_unreferenced instead.
+  w.compress_identical_objects(remove_identicals=True, remove_orphans=True)
+-rwxrwxrwx 1 devinubuntu devinubuntu 6137790 Oct 18 02:17 out/HAKI_WAVE_FULL-TECHPACK_RevA_small.pdf
+zip MB 164.3
+FINAL_DONE

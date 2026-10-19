@@ -1,0 +1,4 @@
+3XL FL {'stitches': 154439, 'trims': 760, 'jumps': 1687, 'stops': 12, 'size_mm': (312.9, 483.7), 'max_stitch': 7.28} 53s
+3XL FL S1_top {'stitches': 58446, 'trims': 320, 'stops': 11, 'size_mm': (332.4, 183.0), 'fits': True} split y 114.1
+3XL FL S2_bottom {'stitches': 96775, 'trims': 455, 'stops': 12, 'size_mm': (332.4, 325.2), 'fits': True} split y 114.1
+DONE 3XL ['FL']

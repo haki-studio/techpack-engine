@@ -1,0 +1,4 @@
+S FL {'stitches': 112086, 'trims': 610, 'jumps': 1310, 'stops': 12, 'size_mm': (256.8, 416.7), 'max_stitch': 7.07} 39s
+S FL S1_top {'stitches': 108290, 'trims': 572, 'stops': 12, 'size_mm': (276.2, 318.5), 'fits': True} split y 264.7
+S FL S2_bottom {'stitches': 3796, 'trims': 29, 'stops': 7, 'size_mm': (276.2, 110.3), 'fits': True} split y 264.7
+DONE S ['FL']

@@ -1,0 +1,5 @@
+XS SL S1_r1c1 {'stitches': 26181, 'trims': 174, 'stops': 11, 'size_mm': (179.4, 165.5), 'fits': True} grid_split
+XS SL S2_r1c2 {'stitches': 22637, 'trims': 138, 'stops': 11, 'size_mm': (195.2, 174.2), 'fits': True} grid_split
+XS SL S3_r2c1 {'stitches': 2988, 'trims': 35, 'stops': 8, 'size_mm': (195.4, 186.4), 'fits': True} grid_split
+XS SL S4_r2c2 {'stitches': 46772, 'trims': 280, 'stops': 17, 'size_mm': (195.4, 186.6), 'fits': True} grid_split
+DONE XS ['SL']

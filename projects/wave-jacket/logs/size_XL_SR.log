@@ -1,0 +1,5 @@
+XL SR {'stitches': 143399, 'trims': 664, 'jumps': 1614, 'stops': 13, 'size_mm': (443.7, 439.2), 'max_stitch': 7.35} 46s
+XL SR S1_top-right {'stitches': 485, 'trims': 11, 'stops': 3, 'size_mm': (259.8, 147.8), 'fits': True} split y 116.2
+XL SR S2_bottom-left {'stitches': 67495, 'trims': 304, 'stops': 12, 'size_mm': (215.4, 323.4), 'fits': True} split y 116.2
+XL SR S3_bottom-right {'stitches': 75609, 'trims': 363, 'stops': 13, 'size_mm': (259.8, 323.4), 'fits': True} split y 116.2
+DONE XL ['SR']

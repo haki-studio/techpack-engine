@@ -93,14 +93,24 @@ for P in which:
         for wm in (70.0, 55.0, 40.0):
             sp = split_clip_wide(vis, FRAME, whole_max=wm)
             if all(sp["fits"].values()): break
-        marks = dst2.split_marks(sp, ext=4.0)
-        keys = [k for k in sorted(sp["secs"], key=lambda k: (k[1], k[0])) if sp["secs"][k]]     # an empty quarter is not a hooping
-        def nm_(k):
-            i, j = k; pos = ("top" if sp["sy"] is not None and j == 0 else "bottom" if sp["sy"] is not None else "") + \
-                            ("-left" if sp["sx"] is not None and i == 0 else "-right" if sp["sx"] is not None else "")
-            return f"S{keys.index(k) + 1}_{pos.strip('-')}"
-        names = {k: nm_(k) for k in keys}
-        spl = dict(frame=FRAME, sx=sp["sx"], sy=sp["sy"], cut_mm=sp["cut"], whole_max=wm, sections={})
+        import glob as _g
+        for fn in _g.glob(f"{OUT}/splits/HAKI_WAVE_01_wave_{P}_{size}_*"): os.remove(fn)      # no stale sections of an older layout
+        if all(sp["fits"].values()):
+            marks = dst2.split_marks(sp, ext=4.0)
+            keys = [k for k in sorted(sp["secs"], key=lambda k: (k[1], k[0])) if sp["secs"][k]]     # an empty quarter is not a hooping
+            def nm_(k):
+                i, j = k; pos = ("top" if sp["sy"] is not None and j == 0 else "bottom" if sp["sy"] is not None else "") + \
+                                ("-left" if sp["sx"] is not None and i == 0 else "-right" if sp["sx"] is not None else "")
+                return f"S{keys.index(k) + 1}_{pos.strip('-')}"
+            names = {k: nm_(k) for k in keys}
+            spl = dict(frame=FRAME, sx=sp["sx"], sy=sp["sy"], xs=[sp["sx"]] if sp["sx"] is not None else [], ys=[sp["sy"]] if sp["sy"] is not None else [],
+                       cut_mm=sp["cut"], whole_max=wm, method="split_clip", sections={})
+        else:      # more than 2 x 2 hoopings needed (XXL/3XL back, tall XS sleeve): any-grid split (moon/castle-falls gridsplit)
+            import gridsplit
+            gp = gridsplit.grid_split(vis, FRAME, margin=9.5)      # 1.5 mm reserve: the written file measures up to 0.5 mm over the art bbox
+            sp = dict(secs=gp["secs"], sy=None, sx=None); marks = gp["marks"]
+            keys = sorted(gp["secs"], key=lambda k: (k[1], k[0])); names = gp["names"]
+            spl = dict(frame=FRAME, sx=None, sy=None, xs=gp["xs"], ys=gp["ys"], grid=[gp["nx"], gp["ny"]], cut_mm=gp["cut"], whole_max=70.0, method="grid_split", sections={})
         for key in keys:
             sv = sp["secs"][key]; t = time.time(); stops, n0 = stops_for(sv)
             bb = unary_union([r["geom"] for r in sv] + [Point(m).buffer(6) for m in marks[key]]).bounds
@@ -111,6 +121,6 @@ for P in which:
             r = record(base, stops, dict(bbox=bb, origin=cc, marks=marks[key], secs=round(time.time()-t)), basting=True)
             r["fits"] = r["size_mm"][0] <= FRAME[0] - 16 and r["size_mm"][1] <= FRAME[1] - 16
             spl["sections"][names[key]] = r
-            print(size, P, names[key], {k: r[k] for k in ("stitches", "trims", "stops", "size_mm", "fits")}, "split y", round(sp["sy"] or 0, 1), flush=True)
+            print(size, P, names[key], {k: r[k] for k in ("stitches", "trims", "stops", "size_mm", "fits")}, spl["method"], flush=True)
         res["splits"] = spl; res["hoopings"] = len(spl["sections"]); json.dump(res, open(rp, "w"), default=float, indent=1)
 print("DONE", size, which, flush=True)

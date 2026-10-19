@@ -43,6 +43,8 @@ def classify(view):
         r, c = rc; X = np.clip((c / up + bb[0]).astype(int), 0, sil.shape[1] - 1); Y = np.clip((r / up + bb[1]).astype(int), 0, sil.shape[0] - 1)
         return sil[Y, X]
     lab, up = TR.label_map(img, b, TONES, up=UP, sigma=0.45, majority=5, mask=mask)
+    if view == "front" and os.path.exists("cu_reg.json"):
+        lab = closeup_labels(lab, up, b)
     # grey + washed fabric look alike: grey only counts inside / next to foam (within 2 px of cream)
     cream = np.isin(lab, ids(CREAM))
     near_c = ndi.binary_dilation(cream, iterations=2 * up)
@@ -53,6 +55,31 @@ def classify(view):
     art = morphology.remove_small_objects(art, int(1.2 * up * up))
     lab = np.where(np.isin(lab, ids(CREAM + GREY + BLUES)) & ~art, NAMES.index("f2"), lab)
     return lab, up, b
+
+def closeup_labels(lab, up, b, inset=3.0):
+    """LESSONS A12: inside the footprint of the founder's detail close-up (inputs/closeup_mockup_foam.png, registered
+    onto the render by register_cu.py), classes come from the close-up pixels (~4 close-up px per render px), not from
+    the render. The render still decides placement (the registration maps the close-up onto it)."""
+    import json
+    from shapely.geometry import Polygon
+    from shapely import contains_xy
+    R_ = json.load(open("cu_reg.json")); H = np.array(R_["H"])
+    cu = np.asarray(Image.open("inputs/closeup_mockup_foam.png").convert("RGB")).astype(float)
+    h, w = cu.shape[:2]
+    corners = np.array([[0, 0, 1], [w, 0, 1], [w, h, 1], [0, h, 1]], float) @ H.T; corners = corners[:, :2] / corners[:, 2:]
+    foot = Polygon(corners).buffer(-inset)
+    Hh, Ww = lab.shape
+    yy, xx = np.mgrid[0:Hh, 0:Ww]; X = xx / up + b[0] + 0.5 / up; Y = yy / up + b[1] + 0.5 / up
+    ins = contains_xy(foot, X, Y) & (lab >= 0)
+    if not ins.any(): return lab
+    Hi = np.linalg.inv(H); P = np.stack([X[ins], Y[ins], np.ones(ins.sum())]); q = Hi @ P; u, v = q[0] / q[2], q[1] / q[2]
+    rgb = np.stack([ndi.map_coordinates(ndi.gaussian_filter(cu[..., k], 1.2), [v, u], order=1) for k in range(3)], -1)
+    L = TR.lab_img(rgb[None])[0]; Pt = TR.lab_img(np.array([t[1] for t in TONES], float)[None])[0]
+    d = ((L[:, None, :] - Pt[None]) ** 2).sum(-1); cl = d.argmin(1)
+    new = lab.copy(); new[ins] = cl
+    oh = np.stack([ndi.uniform_filter((new == i).astype(np.float32), 5) for i in range(len(TONES))], -1)
+    sm = oh.argmax(-1); new = np.where(ins, sm, lab)
+    return new
 
 def trace_view(view):
     lab, up, b = classify(view)
