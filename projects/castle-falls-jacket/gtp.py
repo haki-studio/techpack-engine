@@ -58,13 +58,13 @@ def p_cover(index):
         o.append(t(ix, y, name, 1.95)); o.append(t(SW - 14, y, str(pg), 1.95, 600, MUTED, "end")); y += 3.9
     y += 3; o.append(t(ix, y, "KEY SPECS", 2.4, 700)); y += 4.6
     for a, b in [("Shell", "12 oz cotton duck, washed navy"), ("Collar", "cotton corduroy, washed navy"), ("Zip", "YKK #5 metal, brass, separating"),
-                 ("Hem / cuffs", "rib knit, navy"), ("Embroidery", "3 elements on 5 pieces, 18-thread board (≤ 12 per file)"), ("Fit", "Drum Island block (boxy, cropped)"), ("Pattern", "XS–3XL, Drum Island pattern, DXF + 1:1 plot")]:
+                 ("Hem / cuffs", "rib knit, navy"), ("Embroidery", f"3 elements on 5 pieces, {cfcore.board_text()}, ≤ 12 per file"), ("Fit", "Drum Island block (boxy, cropped)"), ("Pattern", "XS–3XL, Drum Island pattern, DXF + 1:1 plot")]:
         o.append(t(ix, y, a, 1.95, 400, MUTED)); o.append(t(ix + 22, y, b, 1.95, 600)); y += 3.8
     o.append(t(SW - 14, SH - 8, FOOT, 1.8, 400, MUTED, "end"))
     return o
 
 def p_flats(F):
-    o = header("TECHNICAL FLATS — front + back (size M)", "Line drawing to scale (0.13:1). Dashed grey = topstitching. Red dashed boxes = embroidery placement (see embroidery section).", "T2")
+    o = header("TECHNICAL FLATS — front + back (size M)", "Line drawing to scale (0.13:1). Dashed grey = topstitching. Red dashed boxes = embroidery placement (see embroidery section); 03 = the whole sleeve, front + back halves (marker box only).", "T2")
     b = TF.bounds_front(F); s = 0.122
     TF.K = 1.0 / (s * 6); TF.LBL = 2.6 / s
     fb = [(*EMB[e]["box"], "02") for e in ("FR", "FL")]
@@ -81,7 +81,7 @@ def p_flats(F):
     BX = lambda x: X(x) + (b[2]-b[0])*s + 8
     cl = [(X(-90), Y(40), 1, X(-330), 36), (X(0), Y(330), 2, X(70), 124), (X(-230), Y(F.fnd + 384), 3, X(-430), Y(F.fnd + 330)),
           (X(-150), Y(F.hem_seam + 25), 4, X(-150), 124), (X(-470), Y(620), 5, X(-500), 124), (X(-200), Y(60), 6, X(-480), Y(60)),
-          (BX(0), Y(150), 7, BX(150), Y(150))]
+          (BX((F.sp[0] + F.ua[0]) / 2), Y((F.sp[1] + F.ua[1]) / 2), 7, BX(120), Y(150))]
     for x, y, n, tx, ty in cl: o.append(callout(x, y, n, tx, ty))
     lx = 12; ly = 136
     notes = [("1", "Collar: washed-navy cotton corduroy, point collar, 6 mm edge topstitch; under collar same corduroy; collar band interlined."),
@@ -272,7 +272,7 @@ def p_bom():
         ("Zip", "YKK #5 metal separating, auto-lock, one-way", "antique brass teeth, navy tape", "CF", "YKK", "1 × 56 cm (M)", False),
         ("Thread — seams", "Coats Epic 120 (Tex 27) corespun poly/cotton", "tonal navy", "all seams + overlock", "Coats", "~ 450 m", True),
         ("Thread — topstitch", "Coats Gral 40 (Tex 60) poly", "tonal navy", "topstitch, bartacks", "Coats", "~ 120 m", True),
-        ("Embroidery thread", "Madeira Polyneon 40 (18-colour board, see G3)", "per embroidery spec", "01 back, 02 fronts, 03 sleeves", "Madeira", thread_qty(), False),
+        ("Embroidery thread", f"Madeira Polyneon 40 ({len(cfcore.sewn_threads())} colours sewn, see G3)", "per embroidery spec", "01 back, 02 fronts, 03 sleeves", "Madeira", thread_qty(), False),
         ("Embroidery backing", "2.5 oz cutaway", "black / charcoal", "behind BK, FR, FL, SR, SL", "TBC", "5 pieces (+ per hooping)", False),
         ("Main label", "woven damask, HAKI logo, 7 × 2 cm, folded", "black / cream", "CB neck facing", "TBC", "1", True),
         ("Size label", "woven, 2 × 1.5 cm", "black / cream", "under main label", "TBC", "1", True),
@@ -374,7 +374,7 @@ def p_colourway():
         o.append(t(cx + 8, 40 + i*5.5, n, 1.85))
     o.append(t(cx, 66, "Lab-dip / strike-off approval", 1.9, 700))
     o.append(t(cx, 69.5, "required for shell, collar and both ribs.", 1.85))
-    o.append(t(cx, 76, "Embroidery: 18-thread board,", 1.9, 700)); o.append(t(cx, 79.5, "Madeira Polyneon (G3).", 1.85))
+    o.append(t(cx, 76, f"Embroidery: {len(cfcore.sewn_threads())} threads sewn,", 1.9, 700)); o.append(t(cx, 79.5, "Madeira Polyneon (G3).", 1.85))
     o.append(prop(cx, 86, "Shell piece-dyed + washed BEFORE", 1.75)); o.append(t(cx, 89.5, "embroidery (garment dye would", 1.75, 600, PROP)); o.append(t(cx, 93, "shift thread shades) — T10 Q1", 1.75, 600, PROP))
     return o
 

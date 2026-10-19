@@ -7,7 +7,7 @@ from shapely.ops import unary_union
 from shapely import affinity
 from sheet import t, INK, MUTED, RED, ORANGE, GREEN, SW, SH
 from render import f
-import cfcore, pattern_cf
+import cfcore, pattern_cf, factory
 import drum, pattern as PT, pattern_draw as PD, pattern_out as PO, emb_place as EP
 import gtp as GT
 
@@ -227,7 +227,7 @@ def p_inside():
 # ---------------------------------------------------------------- operations / SMV
 OPS = [("Cutting", "Cut shell, collar, lining, rib, pocketing, fusing; drill welt + embroidery marks", "Cutting table", 6.0),
        ("Fusing", "Fuse top collar, facings, back neck facing, welts", "Fusing press", 2.5),
-       ("Embroidery", "01 back, 02 fronts, 03 sleeves — flat on the cut pieces, 16 hoopings on the 360 frame (machine time separate, G4)", "Multi-head (12 needle)", 24.0),
+       ("Embroidery", "01 back, 02 fronts, 03 sleeves — flat on the cut pieces, 16 hoopings on the 360 frame (machine time separate, G4)", f"Multi-head ({factory.load()['needles']} needle)", 24.0),
        ("Embroidery finish", "Trim backing to 5 mm, pick out the registration crosses (5 pieces), press from wrong side", "Hand / press", 14.0),
        ("Welt pockets", "Mark, set welt + bags both fronts, bartack ×4", "Lockstitch + bartack", 9.0),
        ("Shoulders", "Join shoulders (5-thread), press to back, 6 mm topstitch", "Safety stitch + lockstitch", 2.5),
@@ -263,7 +263,7 @@ def p_operations():
 # ---------------------------------------------------------------- revision log + sample tracker
 REVS = [("Garment + Embroidery Rev A", "16 Oct 2026", "First pack for the Castle Falls jacket on the Drum Island block + pattern (collar as the mockup, welts at its position, armholes as wrap seams). "
                                              "Embroidery fidelity first: every mockup tone traced onto the five pattern pieces (back, two fronts, two sleeves) + blossom florets, petals; "
-                                             "original castle + opened tree ring for IP. 18-thread board, ≤ 12 per file; per-size stitch files XS–3XL + hoop splits for the 360 frame; "
+                                             "original castle + opened tree ring for IP. " + cfcore.board_text() + ", ≤ 12 per file; per-size stitch files XS–3XL + hoop splits for the 360 frame; "
                                              "every per-file / per-stop number read back from the DST; G6 hooping table, F1 factory requests. Founder close-up strip (LESSONS A12): waterfall mountain registered + traced, floret centres / petal bases / roof tiles from the close-ups; stitch-level keep-out check on all 35 files (fixed a welt overlap on FR).")]
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]
 

@@ -39,7 +39,7 @@ def cover(index):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>']
     o.append(t(14, 24, "HAKI STUDIOS", 3.0, 700, MUTED))
     o.append(t(14, 36, "Castle Falls jacket · washed navy — embroidery", 7.0, 700))
-    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island block, size M base · 3 elements on 5 pieces · 18-thread board, ≤ 12 per file · all dimensions mm", 2.6, 400, MUTED))
+    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island block, size M base · 3 elements on 5 pieces · {cfcore.board_text()}, ≤ 12 per file · all dimensions mm", 2.6, 400, MUTED))
     o.append(f'<line x1="14" y1="48" x2="{SW-14}" y2="48" stroke="{INK}" stroke-width="0.4"/>')
     fv, bv = views()
     tag, h = img_tag(fv, 14, 54, 90); o.append(tag); tag, h2 = img_tag(bv, 106, 54, 90); o.append(tag)
@@ -51,7 +51,7 @@ def cover(index):
     y += 3
     o.append(t(ix, y, "TOTALS PER JACKET, SIZE M (read from the DST files)", 2.2, 700)); y += 5
     for a, b in [("Stitches", f"{TOT:,}"), ("Trims", f"{TRIMS:,}"), ("Hoopings", f"{HOOP} on {FR_S} (split files)"),
-                 ("Machine time / jacket", f"{MH_SPLIT:.1f} h one head (split files)"), ("Threads", "18 on the board, ≤ 12 per file")]:
+                 ("Machine time / jacket", f"{MH_SPLIT:.1f} h one head (split files)"), ("Threads", f"{len(cfcore.sewn_threads())} sewn (board), ≤ 12 per file")]:
         o.append(t(ix, y, a, 1.9, 400, MUTED)); o.append(t(SW - 14, y, b, 1.9, 600, INK, "end")); y += 3.9
     o.append(t(ix, y + 2, "Fidelity first (Rev A): cost is reported, not limited —", 1.75, 600, ORANGE))
     o.append(t(ix, y + 5.3, "clean-up after the strike-off (F1).", 1.75, 600, ORANGE))
@@ -92,13 +92,15 @@ def overview():
     return o
 
 def threads():
-    o = hdr("THREAD + TRIM SUMMARY", "One 18-thread board for the jacket; every stitch file uses ≤ 12 of them (factory limit). Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target.", "G3")
+    o = hdr("THREAD + TRIM SUMMARY", f"{len(cfcore.CF_KEYS)} tones traced from the mockup; {len(cfcore.sewn_threads())} threads are sewn (read back from all 35 files) — the board to buy; every stitch file uses ≤ 12 of them (factory limit). Approve a physical thread board (Isacord or Madeira Polyneon) before sampling; hex = on-screen target.", "G3")
     use = {k: {} for k in cfcore.CF_KEYS}
     for p in PC:
         for c in CUR[p]["colours"]: use[c][p] = use[c].get(p, 0) + 1
-    hd = ["", "Thread", "Hex", "Isacord", "ΔE", "Madeira Polyneon", "ΔE", "Used for", "Stops  BK  FR  FL  SR  SL"]
+    hd = ["", "Thread", "Hex", "Isacord", "ΔE", "Madeira Polyneon", "ΔE", "Used for", "Stops"]
     cx = [12, 18, 42, 56, 84, 92, 124, 132, 222]
     for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.7, 700, MUTED))
+    for j, p in enumerate(PC): o.append(t(cx[8] + 11 + j * 6.5, 31, p, 1.7, 700, MUTED, "middle"))
+    SEWN = set(cfcore.sewn_threads())
     TH = SB.TH; rh = 7.4 if False else 6.9
     rh = 128 / len(cfcore.CF_KEYS)
     for i, k in enumerate(cfcore.CF_KEYS):
@@ -109,13 +111,14 @@ def threads():
         o.append(swatch(cx[0], y, k, 4.5, 2.8)); o.append(t(cx[1], y, PAL[k][1], 1.8, 600)); o.append(t(cx[2], y, HEX[k], 1.65, 400, MUTED))
         o.append(t(cx[3], y, f"{iso[0]} {iso[1]}"[:22], 1.65)); o.append(t(cx[4], y, f"{iso[3]:.1f}", 1.6, 600, ci))
         o.append(t(cx[5], y, f"{pn[0]} {pn[1]}"[:24], 1.65)); o.append(t(cx[6], y, f"{pn[3]:.1f}", 1.6, 600, cp))
-        o.append(t(cx[7], y, PAL[k][2][:62], 1.6, 400, MUTED))
+        o.append(t(cx[7], y, PAL[k][2][:62] if k in SEWN else "NOT SEWN in any file — merged into a neighbouring thread (no need to buy)", 1.6, 400 if k in SEWN else 600, MUTED if k in SEWN else ORANGE))
         for j, p in enumerate(PC):
             n = use[k].get(p, 0); m = PLAN[p].get(k)
             o.append(t(cx[8] + 11 + j * 6.5, y, str(n) if n else ("→" if m else "·"), 1.6, 600 if n else 400, INK if n else MUTED, "middle"))
     yb = 35.5 + len(cfcore.CF_KEYS) * rh + 2
     o.append(t(12, yb, "ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — amber / red rows must be picked from the physical card. All targets are PROPOSED (read from the mockup).  '→' = this tone is sewn in a neighbouring thread on that piece (G5, spec p4).", 1.6, 600, ORANGE))
-    o.append(t(12, yb + 4.5, "Per-piece merges (12 colours): " + "  |  ".join(f"{p}: " + ", ".join(f"{PAL[a][1]}→{PAL[b][1]}" for a, b in PLAN[p].items()) for p in PC)[:330], 1.4, 400, MUTED))
+    mg = [f"{p}: " + ", ".join(f"{PAL[a][1]}→{PAL[b][1]}" for a, b in PLAN[p].items()) for p in PC]
+    o.append(t(12, yb + 3.6, "Per-piece merges (≤ 12 colours): " + "  |  ".join(mg[:3]), 1.4, 400, MUTED)); o.append(t(12, yb + 6.0, "  |  ".join(mg[3:]) + "   ·  '·' = tone not in that piece's art.", 1.4, 400, MUTED))
     o.append(t(12, yb + 9.5, "TRIMS + CONSUMABLES", 2.0, 700))
     tr = [("Backing", "2.5 oz cutaway, black/charcoal (navy shell), 30 larger than each hooping; trim to 5 from stitching. Very dense art: test a second layer on the strike-off."),
           ("Needles / bobbin", "75/11 sharp (canvas) · 60wt navy polyester pre-wound bobbin"),
@@ -150,11 +153,11 @@ def summary():
     qs = [f"1. Frame: on {FR_S} size M needs {HOOP} hoopings (back 4, fronts 2 each, sleeves 4 each; 3XL back 6). Larger frames (e.g. 600 × 400 jacket-back) remove most joins. Which frames exist?",
           "2. Cost: ~" + f"{MH_SPLIT:.0f}" + " h of one head per jacket at the factory speed. Confirm the price basis (F1) before bulk; a clean-up pass can cut trims + density after the sew-out.",
           "3. IP: the castle + tree are an original redesign (brief). Approve the new castle / opened tree ring, or confirm the mockup composition is licensed.",
-          "4. Thread board: 18 targets read from a low-res AI mockup — approve physical colours (G3); each file sews ≤ 12 (merges per piece on G3 / spec p4).",
+          f"4. Thread board: {len(cfcore.sewn_threads())} threads sewn ({len(cfcore.CF_KEYS)} targets read from a low-res AI mockup) — approve physical colours (G3); each file sews ≤ 12 (merges per piece on G3 / spec p4).",
           "5. Armholes as wrap seams (art 3 mm each side, no armhole topstitch) — OK for construction (T7)?",
           "6. Grading A 92 % / B 100 % / C 108 %, one file per size per piece; body about CB/CF + hem, sleeves about the cuff seam. OK?",
           "7. Shell: piece-dyed + pre-washed navy duck assumed. Dense embroidery on all five pieces will shrink panels — measure on the strike-off (F1).",
-          "8. Reference: no original art and no per-panel close-ups. Close-ups from the same image tool (inputs/closeup_request.md) would sharpen buildings + village.",
+          "8. Reference: low-res AI mockup + the founder's 4-panel close-up strip: falls mountain registered + traced (A12); castle / clouds / blossom panels used as motif references. Per-panel close-ups (inputs/closeup_request.md) would sharpen village, pagoda, gate tower.",
           "9. DST/PES are production-intent drafts: the factory digitizer checks density + pull on 12 oz duck and edits before the sew-out."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i * 3.7, q, 1.7))
     return o

@@ -22,7 +22,7 @@ CFG = {
             crops=[("BK", (-205, 300, -155, 350), "waterfall + cliff"), ("BK", (-225, 460, -175, 510), "cherry florets"),
                    ("BK", (-60, 480, -10, 530), "village"), ("BK", (-40, 130, 10, 180), "clouds + petals")],
             mock_crop=(768 + 115, 150, 768 + 600, 600),
-            changes=["Layout + every tone area traced from the mockup", "  (40 tone clusters → 18 threads, 12 in this file).",
+            changes=["Layout + every tone area traced from the mockup", "  (40 tone clusters → 18 tones, 12 threads in this file).",
                      "Bare navy shell where the mockup shows fabric", "  (upper back between the clouds).",
                      "Blossom masses: tone ground + ~1 floret / 22 mm²", "  (5-petal satin, Ø 3.6–5.6) on top, as the close-up.",
                      "Falling petals redrawn as notched petal satins.", "Mockup CB fold line is not art: filled across.",

@@ -110,3 +110,14 @@ PIECES = ["BK", "FR", "FL", "SR", "SL"]
 PIECE_ELEM = {"BK": "01", "FR": "02", "FL": "02", "SR": "03", "SL": "03"}
 PIECE_NAME = {"BK": "back", "FR": "wearer's right front", "FL": "wearer's left front", "SR": "wearer's right sleeve", "SL": "wearer's left sleeve"}
 PIECE_CODE = {"BK": "B01", "FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
+
+def sewn_threads():
+    """distinct thread colours actually sewn in ANY written file (all sizes, read back via make_current -> dst_all.json)"""
+    import json as _j, os as _o
+    if not _o.path.exists("dst_all.json"): return list(CF_KEYS)
+    s = set()
+    for d in _j.load(open("dst_all.json")).values():
+        for v in d.values(): s |= set(c for c in v["full"]["colours"] if c)
+    return [k for k in CF_KEYS if k in s]
+def board_text():
+    n = len(sewn_threads()); return f"{n}-thread board ({len(CF_KEYS)} traced tones)"

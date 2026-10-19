@@ -2,6 +2,18 @@
 import cfcore
 import os, shutil, glob, subprocess, json
 import pyembroidery as pe
+# prune stitch files no current result references (e.g. XXL/3XL front S1_top/S2_bottom from the 16 Oct split naming) so the
+# package can only carry the files the documents describe
+ALL = json.load(open("dst_all.json")); live = set()
+for sz, d in ALL.items():
+    for P, v in d.items():
+        live.add(v["full"]["file"]); live.update(s["file"] for s in (v.get("splits") or {}).get("sections", {}).values())
+for f_ in glob.glob("out/0[123]_*/**/HAKI_*.*", recursive=True):
+    stem = f_
+    for suf in ("_thread-chart.txt", "_preview.png", ".dst", ".pes"):
+        if f_.endswith(suf): stem = f_[: -len(suf)]; break
+    else: continue
+    if stem not in live: print("pruned stale", f_); os.remove(f_)
 for f_ in sorted(glob.glob("out/0[123]_*/**/*.pes", recursive=True)):
     pt = pe.read(f_); lines = [os.path.basename(f_).replace(".pes", ""), "stop  thread", "-" * 60]
     for i, th in enumerate(pt.threadlist, 1): lines.append(f"{i:>3}   {th.hex_color()}  {th.description}")
