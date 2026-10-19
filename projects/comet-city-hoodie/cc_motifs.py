@@ -73,6 +73,9 @@ def meteor(p_head, p_tail, w_head=1.5, w_tail=0.85, col="cc_azure", unit=None, h
     regs = [R(col, ribbon(pts, w).union(Point(p_head).buffer(w_head/2, quad_segs=8)), "satin", "auto", "MET", unit=unit, kob=0.4)]
     if head_dot:
         regs.append(R("cc_white", Point(p_head).buffer(max(0.75, w_head*0.55), quad_segs=10), "satin", "auto", "DOT", unit=unit, kob=0.3))
+        k_ = int(n*0.35); core = LineString(pts[:k_]).buffer(0.42, cap_style="round") if k_ >= 2 else None
+        if core is not None and w_head >= 1.5:
+            regs.append(R("cc_white", core, "satin", "auto", "MET", unit=unit, kob=0.0))
     return regs
 
 def red_star(cx, cy, r=5.4, unit="redstar"):
@@ -263,6 +266,9 @@ def falling_star(cx, cy, r=6.0, unit="redstar"):
     for a in range(0, 360, 45):
         regs.append(R("cc_white", taper_arm(cx, cy, a - 67.5, r * 0.45, 1.0, 0.8, 1.6).difference(core.buffer(0.3)), "satin", "auto", "RSTAR", unit=unit, kob=0.4))
     regs.append(R("cc_white", core, "satin", ("radial", cx, cy), "STAR-c", unit=unit, kob=0.4))
+    for a in range(0, 360, 30):                                     # halo: 12 white sparks just outside the rays
+        t_ = math.radians(a + 15); d_ = r * 1.18
+        regs.append(R("cc_white", Point(cx + d_*math.cos(t_), cy + d_*math.sin(t_)).buffer(0.55, quad_segs=6), "satin", "auto", "DOT", unit=unit, kob=0.3))
     return regs
 
 def bicycle_b(rx, ry, r=26.0, wb=96.0, unit="bike"):
@@ -276,7 +282,7 @@ def bicycle_b(rx, ry, r=26.0, wb=96.0, unit="bike"):
         c = Point(P(hx, 0))
         out.append(R("cc_night", c.buffer(r).difference(c.buffer(r - 2.8)), "satin", ("radial", *P(hx, 0)), "BIKE", unit=unit, kob=0.5))
         out.append(R("cc_dusk", c.buffer(r - 2.8).difference(c.buffer(r - 3.8)), "satin", ("radial", *P(hx, 0)), "BIKE", unit=unit, kob=0.0))
-        arc = [(hx + (r - 0.6)*math.cos(math.radians(a)), (r - 0.6)*math.sin(math.radians(a))) for a in np.linspace(200, 290, 14)]
+        arc = [(hx + (r - 0.6)*math.cos(math.radians(a)), (r - 0.6)*math.sin(math.radians(a))) for a in np.linspace(185, 335, 22)]
         out.append(R("cc_ice", LineString([P(*p) for p in arc]).buffer(0.45, cap_style="round"), "satin", "auto", "BIKE", unit=unit, kob=0.0))
         for k in range(12):
             a = math.radians(k * 30 + 7)
@@ -291,7 +297,7 @@ def bicycle_b(rx, ry, r=26.0, wb=96.0, unit="bike"):
     tube([(23.0*s, -33.0*s), (22.0*s, -37.0*s)], 1.6)
     out.append(R("cc_night", Point(P(*C)).buffer(3.0), "satin", "auto", "BIKE", unit=unit, kob=0.5))
     # glints: thin ice lines along the top of the top tube + seat stay, and the saddle top
-    for a, b in ((Sd, Ht), ((0, 0), Sd)):
+    for a, b in ((Sd, Ht), ((0, 0), Sd), (C, Sd), (C, Hb), (Hb, Fh), (C, (0, 0))):
         ax, ay = a; bx, by = b; nx, ny = -(by - ay), (bx - ax); L = math.hypot(nx, ny); nx, ny = nx / L * -0.55, ny / L * -0.55
         out.append(R("cc_ice", LineString([P(ax + (bx-ax)*0.1 + nx, ay + (by-ay)*0.1 + ny), P(ax + (bx-ax)*0.85 + nx, ay + (by-ay)*0.85 + ny)]).buffer(0.4, cap_style="round"), "satin", "auto", "BIKE", unit=unit, kob=0.0))
     out.append(R("cc_ice", LineString([P(15.0*s, -38.3*s), P(26.0*s, -38.8*s)]).buffer(0.4, cap_style="round"), "satin", "auto", "BIKE", unit=unit, kob=0.0))
@@ -303,11 +309,11 @@ def figure_b(fx, fy, H=118.0, unit="figure", wk=1.22):
     k = H / 118.0
     P = lambda x, y: (fx + x*k*wk, fy - y*k)
     def poly(pts): return Polygon([P(*p) for p in pts]).buffer(0)
-    hc = (0.5, 104.0); hr = 10.0
+    hc = (0.5, 103.0); hr = 11.5
     head = Point(P(*hc)).buffer(hr*k, quad_segs=24)
     spikes = []
     for i, a in enumerate(np.linspace(15, 165, 11)):
-        L = hr * (1.30 + 0.12 * ((i * 7) % 3)); t = math.radians(a)
+        L = hr * (1.16 + 0.08 * ((i * 7) % 3)); t = math.radians(a)
         tip = (hc[0] + L*math.cos(t), hc[1] + L*math.sin(t))
         b1 = (hc[0] + (hr - 1)*math.cos(t - 0.16), hc[1] + (hr - 1)*math.sin(t - 0.16))
         b2 = (hc[0] + (hr - 1)*math.cos(t + 0.16), hc[1] + (hr - 1)*math.sin(t + 0.16))
@@ -323,7 +329,9 @@ def figure_b(fx, fy, H=118.0, unit="figure", wk=1.22):
     body = unary_union([hair, neck, hood, torso, armL, armR, handL, handR, legs]).buffer(0.3).buffer(-0.3)
     rimz = body.difference(body.buffer(-1.0))
     rim = rimz.intersection(box(fx - 80, fy - 200, fx + 80, fy - 44*k))          # rim light on hair, shoulders, arms (not hands / legs)
-    out = [R("cc_night", body.difference(rim).buffer(0), "tatami", 90.0, "FIG", unit=unit, kob=0.7),
+    sleeves = unary_union([armL, armR, poly([(-20, 82), (-15, 87), (-8, 89), (-13, 80), (-18, 66)]), poly([(21, 82), (16, 87), (9, 89), (14, 80), (19, 66)])]).intersection(body).difference(rim).buffer(0)
+    out = [R("cc_night", body.difference(rim).difference(sleeves).buffer(0), "tatami", 90.0, "FIG", unit=unit, kob=0.7),
+           R("cc_dusk", sleeves, "tatami", 80.0, "FIG", unit=unit, kob=0.0),
            R("cc_azure", rim.buffer(0), "satin", "auto", "FIG-rim", unit=unit, kob=0.0)]
     for pts in (((-13, 88), (-17, 70), (-19, 50)), ((14, 88), (18, 70), (20, 50))):                 # raglan seams
         out.append(R("cc_dusk", LineString([P(*p) for p in pts]).buffer(0.35*k, cap_style="round"), "run", None, "FIG-line", unit=unit, kob=0.0))
@@ -340,9 +348,10 @@ def lamp_b(x, y_top, y_bot, unit="lamp"):
     base = box(x - 3.2, y_bot - 6, x + 3.2, y_bot)
     body = unary_union([lant, capg, neck, pole, base]).buffer(0)
     glass = box(x - head_w/2 + 2.0, y_top + 8, x + head_w/2 - 2.0, y_top + head_h)
-    rim = body.difference(body.buffer(-0.9)).intersection(box(x - 20, y_top - 5, x - 0.2, y_bot + 1)).difference(glass.buffer(0.6))
+    ring = body.difference(body.buffer(-0.9))
+    rim = ring.intersection(box(x - 20, y_top - 5, x - 0.2, y_bot + 1)).union(ring.intersection(box(x - 20, y_top - 5, x + 20, y_top + 8 + head_h))).difference(glass.buffer(0.6))
     return [R("cc_night", body.difference(glass.buffer(0.35)).difference(rim).buffer(0), "satin", "auto", "LAMP", unit=unit, kob=0.8),
-            R("cc_gold", glass, "satin", 90.0, "LAMP-l", unit=unit, kob=0.0),
+            R("cc_dusk", glass, "satin", 90.0, "LAMP-l", unit=unit, kob=0.0),
             R("cc_ice", rim.buffer(0), "satin", "auto", "LAMP", unit=unit, kob=0.0)]
 
 def bush_b(cx, base_y, w, h, rng, unit="bush"):
@@ -363,7 +372,7 @@ def bush_b(cx, base_y, w, h, rng, unit="bush"):
         if rng.random() < tfrac * 0.55: continue                      # highlights on the upper part
         L = rng.uniform(2.8, 4.6); a = rng.uniform(-150, -30)
         leaf = affinity.rotate(affinity.scale(Point(x, y).buffer(1.0, quad_segs=8), L/2, 0.75), a, origin=(x, y))
-        c = "cc_royal" if rng.random() < 0.6 else ("cc_azure" if rng.random() < 0.4 else "cc_dusk")
+        q = rng.random(); c = "cc_dusk" if q < 0.5 else ("cc_royal" if q < 0.92 else "cc_azure")
         dabs[c].append(leaf)
     for c, ls in dabs.items():
         g = unary_union(ls).intersection(mound.buffer(-0.4)).buffer(0)

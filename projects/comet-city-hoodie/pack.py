@@ -158,7 +158,7 @@ def summary():
     y = 36 + len(P4)*4.6 + 1
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.9, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.9, 700))
     o.append(t(cx[9], y, f"{MH:.1f} h", 1.9, 700)); o.append(t(cx[10], y, f"{MH_SPLIT:.1f} h", 1.9, 700))
-    o.append(t(12, y + 4.5, f"Run time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one head, per hooping, excl. hooping time. Rev A is built for fidelity (LESSONS A11):", 1.65, 400, MUTED))
+    o.append(t(12, y + 4.5, f"Run time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one head, per hooping, excl. hooping time. Rev B is built for fidelity (LESSONS A11):", 1.65, 400, MUTED))
     o.append(t(12, y + 7.6, "stitches, trims and run time are reported, not limited — density / trim clean-up happens after the size-M strike-off.", 1.65, 400, MUTED))
     qy = y + 15
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))

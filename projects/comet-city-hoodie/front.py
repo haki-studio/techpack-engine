@@ -32,6 +32,7 @@ WELT_R = _welt(-1)
 WELT_L = _welt(+1)
 
 KEEP_CF, KEEP_SEAM, KEEP_HEM, KEEP_WELT, KEEP_NECK = 15.0, 15.0, 10.0, 8.0, 10.0   # welt 8 = 6 + 2 cut-out margin [PROPOSED]
+WELT_PAD = 0.7       # art stops 0.7 further out so pull comp + underlay never bring a STITCH inside 8 mm (Rev A/B read-back: 7.75)
 KEEP = {"CF / zip": KEEP_CF, "armhole": KEEP_SEAM, "shoulder": KEEP_SEAM, "side": KEEP_SEAM, "hem": KEEP_HEM, "neck": KEEP_NECK}
 MIN = dict(KEEP, welt=KEEP_WELT)
 # sleeves: cap seam 15, underarm seams 15, cuff seam 10; art only on the front-facing half (+ 30 mm past the
@@ -76,7 +77,7 @@ def clip_for(size, side):
     k = keep_geoms(size, side)
     g = k["panel"]
     for nm, d in KEEP.items(): g = g.difference(k[nm].buffer(d))
-    g = g.difference(k["welt"].buffer(KEEP_WELT))
+    g = g.difference(k["welt"].buffer(KEEP_WELT + WELT_PAD))
     return g.buffer(0)
 
 def clearances(geom, size, side):

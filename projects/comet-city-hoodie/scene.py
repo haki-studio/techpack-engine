@@ -83,7 +83,8 @@ Z = dict(comet=3, meteor=4, cloud=5, star=6, glow=7, far=8, farwin=9, near=10, n
 # ================================================================ comet: traced from the registered close-up
 SPINE_MM = [(-80, 320), (-50, 273), (-17, 231), (23, 199), (43, 181), (87, 150), (133, 117), (175, 82), (205, 55), (232, 30), (252, 12)]
 SPINE = CM.smooth_pts(SPINE_MM, 220)
-def spread(t): return float(np.interp(t, [0.0, 0.12, 0.3, 0.5, 0.7, 0.85, 1.0], [1.4, 3.6, 8.0, 14.0, 18.5, 20.5, 21.0]))
+def spread_v(t): return np.interp(t, [0.0, 0.12, 0.3, 0.5, 0.7, 0.85, 1.0], [1.4, 3.6, 8.0, 14.0, 18.5, 20.5, 21.0])
+def spread(t): return float(spread_v(t))
 ZONE = CM.ribbon(SPINE, np.array([2*(spread(t)*1.35 + 7.0) for t in np.linspace(0, 1, len(SPINE))]))
 ZONE = ZONE.union(Point(SPINE[0]).buffer(9)).union(Point(SPINE[-1]).buffer(16)).buffer(3).buffer(-3)
 CB, CPPM = tuple(np.array(ZONE.bounds) + [-2, -2, 2, 2]), 5.0
@@ -123,9 +124,10 @@ _dd, _ii = _kd.query(np.c_[_px.ravel(), _py.ravel()])
 _tg = np.gradient(_sp, axis=0); _tg /= np.linalg.norm(_tg, axis=1)[:, None]; _nr = np.c_[-_tg[:, 1], _tg[:, 0]]
 _rel = np.c_[_px.ravel(), _py.ravel()] - _sp[_ii]
 _sd = (_rel * _nr[_ii]).sum(1); _tt = _ii / (len(_sp) - 1.0)
-_half = np.array([spread(t)*1.35 + 7.0 for t in _tt])
+_half = spread_v(_tt)*1.35 + 7.0
 _o = (_sd / _half).reshape(_ch, _cw); _t = _tt.reshape(_ch, _cw)
-_s = (_ii * np.linalg.norm(_sp[-1] - _sp[0]) / len(_sp)).reshape(_ch, _cw)
+_seg = np.r_[0.0, np.cumsum(np.linalg.norm(np.diff(_sp, axis=0), axis=1))]
+_s = (_seg[_ii] + (_rel * _tg[_ii]).sum(1)).reshape(_ch, _cw)      # continuous arc length along the comet (no 2 mm steps)
 _o2 = _o + 0.06*np.sin(_s/6.0 + 13*_o) + 0.015*np.sin(_s/2.5 + 29*_o)
 BANDS = [(-0.62, "cc_azure"), (-0.24, "cc_royal"), (-0.08, "cc_lilac"), (0.0, "cc_white"), (0.10, "cc_rose"), (0.30, "cc_violet"), (0.58, "cc_royal"), (9, "cc_azure")]
 _band = np.full((_ch, _cw), COMET_COLS.index("cc_azure"))
@@ -138,19 +140,13 @@ _cu_core = ndi.binary_opening(_cu_core, structure=np.ones((2, 2)))
 _clab = np.where(_cand, np.where(_cu_core, np.argmin(_d[..., :len(COMET_COLS)], -1), _band), -1)
 COM_ANG = math.degrees(math.atan2(SPINE[-1][1] - SPINE[0][1], SPINE[-1][0] - SPINE[0][0]))
 n_comet = 0
-_bodyw = 0.55 * np.clip(1 - np.clip((_t - 0.55) / 0.42, 0, 1)**2, 0, 1) * np.clip(_t / 0.12, 0.25, 1)
-_clab = np.where(np.abs(_o2) < _bodyw, _clab, -1)
-for k, col in enumerate(COMET_COLS):
-    m = (_clab == k)
-    m = ndi.binary_opening(m, structure=np.ones((2, 2)))
-    for g in mask_polys(m, CB, CPPM, min_area=1.0 if col in ("cc_white", "cc_rose") else 1.4, simplify=0.15, min_hole=1.5):
-        core = col in ("cc_white", "cc_rose")
-        add([CM.R(col, g, "tatami", COM_ANG, "COM-core" if core else "COM", kob=0.0, kgrp="comet")], "comet", Z["comet"] + 0.01*k); n_comet += 1
 # the cloud the comet passes behind (close-up), 3 tones, stacked
 _cloudm = np.isin(_lab, [len(COMET_COLS) + i for i in range(3)]) & _zm
 _cloudm = ndi.binary_closing(ndi.binary_opening(_cloudm, structure=np.ones((3, 3))), structure=np.ones((3, 3)))
 _cl_lab, _cl_n = ndi.label(_cloudm); _cl_s = ndi.sum(_cloudm, _cl_lab, range(1, _cl_n + 1)) / CPPM**2
-_cloudm = np.isin(_cl_lab, 1 + np.nonzero(_cl_s >= 25.0)[0])
+_cl_y = np.array([c[0] for c in ndi.center_of_mass(_cloudm, _cl_lab, range(1, _cl_n + 1))]) / CPPM + CB[1] if _cl_n else np.array([])
+# only the cloud bank the comet really passes behind (y > 170 at M): faded comet pixels higher up read as cloud tones = ghost tails
+_cloudm = np.isin(_cl_lab, 1 + np.nonzero((_cl_s >= 25.0) & (_cl_y > 170.0))[0])
 _cl_tone = {c: _cloudm & (_lab == len(COMET_COLS) + i) for i, c in enumerate(CLOUD_COLS)}
 for zz, (col, m) in enumerate((("cc_dusk", _cloudm), ("cc_cloud", _cl_tone["cc_cloud"] | _cl_tone["cc_ice"]), ("cc_ice", _cl_tone["cc_ice"]))):
     m = ndi.binary_opening(m & _cloudm, structure=np.ones((2, 2)))
@@ -159,16 +155,53 @@ for zz, (col, m) in enumerate((("cc_dusk", _cloudm), ("cc_cloud", _cl_tone["cc_c
     for g in mask_polys(m, CB, CPPM, min_area=2.0 if zz else 40.0, simplify=0.2, min_hole=3.0):
         add([CM.R(col, g, "tatami", 0.0, "COM-cl", kob=0.0, kgrp="clouds", cref=g.centroid.y)], "cloud", Z["cloud"] + 0.1*zz)
 # ---- strands on top of the traced body: tapering satin streaks inside the traced extent (per-t extent of the traced mask)
+_OMM = _o * (spread_v(_t)*1.35 + 7.0)
 _tb = np.linspace(0, 1, 41); _ext = []
 for i_ in range(40):
     sel = _cand & (_t >= _tb[i_]) & (_t < _tb[i_ + 1])
     if sel.sum() < 20: _ext.append(None); continue
-    ov = (_o * np.vectorize(lambda t: spread(t)*1.35 + 7.0)(_t))[sel]
+    ov = _OMM[sel]
     _ext.append((np.percentile(ov, 4), np.percentile(ov, 96)))
 _ok = [i_ for i_, e in enumerate(_ext) if e]
 _tm = np.array([(_tb[i_] + _tb[i_ + 1])/2 for i_ in _ok]); _lo = np.array([_ext[i_][0] for i_ in _ok]); _hi = np.array([_ext[i_][1] for i_ in _ok])
 _lo = ndi.gaussian_filter1d(_lo, 3.0, mode='nearest'); _hi = ndi.gaussian_filter1d(_hi, 3.0, mode='nearest')
 def ext(t): return float(np.interp(t, _tm, _lo)), float(np.interp(t, _tm, _hi))
+# ---- body (Rev B review 1): the WHOLE traced extent is filled (broad body), tatami along the streak, 9 colour bands across
+#      the bundle (upper-left edge -> lower-right edge), wavy band edges along the comet; feathered (jagged) edges toward the tail
+_omm = _OMM
+_LO = np.interp(_t, _tm, _lo); _HI = np.interp(_t, _tm, _hi)
+_f = (_omm - _LO) / np.maximum(_HI - _LO, 0.5)
+_fe = (0.03 + 0.22*_t**1.5) * np.clip(0.5 + 0.3*np.sin(_s/2.3 + 7.0*_t) + 0.25*np.sin(_s/5.3 + 1.0) + 0.15*np.sin(_s/0.97 + 2.0), 0, 1)      # feather depth (fraction)
+_bodym = _zall & (_f > _fe) & (_f < 1 - _fe) & (_t > 0.015) & (_t < 0.985)
+_bodym = ndi.binary_opening(_bodym, structure=np.ones((2, 2)))
+# white core line position across the bundle traced from the close-up (median f of its white/pink pixels per t), smoothed
+_corem = _cu_core & _zall & (_f > 0) & (_f < 1)
+_fc_t, _fc_v = [], []
+for i_ in range(40):
+    sel = _corem & (_t >= _tb[i_]) & (_t < _tb[i_ + 1])
+    if sel.sum() >= 15: _fc_t.append((_tb[i_] + _tb[i_ + 1])/2); _fc_v.append(float(np.median(_f[sel])))
+FC = (np.array(_fc_t), ndi.gaussian_filter1d(np.clip(_fc_v, 0.35, 0.85), 2.0, mode="nearest")) if len(_fc_t) >= 4 else (np.array([0, 1]), np.array([0.715, 0.715]))
+def fcore(t): return float(np.interp(t, FC[0], FC[1]))
+_fcm = np.interp(_t, FC[0], FC[1])
+_f2 = _f - _fcm + 0.715 + 0.05*np.sin(_s/6.0 + 13*_f) + 0.02*np.sin(_s/2.5 + 29*_f)
+FBANDS = [(0.18, "cc_azure"), (0.50, "cc_royal"), (0.61, "cc_violet"), (0.68, "cc_lilac"), (0.735, "cc_white"),
+          (0.755, "cc_rose"), (0.80, "cc_lilac"), (0.88, "cc_violet"), (9, "cc_royal")]
+_band = np.full((_ch, _cw), COMET_COLS.index("cc_royal"))
+for lim_, col_ in reversed(FBANDS):
+    _band = np.where(_f2 < lim_, COMET_COLS.index(col_), _band)
+_band = np.where((_t > 0.86) & np.isin(_band, [COMET_COLS.index("cc_white"), COMET_COLS.index("cc_rose")]), COMET_COLS.index("cc_lilac"), _band)
+_band = np.where((_t < 0.08) & ~np.isin(_band, [COMET_COLS.index("cc_white"), COMET_COLS.index("cc_rose")]), COMET_COLS.index("cc_azure"), _band)
+# head (below the cloud, FR): azure / royal body, the violet only as a thin lower edge (mockup + close-up)
+_hd = (_t < 0.22) & (_f2 < 0.80)
+_band = np.where(_hd & (_band == COMET_COLS.index("cc_violet")), COMET_COLS.index("cc_royal"), _band)
+_band = np.where(_hd & (_band == COMET_COLS.index("cc_lilac")), COMET_COLS.index("cc_azure"), _band)
+_clab = np.where(_bodym, np.where(_cu_core & _bodym, np.argmin(_d[..., :len(COMET_COLS)], -1), _band), -1)
+n_comet = 0
+for k, col in enumerate(COMET_COLS):
+    m = ndi.binary_opening(_clab == k, structure=np.ones((2, 2)))
+    for g in mask_polys(m, CB, CPPM, min_area=1.0 if col in ("cc_white", "cc_rose") else 1.4, simplify=0.15, min_hole=1.5):
+        core = col in ("cc_white", "cc_rose", "cc_lilac")
+        add([CM.R(col, g, "tatami", COM_ANG, "COM-core" if core else "COM", kob=0.0, kgrp="comet")], "comet", Z["comet"] + 0.01*k); n_comet += 1
 _N = np.c_[-_tg[:, 1], _tg[:, 0]]
 def pos(t, omm):
     i = np.clip(t * (len(_sp) - 1), 0, len(_sp) - 1.001); j = int(i); f_ = i - j
@@ -178,6 +211,12 @@ def band_col(of):
     for lim_, col_ in BANDS:
         if of < lim_: return col_
     return "cc_azure"
+def fband_col(f2):
+    for lim_, col_ in FBANDS:
+        if f2 < lim_: return col_
+    return "cc_royal"
+STRAND_ON = {"cc_azure": ["cc_royal", "cc_azure", "cc_white"], "cc_royal": ["cc_azure", "cc_azure", "cc_violet"], "cc_violet": ["cc_lilac", "cc_royal", "cc_azure"],
+             "cc_lilac": ["cc_violet", "cc_violet", "cc_white"], "cc_rose": ["cc_lilac", "cc_white"], "cc_white": ["cc_lilac", "cc_azure"]}
 srng = random.Random(41); n_str = 0
 def streak(tc, f, L, wmax, col, grp="COM", curl=0.0, drift=0.0):
     ts = np.linspace(max(0.0, tc - L/2), min(1.0, tc + L/2), 36)
@@ -197,22 +236,22 @@ for i_ in range(44):                                   # main streaks
     L = srng.uniform(0.25, 0.55) if edge < 0.2 else srng.uniform(0.4, 0.85)
     tc = srng.uniform(L/2 - 0.05, 1.02 - L/2)
     of = (f - 0.5) * 2 * 0.9
-    col = band_col(of + srng.uniform(-0.08, 0.08))
-    if col in ("cc_white", "cc_rose"): col = "cc_lilac"
+    col = fband_col(f - fcore(tc) + 0.715 + srng.uniform(-0.06, 0.06))
+    col = srng.choice(STRAND_ON[col])                     # a neighbour tone of the body under it: the strand reads as texture
     n_str += streak(tc, f, L, srng.uniform(1.0, 2.4) * (0.75 if edge < 0.15 else 1.0), col, drift=srng.uniform(-0.12, 0.12))
-for i_ in range(10):                                   # side strands curling off the edges toward the tail
+for i_ in range(16):                                   # side strands curling off the edges toward the tail
     side = srng.choice([0, 1]); f = 0.02 if side == 0 else 0.98
     L = srng.uniform(0.12, 0.25); tc = srng.uniform(0.35, 0.95)
     n_str += streak(tc, f, L, srng.uniform(0.9, 1.4), "cc_azure" if srng.random() < 0.6 else "cc_violet", curl=(-0.35 if side == 0 else 0.35))
 # core: white line + pink + lilac strands (own stops)
-for f, L, tc, w, col in ((0.42, 0.66, 0.46, 2.4, "cc_lilac"), (0.56, 0.74, 0.40, 2.2, "cc_rose"), (0.62, 0.5, 0.52, 1.5, "cc_rose"), (0.50, 0.88, 0.44, 1.5, "cc_white")):
-    lo, hi = ext(tc); fc = (0.0 - lo) / max(1e-6, hi - lo) + (f - 0.5)*0.35         # around the spine
-    n_str += streak(tc, fc, L, w, col, grp="COM-core")
+for df, L, tc, w, col in ((-0.09, 0.66, 0.46, 1.8, "cc_lilac"), (0.05, 0.6, 0.42, 1.1, "cc_rose"), (0.0, 0.88, 0.44, 1.3, "cc_white")):
+    n_str += streak(tc, fcore(tc) + df, L, w, col, grp="COM-core")
 COMET_U = unary_union([r["geom"] for r in items if r["sew"] == "comet"]).buffer(0)
 
 # ================================================================ meteors (outside the comet zone), falling star
 METEORS_PX = [((207, 421), (246, 381), 1.6), ((297, 486), (342, 419), 1.5), ((392, 394), (431, 341), 1.4), ((500, 330), (530, 301), 1.2),
-              ((530, 394), (578, 352), 1.4), ((495, 490), (548, 434), 1.5), ((451, 599), (495, 542), 1.5)]
+              ((530, 394), (578, 352), 1.4), ((495, 490), (548, 434), 1.5), ((451, 599), (495, 542), 1.5),
+              ((415, 430), (500, 355), 1.2)]   # long fine streak parallel to the comet (Rev A/B read it as a cloud = ghost tail)
 _mrng = random.Random(8); n_met = 0
 for i, (h, t, w) in enumerate(METEORS_PX):
     seg = LineString([P(*h), P(*t)])
@@ -220,7 +259,10 @@ for i, (h, t, w) in enumerate(METEORS_PX):
     add(CM.meteor(P(*h), P(*t), w_head=w + _mrng.uniform(0.0, 0.6), unit=f"met{i}"), "meteor", Z["meteor"], unit=f"met{i}"); n_met += 1
 RS = P(403.5, 597.5)
 trail = CM.smooth_pts([P(404.7, 530.0), P(404.3, 560.0), P(403.9, 589.0)], 30)
-add([CM.R("cc_violet", CM.ribbon(trail, np.linspace(1.0, 1.5, len(trail))), "satin", "auto", "MET", kob=0.3)], "meteor", Z["meteor"], unit="redstar")
+_tw = np.linspace(1.0, 1.7, len(trail)); _n3 = len(trail)//3
+add([CM.R("cc_violet", CM.ribbon(trail[:2*_n3 + 1], _tw[:2*_n3 + 1]), "satin", "auto", "MET", kob=0.3)], "meteor", Z["meteor"], unit="redstar")
+add([CM.R("cc_lilac", CM.ribbon(trail[2*_n3:], _tw[2*_n3:]), "satin", "auto", "MET", kob=0.3)], "meteor", Z["meteor"], unit="redstar")
+add([CM.R("cc_white", CM.ribbon(trail[2*_n3 + 3:], np.full(len(trail) - 2*_n3 - 3, 0.7)), "satin", "auto", "MET", kob=0.0)], "meteor", Z["meteor"] + 0.2, unit="redstar")
 add(CM.falling_star(*RS, r=7.6), "meteor", Z["meteor"] + 0.5, unit="redstar")
 for (sx, sy, kk) in ((411, 582, 0.8), (395, 588, 0.7), (413, 606, 0.65)):
     add(CM.star(*P(sx, sy), "cross", "cc_white", "redstar", k=kk), "meteor", Z["meteor"], unit="redstar")
@@ -270,7 +312,7 @@ streakm = rast([STREAK_U])
 Ls = ndi.gaussian_filter(LUM, 0.5*PPM)
 _inner = rast([F.PANEL_R.buffer(-13), F.PANEL_L.buffer(-13), box(-400, 330, 400, 600).intersection(unary_union([F.PANEL_R, F.PANEL_L]))])
 _inner &= ~rast([F.WELT_R.buffer(12), F.WELT_L.buffer(12)]) & (np.abs(XMM) > 16)
-cl = (Ls > 60) & PANEL & _inner & (YMM > 88) & (YMM < 408) & ~streakm
+cl = (Ls > 60) & (ndi.gaussian_filter(SAT, 0.5*PPM) < 0.72) & PANEL & _inner & (YMM > 88) & (YMM < 408) & ~streakm   # saturated blue = streaks, not cloud
 cl = ndi.binary_opening(cl, structure=disk(0.9))
 cl = ndi.gaussian_filter(cl.astype(np.float32), 1.1*PPM) > 0.5                  # soft, rounded lobe outlines
 lab, n = ndi.label(cl)
@@ -296,13 +338,15 @@ cl = np.isin(lab, 1 + np.nonzero(sizes >= 25.0)[0])
 soft = ndi.gaussian_filter(cl.astype(np.float32), 2.0*PPM)
 g = np.zeros_like(soft); sh = int(2.5*PPM)
 g[sh:-sh] = soft[:-2*sh] - soft[2*sh:]                                          # >0 near the bottom edge, <0 near the top edge
-T = ndi.gaussian_filter(LUM, 0.7*PPM) - 70.0 * g
-THR = {"cc_night": 70.0, "cc_cloud": 100.0, "cc_ice": 128.0, "cc_white": 165.0}
+T = ndi.gaussian_filter(LUM, 0.8*PPM) - 55.0 * g
+# tone thresholds = midpoints between the thread luminances (night 41, dusk 90, cloud 133, ice 179, white 240) so the stitched
+# tone matches the mockup tone (Rev A/B used 100/128/165: half the cloud area came out ice/white - review 2)
+THR = {"cc_night": 66.0, "cc_cloud": 112.0, "cc_ice": 154.0, "cc_white": 205.0}
 def tone(m):
-    m = ndi.gaussian_filter(m.astype(np.float32), 0.6*PPM) > 0.5
-    m = ndi.binary_opening(m & cl, structure=disk(0.5))
+    m = ndi.gaussian_filter(m.astype(np.float32), 1.0*PPM) > 0.5                     # rounded tone edges, no posterised steps
+    m = ndi.binary_opening(m & cl, structure=disk(0.7))
     lb, nn_ = ndi.label(m); ss = ndi.sum(m, lb, range(1, nn_ + 1)) / PPM**2
-    m = np.isin(lb, 1 + np.nonzero(ss >= 3.0)[0])
+    m = np.isin(lb, 1 + np.nonzero(ss >= 5.0)[0])
     hh = ndi.binary_fill_holes(m) & ~m; hl, hn = ndi.label(hh); hs = ndi.sum(hh, hl, range(1, hn + 1)) / PPM**2
     return m | np.isin(hl, 1 + np.nonzero(hs < 4.0)[0])
 TONES = [("cc_dusk", cl, 0.0), ("cc_night", tone(T < THR["cc_night"]), 0.1), ("cc_cloud", tone(T >= THR["cc_cloud"]), 0.2),
@@ -344,45 +388,60 @@ for layer, wmin, wmax, top_fn, bot_fn in (("far", 6.0, 15.0, far_top, rail_mm), 
         top = top_fn(xc) + crng.uniform(-12, 7) - (crng.uniform(10, 26) if crng.random() < 0.18 else 0)
         bot = bot_fn(xc) - (4 if layer == "far" else 0)
         rr_ = crng.random()
-        if layer == "far": col = "cc_dusk" if rr_ < 0.55 else ("cc_cloud" if rr_ < 0.9 else "cc_night")
-        else: col = "cc_night" if rr_ < 0.45 else ("cc_dusk" if rr_ < 0.88 else "cc_cloud")
-        towers.append((layer, box(x, top, x + w + (0.0 if layer == "far" else 0.0), bot), col))
+        # review 3: far row = lighter dusk / cloud silhouettes against the haze, near row = dark navy / dusk towers
+        if layer == "far": col = "cc_dusk" if rr_ < 0.74 else ("cc_cloud" if rr_ < 0.86 else "cc_night")
+        else: col = "cc_night" if rr_ < 0.58 else "cc_dusk"
+        towers.append((layer, box(x, top, x + w, bot), col))
         x += w + (crng.uniform(0, 2.5) if layer == "far" else crng.uniform(0.0, 1.2))
-# horizon glow: violet + rose bands with a wavy top, behind the far towers
-xs = np.linspace(-300, 300, 160)
-vio = Polygon([(x, near_top(x) - 16 + 3*math.sin(x/9.0)) for x in xs] + [(x, near_top(x) + 3) for x in xs[::-1]]).buffer(0)
-ros = Polygon([(x, near_top(x) - 8 + 2*math.sin(x/6.5 + 1)) for x in xs] + [(x, near_top(x) + 3) for x in xs[::-1]]).buffer(0)
+# horizon glow (review 3): pale haze band behind the whole skyline + violet / rose glow concentrated toward the zip (mockup)
+xs = np.linspace(-300, 300, 200)
+haze = Polygon([(x, far_top(x) - 10 + 2.5*math.sin(x/11.0)) for x in xs] + [(x, near_top(x) + 3) for x in xs[::-1]]).buffer(0)
+add([CM.R("cc_cloud", haze, "tatami", 0.0, "GLOW", kob=0.0)], "glow", Z["glow"] - 0.2)
+def _glow_band(h0, amp, per, ph, xr):
+    xx = np.linspace(-xr, xr, 120); env = np.clip(1.15 - np.abs(xx)/xr, 0, 1) ** 0.6
+    return Polygon([(x, near_top(x) + 3 - (h0*e + 1.0) + amp*e*math.sin(x/per + ph)) for x, e in zip(xx, env)] + [(x, near_top(x) + 3) for x in xx[::-1]]).buffer(0)
+vio = unary_union([_glow_band(26, 4, 9.0, 0, 250)])
+ros = unary_union([_glow_band(15, 3, 6.5, 1, 170)])
 add([CM.R("cc_violet", vio.difference(ros).buffer(-0.5).buffer(0.5), "tatami", 0.0, "GLOW", kob=0.0)], "glow", Z["glow"])
 add([CM.R("cc_rose", ros, "tatami", 0.0, "GLOW", kob=0.0)], "glow", Z["glow"] + 0.1)
-n_win = n_sign = n_ant = 0
+n_win = n_sign = n_ant = n_edge = 0
 for layer, tb, col in towers:
     zt = Z[layer]; b = tb.bounds; w = b[2] - b[0]
     add([CM.R(col, tb, "tatami", 90.0, "BLD" if layer == "near" else "BLD-far", kob=0.3)], "building", zt)
-    # windows: a lit grid per tower
-    if layer == "near": ww, wh, px_, py_, p_lit = 1.5, 1.9, 3.0, 3.6, (0.30 if col != "cc_night" else 0.38)
-    else:               ww, wh, px_, py_, p_lit = 1.4, 1.6, 2.7, 3.2, 0.22
+    # lit edge: a thin pale line down the side facing the comet glow + along the roof (separates the towers, mockup)
+    if layer == "near" or crng.random() < 0.5:
+        ec = "cc_cloud" if col == "cc_night" else "cc_ice"
+        sx_ = b[0] if (b[0] + b[2]) / 2 > 0 else b[2] - 0.8
+        edge = box(sx_, b[1], sx_ + 0.8, b[3]).union(box(b[0], b[1], b[2], b[1] + 0.8))
+        add([CM.R(ec, edge, "satin", "auto", "BLD-edge", kob=0.0)], "window", zt + 0.4); n_edge += 1
+    # windows: a lit GRID per tower (whole floors / column pairs lit, the rest dark), mostly gold (mockup), some cool towers
+    if layer == "near": ww, wh, px_, py_, p_floor, p_win = 1.6, 2.0, 3.2, 3.8, 0.62, 0.72
+    else:               ww, wh, px_, py_, p_floor, p_win = 1.4, 1.6, 2.8, 3.3, 0.40, 0.55
     style = crng.random()
-    pal = (["cc_gold"]*8 + ["cc_azure"] + ["cc_rose"]) if style < 0.65 else ((["cc_azure"]*5 + ["cc_gold"]*4 + ["cc_white"]) if style < 0.85 else (["cc_rose"]*4 + ["cc_gold"]*5 + ["cc_azure"]))
-    if layer == "far" and col == "cc_cloud": pal = ["cc_white", "cc_gold", "cc_azure"]
+    pal = ["cc_gold"] if style < 0.78 else ((["cc_azure"]*3 + ["cc_white"]) if style < 0.92 else (["cc_rose"] + ["cc_gold"]*2))
+    if layer == "far" and col == "cc_cloud": pal = ["cc_white", "cc_gold"]
+    stripes = layer == "near" and w > 14 and crng.random() < 0.05                        # office tower: white light bands
     ncol = int((w - 1.6) // px_)
     if ncol >= 1:
         x0 = b[0] + (w - (ncol*px_ - (px_ - ww)))/2
-        y = b[1] + 2.4
+        y = b[1] + 2.4; cols_on = [crng.random() < p_win for _ in range(ncol)]
         while y + wh < b[3] - 1.0:
-            dense = crng.random() < 0.15                                      # some fully lit floors
-            for c in range(ncol):
-                if crng.random() < (0.9 if dense else p_lit):
-                    gw = box(x0 + c*px_, y, x0 + c*px_ + ww, y + wh)
-                    add([CM.R(crng.choice(pal), gw, "satin", 0.0, "WIN", kob=0.0)], "window", zt + 0.5); n_win += 1
+            if stripes:
+                add([CM.R("cc_ice", box(x0, y + 0.4, x0 + (ncol - 1)*px_ + ww, y + 1.6), "satin", 90.0, "WIN", kob=0.0)], "window", zt + 0.5); n_win += 1
+            elif crng.random() < p_floor:
+                for c in range(ncol):
+                    if cols_on[c] and crng.random() < 0.88:
+                        gw = box(x0 + c*px_, y, x0 + c*px_ + ww, y + wh)
+                        add([CM.R(crng.choice(pal), gw, "satin", 0.0, "WIN", kob=0.0)], "window", zt + 0.5); n_win += 1
             y += py_
     # neon signs + antennas
     if layer == "near" and crng.random() < 0.28 and b[3] - b[1] > 18:
         sc = crng.choice(["cc_rose", "cc_rose", "cc_azure"])
         if crng.random() < 0.6:
-            sx = b[0] + 0.4 if crng.random() < 0.5 else b[2] - 1.9
+            sx = b[0] + 0.9 if crng.random() < 0.5 else b[2] - 2.4
             add([CM.R(sc, box(sx, b[1] + 3, sx + 1.5, b[1] + 3 + crng.uniform(7, 13)), "satin", "auto", "SIGN", kob=0.0)], "window", zt + 0.6)
         else:
-            add([CM.R(sc, box(b[0] + 1.2, b[1] + 1.0, min(b[2] - 1.2, b[0] + 1.2 + crng.uniform(5, 10)), b[1] + 2.6), "satin", "auto", "SIGN", kob=0.0)], "window", zt + 0.6)
+            add([CM.R(sc, box(b[0] + 1.2, b[1] + 1.2, min(b[2] - 1.2, b[0] + 1.2 + crng.uniform(5, 10)), b[1] + 2.8), "satin", "auto", "SIGN", kob=0.0)], "window", zt + 0.6)
         n_sign += 1
     if (b[1] < (far_top if layer == "far" else near_top)((b[0]+b[2])/2) - 6) and crng.random() < 0.6:
         ax = (b[0] + b[2])/2 + crng.uniform(-w/4, w/4); ah = crng.uniform(6, 14)
@@ -402,8 +461,8 @@ add([CM.R("cc_ice", rail_poly(47.5, 1.1), "satin", "auto", "RAIL-hl", kob=0.0)],
 x = 132.0; nb = 0
 while x < 612:
     a = P(x, rail_y(x) + 1.6); b = P(x, rail_y(x) + 37.0)
-    add([CM.R("cc_night", LineString([a, b]).buffer(0.7, cap_style="flat"), "satin", "auto", "RAIL-b", kob=0.0)], "rail", Z["rail"])
-    add([CM.R("cc_cloud", LineString([(a[0] - 1.1, a[1]), (b[0] - 1.1, b[1])]).buffer(0.47, cap_style="flat"), "satin", "auto", "RAIL-hl", kob=0.0)], "rail", Z["rail"] + 0.1)
+    add([CM.R("cc_night", LineString([a, b]).buffer(0.9, cap_style="flat"), "satin", "auto", "RAIL-b", kob=0.0)], "rail", Z["rail"])
+    add([CM.R("cc_ice", LineString([(a[0] - 1.25, a[1]), (b[0] - 1.25, b[1])]).buffer(0.4, cap_style="flat"), "satin", "auto", "RAIL-hl", kob=0.0)], "rail", Z["rail"] + 0.1)
     x += 10.6; nb += 1
 
 # ================================================================ lamp post, bush, bicycle, figure (solid, in front)
@@ -436,7 +495,7 @@ assert not [r for r in items if r["col"] not in COLSEQ], "colour outside the fro
 for r in items: r["layer"] = 20 + COLSEQ.index(r["col"])
 
 META = dict(n_comet_strands=n_str, spine=SPINE.tolist(), n_stars=len(stars), star_moved=star_moved, n_meteors=n_met, n_comet_regions=n_comet, n_cloud_regions=n_cloud,
-            n_towers=len(towers), n_far=sum(1 for t in towers if t[0] == "far"), n_near=sum(1 for t in towers if t[0] == "near"),
+            n_towers=len(towers), n_lit_edges=n_edge, n_far=sum(1 for t in towers if t[0] == "far"), n_near=sum(1 for t in towers if t[0] == "near"),
             n_windows=n_win, n_signs=n_sign, n_antennas=n_ant, n_balusters=nb, closeup_residuals=CU.residuals(),
             lamp_dx=lamp_dx, bush_dx=bush_dx, mock_map=dict(cfx=MM.CFX, necky=MM.NECKY, sx=MM.SX, sy=MM.SY), bike_rear=BIKE_REAR, figure_feet=FIG_FEET)
 pickle.dump(dict(items=items, meta=META), open("scene.pkl", "wb"))

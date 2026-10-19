@@ -26,4 +26,4 @@ for sz in cccore.SIZES:
         out.setdefault(sz, {})[P] = res
 json.dump(out, open("welt_check.json", "w"), indent=1)
 worst = min(v for sz in out for P in out[sz] for v in out[sz][P].values())
-print({sz: {P: out[sz][P]["full"] for P in out[sz]} for sz in out}, "worst", worst, "PASS" if worst >= F.KEEP_WELT - 0.6 else "CHECK")
+print({sz: {P: out[sz][P]["full"] for P in out[sz]} for sz in out}, "worst", worst, "PASS" if worst >= F.KEEP_WELT else "FAIL")

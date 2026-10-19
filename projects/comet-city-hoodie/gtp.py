@@ -112,7 +112,7 @@ def p_cover(index):
 NOTES = [("1", "Hood: 3 panels — side pair + 10 cm centre panel. Washed navy duck outside, cream sherpa inside, bagged at the face edge; 6 mm topstitch. No drawcord. Plain (no embroidery).", True),
          ("2", "Hood neck: shell hood to body neckline, sherpa hood to the front facings + back neck facing. Embroidery keeps 10 mm clear of the neck seam.", True),
          ("3", "Zip: 2-way separating, YKK #5 metal, brass, two pullers (mockup). Embroidery 01 stops 15 mm each side of CF; FR + FL meet at the zip.", True),
-         ("4", "Welt pockets at the mockup position (21.8 cm from CF, 35.2 cm below the neck, 54°), Drum Island welt 1.4 × 13; embroidery keeps 6 mm clear.", True),
+         ("4", "Welt pockets at the mockup position (21.8 cm from CF, 35.2 cm below the neck, 54°), Drum Island welt 1.4 × 13; embroidery keeps 8 mm clear (6 + 2 cut-out margin), checked on the DST stitch points.", True),
          ("5", f"Hem band: self fabric, {HD.hcm('S','M')/10:.1f} cm finished, folded; {HD.EL_HEM_W/10:.0f} cm elastic, flat {HD.FLAT/10:.0f} cm each side of the zip. Not embroidered.", True),
          ("6", f"Cuff band: self fabric, {HD.hcm('T','M')/10:.1f} cm finished, folded, closed into a loop. Not embroidered (02 stops 10 mm above the cuff seam).", True),
          ("7", "Embroidery 01 front scene (FR + FL) + 02 sleeves (SR + SL): direct embroidery on the cut panels, before any seam (G pages).", False),

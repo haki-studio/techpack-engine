@@ -66,7 +66,7 @@ for side in "RL":
     XMM = bb[0] + (np.arange(W) + 0.5)/PPM; YMM = bb[1] + (np.arange(H) + 0.5)/PPM
     _, _, _ys, _ws = MM.sleeve_dims()
     Wy = np.interp(YMM, _ys, _ws)[:, None]
-    readable = ((XMM * sgn)[None, :] > 28.0) & ((XMM * sgn)[None, :] < 0.80 * Wy)
+    readable = ((XMM * sgn)[None, :] > 28.0) & ((XMM * sgn)[None, :] < 0.93 * Wy)
     im = Image.new("L", (W, H), 0); ImageDraw.Draw(im).polygon([((x - bb[0])*PPM, (y - bb[1])*PPM) for x, y in clip.exterior.coords], fill=255)
     CLIPm = np.array(im) > 127
     inside = CLIPm & readable
@@ -109,14 +109,14 @@ for side in "RL":
     cl |= np.isin(hl, 1 + np.nonzero(hs < 10.0)[0])
     soft = ndi.gaussian_filter(cl.astype(np.float32), 1.8*PPM); gsh = np.zeros_like(soft); sh = int(2.2*PPM)
     gsh[sh:-sh] = soft[:-2*sh] - soft[2*sh:]
-    T = ndi.gaussian_filter(L, 0.7*PPM) - 70.0*gsh
+    T = ndi.gaussian_filter(L, 0.8*PPM) - 55.0*gsh
     def tone(m):
-        m = ndi.gaussian_filter(m.astype(np.float32), 0.6*PPM) > 0.5
-        m = ndi.binary_opening(m & cl, structure=np.ones((2, 2)))
+        m = ndi.gaussian_filter(m.astype(np.float32), 1.0*PPM) > 0.5
+        m = ndi.binary_opening(m & cl, structure=np.ones((3, 3)))
         lb_, nn_ = ndi.label(m); ss_ = ndi.sum(m, lb_, range(1, nn_ + 1))/PPM**2
-        return np.isin(lb_, 1 + np.nonzero(ss_ >= 3.0)[0])
+        return np.isin(lb_, 1 + np.nonzero(ss_ >= 5.0)[0])
     ncl = 0
-    for col, m, zz in (("cc_dusk", cl, 0.0), ("cc_cloud", tone(T >= 100), 0.1), ("cc_ice", tone(T >= 128), 0.2), ("cc_white", tone(T >= 165), 0.3)):
+    for col, m, zz in (("cc_dusk", cl, 0.0), ("cc_cloud", tone(T >= 112), 0.1), ("cc_ice", tone(T >= 154), 0.2), ("cc_white", tone(T >= 205), 0.3)):
         for g in mask_polys(m, bb, min_area=3.0 if col != "cc_dusk" else 60.0):
             add([CM.R(col, g, "tatami", 0.0 if col == "cc_dusk" else 8.0, "CL", kob=0.0, kgrp="clouds")], 3 + zz); ncl += 1
     CLOUD_G = unary_union([r["geom"] for r in items if r["grp"] == "CL"]).buffer(1.5) if items else Polygon()
@@ -132,7 +132,7 @@ for side in "RL":
     for i, (px, py, rr) in enumerate(ANCHORS[side]):
         cx, cy = SPp(px, py); k = MM.sscale(side, py)
         R0 = rr*k*1.2; rot = 270 + rng.uniform(-12, 12)
-        put(CM.palm(cx, cy, R0, rng.randint(6, 9), rot, "cc_leaf", "cc_leaflt", f"pal{i}", rng), 6 + 0.01*i, f"pal{i}"); nmot += 1
+        put([dict(r, kob=0.5) for r in CM.palm(cx, cy, R0, rng.randint(6, 9), rot, "cc_royal", "cc_leaflt", f"pal{i}", rng)], 7 + 0.01*i, f"pal{i}"); nmot += 1
     UGs = UG.buffer(-1).difference(CLOUD_G)
     kinds = ["fern", "broad", "palm", "sprig"]
     tries = 0
@@ -145,17 +145,23 @@ for side in "RL":
         if placed and min(g.distance(p) for g in placed[-60:]) < 2.0 and rng.random() < 0.7: continue
         kind = rng.choices(kinds, weights=[0.32, 0.26, 0.22, 0.20])[0]; u = f"m{nmot}"
         ang = -90 + rng.uniform(-70, 70)
+        zz = 5 + rng.random()*2
+        # review 10: layered depth - back plants dark (leaf / royal), front plants bright (royal / leaf-light), azure only on tips
+        back = zz < 6.0
+        c_body = ("cc_leaf" if rng.random() < 0.6 else "cc_royal") if back else ("cc_royal" if rng.random() < 0.6 else "cc_leaf")
+        c_hl = ("cc_royal" if c_body == "cc_leaf" else "cc_leaf") if back else ("cc_leaflt" if rng.random() < 0.8 else "cc_azure")
         if kind == "fern":
-            regs = CM.fern((p.x, p.y), ang, rng.uniform(12, 22), rng.choice(["cc_leaflt", "cc_leaf"]), rng.choice(["cc_azure", "cc_leaflt"]), u, rng, droop=rng.uniform(0.1, 0.45))
+            regs = CM.fern((p.x, p.y), ang, rng.uniform(12, 22), c_body, c_hl, u, rng, droop=rng.uniform(0.1, 0.45))
         elif kind == "broad":
-            regs = CM.broad_leaf((p.x, p.y), ang, rng.uniform(10, 17), rng.choice(["cc_royal", "cc_leaf"]), rng.choice(["cc_azure", "cc_leaflt"]), u, curl=rng.uniform(-0.25, 0.25))
+            regs = CM.broad_leaf((p.x, p.y), ang, rng.uniform(10, 17), c_body, c_hl, u, curl=rng.uniform(-0.25, 0.25))
         elif kind == "palm":
-            regs = CM.palm(p.x, p.y, rng.uniform(9, 15), rng.randint(5, 7), 270 + rng.uniform(-20, 20), rng.choice(["cc_leaf", "cc_royal"]), "cc_leaflt", u, rng)
+            regs = CM.palm(p.x, p.y, rng.uniform(9, 15), rng.randint(5, 7), 270 + rng.uniform(-20, 20), c_body, c_hl, u, rng)
         else:
-            regs = CM.sprig((p.x, p.y), ang, rng.uniform(7, 11), rng.choice(["cc_azure", "cc_leaflt"]), u, rng)
+            regs = CM.sprig((p.x, p.y), ang, rng.uniform(7, 11), "cc_azure" if not back else "cc_leaflt", u, rng)
+        regs = [dict(r, kob=0.5) for r in regs]
         ug_ = unary_union([r["geom"] for r in regs])
         if not clip.contains(ug_) or ug_.intersects(CLOUD_G): continue
-        put(regs, 5 + rng.random()*2, u); nmot += 1
+        put(regs, zz, u); nmot += 1
     # soft undergrowth: hugs the foliage (grown + rounded), never a slab
     UGF = unary_union(placed).buffer(3.2).buffer(-2.0).intersection(clip).difference(CLOUD_G).buffer(0)
     UGF = unary_union([p for p in CM.polys(UGF) if p.area > 40])
