@@ -126,3 +126,38 @@ Chinese phrase, upside-down mirrored Hangul)." Check: the spec page prints the s
 - **Problem:** `PO.write_dxf(..., blk=hoodie.Variant(welt=...))` -> AttributeError 'Variant' object has no attribute 'ORDER'.
 - **Workaround:** `BLK.ORDER = HD.ORDER` in pattern_kc.py. **Fix:** `Variant.ORDER = ORDER` (class attribute) in engine/hoodie.py.
 - **Check:** test that write_dxf + plot_pdf run with a Variant.
+
+## 16. A14 tracing at ~1 px/mm: fit each motif to its own silhouette (kctrace.py) — library candidate
+- **Problem:** hand-typed motif sizes (bar width 3.4, star 11.6 / 14.0, sparkle span (ext + 1.5) px) failed qa.motif_match on
+  86 of 211 badge + field motifs (IoU 0.3-0.6, sparkles 1.4-1.7x too wide, EN stars 20 % small).
+- **Fix (project):** `kctrace.comps/snap` segment each colour family on a x4 bicubic upsample (half-max classes = the gate's),
+  then `register_glyph(geom, ref_fn, aspect, starts, drop_frag, size_rule)` fits ANY motif geometry (shift / rotation /
+  scale / stretch along its own axis, multi-start for 0/45° sparkles, IoU minus a penalty outside the gate's 0.8-1.25 size
+  rule) and `apply()` carries the affine into column centrelines, widths (rims keep theirs), stipple runs and satin angles.
+  Stars also search their inner-radius ratio and pit; the KR ring is traced (centreline + width per direction, width =
+  2 x distance-to-edge) into a closed column with a width table. Font glyphs are registered the same way (IoU only).
+- **Proposed fix:** `engine/trace.py` with these functions + tests; `qa.motif_match` callers get the same reference builder.
+- **Check:** pre-check (art) and binding (DST) gate tables in gates.json; per-motif fit IoU in scene_meta.json "traced".
+
+## 17. Pixel-centre convention (half-pixel bug, 0.4 mm on a 1 px/mm render)
+- `scipy.ndimage.map_coordinates` (all mockup resampling) puts pixel i's centre at i; component centroids computed as
+  (start + stop) / 2 or (index + 0.5) are corner-convention — every speck / traced motif sat 0.5 px (0.4 mm) down-right,
+  which alone cost ~0.2 IoU on 3-6 mm motifs. Fixed in specks.py + kctrace.py. **Proposed:** one helper `px_centre()` in the
+  engine and a test that a single-pixel dot maps back onto itself.
+
+## 18. Gate reference classes vs pale threads / shading (gates.py)
+- A pale lemon satin's lit core reaches r - b ~ 70 (the first yellow class cut at 70 split bars into two strips); the
+  blue bars passed the first mint class (g - r > 45). Classes now: yellow r - b > 45 (complement of white |r - b| < 45),
+  mint needs g >= b - 15. A 0.75 mm closing bridges the render's puff shading lines inside one motif.
+- The front map is non-uniform (0.90 x 0.70 mm/px): references built through it squash round stars (h ratio 1.3) — field
+  references are patches at the uniform motif scale S about each mapped speck. **Proposed:** `qa.reference(mock, map,
+  local_uniform=True)` so every project builds the reference the same way.
+
+## 19. hoodie welt + art: keep-outs from the drafted (graded) welt
+- With the engine welt override the welt grades (x with the chest, y with the hem); Rev A's fixed project welt is gone.
+  `front.keep_geoms` reads the drafted welt per size; badge 03 clears it on every size (min 6.4).
+
+## Lesson proposals (cont.)
+- **A16** — Hand-typed motif sizes are stand-ins too (A14): sizes, widths, angles and star shapes come from a fit to the
+  motif's own silhouette; check = qa.motif_match on the shipped DST (gates.json), tables on the compare sheets.
+- **A17** — Resample and trace in ONE pixel convention (centre = index); a half-pixel offset is 0.4 mm on a 1 px/mm mockup.

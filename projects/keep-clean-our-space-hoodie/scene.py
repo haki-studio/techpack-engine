@@ -34,14 +34,14 @@ def ref_fn_for(anchor_px, anchor_mm, fam):
         return ndi.binary_closing(ndi.binary_opening(TR.FAM[fam](*ch), iterations=1), iterations=3)
     return f
 SP_STARTS = [(0.0, 1.0), (45.0, 1.0), (0.0, 0.8), (0.0, 1.25), (45.0, 0.8), (45.0, 1.25)]
-def fit(regs, fn, el, kind, aspect=False, starts=None):
+def fit(regs, fn, el, kind, aspect=False, starts=None, ret_iou=False):
     """trace a motif: fit its geometry to its reference silhouette (shift / rotation / scale, IoU) and apply to every region"""
     regs = [r for r in regs if r is not None]
     body = unary_union([r["geom"] for r in regs if not r.get("glow")])
     if body.is_empty: return regs
     _, info = TR.register_glyph(body, fn, aspect=aspect, starts=starts, drop_frag=kind in ("sparkle", "dot"))
     META["traced"].setdefault(el, {}).setdefault("fits", []).append(dict(kind=kind, iou_before=info["iou_before"], iou_after=info["iou_after"], scale=info["scale"], aspect=info["aspect"]))
-    return TR.apply(regs, info)
+    return (TR.apply(regs, info), info["iou_after"]) if ret_iou else TR.apply(regs, info)
 def best_star(make, ks, fn, el, kind):
     """trace a star's SHAPE too: try inner-radius ratios ks, fit each (affine + aspect), keep the best IoU"""
     best = None
@@ -330,7 +330,14 @@ def speck_motif(s, x, y, col="kc_white", unit=None, uniform=False, fn=None):
     d = {2: 1.45, 3: 1.7, 4: 2.0}.get(ext, 1.45)
     if c: d = max(1.45, 2 * math.sqrt(c["area"] / math.pi) * (S if uniform else math.sqrt(MM.SX * MM.SY)))
     dr = KM.dot(x, y, d, col, unit)
-    return fit(dr, fn, "05", "dot", aspect=True, starts=[(0.0, 1.0), (0.0, 0.8), (0.0, 1.25)]) if fn is not None else dr
+    if fn is None: return dr
+    dr, i_dot = fit(dr, fn, "05", "dot", aspect=True, starts=[(0.0, 1.0), (0.0, 0.8), (0.0, 1.25)], ret_iou=True)
+    if ext >= 3 and c:
+        # traced shape choice: a 3-4 px speck can be a tiny 4-point star (plus) — fit both, keep the better match
+        sp = max(3.0, max(c["ext_w"], c["ext_h"]) * (S if uniform else math.sqrt(MM.SX * MM.SY)))
+        st, i_sp = fit(KM.sparkle_cols(x, y, sp, col, unit), fn, "05", "sparkle (small)", aspect=True, starts=SP_STARTS, ret_iou=True)
+        if i_sp > i_dot + 0.03: return st
+    return dr
 nfield = {"FR": 0, "FL": 0, "SR": 0, "SL": 0}; ncn = 0
 # sleeve quads in the mockup (px): top fold at the shoulder, cuff outer, underarm, cuff inner
 SLQ = {"SR": dict(A=(203, 428), B=(50, 1240), C=(226, 565), D=(246, 1236)),

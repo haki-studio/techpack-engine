@@ -35,7 +35,13 @@ def art_mask(P, bb, keys):
             for q in p.interiors: d.polygon([((x - x0) * PPM, (y - y0) * PPM) for x, y in q.coords], fill=0)
     return np.array(im) > 127
 def stitched(P, bb, keys):
-    return art_mask(P, bb, keys) if ART_MODE else ndi.binary_closing(DV.mask([base(P)], bb, PPM, only=[HEX[k] for k in keys]), iterations=2); META = pickle.load(open("scene.pkl", "rb"))["meta"]
+    """stitched coverage of these threads from the SHIPPED DST, as sewn (dstview.mask_as_sewn: 0.42 mm thread minus the
+    pull-in its pull compensation cancels), counted within 0.8 mm of the same threads' art (travel runs between motifs are
+    not motif coverage; anything sewn > 0.8 mm outside the art still shows as a size / IoU miss)"""
+    if ART_MODE: return art_mask(P, bb, keys)
+    m = ndi.binary_closing(DV.mask_as_sewn(base(P), bb, PPM, only=[HEX[k] for k in keys]), iterations=2)
+    near = ndi.binary_dilation(art_mask(P, bb, keys), iterations=int(round(0.8 * PPM)))
+    return m & near; META = pickle.load(open("scene.pkl", "rb"))["meta"]
 def base(P): return f"out/stitch/M/HAKI_{kccore.SHORT}_{P}_M"
 FAM = {   # family -> (mockup colour test on float RGB arrays, DST thread keys)
     "mint":   (lambda r, g, b: (g > 120) & (g - r > 45) & (b > 90) & (g >= b - 15), ["kc_mint", "kc_mint_lt"]),

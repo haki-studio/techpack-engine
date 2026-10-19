@@ -37,7 +37,7 @@ tech.COLOUR_ORDER = KC_ORDER + [c for c in tech.COLOUR_ORDER if c not in KC_ORDE
 KC_RULES = {
  "GLOW":   ("Neon glow halo (sheer)",     "Run, serpentine",    "along the text line",      "1.6 rows", "2.6", "none",              "—",    "sewn first, under the art"),
  "STAR":   ("Star speckle (4-point)",     "Satin",              "across arm",               "0.40",  "—",    "none",                  "0.15", "arms ≥ 0.9 wide, blunt tips"),
- "DOT":    ("Star dot",                   "Satin dot",          "across dot",               "0.40",  "—",    "none",                  "0.10", "Ø 1.45–2.0"),
+ "DOT":    ("Star dot",                   "Satin dot",          "across dot",               "0.40",  "—",    "none",                  "0.00", "Ø traced, min 1.45"),
  "TXF":    ("Text stroke, flat satin",    "Satin, turning",     "across the stroke",        "0.40",  "—",    "centre run if ≥ 1.6",   "0.20", "font strokes, 1 satin each"),
  "PF-TX":  ("Text stroke, 3D puff",       "Satin over 3 mm foam","across the stroke",       "0.30",  "—",    "none (foam)",           "0.35", "puff, strokes 2.5–7 wide"),
  "PF-BAR": ("Spark bar, 3D puff",         "Satin over 3 mm foam","across the bar",          "0.20 zz",  "—",    "none (foam)",           "0.35", "rounded capsule ends"),
@@ -55,7 +55,7 @@ KC_RULES = {
  "GLOW-D": ("Neon halo, dense band",      "Tatami, sheer",      "along the badge line",     "0.60",  "2.5",  "none",                  "—",    "0–1.9 mm round the art"),
  "GLOW-S": ("Neon halo, soft band",       "Tatami, open",       "along the badge line +8°", "1.30",  "2.5",  "none",                  "—",    "1.9–3.8 mm, ragged edge"),
  "HAZE":   ("Sparkle haze",               "Tatami, open",       "random per sparkle",       "1.10",  "2.5",  "none",                  "—",    "under sparkles ≥ 5 mm"),
- "SPK":    ("Sparkle (concave 4-point)",  "Satin, 2 tapered columns", "across each arm",    "0.24 zz",  "—",    "none",                  "0.10", "tips 0.25"),
+ "SPK":    ("Sparkle (concave 4-point)",  "Satin, 2 tapered columns", "across each arm",    "0.24 zz",  "—",    "none",                  "0.00", "tips stop 0.3 short"),
  "TXC":    ("Text stroke column, flat",   "Satin column",       "across the stroke",        "0.25 zz",  "—",    "centre run",            "0.15", "1 column per stroke"),
  "PF-TXC": ("Text stroke column, puff",   "Satin column over foam", "across the stroke",    "0.20 zz",  "—",    "none (foam)",           "0.30", "core under the rim"),
  "PF-RIM": ("Puff rim (lighter thread)",  "Satin column over foam", "across the rim",       "0.20 zz",  "—",    "none (foam)",           "0.15", "0.85 wide, on the edge"),
@@ -72,6 +72,7 @@ sheet.FONT = "Liberation Sans"
 # half the row spacing of the engine satin (which hits both edges every row) for the same coverage
 COL_SP = {"PF-TXC": 0.20, "PF-RIM": 0.20, "PF-BAR": 0.20, "PF-DOT": 0.20, "TXC": 0.25, "ORN": 0.25, "SPK": 0.24, "OVAL": 0.28, "OVAL-hl": 0.28}
 OPEN_TAT = {"GLOW-D": (0.60, 2.5), "GLOW-S": (1.30, 2.5), "HAZE": (1.10, 2.2)}
+HALF_THREAD = 0.21      # 40wt polyester lies ~0.42 wide: needle points sit this far inside the art outline
 PUFF_SP = 0.30          # puff satin row spacing (dense, cuts the foam at the column ends)
 PUFF = True             # region codes starting PF- are built as puff satin (no underlay, dense, +pull)
 
@@ -151,6 +152,14 @@ def patch_dst2():
                 sp = COL_SP.get(code, 0.20 if puff else 0.30)          # zig-zag spacing: one edge is hit every 2 x sp
                 pull = dst2.pull_for(code)
                 cl = r["col_cl"]; w = r["col_w"]; caps = r["col_caps"]; closed = r["col_closed"]; prof = r.get("col_prof")
+                if code == "SPK" and not closed and KS.poly_len(cl) > 1.6:      # tips stop half a thread short (A14: stitched span = traced span)
+                    cl = KS.trim(cl, 0.3, 0.3)
+                # needle points half a thread (0.21) inside the outline: as sewn, the thread covers to the art edge (A14)
+                if not r.get("rim") and code != "SPK":
+                    ins = max(0.0, min(HALF_THREAD, (w - 0.8) / 2))
+                    if ins > 0:
+                        w = w - 2 * ins
+                        if not closed and KS.poly_len(cl) > 4 * ins + 0.5: cl = KS.trim(cl, ins if caps[0] == "round" else 0.0, ins if caps[1] == "round" else 0.0)
                 blocks = []
                 if code in ("TXC", "OVAL") and not closed and KS.poly_len(cl) > 2.5 and w >= 1.4:      # centre-run underlay, then satin back
                     ul = KS.trim(cl, min(0.6, w / 2), min(0.6, w / 2))
@@ -175,6 +184,9 @@ def patch_dst2():
                     if ln is not None: blocks.append(dst2.path_resample(list(ln.coords), 2.0))
                     blocks.append(stroke_satin(p, 0.40, pull))
                 return [b for b in blocks if len(b) > 1]
+            if r["st"] == "satin" and not isinstance(r.get("ang"), tuple) and r.get("ang") != "col":
+                gi = r["geom"].buffer(-HALF_THREAD).buffer(0)
+                if not gi.is_empty and gi.area > 0.4 * r["geom"].area: r = dict(r, geom=gi)
             if not (PUFF and code.startswith("PF-") and r["st"] == "satin"):
                 return _orig(r, earlier_tones)
             pull = dst2.pull_for(code); blocks = []

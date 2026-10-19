@@ -43,6 +43,33 @@ def strokes(base, origin=None, only=None):
         keep = {c.lower() for c in only}; out = [(c, r) for c, r in out if c.lower() in keep]
     return out
 
+def mask_as_sewn(base, bbox, ppm, only=None, thread=0.42):
+    """stitched coverage AS SEWN: each stop's stitches drawn at the thread width minus 2 x the pull compensation of the
+    stop's codes (tech.RULES; the pull-in that pull compensation cancels on fabric); only = thread hex colours"""
+    import tech, dst2
+    rp = os.path.join(os.path.dirname(base) if not base.endswith("") else os.path.dirname(base), f"result_{os.path.basename(base).split('_')[2]}.json")
+    try:
+        R = json.load(open(rp)); st = R["full"] if os.path.normpath(R["full"]["file"]) == os.path.normpath(base) else None
+    except Exception: st = None
+    pulls = [min([dst2.pull_for(c) for c in ps.get("codes", []) if c in tech.RULES] or [0.0]) for ps in (st["per_stop"] if st else [])]
+    cx, cy = origin_of(base)
+    cols = [t.hex_color() for t in pe.read(base + ".pes").threadlist]
+    p = pe.read(base + ".dst"); x0, y0, x1, y1 = bbox; W, H = int((x1 - x0)*ppm), int((y1 - y0)*ppm)
+    im = Image.new("L", (W, H), 0); d = ImageDraw.Draw(im); keep = {c.lower() for c in only} if only else None
+    ci = 0; run = []
+    def flush():
+        if len(run) > 1 and (keep is None or cols[min(ci, len(cols)-1)].lower() in keep):
+            pl = pulls[ci] if ci < len(pulls) else 0.0
+            d.line([((x - x0)*ppm, (y - y0)*ppm) for x, y in run], fill=255, width=max(1, int(round(max(0.1, thread - 2*pl)*ppm))))
+    for x, y, cmd in p.stitches:
+        c = cmd & pe.COMMAND_MASK
+        if c == pe.STITCH: run.append((x/10 + cx, y/10 + cy)); continue
+        flush(); run = []
+        if c == pe.COLOR_CHANGE: ci += 1
+        elif c == pe.END: break
+    flush()
+    return np.array(im) > 127
+
 def mask(bases, bbox, ppm, only=None, width=0.42, origins=None):
     """bool mask (H x W) of the stitches (thread width `width` mm) of the given thread colours on a garment-mm grid"""
     x0, y0, x1, y1 = bbox; W, H = int((x1 - x0)*ppm), int((y1 - y0)*ppm)
