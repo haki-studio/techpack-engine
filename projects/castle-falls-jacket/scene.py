@@ -79,6 +79,7 @@ FALL_OBJ = {   # (top (x, y), bottom (x, y), width top, width bottom); BK: the b
  "SL": [((116, 150), (130, 292), 20, 30)]}
 PAGODA = {"FR": (-147.0, 206.0, [(267, 284, 62, 300, 34), (301, 314, 70, 330, 36), (331, 346, 79, 364, 40)])}   # FR, measured on the close-up composite
 GATE = {"SL": (-150.0, 228.0)}          # SL front, beside the left welt (mockup + front close-up right edge)
+CRAG = {"FR": [(-96, 50), (-84, 58), (-70, 110), (-55, 160), (-42, 230), (-32, 300), (-60, 310), (-100, 300), (-118, 240), (-114, 160), (-108, 100)]}
 VILLAGE = {"BK": [(-205, 478, 135, 568)], "FR": [(-300, 405, -60, 512)], "FL": [(0, 478, 40, 512)], "SR": [], "SL": []}
 CLOUD_T = ("cf_white", "cf_cream", "cf_mist")
 FOL_T = ("cf_grndk", "cf_grn", "cf_grnlt")
@@ -101,6 +102,15 @@ def revb_structure(P, res, t, f, rng, add, knock):
     env = ndi.binary_fill_holes(ndi.binary_closing(art, structure=TRC.disk(24.0), iterations=1)) & ndi.binary_erosion(np.ones_like(art), iterations=2)
     hole = env & ~art
     t = t.copy(); t[hole] = TI["cf_navy"]; info["sky_fill_mm2"] = round(float(hole.sum()) / ppm ** 2)
+    # 1b. FR spire crag (item 11): cloud-white strata inside the crag are rock highlights, not clouds
+    crag = Polygon(CRAG[P]) if P in CRAG else Polygon()
+    if not crag.is_empty:
+        X_, Y_ = f(np.arange(W)[None, :].repeat(H, 0), np.arange(H)[:, None].repeat(W, 1))
+        from shapely import contains_xy
+        inc = contains_xy(crag, X_, Y_)
+        for a_, b_ in (("cf_white", "cf_mist"), ("cf_cream", "cf_mist"), ("cf_navy", "cf_slate")):
+            t[inc & (t == TI[a_])] = TI[b_]
+        t[inc & (t < 0)] = TI["cf_slate"]
     # 2. clouds -> lobes (lit rim / body / shaded underside, rows fanned per lobe; item 5)
     nl = 0
     cm = np.isin(t, [TI[k] for k in CLOUD_T])
@@ -141,7 +151,7 @@ def revb_structure(P, res, t, f, rng, add, knock):
         bt = {TI[k] for k in ("cf_navy", "cf_red", "cf_white", "cf_gold", "cf_sky", "cf_brown", "cf_cream")}
         rowy = y1; row = 0
         while rowy > y0 + 8:
-            w = rng.uniform(13, 19) * (0.75 + 0.25 * (rowy - y0) / max(1, y1 - y0))
+            w = rng.uniform(20, 32) * (0.7 + 0.3 * (rowy - y0) / max(1, y1 - y0))
             x = x0 + (w / 2 if row % 2 else 0) + rng.uniform(0, 3)
             while x < x1 - w / 2:
                 fp = box(x - w / 2, rowy - w * 0.6, x + w / 2, rowy)
@@ -150,8 +160,8 @@ def revb_structure(P, res, t, f, rng, add, knock):
                 if win.size and np.isin(win, list(bt)).mean() > 0.45 and not knock.intersects(fp):
                     regs, o = M2.house(x, rowy, w, rng, unit=f"h{P}{nh}")
                     add([r for r in regs if r.get("ko", True)], 19); add([r for r in regs if not r.get("ko", True)], 20); nh += 1
-                x += w * rng.uniform(1.0, 1.25)
-            rowy -= w * 0.52; row += 1
+                x += w * rng.uniform(0.95, 1.4)
+            rowy -= w * rng.uniform(0.45, 0.6); row += 1
     info["houses"] = nh
     return dict(t=t, knock=knock, info=info, field=field)
 
@@ -215,9 +225,9 @@ def build(P):
                         ang, coh = M2.region_angle(field, g, to_px, default=ang)
                     r = CM.R(k, g, "tatami", ang, "VIL" if cls == "bld" else GRP[cls])
                     if cls == "rock" and A >= 40 and k in ("cf_slate", "cf_lav"):
-                        add(M2.strata(g, ang, 3.4, ["cf_mist", "cf_bark"], "RK-line", phase=rng.uniform(0, 3.4)), 13)
+                        add([r], 11); add(M2.strata(g, ang, 3.4, ["cf_mist", "cf_bark"], "RK-line", phase=rng.uniform(0, 3.4)), 11); continue
                     if cls == "trk" and A >= 30:
-                        add(M2.strata(g, ang, 3.0, ["cf_brown" if k == "cf_bark" else "cf_bark"], "TRK-line", phase=rng.uniform(0, 3.0)), 16)
+                        add([r], 11); add(M2.strata(g, ang, 3.0, ["cf_brown" if k == "cf_bark" else "cf_bark"], "TRK-line", phase=rng.uniform(0, 3.0)), 11); continue
                 add([r], 11)
     # ---- blossom florets on the blossom ground (overlay), counted from the ground area (~1 floret per 22 mm2)
     blm = np.isin(t, [TI["cf_pinklt"], TI["cf_pink"], TI["cf_rose"]])

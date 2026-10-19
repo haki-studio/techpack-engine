@@ -62,7 +62,7 @@ def lobe_regions(lobes, tones, C=None, grp="CL", unit=None, gap=0.0, ex=EX, ey=E
         if V.area < 2.0:
             front = front.union(d); continue
         bcol, rcol, scol = tones((cx, cy, r))
-        wr = min(2.6, max(1.1, 0.3 * r)); ws = min(1.8, max(0.9, 0.2 * r))
+        wr = min(2.6, max(1.1, 0.3 * r)); ws = min(1.4, max(0.7, 0.15 * r))
         shade = V.intersection(front.buffer(gap + ws)) if not front.is_empty else Polygon()
         shade = shade.union(V.intersection(box(cx - 2 * r, cy + max(0.4 * r, 0.9 * r * ey - ws), cx + 2 * r, cy + 2 * r)))
         shade = smooth(shade.intersection(V), 0.4) if r >= 3.0 else Polygon()

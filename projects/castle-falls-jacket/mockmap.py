@@ -72,6 +72,7 @@ def with_closeups(a, up):
 # smoothed so the warp never folds, colour-matched to the mockup under its mask and composited with a feathered edge. The
 # full mockup stays the reference for placement + scale; the close-up gives shapes + stitch structure.
 TPS_ON = True
+CU_MATCH = False     # Rev B: keep the close-ups' own colours (matching to the dull mockup turned their navy sky into slate)
 CLOSEUPS_TPS = {
  "front": dict(file="inputs/closeups/closeup_front.png", region=(188, 192, 662, 600), feather=14, pts=[
     ((838, 225), (482, 283)), ((920, 230), (518, 283)), ((712, 560), (432, 420)), ((1055, 560), (565, 420)),
@@ -120,7 +121,7 @@ def with_closeups_tps(a, up):
         ref = a[Y0:Y1, X0:X1]; sel = m > 0.6
         art = (ref.max(2) - ref.min(2) > 25) | (ref.mean(2) > 110)        # mockup art pixels (not bare shell) for the colour match
         sel_r = sel & art
-        p = (p - p[sel].mean(0)) / np.maximum(p[sel].std(0), 1) * ref[sel_r].std(0) + ref[sel_r].mean(0)
+        if CU_MATCH: p = (p - p[sel].mean(0)) / np.maximum(p[sel].std(0), 1) * ref[sel_r].std(0) + ref[sel_r].mean(0)
         p = p.clip(0, 255)
         a[Y0:Y1, X0:X1] = ref * (1 - m[..., None]) + p * m[..., None]
     return a
@@ -239,7 +240,7 @@ def sleeve_closeup(P, bbox, ppm, out, fold_sign=None):
     for fr in (True, False):
         sel = inside & (front == fr)
         art = sel & ((out.max(2) - out.min(2) > 25) | (out.mean(2) > 110))
-        if art.sum() < 50: continue
+        if art.sum() < 50 or not CU_MATCH: continue
         q = p[sel]; q = (q - q.mean(0)) / np.maximum(q.std(0), 1) * out[art].std(0) + out[art].mean(0)
         p[sel] = q
     w = (inside & (u < 0.985)).astype(np.float32)[..., None]
