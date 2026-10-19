@@ -11,9 +11,9 @@ REG = json.load(open("trace/closeup_reg.json"))
 REF = {"01": ("Rev B: motif STRUCTURE traced from the AI close-up of the upper wearer's-right front (inputs/closeup_mockup_koi.png, registered on the mockup, "
               f"mean drift {REG['projective']['mean_mm']} mm): lily petal outlines + tone regions, throats, anthers, free-petal shapes. "
               "Positions + sizes from the low-res mockup (inputs/front.png, ~1 px/mm). Close-up covers FR upper only (2 lilies): the FR hem lily and the FL lilies have NO close-up "
-              "and reuse the traced templates. FISH: founder change 19 Oct — tetras drawn from inputs/reference_fish.png (not the koi of the mockup/close-up), at the mockup fish positions + headings. No original artwork exists."),
+              "and reuse the traced templates. A14: every petal, leaf-cluster and lily silhouette traced from the mockup pixels (zip, seams, welts, background masked first); GENERATED, NOT TRACED: stems + leaf inner structure (clipped to the traced silhouettes). FISH: founder change 19 Oct — tetras drawn from inputs/reference_fish.png (not the koi of the mockup/close-up), at the mockup fish positions + headings. No original artwork exists."),
        "02": ("Rev B: NO close-up of the sleeves — redrawn from the low-res mockup (inputs/front.png, ~1 px/mm, front view only) using the lily + petal "
-              "templates traced from the front close-up (inputs/closeup_mockup_koi.png); fish = tetras from inputs/reference_fish.png (founder change 19 Oct). A sleeve close-up (inputs/closeup_request.md) would let us trace them.")}
+              "templates traced from the front close-up (inputs/closeup_mockup_koi.png); fish = tetras from inputs/reference_fish.png (founder change 19 Oct). A14: petal + leaf-cluster silhouettes traced from the mockup pixels; GENERATED, NOT TRACED: stems + leaf inner structure. A sleeve close-up (inputs/closeup_request.md) would let us trace them.")}
 PROD = ["Embroider the cut panels flat, BEFORE zip, welts,",
         "  side seams, sleeve seams and hem band / cuffs.",
         "12 threads, 40wt polyester (G3); stop order p4.",

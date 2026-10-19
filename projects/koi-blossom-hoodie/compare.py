@@ -192,6 +192,22 @@ def sheet(el):
         for X in pos[P]:
             d.rectangle([X + (zb[0] - bb[0]) * 1.6, 70 + (zb[1] - bb[1]) * 1.6, X + (zb[2] - bb[0]) * 1.6, 70 + (zb[3] - bb[1]) * 1.6], outline=(255, 40, 40), width=2)
             d.text((X + (zb[0] - bb[0]) * 1.6 + 3, 70 + (zb[1] - bb[1]) * 1.6 + 2), str(k + 1), fill=(255, 40, 40), font=FONT)
+    # LESSONS A14/A15 gate tables (fidelity.py on the same size-M DSTs)
+    FDJ = json.load(open(f"out/fidelity_{size}.json"))
+    lines = ["FIDELITY GATES (LESSONS A14/A15) on the shipped DSTs — qa.motif_match per motif (IoU >= 0.70, width + height >= 80 %), qa.uncovered (bare gaps >= 25 mm2)"]
+    for P in pcs:
+        r = FDJ[P]; fams = r["rows"]
+        summ = "  ".join(f"{fam}: {sum(x['ok'] for x in rs)}/{len(rs)} pass, min IoU {min([x['iou'] for x in rs] or [1]):.2f}" for fam, rs in fams.items())
+        lines.append(f"{P} ({os.path.basename(r['dst'])}): {summ}  |  unexplained bare gaps >= 25 mm2: {len(r['gaps'])}" + (f"  |  {r.get('lily_zone_bits', 0)} small mockup bits inside the close-up lily zone (close-up governs)" if r.get('lily_zone_bits') else ""))
+        for fam, rs in fams.items():
+            for x in rs:
+                if not x["ok"]: lines.append(f"   FAIL {fam} at ({x['x_mm']}, {x['y_mm']}) {x['area_mm2']} mm2: IoU {x['iou']}, w {x['w_ratio']}, h {x['h_ratio']}")
+        for g_ in r["gaps"]: lines.append(f"   GAP at ({g_['x_mm']}, {g_['y_mm']}) {g_['w_mm']} x {g_['h_mm']} mm, {g_['area_mm2']} mm2")
+    lines.append("Reference: flora = the mockup pixels (zip, seams, welts, hem band, background + the replaced koi masked out first); the two FR lilies = the close-up trace; fish = composed target "
+                 "(reference_fish.png proportions at the mockup positions). Generated, not traced: stems (thinner than the 1 px/mm mockup resolves) and the leaf objects' inner structure (clipped to the traced silhouettes).")
+    yy = out.height; ext = Image.new("RGB", (out.width, out.height + 24 * len(lines) + 20), "white"); ext.paste(out, (0, 0)); d2 = ImageDraw.Draw(ext)
+    for i, l in enumerate(lines): d2.text((10, yy + 8 + 24 * i), l, fill=(180, 0, 0) if ("FAIL" in l or "GAP" in l) else (0, 0, 0), font=FONT if i == 0 else FS)
+    out = ext
     fn = f"out/compare_{el}_{kbcore.ELEMS[el][0]}.png"; out.save(fn); return fn, out.size
 
 if __name__ == "__main__":

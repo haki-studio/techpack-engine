@@ -55,7 +55,7 @@ def build(size):
         out, moves, leafmoves, dropped = [], {}, {}, []
         for gk, regs in groups.items():
             is_cl = regs[0]["cluster"] is not None
-            if gk.startswith(("fill_", "petal_")):      # traced from the mockup INSIDE this keep-out area: placed as traced, never moved (A14)
+            if size == "M" and gk.startswith(("fill_", "petal_")):   # traced from the mockup inside size M's keep-outs: placed as traced (A14); graded sizes are fitted
                 out += regs; continue
             fitted, mv = (None, None) if is_cl else fit_group(regs, lim)
             if fitted is None and not is_cl: fitted, mv = fit_group(regs, lim, 32.0)      # Rev B: wider search before giving up (no motif dropped)

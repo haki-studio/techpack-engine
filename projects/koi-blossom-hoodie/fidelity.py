@@ -79,6 +79,11 @@ def run(P):
     lily_ref = raster(lil, bb) if lil else np.zeros_like(ref_flora)
     if lil: ref_flora = ref_flora | lily_ref          # the close-up lily silhouettes are part of the reference
     out, dfile = dst_masks(P, bb)
+    # stems are generated, not traced (A14 list): their footprint is taken out of the flora comparison (merge_stops can put a
+    # stem in the same colour stop as traced fill, so stop codes alone cannot separate them)
+    stem_zone = raster([r["geom"].buffer(0.45) for r in ART[P] if r["grp"] == "ST"], bb)
+    out["stems"] = out["stems"] | (out["flora"] & stem_zone); out["flora"] = out["flora"] & ~stem_zone
+    ref_flora = ref_flora & ~stem_zone                 # ... and out of the reference (same footprint on both sides)
     lab, n = ndi.label(ref_flora); areas = ndi.sum(ref_flora, lab, range(1, n + 1)) / PPM**2
     small = areas < 150
     lily_zone = raster([unary_union(lil).buffer(1.0)], bb) if lil else np.zeros_like(ref_flora)

@@ -227,7 +227,8 @@ for P in kbcore.PIECES:
     for r in ITEMS[P]:
         if r in flora and r["unit"] not in PROTECT and r["grp"] != "ST":
             g_ = r["geom"].intersection(Cb).buffer(0)
-            if g_.is_empty or g_.area < 0.8: continue
+            g_ = unary_union([q for q in (g_.geoms if hasattr(g_, 'geoms') else [g_]) if q.geom_type == 'Polygon' and q.area >= 3.0]) if not g_.is_empty else g_
+            if g_.is_empty or g_.area < 3.0: continue          # a sliver of a drawn object: the traced fill covers it instead
             r["geom"] = g_
         kept.append(r)
     ITEMS[P] = kept

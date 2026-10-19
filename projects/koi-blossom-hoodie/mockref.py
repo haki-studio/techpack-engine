@@ -12,7 +12,7 @@ from shapely.ops import unary_union
 from skimage import measure
 import qa, mockmap as MM, front as F
 
-PPM = 3.0
+PPM = 5.0
 BB = {"FR": (-300, -60, 0, 520), "FL": (0, -60, 300, 520), "SR": (-10, -110, 260, 470), "SL": (-260, -110, 10, 470)}
 TONE_KEYS = ["kb_cobalt", "kb_royal", "kb_sky", "kb_ice"]
 
