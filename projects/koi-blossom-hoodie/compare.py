@@ -1,4 +1,6 @@
-"""Fidelity sheets (LESSONS A11/A12): out/compare_01_front-koi.png + out/compare_02_sleeve-koi.png.
+"""Fidelity sheets (LESSONS A11/A12): out/compare_01_front-fish.png + out/compare_02_sleeve-fish.png.
+Founder change (19 Oct): the fish are tetras, not koi — fish zooms show inputs/reference_fish.png (the founder's fish
+reference, mapped onto each fish by its heading + length) in the reference column; lily zooms show the close-up.
 Rev B: the stitch column is drawn from the FINAL production file read back (pyembroidery read of the size-M DST: every
 stitch, in the thread colours of the PES), NOT from the art pickle. DST coordinates + the file's recorded origin = piece mm.
 Columns: MOCKUP (front.png mapped to the piece's mm) | CLOSE-UP (inputs/closeup_mockup_koi.png, FR only, mapped through
@@ -20,6 +22,9 @@ BB = {"FR": (-300, -60, 0, 520), "FL": (0, -60, 300, 520), "SR": (-10, -110, 260
 REG = json.load(open("trace/closeup_reg.json")); H = np.array(REG["projective"]["H"]); HI = np.linalg.inv(H)
 META = pickle.load(open("scene.pkl", "rb"))["meta"]
 CU = np.array(Image.open("inputs/closeup_mockup_koi.png").convert("RGB")).astype(np.float32)
+RF = np.array(Image.open("inputs/reference_fish.png").convert("RGB")).astype(np.float32)
+RF_HEAD, RF_TAIL = np.array([740.0, 930.0]), np.array([967.0, 809.0])     # reference fish (lower middle): snout, tail-lobe tip mid
+RF_BELLY = -1                                                            # it swims leftward with the belly down (kb_fish: mirrored)
 
 def dst_file(P):
     r = json.load(open(f"{kbcore.outdir(P)}/{size}/result_{P}.json"))["full"]; return r["file"], r["origin"]
@@ -87,15 +92,18 @@ def closeup_motif(mot, bb, ppm):
         u = (dx * math.cos(th) - dy * math.sin(th)) / s; v = (dx * math.sin(th) + dy * math.cos(th)) / s
         if info["mirror"]: u = -u
         cx, cy = tp["c"][0] + u, tp["c"][1] + v
-    else:
-        import kb_traced as KT
-        t = KT.TPL["koi"][info["template"]]; hd, tl = np.array(t["head"], float), np.array(t["tail"], float); mid = (hd + tl) / 2
-        a0 = math.atan2(*(hd - tl)[::-1]); s = info["L"] / t["L"]; th = -math.radians(info["ang"])
+    else:       # fish: the founder's reference fish laid onto this fish (same heading, length, belly side)
+        L = info["L"]; a = math.radians(info["ang"]); e = np.array([math.cos(a), math.sin(a)])
+        sb = -1 if math.cos(a) < 0 else 1; nrm = np.array([-e[1], e[0]]) * sb          # belly direction of the art fish
         dx, dy = XX - info["c"][0], YY - info["c"][1]
-        u = (dx * math.cos(th) - dy * math.sin(th)) / s; v = (dx * math.sin(th) + dy * math.cos(th)) / s
-        v = v / KT.LAT
-        if info["mirror"]: v = -v
-        cx = mid[0] + u * math.cos(a0) - v * math.sin(a0); cy = mid[1] + u * math.sin(a0) + v * math.cos(a0)
+        u = (dx * e[0] + dy * e[1]) / L; v = (dx * nrm[0] + dy * nrm[1]) / L
+        Lr = np.hypot(*(RF_HEAD - RF_TAIL)); er = (RF_HEAD - RF_TAIL) / Lr; nr = np.array([-er[1], er[0]]) * RF_BELLY
+        mid = (RF_HEAD + RF_TAIL) / 2
+        cx = mid[0] + u * Lr * er[0] + v * Lr * nr[0]; cy = mid[1] + u * Lr * er[1] + v * Lr * nr[1]
+        src = RF
+        out = np.full((Hh, W, 3), 245, np.float32); ok = (cx >= 0) & (cy >= 0) & (cx < src.shape[1] - 1) & (cy < src.shape[0] - 1)
+        for c in range(3): out[..., c][ok] = map_coordinates(src[..., c], [cy[ok], cx[ok]], order=1)
+        return Image.fromarray(out.clip(0, 255).astype(np.uint8))
     out = np.full((Hh, W, 3), 245, np.float32); ok = (cx >= 0) & (cy >= 0) & (cx < CU.shape[1] - 1) & (cy < CU.shape[0] - 1)
     for c in range(3): out[..., c][ok] = map_coordinates(CU[..., c], [cy[ok], cx[ok]], order=1)
     return Image.fromarray(out.clip(0, 255).astype(np.uint8))
@@ -111,8 +119,8 @@ def _moved(info, key):
 def motif(unit):
     for l in META.get("lilies", []):
         if l["unit"] == unit: return ("lily", _moved(l, unit.rsplit("_", 1)[0]))
-    for k in META["koi"]:
-        if k["unit"] == unit: return ("koi", _moved(k, unit))
+    for k in META["fish"]:
+        if k["unit"] == unit: return ("fish", _moved(k, unit))
     return None
 
 def outline(im, bb, ppm, P):
@@ -125,16 +133,16 @@ def outline(im, bb, ppm, P):
 # zooms: (piece, bbox mm, caption, close-up motif unit or None). Motif positions are the size-M art (art_M.pkl).
 ZOOMS = {"01": [("FR", (-245, 78, -125, 198), "FR big lily (close-up flower 1) + vine leaves", "FR_vine_flower0"),
                 ("FR", (-225, 150, -125, 250), "FR mid lily (close-up flower 2)", "FR_vine_flower1"),
-                ("FR", (-150, 40, -60, 130), "FR koi pair (close-up koi 1 + 2)", "koi1"),
-                ("FR", (-120, 190, -30, 280), "FR koi (close-up koi 4)", "koi4"),
+                ("FR", (-150, 40, -60, 130), "FR fish (tetra, founder reference)", "fish1"),
+                ("FR", (-120, 190, -30, 280), "FR fish (tetra)", "fish4"),
                 ("FR", (-250, 260, -150, 360), "FR vine leaves (lit edges)", None),
                 ("FR", (-100, 400, -10, 490), "FR hem lily + dark leaves", None),
                 ("FL", (60, 360, 230, 490), "FL hem lily pair (big lily + dark flower)", None),
                 ("FL", (160, 355, 265, 470), "FL dark flower + side vine", None),
-                ("FL", (75, 205, 175, 305), "FL koi school", None)],
-         "02": [("SR", (20, 55, 110, 145), "SR top koi", None), ("SR", (25, 330, 115, 420), "SR koi + petals", None),
-                ("SR", (15, 375, 125, 465), "SR cuff flower cluster", None), ("SL", (-115, 245, -25, 335), "SL long koi", None),
-                ("SL", (-155, 330, -65, 420), "SL koi near cuff", None), ("SL", (-155, 105, -65, 195), "SL petals", None)]}
+                ("FL", (75, 205, 175, 305), "FL fish school", "fish9")],
+         "02": [("SR", (20, 55, 110, 145), "SR top fish", "fish13"), ("SR", (25, 330, 115, 420), "SR fish + petals", "fish15"),
+                ("SR", (15, 375, 125, 465), "SR cuff flower cluster", None), ("SL", (-115, 245, -25, 335), "SL fish", "fish16"),
+                ("SL", (-155, 330, -65, 420), "SL fish near cuff", "fish17"), ("SL", (-155, 105, -65, 195), "SL petals", None)]}
 
 def sheet(el):
     pcs = kbcore.ELEMS[el][2]; ppm = 1.6; cols = []
@@ -142,12 +150,18 @@ def sheet(el):
         bb = BB[P]
         mk = MM.warp_piece(P, bb, ppm, mt); st = render_dst(P, bb, ppm); outline(st, bb, ppm, P)
         cu = closeup_global(P, bb, ppm) if P == "FR" else None
-        cols.append((P, [("mockup", mk)] + ([("close-up (registered)", cu)] if cu is not None else []) + [(f"stitches (DST {size})", st)]))
+        extra = []
+        if P == pcs[0]:
+            rf = Image.open("inputs/reference_fish.png").convert("RGB"); rf = rf.resize((int(rf.width * mk.height / rf.height * 0.55), int(mk.height * 0.55)), Image.LANCZOS)
+            pane = Image.new("RGB", (rf.width, mk.height), "white"); pane.paste(rf, (0, 0))
+            ImageDraw.Draw(pane).text((6, rf.height + 8), "FISH REFERENCE (founder, 19 Oct):\ninputs/reference_fish.png\ntetras replace the koi\nof the mockup", fill="black", font=FS)
+            extra = [("fish reference", pane)]
+        cols.append((P, [("mockup", mk)] + ([("close-up (registered)", cu)] if cu is not None else []) + [(f"stitches (DST {size})", st)] + extra))
     W0 = sum(sum(im.width + 6 for _, im in c) + 24 for _, c in cols); H0 = max(c[0][1].height for _, c in cols)
     zw = 330; zs = ZOOMS[el]; per = 2; rows = (len(zs) + per - 1) // per; zrow_w = per * (3 * zw + 12 + 30)
     out = Image.new("RGB", (max(W0, zrow_w) + 20, 80 + H0 + 30 + rows * (zw + 60) + 10), "white"); d = ImageDraw.Draw(out)
     files = ", ".join(os.path.basename(dst_file(P)[0]) + ".dst" for P in pcs)
-    d.text((10, 6), f"{el} {kbcore.ELEMS[el][1]} — {kbcore.REV_EMB}: mockup | close-up | STITCHES READ BACK FROM THE DST, same scale. Red = keep-outs.", fill="black", font=FONT)
+    d.text((10, 6), f"{el} {kbcore.ELEMS[el][1]} — {kbcore.REV_EMB}: mockup | close-up | STITCHES READ BACK FROM THE DST | fish reference, same scale. Red = keep-outs.", fill="black", font=FONT)
     d.text((10, 34), f"Stitch columns are drawn from {files} (every sewn stitch, thread colours from the PES), not from the art. "
                      f"Close-up registered by a projective fit (mean residual {REG['projective']['mean_mm']} mm: positions follow the mockup, structure the close-up).", fill=(60, 60, 60), font=FS)
     x = 10; pos = {}
@@ -167,7 +181,7 @@ def sheet(el):
         st = render_dst(P, zb, zp)
         cx = 10 + (k % per) * (3 * zw + 12 + 30); cy = y0 + (k // per) * (zw + 60)
         for j, im in enumerate((mk, cu, st)): out.paste(im, (cx + j * (zw + 6), cy + 26))
-        d.text((cx, cy + 2), f"{k + 1}. {cap}   (mockup x4 | close-up | DST stitches)", fill="black", font=FS)
+        d.text((cx, cy + 2), f"{k + 1}. {cap}   (mockup x4 | " + ("FISH REFERENCE" if (mot and mot[0] == "fish") else "close-up") + " | DST stitches)", fill="black", font=FS)
         bb = BB[P]
         for X in pos[P]:
             d.rectangle([X + (zb[0] - bb[0]) * 1.6, 70 + (zb[1] - bb[1]) * 1.6, X + (zb[2] - bb[0]) * 1.6, 70 + (zb[3] - bb[1]) * 1.6], outline=(255, 40, 40), width=2)

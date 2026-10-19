@@ -1,4 +1,4 @@
-"""Embroidery pack G1-G6 + element specs + F1 for the koi blossom hoodie (01 front FR/FL, 02 sleeves SR/SL).
+"""Embroidery pack G1-G6 + element specs + F1 for the blossom tetra hoodie (slug koi-blossom-hoodie) (01 front FR/FL, 02 sleeves SR/SL).
 Every count comes from the stitch files (dst_current.json / dst_all.json, readback.dst)."""
 import kbcore
 import os, json, pickle, glob
@@ -39,7 +39,7 @@ def views(ppm):
 def cover(index):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>']
     o.append(t(14, 24, "HAKI STUDIOS", 3.0, 700, MUTED))
-    o.append(t(14, 36, "Koi blossom hooded jacket · washed navy — embroidery", 7.0, 700))
+    o.append(t(14, 36, "Blossom tetra hooded jacket · washed navy — embroidery", 7.0, 700))
     o.append(t(14, 44, f"{REV} · {DATE} · Drum Island body, size M base · 2 elements (01 front, 02 sleeves), 4 pieces · 12 threads · all dimensions mm", 2.6, 400, MUTED))
     o.append(f'<line x1="14" y1="48" x2="{SW-14}" y2="48" stroke="{INK}" stroke-width="0.4"/>')
     a, b = views(2.0)
@@ -47,11 +47,19 @@ def cover(index):
     tag, h2 = img_tag(b, 110, 62, 86); o.append(tag); o.append(t(110, 62 + h2 + 3.5, "SLEEVES (pattern pieces, front half embroidered)", 2.0, 700))
     o.append(t(14, 54 + h + 8, "Back + hood: no embroidery [proposed — confirm, the mockup shows the front only].", 1.9, 600, ORANGE))
     REG = json.load(open("trace/closeup_reg.json"))
-    gl = [f"REFERENCE: lilies, koi + petals traced from the AI close-up of the FR upper panel (registered, drift {REG['projective']['mean_mm']} mm -> positions",
-          "from the mockup). NO close-up for: FR hem lily, the whole FL panel, both sleeves — redrawn from the low-res mockup with the traced templates.",
+    gl = [f"REFERENCE: lilies + petals traced from the AI close-up of the FR upper panel (registered, drift {REG['projective']['mean_mm']} mm -> positions from the mockup).",
+          "NO close-up for: FR hem lily, the whole FL panel, both sleeves — redrawn from the low-res mockup with the traced templates. FISH: tetras from inputs/reference_fish.png.",
           f"GRADING [proposed — confirm]: XS–S 92 %, M–XL 100 % (L + XL sew the M art: FR {ALL['L']['FR']['full']['size_mm'][0]:.0f} × {ALL['L']['FR']['full']['size_mm'][1]:.0f}, "
           f"{ALL['L']['FR']['full']['stitches']:,} / {ALL['XL']['FR']['full']['stitches']:,} st, only re-fitted to their keep-outs), XXL–3XL 108 %."]
     for i, l in enumerate(gl): o.append(t(14, 54 + h + 12 + i*3.4, l, 1.75, 600, ORANGE if i == 2 else INK))
+    ry = 54 + h + 12 + len(gl)*3.4 + 3
+    o.append(t(14, ry, "REVISION LOG", 2.2, 700))
+    import textwrap
+    for rv, dt, txt in kbcore.REV_LOG:
+        ls = textwrap.wrap(txt, 150)
+        o.append(t(14, ry + 4, f"{rv} · {dt}", 1.75, 700))
+        for j, l in enumerate(ls): o.append(t(36, ry + 4 + j*3.0, l, 1.7, 600 if "FOUNDER" in l else 400, RED if "FOUNDER" in l else INK))
+        ry += 4 + 3.0*(len(ls) - 1) + 1.5
     ix = 204
     o.append(t(ix, 58, "CONTENTS", 2.8, 700)); y = 64
     for name, pg in index:
@@ -167,7 +175,8 @@ def summary():
           "6b. Zip: the mockup lilies touch the zip; the art keeps 15 off CF on both fronts (FR hem lily moved ~15 mm). OK?",
           "7. Hood pattern: the hooded Drum Island variant is not drafted yet — pattern + garment pages (T*) follow; placements here use the Drum Island body.",
           "8. Welt pockets: at the mockup position and angle (60°), Drum Island welt size 1.4 × 13. Confirm before the art is frozen.",
-          "9. Reference: lilies + koi traced from ONE AI close-up (FR upper); FL, the FR hem lily and the sleeves are redrawn from the low-res mockup with those templates. Close-ups of FL + sleeves (closeup_request.md) would let us trace them too.",
+          "9. Reference: lilies traced from ONE AI close-up (FR upper); FL, the FR hem lily and the sleeves are redrawn from the low-res mockup with those templates. Fish = tetras from the founder's reference_fish.png (one reference image; sizes + headings from the mockup).",
+          "9b. Product name: shown as 'Blossom Tetra' now that the fish are not koi (slug + style code HK-HD-KOIB-NV kept). Confirm the name.",
           "10. DST/PES are production-intent drafts: the factory digitizer checks density + pull on the shell and edits before the strike-off."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i*3.6, q, 1.75))
     return o
@@ -196,7 +205,7 @@ def files_page():
                 o.append(t(cx[3], y, "pending", 1.4, 400, MUTED)); allfit = False
             y += 3.05
     y += 2.5
-    notes = [("Order", "per piece: stems → leaves (dark tones first) → lilies (petal tones dark → light → throat → stamen lines → anthers) → petals → koi (fins + tail → rays → body → shading → scale rows → red → eyes)."),
+    notes = [("Order", "per piece: stems → leaves (dark tones first) → lilies (petal tones dark → light → throat → stamen lines → anthers) → petals → fish (tail + fins → body facets → cyan line + red stripe → pectoral fin → eye ring → eye)."),
              ("Ties", f"3-stitch tie-on/off at every trim + colour change; max sewn stitch ≤ 7.5 mm; ≤ {FA.max_threads(PROF)} thread colours per file (registration in stop 1's thread).")]
     for a, b_ in notes:
         o.append(t(12, y, a, 1.5, 700)); o.append(t(24, y, b_, 1.4)); y += 3.1
@@ -256,7 +265,7 @@ def hooping_page():
             o.append(t(cx[10], y, f"{sum(mh(v) for v in secs.values()):.2f}", 1.35)); o.append(t(cx[11], y, f"{sum(v['trims'] for v in secs.values())}", 1.35))
             y += 3.05
     y += 2.5
-    notes = ["The split line is chosen where it cuts the least art inside the frame (searched 12–88 % of the art height). Motifs under 70 mm (koi, petals, leaves)",
+    notes = ["The split line is chosen where it cuts the least art inside the frame (searched 12–88 % of the art height). Motifs under 70 mm (fish, petals, leaves)",
              "go whole to one file; larger fills that still cross it overlap 1.2 mm (amber) — check that joint on the strike-off photos.",
              "Needle start = centre of each file's design (origin of the DST/PES). Mark it on the cut panel from the pattern (DXF layer 13 + layer 8 cross).",
              "Registration crosses sew at the start of stop 1 in that stop's thread (max 12 colours per file); S2 re-registers on the crosses S1 sewed; pick out after S2.",

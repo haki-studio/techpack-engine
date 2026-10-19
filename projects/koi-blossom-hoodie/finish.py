@@ -1,4 +1,4 @@
-"""Package (embroidery Rev A; garment pages wait for the hooded pattern): thread charts for every stitch file, elements/, README, zip."""
+"""Package (embroidery; garment pages wait for the hooded pattern): thread charts for every stitch file, elements/, README, zip."""
 import kbcore
 import os, shutil, glob, subprocess, json
 import pyembroidery as pe
@@ -17,15 +17,16 @@ open(f"{PKG}/README.txt", "w").write(f"""HAKI STUDIOS - {kbcore.NAME} (style {kb
 Embroidery {kbcore.REV_EMB} - {kbcore.DATE}
 
 {os.path.basename(pdf)}
-    G1-G6 embroidery pages, 01 front + 02 sleeves element specs (5 pp each), F1 factory requests.
-    Garment pages (T1-T16) + pattern (DXF / 1:1 PDF): WAITING for the hooded Drum Island pattern (engine), follow in Rev B.
+    G1-G6 embroidery pages (G1 has the revision log), 01 front + 02 sleeves element specs (5 pp each), F1 factory requests.
+    Rev B: FOUNDER CHANGE - the fish are tetras (inputs/reference_fish.png), not koi; lilies + petals traced from the close-up.
+    Garment pages (T1-T16) + pattern (DXF / 1:1 PDF): WAITING for the hood decision (hooded Drum Island pattern).
 
-elements/01_front-koi/<size>/     FR (wearer's right front) + FL (wearer's left front) stitch files (DST + PES), previews, thread charts.
-elements/02_sleeve-koi/<size>/    SR (wearer's right sleeve) + SL (wearer's left sleeve), front half of each sleeve.
+elements/01_front-fish/<size>/     FR (wearer's right front) + FL (wearer's left front) stitch files (DST + PES), previews, thread charts.
+elements/02_sleeve-fish/<size>/    SR (wearer's right sleeve) + SL (wearer's left sleeve), front half of each sleeve.
     splits/ = S1_top + S2_bottom for a 360 x 360 frame where the art is taller than the frame (stop 1 opens with
     registration crosses in its own thread - pick out after the last hooping).
 elements/*/ *_SPEC_*.pdf          element specs; *_M_ART*.svg = size-M region art with digitizing attributes.
-compare_*.png                     mockup vs stitch render, same scale + zooms (fidelity check).
+compare_*.png                     mockup | close-up | stitches read back from the size-M DST | fish reference, same scale + zooms.
 
 Size M (read from the DST):
 {nums}

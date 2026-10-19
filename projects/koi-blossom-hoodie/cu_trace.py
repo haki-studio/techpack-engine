@@ -248,7 +248,7 @@ if __name__ == "__main__":
         for kn in f["knots"]: fill(kn, hexc("kb_white"))
     for k in koi.values():
         fill(k["tail_g"], hexc("kb_cream")); [fill(fn, hexc("kb_cream")) for fn in k["fins"]]
-        fill(k["body"], hexc("kb_white")); fill(k["grey"], hexc("kb_grey"))
+        fill(k["body"], hexc("kb_white")); fill(k["grey"], hexc("kb_cream"))
         for r in k["reds"]: fill(r, hexc("kb_red"))
         if k["eye"]: d.ellipse([k["eye"][0] * sc - 4, k["eye"][1] * sc - 4, k["eye"][0] * sc + 4, k["eye"][1] * sc + 4], fill=hexc("kb_ink"))
     for p in pet: fill(p["poly"], "#9DB4D6", outline="#E6ECF5")

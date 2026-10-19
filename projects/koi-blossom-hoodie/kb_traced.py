@@ -1,3 +1,4 @@
+# NOTE (19 Oct 2026): koi() is no longer used — the founder replaced the koi by tetras (kb_fish.py). Kept for the record.
 """Rev B motifs built from the close-up traces (trace/templates.pkl, cu_trace.py) — LESSONS A12/A13.
 Each function maps one traced template (close-up px) onto a mockup position (mm): centre, size, heading, optional mirror,
 and returns region dicts (col, geom, st, ang, grp, sub) like kb_motifs.

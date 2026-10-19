@@ -1,7 +1,7 @@
 """Per-size art for the four pieces (LESSONS A5): the size-M scene is graded (A 92 % / B 100 % / C 108 %) — fronts about
 the CF neck point (both halves share the origin, so the zip line is the same on both), sleeves about the cuff-seam centre
 (then moved onto that size's cuff seam) — and fitted inside THAT size's pattern keep-outs.
-Fidelity first (A11): nothing is cut by a keep-out line. Whole motifs (koi, floating petals) and whole flower clusters
+Fidelity first (A11): nothing is cut by a keep-out line. Whole motifs (fish, floating petals) and whole flower clusters
 are nudged (<= 18 mm) and, only if that is not enough, shrunk (>= 85 %) until they sit inside the keep-outs; a leaf at the
 edge of a cluster that still does not fit is moved inward along its own axis. Every move is recorded (art_<size>.pkl info).
 usage: python3 art_size.py XS S M ...   -> art_<size>.pkl + out/art/<size>_flat.png"""

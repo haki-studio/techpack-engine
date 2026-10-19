@@ -1,4 +1,4 @@
-"""Element spec (5 pages) for one element of the koi blossom hoodie: 01 front (FR + FL) or 02 sleeves (SR + SL).
+"""Element spec (5 pages) for one element of the blossom tetra hoodie (slug koi-blossom-hoodie): 01 front (FR + FL) or 02 sleeves (SR + SL).
 Adapted from the Drum Island / Grand Line espec. Every per-file and per-stop number is read back from the size-M DST
 (dst_current.json, made by make_current.py from readback.dst)."""
 import kbcore

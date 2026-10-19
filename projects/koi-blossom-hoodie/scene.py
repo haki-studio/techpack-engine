@@ -1,8 +1,8 @@
-"""Koi blossom scene — composed on the size-M pieces (garment / pattern mm, unclipped).
+"""Blossom tetra scene (slug koi-blossom-hoodie) — composed on the size-M pieces (garment / pattern mm, unclipped).
 Every motif position, size and direction is read from the mockup (inputs/front.png, px) — counted, not traced
-(LESSONS A2/A10): 18 koi, 7 flowers, ~85 leaves, 37 floating petals.  Rev B: motif STRUCTURE is traced from the close-up
+(LESSONS A2/A10): 18 fish, 7 flowers, ~85 leaves, 37 floating petals.  Rev B: motif STRUCTURE is traced from the close-up
 (inputs/closeup_mockup_koi.png -> cu_trace.py -> trace/templates.pkl, A12/A13): lilies (petal outlines + tone regions,
-throat, anthers), koi (silhouette, red patches, fins, tail, shading) and free-petal shapes, each mapped onto its mockup
+throat, anthers) and free-petal shapes, each mapped onto its mockup
 position (cu_register.py: the close-up drifted ~13 mm, so positions come from the mockup).  Output: scene.pkl = {"items": {piece: [...]}, "meta": {...}}.
 usage: python3 scene.py"""
 import kbcore
@@ -10,7 +10,7 @@ import math, random, pickle, json
 import numpy as np
 from shapely.geometry import Point
 from shapely.ops import unary_union
-import mockmap as MM, front as F, kb_motifs as KM, kb_traced as KT, kbvis, json
+import mockmap as MM, front as F, kb_motifs as KM, kb_traced as KT, kb_fish as KF, kbvis, json
 
 G_M, MT_M = F.pieces("M")
 S = MM.S                                   # mm per mockup px for motif sizes (fronts + sleeves)
@@ -37,7 +37,7 @@ def add(P, regs, zbase, layer, unit, kind, cluster=None, ko=True):
         sub = r.get("sub", 0)
         r["z"] = zbase + sub + len(ITEMS[P]) * 1e-4
         lay = layer
-        if kind == "koi": lay = {1: 24.1, 2: 24.2, 3: 24.3, 4: 24.4, 4.5: 24.45, 5: 24.5, 6: 24.6}[sub]
+        if kind == "fish": lay = 24.0 + sub / 10.0          # tail + fins -> body facets -> lines -> pectoral -> ring -> eye
         if kind == "flower": lay = 22.2 if r["grp"] in ("FL-cup", "FL-eye", "FL-stamen") else 22.0
         if r["grp"] in ("KO-ray", "LF-vein"): r["ko"] = False
         else: r.setdefault("ko", ko)
@@ -49,7 +49,9 @@ def ang_of(P, a, b):
     A, B = np.array(to_mm(P, *a)), np.array(to_mm(P, *b))
     d = B - A; return math.degrees(math.atan2(d[1], d[0])), float(np.hypot(*d)), A
 
-# ================================================================ koi (head px, tail px, red pattern, bend)
+# ================================================================ fish (head px, tail px, -, -) — FOUNDER CHANGE 19 Oct 2026: tetras, not koi
+# Positions + headings = the mockup's fish (former koi); proportions from inputs/reference_fish.png (slimmer + shorter):
+# length = 0.82 x the mockup fish length (min 40 mm), belly kept on the lower side (kb_fish.fish mirrors leftward swimmers).
 KOI = [((255, 371), (201, 344), 0, 2), ((286, 424), (245, 395), 2, -2), ((343, 483), (297, 450), 1, 2), ((283, 499), (215, 465), 0, 3),
        ((322, 565), (277, 515), 3, -2), ((335, 703), (286, 663), 1, 2),                                      # FR
        ((582, 486), (541, 476), 2, 1), ((546, 505), (500, 501), 0, -1), ((509, 533), (461, 528), 1, 1), ((472, 563), (412, 535), 0, 2),
@@ -57,18 +59,15 @@ KOI = [((255, 371), (201, 344), 0, 2), ((286, 424), (245, 395), 2, -2), ((343, 4
        ((51, 540), (89, 489), 3, 2), ((105, 671), (57, 626), 0, -2), ((79, 811), (50, 753), 2, 2),            # SR
        ((707, 756), (680, 669), 3, -3), ((651, 813), (615, 861), 1, 2)]                                       # SL
 rng = random.Random(11)
-REG = json.load(open("trace/closeup_reg.json"))
-CU_OF = {int(v[3:]): int(k[6:]) for k, v in REG["koi_match"].items()}     # scene koi index -> close-up koi template it IS
-koi_info = []
+fish_info = []
 for i, (hd, tl, pat, bend) in enumerate(KOI):
     P = piece_of(*hd)
     a, L, A = ang_of(P, tl, hd)
-    Lpx = math.hypot(hd[0] - tl[0], hd[1] - tl[1]); Lmm = max(50.0, Lpx * S * 0.98)      # tails read short in the render
+    Lpx = math.hypot(hd[0] - tl[0], hd[1] - tl[1]); Lmm = max(40.0, Lpx * S * 0.98 * 0.82)
     c = np.array(to_mm(P, (hd[0] + tl[0]) / 2, (hd[1] + tl[1]) / 2))
-    u = f"koi{i}"
-    k_tpl = CU_OF.get(i, pat); mir = (i not in CU_OF) and (bend < 0)
-    regs, sil = KT.koi(k_tpl, c[0], c[1], Lmm, a, mirror=mir, unit=u)
-    add(P, regs, 5000 + i*10, 24, u, "koi"); koi_info.append(dict(piece=P, unit=u, L=round(Lmm, 1), c=c.tolist(), ang=a, template=KT.KOI_NAMES[k_tpl % 4], mirror=mir, traced_from_closeup=i in CU_OF))
+    u = f"fish{i}"
+    regs, sil = KF.fish(c[0], c[1], Lmm, a, unit=u)
+    add(P, regs, 5000 + i*10, 24, u, "fish"); fish_info.append(dict(piece=P, unit=u, L=round(Lmm, 1), c=c.tolist(), ang=a))
 
 # ================================================================ flower clusters (flowers, leaves, stems), px from the mockup
 # leaf = (base px, tip px, tone, bend); flower = (centre px, R px, tones, rot, n)
@@ -172,8 +171,8 @@ for k, (px, py, Lpx, apx, tone) in enumerate(PETALS):
     regs, _ = KT.petal(k, A[0], A[1], L * 1.05, a, rng, PTONE[tone], unit=u)
     add(P, regs, 4000 + k, 23, u, "petal"); pet_info.append(dict(piece=P, unit=u, L=round(L, 1)))
 
-META = dict(koi=koi_info, clusters=cl_info, petals=pet_info, lilies=lily_info,
-            counts={P: dict(koi=sum(1 for k in koi_info if k["piece"] == P), petals=sum(1 for p in pet_info if p["piece"] == P),
+META = dict(fish=fish_info, clusters=cl_info, petals=pet_info, lilies=lily_info,
+            counts={P: dict(fish=sum(1 for k in fish_info if k["piece"] == P), petals=sum(1 for p in pet_info if p["piece"] == P),
                             flowers=sum(c["flowers"] for c in cl_info.values() if c["piece"] == P),
                             leaves=sum(c["leaves"] for c in cl_info.values() if c["piece"] == P)) for P in kbcore.PIECES},
             mock_map=dict(cfx=MM.CFX, necky=MM.NECKY, sx=MM.SX, sy=MM.SY, s=MM.S), units=UNITS)

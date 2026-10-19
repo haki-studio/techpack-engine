@@ -1,4 +1,4 @@
-"""Koi blossom hoodie — project core. Import this FIRST in every script of this project.
+"""Blossom tetra hoodie (slug koi-blossom-hoodie) — project core. Import this FIRST in every script of this project.
 
 The engine's palette, region rules and colour-stop order are hard-wired for the plum + pine jacket (motifs2.PAL,
 tech.RULES, tech.COLOUR_ORDER). This module adds this jacket's 12-thread palette + region codes to those shared
@@ -10,11 +10,11 @@ import motifs, motifs2, tech, sheet
 
 # ---------------------------------------------------------------- thread palette (12 threads, PROPOSED from the mockup)
 KB_PAL = {   # key: (hex, name, use)
-    "kb_white":  ("#F1ECE2", "Koi white",     "koi bodies, petal tips + highlights, flower stamens"),
-    "kb_cream":  ("#CFC8BC", "Pearl grey",    "koi body shading, fins, tails, cream petals"),
-    "kb_grey":   ("#8F8A84", "Fin grey",      "fin + tail rays, koi edge shading"),
-    "kb_red":    ("#D1272D", "Koi red",       "koi red patches (kohaku)"),
-    "kb_ink":    ("#15181F", "Eye black",     "koi eyes"),
+    "kb_white":  ("#F1EEF2", "Silver white",  "fish lit flank, belly, eye ring, upper tail lobe; petal tips, anthers"),
+    "kb_cream":  ("#B9B5CC", "Lavender grey", "fish shadow facets (lower flank, jaw), lower tail lobe; pale petals"),
+    "kb_cyan":   ("#3FB6E0", "Neon cyan",     "fish neon line along the upper flank"),
+    "kb_red":    ("#D8262E", "Neon red",      "fish red stripe (mid-body -> tail)"),
+    "kb_ink":    ("#15181F", "Eye black",     "fish eyes"),
     "kb_ice":    ("#C7D6EA", "Ice blue",      "lightest petal + leaf tone"),
     "kb_sky":    ("#97B2D8", "Sky blue",      "light petal + leaf tone, floating petals"),
     "kb_blue":   ("#6F93C8", "Cornflower",    "mid petal + leaf tone"),
@@ -30,21 +30,22 @@ for k, v in KB_PAL.items():
 
 # stop order inside a layer (back -> front within the layer)
 KB_ORDER = ["kb_navy", "kb_cobalt", "kb_royal", "kb_slate", "kb_blue", "kb_sky", "kb_ice",
-            "kb_grey", "kb_cream", "kb_white", "kb_red", "kb_ink"]
+            "kb_cream", "kb_white", "kb_cyan", "kb_red", "kb_ink"]
 tech.COLOUR_ORDER = KB_ORDER + [c for c in tech.COLOUR_ORDER if c not in KB_ORDER]
 
 # ---------------------------------------------------------------- region codes
 # code -> (name, stitch, angle rule, density, stitch length, underlay, pull comp, notes)
 KB_RULES = {
- "KO":        ("Koi body",                 "Tatami",             "along the spine (koi axis)", "0.45", "3.5", "edge run + 90° lattice > 60 mm²", "0.20", "traced silhouette (close-up)"),
- "KO-shade":  ("Koi body shading",         "Tatami",             "along the spine",          "0.45", "3.5", "edge run",                "0.20", "traced pearl shading"),
- "KO-scale":  ("Koi scale rows",           "Run (double)",       "chevron rows across back", "—",    "2.6", "none",                    "—",    "on top of the white body"),
- "KO-red":    ("Koi red patch",            "Tatami",             "along the spine (same as body)", "0.45", "3.5", "edge run",        "0.20", "2 crisp traced patches, on top"),
- "KO-head":   ("Koi head",                 "Satin",              "across head",              "0.40", "—",   "centre run",              "0.15", ""),
- "KO-eye":    ("Koi eye",                  "Satin dot",          "across dot",               "0.38", "—",   "none",                    "0.10", "Ø 1.6"),
- "KO-fin":    ("Koi fin",                  "Satin, radial",      "fan from the fin base",    "0.40", "—",   "none",                    "0.15", "traced fin outline"),
- "KO-tail":   ("Koi tail",                 "Satin, radial",      "fan from the tail root",   "0.40", "—",   "centre run",              "0.15", "forked, traced; white base step"),
- "KO-ray":    ("Fin + tail rays",          "Run (double)",       "follows line",             "—",    "2.6", "none",                    "—",    "sewn on top of fin / tail"),
+ "FI":        ("Fish lit flank / head facet", "Tatami",           "+25° to the body axis (head +60°)", "0.45", "3.5", "edge run", "0.20", "silver-white facet"),
+ "FI-dorsal": ("Fish dorsal ridge facet",  "Satin, turning",     "across the facet",         "0.40", "—",   "centre run",              "0.15", "pale ice"),
+ "FI-shade":  ("Fish shadow facet",        "Tatami",             "−20° to the body axis",    "0.45", "3.5", "edge run",                "0.20", "lavender grey, lower flank + jaw"),
+ "FI-belly":  ("Fish belly strip",         "Satin, turning",     "across the strip",         "0.40", "—",   "none",                    "0.15", "silver white"),
+ "FI-line":   ("Fish neon cyan line",      "Satin, turning",     "across the line (line runs along the body)", "0.40", "—", "centre run", "0.15", "crisp, on top"),
+ "FI-red":    ("Fish red stripe",          "Satin, turning",     "across the stripe (stripe runs along the body)", "0.40", "—", "centre run", "0.20", "mid-body -> tail root, on top"),
+ "FI-ring":   ("Fish eye ring",            "Satin dot",          "across dot",               "0.38", "—",   "none",                    "0.10", "Ø ≥ 2.5"),
+ "FI-eye":    ("Fish eye",                 "Satin dot",          "across dot",               "0.38", "—",   "none",                    "0.10", "Ø ≥ 1.4"),
+ "FI-fin":    ("Fish fin",                 "Satin, radial",      "fan from the fin root",    "0.40", "—",   "none",                    "0.15", "small pointed"),
+ "FI-tail":   ("Fish tail",                "Satin, radial",      "fan from the peduncle",    "0.40", "—",   "centre run",              "0.15", "forked; white upper / lavender lower lobe"),
  "FL-petal":  ("Lily petal, mid tone",     "Satin, radial (long-short)", "along the petal axis (from the flower centre)", "0.40", "—", "edge run > 4 mm", "0.20", "tone regions traced from the close-up"),
  "FL-tip":    ("Lily petal, tip tone",     "Satin, radial (long-short)", "along the petal axis",   "0.40", "—",   "none",                    "0.20", "lightest tone of the petal"),
  "FL-base":   ("Lily petal, base tone",    "Satin, radial (long-short)", "along the petal axis",   "0.40", "—",   "edge run > 4 mm",         "0.20", "darkest tone of the petal"),
@@ -62,7 +63,7 @@ KB_RULES = {
  "PT-tone":   ("Floating petal tone",      "Satin, turning",     "across petal",             "0.40", "—",   "none",                    "0.20", "2nd tone"),
 }
 tech.RULES.update(KB_RULES)
-tech.LAYER_NAMES.update({20: "Stems", 21: "Leaves", 22: "Flowers", 23: "Floating petals", 24: "Koi"})
+tech.LAYER_NAMES.update({20: "Stems", 21: "Leaves", 22: "Flowers", 23: "Floating petals", 24: "Fish"})
 
 sheet.FONT = "Liberation Sans"
 
@@ -75,10 +76,14 @@ def patch_dst2():
     return dst2
 
 STYLE = "HK-HD-KOIB-NV"
-NAME = "Koi Blossom Hooded Jacket — Washed Navy"
+NAME = "Blossom Tetra Hooded Jacket — Washed Navy"      # [proposed] (was "Koi Blossom"; slug + style code kept)
 SHORT = "KOIB"
-ELEMS = {"01": ("front-koi", "FRONT — koi school + blue flowers (split at the zip)", ("FR", "FL")),
-         "02": ("sleeve-koi", "SLEEVES — koi, flowers + petals", ("SR", "SL"))}
+ELEMS = {"01": ("front-fish", "FRONT — tetra fish school + blue lilies (split at the zip)", ("FR", "FL")),
+         "02": ("sleeve-fish", "SLEEVES — tetra fish, lilies + petals", ("SR", "SL"))}
+REV_LOG = [("Rev A", "16 Oct 2026", "first embroidery pack: koi school + blue lilies, Drum Island body"),
+           ("Rev B", "19 Oct 2026", "review fixes: lilies + petals traced from the close-up (petal outlines, tone regions, throat, anthers), "
+                                    "denser hem clusters, two-tone leaves with lit edges, compare sheets from the DSTs; FOUNDER CHANGE: the fish are "
+                                    "not koi — every koi replaced by a slender tetra (inputs/reference_fish.png): faceted silver body, neon cyan line, red stripe")]
 PIECES = ("FR", "FL", "SR", "SL")
 ELEM_OF = {"FR": "01", "FL": "01", "SR": "02", "SL": "02"}
 PIECE_NAME = {"FR": "wearer's right front", "FL": "wearer's left front", "SR": "wearer's right sleeve", "SL": "wearer's left sleeve"}
