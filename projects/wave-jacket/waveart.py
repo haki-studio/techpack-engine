@@ -150,7 +150,9 @@ def items_for(size, P):
             for p in polys(mm_):
                 if kind == "sleeve" and width(p) < 2.5 and p.length > 60 and p.intersection(box(-8, -200, 8, 600)).area > 0.6 * p.area:
                     continue                                  # the render's sleeve-fold highlight, not art
-                st = "satin" if width(p) < 5.0 else "tatami"
+                # turning satin follows ONE centreline: on stripes with holes or branches it left 5-15 % bare (DST
+                # coverage check, M BK). Satin only for narrow simple stripes; everything else tatami along the stripe.
+                st = "satin" if (not p.interiors and width(p) < 3.0) else "tatami"
                 add(tone, p, st, "auto", "WV", Z["band"])
         q = tr["lines"].intersection(regb)
         if not q.is_empty:

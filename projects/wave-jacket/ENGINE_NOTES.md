@@ -41,3 +41,16 @@ Problem → proposed fix → check. Worked around in project code only.
   classes then replace the render's inside its footprint (`wavetrace.closeup_labels`). A visible seam remains at the footprint edge.
 - **Proposed fix:** `engine/register.py` (mask-NCC homography search) + feathered blending of the two label maps at the footprint edge.
 - **Check:** registering a crop of the render itself (rotated 30°, scaled 3x) recovers the crop box within 2 px.
+
+## 7. Turning satin left 5-15 % of the wave stripes bare in the DST (found in QA, 19 Oct 2026) — proposed LESSON B25
+- **Problem:** stripes were typed satin when `2·area/perimeter < 5 mm`; hole perimeters count, so a 480 mm stripe with 38 holes
+  (5,933 mm²) read as "thin" and got turning satin on ONE centreline: 26 % of it never sewn. All WV satin on M BK: 84.6 % covered
+  (with holes) / 95.2 % (without); ~4,200 mm² of bare fabric in the stripes. The art-region preview (stitchrender) showed it solid,
+  so the compare sheets looked right; only a stitch-by-stitch render of the DST showed the gaps.
+- **Fix (project):** stripes sew tatami along the stripe; turning satin only for stripes with no holes and width < 3 mm.
+  [M BK coverage 95.7 → 99.6 %; 237,785 → 276,487 stitches; trims 1,207 → 1,194]
+- **Proposed engine fix:** `build_object` measures coverage of each satin object (rasterise its stitch lines at 0.4 mm vs the
+  polygon) and falls back to tatami below 98 %; `width_of` uses the exterior only. Compare sheets always render the DST, never the
+  region art.
+- **Check:** `qa.dst_coverage(dst, art)` ≥ 98 % per stitch code on every file (project script: coverage per code/type, M all pieces);
+  test: a 200 × 4 mm S-curve stripe with 10 holes sews ≥ 98 % covered.

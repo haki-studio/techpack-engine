@@ -1,6 +1,2 @@
-M BK {'stitches': 237785, 'trims': 1207, 'jumps': 3189, 'stops': 13, 'size_mm': (568.8, 490.2), 'max_stitch': 7.38} 99s
-M BK S1_top-left {'stitches': 105165, 'trims': 520, 'stops': 13, 'size_mm': (307.4, 304.8), 'fits': True} split y 368.9
-M BK S2_top-right {'stitches': 34009, 'trims': 237, 'stops': 11, 'size_mm': (315.5, 312.3), 'fits': True} split y 368.9
-M BK S3_bottom-left {'stitches': 15984, 'trims': 118, 'stops': 10, 'size_mm': (305.8, 233.8), 'fits': True} split y 368.9
-M BK S4_bottom-right {'stitches': 84319, 'trims': 367, 'stops': 11, 'size_mm': (284.8, 227.4), 'fits': True} split y 368.9
+M BK {'stitches': 276487, 'trims': 1194, 'jumps': 3174, 'stops': 13, 'size_mm': (568.8, 490.2), 'max_stitch': 7.31} 135s
 DONE M ['BK']

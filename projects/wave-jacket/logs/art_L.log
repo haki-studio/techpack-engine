@@ -1,5 +1,0 @@
-/home/devinubuntu/.venvs/techpack-grand-line/lib/python3.10/site-packages/shapely/constructive.py:246: RuntimeWarning: divide by zero encountered in buffer
-  return lib.buffer(
-/home/devinubuntu/.venvs/techpack-grand-line/lib/python3.10/site-packages/shapely/constructive.py:246: RuntimeWarning: invalid value encountered in buffer
-  return lib.buffer(
-L {'BK': (2922, 107664, 81, 42), 'FR': (1162, 43653, 32, 15), 'FL': (1751, 49371, 39, 11), 'SR': (1583, 59573, 37, 30), 'SL': (1359, 40264, 32, 33)} {'BK armhole L / SL cap': '0/0', 'BK armhole R / SR cap': '0/0', 'FR armhole / SR cap': '0/0', 'FL armhole / SL cap': '0/0'} 59s
