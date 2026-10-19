@@ -28,13 +28,13 @@ def dst_img(entries, mmbox, ppm, bg=(37, 48, 77)):
 cx, cy, r = CA.CU_MOON; s0 = 120.0 / r
 def bmm(px, py): return ((px - cx) * s0, 244 + (py - cy) * s0)
 
-def sheet(name, img, pxbox, entries, mmbox, ppm, zooms=(), note=""):
+def sheet(name, img, pxbox, entries, mmbox, ppm, zooms=(), note="", zf=3):
     """zooms: [(label, close-up px box, mm box)] — each drawn at 3x ppm"""
     ours = dst_img(entries, mmbox, ppm); cu = img.crop(pxbox).resize(ours.size, Image.LANCZOS)
     W = ours.width * 2 + 20
     zs = []
     for lab, zb, mb in zooms:
-        zo = dst_img(entries, mb, ppm * 3); zc = img.crop(zb).resize(zo.size, Image.LANCZOS); zs.append((lab, zc, zo))
+        zo = dst_img(entries, mb, ppm * zf); zc = img.crop(zb).resize(zo.size, Image.LANCZOS); zs.append((lab, zc, zo))
     zh = max([z[1].height for z in zs], default=0)
     # fit the zoom pairs in rows of the sheet width
     rows, cur, cw = [], [], 0
@@ -51,7 +51,7 @@ def sheet(name, img, pxbox, entries, mmbox, ppm, zooms=(), note=""):
     for rw in rows:
         x = 0
         for lab, zc, zo in rw:
-            d.text((x + 2, y), f"zoom {lab} (x3): close-up | DST", fill=(200, 0, 0))
+            d.text((x + 2, y), f"zoom {lab} (x{zf:g}): close-up | DST", fill=(200, 0, 0))
             out.paste(zc, (x, y + 14)); out.paste(zo, (x + zc.width + 6, y + 14)); x += zc.width * 2 + 30
         y += max(z[1].height for z in rw) + 26
     out.save(f"out/compare_{name}.png")
@@ -71,10 +71,15 @@ bsheet("01_clouds_left", (20, 160, 660, 740), [bz("dome + scales", 270, 180, 450
 bsheet("01_clouds_right", (880, 260, 1448, 660), [bz("dome", 1100, 270, 1300, 380), bz("lower dome", 1080, 480, 1280, 580),
                                                   bz("tail", 1250, 560, 1440, 620)])
 sheet("02_03_front", CA.CF, (0, 0, 1448, 1086), [M["03L"], M["03R"], B["02R"], B["02L"]], (-300, 60, 300, 512), 2.5,
-      note="Front: our placement follows the mockup (close-up is framed differently) - compare shapes, not positions.")
+      note="Front: our placement follows the mockup (close-up is framed differently) - compare shapes, not positions.", zf=1.6,
+      zooms=[("02R chest clouds", (0, 0, 640, 446), (-290, 60, -10, 255)), ("02L chest clouds", (880, 100, 1448, 373), (15, 120, 285, 250)),
+             ("03L pole + hardware", (930, 470, 1400, 1091), (148, 320, 288, 505))])
 import moonpattern, pattern as PT
 g, mt = PT.draft("M")
 for k, half in (("04R", (0, 0, 724, 1086)), ("04L", (724, 0, 1448, 1086))):
     sp = g["S01" if k == "04R" else "S02"].sew_poly().bounds
-    sheet(f"04_{k}", CA.CS, half, [B[k]], sp, 2.5, note="Sleeve: 2 close-up views per sleeve -> one sleeve piece (back half | front half).")
+    hx0, hy0, hx1, hy1 = half; hm = (hx0 + hx1) / 2
+    zz = [("upper back half (approx. framing)", (hx0, 60, hm, 420), (sp[0], sp[1], (sp[0] + sp[2]) / 2, sp[1] + (sp[3] - sp[1]) * 0.36)),
+          ("upper front half (approx. framing)", (hm, 60, hx1, 420), ((sp[0] + sp[2]) / 2, sp[1], sp[2], sp[1] + (sp[3] - sp[1]) * 0.36))]
+    sheet(f"04_{k}", CA.CS, half, [B[k]], sp, 2.5, note="Sleeve: 2 close-up views per sleeve -> one sleeve piece (back half | front half).", zooms=zz, zf=1.6)
 print("ok")
