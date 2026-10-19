@@ -29,12 +29,12 @@ def graded(P, size):
     _, mt = F.pieces(size)
     return [xform(r, s, 0, MT_M["Lu"], 0, mt["Lu"] - MT_M["Lu"]) for r in ITEMS[P]]
 
-def fit_group(regs, lim, maxd=18.0):
+def fit_group(regs, lim, maxd=18.0, scales=(1.0, 0.97, 0.94, 0.91, 0.88, 0.85)):
     """smallest move (then shrink) that puts the union of regs inside lim. returns (regs', move) or (None, None)"""
     u = unary_union([r["geom"] for r in regs])
     if lim.contains(u): return regs, (0.0, 0.0, 1.0)
     c = u.centroid
-    for s in (1.0, 0.97, 0.94, 0.91, 0.88, 0.85):
+    for s in scales:
         us = affinity.scale(u, s, s, origin=c)
         for rr in np.arange(0.0 if s < 1 else 1.0, maxd + 0.1, 1.0):
             for th in np.linspace(0, 2*math.pi, max(8, int(rr*3)), endpoint=False):
@@ -65,6 +65,7 @@ def build(size):
             # flower cluster: fit its core (flowers + stems) as one, then each leaf on its own (nudged / shrunk, never cut)
             core = [r for r in regs if r["unit"].split("_")[-1].startswith(("flower", "stem"))]
             cf, mv = fit_group(core, lim, 24.0)
+            if cf is None: cf, mv = fit_group(core, lim, 36.0, (1.0, 0.95, 0.9, 0.85, 0.8, 0.76))     # Rev B: wider search, never cut a cluster
             if cf is None:
                 cf, mv = core, (0.0, 0.0, 1.0); dropped.append(gk + " core (does not fit)")
             out += cf

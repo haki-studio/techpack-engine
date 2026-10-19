@@ -133,7 +133,7 @@ def threads():
         o.append(t(cx[3], y, f"{iso[0]} {iso[1]}"[:22], 1.75)); o.append(t(cx[4], y, f"{iso[3]:.1f}", 1.7, 600, ci))
         o.append(t(cx[5], y, f"{pn[0]} {pn[1]}"[:24], 1.75)); o.append(t(cx[6], y, f"{pn[3]:.1f}", 1.7, 600, cp))
         o.append(t(cx[7], y, "40", 1.75)); o.append(t(cx[8], y, PAL[k][2][:58], 1.65, 400, MUTED))
-        o.append(t(cx[9], y, " / ".join(str(use[k].get(p, 0)) for p in PS) if any(use[k].values()) else "spare — not in Rev A files", 1.75, 600, INK if any(use[k].values()) else MUTED))
+        o.append(t(cx[9], y, " / ".join(str(use[k].get(p, 0)) for p in PS) if any(use[k].values()) else f"spare — not in {REV} files", 1.75, 600, INK if any(use[k].values()) else MUTED))
     yb = 36 + len(kbcore.KB_KEYS)*rh + 3
     o.append(t(12, yb, "ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — amber/red rows must be picked from the physical card. All targets are PROPOSED (read from a low-res AI mockup).", 1.8, 600, ORANGE))
     o.append(t(12, yb + 7, "TRIMS + CONSUMABLES (per jacket)", 2.2, 700))

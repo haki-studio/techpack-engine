@@ -38,17 +38,21 @@ MIN_FRONT = {"CF / zip": KEEP_CF, "armhole": KEEP_SEAM, "shoulder": KEEP_SEAM, "
 MIN_SLEEVE = {"cap": KEEP_CAP, "underarm front": KEEP_SEAM, "underarm back": KEEP_SEAM, "cuff": KEEP_CUFF}
 def MIN(P): return MIN_FRONT if P in ("FR", "FL") else MIN_SLEEVE
 
-VARIANT = None          # set by pieces(): "hooded" once engine/pattern.py has it, else the Drum Island draft
+VARIANT = None
+# Founder decision 19 Oct 2026: hood block option 1 = engine/hoodie.py (Drum Island body + 3-panel sherpa hood + elastic
+# self-fabric hem / cuff bands). Per-design welt override = the mockup welts (60°, 1.4 x 13) [PROPOSED].
+WELT = dict(cx=float(WELT_C[0]), cy=float(WELT_C[1]), angle=float(WELT_ANG), length=WELT_LEN, width=WELT_W)
 _PC = {}
 def pieces(size):
     global VARIANT
     if size not in _PC:
-        import pattern as PT
-        try:
-            _PC[size] = PT.draft(size, variant="hooded"); VARIANT = "hooded"
-        except TypeError:
-            _PC[size] = PT.draft(size); VARIANT = "drum-island"
+        import hoodie
+        _PC[size] = hoodie.draft(size, welt=WELT); VARIANT = "zip-hoodie (hoodie.draft, mockup welt)"
     return _PC[size]
+
+def variant():
+    import hoodie
+    return hoodie.Variant(welt=WELT)
 
 CODE = {"FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
 def keep_geoms(size, P):
