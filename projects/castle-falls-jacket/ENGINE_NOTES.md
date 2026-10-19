@@ -80,3 +80,17 @@ Problems hit while building this product, worked around in project code only. Ea
   The castle (IP-redrawn), blossom and cloud/petal panels became motif references (floret centres, petal bases, roof tiles).
 - **Proposed:** `engine/closeup.py: register(panel, mockup, points)` + the feathered composite; reviewer overlay of the panel
   on the trace.
+
+## 12. Close-up colour match + enclosed bare shell
+- The registered close-up is darker / more contrasty than the mockup: its rock face classified as bare shell. Fix: per-channel
+  mean/std match to the mockup under the blend mask before compositing (`mockmap.with_closeups`).
+- Bare shell ENCLOSED by art (not connected to the open shell, < 4,000 mm²) is never a hole: it takes the neighbouring tone
+  (light neighbours → their shadow tone). Rock faces and deep shadows stay stitched. (`trace.tone_map`)
+
+## 13. Killing jobs on a shared box (E2 / E6 again)
+- **Problem:** while stopping this project's pipeline I filtered `xargs` processes by an argv grep that included `build_size`,
+  which matches every builder's queue — another project's `xargs` queue may have been killed with mine (wave-jacket had fresh
+  jobs a minute later, so it may only have lost queued items).
+- **Rule proposal (E8):** select processes by their working directory (`readlink /proc/<pid>/cwd` inside the project) AND an
+  exact argv, never by a substring that other projects share. Better: each launcher writes its PIDs to `out/pids` and stops
+  only those. Check: a stop helper `scripts/stop_project.sh <slug>` that only touches PIDs whose cwd is in the project.

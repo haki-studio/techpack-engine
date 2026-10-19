@@ -107,6 +107,19 @@ def tone_map(P, cache=True):
     strong = ndi.uniform_filter((~nv & (t >= 0)).astype(np.float32), int(12 * PPM))
     t = np.where(np.isin(t, [TI["cf_navy"], TI["cf_slate"]]) & (fr2 > 0.8) & (strong < 0.06), -1, t)
     t = fabric_absorb(t)
+    # bare shell enclosed by art (dark rock faces, deep shadows) is shadow thread, not a hole: only shell connected to the open
+    # shell around the art, or a very large patch, stays bare (the dark close-up rock face read as shell, 16 Oct)
+    lab_, n = ndi.label(t == -1)
+    if n:
+        edge = set(np.unique(np.r_[lab_[0], lab_[-1], lab_[:, 0], lab_[:, -1]])) - {0}
+        sz = ndi.sum(np.ones_like(lab_), lab_, np.arange(1, n + 1)) / PPM ** 2
+        keep = [i + 1 for i in range(n) if (i + 1) in edge or sz[i] > 4000]
+        hole = (lab_ > 0) & ~np.isin(lab_, keep)
+        _, (iy2, ix2) = ndi.distance_transform_edt(hole | (t < 0), return_indices=True)
+        near2 = t[iy2, ix2]
+        LIGHT = {"cf_white", "cf_cream", "cf_pinklt", "cf_pink", "cf_skylt", "cf_grnlt", "cf_gold"}
+        sh2 = np.array([TI[SHADOW[k]] if k in LIGHT else TI[k] for k in TONES])      # mid / dark neighbours continue as themselves
+        t = np.where(hole, sh2[np.clip(near2, 0, None)], t)
     # islands below MIN_ISLAND mm2 join the tone around them (nearest-tone fill): no fabric holes, fewer trims
     t = merge_small(t, MIN_ISLAND)
     res = dict(P=P, bbox=bbox, ppm=PPM, t=t.astype(np.int8))

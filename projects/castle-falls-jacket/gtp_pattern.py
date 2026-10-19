@@ -264,7 +264,7 @@ def p_operations():
 REVS = [("Garment + Embroidery Rev A", "16 Oct 2026", "First pack for the Castle Falls jacket on the Drum Island block + pattern (collar as the mockup, welts at its position, armholes as wrap seams). "
                                              "Embroidery fidelity first: every mockup tone traced onto the five pattern pieces (back, two fronts, two sleeves) + blossom florets, petals; "
                                              "original castle + opened tree ring for IP. 18-thread board, ≤ 12 per file; per-size stitch files XS–3XL + hoop splits for the 360 frame; "
-                                             "every per-file / per-stop number read back from the DST; G6 hooping table, F1 factory requests.")]
+                                             "every per-file / per-stop number read back from the DST; G6 hooping table, F1 factory requests. Founder close-up strip (LESSONS A12): waterfall mountain registered + traced, floret centres / petal bases / roof tiles from the close-ups; stitch-level keep-out check on all 35 files (fixed a welt overlap on FR).")]
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]
 
 def p_revisions():

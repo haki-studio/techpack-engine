@@ -183,11 +183,13 @@ def build(cfg, art):
     o.append(t(14, 31, "1:1 STITCH-OUT DETAILS (print at 100% to check scale)", 2.6, 700))
     x = 14
     for (p, c, cap) in cfg["crops"]:
-        im = SR.render(V[p], c, 12, base=cfcore.FABRIC); tag, hh = img_tag(im, x, 35, c[2] - c[0]); o.append(tag)
+        c = (c[0], c[1], c[2], min(c[3], c[1] + 52)); im = SR.render(V[p], c, 12, base=cfcore.FABRIC); tag, hh = img_tag(im, x, 35, c[2] - c[0]); o.append(tag)
         o.append(t(x, 35 + hh + 3, f"{p}: {cap}", 1.8, 600)); x += (c[2] - c[0]) + 4
     my = 98
     mk = Image.open("inputs/flat.png").convert("RGB").crop(cfg["mock_crop"])
-    tag, hh = img_tag(mk, 14, my + 3, 56); o.append(tag)
+    wm = min(56.0, 56.0 * mk.width / mk.height * (56.0 / 56.0)) if mk.height > mk.width else 56.0
+    wm = min(56.0, 58.0 * mk.width / mk.height)
+    tag, hh = img_tag(mk, 14, my + 3, wm); o.append(tag)
     o.append(t(14, my, "MOCKUP", 2.4, 700))
     o.append(t(76, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
     for i, c in enumerate(cfg["changes"]): o.append(t(76, my + 4.5 + i * 3.3, c, 1.8))

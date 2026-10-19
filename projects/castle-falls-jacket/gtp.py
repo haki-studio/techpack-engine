@@ -70,6 +70,9 @@ def p_flats(F):
     fb = [(*EMB[e]["box"], "02") for e in ("FR", "FL")]
     fb = [(x0, y0 + F.fnd, x1, y1 + F.fnd, lab) for x0, y0, x1, y1, lab in fb]
     bx_ = EMB["BK"]["box"]; bb = [(bx_[0], bx_[1] + F.bnd, bx_[2], bx_[3] + F.bnd, "01")]
+    for s_ in (1, -1):        # 03 sleeves: marker on each sleeve (front + back views)
+        c_ = (np.array(F.sp) + np.array(F.cuff_seam_out)) / 2; c_ = (s_ * (c_[0] + 15), c_[1])
+        fb.append((c_[0] - 30, c_[1] - 60, c_[0] + 30, c_[1] + 60, "03")); bb.append((c_[0] - 30, c_[1] - 60, c_[0] + 30, c_[1] + 60, "03"))
     o.append(flat_group(TF.draw_front(F, fb), b, 12, 32, s))
     o.append(flat_group(TF.draw_back(F, bb), b, 12 + (b[2]-b[0])*s + 8, 32, s))
     o.append(t(12 + (b[2]-b[0])*s/2, 32 + (b[3]-b[1])*s + 5, "FRONT", 2.3, 700, INK, "middle"))
@@ -248,7 +251,7 @@ def thread_qty():
                 prev = (x, y)
             else: prev = None
     m = L * 1.4
-    return f"≈ {m:,.0f} m top + {m*0.45:,.0f} m bobbin (≈ {5000/m:.0f} jackets / 5,000 m cone avg)"
+    return f"≈ {m/1000:,.1f} km top + {m*0.45/1000:,.1f} km bobbin"
 
 def p_bom():
     o = header("BILL OF MATERIALS", "Per jacket, size M. Fabric consumption = pattern piece area ÷ (150 cm width × 80 % marker efficiency) — replace with the factory's marker. Threads: G3.", "T6")
@@ -387,7 +390,7 @@ def p_questions():
           "8. Pattern (T11–T13) is the Drum Island first pattern: shoulder slope 4.5, cap ease 1.2, facings, rib heights proposed — sample + fit M first.",
           "9. Seam types + SPI (T7) are a standard proposal — factory to confirm capability (5-thread safety stitch, bartack).",
           "10. Embroidery grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per piece. OK?",
-          "11. Frame: on 360 × 360 the jacket needs 16 hoopings (back 4, fronts 2 + 2, sleeves 4 + 4). Which frames does the factory have (F1)?",
+          "11. Frame: on 360 × 360 size M needs 16 hoopings (back 4, fronts 2 + 2, sleeves 4 + 4; 3XL back 6). Which frames does the factory have (F1)?",
           "12. Labels + packaging artwork, country of origin, care-symbol set, carton marks; zip garage + auto-lock slider.",
           "13. Embroidered sleeves are stiff + heavy: confirm the taffeta sleeve lining and a hand-feel check on the strike-off."]
     for i, q in enumerate(qs): o.append(t(14, 34 + i*4.6, q, 2.0))

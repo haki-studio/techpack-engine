@@ -66,7 +66,7 @@ def overview():
     o.append(t(106, 30 + h + 3.5, "BACK: BK, back halves of SL (viewer's left) + SR.", 1.7, 600))
     tx = 202; ty = 30
     o.append(t(tx, ty, "ART BOX PER SIZE (w × h mm)", 2.2, 700))
-    hd = ["Size", "Art"] + PC; cx = [tx, tx + 9, tx + 16, tx + 32, tx + 48, tx + 64, tx + 80]
+    hd = ["Size", "Art"] + PC; cx = [tx, tx + 8, tx + 13, tx + 27, tx + 41, tx + 55, tx + 69]
     for x_, hh in zip(cx, hd): o.append(t(x_, ty + 5, hh, 1.6, 700, MUTED))
     for i, sz in enumerate(cfcore.SIZES):
         y = ty + 9.5 + i * 4.0
@@ -74,7 +74,7 @@ def overview():
         o.append(t(cx[0], y, sz, 1.65, 700)); o.append(t(cx[1], y, cfcore.GRADE[sz][0], 1.65, 700, RED))
         for j, P in enumerate(PC):
             r = ALL.get(sz, {}).get(P)
-            o.append(t(cx[2 + j], y, f"{r['full']['size_mm'][0]:.0f}×{r['full']['size_mm'][1]:.0f}" if r else "—", 1.5))
+            o.append(t(cx[2 + j], y, f"{r['full']['size_mm'][0]:.0f}×{r['full']['size_mm'][1]:.0f}" if r else "—", 1.4))
     ky = ty + 9.5 + 7 * 4.0 + 5
     o.append(t(tx, ky, "KEEP-OUTS (mm from the sew line, all sizes, T13)", 2.0, 700))
     for i, k in enumerate(["CF / zip 15 · side seams 15 · shoulders 15", "Hem-rib seam 10 · welt box 6 · collar lying flat 6",
@@ -100,7 +100,7 @@ def threads():
     cx = [12, 18, 42, 56, 84, 92, 124, 132, 222]
     for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.7, 700, MUTED))
     TH = SB.TH; rh = 7.4 if False else 6.9
-    rh = 140 / len(cfcore.CF_KEYS)
+    rh = 128 / len(cfcore.CF_KEYS)
     for i, k in enumerate(cfcore.CF_KEYS):
         y = 35.5 + i * rh
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-3.0)}" width="{SW-22}" height="{f(rh)}" fill="#F5F2EC"/>')
@@ -147,7 +147,7 @@ def summary():
     o.append(t(12, y + 8.4, "These numbers are REPORTED, not limits; the clean-up pass (density, trims, stop merges) happens after the size-M strike-off shows what is needed.", 1.65, 600, ORANGE))
     qy = y + 15
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.5, 700))
-    qs = [f"1. Frame: on {FR_S} the jacket needs {HOOP} hoopings (back 4, fronts 2 each, sleeves 4 each). Larger frames (e.g. 600 × 400 jacket-back) remove most joins. Which frames exist?",
+    qs = [f"1. Frame: on {FR_S} size M needs {HOOP} hoopings (back 4, fronts 2 each, sleeves 4 each; 3XL back 6). Larger frames (e.g. 600 × 400 jacket-back) remove most joins. Which frames exist?",
           "2. Cost: ~" + f"{MH_SPLIT:.0f}" + " h of one head per jacket at the factory speed. Confirm the price basis (F1) before bulk; a clean-up pass can cut trims + density after the sew-out.",
           "3. IP: the castle + tree are an original redesign (brief). Approve the new castle / opened tree ring, or confirm the mockup composition is licensed.",
           "4. Thread board: 18 targets read from a low-res AI mockup — approve physical colours (G3); each file sews ≤ 12 (merges per piece on G3 / spec p4).",

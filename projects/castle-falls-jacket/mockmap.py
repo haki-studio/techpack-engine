@@ -55,6 +55,13 @@ def with_closeups(a, up):
         ex, ey, rx, ry = c["ell"]; yy, xx = np.mgrid[0:H, 0:W]
         d = np.sqrt((((x0 + xx) / up - ex) / rx) ** 2 + (((y0 + yy) / up - ey) / ry) ** 2)
         m = np.clip((1 - d) / c["feather"], 0, 1).astype(np.float32)[..., None]
+        # colour match: the re-render is darker / more contrasty than the mockup -> per-channel mean + std matched to the
+        # mockup under the same mask, so the tracer reads it with the same tone clusters (rock stays rock, not bare shell)
+        ys0, xs0 = slice(max(0, y0), min(a.shape[0], y0 + H)), slice(max(0, x0), min(a.shape[1], x0 + W))
+        mm = m[ys0.start - y0:ys0.stop - y0, xs0.start - x0:xs0.stop - x0, 0] > 0.5
+        ref = a[ys0, xs0][mm]; src = p[ys0.start - y0:ys0.stop - y0, xs0.start - x0:xs0.stop - x0][mm]
+        p = (p - src.mean(0)) / np.maximum(src.std(0), 1) * ref.std(0) + ref.mean(0)
+        p = p.clip(0, 255)
         ys, xs = slice(max(0, y0), min(a.shape[0], y0 + H)), slice(max(0, x0), min(a.shape[1], x0 + W))
         py, px = slice(ys.start - y0, ys.stop - y0), slice(xs.start - x0, xs.stop - x0)
         a[ys, xs] = a[ys, xs] * (1 - m[py, px]) + p[py, px] * m[py, px]
