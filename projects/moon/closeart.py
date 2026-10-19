@@ -97,7 +97,8 @@ def place(c, centre_mm, s, flipx=False, img=None, want_sil=False):
     if comp.sum() < 300: return ([], None) if want_sil else []
     sx = -s if flipx else s
     f = lambda x, y: (centre_mm[0] + (np.asarray(x) - cx) * sx, centre_mm[1] + (np.asarray(y) - cy) * s)
-    regs, sil = cloud3.cloud(a, comp, (x0, y0), f, abs(s))
+    cut = [f(xe, 0)[0] for xe, hit in ((0, x0 <= 2 and comp[:, :4].any()), (img.width - 1, x1 >= img.width - 2 and comp[:, -4:].any())) if hit]
+    regs, sil = cloud3.cloud(a, comp, (x0, y0), f, abs(s), cut_x=[float(c) for c in cut])
     return (regs, sil) if want_sil else regs
 
 def mm_bbox(vis): return unary_union([r["geom"] for r in vis]).bounds
@@ -283,7 +284,9 @@ def build_all():
     import cloud3
     lab_, n_, _ = cloud3.masks(CF, (0, 0, 1448, 740))            # Rev C final: cloud3 mask (keeps the pale caps)
     cuf = [dict(px=TR.polys_of(lab_ == i, 1, (0, 0, 1448, 740), 30)) for i in range(1, n_ + 1) if (lab_ == i).sum() > 500]
-    cuf = [c for c in cuf if not c["px"].is_empty and c["px"].bounds[2] - c["px"].bounds[0] > 60]
+    def _is_cloud(p):          # not the welt-pocket edge / zip tape: thin diagonal strokes fill < 15 % of their box
+        b = p.bounds; return (b[2] - b[0] > 60) and p.area / max(1, (b[2] - b[0]) * (b[3] - b[1])) > 0.15
+    cuf = [c for c in cuf if not c["px"].is_empty and _is_cloud(c["px"])]
     mockf = [("chest", c) for c in mock["chest"]] + [("lower", c) for c in mock["lower"]]
     mkf = [((lambda b: ((b[0] + b[2]) / 2, (b[1] + b[3]) / 2))(mm_bbox(c["vis"])), mm_bbox(c["vis"])[2] - mm_bbox(c["vis"])[0]) for _, c in mockf]
     zx = 727.0; sf = 246.0 / (FPX_CU - zx)

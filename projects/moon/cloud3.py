@@ -48,7 +48,7 @@ class PxField:
         def bl(A): return (A[i, j] * (1 - fx) * (1 - fy) + A[i, j + 1] * fx * (1 - fy) + A[i + 1, j] * (1 - fx) * fy + A[i + 1, j + 1] * fx * fy)
         t = 0.5 * math.atan2(bl(self.s), bl(self.c)); return math.cos(t), math.sin(t)
 
-def cloud(a, comp, off, f, s, layer_tag=None, tail_w=4.6):
+def cloud(a, comp, off, f, s, layer_tag=None, tail_w=4.6, cut_x=()):
     """a: crop RGB array, comp: bool mask of ONE cloud in the crop, off: crop origin in close-up px,
     f: close-up px -> mm (vectorised), s: mm per px (abs). Returns (regions, silhouette mm)."""
     ox, oy = off
@@ -60,6 +60,14 @@ def cloud(a, comp, off, f, s, layer_tag=None, tail_w=4.6):
     sil_px = TR.polys_of(Mk, 1, bx, 30, simplify=0.3).buffer(1.2).buffer(-1.2)
     sil = M(sil_px).buffer(0)
     if sil.is_empty: return [], sil
+    for xc in cut_x:            # the close-up IMAGE edge cuts this cloud: dome the cut end (half disc of the cut height)
+        cx_ = sil.centroid.x; sg = 1 if xc > cx_ else -1
+        edge = sil.intersection(box(xc - 3, -1e4, xc + 3, 1e4))
+        if edge.is_empty: continue
+        eb = edge.bounds; Rr = max(3.0, (eb[3] - eb[1]) / 2); cy_ = (eb[1] + eb[3]) / 2
+        cut = box(min(xc, xc - sg * Rr), -1e4, max(xc, xc - sg * Rr), 1e4).union(box(min(xc, xc + sg * 30), -1e4, max(xc, xc + sg * 30), 1e4))
+        dome = Point(xc - sg * Rr, cy_).buffer(Rr * 1.02, 48)
+        sil = sil.difference(cut).union(sil.intersection(cut).intersection(dome)).buffer(0.3).buffer(-0.3)
     regs = []
     # tails: narrower than tail_w mm
     core = sil.buffer(-tail_w / 2).buffer(tail_w / 2 + 0.05).intersection(sil)
