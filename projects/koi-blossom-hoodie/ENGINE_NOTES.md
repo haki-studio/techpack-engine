@@ -50,3 +50,32 @@ Problems hit while building this product, worked around in project code only. Ea
 - **Proposed fix:** one git worktree per product (as PLM does), or `commit_project.sh` commits *before* pulling and never autostashes
   other projects' files; refuse to run when `.git/rebase-merge` exists and say so.
 - **Check:** builders hash their source files at start of a stitch build and refuse if art_<size>.pkl is older than scene/motif sources.
+
+## 8. Rev B (19 Oct 2026): close-up registration + pixel trace (LESSONS A12/A13) — candidates for `engine/closeup.py`
+- **Problem:** A12 asks to register a close-up and trace from its pixels, but every project writes its own (Grand Line
+  `closetrace.py`, this project `cu_register.py` + `cu_trace.py`). The AI close-up drifted 13 mm mean / 30 mm max from the
+  mockup and dropped 2 of the 6 koi, so a single global warp cannot provide positions.
+- **What worked here:** (a) matched features (motif centres, koi head + tail) with brute-force assignment, affine + DLT
+  projective fit, residuals in mm → decision rule "positions from the mockup when the mean residual > ~5 mm"; (b) per-motif
+  similarity transform (close-up motif → its mockup counterpart) used for tracing AND for the compare-sheet close-up column;
+  (c) colour mask → silhouettes (union of row runs, then simplify + round smoothing, `mask_poly`); (d) k-means tones over
+  the motif pixels → `clean_labels()` (islands < 70 px and 1-px necks given to the nearest tone — no speckle, nothing
+  `clean_vis` would later drop as a fabric hole) → max 3 tones per petal; (e) hand guides (tip + width) only to split a
+  flower silhouette into overlapping petals.
+- **Proposed fix:** `engine/closeup.py` with `register(features_cu, features_mock)`, `similarity()`, `mask_poly()`,
+  `clean_labels()`, `tone_regions(mask, k)`; tests: a synthetic two-tone disc traced back to ≈ its own area per tone,
+  `clean_labels` leaves no island under min_px.
+- **Check:** `out/closeup_registration.png` + `out/trace_closeup.png` reviewed; compare sheets carry a close-up column.
+
+## 9. Compare sheets from the DST read-back (review item 4, LESSONS A12 check)
+- **Problem:** Rev A compare sheets rendered `art_<size>.pkl`, which can differ from what the machine sews (clean_vis,
+  merges, splits). Reviewers asked for the final DST.
+- **Workaround:** `compare.py render_dst()`: pyembroidery read of the DST, colours from the PES thread list, stitch
+  coords + the file's recorded origin = piece mm; thread-width lines, 2x supersampled.
+- **Proposed fix:** `stitchrender.render_dst(dst, origin, bbox, ppm)` in the engine so every project's compare sheets use it.
+- **Check:** compare sheet header names the DST files it was drawn from.
+
+## 10. Satin direction "along the petal axis"
+- `dst2.build_object` sends every elongated satin to `turning_satin` (stitches ACROSS the centreline) whatever `ang` says, so
+  a long petal tone band cannot be satin-stitched along its length with a fixed angle. Workaround: radial satin from the
+  flower centre (= along each petal axis). Proposed: honour an explicit numeric `ang` for satin (or `st="satin_fixed"`).
