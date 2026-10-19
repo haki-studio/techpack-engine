@@ -21,7 +21,7 @@ from PIL import Image, ImageDraw
 
 FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "inputs", "fonts")
 FONTS = {"jp": ("ZenMaruGothic-Bold.ttf", None), "en": ("Nunito[wght].ttf", 1000), "cn": ("NotoSansSC[wght].ttf", 600),
-         "kr": ("NotoSansKR[wght].ttf", 560)}
+         "kr": ("NotoSansKR[wght].ttf", 450)}
 _F = {}
 
 def font(key):

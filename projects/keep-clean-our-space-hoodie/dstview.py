@@ -26,8 +26,8 @@ def origin_of(base):
         if os.path.normpath(s["file"]) == os.path.normpath(base): return tuple(s["origin"])
     raise KeyError(base)
 
-def strokes(base, origin=None):
-    """[(colour hex, [(x_mm, y_mm), ...] runs)] in garment mm"""
+def strokes(base, origin=None, only=None):
+    """[(colour hex, [(x_mm, y_mm), ...] runs)] in garment mm; only = set of thread hex colours to keep"""
     cx, cy = origin or origin_of(base)
     cols = [t.hex_color() for t in pe.read(base + ".pes").threadlist]
     p = pe.read(base + ".dst"); ci = 0; run = []; out = []
@@ -39,7 +39,18 @@ def strokes(base, origin=None):
         if c == pe.COLOR_CHANGE: ci += 1
         elif c == pe.END: break
     if len(run) > 1: out.append((cols[min(ci, len(cols)-1)], run))
+    if only is not None:
+        keep = {c.lower() for c in only}; out = [(c, r) for c, r in out if c.lower() in keep]
     return out
+
+def mask(bases, bbox, ppm, only=None, width=0.42, origins=None):
+    """bool mask (H x W) of the stitches (thread width `width` mm) of the given thread colours on a garment-mm grid"""
+    x0, y0, x1, y1 = bbox; W, H = int((x1 - x0)*ppm), int((y1 - y0)*ppm)
+    im = Image.new("L", (W, H), 0); d = ImageDraw.Draw(im); wpx = max(1, int(round(width*ppm)))
+    for i, b in enumerate(bases):
+        for col, run in strokes(b, origins[i] if origins else None, only=only):
+            d.line([((x - x0)*ppm, (y - y0)*ppm) for x, y in run], fill=255, width=wpx)
+    return np.array(im) > 127
 
 def image(bases, bbox, ppm, origins=None, bg=FABRIC, ss=2):
     """bg=None -> RGBA with a transparent background (stitches only, for placing on flats)"""

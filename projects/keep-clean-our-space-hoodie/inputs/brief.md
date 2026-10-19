@@ -22,7 +22,7 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 
 ## Assumptions made at intake
 - Shell washed black duck
-- TEXT: the mockup's Chinese and Korean text is AI-garbled (Korean also upside down). Proposed correct text [confirm with founder]: Chinese 不要污染地球 ('don't pollute the earth'), Korean 우주를 깨끗하게 ('keep space clean'); Japanese 宇宙をきれいに reads correctly. Set text with a proper CJK font, never trace garbled glyphs
+- TEXT (SUPERSEDED 19 Oct 2026, see 'Text from the source frame' below): intake proposed Chinese 不要污染地球 and Korean 우주를 깨끗하게 — CLOSED, replaced by the founder's source frame.
 - Body = Drum Island block (same front/back/sleeve pieces, keep-outs, size chart XS–3XL); collar replaced by a hood [proposed — confirm hood size/shape; founder may send boxy-hoodie files for the hood]
 - Factory: 360 x 360 frames, max 12 colours per stitch file (factory.json); colour changes are fine
 - FIDELITY FIRST (LESSONS A11): match the mockup detail for detail; cost is reported, not a limit
@@ -31,7 +31,7 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 ## Assumptions (builder, 16 Oct 2026) — all PROPOSED until confirmed
 - Elements: **01** JP badge 宇宙をきれいに (FR = wearer's right chest), **02** EN badge KEEP CLEAN OUR SPACE (FL chest), **03** CN badge 不要污染地球 (FR lower), **04** KR oval 우주를 깨끗하게 (FL lower), **05** star field (FR, FL, both sleeves). Four stitch pieces: FR (F02), FL (F01), SR (S01), SL (S02).
 - Back + hood: plain (the mockup shows only the front). Sleeves: star field all round — front half mapped from the mockup, back half seeded at the same density.
-- Text set from OFL fonts (inputs/fonts, `get_fonts.sh`): JP Zen Maru Gothic Black, EN Nunito ExtraBold, CN Noto Sans SC 720, KR Noto Sans KR 560. Chinese 不要污染地球 and Korean 우주를 깨끗하게 (upright) per the intake proposal; mockup glyphs not traced.
+- Text set from OFL fonts (inputs/fonts, `get_fonts.sh`): JP Zen Maru Gothic Black, EN Nunito ExtraBold, CN Noto Sans SC 720, KR Noto Sans KR 560. Chinese + Korean text superseded by the source frame (below); mockup glyphs not traced.
 - 3D puff (3 mm black foam) on JP + EN text, JP spark bars / hearts / big stars, EN star border; CN text, CN ring dots, KR oval + text, stars flat. Fallback: same files sewn without foam.
 - Mockup → size-M mm: x 0.902, y 0.703 mm/px (the AI render is a longer jacket than the Drum Island block); badges drawn at the motif scale 0.803 mm/px about their mapped anchors.
 - Welt pockets at the mockup's slash angle 58°, centre ±245 / 360 (Drum Island welt size 1.4 × 13). CN badge moved 14 mm toward CF to clear the welt; EN badge nudged 6–9 mm per size to clear the armhole keep-out.
@@ -51,3 +51,15 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - KR oval: the render's i-arrow mark + accent tick + dot are kept as white ornaments (founder: keep or drop?).
 - Welt keep-out pinned to this mockup's slash welt (58°, ±245 / 360) — the merged engine block drafts the Drum Island welt (ENGINE_NOTES 10/13).
 - Star field: front stars are never dropped (nudged ≤ 8 mm, else relocated ≤ 90 mm, spaced from neighbours); 18 hood specks not used (hood plain).
+
+## Text from the source frame (founder, 19 Oct 2026) — inputs/reference.png
+- The founder supplied the anime frame the design comes from (copyrighted source; the IP question stays on the founder card).
+  Text glyph for glyph from the reference, its lettering style; the mockup's badge layout and placement on the garment are kept.
+- JP 宇宙をきれいに (unchanged) · EN KEEP CLEAN OUR SPACE (unchanged).
+- CN 不要世界汚染 (REPLACES 不要污染地球): the reference draws the 4th glyph in the Japanese form 汚 — drawn as shown;
+  Simplified Chinese would be 污 [PROPOSED alternative — founder to choose]. Vertical, red, inside the blue / green dot ring.
+- KR: the reference is drawn rotated 180° (camera view); upright it reads 우리들소중함우주!. Set as the grammatical
+  우리들 소중한 우주! [confirm: reference glyph reads 소중함]. Light letters (Noto Sans KR 450, em fitted inside the ring).
+  The mockup's "i-arrow mark" + accent marks were the rotated "!" and Hangul parts — no separate ornaments.
+- The reference's small "WE WANT NO DIRTY COSMOS" (near the ship) is not on the mockup: left out, optional add (G4).
+- Lettering weights: JP Zen Maru Gothic Bold (rounded neon), EN Nunito 1000 (bold rounded caps), CN Noto Sans SC 600, KR Noto Sans KR 450.

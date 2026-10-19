@@ -1,9 +1,9 @@
-"""Documents: numbers from the DST files -> compare sheets (DST read-back) -> pattern (QA, DXF, 1:1 plot) -> DST welt check ->
+"""Documents: numbers from the DST files -> A14/A15 gates (gates.json, shipped DSTs) -> compare sheets (DST read-back) -> pattern (QA, DXF, 1:1 plot) -> DST welt check ->
 embroidery pack (G/E/S/R/F) -> garment pages T1-T9 -> merged PDF -> shrink. usage: python3 build_all.py"""
 import kccore
 import subprocess, sys, os
 from pypdf import PdfReader
-for cmd in (["make_current.py"], ["compare.py", "M"], ["pattern_kc.py", "qa", "dxf", "pdf"], ["welt_check.py"]):
+for cmd in (["make_current.py"], ["gates.py"], ["compare.py", "M"], ["pattern_kc.py", "qa", "dxf", "pdf"], ["welt_check.py"]):
     subprocess.run([sys.executable] + cmd, check=True)
 import pack, kcgtp
 pack.build()

@@ -207,10 +207,10 @@ def summary():
                " — tips of stars / sparkles taper to 0.8 by design.", 1.7, 400, GREEN if not bad else ORANGE))
     o.append(t(12, y + 8.4, f"Run time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one hooping; puff pause (lay foam ~2 min) and tear-away not included.", 1.7, 400, MUTED))
     o.append(t(12, y + 11.8, "Fidelity first (Rev B): every badge part, star and glow of the mockup is built; trims (mostly one per star speckle — each is an island on bare fabric) are reported, not cut.", 1.7, 400, MUTED))
-    o.append(t(12, y + 15.2, "Rev B review fixes: DST-based compare sheets · soft halo glow · domed rims + faceted stars · curved JP baseline · solid red star · column satin strokes · KR ornaments · stars nudged not dropped · sparkles · EN weight.", 1.7, 600, INK))
+    o.append(t(12, y + 15.2, "Rev B review fixes: DST-based compare sheets · soft halo glow · domed rims + faceted stars · curved JP baseline · solid red star · column satin strokes · text from the source frame · motifs traced (A14 gates) · stars nudged not dropped · sparkles · EN weight.", 1.7, 600, INK))
     qy = y + 21
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
-    qs = ["1. Text (the mockup's glyphs are AI-garbled): Chinese 不要污染地球, Korean 우주를 깨끗하게 (set upright, not mirrored), Japanese 宇宙をきれいに, English KEEP CLEAN OUR SPACE. Confirm the wording.",
+    qs = ["1. Text now from the founder's source frame: 宇宙をきれいに · KEEP CLEAN OUR SPACE · 不要世界汚染 (汚 as drawn; Simplified 污?) · 우리들 소중한 우주! (source reads 소중함 — confirm).",
           "2. 3D puff: JP + EN text, JP bars / hearts / stars, EN star border and the CN ring dots are digitized for 3 mm puff (dense column satin + lighter rim, foam pause). Can the factory sew puff? Fallback: same files without foam.",
           "3. Back and hood: the mockup shows only the front. Proposed: back + hood plain; star field on both fronts and all round both sleeves (back half of the sleeves seeded at the mockup's density).",
           f"4. Frame: fronts are ~265 × 500 and sleeves ~480 × 560 → {sum(HOOP.values())} hoopings per jacket on {FR_S}. A bigger frame (≥ 300 × 520 for fronts) removes the front joins. Which frames?",
@@ -218,7 +218,7 @@ def summary():
           "6. Welt pockets at the mockup's steep slash position (58°, centre 245 from CF / 360 below the neck at M, graded by the block) — the CN badge needs the space. Confirm.",
           "7. Badge grade: A 92 % / B 100 % / C 106 %; badges keep their shape and move with the panel. Or one badge size for all sizes?",
           "8. Close-ups: art is redrawn from the ~1 px/mm mockup (inputs/closeup_request.md, incl. a badge-texture prompt). Close-ups would let us match puff edges / glow exactly.",
-          "9. KR oval: the render's non-text marks (i-arrow mark, accent tick + dot) are KEPT in Rev B as white ornaments. Keep them, or drop them with the garbled text?",
+          "9. Optional add: the source frame's small 'WE WANT NO DIRTY COSMOS' text (near the ship) is not on the mockup — left out; add it?",
           "10. DST/PES are production-intent drafts: the factory digitizer checks density, pull and puff end caps on the washed duck and edits before the sew-out.",
           "Closed 19 Oct (founder): block = zip-hoodie (engine/hoodie.py, elastic hem + cuff bands); slash welts via the block's welt override. Pattern + T pages in this pack."]
     for i, q in enumerate(qs): o.append(KD.auto(12, qy + 5 + i*3.9, q, 1.75))
@@ -318,9 +318,10 @@ def badge_page(el):
     o.append(t(rx, y, "TEXT — exact characters, set from the font (do not re-type or trace)", 2.1, 700)); y += 3
     key = {"01": "jp", "02": "en", "03": "cn", "04": "kr"}[el]
     txt = kccore.TEXT[el] if el != "02" else "KEEP CLEAN OUR SPACE"
-    o.append(text_big(rx, y + 9, txt, key, 8.5 if el != "02" else 6.5)); y += 13
-    mean = {"01": "'Make space clean' (uchū o kirei ni)", "02": "KEEP / OUR SPACE in mint, CLEAN in lemon, 2 lines", "03": "'Don't pollute the Earth' (bù yào wūrǎn dìqiú), vertical",
-            "04": "'Keep space clean' (ujureul kkaekkeuthage)"}[el]
+    o.append(text_big(rx, y + 9, txt, key, 8.5 if el not in ("02", "04") else (6.5 if el == "02" else 7.0))); y += 13
+    mean = {"01": "'Make space clean' (uchū o kirei ni) — as the source frame", "02": "KEEP / OUR SPACE in mint, CLEAN in lemon, 2 lines",
+            "03": "'Don't pollute the world', vertical — source frame, 汚 as drawn [污 = Simplified, proposed]",
+            "04": "'Our precious universe!' — source frame read upright [ref glyph 소중함 — confirm]"}[el]
     ang = (f"curved baseline {b['angle_start']:+.1f}° at 宇 → {b['angle_end']:+.1f}° at に (fit through the 7 glyph centres measured on the mockup)" if el == "01"
            else f"{b['angle']:+.1f}° (y down: + = clockwise)")
     rows = [("Meaning / layout", mean), ("Font", KD.FONT_NAME[key] + " (OFL, inputs/fonts)"),
@@ -329,7 +330,7 @@ def badge_page(el):
                                          "03": "flat column-satin text; ring dots 3D puff with lighter rims " + PROP, "04": "flat satin"}[el])]
     if el == "03": rows.append(("Ring", f"{b['dots']} domed dots Ø 12.4 (1.3 lighter rim) alternating blue / mint, soft halo, sparkles inside"))
     if el == "04": rows.append(("Oval ring", f"outer {2*b['axes'][0]:.0f} × {2*b['axes'][1]:.0f}, ring {b['axes'][2]:.1f} gold (one closed column) + 1.1 lemon highlight"))
-    if el == "04": rows.append(("Ornaments", "i-arrow mark, accent tick + dot (white) — kept from the mockup " + PROP))
+    if el == "04": rows.append(("Marks", "none: the render's 'i-arrow' is the '!' of 우주! (source drawn rotated 180°)"))
     for a_, b_ in rows:
         o.append(t(rx, y, a_, 1.8, 400, MUTED)); o.append(t(rx + 30, y, b_, 1.75, 600, ORANGE if PROP in b_ else INK)); y += 3.5
     y += 2
@@ -352,10 +353,15 @@ def badge_page(el):
     # mockup vs art (same scale)
     import compare as CP
     mk = CP.mock_local(el, bb, 3.0)
-    room = SH - 14 - (y + 4) - len(CHANGES[el]) * 3.0; wpair = min(52, room * mk.width / mk.height)
+    room = SH - 14 - (y + 4) - len(CHANGES[el]) * 3.0; wpair = min(36, room * mk.width / mk.height)
     tag2, h2 = img_tag(mk, rx, y + 2, wpair); o.append(tag2)
-    st2 = DV.image([BASE], bb, 3.0); tag3, _ = img_tag(st2, rx + wpair + 4, y + 2, wpair); o.append(tag3)
-    o.append(t(rx, y + 1, "MOCKUP (low-res AI render)", 1.6, 700)); o.append(t(rx + wpair + 4, y + 1, "THIS DST (same scale)", 1.6, 700))
+    rp = CP.ref_panel(el, mk.height)
+    if rp is not None:
+        wr = wpair * rp.width / rp.width if False else min(36, h2 * rp.width / rp.height); tagr, _ = img_tag(rp, rx + wpair + 3, y + 2, wr); o.append(tagr)
+        o.append(t(rx + wpair + 3, y + 1, "SOURCE FRAME" + (" (upright)" if el == "04" else ""), 1.5, 700))
+    else: wr = 0
+    st2 = DV.image([BASE], bb, 3.0); tag3, _ = img_tag(st2, rx + wpair + wr + 6, y + 2, wpair); o.append(tag3)
+    o.append(t(rx, y + 1, "MOCKUP (layout)", 1.5, 700)); o.append(t(rx + wpair + wr + 6, y + 1, "THIS DST (same scale)", 1.5, 700))
     yy = y + 4 + h2
     for i, c in enumerate(CHANGES[el]):
         c = c.replace("{dots}", str(META["badges"]["03"]["dots"])).replace("{cnsp}", str(META["counts"]["cn_sparkles"]))
@@ -371,10 +377,10 @@ CHANGES = {
         "Domed puff: lighter rim on text / bars / hearts / dot, faceted stars;", "  top star slender with a dark pit + white centre; red star solid with", "  a star-shaped pit. Glow = soft halo round the letters.", "!Reference: low-res mockup only (no close-up)."],
  "02": ["WHAT CHANGED vs MOCKUP (Rev B)", "18 gold stars counted + placed (2 hidden behind 'N' not added),", "  faceted, lighter top facets. Nunito 1000 em 23 (heavier, as the",
         "  mockup), line pitch 28 + line length 138 measured. Soft halo.", "Badge moved 9 toward CF (M): clears the 15 armhole keep-out.", "!Reference: low-res mockup only (no close-up)."],
- "03": ["WHAT CHANGED vs MOCKUP (Rev B)", "!Text: the render shows 7 garbled glyphs (木不要涞球汚染); set as", "!  不要污染地球 (6 characters, brief) — confirm wording.",
-        "{dots} domed ring dots (puff, lighter rim, no radial centre) + {cnsp}", "  sparkles; soft halo round every dot. Moved 14 toward CF (welt).", "!Reference: low-res mockup only (no close-up)."],
- "04": ["WHAT CHANGED vs MOCKUP (Rev B)", "!Text: the render's Hangul is mirrored + upside down and garbled;", "!  set upright as 우주를 깨끗하게 (brief) — confirm wording.",
-        "Oval ring 4.0 gold + 1.1 lemon highlight, tilted 6.9°. Ornaments", "  kept (Rev A dropped them): i-arrow mark, accent tick + dot.", "!Reference: low-res mockup only (no close-up)."],
+ "03": ["WHAT CHANGED vs MOCKUP (Rev B)", "Text from the founder's source frame: 不要世界汚染 (the render's", "  7 glyphs were garbled). 汚 drawn as the source shows (Japanese form).",
+        "!Simplified Chinese would be 污 — say which (G4).", "{dots} domed ring dots + {cnsp} sparkles, traced; soft halo round the dots.", "!Reference: mockup (layout) + source frame (text)."],
+ "04": ["WHAT CHANGED vs MOCKUP (Rev B)", "Text from the source frame, read upright (drawn rotated 180°):", "  우리들 소중한 우주! — the render's marks were the rotated '!'.",
+        "!Source glyph reads 소중함; set as 소중한 (grammatical) — confirm.", "Oval ring traced from the mockup (4.5–5.0 wide) + 1.1 lemon line.", "!Reference: mockup (layout) + source frame (text)."],
 }
 
 def star_page():
@@ -402,7 +408,8 @@ def star_page():
     sl_txt = "; ".join(f"{'/'.join(v)}: SR {k[0]:,} + SL {k[1]:,} st" for k, v in groups.items() if k[0])
     spn = c["sparkle_spans"]
     lines = [f"Mockup speckles detected: {c['specks_detected']} = fronts {c['FR_field']} + {c['FL_field']} + sleeves (front half) {c['SR_front_mapped']} + {c['SL_front_mapped']} + CN ring {c['cn_sparkles']} (E03)",
-             f"  + not field stars: {c['excluded_in_badge']} inside badge zones, {c['excluded_hood']} on the hood (hood plain {PROP}), {c['excluded_zip']} on the zip, {c['excluded_big_glint']} large glints.",
+             f"  + not field stars: {c['excluded_in_badge']} inside badge zones, {c['excluded_hood']} on the hood (hood plain {PROP}), {c['excluded_zip']} on the zip, {c['excluded_big_glint']} large glints;",
+             "  removed before counting (seam glints checked on x4 crops, not stars): " + ", ".join(f"{v} {k}" for k, v in c.get("glints", {}).items()) + ".",
              f"Fronts: every detected star is placed on every size (dropped = 0, review item 8). A star in a keep-out moves to the nearest free spot (≤ 8 = nudged);",
              "  if none, ≤ 45 mm (relocated: the render's drop-shoulder strip, x ≈ ±305 at M, lies on the Drum Island sleeve cap, so those stars spread onto the front edge).",
              f"Sleeves: front half mapped from the mockup sleeves; back half seeded at the same density + size mix ({c['SR_back_seeded']} + {c['SL_back_seeded']}) {PROP}.",

@@ -48,7 +48,7 @@ def auto(x, y, s, size=2.2, fill="#1A1A1A", w=400):
             if re.match(r"[\uac00-\ud7af]", seg): key = "kr"
             else:
                 jp_ok = all(ord(c) in KL.font("jp").getBestCmap() for c in seg)
-                key = "jp" if (jp_ok and not any(c in seg for c in "不要污染地球")) else "cn"
+                key = "jp" if (jp_ok and not any(c in seg for c in "不要世界汚染污地球")) else "cn"
             parts.append((seg, key))
         else: parts.append((seg, None))
     return mixed(x, y, parts, size, fill, w)[0]
@@ -58,4 +58,4 @@ def load():
     D = pickle.load(open("art_M.pkl", "rb"))
     return CUR, ALL, META, D
 
-FONT_NAME = {"jp": "Zen Maru Gothic Bold", "en": "Nunito Black (wght 1000)", "cn": "Noto Sans SC (wght 600)", "kr": "Noto Sans KR (wght 560)"}
+FONT_NAME = {"jp": "Zen Maru Gothic Bold", "en": "Nunito Black (wght 1000)", "cn": "Noto Sans SC (wght 600)", "kr": "Noto Sans KR (wght 450)"}

@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from shapely.ops import unary_union
 import mockmap as MM, front as F, dstview as DV
 
-size = sys.argv[1] if len(sys.argv) > 1 else "M"
+size = next((a for a in sys.argv[1:] if not a.startswith("-")), "M") if __name__ == "__main__" else "M"
 D = pickle.load(open(f"art_{size}.pkl", "rb")); META = pickle.load(open("scene.pkl", "rb"))["meta"]
 _FD = os.path.expanduser("~/.local/share/fonts")
 FONT = ImageFont.truetype("inputs/fonts/_inst_cn_720.ttf", 22); FS = ImageFont.truetype("inputs/fonts/_inst_cn_640.ttf", 17)
@@ -39,6 +39,27 @@ def zone(P, unit=None, ch=None, el=None, h=20.0, pick=None):
 def top(rs):     # the topmost unit of a set (ring dot / star)
     u = min({r["unit"] for r in rs}, key=lambda u: min(r["geom"].bounds[1] for r in rs if r["unit"] == u))
     return [r for r in rs if r["unit"] == u]
+
+REF_BOX = {"01": ((330, 160, 940, 520), 0), "02": ((1150, 200, 1600, 720), 0), "03": ((250, 680, 560, 1270), 0), "04": ((800, 1040, 1360, 1190), 180)}
+def ref_panel(el, H):
+    """the founder's source frame (inputs/reference.png) around this badge, KR turned upright, scaled to height H"""
+    if not os.path.exists("inputs/reference.png"): return None
+    b, rot = REF_BOX[el]; im = Image.open("inputs/reference.png").convert("RGB").crop(b)
+    if rot: im = im.rotate(rot)
+    return im.resize((int(im.width * H / im.height), H), Image.LANCZOS)
+
+def gate_lines(el=None, field=None):
+    """A14 / A15 gate rows from gates.json (shipped DST) for this element"""
+    if not os.path.exists("gates.json"): return ["A14/A15 gates: gates.json missing — run gates.py"]
+    G = json.load(open("gates.json")); out = [f"A14 / A15 GATES ({G.get('source', '')}; IoU >= 0.70, size within 0.8-1.25, bare gap < 25 mm²)"]
+    keys = [k for k in G["summary"] if (el and k.startswith(el + " ")) or (field and k.startswith("05 field"))]
+    for k in keys:
+        v = G["summary"][k]; st = "PASS" if v["fail"] == 0 and v["gaps_ge25"] == 0 else "FAIL"
+        out.append(f"  {k:12s} {st}: {v['n']} motifs — {v['ok']} match (median IoU {v['iou_med']}), {v['moved']} moved by the art (keep-out), "
+                   f"{v.get('text', 0)} font-set text, {v.get('occluded', 0)} hidden in the render, {v['fail']} FAIL; bare gaps >= 25 mm²: {v['gaps_ge25']}")
+    for n in G.get("not_traced", []):
+        if (el and n.startswith(el)) or (field and n.startswith("05")) or (el in ("01", "02") and n.startswith("01 + 02")): out.append("  generated, not traced: " + n)
+    return out
 
 ZOOMS = {
  "01": [("宇宙 + face star (puff text, rims, halo)", dict(unit="01-text", ch="宙", h=19)), ("き れ (curved baseline, bars)", dict(unit="01-text", ch="き", h=19)),
@@ -77,8 +98,13 @@ def sheet(el):
         pair = Image.new("RGB", (zw * 2 + 8, a.height), (255, 255, 255)); pair.paste(a, (0, 0)); pair.paste(s_, (zw + 8, 0))
         rows.append(label(pair, f"{name} — x {z[0]:.0f}..{z[2]:.0f}, y {z[1]:.0f}..{z[3]:.0f} mm (mockup | DST)"))
     zcol_h = sum(r.height + 8 for r in rows)
-    out = Image.new("RGB", (W * 2 + 40 + zw * 2 + 30, max(H + 70, zcol_h + 50)), (255, 255, 255))
+    rp = ref_panel(el, H); RW = rp.width + 20 if rp is not None else 0
+    gl = gate_lines(el=el); gh = 26 * len(gl) + 20
+    out = Image.new("RGB", (W * 2 + 40 + RW + zw * 2 + 30, max(H + 70 + gh, zcol_h + 50)), (255, 255, 255))
     out.paste(mk, (10, 60)); out.paste(st, (W + 30, 60)); d = ImageDraw.Draw(out)
+    if rp is not None:
+        out.paste(rp, (2 * W + 50, 60)); d.text((2 * W + 50, 34), "SOURCE FRAME (founder; text + lettering)" + (" — turned upright" if el == "04" else ""), fill=(0, 0, 0), font=FS)
+    for i, l in enumerate(gl): d.text((10, H + 80 + i * 26), l, fill=(0, 0, 0) if i else (20, 20, 120), font=FS_KR if any("\uac00" <= c <= "\ud7af" for c in l) else FS)
     d.text((10, 6), f"{el} {kccore.ELEMENTS[el][1]} — Rev B, size {size}", fill=(0, 0, 0), font=ImageFont.truetype("inputs/fonts/_inst_kr_560.ttf", 22) if el == "04" else FONT)
     narrow = W < 700
     d.text((10, 34), "MOCKUP (flat.png, low-res)" if narrow else f"MOCKUP (flat.png, motif scale {MM.S:.3f} mm/px; low-res render, no close-up)", fill=(0, 0, 0), font=FS)
@@ -86,7 +112,7 @@ def sheet(el):
     for _, z in zs:
         for X in (10, W + 30):
             d.rectangle([X + (z[0]-bb[0])*ppm, 60 + (z[1]-bb[1])*ppm, X + (z[2]-bb[0])*ppm, 60 + (z[3]-bb[1])*ppm], outline=(255, 60, 60), width=2)
-    y = 50; x0 = W * 2 + 50
+    y = 50; x0 = W * 2 + 50 + RW
     for r in rows: out.paste(r, (x0, y)); y += r.height + 8
     p = f"out/compare_{el}_{kccore.ELEMENTS[el][0]}.png"; out.save(p); return p
 
@@ -99,7 +125,9 @@ def fronts():
         pn = F.keep_geoms(size, s_)["panel"]; d_.line([((x - bb[0])*ppm, (y - bb[1])*ppm) for x, y in pn.exterior.coords], fill=(120, 120, 120), width=1)
     d_.rectangle([(-6 - bb[0])*ppm, (0 - bb[1])*ppm, (6 - bb[0])*ppm, (510 - bb[1])*ppm], fill=(160, 125, 60))
     mk = MM.warp(bb, ppm)
-    W, H = st.size; out = Image.new("RGB", (W*2 + 20, H + 40), (255, 255, 255)); out.paste(mk, (0, 40)); out.paste(st, (W + 20, 40))
+    W, H = st.size; gl = gate_lines(field=True); out = Image.new("RGB", (W*2 + 20, H + 60 + 26 * len(gl)), (255, 255, 255)); out.paste(mk, (0, 40)); out.paste(st, (W + 20, 40))
+    dd = ImageDraw.Draw(out)
+    for i, l in enumerate(gl): dd.text((10, H + 50 + i * 26), l, fill=(0, 0, 0), font=FS)
     d = ImageDraw.Draw(out); d.text((10, 8), "MOCKUP fronts (mapped to size-M mm: x 0.902, y 0.703 mm/px)", fill=(0, 0, 0), font=FS)
     d.text((W + 30, 8), f"WRITTEN DST FR + FL size {size} read back (badges at motif scale; Drum Island panel, welts outlined)", fill=(0, 0, 0), font=FS)
     out.save(f"out/compare_front_{size}.png"); st.save(f"out/render_front_{size}.png")

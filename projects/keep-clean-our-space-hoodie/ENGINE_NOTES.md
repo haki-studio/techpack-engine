@@ -121,3 +121,8 @@ Chinese phrase, upside-down mirrored Hangul)." Check: the spec page prints the s
   scribble sparkles looked fine in the region render). Rule: compare sheets and spec-page art are rendered from the DST
   read-back only (every sewn stitch drawn). Check: reviewer re-renders one DST; `compare.py` imports no region renderer.
 - **B25** — see note 11 (travel over already-sewn satin). Check: the test in note 11.
+
+## 15. hoodie.Variant has no ORDER (pattern_out.write_dxf / plot_pdf read blk.ORDER)
+- **Problem:** `PO.write_dxf(..., blk=hoodie.Variant(welt=...))` -> AttributeError 'Variant' object has no attribute 'ORDER'.
+- **Workaround:** `BLK.ORDER = HD.ORDER` in pattern_kc.py. **Fix:** `Variant.ORDER = ORDER` (class attribute) in engine/hoodie.py.
+- **Check:** test that write_dxf + plot_pdf run with a Variant.

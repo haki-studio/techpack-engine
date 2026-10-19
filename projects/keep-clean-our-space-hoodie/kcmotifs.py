@@ -243,8 +243,9 @@ def star_facets(cx, cy, size, col, unit, rot=0.0, k=0.48, code="PF-STR", light=N
 
 def sparkle_cols(cx, cy, span, col="kc_white", unit=None, rot=0.0, code="SPK"):
     """concave 4-point sparkle: two crossing tapered columns (arms pinch to 0.25 at the tips, concave sides)."""
-    w0 = max(1.1, 0.40 * span); L = span / 2
-    prof = ("taper", 1.6, 0.12)
+    w0 = max(1.1, 0.52 * span); L = span / 2 * 0.9  # traced: fat 4-point star; arms end at 90 % (needle tips sit outside the half-max edge)
+    prof = ("taper", 1.3, 0.10)
+    if span < 5.0: w0, prof = max(1.1, 0.62 * span), ("taper", 1.0, 0.12)      # small ones read as diamonds
     out = []
     for k in (0, 1):
         a = math.radians(rot + 90 * k)

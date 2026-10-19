@@ -243,9 +243,12 @@ PIECE_CODE = {"FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
 ELEMENTS = {   # id -> (slug, title, piece)
     "01": ("jp-badge", "宇宙をきれいに badge (JP)", "FR"),
     "02": ("en-badge", "KEEP CLEAN OUR SPACE badge (EN)", "FL"),
-    "03": ("cn-badge", "不要污染地球 badge (CN)", "FR"),
-    "04": ("kr-oval", "우주를 깨끗하게 oval (KR)", "FL"),
+    "03": ("cn-badge", "不要世界汚染 badge (CN)", "FR"),
+    "04": ("kr-oval", "우리들 소중한 우주! oval (KR)", "FL"),
     "05": ("star-field", "Star speckle field", "FR FL SR SL"),
 }
-TEXT = {"01": "宇宙をきれいに", "02": ("KEEP", "CLEAN", "OUR SPACE"), "03": "不要污染地球", "04": "우주를 깨끗하게"}
+# Text from the founder's source frame (inputs/reference.png, 19 Oct 2026), glyph for glyph: CN uses the reference's
+# Japanese-form 汚 (Simplified would be 污 — PROPOSED alternative); KR is the reference read upright (it is drawn rotated
+# 180°), in the grammatical form 소중한 (the reference glyph reads 소중함 — confirm).
+TEXT = {"01": "宇宙をきれいに", "02": ("KEEP", "CLEAN", "OUR SPACE"), "03": "不要世界汚染", "04": "우리들 소중한 우주!"}
 REV_EMB = "Rev B"; REV_GAR = "Rev B"; DATE = "19 Oct 2026"

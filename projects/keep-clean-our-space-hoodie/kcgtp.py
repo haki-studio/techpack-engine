@@ -337,7 +337,7 @@ def p_fit():
     for c in checks:
         o.append(f'<rect x="12" y="{f(y - 2.2)}" width="2.6" height="2.6" fill="none" stroke="{INK}" stroke-width="0.25"/>'); o.append(t(16.5, y, c, 1.7)); y += 4.2
     y += 4; o.append(t(12, y, "OPEN QUESTIONS — confirm before the sample", 2.4, 700)); y += 6
-    qs = ["1. Text: Chinese 不要污染地球, Korean 우주를 깨끗하게 (upright), Japanese 宇宙をきれいに, English KEEP CLEAN OUR SPACE — confirm wording (G4).",
+    qs = ["1. Text from the founder's source frame: 宇宙をきれいに · KEEP CLEAN OUR SPACE · 不要世界汚染 (汚 as drawn; Simplified 污?) · 우리들 소중한 우주! (source reads 소중함 — confirm).",
           "2. Back + hood plain; star field on both fronts + all round both sleeves. Confirm, or add back / hood stars.",
           "3. Hood size 36 × 26 cm (M) incl. sherpa allowance, no drawcord; hem / cuff bands 5.5 / 5 cm with elastic (zip-hoodie block, proposed).",
           "4. Zip: 2-way separating YKK #5 metal, antique brass (mockup shows two pullers).",
@@ -353,7 +353,7 @@ def p_revisions():
     revs = [("Rev A", "16 Oct 2026", "Embroidery only: four neon text badges (JP, EN, CN, KR) + star field on the Drum Island body pieces; text set from fonts; "
                             "pattern waiting for the hood block."),
             ("Rev B", DATE, "Independent review fixes: stroke-column satin text, stipple glow halo, domed puff rims in tint threads + faceted stars, curved JP baseline, "
-                            "solid red star, KR ornaments kept, every mockup star placed (seam glints removed), heavier EN; compare sheets drawn from the DST files. "
+                            "solid red star, CN + KR text from the founder's source frame, motifs traced + A14/A15 gates, every mockup star placed (seam glints removed), heavier EN; compare sheets drawn from the DST files. "
                             "Garment: zip-hoodie block (founder decision 19 Oct) with this mockup's slash welts (engine welt override); pattern XS–3XL, DXF + 1:1 plot, T pages.")]
     y = 36
     for rv, dt, ch in revs:

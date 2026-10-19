@@ -73,7 +73,7 @@ def place_front(size, P):
     kept, dropped, nudged, reloc = place_stars(stars, clip, badges, lambda c: (c.x*kx, c.y*ky), out, far=45.0)
     return out, clip, dict(moves=moves, stars=kept, stars_dropped=dropped, stars_nudged=nudged, stars_relocated=reloc, scale=s, grade=grade)
 
-def place_stars(stars, clip, avoid, mapf, out, max_move=8.0, gap=2.5, far=None):
+def place_stars(stars, clip, avoid, mapf, out, max_move=8.0, gap=1.5, far=None):
     """move each star (all regions of one unit together) to its mapped position. A star that lands in a keep-out (or on a
     badge) goes to a free spot inside the clip, chosen on a 1 mm grid by distance from its mapped position minus spacing
     from its neighbours (nearest-point projection lined stars up along the keep-out edges). Tiers: <= max_move

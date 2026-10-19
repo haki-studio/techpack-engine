@@ -95,6 +95,8 @@ def _prof(prof):
     if prof is None or callable(prof): return prof
     if prof[0] == "taper":
         pw, fl = prof[1], prof[2]; return lambda t: max(fl, (1 - abs(2 * t - 1))) ** pw
+    if prof[0] == "table":                 # traced width multipliers along the column (closed rings: t = 0..1 round)
+        v = np.asarray(prof[1], float); tt = np.linspace(0, 1, len(v)); return lambda t: float(np.interp(t, tt, v))
     raise ValueError(prof)
 
 def rows(cl, w, sp, pull=0.0, caps=("round", "round"), closed=False, prof=None):
@@ -144,6 +146,11 @@ def column_pts(cl, w, sp, pull=0.0, caps=("round", "round"), closed=False, prof=
 
 def column_geom(cl, w, caps=("round", "round"), closed=False, prof=None):
     """outline of what the column sews: flat body + a semicircle at each round end (the end point is ON the outline)."""
+    if closed and prof is not None:       # closed column with a width table: the outline of its rows
+        rr = rows(cl, w, 0.15, 0.0, caps, True, prof)
+        outer = Polygon([a for a, b in rr]).buffer(0); inner = Polygon([b for a, b in rr]).buffer(0)
+        if outer.area < inner.area: outer, inner = inner, outer
+        return outer.difference(inner).buffer(0)
     if closed:
         return LineString(list(cl) + [cl[0]]).buffer(w / 2, cap_style="round", join_style="round").buffer(0)
     if prof is not None:          # tapered column: union of row quads

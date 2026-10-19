@@ -28,7 +28,7 @@ for i, sl in enumerate(ndi.find_objects(lab), 1):
     h = sl[0].stop - sl[0].start; wd = sl[1].stop - sl[1].start; A = int((lab[sl] == i).sum())
     if A > 60 or max(h, wd) > 10: continue
     if max(h, wd) / max(1, min(h, wd)) > 3 and A > 4: continue
-    x = (sl[1].start + sl[1].stop) / 2; y = (sl[0].start + sl[0].stop) / 2
+    x = (sl[1].start + sl[1].stop) / 2 - 0.5; y = (sl[0].start + sl[0].stop) / 2 - 0.5     # pixel-centre convention (as map_coordinates)
     if any(L.contains(Point(x, y)) for L in LINES): continue
     gz = [k for k, z in GLINT.items() if z.contains(Point(x, y))]
     if gz: excl[gz[0]] += 1; continue

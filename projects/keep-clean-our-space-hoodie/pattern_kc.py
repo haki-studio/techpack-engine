@@ -6,7 +6,7 @@ import kccore
 import sys, os, json
 import front as F                     # front.WELT = this mockup's welt (engine per-design welt override)
 import hoodie as HD, pattern as PT, pattern_out as PO
-BLK = HD.Variant(welt=F.WELT)
+BLK = HD.Variant(welt=F.WELT); BLK.ORDER = HD.ORDER          # pattern_out reads blk.ORDER; Variant has none (ENGINE_NOTES 15)
 STYLE = kccore.STYLE
 OUTD = "out/pattern"; os.makedirs(OUTD, exist_ok=True)
 PO.EMB_ON = {"F01": ["FL"], "F02": ["FR"], "S01": ["SR"], "S02": ["SL"]}
