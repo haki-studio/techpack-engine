@@ -59,7 +59,7 @@ def build(size):
         for u, rs in units.items():
             ug = unary_union([r["geom"] for r in rs])
             if not ug.intersects(clip): drop.add(u); continue
-            if not clip.buffer(0.3).contains(ug): drop.add(u)
+            if not clip.buffer(0.3).contains(ug) and not u.startswith("islet"): drop.add(u)   # traced islets are clipped, never dropped (A14)
         kept = [r for r in half if r.get("unit") not in drop]
         vis = visible(kept, clip)
         raw_area = unary_union([r["geom"] for r in kept if r["geom"].intersects(clip)]).area

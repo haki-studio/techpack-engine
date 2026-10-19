@@ -136,6 +136,7 @@ def trace(P, seed=1):
     ZR = 11.0
     zone = cut & (Dal < ZR) & (Dc < ZR + 3)
     core = cut & ~zone
+    np.savez_compressed(f"out/bank_ref_{P}.npz", mask=cut, x0=x0, y0=y0, ppm=PPM)      # reference silhouette for qa.motif_match (A14)
     Ds = ndi.gaussian_filter(Dal, 2.0*PPM); gy, gx = np.gradient(Ds)
     cpts = np.argwhere(contact); rng.shuffle(cpts)
     discs = []; SPC = 12.5
