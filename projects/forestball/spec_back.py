@@ -142,7 +142,7 @@ def page3():
     yb, tot = region_table(o, VB, QA)
     o.append(t(12, yb + 2, "Globals: 40wt polyester, 75/11 sharp needle, 2.5 oz cutaway, no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; trims at exposed moves > 2.5.", 1.75, 400, MUTED))
     o.append(t(12, yb + 5.2, "Width = share of area narrower than its minimum (fill/satin 0.8, line 0.6) for > 2.5 mm, on the art. Green < 1%; amber = tapered tips (grass, twig ends) the digitizer absorbs.", 1.75, 400, MUTED))
-    o.append(t(12, yb + 8.4, "Light rays (LR): serpentine single run, rows 2.3 apart (≈ 28 % cover), sewn last over the art — a sheer veil, not a fill. Each tone is one continuous object so the ray has no trims inside it.", 1.75, 600, INK))
+    o.append(t(12, yb + 8.4, "Light rays (LR): serpentine single run, rows 1.8 apart (cream core) / 2.8 (sage edges), ≈ 25-30 % cover, sewn FIRST and covered by the art (light behind the limb) — a sheer veil, not a fill.", 1.75, 600, INK))
     return o
 
 def stops_table(o, stops, x0, y0, title, width=185, sews=True, dst=None):
@@ -208,17 +208,18 @@ def page5():
     _rc = _js.load(open("rays_cover.json"))["ray_cover_pct"]; _rg = _js.load(open("inputs/closeup_reg.json"))["BACK"]
     ch = ["Rev C: TRACED, not generated (LESSONS A12). Close-up 'closeup_front_",
           f"  right_a' shows this BACK scene: SIFT projective fit on the mockup",
-          f"  ({_rg['inliers']} inliers, median {_rg['resid_px_median']} mm); every pixel -> nearest of",
-          "  the 12 threads; stitch angle = the close-up's own strand direction.",
-          "  Pool + outside the close-up: mockup read at x4 (no new geometry).",
-          "Traced: twisted chain limb + trunk with navy crevices, moss + cream",
-          "  highlights, root loops round the pool, mossy bank, rapids, grass.",
-          f"Light rays: {len(_rc)} broad bands traced from the close-up (25-45 mm),",
-          f"  sheer overlay sewn LAST, {min(_rc):.0f}-{max(_rc):.0f} % cover, cream core + sage edges.",
+          f"  ({_rg['inliers']} inliers, median {_rg['resid_px_median']} mm); tones re-calibrated (hue first),",
+          "  links/strands = own satin objects along their own axis (A13).",
+          "  Outside the close-up (top band): mockup read at x4.",
+          "Traced: twisted chain limb + trunk with navy crevices, teal + moss",
+          "  strands, cream highlights, root loops round the pool, mossy bank,",
+          "  rapids + ledges, pool ripples, dense tall grass.",
+          f"Light rays: {len(_rc)} broad bands traced from the close-up (33-44 mm),",
+          f"  sewn FIRST under the art, {min(_rc):.0f}-{max(_rc):.0f} % cover, cream core + sage edges.",
           "ORB in the stream: LICENSED — not drawn. Marked placeholder box",
           f"  {PH[2]-PH[0]:.0f} × {PH[3]-PH[1]:.0f}; water + 4 ripple rings continue round it.",
           "Sides + armholes: art pulled 16 inside (nothing wraps); bottom 11",
-          "  above the hem seam. Leaves/twigs cut by a keep-out are dropped.",]
+          "  above the hem seam. Leaves a keep-out would cut are left out whole.",]
     for i, c in enumerate(ch): o.append(t(70, my + 4.5 + i*3.3, c, 1.8, 600 if "LICENSED" in c else 400, RED if "LICENSED" in c else INK))
     px = 190
     o.append(t(px, my, "PRODUCTION", 2.4, 700))

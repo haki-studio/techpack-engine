@@ -10,5 +10,11 @@
   "inliers": 8,
   "resid_px_median": 1.9,
   "resid_px_p90": 88.24
+ },
+ "02Rc": {
+  "matches": 426,
+  "inliers": 54,
+  "resid_px_median": 0.96,
+  "resid_px_p90": 1.95
  }
 }

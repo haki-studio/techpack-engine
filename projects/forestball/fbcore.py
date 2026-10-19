@@ -5,7 +5,7 @@ Drum Island pattern materials (black corduroy collar, black rib). Nothing in eng
 import motifs2, tech
 
 STYLE = "HK-JK-DRUM-FB"; NAME = "Forestball Jacket"; SLUG = "forestball"
-REV_EMB = "Rev C"; REV_GAR = "Rev C"; DATE = "17 Oct 2026"
+REV_EMB = "Rev C"; REV_GAR = "Rev C"; DATE = "19 Oct 2026"
 FABRIC = "#3A463C"                     # washed forest green (mockup median #38433A..#3D483F)
 
 # ---------------------------------------------------------------- thread palette (13 threads + basting, 40wt polyester) — PROPOSED, read from the mockup
@@ -14,7 +14,7 @@ PAL = {
     "royal":   ("#1E4F8A", "Chain blue",     "braided chain bark + moss ropes (close-up b: royal/teal blue)"),
     "brown":   ("#4E3B2A", "Twig brown",     "twigs (chain stitch), leaf veins"),
     "bark":    ("#2D4862", "Bark blue",      "bark body + chain underside, rock body, stream"),
-    "mossdk":  ("#3B4B26", "Moss dark",      "moss underside, lump contours, grass shade"),
+    "mossdk":  ("#2E4A3C", "Moss dark teal", "moss shade + teal strands of the chain bark / rope roots (close-up a), grass shade"),
     "moss":    ("#55672C", "Moss",           "raised moss on limbs + rocks + strands"),
     "mosslt":  ("#8E9C44", "Moss light",     "moss tops + mottling, leaf shade half, grass light"),
     "leaf":    ("#C6C872", "Leaf yellow-green","leaf light half, moss highlights"),
@@ -35,7 +35,7 @@ MERGE = {"leafdk": "mosslt", "water": "bark",
          "barklt": "waterlt", "basting": "waterlt"}
 def col(c): return MERGE.get(c, c)
 tech.LAYER_NAMES.clear()
-tech.LAYER_NAMES.update({0: "Placeholder outline", 2: "Stream + rocks", 4.5: "Leaves", 5: "Bark + twigs", 6: "Moss",
+tech.LAYER_NAMES.update({0: "Placeholder outline", 1: "Light rays (sewn first, under the art)", 2: "Stream + rocks", 4.5: "Leaves", 5: "Bark + twigs", 6: "Moss",
                          7: "Leaves", 8: "Grass", 10: "Hanging moss", 11: "Light rays (on top)"})
 STITCH_LAYER = {99: 99}                # truthy map: bark line work sews after the moss (tech.stops 6.5 rule)
 
@@ -162,7 +162,7 @@ tech.RULES.update({
  "TH":  ("Traced highlight",                  "Tatami",  "close-up direction",         "0.45", "3.5", "edge run",                    "0.20", "cream / light-blue specks"),
  "THS": ("Traced highlight (narrow)",         "Satin",   "across",                     "0.42", "—",   "none",                        "0.10", "cream specks, rapids"),
  "WAS": ("Stream detail (narrow)",            "Satin",   "across",                     "0.42", "—",   "none",                        "0.15", "rapids, ledges, glints"),
- "LR":  ("Light ray (sheer overlay)",         "Run, serpentine", "along the ray",      "2.3 rows", "2.6", "none",                  "—",    "≈ 28 % cover; sewn LAST, over the art"),
+ "LR":  ("Light ray (sheer)",                 "Run, serpentine", "along the ray",      "1.8 core / 2.8 edge rows", "2.6", "none",  "—",    "≈ 25-30 % cover; cream core, sage edges; sewn FIRST, under the art"),
  "RI":  ("Ripple rings (pool)",               "Run (single)", "follows the ring",      "—",    "2.4", "none",                        "—",    "round the licensed placeholder"),
 })
 for _k in ("TB", "TBS", "TM", "TMS", "TT", "TTS", "TL", "TLS", "TH", "THS", "WAS"):

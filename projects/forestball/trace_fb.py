@@ -1,10 +1,8 @@
 """Rev C: TRACE the embroidery from the registered close-ups (LESSONS A12), not generate it.
   BACK : close-up a (it shows the back scene), registered on back.png by a SIFT projective fit (closereg.py);
          outside its coverage, and for the placeholder pool, the back.png crop read at x4.
-  02R  : close-up b, placed on front.png by an affine fit on 4 matched features (limb top at the shoulder, limb bend,
-         limb at the zip, hanging-moss tip) — b has drifted, so the mockup decides placement; within 40 mm of CF the
-         mockup x4 is used so the limb meets 02L at the zip.
-  02L  : no close-up — traced from the front.png crop read at x4 (no new geometry invented).
+  02R  : close-up c, registered on front.png by SIFT + RANSAC (54 inliers, ~1 px); it also covers the zip half of 02L.
+  02L  : close-up c where it reaches (x <= ~140 mm from CF), elsewhere the front.png crop read at x4.
 Per pixel (4 px/mm, size-M garment mm): nearest thread of the 12-thread palette in CIELAB, or FABRIC (+ sage ray streaks
 -> fabric: the rays are re-sewn as a sheer overlay). Majority filter, islands < 1.5 mm² absorbed, polygons per tone.
 Stitch per piece: width < 3.2 mm -> satin across the piece; else tatami along the close-up's own strand direction
@@ -25,7 +23,11 @@ import back as B, front as F
 
 PPM = 4.0
 LAST_FINE = None
-FABRICS = ["#38433A", "#2E3830", "#424E43", "#26302A"]          # washed shell: mid, shade, highlight, crease
+GAMMA, W_L, NAVY_L = 0.6, 0.4, 10.0                             # Rev C re-tone (see classify)
+FABRICS = ["#38433A", "#2E3830", "#424E43", "#26302A",          # washed shell: mid, shade, highlight, crease
+           "#1D271F", "#222D24"]                                 # Rev C: close-up c/b fabric + its shade (sampled: median #263429,
+                                                                 # shade #1D271F) — without them the close-ups' dark fabric read as navy art
+NOLIFT = None                                                    # per-pixel mask: no tone lift (back stream: mid blues stay mid blue)
 TONES = [k for k in fbcore.PAL]                                  # 12 threads
 
 def lab(hexs): return color.rgb2lab(np.array([[[int(h[i:i+2], 16)/255 for i in (1, 3, 5)] for h in hexs]]))[0]
@@ -66,11 +68,27 @@ def grid(bbox):
     return XX, YY
 
 def classify(img, art_mask):
-    L = color.rgb2lab(np.clip(img, 0, 1)); P = lab([HEX[k] for k in TONES] + FABRICS)
+    """Rev C final: ONE nearest-colour pass on a tone-lifted image. The close-ups are darker than the threads (shaded,
+    photographed stitches), so close-up pixels are lifted (gamma GAMMA) and compared with the TRUE thread colours and with
+    the close-up's own fabric colours lifted the same way; mockup x4 pixels and NOLIFT (stream) are not lifted. Lightness
+    is weighted W_L (hue + chroma decide), so mid blues / teal / greens no longer collapse to navy, and dark green fabric
+    no longer reads as navy art. Only really dark pixels (L < NAVY_L, unlifted) are navy crevices."""
+    L = color.rgb2lab(np.clip(img, 0, 1))
+    gam = np.full(L.shape[:2], 1.0, np.float32)
+    if LAST_FINE is not None and LAST_FINE.shape == L.shape[:2]: gam[LAST_FINE] = GAMMA
+    if NOLIFT is not None and NOLIFT.shape == L.shape[:2]: gam[NOLIFT] = 1.0
+    Lg = color.rgb2lab(np.clip(img, 0, 1) ** gam[..., None]); lifted = gam < 1.0
+    PT_ = lab([HEX[k] for k in TONES]); PF = lab(FABRICS)
+    PFg = color.rgb2lab((np.array([[[int(h[i:i+2], 16)/255 for i in (1, 3, 5)] for h in FABRICS]]) ** GAMMA))[0]
     best = np.full(L.shape[:2], np.inf); lbl = np.zeros(L.shape[:2], int)
-    for i, p in enumerate(P):
-        d = ((L - p) ** 2).sum(-1); w = d < best; best[w] = d[w]; lbl[w] = i
+    def dist(p): return W_L * (Lg[..., 0] - p[..., 0]) ** 2 + (Lg[..., 1] - p[..., 1]) ** 2 + (Lg[..., 2] - p[..., 2]) ** 2
+    for i, p in enumerate(PT_):
+        d = dist(p[None, None, :]); w = d < best; best[w] = d[w]; lbl[w] = i
+    for j in range(len(FABRICS)):
+        p = np.where(lifted[..., None], PFg[j][None, None, :], PF[j][None, None, :])
+        d = dist(p); w = d < best; best[w] = d[w]; lbl[w] = len(TONES) + j
     nT = len(TONES); fab = lbl >= nT
+    lbl[(L[..., 0] < NAVY_L) & ~fab] = TONES.index("navy")
     sage = lbl == TONES.index("sage")
     lbl[sage] = nT                                                    # sage streaks = the rays: re-sewn as overlay
     cream = lbl == TONES.index("cream")
@@ -84,8 +102,17 @@ def classify(img, art_mask):
     hl, hn = ndi.label(holes)
     if hn:
         hs = ndi.sum(holes, hl, range(1, hn+1)) / PPM**2
-        holes = np.isin(hl, 1 + np.where(hs < 60)[0])
-    dark = (closed | holes) & ~artpx & (L[..., 0] < 32)
+        # only gaps ringed by LIMB tones are crevices; fabric between leaves stays fabric (Rev C final: the gaps inside leaf
+        # clusters had become navy squares)
+        limbset = [TONES.index(k) for k in ("navy", "bark", "royal", "mossdk", "moss", "brown")]
+        ring = ndi.grey_dilation(hl, size=(5, 5)) * (~holes)
+        rl = ring[ring > 0]; rv = np.isin(lbl[ring > 0], limbset)
+        tot = np.bincount(rl, minlength=hn + 1)[1:]; lim = np.bincount(rl, weights=rv, minlength=hn + 1)[1:]
+        keep = (hs < 60) & (lim >= 0.6 * np.maximum(tot, 1))
+        holes = np.isin(hl, 1 + np.where(keep)[0])
+    # Rev C final: only ENCLOSED gaps become navy crevices; the closing fringe round leaves / twigs (fabric within 1.5 mm
+    # of art) stays fabric — it read as a dark halo round every spray.
+    dark = holes & ~artpx & (L[..., 0] < 32)
     lbl[dark] = TONES.index("navy")
     lbl[~art_mask] = nT
     artpx = lbl < nT; cl, cn = ndi.label(ndi.binary_dilation(artpx, iterations=2))
@@ -129,6 +156,16 @@ def regions_from(lbl, img, bbox, clip, stream=None):
     g = ndi.gaussian_filter(lum, 0.5); gx = ndi.sobel(g, 1); gy = ndi.sobel(g, 0); s = 1.2*PPM
     Jxx = ndi.gaussian_filter(gx*gx, s); Jyy = ndi.gaussian_filter(gy*gy, s); Jxy = ndi.gaussian_filter(gx*gy, s)
     x0, y0 = bbox[0], bbox[1]; Hh, W = lbl.shape
+    # review item 6 ("no vertical keep-out cut"): a leaf the keep-out would cut is left out WHOLE — every leaf-tone
+    # component (leaf + leaf shade, < 250 mm²) that reaches past the clip line is removed before the polygons are made
+    XXg, YYg = grid(bbox); inside = shapely.contains_xy(clip.buffer(-0.3), XXg, YYg)
+    lm = np.isin(lbl, [TONES.index("leaf"), TONES.index("mosslt")])
+    cl_, cn_ = ndi.label(lm, structure=np.ones((3, 3), bool))
+    if cn_:
+        sz = ndi.sum(lm, cl_, range(1, cn_ + 1)) / PPM**2; out_ = ndi.sum(lm & ~inside, cl_, range(1, cn_ + 1))
+        drop = 1 + np.where((sz < 250) & (out_ > 0))[0]
+        lbl = np.where(np.isin(cl_, drop), len(TONES), lbl)
+        print("   leaves at the keep-out removed whole:", len(drop), flush=True)
     art = polys_of(lbl < len(TONES), bbox)
     sil = art.intersection(clip.buffer(-4.0)).buffer(4.0, quad_segs=8).intersection(clip)      # round ends at keep-outs
     cut = clip.boundary.buffer(0.8)            # where the keep-out cut the art: drop part-leaves / part-twigs there
@@ -207,36 +244,39 @@ def compose(mpx_fn, sources, bbox, clip, art_hint=None):
     inside = shapely.contains_xy(clip.buffer(6.0), XX, YY)
     return img, have & inside
 
+CLOSEUP_BOX = (95.9, 425.9, 158.1, 449.1)                      # close-up a's drawn box, garment mm (closereg H)
 def trace_back():
     t = time.time(); bbox = (-300, -20, 300, 600)
     H = np.load("inputs/closeup_BACK_H.npy")
-    pool = B.PH_BOX.buffer(24)
-    use_close = lambda X, Y: ~shapely.contains_xy(pool, X, Y)
-    img, art = compose(back_px, [("inputs/closeups/closeup_front_right_a.png", H, use_close), ("inputs/back.png", None, None)], bbox, B.CLIP)
-    art &= ~shapely.contains_xy(B.PH_BOX.buffer(1.0), *grid(bbox))
-    lbl = classify(img, art)
+    # Rev C: the close-up is used in the pool too (it shows the pool, its ripple rings and a placeholder box at the same place,
+    # 96-158 x 426-449 mm vs ours 102-156 x 408-456): the close-up's own drawn box (frame + inside) is replaced by its
+    # surroundings (nearest traced tone), our box (+1 mm) stays empty.
+    img, art = compose(back_px, [("inputs/closeups/closeup_front_right_a.png", H, None), ("inputs/back.png", None, None)], bbox, B.CLIP)
+    XXg, YYg = grid(bbox)
+    art &= ~shapely.contains_xy(B.PH_BOX.buffer(1.0), XXg, YYg)
+    global NOLIFT
+    NOLIFT = shapely.contains_xy(B.STREAM.buffer(2.0), XXg, YYg)        # stream + pool: mid blue body, navy reflections
+    lbl = classify(img, art); NOLIFT = None
+    cbox = shapely.contains_xy(box(*CLOSEUP_BOX).buffer(2.5), XXg, YYg) & ~shapely.contains_xy(B.PH_BOX.buffer(1.0), XXg, YYg)
+    if cbox.any():
+        src_ok = ~cbox & ~shapely.contains_xy(B.PH_BOX.buffer(1.0), XXg, YYg) & (lbl < len(TONES))
+        idx = ndi.distance_transform_edt(~src_ok, return_distances=False, return_indices=True)
+        lbl = np.where(cbox, lbl[idx[0], idx[1]], lbl)
     regs, sil = regions_from(lbl, img, bbox, B.CLIP, stream=B.STREAM.buffer(4))
     Image.fromarray((img*255).astype(np.uint8)).save("out/art/trace_src_back.png")
     print("back traced", len(regs), f"{time.time()-t:.0f}s", flush=True)
     return regs
 
 def trace_front():
+    """Rev C final: close-up c registered on front.png by SIFT + RANSAC (closereg.py '02Rc': 54 inliers, median residual
+    ~1 mockup px) covers mockup x 130-505, y 122-495 = all of 02R (hanging moss, limb, sprays) and the zip-side half of
+    02L, continuously across the zip. Close-up b (8 inliers, drifted) is no longer used. Outside c: the mockup x4."""
     t = time.time(); out = {}
-    H, res = affine_from_pairs(FIT_02R); print("02R affine fit residual (mockup px)", np.round(res, 1).tolist())
+    H = np.load("inputs/closeup_02Rc_H.npy"); res = np.array(json.load(open("inputs/closeup_reg.json"))["02Rc"]["resid_px_median"], ndmin=1)
     for piece, side in (("02R", "R"), ("02L", "L")):
         clip = F.clip_for(side); bb = clip.bounds; bbox = (bb[0]-6, bb[1]-6, bb[2]+6, bb[3]+6)
-        if piece == "02R":
-            rope = Polygon([((x - F.CFX) * F.SX, (y - F.NECKY) * F.SY) for x, y in ROPE_PX])
-            far = lambda X, Y: (X < -40.0) & ~shapely.contains_xy(rope, X, Y)
-            srcs = [("inputs/closeups/closeup_front_right_b.png", H, far), ("inputs/front.png", None, None)]
-        else:
-            srcs = [("inputs/front.png", None, None)]
-        mfn = front_px
-        if piece == "02L":     # zip continuity (review: centres within 3 mm at x = ±15): the mockup limb drops 6.6 mm across the
-            # zip gap; a smooth vertical shear over the first 50 mm of 02L lifts it level with 02R (no effect beyond x = 65)
-            ZIP_LIFT = 6.6
-            mfn = lambda X, Y: front_px(X, Y + ZIP_LIFT * np.clip(1 - (X - 15.0) / 50.0, 0, 1))
-        img, art = compose(mfn, srcs, bbox, clip)
+        srcs = [("inputs/closeups/closeup_front_right_c.png", H, None), ("inputs/front.png", None, None)]
+        img, art = compose(front_px, srcs, bbox, clip)
         lbl = classify(img, art)
         regs, sil = regions_from(lbl, img, bbox, clip)
         Image.fromarray((img*255).astype(np.uint8)).save(f"out/art/trace_src_{piece}.png")
@@ -248,4 +288,4 @@ if __name__ == "__main__":
     if "back" in what: pickle.dump(trace_back(), open("trace_back.pkl", "wb"))
     if "front" in what:
         fr, res = trace_front(); pickle.dump(fr, open("trace_front.pkl", "wb"))
-        json.dump(dict(fit_02R_resid_px=[round(float(r), 1) for r in res]), open("trace_info.json", "w"))
+        json.dump(dict(closeup_02R="c (SIFT projective)", fit_02R_resid_px_median=[round(float(r), 2) for r in res]), open("trace_info.json", "w"))

@@ -167,7 +167,7 @@ def summary():
           f"3. Hooping: baseline 6 hoopings on {FRAME[0]:.0f} × {FRAME[1]:.0f} (back S1–S4 + 02R + 02L). A border frame ≥ {CUR['back']['size'][0]+14:.0f} × {CUR['back']['size'][1]+14:.0f} would take the single back file — option, asked on F1.",
           "4. Shell: washed forest green duck — piece-dyed + pre-washed before embroidery, or garment-washed after? Wash-test the sew-out (cream, leaf yellow-green shift first).",
           f"5. Thread palette ({len(PAL)} threads, from the mockup + close-ups; ≤ 12 per file) — approve a physical thread board; amber/red ΔE rows from the card (G3).",
-          "6. Light rays: 5 broad sheer bands traced from the close-up (rows 2.3 apart, ≈ 28 % cover, sewn last over the art). Approve on the sew-out.",
+          "6. Light rays: 5 broad sheer bands traced from the close-up (rows 1.8 apart in the cream core, 2.8 in the sage edges, ≈ 25-30 % cover, sewn FIRST, under the art). Approve on the sew-out.",
           "7. Back collar fall: art stays 6 below a 45 mm collar fall at CB (proposed) — confirm with the sample collar.",
           "8. Retail name 'Forestball': confirm it is not meant to echo Dragon Ball before retail use.",
           "9. DST/PES are production-intent drafts: the factory digitizer opens them, checks density + pull on 12 oz duck and edits before sew-out."]
@@ -208,7 +208,7 @@ def files_page():
     o.append(t(12, y + 1, "▣ = the section that carries the licensed-placeholder outline (Stream light, its first stop with the crosses).", 1.5, 400, RED)); y += 6
     o.append(t(12, y, "WHAT IS DIGITIZED", 2.0, 700)); y += 4.2
     for a, b_ in [("Density", "tatami 0.45, satin 0.42, padded moss 1 padding layer (> 3 mm wide), lattice underlay > 60 mm², 7 mm hidden travel."),
-                  ("Light rays", "one continuous serpentine run per ray tone (no trims inside a ray), sewn LAST as a sheer overlay across limb + rocks."),
+                  ("Light rays", "serpentine run per ray tone (cream core, sage edges), sewn FIRST; every later object covers it, so the rays read behind limb, leaves + bank."),
                   ("Trims", "hidden travel + underpath; objects ordered inside hidden areas; trims counted from the DST read-back."),
                   ("Threads / stops", "≤ 12 colours per file (factory limit, checked on every written file); repeated colours merged into the earliest safe stop."),
                   ("Placeholder", "box outline in Stream light = first stop; nothing stitched inside; water stops 1 mm outside."),

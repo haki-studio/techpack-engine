@@ -8,7 +8,9 @@ from skimage.feature import SIFT, match_descriptors
 from skimage.measure import ransac
 from skimage.transform import ProjectiveTransform
 REG = {"BACK": ("inputs/closeups/closeup_front_right_a.png", "inputs/back.png", (60, 60, 680, 720)),
-       "02R": ("inputs/closeups/closeup_front_right_b.png", "inputs/front.png", (60, 60, 400, 520))}
+       "02R": ("inputs/closeups/closeup_front_right_b.png", "inputs/front.png", (60, 60, 400, 520)),
+       # Rev C final: c matches the mockup front far better than b (54 vs 8 inliers) and is the 02R/02L tracing source
+       "02Rc": ("inputs/closeups/closeup_front_right_c.png", "inputs/front.png", (60, 60, 400, 520))}
 CK = 3.0
 def feat(a):
     l = a.mean(2); r, g, b = a[..., 0], a[..., 1], a[..., 2]

@@ -28,34 +28,48 @@ def norm(regs):
         out.append(dict(r, grp=g, layer=LAYER[g], col=fbcore.col(r["col"])))
     return out
 
-def ray_overlay(clip, voids, sp=2.3, w=0.32, core=0.42, seed=3):
+def ray_overlay(clip, voids, sp=2.3, w=0.32, core=0.42, seed=3, under=None, sp_core=1.8, sp_edge=2.8, ymax=470.0):
+    """Rev C (review item 5): rays sew FIRST and are knocked out by every later art object (`under` = art silhouette), so
+    they read as light falling BEHIND the limb, leaves and bank as in close-up a; row spacing 1.8 mm in the cream core,
+    2.8 mm in the sage edges (soft edges), cut at y = ymax (they fade into the grass / stream in the close-up)."""
     """traced bands -> sheer overlay: rows ALONG the ray every `sp` mm (run 0.64 wide => ~28 % cover), cream core / sage edges,
     row ends ragged by 0-14 % of the band length at both ends (soft fade); one serpentine object per tone per band."""
     bands = json.load(open("rays_trace.json")); rng = random.Random(seed); regs = []; cov = []
     for bi, b in enumerate(bands):
-        P = Polygon(b["pts"]).buffer(0).intersection(clip).difference(voids)
+        P = Polygon(b["pts"]).buffer(0).intersection(clip).difference(voids).intersection(box(-400, -100, 400, ymax))
         if P.is_empty: continue
         th = math.radians(b["angle"]); d = np.array([-math.sin(th), math.cos(th)]); n = np.array([math.cos(th), math.sin(th)])
         c = np.array(P.centroid.coords[0]); span = max(P.bounds[2] - P.bounds[0], P.bounds[3] - P.bounds[1]) * 1.5
         us = [n @ np.array(q) for q in P.exterior.coords]; u0, u1 = min(us), max(us)
-        rows = {"sage": [], "cream": []}
-        for k, u in enumerate(np.arange(u0 + sp / 2, u1, sp)):
+        rows = {"sage": [], "cream": [], "sage2": []}; ph1, ph2 = rng.uniform(0, 6.3), rng.uniform(0, 6.3)
+        us_ = []; u = u0 + sp_edge / 2
+        while u < u1:
+            f = (u - u0) / max(u1 - u0, 1e-6) - 0.5; us_.append(u); u += sp_core if abs(f) < core / 2 else sp_edge
+        for k, u in enumerate(us_):
             f = (u - u0) / max(u1 - u0, 1e-6) - 0.5
             base = n * u; ln = LineString([tuple(base - d * span + d * (d @ c)), tuple(base + d * span + d * (d @ c))]).intersection(P)
             for seg in ([ln] if ln.geom_type == "LineString" else list(getattr(ln, "geoms", []))):
                 if seg.geom_type != "LineString" or seg.length < 15: continue
-                L = seg.length; a = rng.uniform(0, 0.14) * L * (0.6 + abs(f)); e = rng.uniform(0, 0.14) * L * (0.6 + abs(f))
+                # soft ends: the trim-back varies SMOOTHLY row to row (≤ ~2 mm between neighbours), so the serpentine
+                # connectors stay short and the band ends fade along a soft wavy edge (no zig-zag spikes)
+                L = seg.length
+                a = (3.0 + 10.0 * (0.5 + 0.5 * math.sin(0.42 * k + ph1)) + 18.0 * abs(f)) * min(1.0, L / 120.0)
+                e = (3.0 + 10.0 * (0.5 + 0.5 * math.sin(0.37 * k + ph2)) + 18.0 * abs(f)) * min(1.0, L / 120.0)
                 if L - a - e < 12: continue
                 s_ = shapely.ops.substring(seg, a, L - e)
-                rows["cream" if abs(f) < core / 2 else "sage"].append(list(s_.coords))
+                rows["cream" if abs(f) < core / 2 else ("sage" if f < 0 else "sage2")].append(list(s_.coords))   # each edge its own object: no connector over the core
         for col, rr in rows.items():
             if not rr: continue
             rr.sort(key=lambda cs: n @ np.array(cs[0]))
             seq = []
             for i, cs in enumerate(rr): seq += cs if i % 2 == 0 else cs[::-1]
             g = LineString(seq).buffer(w, cap_style="round", join_style="round").intersection(P.buffer(0.5))
-            regs.append(dict(col=col, geom=g, st="run", ang=None, grp="LR", layer=11, overlay=True))
-        cov.append(sum(r["geom"].area for r in regs[-2:]) / P.area if P.area else 0)
+            band_cov = g.area / P.area if P.area else 0
+            if under is not None: g = g.difference(under)
+            parts = [q for q in (list(g.geoms) if hasattr(g, "geoms") else [g]) if q.geom_type == "Polygon" and q.area > 3.0]
+            if not parts: continue
+            regs.append(dict(col=col.rstrip("2"), geom=unary_union(parts), st="run", ang=None, grp="LR", layer=1, cov=band_cov, band=bi))
+        cov.append(sum(r["cov"] for r in regs if r.get("band") == bi))
     return regs, cov
 
 def ripple_rings(box_, water, n=4, gap=4.5):
@@ -84,10 +98,11 @@ def build_back():
     water = unary_union([r["geom"] for r in tr if r["grp"].startswith("WA")]).buffer(1.0)
     rings = ripple_rings(B.PH_BOX, water.union(B.STREAM).intersection(B.PH_BOX.buffer(30)))
     ph = [dict(B.PH_OUT, col=fbcore.col("basting"), layer=0)]
-    rays, cov = ray_overlay(B.CLIP, B.VOID)
+    art = unary_union([r["geom"] for r in tr]).buffer(0.6)
+    rays, cov = ray_overlay(B.CLIP, B.VOID, under=art)
     vis = ph + tr + knockout(rings, B.CLIP)               # traced regions are already disjoint (one tone per pixel)
     vis = dst2.clean_vis([v for v in vis if v["grp"] != "PH"]) + ph
-    vis += rays
+    vis = rays + vis                                       # rays first (layer 1): every later object covers them
     print("back", len(vis), "regions; ray cover per band %", [round(100 * c) for c in cov], f"{time.time()-t:.0f}s", flush=True)
     return vis, cov
 
