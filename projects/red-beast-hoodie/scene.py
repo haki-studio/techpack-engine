@@ -120,6 +120,7 @@ def grow_min(m, w_mm=1.0):
 def vectorize(sp, lab, Lsrc, bb, closeup=None):
     x0, y0 = bb[0], bb[1]; X, Y = grid_xy(bb, lab.shape)
     valid = lab != 9
+    lab_raw = lab
     lab = majority(lab, valid)
     if sp == "F": lab = fill_ground(lab)
     lab = smooth_classes(lab, valid)
@@ -127,25 +128,33 @@ def vectorize(sp, lab, Lsrc, bb, closeup=None):
     st = {}
     regs = []
     cream = lab == 4; red = lab == 1; crim = lab == 2; blk = lab == 3
+    # Rev B2 (LESSONS A14): every rebuilt object stays on its TRACED silhouette (+0.5 mm for the min-width growth)
+    def near(m, px=2): return ndi.binary_dilation(m, iterations=px)
+    ALLOW = {"cream": near(cream, 1) & ~(red | crim | blk), "red": near(red | crim) & ~(cream | blk), "black": near(blk) & ~(cream | red | crim)}
+    ALLOW["cream"] |= cream; ALLOW["red"] |= red | crim; ALLOW["black"] |= blk     # growth only into traced FABRIC, never into another traced tone
+    import refmask
+    REF = refmask.reference(lab_raw, PPM, sp)
+    CUT = {f: refmask.separation_cut(REF[f]) for f in REF}      # keep separate traced motifs separate (A14 gate)
+    for f in ALLOW: ALLOW[f] &= ~CUT[f]
     # ---------------- 2. slash streaks
     if sp == "F":
         zone = np.zeros(lab.shape, bool)
         for z in ZONES_F.values(): zone |= shapely.contains_xy(z, X, Y)
         head = ndi.binary_fill_holes(ndi.binary_closing(cream | blk, structure=disk(6.0)))
         head = ndi.binary_dilation(head, structure=disk(2.0))
-        sm = (red | crim) & zone & ~head & ~ndi.binary_dilation(cream | blk, structure=disk(2.0))
+        sm = (red | crim) & zone & ~head & ~ndi.binary_dilation(cream | blk, structure=disk(2.0)) & ~CUT["red"]
         blk = blk & ~(zone & ~head)                 # no black ground under streaks on bare fabric
     else:
-        sm = red | crim
+        sm = (red | crim) & ~CUT["red"]
     sm = ndi.binary_opening(sm, structure=np.ones((2, 2)))
-    sts = SK.streaks(sm, crim, PPM, x0, y0)
+    sts = SK.streak_tiles(sm, crim, PPM, x0, y0)
     keep_out = SK.mask_geom(cream, x0, y0, PPM).buffer(0.3) if cream.any() else Polygon()
     ns = 0
-    for p, col, ab, w in sts:
+    for p, col in sts:
         g = p.difference(keep_out) if not keep_out.is_empty else p
         for q in getattr(g, "geoms", [g]):
-            if q.geom_type == "Polygon" and q.area > 0.8: regs.append(R(col, q, "satin", "auto", "SK")); ns += 1
-    st["streaks"] = ns; st["streak_list"] = [(round(ab[0][0], 1), round(ab[0][1], 1), round(ab[1][0], 1), round(ab[1][1], 1), round(w, 2), col) for p, col, ab, w in sts]
+            if q.geom_type == "Polygon" and q.area > 0.5: regs.append(R(col, q, "satin", "auto", "SK")); ns += 1
+    st["streaks"] = ns
     red &= ~sm; crim &= ~sm
     # sleeves: no hair mass - every red pixel is a streak
     if sp != "F":
@@ -153,7 +162,7 @@ def vectorize(sp, lab, Lsrc, bb, closeup=None):
         if sp == "SL": cream[:] = False                  # review item 8: stray cream stop on SL (render highlights)
     # ---------------- 3. cream: teeth, cords, lightning
     teeth = cream & shapely.contains_xy(TEETH, X, Y) if sp == "F" else np.zeros_like(cream)
-    teeth = ndi.binary_opening(teeth, structure=disk(0.8))
+    teeth = ndi.binary_opening(teeth, structure=disk(0.8)) & ~CUT["cream"]
     rest = cream & ~teeth
     light = rest & (X < LIGHTNING_X) if sp == "F" else rest
     outl = rest & ~light
@@ -162,7 +171,7 @@ def vectorize(sp, lab, Lsrc, bb, closeup=None):
         c1, _, _ = SK.cords(outl, PPM, "outline", wmin=1.2, wmax=3.0); cord |= c1 & valid
     if light.any():
         c2, _, _ = SK.cords(light, PPM, "lightning", root=2.5, tip=1.0, ramp=6.0); cord |= c2 & valid
-    cord &= ~teeth
+    cord &= ~teeth & ALLOW["cream"]
     # teeth: one object per tooth, satin along the tooth (vertical stitches), white edge run
     tl, nt = split_teeth(teeth); ntooth = 0
     for i, sl in enumerate(ndi.find_objects(tl), 1):
@@ -186,7 +195,7 @@ def vectorize(sp, lab, Lsrc, bb, closeup=None):
         src = ndi.binary_dilation(thick, structure=disk(1.9)) & cord_o
         dy, dx = int(round(0.9*PPM)), int(round(0.25*PPM))
         shifted = np.zeros_like(src); shifted[dy:, dx:] = src[:-dy, :-dx]
-        sh = shifted & ~cord & ~teeth & valid & ~blk & ~sm
+        sh = shifted & ~cord & ~teeth & valid & ~blk & ~sm & (red | crim)     # a tone change on traced red only (A14)
         sh = ndi.binary_opening(sh, structure=np.ones((2, 2)))
     redfull = red & ~cord & ~teeth & ~sh
     if sp == "F":
@@ -221,7 +230,7 @@ def vectorize(sp, lab, Lsrc, bb, closeup=None):
                 hs = ndi.sum(np.ones_like(hl), hl, index=np.arange(1, nh + 1))/PPM**2
                 m |= np.isin(hl, 1 + np.nonzero(hs < 3.0)[0])
             if col != "rb_black": m = grow_min(m, 1.0)
-            m &= ~cord & ~teeth & ~sh & ~others(col)
+            m &= ~cord & ~teeth & ~sh & ~others(col) & ALLOW["black" if col == "rb_black" else "red"]
             done[col] = m
             rr, nl = stroke_regs(m, theta, x0, y0, col, grp, dsep, L0, L1, seed=k + 1)
             regs += rr; st[col] = dict(strokes=len(rr), lines=nl, area=round(float(m.sum())/PPM**2))
@@ -258,7 +267,7 @@ if __name__ == "__main__":
         regs, nd = drop_specks(regs); st["specks_dropped"] = nd
         for i, r in enumerate(regs): r["z"] = r["layer"]*100000 + i; r["el"] = "01" if sp == "F" else "02"
         out[sp] = regs; out["meta"][sp] = st
-        print(sp, len(regs), {k: v for k, v in st.items() if k != "streak_list"}, f"{time.time()-t0:.0f}s", flush=True)
+        print(sp, len(regs), st, f"{time.time()-t0:.0f}s", flush=True)
         if "png" in sys.argv: preview(regs, bb, f"out/trace/scene_{sp}.png")
     if os.path.exists("scene.pkl") and len(out) < 4:
         old = pickle.load(open("scene.pkl", "rb"))

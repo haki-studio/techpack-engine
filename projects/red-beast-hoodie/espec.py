@@ -20,7 +20,9 @@ def _SRR(vis, bbox, ppm, **kw): return SR.render(vis, bbox, ppm, base=rbcore.FAB
 
 def width_check(vis):
     groups = {}
-    for r in vis: groups.setdefault(tech.rule_for(r["grp"]), []).append(r)
+    for r in vis:
+        if r["st"] in ("bean", "run"): continue          # line objects (triple run) are paths, not columns: no width check
+        groups.setdefault(tech.rule_for(r["grp"]), []).append(r)
     out = {}
     for code, rs in groups.items():
         A = L = 0.0
@@ -98,7 +100,7 @@ def build(cfg, vis_all):
     pages = [o]
 
     # ---------------- p2 direction map
-    o = header(f"{el} · STITCH-DIRECTION MAP + REGION CODES", "Hatch = stitch direction (satin columns: stitches across the column, turning with it; tatami: rows along the traced stroke flow). Labels = region code → p3.", "p2 / 5")
+    o = header(f"{el} · STITCH-DIRECTION MAP + REGION CODES", "Hatch = stitch direction. Rev B: hair / shade / black strokes + teeth = satin ALONG the object (its own traced angle); cords, bands, streaks = satin across, turning. Labels = region code → p3.", "p2 / 5")
     xcur = 12
     widths = [(BBs[p][2]-BBs[p][0]) for p in pieces]
     scale = min(160 / max(BBs[p][3]-BBs[p][1] for p in pieces), (172 - 6*(len(pieces)-1)) / sum(widths))
@@ -142,7 +144,8 @@ def build(cfg, vis_all):
         o.append(t(cx[10], y, f"{q:.1f}%", 1.6, 600, qc)); o.append(t(cx[11], y, f"{s_['n']}", 1.6, 400, MUTED)); o.append(t(cx[12], y, f"{s_['area']:,.0f}", 1.6, 400, MUTED))
     yb = y0 + 3.8 + len(order)*rh + 3
     for i, l in enumerate(["Globals: 40wt polyester, 75/11 sharp needle, 2.5 oz black cutaway backing, no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; trims on jumps ≥ 2.5.",
-                           "Thin strands + tapered tips are grown to ≥ 1.0 mm along their own skeleton before stitching (40wt satin minimum 0.8); 'Width' = what is still under 0.8 mm.",
+                           "Thin strands are grown to ≥ 1.0 mm along their own skeleton (40wt satin minimum 0.8); 'Width' = share still under 0.8 mm. SK strip ends + OL-shadow bands taper to a point",
+                           "over their last ≤ 2 mm BY DESIGN (traced slash ends / fading under-edge, as the mockup): short-stitch the tips; if they fray on the strike-off, blunt them to 0.8. Bean lines: no width check.",
                            "Stitch counts are not estimated per region: per-file and per-stop counts (p1, p4, G4, G5) are read back from the DST files.",
                            cfg.get("p3_note", "")]):
         o.append(t(12, yb + i*3.2, l, 1.7, 400, MUTED))

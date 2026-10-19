@@ -11,9 +11,9 @@ import motifs, motifs2, tech, sheet
 # ---------------------------------------------------------------- thread palette (PROPOSED, sampled from the mockup)
 RB_PAL = {   # key: (hex, name, use)
     "rb_red":     ("#C91F32", "Beast red",     "hair strokes, mane, slash streaks (main red)"),
-    "rb_crimson": ("#8E1626", "Deep crimson",  "shadow strokes in the mane + streaks, inner mouth edge"),
-    "rb_black":   ("#141416", "Shadow black",  "stitched black shading between the strokes, mouth + eye"),
-    "rb_cream":   ("#EADFCB", "Bone cream",    "raised outlines, teeth, lightning branches"),
+    "rb_crimson": ("#8E1626", "Deep crimson",  "shade strokes, cord under-edges, darker streaks; registration crosses"),
+    "rb_black":   ("#141416", "Shadow black",  "black ground strokes: mouth, throat, between the strands"),
+    "rb_cream":   ("#EADFCB", "Bone cream",    "raised cords, teeth, lightning branches"),
     "rb_white":   ("#F8F5EE", "Highlight white", "bright edge run on the teeth (Rev B)"),
 }
 RB_KEYS = list(RB_PAL)
@@ -32,8 +32,8 @@ RB_RULES = {
  "HS":       ("Hair stroke (red)",            "Satin ALONG the stroke",  "stroke direction (traced flow)", "0.42", "≤7 (split 6)", "centre run (≥ 1.8 wide)", "0.20", "long-and-short: 1.5–3 wide, 5–12 long, staggered ends"),
  "CS":       ("Crimson shade stroke",         "Satin ALONG the stroke",  "stroke direction (traced flow)", "0.42", "≤7 (split 6)", "centre run (≥ 1.8 wide)", "0.20", "lower edge of strands, dim-red stitches in the throat"),
  "BS":       ("Black ground stroke",          "Satin ALONG the stroke",  "stroke direction (traced flow)", "0.42", "≤7 (split 6)", "centre run (≥ 1.8 wide)", "0.15", "mouth + throat: directional strokes, not flat fill"),
- "SK":       ("Slash streak",                 "Satin, turning",          "across the streak",              "0.40", "≤7",  "centre run (≥ 2 wide)",      "0.20", "tapered pointed column 1.2–2.5 wide"),
- "OL":       ("Raised cord (cream)",          "Satin, turning",          "across the cord",                "0.38", "≤7",  "centre run (≥ 2 wide)",      "0.20", "2.5–3.0 wide (detail lines ≥ 1.2); lightning 2.5 root → 1.0 tip"),
+ "SK":       ("Slash streak",                 "Satin, turning",          "across the streak",              "0.40", "≤7",  "centre run (≥ 2 wide)",      "0.20", "traced bundle cut into 1.8 mm strips (A14)"),
+ "OL":       ("Raised cord (cream)",          "Satin, turning",          "across the cord",                "0.38", "≤7",  "centre run (≥ 2 wide)",      "0.20", "traced width (A14), ≥ 1.2; tips taper over the last 3–4 mm"),
  "OL-shadow":("Cord under-edge (crimson)",    "Satin, turning",          "across the band",                "0.40", "≤7",  "none",                       "0.15", "≈1 mm band under each cord"),
  "OL-tooth": ("Tooth (cream)",                "Satin ALONG the tooth",   "tooth long axis (vertical)",     "0.40", "≤7 (split 6)", "centre run (≥ 1.8 wide)", "0.20", "one object per tooth"),
  "OL-hl":    ("Tooth bright edge (white)",    "Bean (triple run)",       "follows the tooth edge",         "—",    "2.0", "none",                       "—",    "0.45 inside the tooth outline, sewn last"),

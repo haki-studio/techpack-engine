@@ -25,7 +25,7 @@ PL = json.load(open("place_check.json")); WELT = json.load(open("welt.json"))
 P4 = rbcore.PIECES
 BB = {p: unary_union([r["geom"] for r in V[p]]).bounds for p in P4}
 OUT_PDF = f"out/HAKI_{rbcore.SHORT}_EMBROIDERY-PACK_{REV.replace(' ', '')}.pdf"
-SPEC = {e: glob.glob(f"out/{e}_{rbcore.ELEMS[e][0]}/*SPEC_*.pdf")[0] for e in rbcore.ELEMS}
+SPEC = {e: glob.glob(f"out/{e}_{rbcore.ELEMS[e][0]}/*SPEC_{REV.replace(' ', '')}.pdf")[0] for e in rbcore.ELEMS}
 def hdr(title, sub, page): return SB.header(title, sub, page)
 TOT = sum(CUR[p]["stitches"] for p in P4); TRIMS = sum(CUR[p]["trims"] for p in P4)
 MH = sum(mh(CUR[p]) for p in P4)
@@ -161,7 +161,7 @@ def summary():
     qs = [f"1. Welt pockets [PROPOSED]: the render draws the FL welt under the beast's lower jaw. Both welts moved {WELT['move_mm'][0]:.0f} mm out + {WELT['move_mm'][1]:.1f} mm down (same angle + length). OK, or move the art?",
           "2. Back + hood: plain (the mockup shows the front only). Confirm, or send a back / hood mockup.",
           "3. Armhole crossing: streaks + branch tips end 15 short of the seam on front and sleeve (no wrap). Wrap them across with match marks (3 mm short, Drum Island A4) instead?",
-          "4. Hood pattern: body = Drum Island; the hood block is pending in the engine (pattern pages + DXF follow). Neck/hood seam keep-out 10 mm [PROPOSED].",
+          "4. Hood: zip-hoodie block (founder decision 19 Oct 2026) - pattern, DXF and T pages are in this pack. Neck/hood seam keep-out 10 mm [PROPOSED]; hood + back plain [PROPOSED].",
           f"5. Frame: fronts need 2 hoopings each on {FR_S} (split S1/S2 + registration crosses, G6); a ≥ {FW:.0f} × {FH:.0f} frame takes every piece in one (size M). Which frames do you have?",
           "6. Thread board: all targets read from an AI mockup — approve physical colours (G3). Shadow black is black-on-black texture: keep it, or drop it to save stitches?",
           "7. Shell: washed black 12 oz duck assumed, washed before embroidery. If garment-washed after embroidery, wash-test the sew-out (dense FL head).",
@@ -202,7 +202,7 @@ def files_page():
     bx = 214; o.append(t(bx, 31.5, "WHAT IS DIGITIZED", 2.0, 700)); yy = 35.5
     notes = ["Order per file: red strokes + streaks →", "crimson shade strokes + cord under-edges →", "black ground strokes → cream cords + teeth", "→ white tooth edges (on top).",
              "", "Hair / shade / black: one object per", "stroke (1.5–3 wide, 5–12 long, staggered),", "satin ALONG the traced flow, split ≤ 6.",
-             "Cords: satin across, 2.5–3 wide (detail", "lines ≥ 1.2), one column per branch.", "Teeth: one object each, satin along the", "tooth; streaks: tapered pointed columns.",
+             "Cords: satin across at the traced width", "(≥ 1.2), one column per branch.", "Teeth: one object each, satin along the", "tooth; streaks: traced bundles in 1.8 strips.",
              "", "Ties: 3-stitch tie-on/off at every trim +", "colour change; trims on jumps ≥ 2.5 mm.",
              "", "SEWING A SPLIT PIECE", "1. Mark CF / sleeve centre + split line.", "2. Hoop S1; stop 1 opens with the", "   registration crosses (own stop, crimson).",
              "3. Re-hoop for S2, align on the crosses.", "4. Fills crossing the split overlap 1.2;", "   motifs < 70 go whole to one file.", "5. Pick out the crosses after S2."]

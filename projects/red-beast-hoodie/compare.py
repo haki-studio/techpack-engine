@@ -122,6 +122,24 @@ def sheet(title, sub, full, zooms, path):
         y += h + 22
     o.save(path); print(path, o.size)
 
+def gate_img(spaces, width=2900):
+    """LESSONS A14/A15 gate tables (qa_gates.json, from the shipped size-M DSTs) as an image row on the sheet"""
+    G = json.load(open("qa_gates.json")) if os.path.exists("qa_gates.json") else {}
+    lines = [("A14 motif_match (IoU >= 0.70, width + height >= 80 %) + A15 uncovered gaps >= 25 mm2, from the size-M DST read-back:", True)]
+    for sp in spaces:
+        v = G.get(sp)
+        if not v: lines.append((f"{sp}: not run", False)); continue
+        fam = "  ".join(f"{k}: {d['passed']}/{d['motifs']} motifs pass" for k, d in v["families"].items())
+        lines.append((f"{sp}  {fam}  |  unexplained gaps >= 25 mm2: {len(v['uncovered'])}", True))
+        fails = [(k, r) for k, d in v["families"].items() for r in d["fails"]]
+        for k, r in sorted(fails, key=lambda kr: -kr[1]["area_mm2"])[:6]:
+            lines.append((f"    FAIL {k} motif at ({r['x_mm']:+.0f}, {r['y_mm']:.0f}) mm, {r['area_mm2']:.0f} mm2: IoU {r['iou']:.2f}, w {r['w_ratio']:.2f}, h {r['h_ratio']:.2f}", False))
+        for g in v["uncovered"][:4]:
+            lines.append((f"    GAP at ({g['x_mm']:+.0f}, {g['y_mm']:.0f}) mm, {g['w_mm']:.0f} x {g['h_mm']:.0f}, {g['area_mm2']:.0f} mm2", False))
+    im = Image.new("RGB", (width, 30*len(lines) + 20), (250, 248, 244)); d = ImageDraw.Draw(im)
+    for i, (l, b) in enumerate(lines): d.text((12, 10 + 30*i), l, fill=(20, 20, 20) if b else (150, 40, 30) if "FAIL" in l or "GAP" in l else (60, 60, 60), font=FS)
+    return im
+
 def fsub(P): s = stitches(P); return f"{os.path.basename(s['file'])}: {s['stitches']:,} st / {s['trims']} trims (read back)"
 
 if __name__ == "__main__":
@@ -145,6 +163,7 @@ if __name__ == "__main__":
         if cov > 0.15: ims.append(label(ci, "close-up (traced)", f"covers {cov*100:.0f} % of this zoom"))
         ims.append(label(outline(dst_img(("FR", "FL"), zb, zp), zb, zp, clips), "stitch file (DST)"))
         Z.append((zt, ims))
+    Z.append(("QA gates (LESSONS A14 / A15)", [gate_img(("F",))]))
     sheet("01 BEAST HEAD (fronts) — mockup vs stitch file, Rev B", SUB, (mk, st), Z, "out/compare_01_beast-head.png")
     # ---------------- 02 sleeves
     bbs = (-260, -110, 260, 470); ppm = 1.4
@@ -164,4 +183,5 @@ if __name__ == "__main__":
         raw = raw_sleeve_crop(P[1], zb, ms.size[1])
         ims = ([label(raw, "mockup as rendered (front view)")] if raw is not None else []) + [label(ms, "mockup (unwrapped)"), label(ss, "stitch file (DST)")]
         Z.append((zt, ims))
+    Z.append(("QA gates (LESSONS A14 / A15)", [gate_img(("SR", "SL"), 2900)]))
     sheet("02 SLASH STREAKS (sleeves) — mockup vs stitch file, Rev B", SUB + " No sleeve close-up exists: traced from the mockup.", (mk, st), Z, "out/compare_02_sleeve-streaks.png")

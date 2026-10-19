@@ -178,11 +178,15 @@ def cords(mask, ppm, mode, wmin=1.2, wmax=3.0, root=2.5, tip=1.0, ramp=10.0, wfl
     sk = prune(skeletonize(m), int(round((3.0 if mode == "outline" else 1.5)*ppm)))
     dt = ndi.distance_transform_edt(m)
     D = geodesic_tip_distance(sk, ppm)
+    # Rev B2 (LESSONS A14): the cord width IS the traced width (2 x distance to the traced edge) - no width cap; only the
+    # last few mm before a tip narrow toward the tip width the trace itself shows (blur rounds traced tips)
+    wt = 2*dt/ppm
     if mode == "lightning":
-        w = np.minimum(np.clip(2*dt/ppm*1.25, tip, root), tip + (root - tip)*np.minimum(1.0, D/ramp))
+        w = np.maximum(wt, tip)
+        w = np.minimum(w, tip + (w - tip)*np.minimum(1.0, D/4.0))
     else:
-        w = np.clip(2*dt/ppm*1.25, wfloor, wmax)            # the threshold trace loses ~20 % of the cord edge
-        w = np.minimum(w, wmin + (wmax - wmin)*np.minimum(1.0, D/6.0))
+        w = np.maximum(wt, wmin)
+        w = np.minimum(w, wmin + (w - wmin)*np.minimum(1.0, D/3.0))
     out = np.zeros_like(mask)
     rq = np.round(w*ppm/2*2)/2          # radius in half px
     for r in np.unique(rq[sk]):
@@ -242,4 +246,31 @@ def streaks(mask, crim, ppm, x0, y0, close_mm=3.0, min_len=7.0, sep=1.7, gap=5.0
                 a = mu + sa*u + ta*nrm; b = mu + sb*u + tb_*nrm
                 col = "rb_crimson" if cc[seg].mean() > 0.5 else "rb_red"
                 out.append((streak_poly(a, b, w), col, (tuple(a), tuple(b)), w))
+    return out
+
+
+def streak_tiles(mask, crim, ppm, x0, y0, close_mm=3.0, dsep=1.8, gap=0.2):
+    """Rev B2 (A14): slash streaks keep their TRACED silhouette; inside each bundle (dominant direction by PCA) the traced
+    area is cut into parallel strips dsep apart along the bundle direction (one satin column per strip = one streak),
+    separated by a gap mm hairline. Returns [(polygon, colour key)]."""
+    out = []
+    bl, n = ndi.label(ndi.binary_closing(mask, structure=disk_px(close_mm*ppm/2)) & ndi.binary_dilation(mask, structure=disk_px(close_mm*ppm/2)))
+    for i, sl in enumerate(ndi.find_objects(bl), 1):
+        if sl is None: continue
+        m = (bl[sl] == i) & mask[sl]
+        if m.sum() < 1.0*ppm*ppm: continue
+        yy, xx = np.nonzero(m)
+        P = np.stack([xx, yy], 1).astype(float); P -= P.mean(0)
+        ev, evec = np.linalg.eigh(np.cov(P.T)); u = evec[:, 1]
+        theta = np.full(m.shape, math.atan2(u[1], u[0]), np.float32)
+        Tl, lines = stroke_tiles(m, theta, ppm, dsep=dsep, Lmin=1e4, Lmax=1e4, seed=i, max_turn=89.0, min_len=0.5)
+        cm = crim[sl]
+        for p, a in tiles_to_polys(Tl, lines, x0 + sl[1].start/ppm, y0 + sl[0].start/ppm, ppm, min_area=0.6):
+            q = p.buffer(-gap/2)
+            if q.is_empty: continue
+            for qq in getattr(q, "geoms", [q]):
+                if qq.geom_type != "Polygon" or qq.area < 0.5: continue
+                c = qq.representative_point(); cx_, cy_ = int((c.x - x0)*ppm) - sl[1].start, int((c.y - y0)*ppm) - sl[0].start
+                cr = bool(cm[min(max(cy_, 0), cm.shape[0]-1), min(max(cx_, 0), cm.shape[1]-1)])
+                out.append((qq, "rb_crimson" if cr else "rb_red"))
     return out

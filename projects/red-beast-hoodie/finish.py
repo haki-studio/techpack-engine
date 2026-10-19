@@ -9,25 +9,28 @@ for f_ in sorted(glob.glob("out/0[12]_*/**/*.pes", recursive=True)):
     open(f_.replace(".pes", "_thread-chart.txt"), "w").write("\n".join(lines) + "\n")
 PKG = "out/pkg"; shutil.rmtree(PKG, ignore_errors=True); os.makedirs(f"{PKG}/elements")
 for e, (slug, title, pcs) in rbcore.ELEMS.items():
-    shutil.copytree(f"out/{e}_{slug}", f"{PKG}/elements/{e}_{slug}", ignore=shutil.ignore_patterns("summary.json", "result_*.json"))
+    shutil.copytree(f"out/{e}_{slug}", f"{PKG}/elements/{e}_{slug}", ignore=shutil.ignore_patterns("summary.json", "result_*.json", "*RevA*"))
 if os.path.isdir("out/pattern"): shutil.copytree("out/pattern", f"{PKG}/pattern", ignore=shutil.ignore_patterns("*.png"))
 for c in glob.glob("out/compare_*.png"): shutil.copy(c, PKG)
-pdfs = sorted(glob.glob("out/HAKI_RBST_*PACK*_small.pdf")) or sorted(glob.glob("out/HAKI_RBST_*PACK*.pdf"))
+REVT = rbcore.REV_EMB.replace(" ", "")
+pdfs = sorted(glob.glob(f"out/HAKI_RBST_TECHPACK_{REVT}_small.pdf"))
 for p in pdfs: shutil.copy(p, PKG)
 cur = json.load(open("dst_current.json"))
 open(f"{PKG}/README.txt", "w").write(f"""HAKI STUDIOS - {rbcore.NAME} (style {rbcore.STYLE})
-Embroidery {rbcore.REV_EMB} - {rbcore.DATE}
+Garment {rbcore.REV_GAR} · Embroidery {rbcore.REV_EMB} - {rbcore.DATE}
 
 {', '.join(os.path.basename(p) for p in pdfs)}
+    T1-T8 garment pages (zip-hoodie block: Drum Island body + 3-panel sherpa hood + elastic bands; moved welts [PROPOSED]),
     G1-G6 embroidery pages, element specs 01 (beast head, fronts) + 02 (slash streaks, sleeves), F1 factory requests.
-    Garment pages (T) + pattern follow when the hooded Drum Island pattern is released (hood block pending).
+pattern/{rbcore.STYLE}_pattern_<size>.dxf + _ALL-SIZES.dxf   AAMA-layer DXF (1 cut, 14 sew, 4 notches, 7 grain, 8 internal +
+    embroidery outline/box/centre, 13 drill + needle start, 15 text), mm. pattern/*_M_1to1_PLOT.pdf = size M at 1:1.
 
 elements/01_beast-head/<size>/        FR (wearer's right front) + FL (wearer's left front): DST + PES, previews, thread charts.
 elements/02_sleeve-streaks/<size>/    SR (wearer's right sleeve, S01) + SL (wearer's left sleeve, S02).
-    splits/ = S1_top + S2_bottom for the factory frame (stop 1 opens with registration crosses in its own thread -
+    splits/ = S1_top + S2_bottom for the factory frame (stop 1 = registration crosses in Deep crimson -
     pick out after the last hooping). Pieces that fit one hooping have no splits/.
 elements/*/*_SPEC_*.pdf               element spec (5 pages); *_M_ART*.svg = size-M region art with digitizing attributes.
-compare_*.png                         mockup vs stitch render, same scale, zoomed regions.
+compare_*.png                         mockup (+ close-up where it exists) vs the size-M DST read-back, same scale, zoomed regions.
 
 Size M (read from the DST): """ + " · ".join(f"{P} {cur[P]['stitches']:,} st / {cur[P]['trims']} trims" for P in rbcore.PIECES) + f""".
 Max {12} thread colours per file (factory limit, incl. registration). Production-intent drafts: the factory digitizer checks density + pull

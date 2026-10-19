@@ -66,3 +66,19 @@ Each: problem → proposed fix → check.
 - **Proposed engine fix:** `pattern.draft(size, welt=<polygon at M>)` (or read `front.WELT_L` when the project defines it),
   graded the same way; the DXF welt box + drills follow it.
 - **Check:** `emb_place.clearances()` welt ≥ 6 on every size AND the DXF welt box == the keep-out welt.
+
+## 11. `hoodie.Variant` has no `ORDER` (pattern_out.write_dxf / plot_pdf read `blk.ORDER`)
+- **Problem:** `plot_pdf(..., blk=hoodie.Variant(welt=...))` raises AttributeError; write_dxf only works with `pieces=`.
+- **Project fix:** `garment.Block(HD.Variant)` with `ORDER = HD.ORDER` and `__getattr__` delegating to the module.
+- **Proposed engine fix:** `Variant.ORDER = ORDER` (and delegate `measure`, `shape_checks`, `chart`). **Check:** plot_pdf with a Variant.
+
+## 12. A14/A15 gates: how the stitched mask is built decides the verdict
+- **Found:** (a) drawing every DST stitch of a colour counts its hidden travel (runs under later fills) as visible thread
+  and merges motifs; (b) a 0.6 mm line + 0.5 mm closing + the file's pull comp grows thin cords ~0.5 mm a side, so a
+  correct 2 mm cord scored IoU 0.5; (c) two traced motifs 0.5 mm apart that the rebuild + pull comp bridge become ONE
+  stitched component and BOTH fail (IoU ~0.5 with width/height ratios 1.0).
+- **Project practice (qa_gates.py):** visible-colour raster (stops drawn in sew order, later over earlier), 0.4 mm thread,
+  1 px closing, then 0.25 mm erosion = the pull-in the pull comp compensates; art builder cuts a 0.75 mm separation
+  between different traced motifs of one family (refmask.separation_cut) and keeps rebuilt objects on the traced silhouette.
+- **Proposed engine:** `qa.dst_visible(dst, origin, bbox, ppm)` + `qa.motif_match(..., pull_mm=)` so every project measures
+  the same way. **Check:** a synthetic 2 mm satin cord built by dst2 passes motif_match against its own 2 mm mask.

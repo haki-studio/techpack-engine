@@ -38,28 +38,26 @@ KEEP = {"CF / zip": KEEP_CF, "armhole": KEEP_SEAM, "shoulder": KEEP_SEAM, "side"
 MIN = dict(KEEP, welt=KEEP_WELT)
 SKEEP = {"cap": KEEP_SEAM, "underarm front": KEEP_SEAM, "underarm back": KEEP_SEAM, "cuff": KEEP_CUFF}
 
+# Rev B: the founder chose the zip-hoodie block (engine/hoodie.py: Drum Island body + 3-panel hood + elastic hem/cuff
+# bands, 19 Oct 2026). The moved welt goes into the pattern itself (per-design override, engine 08ef40a) [PROPOSED].
+WELT_SPEC = dict(cx=WELT_C[0], cy=WELT_C[1], angle=WELT_ANG, length=WELT_LEN, width=WELT_W)
 _PC = {}
 def pieces(size):
     if size not in _PC:
-        import pattern as PT
-        _PC[size] = PT.draft(size)
+        import hoodie as HD
+        _PC[size] = HD.draft(size, welt=WELT_SPEC)
     return _PC[size]
+def block():
+    import hoodie as HD
+    return HD.Variant(welt=WELT_SPEC)
 
 def keep_geoms(size, side):
     """named keep-out references for one front piece of one size, from that size's pattern (sew lines, LESSONS C8)."""
     g, mt = pieces(size); pc = g["F02" if side == "R" else "F01"]
     out = {e.name: LineString(e.pts) for e in pc.edges}
-    out["welt"] = welt_for(size, side, Polygon(pc.internal[0][1]).buffer(0))
+    out["welt"] = Polygon(pc.internal[0][1]).buffer(0)          # the pattern's own (moved, PROPOSED) welt
     out["panel"] = pc.sew_poly()
     return out
-
-def welt_for(size, side, block_welt):
-    """the PROPOSED moved welt on this size: this jacket's welt (welt.json: mockup angle 61.6 deg, moved clear of the jaw) shifted by
-    the block's own grading of the welt position (engine pattern.py, drum.WELT_L_M) from M to this size. Since commit c026934 the engine pattern no longer reads the project WELT_L, so the
-    move is applied here (ENGINE_NOTES 10) - otherwise the keep-out sits under the jaw again."""
-    gM, _ = pieces("M"); bM = Polygon(gM["F02" if side == "R" else "F01"].internal[0][1]).buffer(0).centroid
-    bS = block_welt.centroid                      # the block's grading of the welt position, this size vs M
-    return affinity.translate(WELT_R if side == "R" else WELT_L, bS.x - bM.x, bS.y - bM.y)
 
 def clip_for(size, side):
     """area art may occupy on one front piece of one size (all keep-outs removed)."""
