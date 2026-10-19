@@ -12,7 +12,8 @@ import mockmap as MM, front as F, dstview as DV
 size = sys.argv[1] if len(sys.argv) > 1 else "M"
 D = pickle.load(open(f"art_{size}.pkl", "rb")); META = pickle.load(open("scene.pkl", "rb"))["meta"]
 _FD = os.path.expanduser("~/.local/share/fonts")
-FONT = ImageFont.truetype(os.path.join(_FD, "LiberationSans-Bold.ttf"), 22); FS = ImageFont.truetype(os.path.join(_FD, "LiberationSans-Regular.ttf"), 17)
+FONT = ImageFont.truetype("inputs/fonts/_inst_cn_720.ttf", 22); FS = ImageFont.truetype("inputs/fonts/_inst_cn_640.ttf", 17)
+FS_KR = ImageFont.truetype("inputs/fonts/_inst_kr_560.ttf", 17)
 def base(P): return f"out/stitch/{size}/HAKI_{kccore.SHORT}_{P}_{size}"
 FAB = tuple(int(kccore.FABRIC[i:i+2], 16) for i in (1, 3, 5))
 
@@ -52,6 +53,7 @@ ZOOMS = {
 
 def label(im, s, f=FS):
     out = Image.new("RGB", (im.width, im.height + 26), (255, 255, 255)); out.paste(im, (0, 26))
+    if any("\uac00" <= ch <= "\ud7af" for ch in s): f = FS_KR
     ImageDraw.Draw(out).text((4, 3), s, fill=(0, 0, 0), font=f); return out
 
 def sheet(el):
@@ -77,7 +79,7 @@ def sheet(el):
     zcol_h = sum(r.height + 8 for r in rows)
     out = Image.new("RGB", (W * 2 + 40 + zw * 2 + 30, max(H + 70, zcol_h + 50)), (255, 255, 255))
     out.paste(mk, (10, 60)); out.paste(st, (W + 30, 60)); d = ImageDraw.Draw(out)
-    d.text((10, 6), f"{el} {kccore.ELEMENTS[el][1]} — Rev B, size {size}", fill=(0, 0, 0), font=FONT)
+    d.text((10, 6), f"{el} {kccore.ELEMENTS[el][1]} — Rev B, size {size}", fill=(0, 0, 0), font=ImageFont.truetype("inputs/fonts/_inst_kr_560.ttf", 22) if el == "04" else FONT)
     d.text((10, 34), f"MOCKUP (flat.png, motif scale {MM.S:.3f} mm/px; low-res render, no close-up)", fill=(0, 0, 0), font=FS)
     d.text((W + 30, 34), f"WRITTEN DST read back ({os.path.basename(base(P))}.dst, {ppm:.0f} px/mm, same scale)", fill=(0, 0, 0), font=FS)
     for _, z in zs:

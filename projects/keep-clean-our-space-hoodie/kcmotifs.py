@@ -155,7 +155,7 @@ def glow(shape, ang, col="kc_glow", sp=1.6, rng=None, ragged=0.35, grp="GLOW"):
 # ================================================================ Rev B motifs (review Rev A items 2, 3, 5, 7, 9)
 # Every satin is a column (kcsatin): one turning satin per stroke, no fans, no skipped rows.
 import kcsatin as KS
-RIM_COL = {"kc_mint": "kc_mint_lt", "kc_blue": "kc_blue_lt", "kc_red": "kc_red_lt", "kc_lemon": "kc_white", "kc_gold": "kc_lemon"}
+RIM_COL = {"kc_mint": "kc_mint_lt", "kc_blue": "kc_blue_lt", "kc_red": "kc_red_lt", "kc_lemon": "kc_lemon_lt", "kc_gold": "kc_lemon"}
 RIM_W = 0.85          # puff rim column (lighter thread) — 40wt satin minimum is 0.8
 RIM_OVL = 0.3         # the core runs this far under the rim
 
@@ -213,12 +213,12 @@ def heart_rc(cx, cy, size, col, unit, rot=0.0, code="PF-HRT"):
            for s_ in KS.ring_columns(g, RIM_W, corner=40.0)]
     return core, rim, g
 
-def star_facets(cx, cy, size, col, unit, rot=0.0, k=0.48, code="PF-STR", light=None, pit=0.0, pit_shape="circle"):
+def star_facets(cx, cy, size, col, unit, rot=0.0, k=0.48, code="PF-STR", light=None, pit=0.0, pit_shape="circle", round_=0.35):
     """faceted 5-point star: every arm = two facets (centre-tip-valley triangles), each its own satin direction; the
     facet that faces up (light from above) sews in the lighter thread. pit: knocked-out centre (fabric shows):
     radius as a share of R, a circle or a small star."""
     R_ = size / 2; light = light or RIM_COL.get(col, col)
-    g = star5_geom(cx, cy, R_, rot, k=k, round_=0.35)
+    g = star5_geom(cx, cy, R_, rot, k=k, round_=round_)
     hole = Polygon()
     if pit:
         hole = Point(cx, cy).buffer(R_ * pit, quad_segs=12) if pit_shape == "circle" else star5_geom(cx, cy, R_ * pit, rot, k=0.5, round_=0.0)
@@ -243,8 +243,8 @@ def star_facets(cx, cy, size, col, unit, rot=0.0, k=0.48, code="PF-STR", light=N
 
 def sparkle_cols(cx, cy, span, col="kc_white", unit=None, rot=0.0, code="SPK"):
     """concave 4-point sparkle: two crossing tapered columns (arms pinch to 0.25 at the tips, concave sides)."""
-    w0 = max(1.0, 0.30 * span); L = span / 2
-    prof = ("taper", 1.9, 0.14)
+    w0 = max(1.1, 0.40 * span); L = span / 2
+    prof = ("taper", 1.6, 0.12)
     out = []
     for k in (0, 1):
         a = math.radians(rot + 90 * k)
@@ -252,12 +252,10 @@ def sparkle_cols(cx, cy, span, col="kc_white", unit=None, rot=0.0, code="SPK"):
         out.append(KS.column_region(col, code, cl, w0, ("flat", "flat"), False, prof=prof, unit=unit))
     return out
 
-def haze(cx, cy, r, unit, col="kc_haze", code="HAZE", rng=None):
-    """soft glow under a big sparkle: sparse tatami disc with a ragged edge (one object)."""
-    rng = rng or random.Random(int(cx * 7 + cy * 13))
-    pts = [(cx + (r * rng.uniform(0.78, 1.0)) * math.cos(t), cy + (r * rng.uniform(0.78, 1.0)) * math.sin(t)) for t in np.linspace(0, 2 * math.pi, 18, endpoint=False)]
-    g = Polygon(pts).buffer(0.3).buffer(-0.3).buffer(0)
-    return [R(col, g, "tatami", rng.uniform(0, 180), code, unit=unit, kob=0.0, nok=True, glow=True)]
+def haze(cx, cy, r, unit, col="kc_haze", code="HAZE", star=None):
+    """soft glow round a big sparkle: a stipple run on a disc, fading out (review item 9)"""
+    core = star if star is not None else Point(cx, cy).buffer(0.6)
+    return stipple_band(core, unit, outer=r, col=col, code=code, seed=int(abs(cx * 7 + cy * 13)) % 9973, s0=0.55, k=0.35, hole_inset=0.0, step=1.5)
 
 def halo(shape, ang, unit, inner=1.9, outer=3.8, col="kc_glow", rng=None, hole_inset=0.45):
     """soft neon halo following the silhouette: dense band 0..inner mm round the shape, sparse band inner..outer with a
@@ -300,4 +298,49 @@ def oval_cols(cx, cy, a, b, w, col, ang=0.0, hl_col=None, hl_w=1.1, unit=None):
     if hl_col:
         m = w * 0.38
         regs.append(KS.column_region(hl_col, "OVAL-hl", ell(a - w + m, b - w + m), hl_w, ("flat", "flat"), True, unit=unit, ko=False))
+    return regs
+
+# ---------------------------------------------------------------- Rev B soft glow: stipple run (review item 2)
+def stipple_band(shape, unit, inner=0.0, outer=3.6, col="kc_glow", code="GLOW", seed=7, s0=0.30, k=0.16, hole_inset=0.45,
+                 step=1.8, glow=True):
+    """soft glow: a random short-stitch run inside the band round `shape` (0..outer mm from its silhouette, following
+    it — no bridging), point spacing s0 + k * distance, so it is dense at the art and fades out. One run per connected
+    band (greedy nearest-neighbour path, hops > step re-stitched). Returns regions with r['run_pts']."""
+    from shapely import contains_xy, distance as sdist, points as spoints
+    rng = np.random.default_rng(seed)
+    band = shape.buffer(outer, join_style="round").difference(shape.buffer(-hole_inset)).buffer(0)
+    if inner: band = band.difference(shape.buffer(inner)).buffer(0)
+    regs = []
+    for part in polys(band):
+        if part.area < 2: continue
+        b = part.bounds; g = 0.25
+        X, Y = np.meshgrid(np.arange(b[0], b[2], g), np.arange(b[1], b[3], g))
+        X = X + rng.uniform(-g/2, g/2, X.shape); Y = Y + rng.uniform(-g/2, g/2, Y.shape)
+        m = contains_xy(part, X, Y); xs, ys = X[m], Y[m]
+        if not len(xs): continue
+        d = sdist(shape.boundary, spoints(xs, ys)); d = np.where(contains_xy(shape, xs, ys), 0.0, d)
+        sp = s0 + k * d                          # local spacing
+        keep = rng.uniform(0, 1, len(xs)) < (g * g) / (sp * sp)
+        P = np.c_[xs[keep], ys[keep]]
+        if len(P) < 3: continue
+        # greedy nearest-neighbour walk (KD-tree)
+        from scipy.spatial import cKDTree
+        tree = cKDTree(P); used = np.zeros(len(P), bool); i = int(np.argmin(P[:, 0])); path = [tuple(P[i])]; used[i] = True
+        for _ in range(len(P) - 1):
+            kq = 8
+            while True:
+                dd, ii = tree.query(P[i], k=min(kq, len(P)))
+                ii = np.atleast_1d(ii); cand = [j for j in ii if not used[j]]
+                if cand or kq >= len(P): break
+                kq *= 4
+            if not cand:
+                rest = np.nonzero(~used)[0]
+                if not len(rest): break
+                j = rest[np.argmin(np.hypot(P[rest, 0] - P[i, 0], P[rest, 1] - P[i, 1]))]
+            else: j = cand[0]
+            a = path[-1]; bpt = tuple(P[j]); L = math.dist(a, bpt)
+            if L > step:
+                n = int(math.ceil(L / step)); path += [(a[0] + (bpt[0] - a[0]) * t / n, a[1] + (bpt[1] - a[1]) * t / n) for t in range(1, n)]
+            path.append(bpt); used[j] = True; i = j
+        regs.append(dict(col=col, geom=part, st="run", ang=None, grp=code, unit=unit, kob=0.0, nok=True, ko=False, glow=True, run_pts=path))
     return regs

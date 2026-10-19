@@ -423,6 +423,7 @@ def move(r, s=1.0, origin=(0.0, 0.0), d=(0.0, 0.0)):
     g = affinity.translate(affinity.scale(r["geom"], s, s, origin=(ox, oy)), d[0], d[1]) if s != 1.0 else affinity.translate(r["geom"], d[0], d[1])
     r2 = dict(r, geom=g.buffer(0))
     if r.get("col_cl"): r2["col_cl"] = [f(p) for p in r["col_cl"]]; r2["col_w"] = r["col_w"] * s
+    if r.get("run_pts"): r2["run_pts"] = [f(p) for p in r["run_pts"]]
     if isinstance(r.get("ang"), tuple):
         c = f((r["ang"][1], r["ang"][2])); r2["ang"] = (r["ang"][0], c[0], c[1])
     return r2

@@ -58,4 +58,4 @@ def load():
     D = pickle.load(open("art_M.pkl", "rb"))
     return CUR, ALL, META, D
 
-FONT_NAME = {"jp": "Zen Maru Gothic Black", "en": "Nunito ExtraBold (wght 820)", "cn": "Noto Sans SC (wght 720)", "kr": "Noto Sans KR (wght 560)"}
+FONT_NAME = {"jp": "Zen Maru Gothic Black", "en": "Nunito Black (wght 1000)", "cn": "Noto Sans SC (wght 600)", "kr": "Noto Sans KR (wght 560)"}

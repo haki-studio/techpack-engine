@@ -74,66 +74,83 @@ def place_front(size, P):
     return out, clip, dict(moves=moves, stars=kept, stars_dropped=dropped, stars_nudged=nudged, stars_relocated=reloc, scale=s, grade=grade)
 
 def place_stars(stars, clip, avoid, mapf, out, max_move=8.0, gap=2.5, far=None):
-    """move each star (all regions of one unit together) to its mapped position; a star that lands in a keep-out (or on
-    a badge) moves to the nearest free spot inside the clip <= max_move mm (>= gap from other stars) so the mockup's
-    star COUNT is kept (A2). far: second search radius (fronts, review item 8: nudge, don't drop) — stars that need
-    more than max_move are 'relocated' (counted separately)."""
-    from shapely.ops import nearest_points
+    """move each star (all regions of one unit together) to its mapped position. A star that lands in a keep-out (or on a
+    badge) goes to a free spot inside the clip, chosen on a 1 mm grid by distance from its mapped position minus spacing
+    from its neighbours (nearest-point projection lined stars up along the keep-out edges). Tiers: <= max_move
+    ('nudged'), <= far, then <= 2 x far ('relocated', fronts: review item 8 — nudge, don't drop)."""
+    from shapely import contains_xy
     groups = {}
     for r in stars: groups.setdefault(r.get("unit"), []).append(r)
-    placed = []; kept = dropped = nudged = relocated = 0
+    placed = []; pc = []; kept = dropped = nudged = relocated = 0
+    rng = np.random.default_rng(5)
     for u, rs in groups.items():
         body = unary_union([r["geom"] for r in rs if not r.get("glow")] or [r["geom"] for r in rs])
         c = body.centroid; nx_, ny_ = mapf(c)
         g = affinity.translate(body, nx_ - c.x, ny_ - c.y)
+        gb = g.bounds; rad = max(gb[2] - gb[0], gb[3] - gb[1]) / 2 + 0.4       # bounding radius (sparkles are concave)
         ok = lambda q: clip.contains(q) and (avoid is None or not q.intersects(avoid)) and all(q.distance(p) >= gap for p in placed)
         if not ok(g):
-            gb = g.bounds; rad = max(gb[2] - gb[0], gb[3] - gb[1]) / 2 + 0.4       # bounding radius (sparkles are concave)
-            moved = None
-            for lim in ([max_move] + ([far] if far else [])):
-                free = clip.buffer(-rad)
-                if avoid is not None: free = free.difference(avoid.buffer(rad))
-                for p in placed: free = free.difference(p.buffer(gap + rad)) if p.distance(g) < lim + 10 else free
-                if not free.is_empty:
-                    q = nearest_points(free, g.centroid)[0]; d = q.distance(g.centroid)
-                    if d <= lim: moved = affinity.translate(g, q.x - g.centroid.x, q.y - g.centroid.y)
-                if moved is not None and ok(moved):
-                    if lim > max_move: relocated += 1
-                    else: nudged += 1
+            moved = None; tiers = [max_move] + ([far, 2 * far] if far else [])
+            free0 = clip.buffer(-rad)
+            if avoid is not None: free0 = free0.difference(avoid.buffer(rad))
+            gc = np.array([g.centroid.x, g.centroid.y])
+            for ti, lim in enumerate(tiers):
+                free = free0.intersection(g.centroid.buffer(lim))
+                if free.is_empty: continue
+                b_ = free.bounds
+                X, Y = np.meshgrid(np.arange(b_[0], b_[2] + 1e-6, 1.0), np.arange(b_[1], b_[3] + 1e-6, 1.0))
+                m = contains_xy(free, X, Y); xs, ys = X[m], Y[m]
+                if not len(xs): continue
+                dist = np.hypot(xs - gc[0], ys - gc[1])
+                if pc:
+                    P_ = np.array([q[:2] for q in pc]); R_ = np.array([q[2] for q in pc])
+                    near = np.hypot(xs[:, None] - P_[None, :, 0], ys[:, None] - P_[None, :, 1]) - R_[None, :] - rad
+                    md = near.min(axis=1)
+                else: md = np.full(len(xs), 10.0)
+                sel = md >= gap
+                if not sel.any(): continue
+                score = dist - 1.2 * np.minimum(md, 8.0) + rng.uniform(0, 0.8, len(xs))
+                score[~sel] = 1e9
+                for k in np.argsort(score)[:6]:
+                    if score[k] >= 1e9: break
+                    cand = affinity.translate(g, xs[k] - gc[0], ys[k] - gc[1])
+                    if ok(cand): moved = cand; break
+                if moved is not None:
+                    if ti == 0: nudged += 1
+                    else: relocated += 1
                     break
-                moved = None
-            if moved is None and far:
-                # last tier (fronts, item 8): any free spot <= 2 x far that keeps clear of the other stars, scored by
-                # distance from the mockup position minus spacing from neighbours (a cluster spreads out, it is not dropped)
-                free = clip.buffer(-rad)
-                if avoid is not None: free = free.difference(avoid.buffer(rad))
-                free = free.intersection(g.centroid.buffer(2 * far))
-                best = None
-                if not free.is_empty:
-                    b_ = free.bounds
-                    for xx in np.arange(b_[0], b_[2], 2.0):
-                        for yy in np.arange(b_[1], b_[3], 2.0):
-                            q = Point(xx, yy)
-                            if not free.contains(q): continue
-                            cand = affinity.translate(g, xx - g.centroid.x, yy - g.centroid.y)
-                            md = min([cand.distance(p) for p in placed if p.distance(q) < 30] or [30.0])
-                            if md < gap: continue
-                            sc = q.distance(g.centroid) - 3.0 * min(md, 10.0)
-                            if best is None or sc < best[0]: best = (sc, cand)
-                if best is not None and ok(best[1]): moved = best[1]; relocated += 1
             if moved is None: dropped += 1; continue
             g = moved
         dx, dy = g.centroid.x - c.x, g.centroid.y - c.y
         for r in rs: out.append(KS.move(r, 1.0, (0, 0), (dx, dy)))
-        placed.append(g); kept += 1
+        placed.append(g); pc.append((g.centroid.x, g.centroid.y, rad)); kept += 1
     return kept, dropped, nudged, relocated
 
 def place_sleeve(size, P):
     clip = SV.clip_for(size, P).buffer(-0.4)
     kx, ky, top_m, top_s = SV.ratio(size, P)
     out = []
-    kept, dropped, nudged, reloc = place_stars(ITEMS[P], clip, None, lambda c: (c.x*kx, top_s + (c.y - top_m)*ky), out, far=20.0)
+    kept, dropped, nudged, reloc = place_stars(ITEMS[P], clip, None, lambda c: (c.x*kx, top_s + (c.y - top_m)*ky), out, far=14.0)
     return out, clip, dict(stars=kept, stars_dropped=dropped, stars_nudged=nudged, stars_relocated=reloc)
+
+def clip_runs(vis, clip):
+    """stipple runs (glow, haze) carry their own stitch points: cut them at the clip (keep-outs), one region per inside
+    piece, geometry = the piece's own footprint (one polygon, so make_pattern emits it once)."""
+    from shapely import contains_xy
+    out = []
+    for r in vis:
+        if not r.get("run_pts"): out.append(r); continue
+        P = np.array(r["run_pts"]); ins = contains_xy(clip, P[:, 0], P[:, 1]); runs = []; cur = []
+        for q, k in zip(r["run_pts"], ins):
+            if k: cur.append(q)
+            elif cur: runs.append(cur); cur = []
+        if cur: runs.append(cur)
+        for run in runs:
+            if len(run) < 3: continue
+            g = LineString(run).buffer(0.35)
+            if g.geom_type != "Polygon": g = max(getattr(g, "geoms", [g]), key=lambda q: q.area)
+            out.append(dict(r, geom=g, run_pts=run))
+    return out
 
 def build(size):
     t0 = time.time(); res = {"info": dict(size=size, grade=kccore.GRADE[size][0], scale=kccore.GRADE[size][1])}
@@ -141,6 +158,7 @@ def build(size):
         its, clip, info = (place_front if P in ("FR", "FL") else place_sleeve)(size, P)
         vis = visible(its, clip)
         vis = dst2.clean_vis([v for v in vis if not v.get("nok")]) + [v for v in vis if v.get("nok")]
+        vis = clip_runs(vis, clip)
         vis = [dict(r, geom=r["geom"].intersection(clip).buffer(0)) for r in vis]
         vis = [r for r in vis if not r["geom"].is_empty and r["geom"].area > 0.3]
         vis.sort(key=lambda r: r["z"])

@@ -1,6 +1,6 @@
 """Render WRITTEN stitch files (DST read back, thread colours from the PES) in garment mm — the only renderer the compare
 sheets use (review Rev A item 1: nothing on a compare sheet is drawn from the art regions).
-Each sewn stitch is drawn as a thread: a dark edge line (0.42 mm) under a lighter core (0.22 mm), so satin direction,
+Each sewn stitch is drawn as a thread: a 0.42 mm line at 80 % of the thread colour under a 0.20 mm core at 110 %, so satin direction,
 crossing rows and fans are visible exactly as the machine will sew them. Jumps/trims are not drawn.
   img = dstview.image(["out/stitch/M/HAKI_KCOS_FR_M"], bbox_mm, ppm, origins=[(cx, cy)])
 usage: python3 dstview.py <base> <x0> <y0> <x1> <y1> <out.png> [ppm]   (garment mm; origin read from result json)"""
@@ -50,7 +50,7 @@ def image(bases, bbox, ppm, origins=None, bg=FABRIC, ss=2):
             pts = [((x - x0)*S, (y - y0)*S) for x, y in run]
             xs = [p[0] for p in pts]; ys = [p[1] for p in pts]
             if max(xs) < 0 or min(xs) > W*ss or max(ys) < 0 or min(ys) > H*ss: continue
-            dk, lt = _shade(col, 0.62), _shade(col, 1.18)
+            dk, lt = _shade(col, 0.80), _shade(col, 1.10)
             for a, c in zip(pts, pts[1:]):
                 d.line([a, c], fill=dk, width=we)
             for a, c in zip(pts, pts[1:]):

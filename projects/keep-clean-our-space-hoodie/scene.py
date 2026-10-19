@@ -63,7 +63,7 @@ META["badges"]["01"] = dict(anchor_px=J0, centre=JC, angle=JANG, angle_start=jp_
                             em=em_jp, text=kccore.TEXT["01"], baseline="quadratic through the 7 measured glyph centres")
 jcore, jrim = text_regs(jp, "kc_mint", "PF-TXC", "01-text", "round", rim=True)
 jshape = unary_union([r["geom"] for r in jcore + jrim])
-add("FR", KM.halo(jshape, JANG, "01-glow", rng=random.Random(11)), 20, "01", unit="01-glow")
+add("FR", KM.stipple_band(jshape, "01-glow", outer=4.5, seed=11), 20, "01", unit="01-glow")
 BARS_JP = [  # mockup px centre, length px, angle deg (y down), colour  (17 bars, counted on the mockup)
     ((298.5, 537.2), 26.0, -8, "kc_mint"), ((347.6, 474.3), 23.0, 52, "kc_mint"), ((454.8, 495.9), 25.6, 52, "kc_mint"),
     ((465.6, 410.5), 25.7, 110, "kc_blue"), ((401.0, 439.6), 16.3, 73, "kc_blue"), ((314.0, 512.7), 11.9, 42, "kc_blue"),
@@ -83,18 +83,18 @@ for k, (pos, sz, rot) in enumerate((((395.6, 421.0), 12.0, 0), ((333.3, 459.5), 
     add("FR", hc, 30, "01", unit=f"01-heart{k}"); add("FR", hr, 32, "01", unit=f"01-heart{k}")
 # left star with face (two knocked-out eyes), faceted
 sx0, sy0 = J(303.8, 501.3); fs, _ = KM.star_facets(sx0, sy0, 14.0, "kc_gold", "01-star0", rot=-12)
-eyes = unary_union([Point(sx0 - 7.0*0.18, sy0 - 7.0*0.02).buffer(0.75), Point(sx0 + 7.0*0.18, sy0 - 7.0*0.02).buffer(0.75)])
+eyes = unary_union([Point(sx0 - 7.0*0.2, sy0 - 7.0*0.02).buffer(1.0), Point(sx0 + 7.0*0.2, sy0 - 7.0*0.02).buffer(1.0)])
 fs = [dict(r, geom=r["geom"].difference(eyes).buffer(0)) for r in fs]
 add("FR", [r for r in fs if not r["geom"].is_empty], 30, "01", unit="01-star0")
 # top star (review item 5): slender 5-point star, dark centre pit with a white dot
 sx1, sy1 = J(460.0, 391.3)
-fs, _ = KM.star_facets(sx1, sy1, 14.4, "kc_gold", "01-star1", rot=6, k=0.38, pit=0.26)
+fs, _ = KM.star_facets(sx1, sy1, 14.4, "kc_gold", "01-star1", rot=6, k=0.30, pit=0.24, round_=0.12)
 add("FR", fs, 30, "01", unit="01-star1")
 add("FR", KM.dot(sx1, sy1, 1.4, "kc_white", "01-star1", grp="FACE"), 33, "01", unit="01-star1")
 # small top-right star: a 4-point sparkle in star gold (mockup)
 add("FR", KM.sparkle_cols(*J(482.5, 415.0), 6.0, "kc_gold", "01-star2", code="SPK"), 22, "01", unit="01-star2")
 # bottom red star (review item 5): SOLID red, faceted, with a small dark star pit (fabric) in the middle
-fs, _ = KM.star_facets(*J(406.3, 563.8), 15.0, "kc_red", "01-star3", rot=10, pit=0.34, pit_shape="star")
+fs, _ = KM.star_facets(*J(406.3, 563.8), 15.0, "kc_red", "01-star3", rot=10, pit=0.30, pit_shape="star")
 add("FR", fs, 30, "01", unit="01-star3")
 put("FR", (jcore, jrim), 31, "01", "01-text")
 
@@ -115,7 +115,7 @@ META["badges"]["02"] = dict(anchor_px=E0, centre=EC, angle=EANG, em=em_en, pitch
 ecore, erim = text_regs(keep + L2, "kc_mint", "PF-TXC", "02-text", "round", rim=True)
 ccore, crim = text_regs(clean, "kc_lemon", "PF-TXC", "02-text", "round", rim=True)
 eshape = unary_union([r["geom"] for r in ecore + erim + ccore + crim])
-add("FL", KM.halo(eshape, EANG, "02-glow", rng=random.Random(12)), 20, "02", unit="02-glow")
+add("FL", KM.stipple_band(eshape, "02-glow", outer=4.5, seed=12), 20, "02", unit="02-glow")
 STARS_EN = [(325, 105), (425, 130), (495, 215), (570, 300), (645, 400), (720, 495), (770, 600), (800, 840), (750, 935), (645, 985),
             (540, 910), (460, 815), (385, 720), (305, 625), (225, 530), (140, 430), (115, 310), (195, 190)]      # 18 stars (crop_en2: /4 + (670,380))
 for i, (cx_, cy_) in enumerate(STARS_EN):
@@ -141,7 +141,7 @@ for i, ((px, py, k), (x, y)) in enumerate(zip(DOTS_CN, dpts)):
     dcores += c_; drims += r_
 # glow (review item 2): soft halo round every dot (mockup: green haze round the dots), one connected band
 dshape = unary_union([r["geom"] for r in dcores + drims])
-add("FR", KM.halo(dshape, 0.0, "03-glow", inner=1.6, outer=3.4, rng=random.Random(13)), 20, "03", unit="03-glow")
+add("FR", KM.stipple_band(dshape, "03-glow", outer=3.6, seed=13), 20, "03", unit="03-glow")
 add("FR", dcores, 30, "03", unit="03-dots"); add("FR", drims, 32, "03", unit="03-dots")
 # text column: 6 glyphs between the mockup's first + last glyph centres (the AI drew 7 garbled glyphs)
 t0 = C(370.0, 690.0); t1 = C(407.5, 867.5)
@@ -158,23 +158,26 @@ K0 = (723.3, 891.8); K = anchor(*K0); KC = K(*K0); KANG = 6.9
 a_c, b_c, wr = 117.7*S, 30.7*S, 4.0
 add("FL", KM.oval_cols(*KC, a_c + wr/2, b_c + wr/2, wr, "kc_gold", ang=KANG, hl_col="kc_lemon", unit="04-oval"), 25, "04", unit="04-oval")
 add("FL", [], 27, "04")
-em_kr = 19.0
-kr = KL.place(KL.set_line("kr", kccore.TEXT["04"], em_kr, tracking=3.6), *KC, KANG)
-kb = KL.ink_bounds(KL.set_line("kr", kccore.TEXT["04"], em_kr, tracking=3.6))
-META["badges"]["04"] = dict(anchor_px=K0, centre=KC, angle=KANG, em=em_kr, text=kccore.TEXT["04"], axes=(a_c + wr/2, b_c + wr/2, wr))
+em_kr = 19.0; trk_kr = 2.4
+kr = KL.place(KL.set_line("kr", kccore.TEXT["04"], em_kr, tracking=trk_kr), *KC, KANG)
+META["badges"]["04"] = dict(anchor_px=K0, centre=KC, angle=KANG, em=em_kr, tracking=trk_kr, text=kccore.TEXT["04"], axes=(a_c + wr/2, b_c + wr/2, wr))
 put("FL", text_regs(kr, "kc_white", "TXC", "04-text", "flat"), 26, "04", "04-text")
 # ornaments (review item 7): the mockup's non-text marks are kept — the 'i'-arrow mark at the left end (vertical stem,
-# diamond head, arrow foot) and two accent marks above the line (a tick + a dot), white, at the mockup positions
+# diamond head, arrow foot) and two accent marks (a tick above the line, a dot below), white. The mark sits 3.5 mm left
+# of the upright text, centred on the line (the mockup's mark is where its mirrored text began).
 def korn(px, py): return K(px, py)
 ux, uy = math.cos(math.radians(KANG)), math.sin(math.radians(KANG)); vx, vy = -uy, ux        # u along the line, v down
-ax_, ay_ = korn(627.0, 893.0)
-stem = [(ax_ - vx*4.6, ay_ - vy*4.6), (ax_ + vx*4.4, ay_ + vy*4.4)]
+tu = unary_union([g for _, g in kr]); proj = [((x - KC[0]) * ux + (y - KC[1]) * uy) for x, y in tu.exterior.coords] if tu.geom_type == "Polygon" else \
+     [((x - KC[0]) * ux + (y - KC[1]) * uy) for g in tu.geoms for x, y in g.exterior.coords]
+s_left = min(proj) - 3.5 - 1.7
+ax_, ay_ = KC[0] + ux * s_left, KC[1] + uy * s_left
+stem = [(ax_ - vx*3.4, ay_ - vy*3.4), (ax_ + vx*3.2, ay_ + vy*3.2)]
 orn = [KS.column_region("kc_white", "ORN", stem, 1.15, ("flat", "flat"), unit="04-orn")]
-dh = (ax_ - vx*6.6, ay_ - vy*6.6)
-orn += KM.sparkle_cols(*dh, 3.4, "kc_white", "04-orn", rot=KANG, code="SPK")
-foot = (ax_ + vx*6.6, ay_ + vy*6.6)
+dh = (ax_ - vx*5.0, ay_ - vy*5.0)
+orn += KM.sparkle_cols(*dh, 3.2, "kc_white", "04-orn", rot=KANG, code="SPK")
+foot = (ax_ + vx*5.0, ay_ + vy*5.0)
 for sgn in (-1, 1):
-    orn.append(KS.column_region("kc_white", "ORN", [(foot[0] + ux*2.0*sgn - vx*2.2, foot[1] + uy*2.0*sgn - vy*2.2), foot], 1.05, ("flat", "round"), unit="04-orn"))
+    orn.append(KS.column_region("kc_white", "ORN", [(foot[0] + ux*1.7*sgn - vx*1.9, foot[1] + uy*1.7*sgn - vy*1.9), foot], 1.0, ("flat", "round"), unit="04-orn"))
 tk = korn(732.0, 879.0); orn.append(KS.column_region("kc_white", "ORN", [(tk[0] - ux*1.1 - vx*1.0, tk[1] - uy*1.1 - vy*1.0), (tk[0] + ux*1.1 + vx*1.0, tk[1] + uy*1.1 + vy*1.0)], 1.0, ("round", "round"), unit="04-orn"))
 orn += KM.dot(*korn(731.0, 914.0), 1.5, "kc_white", "04-orn", grp="DOT")
 add("FL", orn, 26, "04", unit="04-orn")
@@ -194,7 +197,8 @@ def speck_motif(s, x, y, col="kc_white", unit=None):
     ext = max(s["w"], s["h"])
     if ext >= 5:
         sp = SPAN(ext); rot = ((x * 13 + y * 7) % 9) - 4
-        return KM.haze(x, y, 0.42 * sp, unit) + KM.sparkle_cols(x, y, sp, col, unit, rot=rot)
+        st = KM.sparkle_cols(x, y, sp, col, unit, rot=rot)
+        return KM.haze(x, y, 0.55 * sp, unit, star=unary_union([r["geom"] for r in st])) + st
     return KM.dot(x, y, {2: 1.45, 3: 1.7, 4: 2.0}.get(ext, 1.45), col, unit)
 nfield = {"FR": 0, "FL": 0, "SR": 0, "SL": 0}; ncn = 0
 # sleeve quads in the mockup (px): top fold at the shoulder, cuff outer, underarm, cuff inner

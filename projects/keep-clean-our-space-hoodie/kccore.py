@@ -21,6 +21,7 @@ KC_PAL = {   # key: (hex, name, use)
     "kc_blue_lt": ("#73C4FF", "Blue tint",    "lighter rim of the blue bars and CN blue dots"),
     "kc_red_lt":  ("#FF8C84", "Red tint",     "lighter rim / facets of the red hearts, bars and star"),
     "kc_haze":    ("#3A4357", "Star haze",    "soft glow under the big sparkles"),
+    "kc_lemon_lt": ("#FFF4B8", "Lemon tint",  "lighter rim of the lemon puff letters (CLEAN) and lemon bars"),
 }
 KC_KEYS = list(KC_PAL)
 FABRIC = "#191C24"          # washed black duck (mockup median #13161D, lifted for the render)
@@ -28,7 +29,7 @@ for k, v in KC_PAL.items():
     motifs2.PAL[k] = v; motifs2.HEX[k] = v[0]; motifs.HEX[k] = v[0]
 
 # stop order inside a layer
-KC_ORDER = ["kc_glow", "kc_haze", "kc_white", "kc_blue", "kc_blue_lt", "kc_red", "kc_red_lt", "kc_gold", "kc_lemon", "kc_mint", "kc_mint_lt"]
+KC_ORDER = ["kc_glow", "kc_haze", "kc_white", "kc_blue", "kc_blue_lt", "kc_red", "kc_red_lt", "kc_gold", "kc_lemon", "kc_lemon_lt", "kc_mint", "kc_mint_lt"]
 tech.COLOUR_ORDER = KC_ORDER + [c for c in tech.COLOUR_ORDER if c not in KC_ORDER]
 
 # ---------------------------------------------------------------- region codes
@@ -50,10 +51,11 @@ KC_RULES = {
  "OVAL-hl":("Oval ring highlight",        "Satin, turning",     "across the ring",          "0.40",  "—",    "none",                  "0.10", "1.1 wide, on top"),
  "FACE":   ("Star face (eyes/centre)",    "Satin dot",          "across dot",               "0.40",  "—",    "none",                  "0.10", "Ø 1.2"),
  # Rev B codes (review Rev A): columns = one satin per stroke along its centreline (kcsatin)
+ "GLOW":   ("Neon glow, stipple run",     "Run, random short stitches", "random",          "0.30 + 0.16/mm out", "1.8", "none",     "—",    "fades 0–4.5 mm from the art"),
  "GLOW-D": ("Neon halo, dense band",      "Tatami, sheer",      "along the badge line",     "0.60",  "2.5",  "none",                  "—",    "0–1.9 mm round the art"),
  "GLOW-S": ("Neon halo, soft band",       "Tatami, open",       "along the badge line +8°", "1.30",  "2.5",  "none",                  "—",    "1.9–3.8 mm, ragged edge"),
  "HAZE":   ("Sparkle haze",               "Tatami, open",       "random per sparkle",       "1.10",  "2.5",  "none",                  "—",    "under sparkles ≥ 5 mm"),
- "SPK":    ("Sparkle (concave 4-point)",  "Satin, 2 tapered columns", "across each arm",    "0.36",  "—",    "none",                  "0.10", "tips 0.25"),
+ "SPK":    ("Sparkle (concave 4-point)",  "Satin, 2 tapered columns", "across each arm",    "0.28",  "—",    "none",                  "0.10", "tips 0.25"),
  "TXC":    ("Text stroke column, flat",   "Satin column",       "across the stroke",        "0.40",  "—",    "centre run",            "0.15", "1 column per stroke"),
  "PF-TXC": ("Text stroke column, puff",   "Satin column over foam", "across the stroke",    "0.30",  "—",    "none (foam)",           "0.30", "core under the rim"),
  "PF-RIM": ("Puff rim (lighter thread)",  "Satin column over foam", "across the rim",       "0.30",  "—",    "none (foam)",           "0.15", "0.85 wide, on the edge"),
@@ -143,7 +145,7 @@ def patch_dst2():
             if r.get("ang") == "col" and r.get("col_cl"):          # Rev B satin column (kcsatin)
                 import kcsatin as KS
                 puff = PUFF and code.startswith("PF-")
-                sp = PUFF_SP if puff else (0.36 if code == "SPK" else 0.40)
+                sp = PUFF_SP if puff else (0.28 if code == "SPK" else 0.34 if code in ("TXC", "ORN") else 0.40)
                 pull = dst2.pull_for(code)
                 cl = r["col_cl"]; w = r["col_w"]; caps = r["col_caps"]; closed = r["col_closed"]; prof = r.get("col_prof")
                 blocks = []
@@ -154,6 +156,8 @@ def patch_dst2():
                 else:
                     blocks.append(KS.column_pts(cl, w, sp, pull, caps, closed, prof))
                 return [b for b in blocks if len(b) > 1]
+            if r.get("run_pts"):                                       # stipple glow / haze: the precomputed run
+                return [list(r["run_pts"])]
             if code in OPEN_TAT and r["st"] == "tatami":            # sheer halo / haze: open tatami, no underlay, no edge run
                 sp, L = OPEN_TAT[code]; blocks = []
                 for p in dst2.polys(r["geom"]):

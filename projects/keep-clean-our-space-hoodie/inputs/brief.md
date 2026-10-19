@@ -39,3 +39,15 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - Badge grade: A 92 % (XS–S), B 100 % (M–XL), C 106 % (XXL–3XL); star size constant, positions follow the panel.
 - Threads: 7 colours read from the mockup (neon mint, lemon, star gold, signal red, electric blue, star white, glow green); frames 360 × 360 (factory.json, unconfirmed).
 - Pattern / garment pages wait for the hooded Drum Island block (`pattern.draft(size, variant="hooded")`, separate engine PR); stitch files use the current Drum Island body pieces, which the hood does not change.
+
+## Assumptions (builder, Rev B, 19 Oct 2026) — all PROPOSED until confirmed
+- Review Rev A fixes applied (REVIEW_OPEN.md items 1–11). Domed puff look = dense core + 0.85 mm rim in a LIGHTER tint thread
+  (mint / blue / red / lemon tints added), stars faceted (upper facet lighter). Threads per file: FR 12 (factory max 12), FL 8, sleeves 2.
+- CN ring dots are now 3D puff too (mockup shows domed dots): FR foam sheet covers badge 01 + the 03 dot ring. CN text stays flat.
+- Glow = stipple run (random short stitches, dense at the art, fading out to 3.6–3.8 mm) in Glow green; sparkles ≥ 5 mm get a
+  stipple haze in a dim Star-haze thread.
+- JP baseline curved as measured on the mockup (glyph centres): −38.6° at 宇 → −27.1° at に (the review estimated −45° → −20°).
+- EN: Nunito weight 1000, em 23, line pitch 28 (measured), line length 138 (measured).
+- KR oval: the render's i-arrow mark + accent tick + dot are kept as white ornaments (founder: keep or drop?).
+- Welt keep-out pinned to this mockup's slash welt (58°, ±245 / 360) — the merged engine block drafts the Drum Island welt (ENGINE_NOTES 10/13).
+- Star field: front stars are never dropped (nudged ≤ 8 mm, else relocated ≤ 90 mm, spaced from neighbours); 18 hood specks not used (hood plain).
