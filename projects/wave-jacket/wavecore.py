@@ -57,7 +57,56 @@ def patch_dst2():
     dst2.ALONG.add("WV")
     dst2.COL_MERGE.clear()
     dst2.TRIM_MIN = 2.0             # an exposed move > 2 mm is trimmed, never left as a float
+    if not getattr(dst2, "_wave_cov_guard", False):
+        dst2._orig_build_object = dst2.build_object; dst2.build_object = covered_build_object; dst2._wave_cov_guard = True
     return dst2
+
+# ---------------------------------------------------------------- satin coverage guard (QA 19 Oct, ENGINE_NOTES 7)
+SAT_MIN_COV = 0.97
+COV_LOG = {"checked": 0, "fixed_satin": 0, "tatami": 0}
+
+def stitch_cover(blocks, geom, ppm=10, thread=0.6):
+    """share of geom (eroded 0.25 mm) covered by the stitch lines of blocks, each drawn thread mm wide (> the 0.42 row spacing: a
+    satin row of 40wt spreads to ~0.5-0.6 mm, so only real fan gaps count)"""
+    import numpy as np
+    from PIL import Image, ImageDraw
+    from scipy import ndimage as ndi
+    x0, y0, x1, y1 = geom.bounds; x0 -= 1; y0 -= 1
+    W, H = int((x1 - x0 + 1) * ppm) + 2, int((y1 - y0 + 1) * ppm) + 2
+    A = Image.new("L", (W, H)); d = ImageDraw.Draw(A)
+    import dst2
+    for q in dst2.polys(geom):
+        d.polygon([((x - x0) * ppm, (y - y0) * ppm) for x, y in q.exterior.coords], fill=255)
+        for h in q.interiors: d.polygon([((x - x0) * ppm, (y - y0) * ppm) for x, y in h.coords], fill=0)
+    a = ndi.binary_erosion(np.asarray(A) > 0, iterations=max(1, int(0.25 * ppm)))
+    if a.sum() == 0: return 1.0
+    S = Image.new("L", (W, H)); ds = ImageDraw.Draw(S); lw = max(1, int(round(thread * ppm)))
+    for b in blocks:
+        ds.line([((x - x0) * ppm, (y - y0) * ppm) for x, y in b], fill=255, width=lw)
+    return float((a & (np.asarray(S) > 0)).sum() / a.sum())
+
+def covered_build_object(r, earlier_tones):
+    """engine build_object, then: a satin object whose stitches cover < SAT_MIN_COV of it (turning satin fans out on the
+    outside of a bend: drops, curl shades) is rebuilt as fixed-angle split satin, or tatami if that covers more"""
+    import dst2, stitchrender as SR
+    blocks = dst2._orig_build_object(r, earlier_tones)
+    if r["st"] != "satin" or isinstance(r.get("ang"), tuple): return blocks
+    COV_LOG["checked"] += 1
+    c0 = stitch_cover(blocks, r["geom"])
+    if c0 >= SAT_MIN_COV: return blocks
+    code = tech.rule_for(r["grp"]); pull = dst2.pull_for(code); fs = []
+    for p in dst2.polys(r["geom"]):
+        if p.area < 0.06: continue
+        if dst2.width_of(p) > 4.0: fs += dst2.edge_run(p, 0.5)
+        fs.append(dst2.fixed_satin(p, SR.auto_angle(p), pull=pull))
+    fs = [b for b in fs if len(b) > 1]; c1 = stitch_cover(fs, r["geom"])
+    if c1 >= SAT_MIN_COV or c1 >= c0:
+        if c1 >= SAT_MIN_COV:
+            COV_LOG["fixed_satin"] += 1; return fs
+    tb = dst2._orig_build_object(dict(r, st="tatami"), earlier_tones); c2 = stitch_cover(tb, r["geom"])
+    best = max((c0, 0, blocks), (c1, 1, fs), (c2, 2, tb), key=lambda t: t[0])
+    if best[1]: COV_LOG["fixed_satin" if best[1] == 1 else "tatami"] += 1
+    return best[2]
 
 STYLE = "HK-JK-WAVE-NV"
 NAME = "Wave Jacket — Washed Navy"

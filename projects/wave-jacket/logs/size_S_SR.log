@@ -1,5 +1,4 @@
-S SR {'stitches': 138944, 'trims': 677, 'jumps': 1557, 'stops': 13, 'size_mm': (403.3, 430.5), 'max_stitch': 7.28} 51s
-S SR S1_top-right {'stitches': 169, 'trims': 10, 'stops': 1, 'size_mm': (233.6, 145.0), 'fits': True} split_clip
-S SR S2_bottom-left {'stitches': 64473, 'trims': 317, 'stops': 12, 'size_mm': (201.4, 317.2), 'fits': True} split_clip
-S SR S3_bottom-right {'stitches': 74584, 'trims': 367, 'stops': 13, 'size_mm': (233.6, 317.2), 'fits': True} split_clip
+S SR {'stitches': 147112, 'trims': 667, 'jumps': 1540, 'stops': 13, 'size_mm': (400.9, 293.5), 'max_stitch': 7.34} 44s
+S SR S1_left {'stitches': 69010, 'trims': 310, 'stops': 12, 'size_mm': (202.3, 313.4), 'fits': True} split_clip
+S SR S2_right {'stitches': 78090, 'trims': 360, 'stops': 13, 'size_mm': (210.5, 313.4), 'fits': True} split_clip
 DONE S ['SR']

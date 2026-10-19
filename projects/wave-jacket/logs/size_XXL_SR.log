@@ -1,5 +1,0 @@
-XXL SR {'stitches': 175497, 'trims': 744, 'jumps': 1714, 'stops': 13, 'size_mm': (471.1, 474.0), 'max_stitch': 7.3} 72s
-XXL SR S1_top-right {'stitches': 582, 'trims': 13, 'stops': 3, 'size_mm': (270.2, 177.0), 'fits': True} split_clip
-XXL SR S2_bottom-left {'stitches': 82224, 'trims': 345, 'stops': 12, 'size_mm': (232.6, 328.6), 'fits': True} split_clip
-XXL SR S3_bottom-right {'stitches': 92870, 'trims': 402, 'stops': 13, 'size_mm': (270.2, 328.6), 'fits': True} split_clip
-DONE XXL ['SR']

@@ -1,6 +1,6 @@
-XS SL {'stitches': 104999, 'trims': 617, 'jumps': 1504, 'stops': 17, 'size_mm': (378.6, 340.2), 'max_stitch': 7.06} 50s
-XS SL absorbed near-empty sections: ['(0, 1) (909 mm2) -> (0, 0)']
-XS SL S1_r1c1 {'stitches': 30893, 'trims': 209, 'stops': 11, 'size_mm': (195.4, 318.2), 'fits': True} grid_split
-XS SL S2_r1c2 {'stitches': 23687, 'trims': 137, 'stops': 11, 'size_mm': (195.2, 174.2), 'fits': True} grid_split
-XS SL S3_r2c2 {'stitches': 50751, 'trims': 279, 'stops': 17, 'size_mm': (195.3, 186.6), 'fits': True} grid_split
+XS SL {'stitches': 106708, 'trims': 607, 'jumps': 1467, 'stops': 17, 'size_mm': (378.4, 340.1), 'max_stitch': 7.41} 61s
+XS SL absorbed near-empty sections: ['(0, 1) (1113 mm2) -> (0, 0)']
+XS SL S1_r1c1 {'stitches': 31881, 'trims': 208, 'stops': 11, 'size_mm': (197.6, 318.4), 'fits': True} grid_split
+XS SL S2_r1c2 {'stitches': 24077, 'trims': 138, 'stops': 11, 'size_mm': (195.2, 174.2), 'fits': True} grid_split
+XS SL S3_r2c2 {'stitches': 51217, 'trims': 276, 'stops': 17, 'size_mm': (200.3, 186.6), 'fits': True} grid_split
 DONE XS ['SL']

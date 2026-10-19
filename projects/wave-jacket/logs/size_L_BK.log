@@ -1,0 +1,6 @@
+L BK {'stitches': 291619, 'trims': 1269, 'jumps': 3264, 'stops': 13, 'size_mm': (594.7, 511.2), 'max_stitch': 7.31} 122s
+L BK S1_top-left {'stitches': 135802, 'trims': 550, 'stops': 13, 'size_mm': (310.5, 304.8), 'fits': True} split_clip
+L BK S2_top-right {'stitches': 35975, 'trims': 248, 'stops': 11, 'size_mm': (314.9, 312.3), 'fits': True} split_clip
+L BK S3_bottom-left {'stitches': 18371, 'trims': 126, 'stops': 10, 'size_mm': (309.2, 254.7), 'fits': True} split_clip
+L BK S4_bottom-right {'stitches': 104280, 'trims': 393, 'stops': 11, 'size_mm': (297.8, 248.1), 'fits': True} split_clip
+DONE L ['BK']

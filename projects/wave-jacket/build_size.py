@@ -79,7 +79,7 @@ for P in which:
         base = f"{OUT}/HAKI_WAVE_01_wave_{P}_{size}"
         dst2.write(cap_stitches(pat), base); dst2.render(base, base + "_preview.png", bg=(39, 47, 67), s=0.5)
         ex = dst2.exposed_travel(stops, st.get("runs", []))
-        res["full"] = record(base, stops, dict(origin=c, art_box=ub, stops_before_merge=n0, secs=round(time.time()-t),
+        res["full"] = record(base, stops, dict(origin=c, art_box=ub, stops_before_merge=n0, secs=round(time.time()-t), satin_guard=dict(glcore.COV_LOG),
                                                exposed_travel=dict(runs_over_1mm=sum(1 for e in ex if e > 1.0), runs_over_2mm=sum(1 for e in ex if e > 2.0), max_mm=round(max(ex), 1) if ex else 0.0),
                                                build_trims_by_code=sorted(st.get("by", {}).items(), key=lambda kv: -kv[1])[:10]))
         f_ = res["full"]

@@ -54,3 +54,23 @@ Problem → proposed fix → check. Worked around in project code only.
   region art.
 - **Check:** `qa.dst_coverage(dst, art)` ≥ 98 % per stitch code on every file (project script: coverage per code/type, M all pieces);
   test: a 200 × 4 mm S-curve stripe with 10 holes sews ≥ 98 % covered.
+
+## 8. Sleeve fold: bare 15-50 mm band down the sleeve centre + the fold highlight sewn as white dashes (QA 19 Oct 2026)
+- **Problem:** the sleeve map lays the render's outer contour on the sleeve centre line, but the trace drops the silhouette-edge
+  shading, so each half stopped 13-19 mm short (M) and the sewn sleeve had a bare vertical band; the render's fold highlight
+  survived as 19 (SR) / 14 (SL) tiny "drops" in a vertical line on x = 0.
+- **Fix (project, `waveart.close_fold`):** per half, g = 25th percentile of the innermost art per 10 mm row; stretch the half from
+  its underarm edge so |x| = g lands on 0 (stripes point-mapped, curls/drops moved rigidly); drop units < 20 mm² within 6 mm of x = 0.
+- **Proposed engine fix:** sleeve maps take the fold contour from the ART edge (trace mask), not the garment silhouette.
+- **Check:** innermost art per 20 mm row on each half ≤ 5 mm from the centre line where both views show art; no unit < 20 mm²
+  within 6 mm of the centre line.
+
+## 9. Turning satin fans open on the outside of a bend: drops, curl shades, grey hollows (QA 19 Oct 2026)
+- **Problem:** after the stripe fix, the DST coverage gate still found 94-97 % on DR / FM-sh / FM-gr satin (M): wedge gaps on the
+  convex side of curved drops and shades, and one 60 mm² FM-sh object on SL almost bare.
+- **Fix (project, `wavecore.covered_build_object`, patched over `dst2.build_object`):** every satin object is rasterised from its
+  own stitches (0.6 mm thread, polygon eroded 0.25 mm); < 97 % → rebuilt as fixed-angle split satin (auto angle), or tatami if
+  that covers more. [M: 15-23 % of satin objects fall back to fixed satin, 1-7 per piece to tatami; every code ≥ 99.6 %]
+  Pitfall: drawing the thread at 0.45 mm against 0.42 mm rows rounds to gaps at 10 px/mm and condemned 77 % of objects.
+- **Proposed engine fix:** the same guard inside `build_object` (and `qa.dst_coverage`), counts in the build stats.
+- **Check:** coverage.py per code ≥ 98 % on every file; test: a 6 mm C-shaped satin drop sews ≥ 98 % covered.

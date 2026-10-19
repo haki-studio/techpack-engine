@@ -1,0 +1,6 @@
+XXL BK {'stitches': 330742, 'trims': 1377, 'jumps': 3699, 'stops': 13, 'size_mm': (645.6, 542.5), 'max_stitch': 7.32} 176s
+XXL BK S1_r1c1 {'stitches': 99978, 'trims': 371, 'stops': 13, 'size_mm': (328.9, 250.9), 'fits': True} grid_split
+XXL BK S2_r1c2 {'stitches': 9011, 'trims': 75, 'stops': 7, 'size_mm': (331.6, 226.2), 'fits': True} grid_split
+XXL BK S3_r2c1 {'stitches': 74967, 'trims': 347, 'stops': 11, 'size_mm': (332.6, 330.0), 'fits': True} grid_split
+XXL BK S4_r2c2 {'stitches': 150200, 'trims': 598, 'stops': 11, 'size_mm': (333.9, 328.1), 'fits': True} grid_split
+DONE XXL ['BK']

@@ -1,4 +1,4 @@
-M FR {'stitches': 103799, 'trims': 492, 'jumps': 1320, 'stops': 11, 'size_mm': (269.2, 369.1), 'max_stitch': 7.31} 54s
-M FR S1_top {'stitches': 54758, 'trims': 259, 'stops': 11, 'size_mm': (288.8, 245.7), 'fits': True} split_clip
-M FR S2_bottom {'stitches': 49043, 'trims': 235, 'stops': 11, 'size_mm': (288.8, 135.3), 'fits': True} split_clip
+M FR {'stitches': 104358, 'trims': 490, 'jumps': 1343, 'stops': 11, 'size_mm': (269.2, 369.1), 'max_stitch': 7.43} 78s
+M FR S1_top {'stitches': 54746, 'trims': 259, 'stops': 11, 'size_mm': (288.8, 245.7), 'fits': True} split_clip
+M FR S2_bottom {'stitches': 49574, 'trims': 232, 'stops': 11, 'size_mm': (288.8, 135.3), 'fits': True} split_clip
 DONE M ['FR']

@@ -1,0 +1,4 @@
+3XL FR {'stitches': 141103, 'trims': 568, 'jumps': 1653, 'stops': 11, 'size_mm': (320.2, 428.4), 'max_stitch': 7.47} 50s
+3XL FR S1_r1c1 {'stitches': 71960, 'trims': 312, 'stops': 11, 'size_mm': (320.2, 260.3), 'fits': True} grid_split
+3XL FR S2_r2c1 {'stitches': 69137, 'trims': 257, 'stops': 11, 'size_mm': (320.1, 194.0), 'fits': True} grid_split
+DONE 3XL ['FR']

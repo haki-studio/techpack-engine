@@ -1,0 +1,4 @@
+L SR {'stitches': 167765, 'trims': 693, 'jumps': 1656, 'stops': 13, 'size_mm': (434.0, 309.8), 'max_stitch': 7.45} 114s
+L SR S1_r1c1 {'stitches': 79990, 'trims': 356, 'stops': 12, 'size_mm': (225.7, 309.8), 'fits': True} grid_split
+L SR S2_r1c2 {'stitches': 87963, 'trims': 350, 'stops': 13, 'size_mm': (223.1, 309.6), 'fits': True} grid_split
+DONE L ['SR']

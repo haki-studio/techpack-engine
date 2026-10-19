@@ -1,5 +1,5 @@
-S SL {'stitches': 96306, 'trims': 557, 'jumps': 1296, 'stops': 17, 'size_mm': (363.1, 350.2), 'max_stitch': 7.05} 42s
-S SL S1_top-left {'stitches': 27169, 'trims': 173, 'stops': 11, 'size_mm': (183.0, 323.8), 'fits': True} split_clip
-S SL S2_top-right {'stitches': 66000, 'trims': 366, 'stops': 17, 'size_mm': (212.0, 323.8), 'fits': True} split_clip
-S SL S3_bottom-right {'stitches': 3461, 'trims': 29, 'stops': 8, 'size_mm': (212.0, 67.1), 'fits': True} split_clip
+S SL {'stitches': 98128, 'trims': 544, 'jumps': 1280, 'stops': 17, 'size_mm': (363.0, 350.2), 'max_stitch': 7.07} 30s
+S SL absorbed near-empty sections: ['(1, 1) (1199 mm2) -> (1, 0)']
+S SL S1_top-left {'stitches': 26867, 'trims': 165, 'stops': 11, 'size_mm': (175.6, 314.0), 'fits': True} split_clip
+S SL S2_top-right {'stitches': 71413, 'trims': 394, 'stops': 17, 'size_mm': (219.2, 313.8), 'fits': True} split_clip
 DONE S ['SL']
