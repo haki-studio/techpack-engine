@@ -190,6 +190,7 @@ def build(cfg, F, vis_all):
     o.append(t(14, my, "MOCKUP", 2.4, 700))
     o.append(t(76, my, "WHAT CHANGED vs MOCKUP (and why)", 2.4, 700))
     o.append(t(14, my + 62, cfg.get("reference", ""), 1.7, 600, ORANGE))
+    for i, g_ in enumerate(cfg.get("generated", [])): o.append(t(14, my + 65.5 + i*3.0, g_, 1.6, 400, ORANGE))
     for i, c in enumerate(cfg["changes"]): o.append(t(76, my + 4.5 + i*3.3, c, 1.85))
     o.append(t(196, my, "PRODUCTION", 2.4, 700))
     for i, c in enumerate(cfg["production"]): o.append(t(196, my + 4.5 + i*3.3, c, 1.85))

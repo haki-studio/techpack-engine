@@ -40,6 +40,7 @@ def measure_dot(cx, cy):
 
 # ---------------------------------------------------------------- observation model shared with qa_fidelity (same operator both sides)
 PPM_OBS = 4.0
+GROW = 0.25        # mm: satin pull comp + thread width the stitched star gains over its outline (as the DST render shows)
 PSF = 0.7          # mm: the mockup's own softness beyond its ~1.2 mm pixel grid
 def observe(a, ppm=PPM_OBS):
     """a stitched/drawn coverage image (0..1, garment mm grid) as the mockup would show it: averaged into the mockup's pixel
@@ -76,7 +77,7 @@ def fit(cx, cy, kind, make, p0):
         ys, xs = np.nonzero(lab); i = np.argmin((ys - c)**2 + (xs - c)**2); k = lab[ys[i], xs[i]]
     ref = lab == k
     def score(pc, x_, y_):
-        o = halfmax(observe(_raster(make(x_, y_, pc), bb, ppm)), 0.0)
+        o = halfmax(observe(_raster([g.buffer(GROW) for g in make(x_, y_, pc)], bb, ppm)), 0.0)
         ol, _ = ndi.label(o); keep = np.unique(ol[ref & (ol > 0)]); o = np.isin(ol, keep) & (ol > 0)
         return (ref & o).sum() / max((ref | o).sum(), 1)
     best = (score(p0, cx, cy), p0, (cx, cy))

@@ -4,6 +4,8 @@ import pickle, json
 import front as F, espec
 D = pickle.load(open("front_M.pkl", "rb")); VIS = {"FR": D["FR"], "FL": D["FL"]}
 M = json.load(open("scene_meta.json"))
+_ns = [s for s in M.get("star_trace", []) if s.get("dropped")] + [s for s in M.get("islets", []) if s.get("dropped")]
+NOT_SEWN = (f"{len(_ns)} motifs inside keep-outs not sewn (G4)" if _ns else "all mockup stars sewn")
 
 def clear_rows(p):
     import emb_place as EP
@@ -27,18 +29,20 @@ CFG = dict(id="01", slug="front-scene", short="front scene", title="FRONT SCENE 
    crops=[((20, 170, 70, 220), "Sun, burst, glitter path"), ((-170, 130, -120, 180), "Cloud bank lobes"),
           ((80, 270, 130, 320), "Islet over the sea, ray")],
    mock_crop=(110, 120, 640, 620),
-   changes=["Rev E: close-ups fitted row by row into the keep-outs;",
-            "  row scale smoothed + clamped (no squeezed tower lobes).",
-            "Bank edges at keep-outs + close-up border: cut back 11,",
-            "  regrown with whole round lobes (r 6-9.5, varied depth).",
-            "Tones traced per pixel (hue family + lightness), mode-",
-            "  filtered, regions < 18 mm2 merged; sage top, slate mid,",
-            "  cream / sand base; few round pinholes in cream lobes.",
-            "Each lobe: concentric rows + arc rows (close-up stitches).",
-            "Sun: no ring, hairline rays. Glitter: no centre line, sea",
-            "  both sides. Sea darker to the hem; stars gold-cream.",
-            "Welts moved 18 toward CF (mockup welt touches the seam)."],
-   reference="Clouds traced from AI close-ups (~4.5 px/mm) registered onto the mockup; layout from the mockup (~1 px/mm). No originals.",
+   changes=["Clouds traced from the close-ups: row scale clamped (no tower",
+            "  lobes), banks regrown with whole lobes at keep-outs + border,",
+            "  tones by thread family (>= 18 mm2), sage top / cream base.",
+            "Islets: every silhouette traced from the mockup, lobe rows",
+            "  inside it; cut (never moved) at keep-outs (A14).",
+            "Stars: centre, arm lengths + root width fitted to the mockup;",
+            "  " + NOT_SEWN + ".",
+            "Sea: dash layout traced from the mockup; zip shadow + mockup",
+            "  welts filled from the row (A15); glitter = broken bars ON it.",
+            "Sun: no ring, hairline rays. Solid sea rays + welt position:",
+            "  approved by Devin 19 Oct. Welts 18 toward CF (mockup touches seam)."],
+   reference="Clouds traced from AI close-ups (~4.5 px/mm) registered onto the mockup; islets, stars, sea layout traced from the mockup (~1 px/mm). No originals.",
+   generated=["Generated, not traced (no reference at stitch resolution): sea dash lengths / colours inside the traced layout, sun core + 20 burst rays,",
+              "sky-glow hairlines, cloud arc rows (texture), star arm taper. Gates (qa_fidelity, from the shipped DSTs) on the compare sheets."],
    production=["Embroider the cut front panels flat, BEFORE",
                "  zip, welt pockets and side seams.",
                "12 threads, 40wt polyester (G3); stop order p4.",

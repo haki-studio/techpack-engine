@@ -102,6 +102,13 @@ def run():
         lab_s, _ = ndi.label(ref_s); ref_s = np.isin(lab_s, np.unique(lab_s[ref_s & warm]))          # keep the gold blobs whole
         out_s = halfmax(mock_res(st), 0.0)
         rows_s = qa.motif_match(ref_s, out_s, PPM, min_mm2=2.0)
+        # a bright gold blob is a STAR row when a mockup star was traced within 4 mm of it; anything else is listed (not hidden)
+        tr = [s_.get("traced_at") or s_["mm"] for s_ in META.get("star_trace", [])]
+        other_s = []
+        for r in rows_s:
+            gx, gy = r["x_mm"] + x0, r["y_mm"] + y0
+            if not tr or min(math.hypot(gx - a_, gy - b_) for a_, b_ in tr) > 4.0: r["other"] = True
+        other_s = [dict(r) for r in rows_s if r.get("other")]; rows_s = [r for r in rows_s if not r.get("other")]
         # sea coverage (A15)
         # the design sea = scene.SEA_DES (mockup sea pixels, welts + zip shadow masked, closed 3 mm), resampled to this grid
         des = META["sea_des"]; dg = des["mask"]
@@ -117,9 +124,9 @@ def run():
             g["x_mm"], g["y_mm"] = round(gx, 1), round(gy, 1)
             g["why"] = ("glitter core: broken pale bars over the sea (gaps between bars)" if (P == "FL" and abs(gx - META["sun"][0]) < 10 and gy < 405)
                         else "UNEXPLAINED")
-        for rows in (rows_i, rows_b, rows_s):
+        for rows in (rows_i, rows_b, rows_s, other_s):
             for r in rows: r["x_mm"] = round(r["x_mm"] + x0, 1); r["y_mm"] = round(r["y_mm"] + y0, 1)
-        res[P] = dict(islets=rows_i, islets_in_keepout=isl_keepout, banks=rows_b, stars=rows_s, sea_gaps=gaps)
+        res[P] = dict(islets=rows_i, islets_in_keepout=isl_keepout, banks=rows_b, stars=rows_s, bright_not_star=other_s, sea_gaps=gaps)
         if "debug" in sys.argv:
             v = np.zeros((H, W, 3), np.uint8); v[design] = (40, 90, 90); v[cover & design] = (90, 200, 190); v[cover & ~design] = (90, 90, 90)
             gm = ndi.binary_opening(design & ~cover, structure=np.ones((4, 4))); v[gm] = (255, 0, 0)
@@ -127,6 +134,18 @@ def run():
             Image.fromarray(v).save(f"out/qa_debug_{P}.png")
             v2 = (np.stack([lum]*3, -1)*0.5).astype(np.uint8); v2[ref_s & ~out_s] = (255, 200, 0); v2[out_s & ~ref_s] = (0, 90, 255); v2[ref_s & out_s] = (255, 255, 255)
             Image.fromarray(v2[: int((HZ + 40 - y0)*PPM)]).save(f"out/qa_debug_stars_{P}.png")
+            tiles = []
+            for fam, rf, ot, rows in (("islets", ref_i, out_i, rows_i), ("stars", ref_s, out_s, rows_s)):
+                for r in rows:
+                    if r["ok"]: continue
+                    cx_, cy_ = int((r["x_mm"] - x0)*PPM), int((r["y_mm"] - y0)*PPM); hw = int(16*PPM)
+                    sl = (slice(max(0, cy_ - hw), cy_ + hw), slice(max(0, cx_ - hw), cx_ + hw))
+                    t_ = np.zeros(rf[sl].shape + (3,), np.uint8) + 25; t_[rf[sl] & ~ot[sl]] = (255, 200, 0); t_[ot[sl] & ~rf[sl]] = (0, 90, 255); t_[rf[sl] & ot[sl]] = (255, 255, 255)
+                    mk_ = np.array(MM.warp((x0 + sl[1].start/PPM, y0 + sl[0].start/PPM, x0 + sl[1].stop/PPM, y0 + sl[0].stop/PPM), PPM).resize(t_.shape[1::-1]))
+                    tiles.append(np.concatenate([mk_, t_], 1))
+            if tiles:
+                wmax = max(x.shape[1] for x in tiles); tiles = [np.pad(x, ((0, 4), (0, wmax - x.shape[1]), (0, 0)), constant_values=255) for x in tiles]
+                Image.fromarray(np.concatenate(tiles, 0)).resize((wmax*2, sum(x.shape[0] for x in tiles)*2), Image.NEAREST).save(f"out/qa_fail_{P}.png")
     json.dump(res, open("out/qa_fidelity.json", "w"), indent=1)
     return res
 

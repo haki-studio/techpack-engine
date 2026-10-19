@@ -183,6 +183,7 @@ TRACED_U = unary_union([TRACE[p]["region"] for p in ("FR", "FL")]).buffer(2.0)
 # silhouette is the mockup's, not a box. An outline that hits a keep-out is first shrunk (>= 80 %), then nudged the shortest way.
 r_, g_, b_ = _rgb[..., 0], _rgb[..., 1], _rgb[..., 2]
 _im = ndi.binary_closing((r_ > g_ + 3) & (LUM > 115) & PANEL & ~ZIP & (YMM > HORIZON + 1), structure=disk(1.2))
+_im = ndi.binary_opening(_im, structure=disk(1.0))          # Rev E2: the gold rays crossing the sea are not islets
 _lab, _n = ndi.label(_im); ISL = []
 BANK_U = TRACED_U
 for k_, sl in enumerate(ndi.find_objects(_lab), 1):
@@ -191,16 +192,18 @@ for k_, sl in enumerate(ndi.find_objects(_lab), 1):
     cx_ = BB[0] + (sl[1].start + xs_.mean()) / PPM; cy_ = BB[1] + (sl[0].start + ys_.max() + 1) / PPM   # cy = base
     if a_ < 6 or h_ < 2.0 or w_ / max(h_, 0.1) > 9 or w_ < 5.5: continue
     if abs(cx_ - SUN[0]) < 16 and cy_ < 400: continue                                  # glitter column
+    if abs(cx_ - SUN[0]) < 30 and cy_ < HORIZON + 12: continue                         # horizon glare under the sun
     if BANK_U.contains(Point(cx_, cy_ - h_/2)): continue
     bx = (BB[0] + sl[1].start/PPM - 4, BB[1] + sl[0].start/PPM - 4, BB[0] + sl[1].stop/PPM + 4, BB[1] + sl[0].stop/PPM + 3)
     ISL.append((cx_, cy_, w_, h_, bx))
 ISL.sort(key=lambda o: (o[0] > 0, o[1]))
 TPPM = 8.0
+def disk_px(r): y, x = np.ogrid[-r:r+1, -r:r+1]; return x*x + y*y <= r*r
 def trace_islet(bx):
     """silhouette of one mockup islet at 8 px/mm: cream pixels (warm, bright), largest part, base cut where the body ends"""
     a = np.array(MM.warp(bx, TPPM / 4.0).resize((int((bx[2]-bx[0])*TPPM), int((bx[3]-bx[1])*TPPM)), Image.LANCZOS)).astype(np.float32)
     lum = a @ np.array([0.3, 0.59, 0.11]); m = (lum > 112) & (a[..., 0] > a[..., 2] + 6)
-    m = ndi.binary_opening(ndi.binary_closing(m, structure=np.ones((5, 5))), structure=np.ones((3, 3)))
+    m = ndi.binary_opening(ndi.binary_closing(m, structure=np.ones((5, 5))), structure=disk_px(int(1.1*TPPM)))   # cut off rays crossing it
     lab, n = ndi.label(m)
     if not n: return None
     m = lab == (np.bincount(lab.ravel())[1:].argmax() + 1); m = ndi.binary_fill_holes(m)
@@ -379,8 +382,11 @@ while y < 470:
         hgt = hgt0 * rng.uniform(0.75, 1.25)                                            # and thicknesses
         x1 = x + L; mid = Point((x + x1)/2, y)
         if x < -15.6 < x1: x1 = -15.6; mid = Point((x + x1)/2, y)              # Rev E2: a dash reaching the zip ends at the keep-out (was dropped)
+        if des_frac(x, x1, y) < 0.5:                                 # a shorter dash where the mockup's sea patch is short
+            for f_ in (0.5, 0.3):
+                if L*f_ >= 3.0 and des_frac(x, x + L*f_, y) >= 0.5: x1 = x + L*f_; mid = Point((x + x1)/2, y); break
         if (x < 15.5 and x1 > -15.5) or (SUN[0] - glit_half(y) < x1 and x < SUN[0] + glit_half(y) and y < 405) or des_frac(x, x1, y) < 0.5:
-            x += rng.uniform(1.0, 2.5); continue                     # the mockup's sea layout (incl. its fade) decides where dashes go
+            x += rng.uniform(0.8, 1.6); continue                     # the mockup's sea layout (incl. its fade) decides where dashes go
         lv = lum_at(x, x1, y, 75)
         if abs(mid.x) < 40:                                              # Rev E2 (A15): zip-shadow band -> the row's own sea brightness
             rf = row_ref("R" if mid.x < 0 else "L", y)

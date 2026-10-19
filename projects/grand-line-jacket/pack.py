@@ -148,7 +148,13 @@ def summary():
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.9, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.9, 700)); o.append(t(cx[8], y, f"{MH:.1f} h", 1.9, 700))
     o.append(t(12, y + 4.5, f"Width check: fills + satins are at or above the 0.8 mm minimum except tapered ends. Hairline runs (sky-glow lines, short sun rays) are INTENTIONALLY 0.45 mm, under the 0.6 mm line minimum: {HAIR_PCT:.1f} % of the stitched area. Check them on the sew-out.", 1.6, 600, ORANGE))
     o.append(t(12, y + 7.8, f"Run time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one hooping (split files: {MH_SPLIT:.1f} h per jacket). Rev E: clouds traced from the close-ups; cost is reported, cleaned up after the sew-out.", 1.7, 400, MUTED))
-    qy = y + 16
+    _ns = [x for x in META.get("star_trace", []) if x.get("dropped")] + [x for x in META.get("islets", []) if x.get("dropped")]
+    _q = json.load(open("out/qa_fidelity.json")) if os.path.exists("out/qa_fidelity.json") else {}
+    _g = "; ".join(f"{P}: " + ", ".join(f"{fam} {sum(r['ok'] for r in _q[P][fam])}/{len(_q[P][fam])}" for fam in ("banks", "islets", "stars"))
+                   + f", sea gaps unexplained {sum(1 for r in _q[P]['sea_gaps'] if r['why'] == 'UNEXPLAINED')}" for P in _q)
+    o.append(t(12, y + 11, f"Fidelity gates (LESSONS A14/A15, size M DST vs reference, compare sheets): {_g}.", 1.6, 600, GREEN if _q and "UNEXPLAINED" not in json.dumps(_q) and all(r['ok'] for P in _q for fam in ('banks','islets','stars') for r in _q[P][fam]) else ORANGE))
+    o.append(t(12, y + 13.8, "Not sewn (inside a keep-out, hard limit): " + ("; ".join(f"{x.get('kind', 'islet')} at ({x['mm'][0]:.0f}, {x['mm'][1]:.0f})" for x in _ns) if _ns else "none") + ".", 1.6, 400, MUTED))
+    qy = y + 19
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
     qs = [f"1. Frame: each piece is ~420–505 tall → 2 hoopings on {FR_S} (split S1/S2, registration crosses, G5/G6), or 1 hooping on a ≥ 300 × 520 frame (full files). Which?",
           f"2. Thread board: all {NTH} targets are read from the mockup + close-ups — approve physical colours (G3), especially sea teals vs the navy shell.",
