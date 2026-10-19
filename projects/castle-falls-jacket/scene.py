@@ -73,12 +73,17 @@ def comp_polys(mask, f, ppm, min_area=2.0):
 
 # ---------------------------------------------------------------- Rev B structure (review Rev A items 1-11)
 # objects drawn per piece, mm on the size-M piece, measured on the registered close-up composite (gridwarp.py)
-FALL_OBJ = {   # (top (x, y), bottom (x, y), width top, width bottom); BK: the big fall + the second fall (480-520 mm, item 7)
- "FL": [((60, 352), (62, 442), 12, 18), ((108, 322), (108, 446), 22, 26), ((165, 322), (167, 455), 12, 16), ((20, 348), (16, 490), 14, 22)],
- "BK": [((-160, 336), (-143, 462), 22, 28), ((-53, 412), (-50, 478), 12, 16)], "FR": [], "SR": [],
- "SL": [((116, 150), (130, 292), 20, 30)]}
-PAGODA = {"FR": (-147.0, 206.0, [(267, 284, 62, 300, 34), (301, 314, 70, 330, 36), (331, 346, 79, 364, 40)])}   # FR, measured on the close-up composite
-GATE = {"SL": (-150.0, 228.0)}          # SL front, beside the left welt (mockup + front close-up right edge)
+FALL_ZONE = {   # mm polygons where the close-up shows falls (the silhouette inside is traced)
+ "FL": [[(0, 318), (205, 318), (205, 470), (0, 470)]],
+ "BK": [[(-205, 320), (-120, 320), (-120, 485), (-205, 485)], [(-72, 400), (-32, 400), (-32, 488), (-72, 488)]],
+ "SL": [[(92, 130), (158, 130), (158, 308), (92, 308)]], "FR": [], "SR": []}
+# traced buildings: (motif fn, args, zone polygon) — the generated geometry only supplies structure overlays (ribs, eave
+# lines, studs, windows, shachi), clipped to the traced silhouette
+BUILDINGS = {
+ "FL": {"castle": (M2.castle2, (108.0, 168.0), [(0, 140), (215, 140), (215, 330), (0, 330)]),
+        "karamon": (M2.karamon, (103.0, 415.0, 150.0, 85.0), [(20, 400), (190, 400), (190, 505), (20, 505)])},
+ "FR": {"pagoda": (M2.pagoda, (-147.0, 206.0, [(267, 284, 62, 300, 34), (301, 314, 70, 330, 36), (331, 346, 79, 364, 40)]), None)}}
+GENERATED = {"SL": {"gate tower": (M2.gate_tower, (-150.0, 228.0))}}   # in the front mockup only (no close-up shows it)
 CRAG = {"FR": [(-96, 50), (-84, 58), (-70, 110), (-55, 160), (-42, 230), (-32, 300), (-60, 310), (-100, 300), (-118, 240), (-114, 160), (-108, 100)]}
 VILLAGE = {"BK": [(-205, 478, 135, 568)], "FR": [(-300, 405, -60, 512)], "FL": [(0, 478, 40, 512)], "SR": [], "SL": []}
 CLOUD_T = ("cf_white", "cf_cream", "cf_mist")
@@ -91,6 +96,38 @@ def _poly_tone(t, g, to_px, keys, default):
             c, r = to_px(x, y)
             if 0 <= r < t.shape[0] and 0 <= c < t.shape[1] and t[r, c] >= 0 and TONES[t[r, c]] in keys: vals.append(TONES[t[r, c]])
     return max(set(vals), key=vals.count) if vals else default
+
+def long_axis(g):
+    mr = g.minimum_rotated_rectangle; c = list(mr.exterior.coords)
+    e = max(((c[i], c[i + 1]) for i in range(4)), key=lambda e: math.hypot(e[1][0] - e[0][0], e[1][1] - e[0][1]))
+    return math.degrees(math.atan2(e[1][1] - e[0][1], e[1][0] - e[0][0])) % 180
+
+def zone_style(ztype, k, q, rng, info):
+    """traced region inside a building / village zone -> its own object with the structure's stitch direction (A13/A14)"""
+    A = q.area; w = 2 * A / max(q.length, 1e-6); thin = w < 2.0 and A < 70
+    if k in ("cf_navy", "cf_sky", "cf_skylt"):                  # roofs: rows along the ridge (village) / down the slope (castle)
+        ang = long_axis(q) if ztype == "vil" else 90.0
+        out = [CM.R(k, q, "satin" if thin else "tatami", "auto" if thin else ang, "ROOF")]
+        if ztype == "vil" and A > 12:
+            out += M2.strata(q, ang, 1.7, ["cf_sky" if k == "cf_navy" else "cf_navy"], "ROOF-ln", w=0.33, inset=0.6, min_len=2.0)
+            info["houses"] = info.get("houses", 0) + 1
+        return out
+    if k in ("cf_white", "cf_cream", "cf_mist"):
+        return [CM.R(k, q, "satin" if thin else "tatami", "auto" if thin else 0.0, "WALL")]
+    if k in ("cf_red", "cf_bark", "cf_brown"):
+        return [CM.R(k, q, "satin" if thin else "tatami", "auto" if thin else (0.0 if ztype == "bld" else 90.0), "TMB")]
+    if k == "cf_gold":
+        return [CM.R(k, q, "satin" if thin else "tatami", "auto" if thin else 0.0, "ORN")]
+    cls = CLASS[k]
+    return [CM.R(k, q, "satin" if thin else "tatami", "auto" if thin else rng.uniform(0, 180), GRP[cls])]
+
+def silhouette(t, f, ppm, zone, tones, open_mm=0.8, min_mm2=20.0):
+    """traced pixels of the given tones inside zone -> cleaned polygons (the motif silhouettes, LESSONS A14)"""
+    H, W = t.shape; X_, Y_ = f(np.arange(W)[None, :].repeat(H, 0), np.arange(H)[:, None].repeat(W, 1))
+    from shapely import contains_xy
+    m = contains_xy(zone, X_, Y_) & np.isin(t, [TI[k] for k in tones])
+    m = ndi.binary_opening(m, structure=TRC.disk(open_mm))
+    return [g for g in comp_polys(m, f, ppm, min_mm2)]
 
 def revb_structure(P, res, t, f, rng, add, knock):
     ppm = res["ppm"]; H, W = t.shape; info = {}
@@ -111,10 +148,13 @@ def revb_structure(P, res, t, f, rng, add, knock):
         for a_, b_ in (("cf_white", "cf_mist"), ("cf_cream", "cf_mist"), ("cf_navy", "cf_slate")):
             t[inc & (t == TI[a_])] = TI[b_]
         t[inc & (t < 0)] = TI["cf_slate"]
+    BO = unary_union([fn(*args)[1].buffer(2.0) for fn, args, _ in BUILDINGS.get(P, {}).values()] + [box(*z) for z in VILLAGE.get(P, [])]) if (BUILDINGS.get(P) or VILLAGE.get(P)) else Polygon()
     # 2. clouds -> lobes (lit rim / body / shaded underside, rows fanned per lobe; item 5)
     nl = 0
     cm = np.isin(t, [TI[k] for k in CLOUD_T])
     for C in comp_polys(cm, f, ppm, 20.0):
+        C = C.difference(BO).buffer(0)
+        if C.is_empty or C.area < 20: continue
         R0 = max(2.6, min(5.2, math.sqrt(C.area) / 4.5))
         lobes = M2.pack_lobes(C, R0, rng)
         def tn(l, C=C):
@@ -128,6 +168,8 @@ def revb_structure(P, res, t, f, rng, add, knock):
     nf = 0
     fm = np.isin(t, [TI[k] for k in FOL_T])
     for C in comp_polys(fm, f, ppm, 25.0):
+        C = C.difference(BO).buffer(0)
+        if C.is_empty or C.area < 25: continue
         lobes = M2.pack_lobes(C, 3.1, rng, rjit=0.28, dy=0.7, dx=1.1, rmin=1.8)
         def tf(l):
             body = _poly_tone(t, Point(l[0], l[1]).buffer(l[2] * 0.7), to_px, FOL_T, "cf_grn")
@@ -135,35 +177,34 @@ def revb_structure(P, res, t, f, rng, add, knock):
         regs, _ = M2.lobe_regions(lobes, tf, C=C.buffer(0.6), grp="FOL", ex=1.1, ey=0.85)
         add(regs, 15); nf += len(lobes)
     info["foliage_clumps"] = nf
-    # 4. waterfalls as rope cords with a mist foot (item 7)
-    for (a, b, w0, w1) in FALL_OBJ.get(P, []):
-        regs, o = M2.fall(a, b, w0, w1, rng); add(regs, 16)
-    # 5. buildings (items 2-3)
-    if P in PAGODA:
-        regs, k = M2.pagoda(*PAGODA[P]); add([r for r in regs if r.get("ko", True)], 18); add([r for r in regs if not r.get("ko", True)], 19)
-        knock = knock.union(k)
-    if P in GATE:
-        regs, k = M2.gate_tower(*GATE[P]); add([r for r in regs if r.get("ko", True)], 18); add([r for r in regs if not r.get("ko", True)], 19)
-        knock = knock.union(k)
-    # 6. village: rows of small houses where the composite shows buildings (roof navy / wall red + white), item 4
-    nh = 0
-    for (x0, y0, x1, y1) in VILLAGE.get(P, []):
-        bt = {TI[k] for k in ("cf_navy", "cf_red", "cf_white", "cf_gold", "cf_sky", "cf_brown", "cf_cream")}
-        rowy = y1; row = 0
-        while rowy > y0 + 8:
-            w = rng.uniform(20, 32) * (0.7 + 0.3 * (rowy - y0) / max(1, y1 - y0))
-            x = x0 + (w / 2 if row % 2 else 0) + rng.uniform(0, 3)
-            while x < x1 - w / 2:
-                fp = box(x - w / 2, rowy - w * 0.6, x + w / 2, rowy)
-                c0, r0 = to_px(fp.bounds[0], fp.bounds[1]); c1, r1 = to_px(fp.bounds[2], fp.bounds[3])
-                win = t[max(0, r0):r1, max(0, c0):c1]
-                if win.size and np.isin(win, list(bt)).mean() > 0.45 and not knock.intersects(fp):
-                    regs, o = M2.house(x, rowy, w, rng, unit=f"h{P}{nh}")
-                    add([r for r in regs if r.get("ko", True)], 19); add([r for r in regs if not r.get("ko", True)], 20); nh += 1
-                x += w * rng.uniform(0.95, 1.4)
-            rowy -= w * rng.uniform(0.45, 0.6); row += 1
-    info["houses"] = nh
-    return dict(t=t, knock=knock, info=info, field=field)
+    zones = []
+    # 4. waterfalls: silhouette traced from the close-up (fall tones inside the fall zone), filled with rope cords (item 7, A14)
+    nf_ = 0
+    for Z in FALL_ZONE.get(P, []):
+        Z = Polygon(Z) if not hasattr(Z, "area") else Z
+        for g in silhouette(t, f, ppm, Z, ("cf_white", "cf_cream", "cf_skylt"), open_mm=1.0, min_mm2=30.0):
+            b_ = g.bounds
+            if (b_[3] - b_[1]) < 1.6 * (b_[2] - b_[0]) and g.area < 300: continue      # falls are tall streams
+            add(M2.fall_in(g, rng), 16); knock = knock.union(g.buffer(0.2)); nf_ += 1
+    info["falls"] = nf_
+    # 5. buildings: traced silhouette (zone styling) + structure overlays clipped to it; generated only where no reference
+    for name, (fn, args, Zp) in BUILDINGS.get(P, {}).items():
+        _o = fn(*args); regs, O = _o[0], _o[1]
+        Z = Polygon(Zp).intersection(O.buffer(2.0)) if Zp else O.buffer(2.0)
+        sky = unary_union(silhouette(t, f, ppm, Z, ("cf_sky", "cf_skylt"), open_mm=0.6, min_mm2=6.0)) if True else Polygon()
+        S = Z.difference(sky).buffer(0)
+        zones.append(("bld", S))
+        ov = [dict(r, ko=False, geom=r["geom"].intersection(S.buffer(-0.3)).buffer(0)) for r in regs
+              if not (r["st"] == "tatami" and r["geom"].area > 40)]
+        add([r for r in ov if not r["geom"].is_empty and r["geom"].area > 0.3], 19)
+        info.setdefault("buildings_traced", []).append(name)
+    for name, (fn, args) in GENERATED.get(P, {}).items():          # no reference pixels (not in any close-up): generated object
+        regs, k = fn(*args); add([r for r in regs if r.get("ko", True)], 18); add([r for r in regs if not r.get("ko", True)], 19)
+        knock = knock.union(k); info.setdefault("generated", []).append(name)
+    # 6. village: every traced roof / wall / lintel region in the zone is its own object (item 4, A14)
+    for Zb in VILLAGE.get(P, []): zones.append(("vil", box(*Zb)))
+    info["houses"] = 0
+    return dict(t=t, knock=knock, info=info, field=field, zones=zones)
 
 def build(P):
     t0 = time.time(); rng = random.Random(7 + cfcore.PIECES.index(P))
@@ -179,10 +220,7 @@ def build(P):
     if P == "FL":
         # Rev B (founder 19 Oct: follow the reference composition): castle on the falls rock as in the close-up / reference —
         # 3 tiers, gold shachi + studs, lantern band, red balustrade; karamon gate at the foot. Drawn as objects over the trace.
-        regs, knock, base_bot = M2.castle2(108.0, 168.0)
-        gr, gk = M2.karamon(103.0, 415.0, w=150.0, h=85.0); regs += gr; knock = knock.union(gk)
-        regs = [r for r in regs if r.get("ko", True)] + [r for r in regs if not r.get("ko", True)]
-        add(regs, 21)
+        pass        # castle + karamon: traced silhouette + structure overlays (revb_structure, LESSONS A14)
     if P in ("SR", "SL"):
         # the centre fold is the flat-lay silhouette edge in both views (dark shading, read as bare shell): where the art
         # runs on both sides of the fold, the fold strip takes the tones beside it (the top of the arm is not a seam)
@@ -213,6 +251,12 @@ def build(P):
                 if not knock.is_empty:
                     g = g.difference(knock).buffer(0)
                     if g.is_empty or g.area < 2.0: continue
+                for ztype, Z in rev_b["zones"]:
+                    if not g.intersects(Z): continue
+                    part = g.intersection(Z).buffer(0); g = g.difference(Z).buffer(0)
+                    for q in CM.polys(part):
+                        if q.area >= 1.0: add(zone_style(ztype, k, q, rng, info), 11)
+                if g.is_empty or g.area < 2.0: continue
                 A = g.area; w = 2 * A / max(g.length, 1e-6)
                 if kind == "fall":
                     r = CM.R(k, g, "tatami", 90.0 + rng.uniform(-4, 4), "FALL")
@@ -269,14 +313,26 @@ def build(P):
             cx, cy = f(cx_, cy_)
             cov = np.cov(np.stack([cc, rr])) if len(rr) > 2 else np.eye(2)
             ev, evec = np.linalg.eigh(cov); ang = math.degrees(math.atan2(evec[1, 1], evec[0, 1]))
-            L = max(3.2, min(5.6, 2.1 * math.sqrt(sizes[i - 1])))
             lum = np.mean([{"cf_pinklt": 2, "cf_pink": 1, "cf_rose": 0}[TONES[v]] for v in t[ys2, xs2][m]])
             col = "cf_pinklt" if lum > 1.3 else "cf_pink"
             blob = Point(cx, cy).buffer(math.sqrt(sizes[i - 1] / math.pi) + 0.8)
+            traced = []
             for r in items:
                 if r["layer"] == 11 and r["col"] in ("cf_pinklt", "cf_pink", "cf_rose") and r["geom"].intersects(blob) and r["geom"].area < 45:
-                    r["geom"] = r["geom"].difference(blob)
-            add(CM.petal(cx, cy, L, ang, col, unit=f"pt{npet}"), 20); npet += 1
+                    traced.append(r["geom"].intersection(blob)); r["geom"] = r["geom"].difference(blob)
+            pg = M2.smooth(unary_union(traced).buffer(0.25), 0.3) if traced else Polygon()
+            if pg.is_empty or pg.area < 1.5: continue
+            pg = max(CM.polys(pg), key=lambda q: q.area)
+            # the TRACED petal silhouette (LESSONS A14), satin across its long axis; deeper-rose base at the stalk end
+            la = M2.long_axis(pg) if hasattr(M2, "long_axis") else ang
+            add([CM.R(col, pg, "satin", la + 90, "PT", unit=f"pt{npet}")], 20)
+            if pg.area > 6:
+                ux, uy = math.cos(math.radians(la)), math.sin(math.radians(la)); c_ = pg.centroid
+                pr = [(q[0] - c_.x) * ux + (q[1] - c_.y) * uy for q in pg.exterior.coords]; lo = min(pr)
+                base = pg.intersection(Polygon([(c_.x + ux * lo - uy * 9 - ux * 2, c_.y + uy * lo + ux * 9 - uy * 2), (c_.x + ux * lo + uy * 9 - ux * 2, c_.y + uy * lo - ux * 9 - uy * 2),
+                                                (c_.x + ux * (lo + 1.4) + uy * 9, c_.y + uy * (lo + 1.4) - ux * 9), (c_.x + ux * (lo + 1.4) - uy * 9, c_.y + uy * (lo + 1.4) + ux * 9)]).buffer(0))
+                if not base.is_empty and base.area > 0.6: add([CM.R("cf_rose", base, "satin", la + 90, "PT", unit=f"pt{npet}", ko=False)], 20)
+            npet += 1
     info["petals"] = npet
     items = [r for r in items if not r["geom"].is_empty and r["geom"].area > 0.3]
     info.update(objects=len(items), secs=round(time.time() - t0))

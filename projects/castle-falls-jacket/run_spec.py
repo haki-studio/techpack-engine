@@ -5,8 +5,9 @@ import sys, pickle
 import espec
 
 REF = ("Rev B: mockup (placement + scale) + founder close-ups inputs/closeups/ (front, back left, back right, sleeves; registered by thin-plate spline on matched "
-       "features and traced, LESSONS A12/A13) + reference.png (structure where an AI close-up is garbled). Redrawn from the LOW-RES MOCKUP only (no close-up): "
-       "SL gate tower, village house rows (objects placed on the traced building tones).")
+       "features, traced in their own colours, LESSONS A12/A13/A14) + reference.png (structure where an AI close-up is garbled). Every motif silhouette (castle, "
+       "karamon, pagoda, falls, village roofs, clouds, crowns, petals) is TRACED; structure inside it (tile ribs, studs, windows, rope cords, lobes, florets) is drawn "
+       "on top. GENERATED, NOT TRACED: SL gate tower (no close-up shows it; size + place from the low-res front mockup).")
 PROD_COMMON = ["Embroider the cut panel flat, BEFORE any seam.", "Navy 12 oz duck: 75/11 sharp, 2.5 oz cutaway,",
                "  no topping. Pre-wash the shell first.", "≤ 12 threads per file (factory limit), 40wt.",
                "Frame (factory.json): split files + registration", "  crosses sewn in stop 1's thread (G5 / G6).",
@@ -47,7 +48,7 @@ CFG = {
             changes=["Traced from the front close-up (registered TPS) on the", "  mockup layout; composition as reference.png (founder).",
                      "Castle as objects: 3 tiers, tile-rib roofs, gold eaves +", "  white studs, window bands, gables, shachi, lantern band,",
                      "  red balustrade; karamon gate at the rock foot.", "Pagoda: 3 tiers, upturned eaves, red bodies, gold rail,", "  ringed gold finial. Falls: rope cords + mist foot.",
-                     "Village: house rows (redrawn, low-res mockup).", "Welts at the mockup position (T3); art clears 6.",
+                     "Village: every traced roof / wall its own object.", "Welts at the mockup position (T3); art clears 6.",
                      "Merges (12 colours): FR moss light → green, bark tan →", "  bark dark, sky light → sky, pink → pale, cream → white;",
                      "  FL pinks → pink, moss light → green, cream → white,", "  sky light → sky (p4)."],
             production=PROD_COMMON, reference=REF),
@@ -64,8 +65,8 @@ CFG = {
                    ("SL", (-175, 260, -125, 310), "gate tower"), ("SL", (50, 110, 100, 160), "clouds + petals")],
             mock_crop=(0, 150, 220, 690),
             changes=["FULL WRAP (Rev B): front + back halves traced from the", "  founder's sleeve close-up (4 views), placed on the mockup.",
-                     "SL back: cliff waterfall (rope cords) as the close-up.", "Gate tower (SL front) redrawn as an object from the",
-                     "  low-res mockup (not in the sleeve close-up).",
+                     "SL back: cliff waterfall (rope cords) as the close-up.", "Gate tower (SL front): GENERATED, not traced — from the",
+                     "  low-res front mockup (not in the sleeve close-up).",
                      "Florets + petals as on the back (01).", "Merges (12 colours): sky light → sky, moss light →",
                      "  green, bark tan → bark dark, gold → cream; SR", "  vermilion → blossom deep, SL pink → pale (p4)."],
             production=PROD_COMMON, reference=REF),

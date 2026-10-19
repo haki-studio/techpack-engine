@@ -157,7 +157,7 @@ def summary():
           "5. Armhole wrap seams — CLOSED (founder 2026-10-19): art 3 mm each side, no topstitch; SA pressed to body + finished inside (T7).",
           "6. Grading A 92 % / B 100 % / C 108 %, one file per size per piece; body about CB/CF + hem, sleeves about the cuff seam. OK?",
           "7. Shell: piece-dyed + pre-washed navy duck assumed. Dense embroidery on all five pieces will shrink panels — measure on the strike-off (F1).",
-          "8. Reference: mockup (placement + scale) + founder close-ups (inputs/closeups/, registered TPS, traced) + reference.png (structure where the AI close-up is garbled). Gate tower (SL) + village houses are redrawn objects, low-res mockup only.",
+          "8. Reference: mockup (placement + scale) + founder close-ups (inputs/closeups/, registered TPS, traced) + reference.png (structure where the AI close-up is garbled). Generated, not traced: SL gate tower only (A14).",
           "9. DST/PES are production-intent drafts: the factory digitizer checks density + pull on 12 oz duck and edits before the sew-out."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i * 3.7, q, 1.7))
     return o

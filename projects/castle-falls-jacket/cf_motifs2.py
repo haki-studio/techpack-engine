@@ -382,3 +382,36 @@ def floret(cx, cy, d, rot, col, unit=None):
     out.append(R("cf_rose", ring.difference(Point(cx, cy).buffer(max(0.5, d * 0.09))), "satin", ("radial", cx, cy), "BL-c", unit=unit, ko=False))
     out.append(R("cf_cream", Point(cx, cy).buffer(max(0.55, d * 0.1), quad_segs=6), "satin", "auto", "BL-c", unit=unit, ko=False))
     return out
+
+def fall_in(poly, rng, cord=3.0, gap=0.7, cols=("cf_white", "cf_white", "cf_skylt", "cf_white", "cf_cream"), ground="cf_sky"):
+    """waterfall INSIDE a traced silhouette (LESSONS A14): blue ground = the silhouette, rope cords run top -> bottom between
+    lateral fractions of the local width (they spread with the fall), each cord a turning satin with a slight wobble."""
+    b = poly.bounds; rows = []
+    for y in np.arange(b[1] + 0.3, b[3], 1.0):
+        seg = poly.intersection(LineString([(b[0] - 1, y), (b[2] + 1, y)]))
+        segs = [s for s in getattr(seg, "geoms", [seg]) if s.geom_type == "LineString" and s.length > 0.5]
+        if not segs: continue
+        s = max(segs, key=lambda s: s.length); xs = [c[0] for c in s.coords]; rows.append((y, min(xs), max(xs)))
+    regs = [R(ground, poly, "tatami", 90.0, "FALL")]
+    if len(rows) < 3: return regs
+    wmed = float(np.median([r[2] - r[1] for r in rows])); n = max(1, int(round(wmed / (cord + gap))))
+    for i in range(n):
+        ph = rng.uniform(0, 2 * math.pi); L, Rr = [], []
+        for j, (y, xl, xr) in enumerate(rows):
+            wv = 0.35 * math.sin(ph + y * 0.45)
+            a = xl + (xr - xl) * i / n + gap / 2 + wv; c = xl + (xr - xl) * (i + 1) / n - gap / 2 + wv
+            if c - a < 0.6: c = a + 0.6
+            L.append((a, y)); Rr.append((c, y))
+        cp = Polygon(L + Rr[::-1]).buffer(0).intersection(poly.buffer(-0.15)).buffer(0)
+        if cp.is_empty or cp.area < 2: continue
+        col = cols[(i + int(ph * 3)) % len(cols)]
+        regs.append(R(col, cp, "satin", "auto", "FALL-cord"))
+        if col == "cf_white" and cp.area > 40 and rng.random() < 0.6:
+            core = LineString([((l[0] + r[0]) / 2, l[1]) for l, r in zip(L[2:-2], Rr[2:-2])]).buffer(0.4).intersection(cp.buffer(-0.5))
+            if not core.is_empty: regs.append(R("cf_skylt", core, "run", None, "FALL-ln", ko=False))
+    return regs
+
+def long_axis(g):
+    mr = g.minimum_rotated_rectangle; c = list(mr.exterior.coords)
+    e = max(((c[i], c[i + 1]) for i in range(4)), key=lambda e: math.hypot(e[1][0] - e[0][0], e[1][1] - e[0][1]))
+    return math.degrees(math.atan2(e[1][1] - e[0][1], e[1][0] - e[0][0])) % 180

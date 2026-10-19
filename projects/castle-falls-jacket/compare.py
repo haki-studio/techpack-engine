@@ -9,7 +9,7 @@ import json, sys
 import numpy as np
 import pyembroidery as pe
 from PIL import Image, ImageDraw, ImageFont
-import mockmap as MM, keepout as KO, make_current as MC
+import mockmap as MM, keepout as KO, make_current as MC, scene as SCN
 
 ZOOMS = {   # element -> [(piece, (x0, y0, x1, y1) mm, caption)]
  "01": [("BK", (-215, 260, -135, 340), "left falls + cliff"), ("BK", (-60, 120, 20, 200), "cloud bank + petals"),
@@ -108,6 +108,20 @@ def sheet(e, size="M"):
         cu = closeup_image(fb, fz); mk, st = pair(P, fb, fz, size)
         txt(d, (10, yy - 20), f"{P} {cap}: x {fb[0]}..{fb[2]}, y {fb[1]}..{fb[3]} mm")
         for i, im in enumerate((cu, mk, st)): out.paste(im, (10 + i * (im.width + 10), yy))
+    # fidelity gate tables (LESSONS A14/A15) from fidelity.py, read off the same final DSTs
+    import os
+    if os.path.exists("out/fidelity_M.json"):
+        FD = json.load(open("out/fidelity_M.json")); lines = ["FIDELITY GATES (size M, final DSTs): qa.motif_match per family (IoU >= 0.70, w/h >= 80 %) + qa.uncovered (gaps >= 25 mm2)"]
+        for P in pcs:
+            if P not in FD: continue
+            for fm, v in FD[P]["families"].items():
+                lines.append(f"  {P} {fm:14s} motifs {v['motifs']:4d}   pass {v['passed']:4d}   min IoU {v['iou_min']}   {'PASS' if v['passed'] == v['motifs'] else 'FAIL'}")
+            lines.append(f"  {P} uncovered gaps >= 25 mm2: {len(FD[P]['gaps'])}   {'PASS' if not FD[P]['gaps'] else 'FAIL'}")
+        gen = [f"{P}: " + ", ".join(SCN.GENERATED.get(P, {}).keys()) for P in pcs if SCN.GENERATED.get(P)]
+        lines.append("  Generated, not traced: " + ("; ".join(gen) if gen else "none") + "  (structure overlays — tile ribs, studs, windows, cords, lobes, florets — sit inside traced silhouettes)")
+        ext = Image.new("RGB", (out.width, out.height + 22 * len(lines) + 20), (255, 255, 255)); ext.paste(out, (0, 0)); d2 = ImageDraw.Draw(ext)
+        for i, l in enumerate(lines): txt(d2, (10, out.height + 8 + i * 22), l)
+        out = ext
     out.save(f"out/compare_{cfcore.ELEMS[e][0]}.png")
     return out.size, [segments(P, size)[3] for P in pcs]
 
