@@ -102,9 +102,9 @@ def p_placement():
     for P in kbcore.PIECES:
         pc = g[F.CODE[P]]; b = PT.cut_poly(pc).bounds; s = (40 if P in ("FR", "FL") else 34) / (b[2] - b[0])
         X = (lambda xx0, b0: (lambda q: xx0 + (q - b0) * s))(x, b[0]); Y = (lambda b1: (lambda q: 34 + (q - b1) * s))(b[1])
-        o.append(f'<path d="M' + " L".join(f"{f(X(x_))} {f(Y(y_))}" for x_, y_ in pc.sew_poly().exterior.coords) + f' Z" fill="{kbcore.FABRIC}" stroke="none"/>')
+        o += PD.piece_svg(pc, X, Y, s, label=False, size="M", lw=0.25, text_mm=1.0)          # (piece_svg fills the piece white: draw it first)
+        o.append(f'<path d="M' + " L".join(f"{f(X(x_))} {f(Y(y_))}" for x_, y_ in pc.sew_poly().exterior.coords) + f' Z" fill="{kbcore.FABRIC}" stroke="#888" stroke-width="0.15"/>')
         im, ab = masked(D[P], 4.0); o.append(img_at(im, X(ab[0]), Y(ab[1]), (ab[2] - ab[0]) * s, (ab[3] - ab[1]) * s))
-        o += PD.piece_svg(pc, X, Y, s, label=False, size="M", lw=0.25, text_mm=1.0)
         if P in ("FR", "FL"):
             w_ = F.keep_geoms("M", P)["welt"]
             o.append(f'<path d="M' + " L".join(f"{f(X(x_))} {f(Y(y_))}" for x_, y_ in w_.exterior.coords) + '" fill="none" stroke="#E0C080" stroke-width="0.35"/>')

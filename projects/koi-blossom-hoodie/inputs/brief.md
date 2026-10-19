@@ -33,3 +33,8 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - Koi slimmed 15 % across the spine to the mockup proportions; fins scaled 1.35 about their root (mockup fin size).
 - Grading: XS–S 92 %, M–XL 100 % (L/XL sew the M art, re-fitted only), XXL–3XL 108 %.
 - Lilies kept 15 mm off the zip; art stops 10 mm above hem band + cuffs (deviations from the mockup, asked as questions).
+- FOUNDER CHANGE 19 Oct: the fish are tetras (inputs/reference_fish.png), not koi — at the mockup fish positions/headings,
+  0.82 x the mockup fish length; palette: Pearl grey -> Lavender grey, Fin grey -> Neon cyan.
+- Hood: founder decision 19 Oct, option 1 = engine/hoodie.py zip-hoodie block; welts = mockup welts (61°) via the welt override.
+- A14/A15: flora silhouettes traced from the mockup pixels (garment details masked first); stems + leaf inner structure
+  are generated, not traced (the 1 px/mm mockup does not resolve them).

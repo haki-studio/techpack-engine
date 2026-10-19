@@ -158,11 +158,11 @@ def summary():
         o.append(t(cx[4], y, f"{r['trims']:,}", 1.8)); o.append(t(cx[5], y, f"{r['trims']/r['stitches']*1e4:.0f}", 1.8))
         o.append(t(cx[6], y, f"{r['stops']}", 1.8)); o.append(t(cx[7], y, f"{len(set(r['colours']))}", 1.8))
         o.append(t(cx[8], y, f"{r['max_stitch']:.2f} mm", 1.8)); o.append(t(cx[9], y, f"{mh(r)*60:.0f} min", 1.8))
-        wc = {k: v for k, v in SUMS[el]["width"].items() if k not in ("KO-ray", "LF-vein")}; wk = max(wc, key=wc.get)
+        wc = {k: v for k, v in SUMS[el]["width"].items() if k not in ("KO-ray", "LF-vein", "FL-line")}; wk = max(wc, key=wc.get)
         o.append(t(cx[10], y, ("all < 1 %" if wc[wk] < 1 else f"{wk} {wc[wk]:.1f}% (tapered tips)"), 1.6, 600, GREEN if wc[wk] < 1 else ORANGE))
     y = 36 + len(PS)*4.6 + 1
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.9, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.9, 700)); o.append(t(cx[9], y, f"{MH:.1f} h", 1.9, 700))
-    o.append(t(12, y + 4.5, f"Split files ({HOOPS} hoopings per jacket): {MH_SPLIT:.1f} h per jacket. Width check = share of a code's area below its minimum width (satin 0.8, run 0.6). Fin/tail rays + leaf midribs are single-run lines by design.", 1.65, 400, MUTED))
+    o.append(t(12, y + 4.5, f"Split files ({HOOPS} hoopings per jacket): {MH_SPLIT:.1f} h per jacket. Width check = share of a code's area below its minimum width (satin 0.8, run 0.6). Stamen lines + leaf midribs are double-run lines by design (not width-checked).", 1.65, 400, MUTED))
     o.append(t(12, y + 7.8, f"{REV} is built for fidelity (LESSONS A11): trims, stops and run time are reported, not limited — clean-up after the strike-off.", 1.65, 400, MUTED))
     qy = y + 15
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))

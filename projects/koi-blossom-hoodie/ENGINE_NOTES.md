@@ -91,3 +91,20 @@ Problems hit while building this product, worked around in project code only. Ea
   the page builders to `engine/hoodie_pages.py` taking `(G, flat_cls)`.
 - **`shrink.py` re-encodes every image as RGB**: a transparent PNG (art on a flat) turns its background black. Workaround: skip
   images with an SMask / alpha. Fix: same in the shared shrink step. Check: render the shrunk T1 and look at it.
+
+## 12. A14/A15 gates on a 1 px/mm mockup (19 Oct 2026)
+- **Small motifs fail IoU on pull compensation alone**: a traced 5–15 mm² petal stitched with 0.2 mm pull per side reads
+  IoU 0.55–0.69 against its own reference. Fix used: inset traced geometry by the pull comp (0.2; 0.32 under 8 mm²) so
+  stitched = traced, and run the gate at 5 px/mm (3 px/mm quantisation alone costs ~0.1 IoU on a Ø2.5 mm dot).
+  Proposed engine fix: `dst2` option `pull_inset=True` for traced regions; `qa.motif_match` docstring: recommend ppm ≥ 5.
+- **`merge_stops` mixes families in one stop** (a navy stem moved into the navy traced-fill stop), so a DST mask split
+  by per-stop codes cannot isolate stems. Workaround: subtract the art's stem footprint (+0.45) from both masks and list
+  stems as "generated, not traced". Proposed: `readback.dst` per-object spans (stop, object id, code) so masks can be
+  split per code from the file itself.
+- **Garment details in a front-view mockup mapped onto pieces**: seams/topstitching land INSIDE the art area after the
+  mockup→piece mapping. `mockref.flora_mask` order that worked: piece clip → welt +4 mm → edge-connected white background
+  → sleeve inner 28 % (body visible behind the sleeve) → replaced-motif footprints → colour test → opening 2 mm (lines) →
+  closing 1.6 mm + fill holes. Proposed: `engine/mockref.py` with this pipeline + a test on a synthetic seam line.
+- **Close-up vs mockup reference conflict**: a motif traced from the close-up does not match the 1 px/mm mockup pixels.
+  Composed reference used: mockup ∪ close-up-traced silhouettes; small mockup bits within 1 mm of a close-up motif are
+  "close-up zone" (counted on the compare sheet, not gated). Proposed: `qa.motif_match(..., exclude=mask)`.

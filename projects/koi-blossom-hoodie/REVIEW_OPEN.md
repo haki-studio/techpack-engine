@@ -10,3 +10,10 @@ Hard limits passed (73 files, ≤11 colours, max 7.41, M FR 43,470/263 FL 27,513
 8. MED Leaves: single-tone herringbone → 2 tones (navy/cobalt/royal) + pale-ice lit-edge highlight on FR vine.
 9. LOW Keep disclosed deviations (lilies 15 mm off zip, art stops 10 mm above hem band) as questions.
 10. LOW L/XL share M FR art (262×503, 43,470 st) — confirm grading intent on G1.
+
+## Rev B status (19 Oct 2026) — see the builder's final report
+1 lilies traced from the close-up (petal outlines + tone regions, radial along each petal axis) · 2 throat/anthers/stamen lines traced ·
+3 close-up registered (cu_register.py, out/closeup_registration.png), G1 + spec p5 say which panels have no close-up ·
+4 compare sheets drawn from the DST read-back, close-up + fish-reference columns, FL hem pair + dark-flower zooms ·
+5/6 SUPERSEDED by the founder (koi -> tetras, kb_fish.py) · 7 FL/FR hem clusters traced from the mockup (A14) ·
+8 two-tone leaves + lit edges, then clipped/filled to the traced silhouettes · 9 zip + hem deviations asked on G4 · 10 grading asked on G1/G4.
