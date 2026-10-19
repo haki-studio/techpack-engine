@@ -1,14 +1,16 @@
 """Koi blossom scene — composed on the size-M pieces (garment / pattern mm, unclipped).
 Every motif position, size and direction is read from the mockup (inputs/front.png, px) — counted, not traced
-(LESSONS A2/A10): 18 koi, 7 flowers, ~60 leaves, 33 floating petals. Detail comes from the close-up
-(inputs/closeup_mockup_koi.png) via kb_motifs.  Output: scene.pkl = {"items": {piece: [...]}, "meta": {...}}.
+(LESSONS A2/A10): 18 koi, 7 flowers, ~85 leaves, 37 floating petals.  Rev B: motif STRUCTURE is traced from the close-up
+(inputs/closeup_mockup_koi.png -> cu_trace.py -> trace/templates.pkl, A12/A13): lilies (petal outlines + tone regions,
+throat, anthers), koi (silhouette, red patches, fins, tail, shading) and free-petal shapes, each mapped onto its mockup
+position (cu_register.py: the close-up drifted ~13 mm, so positions come from the mockup).  Output: scene.pkl = {"items": {piece: [...]}, "meta": {...}}.
 usage: python3 scene.py"""
 import kbcore
 import math, random, pickle, json
 import numpy as np
 from shapely.geometry import Point
 from shapely.ops import unary_union
-import mockmap as MM, front as F, kb_motifs as KM, kbvis
+import mockmap as MM, front as F, kb_motifs as KM, kb_traced as KT, kbvis, json
 
 G_M, MT_M = F.pieces("M")
 S = MM.S                                   # mm per mockup px for motif sizes (fronts + sleeves)
@@ -35,7 +37,7 @@ def add(P, regs, zbase, layer, unit, kind, cluster=None, ko=True):
         sub = r.get("sub", 0)
         r["z"] = zbase + sub + len(ITEMS[P]) * 1e-4
         lay = layer
-        if kind == "koi": lay = {1: 24.1, 2: 24.2, 3: 24.3, 4: 24.4, 5: 24.5, 6: 24.6}[sub]
+        if kind == "koi": lay = {1: 24.1, 2: 24.2, 3: 24.3, 4: 24.4, 4.5: 24.45, 5: 24.5, 6: 24.6}[sub]
         if kind == "flower": lay = 22.2 if r["grp"] in ("FL-cup", "FL-eye", "FL-stamen") else 22.0
         if r["grp"] in ("KO-ray", "LF-vein"): r["ko"] = False
         else: r.setdefault("ko", ko)
@@ -55,6 +57,8 @@ KOI = [((255, 371), (201, 344), 0, 2), ((286, 424), (245, 395), 2, -2), ((343, 4
        ((51, 540), (89, 489), 3, 2), ((105, 671), (57, 626), 0, -2), ((79, 811), (50, 753), 2, 2),            # SR
        ((707, 756), (680, 669), 3, -3), ((651, 813), (615, 861), 1, 2)]                                       # SL
 rng = random.Random(11)
+REG = json.load(open("trace/closeup_reg.json"))
+CU_OF = {int(v[3:]): int(k[6:]) for k, v in REG["koi_match"].items()}     # scene koi index -> close-up koi template it IS
 koi_info = []
 for i, (hd, tl, pat, bend) in enumerate(KOI):
     P = piece_of(*hd)
@@ -62,8 +66,9 @@ for i, (hd, tl, pat, bend) in enumerate(KOI):
     Lpx = math.hypot(hd[0] - tl[0], hd[1] - tl[1]); Lmm = max(50.0, Lpx * S * 0.98)      # tails read short in the render
     c = np.array(to_mm(P, (hd[0] + tl[0]) / 2, (hd[1] + tl[1]) / 2))
     u = f"koi{i}"
-    regs, sil = KM.koi(c[0], c[1], Lmm, a, rng, pattern=pat, bend=bend, unit=u)
-    add(P, regs, 5000 + i*10, 24, u, "koi"); koi_info.append(dict(piece=P, unit=u, L=round(Lmm, 1), c=c.tolist(), ang=a))
+    k_tpl = CU_OF.get(i, pat); mir = (i not in CU_OF) and (bend < 0)
+    regs, sil = KT.koi(k_tpl, c[0], c[1], Lmm, a, mirror=mir, unit=u)
+    add(P, regs, 5000 + i*10, 24, u, "koi"); koi_info.append(dict(piece=P, unit=u, L=round(Lmm, 1), c=c.tolist(), ang=a, template=KT.KOI_NAMES[k_tpl % 4], mirror=mir, traced_from_closeup=i in CU_OF))
 
 # ================================================================ flower clusters (flowers, leaves, stems), px from the mockup
 # leaf = (base px, tip px, tone, bend); flower = (centre px, R px, tones, rot, n)
@@ -91,7 +96,10 @@ CLUSTERS = {
     flowers=[((326, 745), 26, "mid", -100, 5)],
     stems=[([(300, 738), (316, 752), (330, 758)], 1.6, 1.0, "kb_navy")],
     leaves=[((318, 750), (294, 745), "ice", 0.06), ((321, 763), (298, 769), "sky", -0.06), ((330, 728), (336, 708), "royal", 0.05),
-            ((338, 762), (350, 772), "cobalt", 0.04)]),
+            ((338, 762), (350, 772), "cobalt", 0.04),
+            # Rev B: dark-blue leaves beside the FR hem flower (mockup)
+            ((306, 758), (284, 774), "navy", 0.05), ((340, 742), (354, 722), "cobalt", -0.05), ((312, 736), (298, 716), "navy", 0.05),
+            ((344, 768), (362, 782), "royal", -0.04)]),
  "FL_bot": dict(
     flowers=[((482, 735), 40, "light", -85, 6), ((560, 744), 27, "dark", -70, 6)],
     stems=[([(470, 758), (510, 767), (556, 765)], 1.8, 1.1, "kb_navy"),
@@ -101,7 +109,11 @@ CLUSTERS = {
             ((500, 768), (540, 760), "ice", -0.06), ((594, 650), (588, 615), "royal", 0.05), ((594, 668), (566, 656), "blue", -0.05),
             ((597, 664), (614, 640), "blue", 0.05), ((591, 700), (568, 684), "ice", 0.05), ((597, 702), (614, 722), "royal", -0.05),
             ((590, 628), (578, 606), "cobalt", 0.04), ((599, 708), (612, 690), "sky", -0.04),
-            ((578, 764), (602, 748), "royal", 0.05), ((548, 770), (520, 780), "ice", -0.05), ((596, 726), (612, 738), "cobalt", 0.04)]),
+            ((578, 764), (602, 748), "royal", 0.05), ((548, 770), (520, 780), "ice", -0.05), ((596, 726), (612, 738), "cobalt", 0.04),
+            # Rev B (review item 7, mockup counts): more leaves round the lily, the dark flower and up the right-hand vine
+            ((520, 752), (545, 738), "cobalt", 0.05), ((515, 772), (538, 786), "navy", -0.05), ((470, 705), (462, 680), "royal", 0.05),
+            ((440, 748), (418, 754), "cobalt", -0.05), ((585, 735), (600, 715), "navy", 0.05), ((560, 765), (585, 778), "cobalt", -0.04),
+            ((600, 690), (618, 676), "navy", 0.05), ((592, 645), (575, 628), "blue", -0.05)]),
  "SR_cuff": dict(
     flowers=[((45, 868), 25, "mid", -80, 6)],
     stems=[([(45, 870), (48, 842), (55, 815)], 1.5, 1.0, "kb_cobalt")],
@@ -110,6 +122,14 @@ CLUSTERS = {
 }
 rng = random.Random(23)
 cl_info = {}
+# which traced lily each mockup flower uses: (template, tone shift (+ = darker), mirror, rotation deg)
+LILY = {("FR_vine", 0): ("cu_lily0", 0, False, 0.0),    # = close-up flower 1 (big pale lily)
+        ("FR_vine", 1): ("cu_lily1", 0, False, 0.0),    # = close-up flower 2 (mid lily)
+        ("FR_bot", 0): ("cu_lily1", 0, True, 15.0),
+        ("FL_bot", 0): ("cu_lily0", 0, True, 0.0),      # big light lily at the FL hem
+        ("FL_bot", 1): ("cu_lily1", 1, False, -20.0),   # dark flower
+        ("SR_cuff", 0): ("cu_lily1", 0, True, 10.0)}
+lily_info = []
 for cname, cl in CLUSTERS.items():
     P = piece_of(*cl["flowers"][0][0])
     n_l = 0
@@ -118,10 +138,16 @@ for cname, cl in CLUSTERS.items():
         regs, _ = KM.stem(mm, w0, w1, col, unit=u); add(P, regs, 1000 + k, 20, u, "stem", cname)
     for k, (b, t, tone, bend) in enumerate(cl["leaves"]):
         a, L, A = ang_of(P, b, t); u = f"{cname}_leaf{k}"
-        regs, _ = KM.leaf(A[0], A[1], L, a, rng, tone, bend=bend, unit=u); add(P, regs, 2000 + k*5, 21, u, "leaf", cname); n_l += 1
+        regs, _ = KM.leaf(A[0], A[1], L, a, rng, tone, bend=bend, unit=u, lit=(cname == "FR_vine" and tone in ("ice", "sky", "blue", "royal"))); add(P, regs, 2000 + k*5, 21, u, "leaf", cname); n_l += 1
     for k, (c, Rpx, tones, rot, n) in enumerate(cl["flowers"]):
         cm = to_mm(P, *c); u = f"{cname}_flower{k}"
-        regs, _ = KM.flower(cm[0], cm[1], Rpx * S, rot, rng, tones, n=n, unit=u); add(P, regs, 3000 + k*100, 22, u, "flower", cname)
+        tpl, shift, mir, rot2 = LILY[(cname, k)]
+        regs, _ = KT.lily(tpl, cm[0], cm[1], 0.9 * Rpx * S, rot=rot2, mirror=mir, shift=shift, unit=u); add(P, regs, 3000 + k*100, 22, u, "flower", cname)
+        lily_info.append(dict(unit=u, piece=P, c=[float(cm[0]), float(cm[1])], template=tpl, shift=shift, mirror=mir, rot=rot2, R=round(0.9 * Rpx * S, 1), close_up=(cname, k) in (("FR_vine", 0), ("FR_vine", 1))))
+    # stems run BEHIND the lilies: no stem line through the gaps between petals
+    fl_sil = unary_union([r["geom"] for r in ITEMS[P] if r.get("cluster") == cname and r["unit"].split("_")[-1].startswith("flower")]).buffer(1.5)
+    for r in ITEMS[P]:
+        if r.get("cluster") == cname and r["grp"] == "ST": r["geom"] = r["geom"].difference(fl_sil).buffer(0)
     cl_info[cname] = dict(piece=P, flowers=len(cl["flowers"]), leaves=n_l, stems=len(cl["stems"]))
 
 # ================================================================ floating petals (centre px, length px, tip angle deg in px space, tone)
@@ -134,7 +160,7 @@ PETALS = [
  (472, 613, 12, -80, "royal"), (505, 568, 18, -15, "sky"), (532, 569, 18, 5, "sky"), (565, 640, 14, 45, "ice"),                 # FL 9
  (65, 591, 26, 180, "sky"), (63, 756, 24, -80, "sky"), (88, 768, 20, -80, "sky"), (100, 792, 22, -60, "sky"),                   # SR 4
  (658, 582, 26, 35, "sky"), (676, 622, 26, 100, "white"), (686, 625, 14, 100, "royal"), (662, 705, 18, -80, "sky"), (668, 784, 30, 125, "sky")]  # SL 5
-TONE = {"white": "ice", "ice": "ice", "sky": "sky", "blue": "blue", "royal": "royal"}
+PTONE = {"white": ("kb_cream", "kb_white"), "ice": ("kb_sky", "kb_ice"), "sky": ("kb_blue", "kb_sky"), "blue": ("kb_royal", "kb_blue"), "royal": ("kb_cobalt", "kb_royal")}
 rng = random.Random(5)
 pet_info = []
 for k, (px, py, Lpx, apx, tone) in enumerate(PETALS):
@@ -143,13 +169,10 @@ for k, (px, py, Lpx, apx, tone) in enumerate(PETALS):
     a, L, A = ang_of(P, (px - math.cos(a_)*d, py - math.sin(a_)*d), (px + math.cos(a_)*d, py + math.sin(a_)*d))
     L = max(L, 9.0) if tone != "white" else max(L, 8.0)
     u = f"petal{k}"
-    regs, _ = KM.float_petal(A[0], A[1], L * 1.05, a, rng, TONE[tone], unit=u)
-    if tone == "white":
-        for r in regs:
-            r["col"] = {"kb_ice": "kb_white", "kb_white": "kb_cream", "kb_sky": "kb_cream"}.get(r["col"], r["col"])
+    regs, _ = KT.petal(k, A[0], A[1], L * 1.05, a, rng, PTONE[tone], unit=u)
     add(P, regs, 4000 + k, 23, u, "petal"); pet_info.append(dict(piece=P, unit=u, L=round(L, 1)))
 
-META = dict(koi=koi_info, clusters=cl_info, petals=pet_info,
+META = dict(koi=koi_info, clusters=cl_info, petals=pet_info, lilies=lily_info,
             counts={P: dict(koi=sum(1 for k in koi_info if k["piece"] == P), petals=sum(1 for p in pet_info if p["piece"] == P),
                             flowers=sum(c["flowers"] for c in cl_info.values() if c["piece"] == P),
                             leaves=sum(c["leaves"] for c in cl_info.values() if c["piece"] == P)) for P in kbcore.PIECES},

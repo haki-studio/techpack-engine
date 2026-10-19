@@ -195,8 +195,9 @@ def flower(cx, cy, Rr, rot, rng, tones="light", n=6, cup=True, unit=None, petal_
     return regs, unary_union(sils + [eye]).buffer(0.3)
 
 # ================================================================ leaves, stems, floating petals
-LEAF_TONES = {"ice": ("kb_ice", "kb_sky", "kb_white"), "sky": ("kb_sky", "kb_blue", "kb_ice"), "blue": ("kb_blue", "kb_royal", "kb_sky"),
-              "royal": ("kb_royal", "kb_cobalt", "kb_blue"), "cobalt": ("kb_cobalt", "kb_navy", "kb_royal"), "navy": ("kb_navy", "kb_navy", "kb_cobalt")}
+LEAF_TONES = {   # Rev B (review item 8): two clearly different tones per leaf (light half, shade half, tip step)
+              "ice": ("kb_ice", "kb_sky", "kb_white"), "sky": ("kb_sky", "kb_royal", "kb_ice"), "blue": ("kb_blue", "kb_cobalt", "kb_sky"),
+              "royal": ("kb_royal", "kb_navy", "kb_blue"), "cobalt": ("kb_cobalt", "kb_navy", "kb_royal"), "navy": ("kb_cobalt", "kb_navy", "kb_royal")}
 
 def leaf_poly(L, W, bend=0.0, n=48):
     t = np.linspace(0, 1, n)
@@ -205,7 +206,7 @@ def leaf_poly(L, W, bend=0.0, n=48):
     top = np.c_[t*L, cyy - half]; bot = np.c_[t*L, cyy + half]
     return Polygon(np.r_[top, bot[::-1]]).buffer(0), LineString(np.c_[t*L, cyy][4:-4])
 
-def leaf(x, y, L, ang, rng, tone="blue", bend=0.0, W=None, unit=None, vein=True):
+def leaf(x, y, L, ang, rng, tone="blue", bend=0.0, W=None, unit=None, vein=True, lit=False):
     """lanceolate leaf from its base (x, y) toward `ang`: light half + shade half split on the midrib, a lit tip
     step (zig-zag), midrib run on top for leaves > 14 mm."""
     W = W or L*rng.uniform(0.28, 0.36)
@@ -219,6 +220,14 @@ def leaf(x, y, L, ang, rng, tone="blue", bend=0.0, W=None, unit=None, vein=True)
     light, shade = (up, lo) if rng.random() < 0.5 else (lo, up)
     regs = [R(lt, light.difference(tipcut), "satin", "auto", "LF", 0), R(dk, shade.difference(tipcut), "satin", "auto", "LF-dk", 0),
             R(tp, tipcut.intersection(light).buffer(0), "satin", "auto", "LF-tip", 1), R(lt, tipcut.intersection(shade).buffer(0), "satin", "auto", "LF-tip", 1)]
+    if lit and L > 10:      # pale-ice lit edge along the light half (FR vine, review item 8)
+        sgn = -1 if light is up else 1
+        t_ = np.linspace(0.12, 0.80, 24); hw = W/2 * (np.sin(np.pi * t_**0.9)**0.9); cyy = bend * L * (t_ - t_**2) * 2
+        edge = LineString(np.c_[t_*L, cyy + sgn*(hw - 0.55)])
+        hl = edge.buffer(0.55, cap_style="round").intersection(p.buffer(-0.05)).buffer(0)
+        if not hl.is_empty:
+            regs = [dict(r, geom=r["geom"].difference(hl.buffer(0.05)).buffer(0)) for r in regs]
+            regs.append(R("kb_ice" if tone not in ("ice",) else "kb_white", hl, "satin", "auto", "LF-lit", 1))
     if vein and L > 14:
         regs.append(R(tp if tone in ("cobalt", "navy", "royal") else dk, mid.buffer(0.32).intersection(p.buffer(-0.5)).intersection(Point(0, 0).buffer(L*0.8)), "run", None, "LF-vein", 2))
     out = [dict(r, geom=T(r["geom"], x, y, ang), unit=unit) for r in regs if not r["geom"].is_empty]

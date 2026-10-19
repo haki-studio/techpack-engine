@@ -36,24 +36,26 @@ tech.COLOUR_ORDER = KB_ORDER + [c for c in tech.COLOUR_ORDER if c not in KB_ORDE
 # ---------------------------------------------------------------- region codes
 # code -> (name, stitch, angle rule, density, stitch length, underlay, pull comp, notes)
 KB_RULES = {
- "KO":        ("Koi body",                 "Satin, turning",     "across the body",          "0.40", "—",   "edge run + centre run",   "0.20", "split satin > 7"),
- "KO-shade":  ("Koi body shading",         "Satin, turning",     "across the body",          "0.40", "—",   "centre run",              "0.20", "long-short edge into body"),
- "KO-red":    ("Koi red patch",            "Satin, turning",     "across the body",          "0.40", "—",   "centre run",              "0.20", "sewn on top of the body"),
+ "KO":        ("Koi body",                 "Tatami",             "along the spine (koi axis)", "0.45", "3.5", "edge run + 90° lattice > 60 mm²", "0.20", "traced silhouette (close-up)"),
+ "KO-shade":  ("Koi body shading",         "Tatami",             "along the spine",          "0.45", "3.5", "edge run",                "0.20", "traced pearl shading"),
+ "KO-scale":  ("Koi scale rows",           "Run (double)",       "chevron rows across back", "—",    "2.6", "none",                    "—",    "on top of the white body"),
+ "KO-red":    ("Koi red patch",            "Tatami",             "along the spine (same as body)", "0.45", "3.5", "edge run",        "0.20", "2 crisp traced patches, on top"),
  "KO-head":   ("Koi head",                 "Satin",              "across head",              "0.40", "—",   "centre run",              "0.15", ""),
- "KO-eye":    ("Koi eye",                  "Satin dot",          "across dot",               "0.38", "—",   "none",                    "0.10", "Ø ≥ 1.2"),
- "KO-fin":    ("Koi fin",                  "Satin, radial",      "radial from fin base",     "0.42", "—",   "none",                    "0.15", ""),
- "KO-tail":   ("Koi tail",                 "Satin, radial",      "radial from tail root",    "0.42", "—",   "centre run",              "0.15", "forked"),
- "KO-ray":    ("Fin + tail rays",          "Run (double)",       "follows line",             "—",    "2.0", "none",                    "—",    "sewn on top of the fin"),
- "FL-petal":  ("Flower petal (body tone)", "Satin, radial",      "radial from flower centre","0.40", "—",   "edge run + centre run",   "0.20", "long-short tone steps"),
- "FL-tip":    ("Flower petal tip / edge",  "Satin, radial",      "radial from flower centre","0.40", "—",   "centre run",              "0.20", "zig-zag tone boundary"),
- "FL-base":   ("Flower petal base",        "Satin, radial",      "radial from flower centre","0.40", "—",   "centre run",              "0.20", ""),
- "FL-hl":     ("Petal highlight stroke",   "Satin",              "along petal",              "0.40", "—",   "none",                    "0.15", "on top"),
- "FL-cup":    ("Flower inner cup",         "Satin, radial",      "radial from flower centre","0.38", "—",   "none",                    "0.15", "cream inner petals"),
- "FL-eye":    ("Flower centre",            "Satin, radial",      "radial",                   "0.38", "—",   "none",                    "0.15", ""),
- "FL-stamen": ("Stamens",                  "Satin dot",          "across dot",               "0.38", "—",   "none",                    "0.10", "Ø ≥ 1.2"),
+ "KO-eye":    ("Koi eye",                  "Satin dot",          "across dot",               "0.38", "—",   "none",                    "0.10", "Ø 1.6"),
+ "KO-fin":    ("Koi fin",                  "Satin, radial",      "fan from the fin base",    "0.40", "—",   "none",                    "0.15", "traced fin outline"),
+ "KO-tail":   ("Koi tail",                 "Satin, radial",      "fan from the tail root",   "0.40", "—",   "centre run",              "0.15", "forked, traced; white base step"),
+ "KO-ray":    ("Fin + tail rays",          "Run (double)",       "follows line",             "—",    "2.6", "none",                    "—",    "sewn on top of fin / tail"),
+ "FL-petal":  ("Lily petal, mid tone",     "Satin, radial (long-short)", "along the petal axis (from the flower centre)", "0.40", "—", "edge run > 4 mm", "0.20", "tone regions traced from the close-up"),
+ "FL-tip":    ("Lily petal, tip tone",     "Satin, radial (long-short)", "along the petal axis",   "0.40", "—",   "none",                    "0.20", "lightest tone of the petal"),
+ "FL-base":   ("Lily petal, base tone",    "Satin, radial (long-short)", "along the petal axis",   "0.40", "—",   "edge run > 4 mm",         "0.20", "darkest tone of the petal"),
+ "FL-hl":     ("Lily cream edge / highlight", "Satin, radial (long-short)", "along the petal axis", "0.40", "—",  "none",                    "0.15", "traced cream edges"),
+ "FL-eye":    ("Lily throat",              "Satin, radial",      "radial",                   "0.38", "—",   "none",                    "0.15", "deep-blue, traced"),
+ "FL-line":   ("Stamen lines",             "Run (double)",       "throat -> anther",         "—",    "2.0", "none",                    "—",    "over the throat"),
+ "FL-stamen": ("Anther knots",             "Satin",              "across knot",              "0.38", "—",   "none",                    "0.10", "4-6 uneven, traced"),
  "LF":        ("Leaf, light half",         "Satin, turning",     "midrib ± 45°",             "0.40", "—",   "centre run",              "0.20", "split satin if > 7"),
  "LF-dk":     ("Leaf, shade half",         "Satin, turning",     "midrib ± 45°",             "0.40", "—",   "centre run",              "0.20", ""),
  "LF-tip":    ("Leaf tip / edge tone",     "Satin, turning",     "midrib ± 45°",             "0.40", "—",   "none",                    "0.20", "long-short step"),
+ "LF-lit":    ("Leaf lit edge",            "Satin, turning",     "across the stroke",        "0.40", "—",   "none",                    "0.15", "pale-ice highlight on one edge"),
  "LF-vein":   ("Leaf midrib",              "Run (double)",       "follows line",             "—",    "2.0", "none",                    "—",    "on top"),
  "ST":        ("Stem / vine",              "Satin, turning",     "across stem",              "0.40", "—",   "centre run",              "0.15", "≥ 1.2 wide"),
  "PT":        ("Floating petal",           "Satin, turning",     "across petal",             "0.40", "—",   "centre run",              "0.20", ""),
@@ -83,5 +85,5 @@ PIECE_NAME = {"FR": "wearer's right front", "FL": "wearer's left front", "SR": "
 PIECE_CODE = {"FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
-REV_EMB = "Rev A"; REV_GAR = "Rev A"; DATE = "16 Oct 2026"
+REV_EMB = "Rev B"; REV_GAR = "Rev A"; DATE = "19 Oct 2026"
 def outdir(P): e = ELEM_OF[P]; return f"out/{e}_{ELEMS[e][0]}"
