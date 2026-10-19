@@ -20,6 +20,9 @@ REV, DATE = kbcore.REV_EMB, kbcore.DATE
 SB.FOOT = f"HAKI STUDIOS · {kbcore.NAME} · EMBROIDERY · {REV} · {DATE}"
 D = pickle.load(open("art_M.pkl", "rb")); V = {p: D[p] for p in kbcore.PIECES}
 CUR = json.load(open("dst_current.json")); ALL = json.load(open("dst_all.json")); META = json.load(open("scene_meta.json"))
+FID = json.load(open("out/fidelity_M.json"))
+# earlier revisions' size-M totals as read back from their DSTs (recorded in REVIEW_OPEN.md, Rev B review; those files are superseded)
+HIST = {"A": {"FR": 43470, "FL": 27513}, "B": {"FR": 40325, "FL": 25897}}
 SUMS = {el: json.load(open(f"out/{el}_{kbcore.ELEMS[el][0]}/summary.json")) for el in kbcore.ELEMS}
 PS = kbcore.PIECES
 BB = {p: unary_union([r["geom"] for r in V[p]]).bounds for p in PS}
@@ -47,11 +50,13 @@ def cover(index):
     tag, h2 = img_tag(b, 110, 62, 86); o.append(tag); o.append(t(110, 62 + h2 + 3.5, "SLEEVES (pattern pieces, front half embroidered)", 2.0, 700))
     o.append(t(14, 54 + h + 8, "Back + hood: no embroidery [proposed — confirm, the mockup shows the front only].", 1.9, 600, ORANGE))
     REG = json.load(open("trace/closeup_reg.json"))
-    gl = [f"REFERENCE: lilies + petals traced from the AI close-up of the FR upper panel (registered, drift {REG['projective']['mean_mm']} mm -> positions from the mockup).",
-          "NO close-up for: FR hem lily, the whole FL panel, both sleeves — redrawn from the low-res mockup with the traced templates. FISH: tetras from inputs/reference_fish.png.",
+    gl = [f"REFERENCE (Rev C): every motif traced from the input pixels. FR upper lilies + leaves: AI close-up (registered, drift {REG['projective']['mean_mm']} mm, pasted per lily disc). "
+          "FR hem lily, FL hem lily + dark flower, SR cuff lily, all leaves/stems/petals: low-res mockup (~1 px/mm, redrawn).",
+          "GENERATED, NOT TRACED: the guide lines that split each lily silhouette into its overlapping petals, the stamen lines. FISH: tetras traced from reference_fish.png, "
+          "0.82 x the mockup fish length = FOUNDER DECISION 19 Oct.",
           f"GRADING [proposed — confirm]: XS–S 92 %, M–XL 100 % (L + XL sew the M art: FR {ALL['L']['FR']['full']['size_mm'][0]:.0f} × {ALL['L']['FR']['full']['size_mm'][1]:.0f}, "
           f"{ALL['L']['FR']['full']['stitches']:,} / {ALL['XL']['FR']['full']['stitches']:,} st, only re-fitted to their keep-outs), XXL–3XL 108 %."]
-    for i, l in enumerate(gl): o.append(t(14, 54 + h + 12 + i*3.4, l, 1.75, 600, ORANGE if i == 2 else INK))
+    for i, l in enumerate(gl): o.append(t(14, 54 + h + 12 + i*3.4, l, 1.6, 600, ORANGE if i == 2 else INK))
     ry = 54 + h + 12 + len(gl)*3.4 + 3
     o.append(t(14, ry, "REVISION LOG", 2.2, 700))
     import textwrap
@@ -164,18 +169,23 @@ def summary():
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.9, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.9, 700)); o.append(t(cx[9], y, f"{MH:.1f} h", 1.9, 700))
     o.append(t(12, y + 4.5, f"Split files ({HOOPS} hoopings per jacket): {MH_SPLIT:.1f} h per jacket. Width check = share of a code's area below its minimum width (satin 0.8, run 0.6). Stamen lines + leaf midribs are double-run lines by design (not width-checked).", 1.65, 400, MUTED))
     o.append(t(12, y + 7.8, f"{REV} is built for fidelity (LESSONS A11): trims, stops and run time are reported, not limited — clean-up after the strike-off.", 1.65, 400, MUTED))
+    sb = {p_: FID[p_]["stitches_by_family"] for p_ in ("FR", "FL")}
+    o.append(t(12, y + 11.1, f"Stitch count history (FR / FL): Rev A koi {HIST['A']['FR']:,} / {HIST['A']['FL']:,} -> Rev B tetras {HIST['B']['FR']:,} / {HIST['B']['FL']:,} -> {REV} {CUR['FR']['stitches']:,} / {CUR['FL']['stitches']:,} "
+                         f"(fish {sb['FR'].get('fish', 0):,} / {sb['FL'].get('fish', 0):,} + flora {sb['FR'].get('flora', 0):,} / {sb['FL'].get('flora', 0):,} stitches, split in the DST by fidelity.py). "
+                         "Rev B fell vs Rev A because a 0.82 x tetra is a far smaller fill than a koi; no flora was thinned (Rev C flora = every traced pixel area).", 1.55, 400, MUTED))
     qy = y + 15
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
     qs = [f"1. Frame: on {FR_S} the taller pieces need 2 hoopings (split S1/S2 with registration crosses, G5/G6); a larger / jacket frame removes the joins — which frames do you have?",
           "2. Thread board: all 12 targets are read from a low-res AI mockup — approve physical colours (G3), especially the 6 blues against the washed navy shell.",
           "3. Shell: assumed washed navy 12 oz duck, piece-dyed and pre-washed before embroidery. If the jacket is garment-washed after embroidery, wash-test the sew-out.",
           "4. Back, hood and the back half of the sleeves: the mockup shows the front only — assumed plain. Confirm (or send a back / hood mockup).",
-          "5. Hem band + cuffs: the mockup flowers run over the band / cuff seams; the art stops 10 above them (band + cuffs not embroidered). OK, or embroider the band?",
+          f"5. Hem band + cuffs: the mockup flowers run over the band / cuff seams; the art stops 10 above them (keep-out). Mockup blue left unstitched in that strip, size M: "
+          f"FR {FID['FR']['band_zone_mm2']:.0f}, FL {FID['FL']['band_zone_mm2']:.0f}, SR {FID['SR']['band_zone_mm2']:.0f} mm2 (fidelity.py). OK, or embroider the band?",
           f"6. Grading: A 92 % (XS–S) · B 100 % (M–XL) · C 108 % (XXL–3XL). L + XL sew the M art at 100 % (FR {ALL['L']['FR']['full']['stitches']:,} / {ALL['XL']['FR']['full']['stitches']:,} st vs M {ALL['M']['FR']['full']['stitches']:,}) — OK, or scale L/XL (e.g. 104 %)?",
           "6b. Zip: the mockup lilies touch the zip; the art keeps 15 off CF on both fronts (FR hem lily moved ~15 mm). OK?",
           "7. Hood: CLOSED 19 Oct — founder chose the zip-hoodie block (engine hoodie.py); placements + keep-outs use it with the mockup welts (garment T pages).",
           f"8. Welt pockets: at the mockup position and angle ({F.WELT_ANG:.0f}°, hoodie.draft welt override), 1.4 × 13 [proposed]. Confirm before the art is frozen.",
-          "9. Reference: lilies traced from ONE AI close-up (FR upper); FL, the FR hem lily and the sleeves are redrawn from the low-res mockup with those templates. Fish = tetras from the founder's reference_fish.png (one reference image; sizes + headings from the mockup).",
+          "9. Fish size: FOUNDER DECISION 19 Oct — tetras at 0.82 x the mockup fish length (\"82 % is fine\"); closed.",
           "9b. Product name: shown as 'Blossom Tetra' now that the fish are not koi (slug + style code HK-HD-KOIB-NV kept). Confirm the name.",
           "10. DST/PES are production-intent drafts: the factory digitizer checks density + pull on the shell and edits before the strike-off."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i*3.6, q, 1.75))

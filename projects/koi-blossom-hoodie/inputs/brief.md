@@ -38,3 +38,18 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - Hood: founder decision 19 Oct, option 1 = engine/hoodie.py zip-hoodie block; welts = mockup welts (61°) via the welt override.
 - A14/A15: flora silhouettes traced from the mockup pixels (garment details masked first); stems + leaf inner structure
   are generated, not traced (the 1 px/mm mockup does not resolve them).
+
+## Founder decisions (19 Oct 2026) — not PROPOSED
+- Fish = tetras per inputs/reference_fish.png, not koi.
+- Fish size: 0.82 x the mockup fish length ("82 % is fine", via the coordinator) — overrides the review's "full length".
+- Pattern: zip-hoodie block (engine/hoodie.py, hood option 1) with the mockup welt override.
+
+## Assumptions (Rev C, 19 Oct 2026) [PROPOSED — confirm]
+- Every motif traced from the input pixels (Rev B review): FR upper lilies + leaves from the close-up (pasted per lily disc on its
+  registration), every other lily / leaf / stem / petal from the ~1 px/mm mockup (redrawn at that resolution; lily petal fans read on
+  8-10x gridded zooms). Gate references (refmask.py) from the input pixels only.
+- Fish: reference tetra (reference_fish.png pixels: silhouette + facets) at the mockup fish poses measured from the mockup pixels.
+  The SL lower fish swims head-down-left (Rev B had it reversed).
+- Thread "Lavender blue" #8F98C2 (was Lavender grey #B9B5CC) = the reference fish flank colour (#8088AD) +12 %; lab dip on F1.
+- Flora threads chosen per pixel by nearest thread colour (Lab) from the 7 blues/white; slate is used by the fish only.
+- Still open: hem band / cuffs not embroidered (art 10 above the seam), 15 off the zip; L/XL sew the M art (grading).

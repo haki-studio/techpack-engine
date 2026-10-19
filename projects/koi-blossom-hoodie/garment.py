@@ -1,6 +1,6 @@
 """Garment pages T1-T8 + pattern (DXF per size + all sizes, 1:1 plot PDF size M) for the blossom tetra hoodie.
 Block = zip-hoodie (engine/hoodie.py: Drum Island body + 3-panel sherpa hood + elastic self-fabric hem / cuff bands;
-founder decision 19 Oct 2026, hood option 1) with this design's welt override (mockup welts, 60°, PROPOSED).
+founder decision 19 Oct 2026, hood option 1) with this design's welt override (mockup welts, angle from front.WELT_ANG, PROPOSED).
 Pages T2-T6 reuse the zip-hoodie block pages (projects/zip-hoodie-block/build.py), fed with THIS design's pattern;
 T1, T7 (embroidery placement per size) and T8 (questions + revisions) are this design's. Every number is read from the
 pattern (hoodie.draft / measure) or the stitch files (dst_all.json).  usage: python3 garment.py"""
@@ -158,7 +158,7 @@ def p_questions():
     for q in qs: o.append(t(12, y, q, 1.75, 400, PROP)); y += 4.6
     y += 6; o.append(t(12, y, "REVISION LOG", 2.4, 700)); y += 5
     import textwrap
-    revs = [("Garment Rev A", DATE, "Garment pages + pattern: zip-hoodie block (founder decision 19 Oct, hood option 1) with this design's welt override (mockup welts, 60°)."),
+    revs = [("Garment Rev A", DATE, "Garment pages + pattern: zip-hoodie block (founder decision 19 Oct, hood option 1) with this design's welt override (mockup welts, " + f"{F.WELT_ANG:.0f}°)."),
             ] + [(f"Embroidery {rv}", dt, txt) for rv, dt, txt in kbcore.REV_LOG]
     for rv, dt, txt in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(46, y, dt, 1.7))

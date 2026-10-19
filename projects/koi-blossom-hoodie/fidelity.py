@@ -1,120 +1,173 @@
-"""LESSONS A14/A15 gates on the shipped size-M DSTs: qa.motif_match per motif family + qa.uncovered, every piece.
-Families: floating petals + lily/leaf clusters (reference = the mockup's embroidery pixels, garment details masked out
-first: welt boxes, zip, seams, hem band, everything outside the art keep-outs, and the mockup koi, which the founder
-replaced by tetras); fish (reference = the COMPOSED target: reference_fish.png proportions at the mockup positions,
-i.e. the art's fish regions). Out masks are drawn from the DST read-back, split by what each colour stop sews
-(result json per_stop codes: FI-* = fish, everything else = flora).
-Output: out/fidelity_M.json + out/fidelity_<piece>.png (masks) — tables printed on the compare sheets.
-usage: python3 fidelity.py"""
-import kbcore, json, pickle, math, sys
+"""LESSONS A13/A14/A15 gates on the shipped size-M DSTs (Rev C) — every REFERENCE mask from input pixels only (refmask.py).
+
+Reference (refmask.py, reads no art / scene / template):
+  flora   refmask.flora(P): the mockup's embroidery pixels (the two close-up lilies pasted in their registration discs
+          on FR), garment details + the mockup fish masked first. Split into families by size: floating petals
+          (components < 150 mm2) and clusters (>= 150 mm2: lilies + leaves + stems, stems INCLUDED).
+  lilies  per lily: the same flora pixels inside the lily's disc (centre + radius read on the input images:
+          floratrace guides / close-up registration) — silhouette + tone + row-direction rows.
+  fish    refmask.fish_ref(P): the founder's reference tetra pixels at each mockup fish pose (pose from the mockup
+          pixels), 0.82 x the mockup length (founder decision).
+Out masks: every sewn stitch of the DST as a 0.4 mm thread line, closed 0.5 mm (row spacing), NO hole filling.
+Fish vs flora stitches: stops that sew only FI-* codes are fish; a stop that also sews flora (shared thread colour after
+merge_stops) is split by the fish pose boxes (from the mockup pixels).
+Gates: qa.motif_match (IoU >= 0.70, width + height >= 80 %) per motif; qa.uncovered (gaps >= 25 mm2);
+A13 texture primitives: tone agreement (reference luminance quartiles vs the DST's thread luminance quartiles, same
+pixels: exact + within one step), lily row direction (median angle between stitches and the petal axis = radial from
+the lily centre), fish facet tone agreement.
+Output: out/fidelity_M.json + out/fidelity_<piece>.png.   usage: python3 fidelity.py"""
+import kbcore, json, math, sys
 import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage as ndi
-from shapely.geometry import LineString, Point
-from shapely.ops import unary_union
 import pyembroidery as pe
-import qa, mockmap as MM, front as F, mockref as MR
+import qa, refmask as RM, front as F
+import floratrace as FT_guides                      # only the lily centres (input readings), never its masks
 
-SIZE = "M"; PPM = MR.PPM
-g, mt = F.pieces(SIZE)
-BB = {"FR": (-300, -60, 0, 520), "FL": (0, -60, 300, 520), "SR": (-10, -110, 260, 470), "SL": (-260, -110, 10, 470)}
-META = pickle.load(open("scene.pkl", "rb"))["meta"]; ART = pickle.load(open(f"art_{SIZE}.pkl", "rb"))
+SIZE = "M"; PPM = RM.PPM
+_, mt = F.pieces(SIZE)
 
-def grid(bb): return int((bb[3] - bb[1]) * PPM), int((bb[2] - bb[0]) * PPM)
+def hexrgb(h): h = h.lstrip("#"); return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
 
-def raster(geoms, bb):
-    H, W = grid(bb); im = Image.new("L", (W, H), 0); d = ImageDraw.Draw(im)
-    T = lambda cs: [((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in cs]
-    for gg in geoms:
-        for p in (gg.geoms if hasattr(gg, "geoms") else [gg]):
-            if p.geom_type != "Polygon" or p.is_empty: continue
-            d.polygon(T(p.exterior.coords), fill=255)
-            for h in p.interiors: d.polygon(T(h.coords), fill=0)
-    return np.array(im) > 127
-
-def dst_masks(P, bb):
+def dst_render(P):
+    """(stitch segments in piece mm with stop index, stop codes, thread colours, file)"""
     r = json.load(open(f"{kbcore.outdir(P)}/{SIZE}/result_{P}.json"))["full"]; ox, oy = r["origin"]
-    fish_stop = [all(c.startswith("FI") for c in ps.get("codes", [])) for ps in r["per_stop"]]
-    stem_stop = [set(ps.get("codes", [])) <= {"ST"} for ps in r["per_stop"]]          # stems: generated, not traced (1 px/mm mockup)
-    H, W = grid(bb); ims = {k: Image.new("L", (W, H), 0) for k in ("fish", "flora", "stems")}; dr = {k: ImageDraw.Draw(v) for k, v in ims.items()}
-    w = 1; ci = 0; prev = None                 # 1 px (0.33 mm) lines: stitched extent, no extra growth
+    cols = [t.hex_color() for t in pe.read(r["file"] + ".pes").threadlist]
+    codes = [ps.get("codes", []) for ps in r["per_stop"]]
+    segs = []; ci = 0; prev = None
     for x, y, c in pe.read(r["file"] + ".dst").stitches:
-        k = c & pe.COMMAND_MASK; p = ((ox + x / 10 - bb[0]) * PPM, (oy + y / 10 - bb[1]) * PPM)
+        k = c & pe.COMMAND_MASK; p = (ox + x / 10, oy + y / 10)
         if k == pe.STITCH:
-            j = min(ci, len(fish_stop) - 1)
-            if prev is not None: dr["fish" if fish_stop[j] else ("stems" if stem_stop[j] else "flora")].line([prev, p], fill=255, width=w)
+            if prev is not None: segs.append((ci, prev, p))
             prev = p
         elif k == pe.COLOR_CHANGE: ci += 1; prev = None
         elif k in (pe.TRIM, pe.JUMP): prev = None
         elif k == pe.END: break
-    st = qa.disk(0.6, PPM)
-    return {k: ndi.binary_fill_holes(ndi.binary_closing(np.array(v) > 0, structure=st)) for k, v in ims.items()}, r["file"]
+    return segs, codes, cols, r["file"]
 
-def koi_footprints(P):
-    """the mockup's koi (now tetras) — excluded from the flora reference"""
+def pose_box(pose, f=1.15):
+    from shapely.geometry import Polygon
+    c = np.array(pose["c"]); a = math.radians(pose["ang"]); e = np.array([math.cos(a), math.sin(a)]); n = np.array([-e[1], e[0]])
+    L = pose["L_ref"] * f / 2; W = pose["L_ref"] * 0.30
+    return Polygon([tuple(c + e * L + n * W), tuple(c - e * L + n * W), tuple(c - e * L - n * W), tuple(c + e * L - n * W)])
+
+NST = {}
+def masks(P, poses):
+    NST.clear()
+    segs, codes, cols, f = dst_render(P); bb = RM.BB[P]
+    H, W = RM.grid(P)[0].shape
+    ims = {k: Image.new("L", (W, H), 0) for k in ("fish", "flora")}; dr = {k: ImageDraw.Draw(v) for k, v in ims.items()}
+    lum = Image.new("L", (W, H), 0); dl = ImageDraw.Draw(lum)
+    ang = np.full((H, W), np.nan, np.float32)
+    boxes = [pose_box(p) for p in poses]
+    from shapely.geometry import Point
+    from shapely.ops import unary_union
+    bu = unary_union(boxes) if boxes else None
+    w = max(1, int(round(0.4 * PPM)))
+    T = lambda p: ((p[0] - bb[0]) * PPM, (p[1] - bb[1]) * PPM)
+    for ci, a, b in segs:
+        cs = codes[min(ci, len(codes) - 1)]
+        fish_only = cs and all(c.startswith("FI") for c in cs); mixed = any(c.startswith("FI") for c in cs) and not fish_only
+        mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        fam = "fish" if (fish_only or (mixed and bu is not None and bu.contains(Point(mid)))) else "flora"
+        A, B = T(a), T(b); dr[fam].line([A, B], fill=255, width=w); NST[fam] = NST.get(fam, 0) + 1
+        rgb = hexrgb(cols[min(ci, len(cols) - 1)]); dl.line([A, B], fill=int(sum(rgb) / 3), width=w)
+        if fam == "flora":
+            i, j = int(T(mid)[1]), int(T(mid)[0])
+            if 0 <= i < H and 0 <= j < W and math.hypot(b[0] - a[0], b[1] - a[1]) > 1.0: ang[i, j] = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0]))
+    st = RM.disk(0.5)
+    out = {k: ndi.binary_closing(np.array(v) > 0, structure=st) | (np.array(v) > 0) for k, v in ims.items()}
+    return out, np.array(lum).astype(float), ang, f
+
+def tone_agree(ref_tone, ref_m, out_lum, out_m):
+    """reference luminance quartile (0-3) vs the DST thread-luminance quartile on the pixels both cover"""
+    m = ref_m & out_m & (ref_tone >= 0)
+    if m.sum() < 25: return None
+    q = np.quantile(out_lum[m], [0.25, 0.5, 0.75]); ot = np.digitize(out_lum[m], q); rt = ref_tone[m]
+    return dict(exact=round(float((ot == rt).mean()), 2), within1=round(float((np.abs(ot - rt) <= 1).mean()), 2))
+
+def lily_discs(P):
+    """lily centre + radius from the input readings (close-up registration / the guides read on the mockup zooms)"""
     out = []
-    for k in META["fish"]:
-        if k["piece"] != P: continue
-        Lk = k["L"] / 0.82; a = math.radians(k["ang"]); u = np.array([math.cos(a), math.sin(a)]); c = np.array(k["c"])
-        out.append(LineString([tuple(c - u * Lk * 0.55), tuple(c + u * Lk * 0.55)]).buffer(0.17 * Lk))
+    for spec in FT_guides.lily_specs(P):
+        cx, cy = FT_guides.to_mm(P, [spec["c"][0]], [spec["c"][1]]); c = (float(cx[0]), float(cy[0]))
+        tips = [FT_guides.to_mm(P, t[0], t[1]) for _, t in spec["petals"]]
+        Rr = float(np.median([math.hypot(float(x[0]) - c[0], float(y[0]) - c[1]) for x, y in tips]))
+        out.append((spec["name"], spec["src"], c, Rr))
     return out
 
-def _old_flora_reference(P, bb, design_area):
-    mk = np.array(MM.warp_piece(P, bb, PPM, mt)).astype(float)
-    inside = design_area
-    fab = np.median(mk[inside], axis=0)
-    dist = np.sqrt(((mk - fab) ** 2).sum(-1)); red = (mk[..., 0] > mk[..., 2] + 40)
-    emb = (dist > 48) & ~red & inside
-    emb &= ~raster(koi_footprints(P), bb)
-    emb = ndi.binary_fill_holes(ndi.binary_opening(emb, structure=qa.disk(1.0, PPM)))
-    return emb, fab
-
-PROTECT = ("FR_vine_flower0", "FR_vine_flower1")
-
 def run(P):
-    bb = BB[P]
-    ref_flora, tone, _ = MR.flora_mask(P, META["koi_mm"].get(P, []), mt=mt)
-    # composed reference: the two FR lilies traced from the CLOSE-UP replace their (1 px/mm) mockup pixels
-    lil = [r["geom"] for r in ART[P] if r["unit"] in PROTECT]
-    lily_ref = raster(lil, bb) if lil else np.zeros_like(ref_flora)
-    if lil: ref_flora = ref_flora | lily_ref          # the close-up lily silhouettes are part of the reference
-    out, dfile = dst_masks(P, bb)
-    # stems are generated, not traced (A14 list): their footprint is taken out of the flora comparison (merge_stops can put a
-    # stem in the same colour stop as traced fill, so stop codes alone cannot separate them)
-    stem_zone = raster([r["geom"].buffer(0.45) for r in ART[P] if r["grp"] == "ST"], bb)
-    out["stems"] = out["stems"] | (out["flora"] & stem_zone); out["flora"] = out["flora"] & ~stem_zone
-    ref_flora = ref_flora & ~stem_zone                 # ... and out of the reference (same footprint on both sides)
-    lab, n = ndi.label(ref_flora); areas = ndi.sum(ref_flora, lab, range(1, n + 1)) / PPM**2
-    small = areas < 150
-    lily_zone = raster([unary_union(lil).buffer(1.0)], bb) if lil else np.zeros_like(ref_flora)
-    near_lily = np.array([bool((lily_zone & (lab == i + 1)).any()) for i in range(n)]) if n else np.zeros(0, bool)
-    pet = np.isin(lab, 1 + np.nonzero(small & ~near_lily)[0]); clus = np.isin(lab, 1 + np.nonzero(~small)[0])
-    zone_n = int((small & near_lily).sum())          # small mockup bits inside the close-up lily zone (the close-up governs there)
-    rows = dict(petals=qa.motif_match(pet, out["flora"], PPM), clusters=qa.motif_match(clus, out["flora"], PPM), fish=[])
-    # fish: one motif per fish (composed target = the art's fish regions, reference_fish proportions at the mockup positions)
-    for k in META["fish"]:
-        if k["piece"] != P: continue
-        tg = [r["geom"] for r in ART[P] if r["unit"] == k["unit"]]
-        if not tg: continue
-        t_m = raster(tg, bb); foot = raster([unary_union(tg).buffer(2.0)], bb)
-        rr = qa.motif_match(t_m, out["fish"] & foot, PPM)
-        if rr:
-            best = max(rr, key=lambda x: x["area_mm2"]); best["motif"] = k["unit"]; rows["fish"].append(best)
-    fish_t = raster([r["geom"] for r in ART[P] if r["grp"].startswith("FI")], bb)
-    zone_bits = np.isin(lab, 1 + np.nonzero(small & near_lily)[0])
-    gaps = qa.uncovered((ref_flora & ~zone_bits) | fish_t, out["flora"] | out["fish"] | out["stems"], PPM)
-    for fam in rows.values():
-        for r in fam: r["x_mm"] = round(r["x_mm"] + bb[0], 1); r["y_mm"] = round(r["y_mm"] + bb[1], 1)
-    for r in gaps: r["x_mm"] = round(r["x_mm"] + bb[0], 1); r["y_mm"] = round(r["y_mm"] + bb[1], 1)
-    vis = np.zeros(ref_flora.shape + (3,), np.uint8); vis[ref_flora | fish_t] = (90, 90, 200); vis[(out["flora"] | out["fish"])] += np.array([0, 120, 0], np.uint8)
+    bb = RM.BB[P]
+    ref = RM.flora(P); tone = RM.tone(P); fr = RM.fish_ref(P); poses = [p for p, _ in fr]
+    fish_all = np.any([m for _, m in fr], axis=0) if fr else np.zeros_like(ref)
+    out, olum, oang, dfile = masks(P, poses); NSTP = dict(NST)
+    fish_zone = ndi.binary_dilation(fish_all, structure=RM.disk(1.5))
+    ref_f = ref & ~fish_zone; out_f = out["flora"] & ~fish_zone
+    lab, n = ndi.label(ref_f); areas = ndi.sum(ref_f, lab, range(1, n + 1)) / PPM ** 2
+    pet = np.isin(lab, 1 + np.nonzero(areas < 150)[0]); clus = np.isin(lab, 1 + np.nonzero(areas >= 150)[0])
+    rows = dict(petals=qa.motif_match(pet, out_f, PPM), clusters=qa.motif_match(clus, out_f, PPM), lilies=[], fish=[])
+    XX, YY = RM.grid(P)
+    for name, src, c, Rr in lily_discs(P):
+        disc = np.hypot(XX - c[0], YY - c[1]) < Rr * 1.0
+        rm = ref_f & disc
+        if rm.sum() < 20: continue
+        om = out_f & disc
+        iou = float((rm & om).sum() / max((rm | om).sum(), 1))
+        def ext(m, ax):
+            idx = np.nonzero(m.any(axis=ax))[0]; return (idx[-1] - idx[0] + 1) / PPM if len(idx) else 0.0
+        wr = ext(om, 0) / max(ext(rm, 0), 1e-9); hr = ext(om, 1) / max(ext(rm, 1), 1e-9)
+        ta = tone_agree(tone, rm, olum, om)
+        a = oang[disc & ~np.isnan(oang) & (np.hypot(XX - c[0], YY - c[1]) > 0.25 * Rr)]
+        rad = np.degrees(np.arctan2(YY - c[1], XX - c[0]))[disc & ~np.isnan(oang) & (np.hypot(XX - c[0], YY - c[1]) > 0.25 * Rr)]
+        dd = np.abs(((a - rad) + 90) % 180 - 90) if a.size else np.array([90.0])
+        ok = iou >= 0.70 and min(wr, 1 / max(wr, 1e-9)) >= 0.8 and min(hr, 1 / max(hr, 1e-9)) >= 0.8
+        rows["lilies"].append(dict(motif=name, ref=src, x_mm=round(c[0], 1), y_mm=round(c[1], 1), R_mm=round(Rr, 1), area_mm2=round(float(rm.sum() / PPM ** 2), 1),
+                                   iou=round(iou, 2), w_ratio=round(wr, 2), h_ratio=round(hr, 2), ok=bool(ok), tone=ta,
+                                   row_dir_median_deg=round(float(np.median(dd)), 1), rows_along_pct=round(float((dd < 30).mean() * 100), 1)))
+    for pose, m in fr:
+        zone = ndi.binary_dilation(m, structure=RM.disk(4.0))
+        rr = qa.motif_match(m, out["fish"] & zone, PPM)
+        if not rr: continue
+        best = max(rr, key=lambda x: x["area_mm2"]); best["motif"] = f"fish at ({pose['c'][0]:.0f}, {pose['c'][1]:.0f})"
+        best["L_mm"] = round(pose["L_ref"], 1); best["heading_deg"] = round(pose["ang"])
+        best["tone"] = tone_agree(pose["tone"], m, olum, out["fish"])
+        rows["fish"].append(best)
+    for fam in ("petals", "clusters", "fish"):
+        for r_ in rows[fam]:
+            if fam != "fish" or "x_mm" in r_:
+                r_["x_mm"] = round(r_["x_mm"] + bb[0], 1); r_["y_mm"] = round(r_["y_mm"] + bb[1], 1)
+    # cluster tone agreement
+    for r_ in rows["clusters"]:
+        i, j = int((r_["y_mm"] - bb[1]) * PPM), int((r_["x_mm"] - bb[0]) * PPM)
+        k = lab[min(max(i, 0), lab.shape[0] - 1), min(max(j, 0), lab.shape[1] - 1)]
+        cm = (lab == k) if k > 0 else clus
+        r_["tone"] = tone_agree(tone, cm, olum, out_f)
+    gaps = qa.uncovered(ref | fish_all, out["flora"] | out["fish"], PPM)
+    for g_ in gaps: g_["x_mm"] = round(g_["x_mm"] + bb[0], 1); g_["y_mm"] = round(g_["y_mm"] + bb[1], 1)
+    # explain gaps: inside the close-up lily zone edge / hem keep-out etc. are listed, none hidden
+    band = band_zone_mm2(P)
+    vis = np.zeros(ref.shape + (3,), np.uint8); vis[ref | fish_all] = (90, 90, 200); vis[out["flora"] | out["fish"]] += np.array([0, 120, 0], np.uint8)
     Image.fromarray(vis).save(f"out/fidelity_{P}.png")
-    return dict(dst=dfile + ".dst", rows=rows, gaps=gaps, lily_zone_bits=zone_n)
+    return dict(dst=dfile + ".dst", rows=rows, gaps=gaps, band_zone_mm2=band, stitches_by_family=NSTP,
+                reference="refmask.py: input pixels only (mockup front.png" + (" + close-up lily discs" if P == "FR" else "") + "; fish = reference_fish.png at the mockup poses x 0.82)")
+
+def band_zone_mm2(P):
+    """mockup embroidery pixels between the hem / cuff keep-out line and the band seam (art stops there, item 6)"""
+    if P not in ("FR", "FL", "SR"): return 0.0
+    k = F.keep_geoms(SIZE, P); seam = k["hem"] if P in ("FR", "FL") else k["cuff"]
+    strip = k["panel"].intersection(seam.buffer(F.KEEP_HEM if P in ("FR", "FL") else F.KEEP_CUFF))
+    rgb = RM.source(P)[0]; fab = np.median(rgb[RM.art_area(P)], axis=0)
+    m = RM.raster([strip], P) & (np.sqrt(((rgb - fab) ** 2).sum(-1)) > 30) & ((rgb[..., 2] - rgb[..., 0]) > fab[2] - fab[0] + 22)
+    m = ndi.binary_opening(m, structure=RM.disk(1.0))
+    return round(float(m.sum() / PPM ** 2), 1)
 
 if __name__ == "__main__":
     res = {P: run(P) for P in kbcore.PIECES}
     json.dump(res, open(f"out/fidelity_{SIZE}.json", "w"), indent=1, default=float)
     for P, r in res.items():
-        print(P, {fam: (sum(x["ok"] for x in rs), len(rs)) for fam, rs in r["rows"].items()}, "gaps>=25:", [(g_["x_mm"], g_["y_mm"], g_["area_mm2"]) for g_ in r["gaps"]][:6])
+        print(P, {fam: (sum(x["ok"] for x in rs), len(rs), min([x["iou"] for x in rs] or [1])) for fam, rs in r["rows"].items()},
+              "gaps>=25:", [(g_["x_mm"], g_["y_mm"], g_["area_mm2"]) for g_ in r["gaps"]][:8], "band", r["band_zone_mm2"])
         for fam, rs in r["rows"].items():
             for x in rs:
-                if not x["ok"]: print("   FAIL", fam, x)
+                if not x["ok"]: print("   FAIL", fam, {k: x[k] for k in ("x_mm", "y_mm", "area_mm2", "iou", "w_ratio", "h_ratio")})
+        for x in r["rows"]["lilies"]: print("   lily", x["motif"], x["iou"], x["tone"], x["row_dir_median_deg"], x["rows_along_pct"])

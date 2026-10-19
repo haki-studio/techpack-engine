@@ -8,12 +8,18 @@ CUR = json.load(open("dst_current.json"))
 def hoops(P): return len(CUR[P]["splits"]["sections"])
 def n(P, k): return C[P][k]
 REG = json.load(open("trace/closeup_reg.json"))
-REF = {"01": ("Rev B: motif STRUCTURE traced from the AI close-up of the upper wearer's-right front (inputs/closeup_mockup_koi.png, registered on the mockup, "
-              f"mean drift {REG['projective']['mean_mm']} mm): lily petal outlines + tone regions, throats, anthers, free-petal shapes. "
-              "Positions + sizes from the low-res mockup (inputs/front.png, ~1 px/mm). Close-up covers FR upper only (2 lilies): the FR hem lily and the FL lilies have NO close-up "
-              "and reuse the traced templates. A14: every petal, leaf-cluster and lily silhouette traced from the mockup pixels (zip, seams, welts, background masked first); GENERATED, NOT TRACED: stems + leaf inner structure (clipped to the traced silhouettes). FISH: founder change 19 Oct — tetras drawn from inputs/reference_fish.png (not the koi of the mockup/close-up), at the mockup fish positions + headings. No original artwork exists."),
-       "02": ("Rev B: NO close-up of the sleeves — redrawn from the low-res mockup (inputs/front.png, ~1 px/mm, front view only) using the lily + petal "
-              "templates traced from the front close-up (inputs/closeup_mockup_koi.png); fish = tetras from inputs/reference_fish.png (founder change 19 Oct). A14: petal + leaf-cluster silhouettes traced from the mockup pixels; GENERATED, NOT TRACED: stems + leaf inner structure. A sleeve close-up (inputs/closeup_request.md) would let us trace them.")}
+import front as _F
+WELT_DEG = f"{_F.WELT_ANG:.0f}°"          # one value, read from the pattern's welt override (review item 8)
+REF = {"01": ("Rev C: EVERY motif traced from the input pixels (no templates, no typed positions, no random numbers). The two FR upper lilies + their "
+              f"leaves: from the AI close-up (inputs/closeup_mockup_koi.png, registered on the mockup, drift {REG['projective']['mean_mm']} mm: each lily pasted in its own disc). "
+              "FR hem lily, FL hem lily + FL dark flower: traced from the low-res mockup (inputs/front.png, ~1 px/mm, REDRAWN at that resolution: petal fans read on 8-10x zooms, "
+              "tones from the pixels). Leaves, stems + floating petals: traced one by one from the mockup pixels. FISH (founder change 19 Oct): tetras traced from "
+              "inputs/reference_fish.png (facets from its pixels) at each mockup fish pose measured on the mockup pixels, 0.82 x the mockup length (founder decision). "
+              "GENERATED, NOT TRACED: the petal-guide split of each lily silhouette into overlapping petals, stamen lines. No original artwork exists."),
+       "02": ("Rev C: NO close-up of the sleeves — traced from the low-res mockup (inputs/front.png, ~1 px/mm, front view only, REDRAWN at that resolution): "
+              "the SR cuff lily (its own petal fan), every leaf, stem + petal one by one from the pixels; fish = tetras traced from inputs/reference_fish.png at the "
+              "mockup fish poses (0.82 x, founder decision). The SL lower fish swims head-down-left as the mockup shows (Rev B had it reversed). "
+              "A sleeve close-up (inputs/closeup_request.md) would sharpen the leaves.")}
 PROD = ["Embroider the cut panels flat, BEFORE zip, welts,",
         "  side seams, sleeve seams and hem band / cuffs.",
         "12 threads, 40wt polyester (G3); stop order p4.",
@@ -35,8 +41,8 @@ CFG = {
              "!  so the two halves need no match marks.",
              "!Hem band: art stops 10 above the band seam (G2).",
              f"!Hoopings on the factory frame (size M): FR {hoops('FR')}, FL {hoops('FL')} (G5/G6)."],
-   dm_crops=[("FR", (-225, 105, -170, 135), "Lily: traced petals + tone regions, throat, anthers"),
-             ("FR", (-115, 110, -60, 140), "Tetra: 3 faceted tones, cyan line + red stripe (satin), eye ring, forked tail"),
+   dm_crops=[("FR", (-225, 105, -170, 135), "Lily: traced petal fan, tone bands, long rows along each petal"),
+             ("FR", (-115, 110, -60, 140), "Tetra: traced lavender-blue facets, cyan line, tapered red stripe, eye"),
              ("FL", (100, 380, 155, 410), "Lily cluster at the hem band, leaves")],
    crops=[("FR", (-220, 100, -165, 160), "Lily, size M 1:1"), ("FR", (-120, 100, -70, 160), "Fish pair + petals"),
           ("FL", (60, 210, 115, 270), "Fish school"), ("FL", (95, 380, 150, 440), "Hem-band lily")],
@@ -49,11 +55,12 @@ CFG = {
             "  clusters end 10 above it (whole petals, nothing cut).",
             "Side seam: FR vine leaves kept 15 inside the seam (the",
             "  render draws them under the sleeve).",
-            "Welts at the mockup position + angle (60°), Drum Island",
+            f"Welts at the mockup position + angle ({WELT_DEG}), Drum Island",
             "  size 1.4 × 13; art keeps 6 clear on every size.",
-            "Rev B: lilies + free petals traced from the close-up.",
-            "FOUNDER CHANGE: the fish are tetras, not koi",
-            "  (inputs/reference_fish.png), slimmer + shorter."],
+            "Rev C: all lilies, leaves, stems + petals traced",
+            "  from the pixels (close-up / mockup), one by one.",
+            "FOUNDER: tetras, not koi (reference_fish.png), at",
+            "  0.82 x the mockup fish length (decision 19 Oct)."],
    production=PROD, reference=REF["01"]),
  "02": dict(id="02", short="sleeve fish", title="SLEEVES — tetra fish, lilies + petals",
    sub="Direct embroidery on the front half of both cut sleeves (S01 wearer's right, S02 wearer's left) · mm, finished size · art files 1:1",

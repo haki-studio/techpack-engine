@@ -66,8 +66,11 @@ def build(size):
             if not is_cl: dropped.append(gk); continue
             # flower cluster: fit its core (flowers + stems) as one, then each leaf on its own (nudged / shrunk, never cut)
             core = [r for r in regs if r["unit"].split("_")[-1].startswith(("flower", "stem"))]
-            cf, mv = fit_group(core, lim, 24.0)
-            if cf is None: cf, mv = fit_group(core, lim, 36.0, (1.0, 0.95, 0.9, 0.85, 0.8, 0.76))     # Rev B: wider search, never cut a cluster
+            if not core:                     # a traced cluster of leaves only (no lily / stem): every leaf fitted on its own
+                core = []; cf, mv = [], (0.0, 0.0, 1.0)
+            else:
+                cf, mv = fit_group(core, lim, 24.0)
+            if cf is None and core: cf, mv = fit_group(core, lim, 36.0, (1.0, 0.95, 0.9, 0.85, 0.8, 0.76))     # Rev B: wider search, never cut a cluster
             if cf is None:
                 cf, mv = core, (0.0, 0.0, 1.0); dropped.append(gk + " core (does not fit)")
             out += cf
@@ -75,7 +78,7 @@ def build(size):
             leaves = {}
             for r in regs:
                 if r not in core: leaves.setdefault(r["unit"], []).append(r)
-            c0 = unary_union([r["geom"] for r in core]).centroid
+            c0 = unary_union([r["geom"] for r in (core or regs)]).centroid
             for lu, lr in leaves.items():
                 # apply the core move first (leaves stay with their stems), then fit the leaf alone
                 lr = [xform(r, mv[2], c0.x, c0.y, mv[0], mv[1]) for r in lr]
