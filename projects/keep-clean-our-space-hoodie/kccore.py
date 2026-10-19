@@ -15,7 +15,12 @@ KC_PAL = {   # key: (hex, name, use)
     "kc_red":   ("#EC3135", "Signal red",    "CN text, JP hearts + red bars + red star"),
     "kc_blue":  ("#1F8DE3", "Electric blue", "JP blue bars, CN blue dots"),
     "kc_white": ("#F1F0EA", "Star white",    "star speckles, KR text, CN ring sparkles"),
-    "kc_glow":  ("#1E5B4F", "Glow green",    "sheer neon halo behind the JP + EN text and the CN dot ring"),
+    "kc_glow":  ("#1E5B4F", "Glow green",    "soft neon halo round the JP + EN letters and the CN ring dots"),
+    # Rev B (review item 3): lighter rim / facet threads for the domed puff look, haze under big sparkles (item 9)
+    "kc_mint_lt": ("#B4F5E6", "Mint tint",    "lighter rim of the mint puff text, bars and dots"),
+    "kc_blue_lt": ("#73C4FF", "Blue tint",    "lighter rim of the blue bars and CN blue dots"),
+    "kc_red_lt":  ("#FF8C84", "Red tint",     "lighter rim / facets of the red hearts, bars and star"),
+    "kc_haze":    ("#3A4357", "Star haze",    "soft glow under the big sparkles"),
 }
 KC_KEYS = list(KC_PAL)
 FABRIC = "#191C24"          # washed black duck (mockup median #13161D, lifted for the render)
@@ -23,7 +28,7 @@ for k, v in KC_PAL.items():
     motifs2.PAL[k] = v; motifs2.HEX[k] = v[0]; motifs.HEX[k] = v[0]
 
 # stop order inside a layer
-KC_ORDER = ["kc_glow", "kc_white", "kc_blue", "kc_red", "kc_gold", "kc_lemon", "kc_mint"]
+KC_ORDER = ["kc_glow", "kc_haze", "kc_white", "kc_blue", "kc_blue_lt", "kc_red", "kc_red_lt", "kc_gold", "kc_lemon", "kc_mint", "kc_mint_lt"]
 tech.COLOUR_ORDER = KC_ORDER + [c for c in tech.COLOUR_ORDER if c not in KC_ORDER]
 
 # ---------------------------------------------------------------- region codes
@@ -44,6 +49,16 @@ KC_RULES = {
  "OVAL":   ("Oval ring",                  "Satin, turning",     "across the ring",          "0.40",  "—",    "edge + centre run",     "0.20", "4.0 wide"),
  "OVAL-hl":("Oval ring highlight",        "Satin, turning",     "across the ring",          "0.40",  "—",    "none",                  "0.10", "1.1 wide, on top"),
  "FACE":   ("Star face (eyes/centre)",    "Satin dot",          "across dot",               "0.40",  "—",    "none",                  "0.10", "Ø 1.2"),
+ # Rev B codes (review Rev A): columns = one satin per stroke along its centreline (kcsatin)
+ "GLOW-D": ("Neon halo, dense band",      "Tatami, sheer",      "along the badge line",     "0.60",  "2.5",  "none",                  "—",    "0–1.9 mm round the art"),
+ "GLOW-S": ("Neon halo, soft band",       "Tatami, open",       "along the badge line +8°", "1.30",  "2.5",  "none",                  "—",    "1.9–3.8 mm, ragged edge"),
+ "HAZE":   ("Sparkle haze",               "Tatami, open",       "random per sparkle",       "1.10",  "2.5",  "none",                  "—",    "under sparkles ≥ 5 mm"),
+ "SPK":    ("Sparkle (concave 4-point)",  "Satin, 2 tapered columns", "across each arm",    "0.36",  "—",    "none",                  "0.10", "tips 0.25"),
+ "TXC":    ("Text stroke column, flat",   "Satin column",       "across the stroke",        "0.40",  "—",    "centre run",            "0.15", "1 column per stroke"),
+ "PF-TXC": ("Text stroke column, puff",   "Satin column over foam", "across the stroke",    "0.30",  "—",    "none (foam)",           "0.30", "core under the rim"),
+ "PF-RIM": ("Puff rim (lighter thread)",  "Satin column over foam", "across the rim",       "0.30",  "—",    "none (foam)",           "0.15", "0.85 wide, on the edge"),
+ "PF-DOT": ("Domed dot core, puff",       "Satin column (disc)", "parallel, 35°",           "0.30",  "—",    "none (foam)",           "0.25", "staggered splits"),
+ "ORN":    ("Ornament (KR mark, accents)", "Satin column",      "across the stroke",        "0.40",  "—",    "none",                  "0.10", "1.0–1.2 wide"),
 }
 tech.RULES.update(KC_RULES)
 tech.LAYER_NAMES.update({20: "Glow halo", 21: "Star speckles", 22: "Spark bars + stars", 23: "Hearts", 24: "Ring dots",
@@ -51,6 +66,7 @@ tech.LAYER_NAMES.update({20: "Glow halo", 21: "Star speckles", 22: "Spark bars +
 
 sheet.FONT = "Liberation Sans"
 
+OPEN_TAT = {"GLOW-D": (0.60, 2.5), "GLOW-S": (1.30, 2.5), "HAZE": (1.10, 2.2)}
 PUFF_SP = 0.30          # puff satin row spacing (dense, cuts the foam at the column ends)
 PUFF = True             # region codes starting PF- are built as puff satin (no underlay, dense, +pull)
 
@@ -124,6 +140,26 @@ def patch_dst2():
         _orig = dst2.build_object
         def build_object(r, earlier_tones):
             code = tech.rule_for(r["grp"])
+            if r.get("ang") == "col" and r.get("col_cl"):          # Rev B satin column (kcsatin)
+                import kcsatin as KS
+                puff = PUFF and code.startswith("PF-")
+                sp = PUFF_SP if puff else (0.36 if code == "SPK" else 0.40)
+                pull = dst2.pull_for(code)
+                cl = r["col_cl"]; w = r["col_w"]; caps = r["col_caps"]; closed = r["col_closed"]; prof = r.get("col_prof")
+                blocks = []
+                if code in ("TXC", "OVAL") and not closed and KS.poly_len(cl) > 2.5 and w >= 1.4:      # centre-run underlay, then satin back
+                    ul = KS.trim(cl, min(0.6, w / 2), min(0.6, w / 2))
+                    blocks.append(dst2.path_resample(ul, 2.0))
+                    blocks.append(KS.column_pts(cl, w, sp, pull, caps, closed, prof, reverse=True))
+                else:
+                    blocks.append(KS.column_pts(cl, w, sp, pull, caps, closed, prof))
+                return [b for b in blocks if len(b) > 1]
+            if code in OPEN_TAT and r["st"] == "tatami":            # sheer halo / haze: open tatami, no underlay, no edge run
+                sp, L = OPEN_TAT[code]; blocks = []
+                for p in dst2.polys(r["geom"]):
+                    if p.area < 0.3: continue
+                    blocks += dst2.join_rows(dst2.tatami_rows(p, r["ang"], sp, L))
+                return [b for b in blocks if len(b) > 1]
             if code == "TXF" and r["st"] == "satin":          # flat text: centre-run underlay + stroke satin
                 pull = dst2.pull_for(code); blocks = []
                 for p in dst2.polys(r["geom"]):
@@ -147,7 +183,46 @@ def patch_dst2():
                     blocks.append(dst2.fixed_satin(p, a, sp=PUFF_SP, pull=pull))
             return [b for b in blocks if len(b) > 1]
         dst2.build_object = build_object; dst2._kc_puff = True
+        _patch_make_pattern(dst2)
     return dst2
+
+def _patch_make_pattern(dst2):
+    """Travel may hide under objects of the current stop only while they are UNSEWN (review Rev A item 1: the engine's
+    own-stop mask also counted satins already sewn, so travel ran on top of finished letters — the straight lines across
+    宇 / 要 in the Rev A DST). Exec'd copy of dst2.make_pattern with a per-object count raster (ENGINE_NOTES 11)."""
+    import inspect, numpy as np
+    src = inspect.getsource(dst2.make_pattern)
+    a = '        sewn_same = base_hid.copy()\n'
+    b = '            if o["r"]["st"] in ("tatami", "padded"): cov.stamp(sewn_same, o["r"]["geom"])\n'
+    assert src.count(a) == 1 and src.count(b) == 1, "engine make_pattern changed: update kccore._patch_make_pattern"
+    src = src.replace(a, a + '        _kc = _kc_init(objs, cov, si, sewn_same)\n')
+    src = src.replace(b, '            _kc_sewn(_kc, o, sewn_same)\n')
+    ns = dict(vars(dst2))
+    def _kc_init(objs, cov, si, sewn_same):
+        base = (cov.later > si) | cov.merged(si + 1)
+        cnt = np.zeros(base.shape, np.int16); loc = {}
+        for o in objs:
+            g = o["r"]["geom"].buffer(0.1); bb = g.bounds
+            c0 = max(0, int((bb[0] - cov.x0) * cov.ppm) - 1); r0 = max(0, int((bb[1] - cov.y0) * cov.ppm) - 1)
+            c1 = min(cov.W, int((bb[2] - cov.x0) * cov.ppm) + 2); r1 = min(cov.H, int((bb[3] - cov.y0) * cov.ppm) + 2)
+            if c1 <= c0 or r1 <= r0: continue
+            from PIL import Image, ImageDraw
+            im = Image.new("L", (c1 - c0, r1 - r0), 0); d = ImageDraw.Draw(im)
+            for p in dst2.polys(g):
+                T = lambda cs: [((x - cov.x0) * cov.ppm - c0, (y - cov.y0) * cov.ppm - r0) for x, y in cs]
+                d.polygon(T(p.exterior.coords), fill=255)
+                for q in p.interiors: d.polygon(T(q.coords), fill=0)
+            m = np.array(im) > 127; cnt[r0:r1, c0:c1] += m; loc[id(o)] = (r0, r1, c0, c1, m)
+        sewn_same[:] = base | (cnt > 0)
+        return dict(base=base, cnt=cnt, loc=loc)
+    def _kc_sewn(kc, o, sewn_same):
+        L = kc["loc"].pop(id(o), None)
+        if L is None: return
+        r0, r1, c0, c1, m = L
+        kc["cnt"][r0:r1, c0:c1] -= m
+        sewn_same[r0:r1, c0:c1] = kc["base"][r0:r1, c0:c1] | (kc["cnt"][r0:r1, c0:c1] > 0)
+    ns["_kc_init"] = _kc_init; ns["_kc_sewn"] = _kc_sewn
+    exec(src, ns); dst2.make_pattern = ns["make_pattern"]
 
 STYLE = "HK-HJ-KCOS-BK"
 NAME = "Keep Clean Our Space Hooded Jacket — Washed Black"
@@ -166,4 +241,4 @@ ELEMENTS = {   # id -> (slug, title, piece)
     "05": ("star-field", "Star speckle field", "FR FL SR SL"),
 }
 TEXT = {"01": "宇宙をきれいに", "02": ("KEEP", "CLEAN", "OUR SPACE"), "03": "不要污染地球", "04": "우주를 깨끗하게"}
-REV_EMB = "Rev A"; REV_GAR = "Rev A"; DATE = "16 Oct 2026"
+REV_EMB = "Rev B"; REV_GAR = "Rev A"; DATE = "19 Oct 2026"

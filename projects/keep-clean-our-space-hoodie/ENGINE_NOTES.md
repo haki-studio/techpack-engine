@@ -74,3 +74,50 @@ Chinese phrase, upside-down mirrored Hangul)." Check: the spec page prints the s
   `F01.internal[0]` and the drill holes.
 - **Then (builder):** sync the shared tree, run `pattern_out` for the hoodie block, rebuild `art_size.py` + `kcstitch.py`
   if the hood changes the front neck line (keep-out 10 from the neck seam), build the T pages.
+
+# Rev B (19 Oct 2026) — from the first independent review
+
+## 11. make_pattern: travel hid under satins that were ALREADY sewn (visible lines across letters) — engine bug
+- **Problem:** `make_pattern` builds the stop's hidden-travel mask from `own_mask` (every FILL_ST object of the stop,
+  satins included) and `merged(si)` (this stop's own footprint), once per stop. An object stays "hidden" after it is
+  sewn, so travel to the next stroke ran ON TOP of finished satin: the straight lines across 宇 / 要 in the Rev A DST.
+- **Workaround:** `kccore._patch_make_pattern()` execs a copy of `make_pattern` with a per-object count raster: hidden =
+  later stops (`later > si` | `merged(si + 1)`) | objects of this stop not yet sewn; an object's footprint is removed
+  the moment it is sewn (asserts on engine change).
+- **Proposed fix:** the same in `dst2.make_pattern` (sewn tatami of the same colour may stay hidden, as now; sewn
+  satin may not).
+- **Check:** test: three satin columns A, B, C in one stop, A sewn first; no travel segment after A may lie inside A
+  (DST read-back) — today it does.
+
+## 12. Satin columns (kcsatin.py) — replaces notes 1 + 9
+- **Problem:** satin on font OUTLINE tiles (Rev A) gave skipped rows (long diagonal stitches), fans at round ends, gaps at
+  junctions and fixed-angle fallbacks (review item 1/6: "scribbled CN/JP strokes").
+- **Fix (project):** every stroke is a COLUMN: skeleton graph of the glyph → branches (spurs pruned by reach, end forks
+  pruned, short crossing bars kept, straight-through branches joined) → split at corners > 50° → one satin per stroke at
+  the font's stroke width, free ends run to the outline (ray cast), junction ends stop on the crossing stroke's
+  centreline (strokes overlap, no crumbs); zig-zag satin perpendicular to the smoothed centreline, an inner end that
+  would move backwards pivots (rows never cross), round caps shrink as a semicircle, width profiles (tapered sparkle
+  arms), rows > 7 mm split at staggered points. Used for text, rims, bars, dots (a disc = one round-capped column),
+  oval ring (one closed column), sparkles.
+- **Proposed fix:** `engine/columns.py` (`glyph_columns`, `ring_columns`, `column_pts`, `column_geom`) + region type
+  `st="column"` in `build_object`, `art` transforms that move `col_cl` with the geometry.
+- **Check:** golden glyph set (口 O 田 宇 要 球 ㅇ K): (a) no two consecutive stitches cross, (b) every satin stitch within
+  20° of its centreline normal, (c) union of the columns covers ≥ 98 % of the glyph and spills ≤ 3 %.
+
+## 13. Pattern welt (note 10) — still a BLOCKER for the pattern stage; keep-outs now pinned to the project welt
+- The shared tree now has the merged hoodie block: `pattern.draft` drafts the Drum Island welt (38°, centre ≈ ±170 / 364),
+  which lies on badges 03 and 04. `front.keep_geoms()` uses THIS mockup's slash welt (`front.WELT_R/L`) for the keep-out,
+  as Rev A did, and keeps the engine welt as `welt_engine` for reference. Same proposed fix as note 10
+  (`pattern.draft(size, welt=...)`).
+
+## 14. Star placement: group regions per star, escalate, never drop on fronts (replaces note 4)
+- A Rev B star is 2-3 regions (two arm columns + haze); `place_stars` moves all regions of a unit together, uses the
+  bounding radius (concave sparkles), tries ≤ 8 mm, then ≤ 45 mm (fronts) / 20 mm (sleeves), then any free spot ≤ 2 x
+  that radius scored by distance minus neighbour spacing. Result: 0 dropped on every piece and size (Rev A: 35 on the
+  M fronts). Proposed: `qa.place_whole(groups, clip, avoid, tiers)` in the engine.
+
+## Lesson proposals (coordinator merges into LESSONS.md)
+- **A14** — Compare sheets drawn from the art regions hid what the machine sews (Rev A: scribbled strokes, hatched glow,
+  scribble sparkles looked fine in the region render). Rule: compare sheets and spec-page art are rendered from the DST
+  read-back only (every sewn stitch drawn). Check: reviewer re-renders one DST; `compare.py` imports no region renderer.
+- **B25** — see note 11 (travel over already-sewn satin). Check: the test in note 11.

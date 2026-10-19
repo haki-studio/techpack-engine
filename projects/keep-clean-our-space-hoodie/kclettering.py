@@ -20,7 +20,7 @@ from skimage import measure
 from PIL import Image, ImageDraw
 
 FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "inputs", "fonts")
-FONTS = {"jp": ("ZenMaruGothic-Black.ttf", None), "en": ("Nunito[wght].ttf", 820), "cn": ("NotoSansSC[wght].ttf", 720),
+FONTS = {"jp": ("ZenMaruGothic-Black.ttf", None), "en": ("Nunito[wght].ttf", 1000), "cn": ("NotoSansSC[wght].ttf", 720),
          "kr": ("NotoSansKR[wght].ttf", 560)}
 _F = {}
 

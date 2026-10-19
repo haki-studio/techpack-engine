@@ -151,3 +151,153 @@ def glow(shape, ang, col="kc_glow", sp=1.6, rng=None, ragged=0.35, grp="GLOW"):
     if len(seq) < 2: return []
     line = affinity.rotate(LineString(seq), ang, origin=c)
     return [R(col, line.buffer(0.3, cap_style="round", join_style="round"), "run", None, grp, ko=False, kob=0.0)]
+
+# ================================================================ Rev B motifs (review Rev A items 2, 3, 5, 7, 9)
+# Every satin is a column (kcsatin): one turning satin per stroke, no fans, no skipped rows.
+import kcsatin as KS
+RIM_COL = {"kc_mint": "kc_mint_lt", "kc_blue": "kc_blue_lt", "kc_red": "kc_red_lt", "kc_lemon": "kc_white", "kc_gold": "kc_lemon"}
+RIM_W = 0.85          # puff rim column (lighter thread) — 40wt satin minimum is 0.8
+RIM_OVL = 0.3         # the core runs this far under the rim
+
+def _core_w(w, rw=RIM_W): return max(0.9, w - 2 * (rw - RIM_OVL))
+
+def text_columns(glyphs, col, code, cap, unit, rim=False, rim_code="PF-RIM", **kw):
+    """font glyphs -> stroke columns (core) [+ lighter rim columns round the stroke outline, puff dome look]."""
+    core, rims = [], []
+    for ch, g in glyphs:
+        for P in polys(g):
+            sts = KS.glyph_columns(P, cap)
+            if not sts: continue
+            for s in sts:
+                w = _core_w(s["w"]) if rim else s["w"]
+                core.append(KS.column_region(col, code, s["cl"], w, s["caps"], s.get("closed", False), unit=unit, ch=ch, **kw))
+            if rim:
+                shape = KS.strokes_geom(sts)
+                for p in polys(shape):
+                    for s in KS.ring_columns(p, RIM_W):
+                        rims.append(KS.column_region(RIM_COL[col], rim_code, s["cl"], RIM_W, s["caps"], s.get("closed", False), unit=unit, ch=ch, rim=True, **kw))
+    return core, rims
+
+def bar_rc(cx, cy, L, w, ang, col, unit, code="PF-BAR"):
+    """spark bar: core column along the bar + lighter rim column round the capsule (domed)."""
+    a = math.radians(ang); dx, dy = math.cos(a) * L / 2, math.sin(a) * L / 2
+    cl = [(cx - dx, cy - dy), (cx + dx, cy + dy)]
+    cap = KS.column_geom(cl, w)
+    core = [KS.column_region(col, code, cl, _core_w(w), unit=unit)]
+    rim = [KS.column_region(RIM_COL[col], "PF-RIM", s["cl"], RIM_W, s["caps"], s.get("closed", False), unit=unit, rim=True)
+           for p in polys(cap) for s in KS.ring_columns(p, RIM_W)]
+    return core, rim
+
+def disc_rc(cx, cy, d, col, unit, code="PF-DOT", rim_w=1.1, ang=35.0):
+    """domed dot: core = one round-capped column across the disc (a disc, rows parallel, staggered splits — no radial
+    starburst, no centre line) + lighter rim ring column."""
+    rc = d / 2 - rim_w + RIM_OVL; a = math.radians(ang)
+    cl = [(cx - math.cos(a) * rc, cy - math.sin(a) * rc), (cx + math.cos(a) * rc, cy + math.sin(a) * rc)]
+    core = [KS.column_region(col, code, cl, 2 * rc, unit=unit)]
+    rr = d / 2 - rim_w / 2
+    ring = [(cx + rr * math.cos(t), cy + rr * math.sin(t)) for t in np.linspace(0, 2 * math.pi, 72, endpoint=False)]
+    rim = [KS.column_region(RIM_COL[col], "PF-RIM", ring, rim_w, ("flat", "flat"), True, unit=unit, rim=True)]
+    return core, rim
+
+def heart_rc(cx, cy, size, col, unit, rot=0.0, code="PF-HRT"):
+    s = size / 2; lobe = s * 0.52
+    g = unary_union([Point(cx - s*0.46, cy - s*0.18).buffer(lobe, quad_segs=16), Point(cx + s*0.46, cy - s*0.18).buffer(lobe, quad_segs=16),
+                     Polygon([(cx - s*0.95, cy - s*0.05), (cx + s*0.95, cy - s*0.05), (cx, cy + s*0.95)])]).buffer(0.2).buffer(-0.2)
+    g = affinity.rotate(g, rot, origin=(cx, cy))
+    inner = g.buffer(-(RIM_W - RIM_OVL)); core = []
+    for sgn in (-1, 1):
+        hb = affinity.rotate(box(cx if sgn > 0 else cx - 3*s, cy - 3*s, cx + 3*s if sgn > 0 else cx, cy + 3*s), rot, origin=(cx, cy))
+        for p in polys(inner.intersection(hb).buffer(0)):
+            core.append(R(col, p, "satin", rot + (45 if sgn < 0 else -45), code, unit=unit, kob=0.0, nok=True))
+    rim = [KS.column_region(RIM_COL[col], "PF-RIM", s_["cl"], RIM_W, s_["caps"], s_.get("closed", False), unit=unit, rim=True)
+           for s_ in KS.ring_columns(g, RIM_W, corner=40.0)]
+    return core, rim, g
+
+def star_facets(cx, cy, size, col, unit, rot=0.0, k=0.48, code="PF-STR", light=None, pit=0.0, pit_shape="circle"):
+    """faceted 5-point star: every arm = two facets (centre-tip-valley triangles), each its own satin direction; the
+    facet that faces up (light from above) sews in the lighter thread. pit: knocked-out centre (fabric shows):
+    radius as a share of R, a circle or a small star."""
+    R_ = size / 2; light = light or RIM_COL.get(col, col)
+    g = star5_geom(cx, cy, R_, rot, k=k, round_=0.35)
+    hole = Polygon()
+    if pit:
+        hole = Point(cx, cy).buffer(R_ * pit, quad_segs=12) if pit_shape == "circle" else star5_geom(cx, cy, R_ * pit, rot, k=0.5, round_=0.0)
+    out = []
+    for i in range(5):
+        ta = math.radians(-90 + rot + 72 * i)
+        tip = (cx + 3 * R_ * math.cos(ta), cy + 3 * R_ * math.sin(ta))
+        for side in (-1, 1):
+            va = ta + side * math.radians(36)
+            val = (cx + 3 * R_ * math.cos(va), cy + 3 * R_ * math.sin(va))
+            tri = Polygon([(cx, cy), tip, val])
+            f = g.intersection(tri).difference(hole).buffer(0)
+            # facet normal: the facet's centroid direction rotated toward its valley; "up" facets catch the light
+            c = f.centroid if not f.is_empty else Point(cx, cy)
+            up = (c.y - cy) < -0.15 * R_ or (abs(c.y - cy) <= 0.15 * R_ and side < 0)
+            # rows run from the arm axis to the facet edge, slanted toward the valley
+            ang = math.degrees(ta) + 90 + side * 18
+            for p in polys(f):
+                if p.area < 0.15: continue
+                out.append(R(light if up else col, p, "satin", ang, code, unit=unit, kob=0.0, nok=True, facet=True))
+    return out, g
+
+def sparkle_cols(cx, cy, span, col="kc_white", unit=None, rot=0.0, code="SPK"):
+    """concave 4-point sparkle: two crossing tapered columns (arms pinch to 0.25 at the tips, concave sides)."""
+    w0 = max(1.0, 0.30 * span); L = span / 2
+    prof = ("taper", 1.9, 0.14)
+    out = []
+    for k in (0, 1):
+        a = math.radians(rot + 90 * k)
+        cl = [(cx - math.cos(a) * L, cy - math.sin(a) * L), (cx + math.cos(a) * L, cy + math.sin(a) * L)]
+        out.append(KS.column_region(col, code, cl, w0, ("flat", "flat"), False, prof=prof, unit=unit))
+    return out
+
+def haze(cx, cy, r, unit, col="kc_haze", code="HAZE", rng=None):
+    """soft glow under a big sparkle: sparse tatami disc with a ragged edge (one object)."""
+    rng = rng or random.Random(int(cx * 7 + cy * 13))
+    pts = [(cx + (r * rng.uniform(0.78, 1.0)) * math.cos(t), cy + (r * rng.uniform(0.78, 1.0)) * math.sin(t)) for t in np.linspace(0, 2 * math.pi, 18, endpoint=False)]
+    g = Polygon(pts).buffer(0.3).buffer(-0.3).buffer(0)
+    return [R(col, g, "tatami", rng.uniform(0, 180), code, unit=unit, kob=0.0, nok=True, glow=True)]
+
+def halo(shape, ang, unit, inner=1.9, outer=3.8, col="kc_glow", rng=None, hole_inset=0.45):
+    """soft neon halo following the silhouette: dense band 0..inner mm round the shape, sparse band inner..outer with a
+    ragged outer edge. Both are knocked out where the art sits (the art overlaps them by hole_inset)."""
+    rng = rng or random.Random(7)
+    s0 = shape.buffer(0.6).buffer(-0.6)
+    dense = s0.buffer(inner, join_style="round").buffer(0)
+    out_g = s0.buffer(outer + 1.2, join_style="round").buffer(-1.2, join_style="round")       # bridges letter gaps
+    # ragged outer edge
+    rag = []
+    for p in polys(out_g):
+        ring = LineString(p.exterior.coords); L = ring.length; n = max(12, int(L / 1.1)); pts = []
+        for i in range(n):
+            q = ring.interpolate(L * i / n); q2 = ring.interpolate(L * i / n + 0.3)
+            t = np.array([q2.x - q.x, q2.y - q.y]); tn = np.linalg.norm(t)
+            nn = np.array([t[1], -t[0]]) / tn if tn > 1e-9 else np.array([0.0, 0.0])
+            d = rng.uniform(0.0, 1.5)
+            pts.append((q.x - nn[0] * d, q.y - nn[1] * d))
+        pp = Polygon(pts).buffer(0)
+        hole = [Polygon(h.coords) for h in p.interiors]
+        if hole: pp = pp.difference(unary_union(hole))
+        rag.append(pp)
+    out_g = unary_union(rag).buffer(0.25).buffer(-0.25).union(dense).buffer(0)
+    art = shape.buffer(-hole_inset)
+    d_ = dense.difference(art).buffer(0); s_ = out_g.difference(dense.buffer(-0.2)).difference(art).buffer(0)
+    regs = []
+    for p in polys(d_):
+        if p.area > 0.4: regs.append(R(col, p, "tatami", ang, "GLOW-D", unit=unit, kob=0.0, nok=True, glow=True))
+    for p in polys(s_):
+        if p.area > 0.4: regs.append(R(col, p, "tatami", ang + 8, "GLOW-S", unit=unit, kob=0.0, nok=True, glow=True))
+    return regs
+
+def oval_cols(cx, cy, a, b, w, col, ang=0.0, hl_col=None, hl_w=1.1, unit=None):
+    """elliptic ring as ONE closed satin column (no quarter seams) + an inner highlight column on top."""
+    def ell(A, B):
+        return [(cx + A * math.cos(t) * math.cos(math.radians(ang)) - B * math.sin(t) * math.sin(math.radians(ang)),
+                 cy + A * math.cos(t) * math.sin(math.radians(ang)) + B * math.sin(t) * math.cos(math.radians(ang)))
+                for t in np.linspace(0, 2 * math.pi, 220, endpoint=False)]
+    regs = [KS.column_region(col, "OVAL", ell(a - w / 2, b - w / 2), w, ("flat", "flat"), True, unit=unit)]
+    if hl_col:
+        m = w * 0.38
+        regs.append(KS.column_region(hl_col, "OVAL-hl", ell(a - w + m, b - w + m), hl_w, ("flat", "flat"), True, unit=unit, ko=False))
+    return regs

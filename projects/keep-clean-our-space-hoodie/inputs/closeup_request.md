@@ -21,3 +21,7 @@ Same jacket and embroidery as the attached image. A straight-on, flat, evenly li
 ## [stars]
 
 Same jacket and embroidery as the attached image. A straight-on, flat, evenly lit close-up of ONLY the small white star speckles embroidery on the whole jacket front, filling the whole frame edge to edge, no perspective, no folds, no model, highest resolution available (at least 3000 px wide). Keep every motif, colour and position exactly as in the original; do not add or remove anything.
+
+## [badges_texture] (review Rev A item 11 — highest priority)
+
+Same jacket and embroidery as the attached image. A straight-on, flat, evenly lit macro close-up of ONLY the four text badges (Japanese sparks badge, 'KEEP CLEAN OUR SPACE' badge, vertical Chinese dot-ring badge, yellow oval badge), one badge per image, each filling the whole frame edge to edge, showing the thread texture: satin stitch direction, the raised (puffed) letters and dots with their lighter edges, the soft green glow around the letters, and the small white 4-point stars. No perspective, no folds, no model, highest resolution available (at least 3000 px wide). Keep every motif, colour and position exactly as in the original; do not add or remove anything. Save as closeup_badge_jp.png, closeup_badge_en.png, closeup_badge_cn.png, closeup_badge_kr.png.

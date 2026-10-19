@@ -13,6 +13,7 @@ from shapely.geometry import Point, LineString, box, Polygon
 from shapely.ops import unary_union
 from shapely import affinity
 import front as F, sleeve as SV, drum, dst2
+import kcsatin as KS
 kccore.patch_dst2()
 
 SC = pickle.load(open("scene.pkl", "rb")); ITEMS = SC["items"]; META = SC["meta"]
@@ -56,7 +57,7 @@ def place_front(size, P):
         tx, ty = ax*kx, ay*ky
         def tf(g, dx=0.0, dy=0.0):
             return affinity.translate(affinity.scale(g, s, s, origin=(ax, ay)), tx - ax + dx, ty - ay + dy).buffer(0)
-        U = unary_union([r["geom"] for r in rs if not r.get("nok")])
+        U = unary_union([r["geom"] for r in rs if not r.get("glow")])
         best = None
         for rad in np.arange(0, 20.5, 0.5):
             for k in range(max(1, int(rad*2))):
@@ -65,46 +66,74 @@ def place_front(size, P):
             if best: break
         if best is None: best = (0.0, 0.0); moves[el] = "NO FIT"
         else: moves[el] = (round(best[0], 1), round(best[1], 1))
-        for r in rs:
-            r2 = dict(r, geom=tf(r["geom"], *best))
-            if isinstance(r["ang"], tuple):          # radial satin centre moves with the badge
-                c = affinity.translate(affinity.scale(Point(r["ang"][1], r["ang"][2]), s, s, origin=(ax, ay)), tx - ax + best[0], ty - ay + best[1])
-                r2["ang"] = (r["ang"][0], c.x, c.y)
-            out.append(r2)
-    badges = unary_union([r["geom"] for r in out if not r.get("nok")]).buffer(2.0)
+        for r in rs:             # geometry + column centrelines / widths + radial centres follow the badge
+            out.append(KS.move(r, s, (ax, ay), (tx - ax + best[0], ty - ay + best[1])))
+    badges = unary_union([r["geom"] for r in out if not r.get("glow")]).buffer(2.0)
     stars = [r for r in its if (r.get("unit") or "").startswith("05")]
-    kept, dropped, nudged = place_stars(stars, clip, badges, lambda c: (c.x*kx, c.y*ky), out)
-    return out, clip, dict(moves=moves, stars=kept, stars_dropped=dropped, stars_nudged=nudged, scale=s, grade=grade)
+    kept, dropped, nudged, reloc = place_stars(stars, clip, badges, lambda c: (c.x*kx, c.y*ky), out, far=45.0)
+    return out, clip, dict(moves=moves, stars=kept, stars_dropped=dropped, stars_nudged=nudged, stars_relocated=reloc, scale=s, grade=grade)
 
-def place_stars(stars, clip, avoid, mapf, out, max_move=8.0, gap=2.5):
-    """move each star to its mapped position; a star that lands in a keep-out (or on a badge) is moved to the nearest
-    free spot inside the clip (<= max_move mm, >= gap from other stars) so the mockup's star COUNT is kept (A2)."""
+def place_stars(stars, clip, avoid, mapf, out, max_move=8.0, gap=2.5, far=None):
+    """move each star (all regions of one unit together) to its mapped position; a star that lands in a keep-out (or on
+    a badge) moves to the nearest free spot inside the clip <= max_move mm (>= gap from other stars) so the mockup's
+    star COUNT is kept (A2). far: second search radius (fronts, review item 8: nudge, don't drop) — stars that need
+    more than max_move are 'relocated' (counted separately)."""
     from shapely.ops import nearest_points
-    placed = []; kept = dropped = nudged = 0
-    for r in stars:
-        c = r["geom"].centroid; nx_, ny_ = mapf(c)
-        g = affinity.translate(r["geom"], nx_ - c.x, ny_ - c.y)
+    groups = {}
+    for r in stars: groups.setdefault(r.get("unit"), []).append(r)
+    placed = []; kept = dropped = nudged = relocated = 0
+    for u, rs in groups.items():
+        body = unary_union([r["geom"] for r in rs if not r.get("glow")] or [r["geom"] for r in rs])
+        c = body.centroid; nx_, ny_ = mapf(c)
+        g = affinity.translate(body, nx_ - c.x, ny_ - c.y)
         ok = lambda q: clip.contains(q) and (avoid is None or not q.intersects(avoid)) and all(q.distance(p) >= gap for p in placed)
         if not ok(g):
-            rad = math.sqrt(g.area / math.pi) + 0.6
-            free = clip.buffer(-rad)
-            if avoid is not None: free = free.difference(avoid.buffer(rad))
-            for p in placed: free = free.difference(p.buffer(gap + rad)) if p.distance(g) < max_move + 10 else free
+            gb = g.bounds; rad = max(gb[2] - gb[0], gb[3] - gb[1]) / 2 + 0.4       # bounding radius (sparkles are concave)
             moved = None
-            if not free.is_empty:
-                q = nearest_points(free, g.centroid)[0]; d = q.distance(g.centroid)
-                if d <= max_move: moved = affinity.translate(g, q.x - g.centroid.x, q.y - g.centroid.y)
-            if moved is None or not ok(moved): dropped += 1; continue
-            g = moved; nudged += 1
-        out.append(dict(r, geom=g)); placed.append(g); kept += 1
-    return kept, dropped, nudged
+            for lim in ([max_move] + ([far] if far else [])):
+                free = clip.buffer(-rad)
+                if avoid is not None: free = free.difference(avoid.buffer(rad))
+                for p in placed: free = free.difference(p.buffer(gap + rad)) if p.distance(g) < lim + 10 else free
+                if not free.is_empty:
+                    q = nearest_points(free, g.centroid)[0]; d = q.distance(g.centroid)
+                    if d <= lim: moved = affinity.translate(g, q.x - g.centroid.x, q.y - g.centroid.y)
+                if moved is not None and ok(moved):
+                    if lim > max_move: relocated += 1
+                    else: nudged += 1
+                    break
+                moved = None
+            if moved is None and far:
+                # last tier (fronts, item 8): any free spot <= 2 x far that keeps clear of the other stars, scored by
+                # distance from the mockup position minus spacing from neighbours (a cluster spreads out, it is not dropped)
+                free = clip.buffer(-rad)
+                if avoid is not None: free = free.difference(avoid.buffer(rad))
+                free = free.intersection(g.centroid.buffer(2 * far))
+                best = None
+                if not free.is_empty:
+                    b_ = free.bounds
+                    for xx in np.arange(b_[0], b_[2], 2.0):
+                        for yy in np.arange(b_[1], b_[3], 2.0):
+                            q = Point(xx, yy)
+                            if not free.contains(q): continue
+                            cand = affinity.translate(g, xx - g.centroid.x, yy - g.centroid.y)
+                            md = min([cand.distance(p) for p in placed if p.distance(q) < 30] or [30.0])
+                            if md < gap: continue
+                            sc = q.distance(g.centroid) - 3.0 * min(md, 10.0)
+                            if best is None or sc < best[0]: best = (sc, cand)
+                if best is not None and ok(best[1]): moved = best[1]; relocated += 1
+            if moved is None: dropped += 1; continue
+            g = moved
+        dx, dy = g.centroid.x - c.x, g.centroid.y - c.y
+        for r in rs: out.append(KS.move(r, 1.0, (0, 0), (dx, dy)))
+        placed.append(g); kept += 1
+    return kept, dropped, nudged, relocated
 
 def place_sleeve(size, P):
     clip = SV.clip_for(size, P).buffer(-0.4)
     kx, ky, top_m, top_s = SV.ratio(size, P)
     out = []
-    kept, dropped, nudged = place_stars(ITEMS[P], clip, None, lambda c: (c.x*kx, top_s + (c.y - top_m)*ky), out)
-    return out, clip, dict(stars=kept, stars_dropped=dropped, stars_nudged=nudged)
+    kept, dropped, nudged, reloc = place_stars(ITEMS[P], clip, None, lambda c: (c.x*kx, top_s + (c.y - top_m)*ky), out, far=20.0)
+    return out, clip, dict(stars=kept, stars_dropped=dropped, stars_nudged=nudged, stars_relocated=reloc)
 
 def build(size):
     t0 = time.time(); res = {"info": dict(size=size, grade=kccore.GRADE[size][0], scale=kccore.GRADE[size][1])}
@@ -119,7 +148,7 @@ def build(size):
         u = unary_union([r["geom"] for r in vis])
         res["info"][P] = dict(info, objects=len(vis), area=u.area, bbox=u.bounds)
     pickle.dump(res, open(f"art_{size}.pkl", "wb"))
-    print(size, {P: {k: v for k, v in res["info"][P].items() if k in ("moves", "stars", "stars_dropped", "stars_nudged", "objects")} for P in kccore.PIECES},
+    print(size, {P: {k: v for k, v in res["info"][P].items() if k in ("moves", "stars", "stars_dropped", "stars_nudged", "stars_relocated", "objects")} for P in kccore.PIECES},
           f"{time.time()-t0:.0f}s", flush=True)
     return res
 

@@ -42,7 +42,10 @@ def keep_geoms(size, side):
     """named keep-out references for one front piece of one size, from that size's pattern (sew lines)."""
     g, mt = pieces(size); pc = g["F02" if side == "R" else "F01"]
     out = {e.name: LineString(e.pts) for e in pc.edges}
-    out["welt"] = Polygon(pc.internal[0][1]).buffer(0)
+    # the merged engine block drafts the Drum Island welt (38 deg, centre ~170 from CF) — it sits on badges 03 / 04. Until
+    # pattern.draft takes a welt override (ENGINE_NOTES 10) the keep-out uses THIS mockup's slash welt (as Rev A did).
+    out["welt"] = WELT_R if side == "R" else WELT_L
+    out["welt_engine"] = Polygon(pc.internal[0][1]).buffer(0)
     out["panel"] = pc.sew_poly()
     return out
 
