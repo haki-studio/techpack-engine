@@ -59,7 +59,7 @@ KOI = [((255, 371), (201, 344), 0, 2), ((286, 424), (245, 395), 2, -2), ((343, 4
        ((51, 540), (89, 489), 3, 2), ((105, 671), (57, 626), 0, -2), ((79, 811), (50, 753), 2, 2),            # SR
        ((707, 756), (680, 669), 3, -3), ((651, 813), (615, 861), 1, 2)]                                       # SL
 rng = random.Random(11)
-fish_info = []
+fish_info = []; KOI_MM = {}
 for i, (hd, tl, pat, bend) in enumerate(KOI):
     P = piece_of(*hd)
     a, L, A = ang_of(P, tl, hd)
@@ -67,6 +67,7 @@ for i, (hd, tl, pat, bend) in enumerate(KOI):
     c = np.array(to_mm(P, (hd[0] + tl[0]) / 2, (hd[1] + tl[1]) / 2))
     u = f"fish{i}"
     regs, sil = KF.fish(c[0], c[1], Lmm, a, unit=u)
+    KOI_MM.setdefault(P, []).append((list(to_mm(P, *hd)), list(to_mm(P, *tl))))
     add(P, regs, 5000 + i*10, 24, u, "fish"); fish_info.append(dict(piece=P, unit=u, L=round(Lmm, 1), c=c.tolist(), ang=a))
 
 # ================================================================ flower clusters (flowers, leaves, stems), px from the mockup
@@ -171,7 +172,87 @@ for k, (px, py, Lpx, apx, tone) in enumerate(PETALS):
     regs, _ = KT.petal(k, A[0], A[1], L * 1.05, a, rng, PTONE[tone], unit=u)
     add(P, regs, 4000 + k, 23, u, "petal"); pet_info.append(dict(piece=P, unit=u, L=round(L, 1)))
 
-META = dict(fish=fish_info, clusters=cl_info, petals=pet_info, lilies=lily_info,
+
+# ================================================================ A14/A15 (19 Oct 2026): every flora silhouette traced from the mockup
+# The mockup's flora pixels (mockref.flora_mask: garment details, background, mockup koi masked out FIRST) give one
+# silhouette per motif / cluster. Floating petals = the traced silhouettes themselves (two tones split on their axis,
+# tones from the mockup's luminance); clusters = the leaf / stem / lily objects CLIPPED to the traced cluster silhouette,
+# and whatever of the silhouette they leave bare FILLED with the mockup's own tone regions ("traced fill").
+# The two FR lilies traced from the close-up (A12/A13) are kept as traced there (their reference is the close-up).
+import mockref as MR
+from shapely.geometry import Point as _Pt, Polygon
+PROTECT = {"FR_vine_flower0", "FR_vine_flower1"}
+TRACE = {}
+def _pet_tones(Lm):
+    if Lm > 195: return ("kb_cream", "kb_white")
+    if Lm > 165: return ("kb_sky", "kb_ice")
+    if Lm > 125: return ("kb_blue", "kb_sky")
+    return ("kb_cobalt", "kb_royal")
+pet_info = []
+for P in kbcore.PIECES:
+    emb, tone, bb = MR.flora_mask(P, KOI_MM.get(P, []), mt=MT_M); Lm = MR.lum(P)
+    sils = MR.polys_of(emb, bb, min_mm2=4.0)
+    flora = [r for r in ITEMS[P] if r["unit"].split("_")[-1].startswith(("leaf", "stem", "flower"))]
+    prot = unary_union([r["geom"] for r in flora if r["unit"] in PROTECT]) if any(r["unit"] in PROTECT for r in flora) else None
+    cl_geoms = [r["geom"] for r in flora]
+    flora_u = unary_union(cl_geoms) if cl_geoms else None
+    petals, clusters = [], []
+    for sgeo in sils:
+        if prot is not None and sgeo.buffer(-0.5).intersection(prot).area > 0.5 * sgeo.area: continue      # the close-up lily itself
+        near = flora_u is not None and sgeo.intersection(flora_u).area > 0.25 * sgeo.area
+        if prot is not None and sgeo.area < 150 and sgeo.distance(prot) < 1.0: continue   # inside the close-up lily's zone: the close-up governs
+        (clusters if (sgeo.area >= 150 or near) else petals).append(sgeo)
+    # floating petals: drop the generated ones, add the traced silhouettes
+    ITEMS[P] = [r for r in ITEMS[P] if not r["unit"].startswith("petal")]
+    for k, sgeo in enumerate(petals):
+        H_, W_ = Lm.shape
+        m = MR.raster([sgeo], bb); lm = float(Lm[m].mean()) if m.any() else 150.0
+        mrr = sgeo.minimum_rotated_rectangle; cs = np.array(mrr.exterior.coords); e = [cs[i + 1] - cs[i] for i in range(2)]
+        ax = e[0] if np.hypot(*e[0]) >= np.hypot(*e[1]) else e[1]; ax = ax / np.hypot(*ax); c = sgeo.centroid
+        cut = Polygon([(c.x - ax[0] * 200, c.y - ax[1] * 200), (c.x + ax[0] * 200, c.y + ax[1] * 200),
+                       (c.x + ax[0] * 200 - ax[1] * 200, c.y + ax[1] * 200 + ax[0] * 200), (c.x - ax[0] * 200 - ax[1] * 200, c.y - ax[1] * 200 + ax[0] * 200)])
+        dk, lt = _pet_tones(lm); u = f"petal_{P}{k}"
+        sg = sgeo.buffer(-0.2 if sgeo.area >= 8 else -0.32)    # stitched = traced: the engine adds ~0.2 mm pull compensation per side (tiny dots grow more)
+        if sgeo.area < 15:                      # small petals: one tone (two halves would be under the 0.7 mm min width)
+            regs = [dict(col=lt, geom=sg, st="satin", ang="auto", grp="PT", sub=0)]
+        else:
+            regs = [dict(col=dk, geom=sg.intersection(cut).buffer(0), st="satin", ang="auto", grp="PT", sub=0),
+                    dict(col=lt, geom=sg.difference(cut).buffer(0), st="satin", ang="auto", grp="PT-tone", sub=0)]
+        add(P, [r for r in regs if not r["geom"].is_empty], 4000 + k, 23, u, "petal")
+        pet_info.append(dict(piece=P, unit=u, L=round(float(max(np.hypot(*e[0]), np.hypot(*e[1]))), 1), traced=True))
+    # clusters: clip the drawn objects to the traced silhouette, fill what they leave bare with the mockup's tones
+    C = unary_union(clusters) if clusters else Polygon()
+    Cb = C.buffer(-0.2)                       # inside the traced silhouette by the 0.2 mm pull compensation (stitched = traced)
+    kept = []
+    for r in ITEMS[P]:
+        if r in flora and r["unit"] not in PROTECT and r["grp"] != "ST":
+            g_ = r["geom"].intersection(Cb).buffer(0)
+            if g_.is_empty or g_.area < 0.8: continue
+            r["geom"] = g_
+        kept.append(r)
+    ITEMS[P] = kept
+    drawn = unary_union([r["geom"] for r in ITEMS[P] if r["unit"].split("_")[-1].startswith(("leaf", "stem", "flower"))] + ([prot] if prot is not None else []))
+    fill = C.buffer(-0.2).difference(drawn.buffer(0.05)).buffer(-0.35).buffer(0.35)
+    nf = 0
+    for q in (fill.geoms if hasattr(fill, "geoms") else [fill]):
+        if q.geom_type != "Polygon" or q.area < 3.0: continue
+        m = MR.raster([q], bb); tv = tone[m & (tone >= 0)]
+        k_t = int(np.bincount(tv, minlength=4).argmax()) if tv.size else 1          # ONE tone per fill object (majority of the mockup pixels)
+        best = None
+        for cname, ci in cl_info.items():
+            if ci["piece"] != P: continue
+            cg = unary_union([r["geom"] for r in ITEMS[P] if r.get("cluster") == cname])
+            dd = cg.distance(q) if not cg.is_empty else 1e9
+            if best is None or dd < best[0]: best = (dd, cname)
+        cn = best[1] if best and best[0] < 25 else None
+        u = f"fill_{P}{nf}"           # traced in place: fitted on its own (never moved with a drawn cluster)
+        add(P, [dict(col=MR.TONE_KEYS[k_t], geom=q, st="satin", ang="auto", grp="LF-fill", sub=0)], 1500 + nf * 0.01, 19, u, "fill", None)
+        nf += 1
+    TRACE[P] = dict(silhouettes=len(sils), petals=len(petals), clusters=len(clusters), fill_objects=nf, fill_mm2=round(fill.area, 1),
+                    cluster_mm2=round(C.area, 1))
+print("A14 trace", TRACE)
+
+META = dict(trace=TRACE, koi_mm=KOI_MM, fish=fish_info, clusters=cl_info, petals=pet_info, lilies=lily_info,
             counts={P: dict(fish=sum(1 for k in fish_info if k["piece"] == P), petals=sum(1 for p in pet_info if p["piece"] == P),
                             flowers=sum(c["flowers"] for c in cl_info.values() if c["piece"] == P),
                             leaves=sum(c["leaves"] for c in cl_info.values() if c["piece"] == P)) for P in kbcore.PIECES},

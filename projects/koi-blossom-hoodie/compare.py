@@ -140,9 +140,9 @@ ZOOMS = {"01": [("FR", (-245, 78, -125, 198), "FR big lily (close-up flower 1) +
                 ("FL", (60, 360, 230, 490), "FL hem lily pair (big lily + dark flower)", None),
                 ("FL", (160, 355, 265, 470), "FL dark flower + side vine", None),
                 ("FL", (75, 205, 175, 305), "FL fish school", "fish9")],
-         "02": [("SR", (20, 55, 110, 145), "SR top fish", "fish13"), ("SR", (25, 330, 115, 420), "SR fish + petals", "fish15"),
+         "02": [("SR", (35, 28, 125, 118), "SR top fish", "fish13"), ("SR", (25, 330, 115, 420), "SR fish + petals", "fish15"),
                 ("SR", (15, 375, 125, 465), "SR cuff flower cluster", None), ("SL", (-115, 245, -25, 335), "SL fish", "fish16"),
-                ("SL", (-155, 330, -65, 420), "SL fish near cuff", "fish17"), ("SL", (-155, 105, -65, 195), "SL petals", None)]}
+                ("SL", (-170, 370, -80, 460), "SL fish near cuff", "fish17"), ("SL", (-155, 105, -65, 195), "SL petals", None)]}
 
 def sheet(el):
     pcs = kbcore.ELEMS[el][2]; ppm = 1.6; cols = []
@@ -168,12 +168,18 @@ def sheet(el):
     for P, c in cols:
         pos[P] = []
         for lab, im in c:
-            out.paste(im, (x, 70)); d.text((x + 4, 74), f"{P} {lab}", fill=(255, 255, 0), font=FS); pos[P].append(x); x += im.width + 6
+            out.paste(im, (x, 70)); d.text((x + 4, 74), f"{P} {lab}", fill=(255, 255, 0), font=FS)
+            if lab != "fish reference": pos[P].append(x)
+            x += im.width + 6
         x += 24
     y0 = 70 + H0 + 30
     for k, (P, zb, cap, unit) in enumerate(zs):
         zp = zw / (zb[2] - zb[0]); hz = int((zb[3] - zb[1]) * zp)
         mk = MM.warp_piece(P, zb, zp / 4, mt).resize((zw, hz), Image.LANCZOS).filter(ImageFilter.UnsharpMask(2, 60, 2))
+        if unit and unit.startswith("fish"):        # the fish nearest the zoom centre (after the size's fitting move)
+            zc = ((zb[0] + zb[2]) / 2, (zb[1] + zb[3]) / 2)
+            cand = [motif(k["unit"]) for k in META["fish"] if k["piece"] == P]
+            unit = min(cand, key=lambda m: math.hypot(m[1]["c"][0] - zc[0], m[1]["c"][1] - zc[1]))[1]["unit"]
         mot = motif(unit) if unit else None
         if mot: cu = closeup_motif(mot, zb, zp)
         else:

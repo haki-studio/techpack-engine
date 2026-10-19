@@ -56,6 +56,7 @@ KB_RULES = {
  "LF":        ("Leaf, light half",         "Satin, turning",     "midrib ± 45°",             "0.40", "—",   "centre run",              "0.20", "split satin if > 7"),
  "LF-dk":     ("Leaf, shade half",         "Satin, turning",     "midrib ± 45°",             "0.40", "—",   "centre run",              "0.20", ""),
  "LF-tip":    ("Leaf tip / edge tone",     "Satin, turning",     "midrib ± 45°",             "0.40", "—",   "none",                    "0.20", "long-short step"),
+ "LF-fill":   ("Traced cluster fill (mockup tones)", "Satin, turning", "across the shape",       "0.40", "—",   "centre run",              "0.20", "fills the traced silhouette where no leaf is drawn"),
  "LF-lit":    ("Leaf lit edge",            "Satin, turning",     "across the stroke",        "0.40", "—",   "none",                    "0.15", "pale-ice highlight on one edge"),
  "LF-vein":   ("Leaf midrib",              "Run (double)",       "follows line",             "—",    "2.0", "none",                    "—",    "on top"),
  "ST":        ("Stem / vine",              "Satin, turning",     "across stem",              "0.40", "—",   "centre run",              "0.15", "≥ 1.2 wide"),
