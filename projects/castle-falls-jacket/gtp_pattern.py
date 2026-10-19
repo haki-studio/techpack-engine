@@ -231,7 +231,7 @@ OPS = [("Cutting", "Cut shell, collar, lining, rib, pocketing, fusing; drill wel
        ("Embroidery finish", "Trim backing to 5 mm, pick out the registration crosses (5 pieces), press from wrong side", "Hand / press", 14.0),
        ("Welt pockets", "Mark, set welt + bags both fronts, bartack ×4", "Lockstitch + bartack", 9.0),
        ("Shoulders", "Join shoulders (5-thread), press to back, 6 mm topstitch", "Safety stitch + lockstitch", 2.5),
-       ("Sleeves", "Set sleeves, matching the art across the armhole (wrap seam, no topstitch)", "Safety stitch", 6.0),
+       ("Sleeves", "Set sleeves, matching the art across the armhole (wrap seam, no topstitch); SA pressed to body, overlock / bind inside", "Safety stitch", 6.0),
        ("Side + underarm", "Close side + underarm seams in one pass", "Safety stitch", 2.5),
        ("Collar", "Make collar (top + under), turn, press, 6 mm edge topstitch", "Lockstitch", 6.5),
        ("Collar attach", "Attach collar sandwiched by facings; stitch-in-ditch back neck", "Lockstitch", 4.5),

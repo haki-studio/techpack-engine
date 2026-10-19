@@ -21,7 +21,7 @@ def draft(size):
     return _cache[size]
 PT.draft = draft
 PT.PROPOSED["Welt"] = "1.4 × 13 cm (Drum Island) at the mockup position: centre 23.0 cm from CF, 38.4 cm below the neck, 56°"
-PT.PROPOSED["Armhole"] = "wrap seam: no topstitch (embroidery runs to 3 mm each side of the seam)"
+PT.PROPOSED.pop("Armhole", None)   # founder decision 2026-10-19: wrap seam accepted (no longer proposed; construction note on T2 / T7)
 import pattern_out as PO
 PO.STYLE = cfcore.STYLE
 PO.EMB_ON = {"B01": ["BK"], "F01": ["FL"], "F02": ["FR"], "S01": ["SR"], "S02": ["SL"]}

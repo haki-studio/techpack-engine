@@ -5,7 +5,7 @@ sleeves: x across the sleeve from the centre line, + = front half on S01, y down
 Keep-outs (mm from the sew line):
   CF / zip 15 · side seams 15 · shoulder 15 · hem-rib seam 10 · welt box 6 · collar lying flat 6 ·
   armhole / sleeve cap 3 = WRAP seam (LESSONS A4: the mockup art runs across the armhole; art stops 3 mm short on both
-  sides, armhole sewn without topstitch) · sleeve underarm seams 15 · cuff seam 10.  [armhole wrap rule PROPOSED]"""
+  sides, armhole sewn without topstitch) · sleeve underarm seams 15 · cuff seam 10.  [armhole wrap rule: founder decision 2026-10-19]"""
 import cfcore
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union

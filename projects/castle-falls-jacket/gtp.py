@@ -90,7 +90,7 @@ def p_flats(F):
              ("4", "Hem: rib knit, navy, finished height 5.5 cm; joined with 4-thread overlock, topstitched 5 mm on body."),
              ("5", "Cuffs: rib knit, navy, finished height 7.5 cm, folded double; seam inside."),
              ("6", "Shoulder: 5-thread safety stitch, pressed to back, 6 mm single-needle topstitch on back."),
-             ("7", "Armholes = wrap seams: 5-thread safety stitch, pressed to the body, NO topstitch (embroidery runs to 3 mm each side). One-piece back, no yoke."),
+             ("7", "Armholes = wrap seams (founder 19 Oct): 5-thread safety stitch; press the seam allowance toward the body and finish it inside (overlock or bind) so it lies flat without topstitch. Embroidery runs to 3 mm each side. One-piece back, no yoke."),
              ("8", "Embroidery 01 back, 02 fronts (FR + FL, before welts + zip), 03 both sleeves (front + back halves): flat on the cut pieces before any seam (G pages).")]
     for i, (n, s_) in enumerate(notes):
         o.append(f'<circle cx="{f(lx + 2.3)}" cy="{f(ly + i*4.0 - 0.7)}" r="1.9" fill="#FFF" stroke="{INK}" stroke-width="0.25"/>' + t(lx + 2.3, ly + i*4.0, n, 1.7, 700, INK, "middle"))
@@ -297,7 +297,7 @@ def p_construction():
     cx = [12, 62, 104, 114, 124]
     for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.8, 700, MUTED))
     rows = [("Shoulder", "5-thread safety stitch (ISO 516)", "11", "1.0", "pressed to back; 6 mm single-needle topstitch on back"),
-            ("Armhole (wrap seam)", "5-thread safety stitch", "11", "1.0", "pressed to body, NO topstitch: embroidery to 3 mm each side [proposed]"),
+            ("Armhole (wrap seam)", "5-thread safety stitch", "11", "1.0", "SA pressed to body + finished inside (overlock / bind), NO topstitch; art to 3 mm each side (founder 19 Oct)"),
             ("Sleeve cap (wrap seam)", "ease 12 mm spread evenly", "—", "—", "match art at the seam; no pressing on the embroidery face"),
             ("Side seam + underarm", "5-thread safety stitch, one pass", "11", "1.0", "pressed to back, no topstitch"),
             ("CF zip", "lockstitch (ISO 301)", "10", "1.0", "tape enclosed shell + facing; 10 mm topstitch"),
@@ -381,11 +381,11 @@ def p_colourway():
 def p_questions():
     o = header("OPEN QUESTIONS — garment", "Everything marked [proposed — confirm] in this pack, in one place. Embroidery questions are on G4.", "T10")
     qs = ["1. IP — CLOSED. Founder decision 2026-10-19: follow the reference composition (castle on the falls inside the closed arching tree, as the mockup + reference.png).",
-          "2. Collar vs hood: the mockup shows a navy corduroy point collar (built); the intake note mentioned a hood. Confirm the collar (or send the hood files).",
+          "2. Collar vs hood — CLOSED. Founder decision 2026-10-19: collar, not hood (navy corduroy point collar as the mockup).",
           "3. Shell: 12 oz duck washed navy — piece-dyed + washed before embroidery (assumed) or garment-dyed after? Lab-dip / Pantone reference.",
           "4. Collar: 14-wale corduroy 8 oz, washed navy; rib 95/5 cotton/elastane navy, hem 5.5 / cuff 7.5 (not on the fit chart).",
           "5. Lining: navy / red plaid cotton flannel body (as seen at the neck in the mockup) + navy taffeta sleeves proposed.",
-          "6. Armholes as wrap seams: art runs to 3 mm each side, armhole sewn without topstitch (T7). OK for durability?",
+          "6. Armhole wrap seams — CLOSED. Founder decision 2026-10-19: accepted; press the seam allowance toward the body and finish it inside (overlock or bind) so it lies flat without topstitch (T7).",
           "7. Welt pockets: Drum Island welt 1.4 × 13 cm at the mockup position (23.0 from CF, 38.4 below the neck, 56°). Confirm.",
           "8. Pattern (T11–T13) is the Drum Island first pattern: shoulder slope 4.5, cap ease 1.2, facings, rib heights proposed — sample + fit M first.",
           "9. Seam types + SPI (T7) are a standard proposal — factory to confirm capability (5-thread safety stitch, bartack).",

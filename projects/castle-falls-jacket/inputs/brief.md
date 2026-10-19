@@ -40,3 +40,8 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - Fidelity first (LESSONS A11): stitch count, trims and run time are reported, not limited.
 - **Rev A rebuild (17-19 Oct)**: the founder's 4-panel detail strip (inputs/closeup_mockup_strip.png) is used: the waterfall-mountain panel is registered onto the back (similarity fit, scale 0.82) and traced (LESSONS A12); the castle, cloud/petal and blossom panels are re-renders that do not register and are used as motif references (floret centres, petal bases, roof tiles). Village, pagoda and gate tower are still traced from the ~1.2 mm/px mockup only.
 - **Threads**: 18 tones traced; 15 threads are actually sewn across all 35 files (sky light, moss light, far lavender always merged into a neighbour) — the physical board to approve is those 15 (G3). PROPOSED.
+
+## Founder decisions 2026-10-19
+- IP: follow the reference composition (reference.png + close-ups); the 'original castle / opened tree' edits are dropped.
+- Collar, not hood.
+- Armhole wrap seam accepted: art 3 mm short each side, no topstitch; press the SA toward the body and finish it inside (overlock or bind).

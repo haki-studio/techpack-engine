@@ -154,7 +154,7 @@ def summary():
           "2. Cost: ~" + f"{MH_SPLIT:.0f}" + " h of one head per jacket at the factory speed. Confirm the price basis (F1) before bulk; a clean-up pass can cut trims + density after the sew-out.",
           "3. IP — CLOSED. Founder decision 2026-10-19: follow the reference composition (castle on the falls, closed arching tree, karamon, pagoda, gate tower, bridge).",
           f"4. Thread board: {len(cfcore.sewn_threads())} threads sewn ({len(cfcore.CF_KEYS)} targets read from a low-res AI mockup) — approve physical colours (G3); each file sews ≤ 12 (merges per piece on G3 / spec p4).",
-          "5. Armholes as wrap seams (art 3 mm each side, no armhole topstitch) — OK for construction (T7)?",
+          "5. Armhole wrap seams — CLOSED (founder 2026-10-19): art 3 mm each side, no topstitch; SA pressed to body + finished inside (T7).",
           "6. Grading A 92 % / B 100 % / C 108 %, one file per size per piece; body about CB/CF + hem, sleeves about the cuff seam. OK?",
           "7. Shell: piece-dyed + pre-washed navy duck assumed. Dense embroidery on all five pieces will shrink panels — measure on the strike-off (F1).",
           "8. Reference: mockup (placement + scale) + founder close-ups (inputs/closeups/, registered TPS, traced) + reference.png (structure where the AI close-up is garbled). Gate tower (SL) + village houses are redrawn objects, low-res mockup only.",

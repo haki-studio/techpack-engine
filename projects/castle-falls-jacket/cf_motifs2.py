@@ -258,25 +258,34 @@ def castle2(cx, y0, unit=None, T=None, bal=(176.0, 24.0)):
     return regs, unary_union(outline).buffer(0.5), bt + bh
 
 def karamon(cx, y0, w=64.0, h=46.0, unit=None):
-    """gold/brown gate at the foot of the castle rock: cusped (karahafu) roof in bark + gold edge, brown posts, dark opening,
-    gold studs. y0 = roof top."""
+    """karamon gate (front close-up / reference): cusped karahafu roof — central bell hump, ends sweeping up — in bark with gold
+    edge lines, gold ridge crest + end ornaments; dark gate body with brown posts, gold lintel, studs and door grille."""
     regs = []
-    rh = h * 0.42
-    top = [(cx + (w / 2) * math.cos(a), y0 + rh - rh * (math.sin(a) ** 0.6) - 0.0) for a in np.linspace(0, math.pi, 32)]
-    curl = [(cx - w / 2 - 3, y0 + rh + 1.5), (cx + w / 2 + 3, y0 + rh + 1.5)]
-    rf = Polygon([curl[1]] + top + [curl[0]]).buffer(0)
-    regs.append(R("cf_bark", rf, "tatami", ("radial", cx, y0 + rh + 8), "ROOF", unit=unit))
-    regs.append(R("cf_gold", LineString(top).buffer(0.9), "satin", "auto", "ORN", unit=unit, ko=False))
-    regs.append(R("cf_gold", LineString(curl).buffer(1.0), "satin", "auto", "ORN", unit=unit))
-    for k in range(7): regs.append(R("cf_gold", Point(cx - w / 2 + 6 + k * (w - 12) / 6, y0 + rh - 1.6).buffer(0.7), "satin", "auto", "DOT", unit=unit, ko=False))
-    yb = y0 + rh + 2.5; hb = h - rh - 2.5
-    body = box(cx - w / 2 + 4, yb, cx + w / 2 - 4, yb + hb)
-    regs.append(R("cf_brown", body, "tatami", 90.0, "TMB", unit=unit))
-    regs.append(R("cf_navy", box(cx - w / 2 + 10, yb + 4, cx + w / 2 - 10, yb + hb), "tatami", 90.0, "WIN", unit=unit))
-    regs.append(R("cf_gold", box(cx - w / 2 + 4, yb + 1.0, cx + w / 2 - 4, yb + 2.4), "satin", 90.0, "ORN", unit=unit, ko=False))
-    for s in (-1, 1):
-        for j in range(3): regs.append(R("cf_gold", Point(cx + s * (w / 2 - 7), yb + 7 + j * 6).buffer(0.8), "satin", "auto", "DOT", unit=unit, ko=False))
-    return regs, unary_union([rf, body]).buffer(0.4)
+    rh = h * 0.40; th = rh * 0.42
+    us = np.linspace(-1, 1, 48)
+    def top(u): return y0 + rh * (1.0 - 0.85 * math.exp(-(u / 0.5) ** 2) - 0.32 * abs(u) ** 5)
+    up = [(cx + u * w / 2, top(u)) for u in us]; lo = [(cx + u * w / 2 * 0.97, top(u) + th * (0.75 + 0.25 * math.exp(-(u / 0.5) ** 2))) for u in us]
+    rf = Polygon(up + lo[::-1]).buffer(0)
+    regs.append(R("cf_bark", rf, "tatami", 90.0, "ROOF", unit=unit))
+    regs.append(R("cf_gold", LineString(up).buffer(0.9), "satin", "auto", "ORN", unit=unit, ko=False))
+    regs.append(R("cf_gold", LineString(lo).buffer(1.0), "satin", "auto", "ORN", unit=unit, ko=False))
+    for u in np.linspace(-0.85, 0.85, 9):          # tile ribs across the roof band
+        x = cx + u * w / 2; regs.append(R("cf_brown", LineString([(x, top(u) + 1.4), (x, top(u) + th * 0.8)]).buffer(0.4), "run", None, "ROOF-ln", unit=unit, ko=False))
+    crest = Polygon([(cx - 7, top(0) + 0.5), (cx - 4, top(0) - 6), (cx, top(0) - 8.5), (cx + 4, top(0) - 6), (cx + 7, top(0) + 0.5)]).buffer(0.3)
+    regs.append(R("cf_gold", crest, "satin", 90.0, "ORN", unit=unit))
+    for s_ in (-1, 1):
+        ex = cx + s_ * w / 2; regs.append(R("cf_gold", LineString([(ex - s_ * 2, top(s_) + 1), (ex + s_ * 1.5, top(s_) - 4)]).buffer(1.3, cap_style="round"), "satin", "auto", "ORN", unit=unit))
+    yb = max(lo, key=lambda p: p[1])[1] - 1.0; hb = y0 + h - yb
+    body = box(cx - w * 0.40, yb, cx + w * 0.40, y0 + h)
+    regs.append(R("cf_navy", body, "tatami", 90.0, "WIN", unit=unit))
+    for s_ in (-1, 1):
+        regs.append(R("cf_brown", box(cx + s_ * w * 0.40 - (6 if s_ > 0 else 0), yb, cx + s_ * w * 0.40 + (0 if s_ > 0 else 6), y0 + h), "satin", 90.0, "TMB", unit=unit))
+        for j in range(4): regs.append(R("cf_gold", Point(cx + s_ * (w * 0.40 - 3), yb + 6 + j * (hb - 10) / 3).buffer(0.9), "satin", "auto", "DOT", unit=unit, ko=False))
+    regs.append(R("cf_gold", box(cx - w * 0.40, yb + 1.2, cx + w * 0.40, yb + 3.0), "satin", 90.0, "ORN", unit=unit, ko=False))
+    regs.append(R("cf_gold", box(cx - w * 0.30, yb + hb * 0.45, cx + w * 0.30, yb + hb * 0.45 + 1.4), "satin", 90.0, "ORN", unit=unit, ko=False))
+    for k in range(-3, 4):
+        regs.append(R("cf_gold", LineString([(cx + k * w * 0.08, yb + hb * 0.45 + 1.4), (cx + k * w * 0.08, y0 + h - 1.5)]).buffer(0.55), "satin", "auto", "ORN", unit=unit, ko=False))
+    return regs, unary_union([rf, body, crest]).buffer(0.4)
 
 def pagoda(cx, spire_top, tiers, ring_col="cf_gold", unit=None):
     """3-tier pagoda: gold finial spire with rings (sorin), per tier an upturned navy tile roof with gold tips, red balcony band
