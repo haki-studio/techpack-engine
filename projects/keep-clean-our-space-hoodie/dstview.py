@@ -42,8 +42,9 @@ def strokes(base, origin=None):
     return out
 
 def image(bases, bbox, ppm, origins=None, bg=FABRIC, ss=2):
+    """bg=None -> RGBA with a transparent background (stitches only, for placing on flats)"""
     x0, y0, x1, y1 = bbox; W, H = int((x1 - x0)*ppm), int((y1 - y0)*ppm)
-    S = ppm*ss; im = Image.new("RGB", (W*ss, H*ss), bg); d = ImageDraw.Draw(im)
+    S = ppm*ss; im = Image.new("RGBA" if bg is None else "RGB", (W*ss, H*ss), (0, 0, 0, 0) if bg is None else bg); d = ImageDraw.Draw(im)
     we, wc = max(1, int(round(0.42*S))), max(1, int(round(0.20*S)))
     for i, b in enumerate(bases):
         for col, run in strokes(b, origins[i] if origins else None):

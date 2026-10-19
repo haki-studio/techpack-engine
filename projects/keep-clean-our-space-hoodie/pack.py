@@ -215,11 +215,12 @@ def summary():
           "3. Back and hood: the mockup shows only the front. Proposed: back + hood plain; star field on both fronts and all round both sleeves (back half of the sleeves seeded at the mockup's density).",
           f"4. Frame: fronts are ~265 × 500 and sleeves ~480 × 560 → {sum(HOOP.values())} hoopings per jacket on {FR_S}. A bigger frame (≥ 300 × 520 for fronts) removes the front joins. Which frames?",
           f"5. Thread board: {len(kccore.KC_KEYS)} targets read from a low-res AI render (Rev B adds mint / blue / red tints for the domed rims + star haze) — approve physical colours (G3).",
-          "6. Welt pockets: drawn at the mockup's steep slash angle (58°, centre 245 from CF) instead of Drum Island's 38° — the CN badge needs the space. Confirm with the pattern (hood PR).",
+          "6. Welt pockets at the mockup's steep slash position (58°, centre 245 from CF / 360 below the neck at M, graded by the block) — the CN badge needs the space. Confirm.",
           "7. Badge grade: A 92 % / B 100 % / C 106 %; badges keep their shape and move with the panel. Or one badge size for all sizes?",
           "8. Close-ups: art is redrawn from the ~1 px/mm mockup (inputs/closeup_request.md, incl. a badge-texture prompt). Close-ups would let us match puff edges / glow exactly.",
-          "10. KR oval: the render's non-text marks (i-arrow mark, accent tick + dot) are KEPT in Rev B as white ornaments. Keep them, or drop them with the garbled text?",
-          "9. DST/PES are production-intent drafts: the factory digitizer checks density, pull and puff end caps on the washed duck and edits before the sew-out."]
+          "9. KR oval: the render's non-text marks (i-arrow mark, accent tick + dot) are KEPT in Rev B as white ornaments. Keep them, or drop them with the garbled text?",
+          "10. DST/PES are production-intent drafts: the factory digitizer checks density, pull and puff end caps on the washed duck and edits before the sew-out.",
+          "Closed 19 Oct (founder): block = zip-hoodie (engine/hoodie.py, elastic hem + cuff bands); slash welts via the block's welt override. Pattern + T pages in this pack."]
     for i, q in enumerate(qs): o.append(KD.auto(12, qy + 5 + i*3.9, q, 1.75))
     return o
 

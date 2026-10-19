@@ -248,4 +248,4 @@ ELEMENTS = {   # id -> (slug, title, piece)
     "05": ("star-field", "Star speckle field", "FR FL SR SL"),
 }
 TEXT = {"01": "宇宙をきれいに", "02": ("KEEP", "CLEAN", "OUR SPACE"), "03": "不要污染地球", "04": "우주를 깨끗하게"}
-REV_EMB = "Rev B"; REV_GAR = "Rev A"; DATE = "19 Oct 2026"
+REV_EMB = "Rev B"; REV_GAR = "Rev B"; DATE = "19 Oct 2026"
