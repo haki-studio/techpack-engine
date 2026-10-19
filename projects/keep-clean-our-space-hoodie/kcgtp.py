@@ -314,7 +314,7 @@ def p_placement():
         y += 2.2
     o.append(t(12, y + 1, f"Result: {'ALL KEEP-OUTS PASS on every size' if allok else 'KEEP-OUT FAILURE — see red'}.", 2.0, 700, GREEN if allok else RED))
     try:
-        wc = json.load(open("welt_check.json")); worst = min(v for sz in wc for P in wc[sz] for v in wc[sz][P].values())
+        wc = json.load(open("welt_check.json")); worst = min(v for sz in wc for v in wc[sz].values())
         okw = worst >= F_.KEEP_WELT - 0.6
         o.append(t(150, y + 1, f"Welt line: nearest STITCH to the welt box, read from every DST (full + splits), all sizes: {worst:.1f} mm — {'no stitch on the welt' if okw else 'CHECK'}.", 1.7, 700, GREEN if okw else RED))
     except FileNotFoundError:

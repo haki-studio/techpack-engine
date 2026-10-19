@@ -142,3 +142,19 @@ def apply(regs, info):
         elif isinstance(r.get("ang"), (int, float)): r2["ang"] = r["ang"] + rot
         out.append(r2)
     return out
+
+def trace_polygon(ref_fn, cx, cy, r=5.0, ppm=10.0):
+    """the reference silhouette itself (A14 'trace every motif'): the mockup component under (cx, cy) as a polygon (mm)"""
+    from skimage import measure
+    from shapely.geometry import Polygon as _P
+    bb = (cx - r, cy - r, cx + r, cy + r); m = ref_fn(bb, ppm)
+    lab, n = ndi.label(m)
+    if not n: return None
+    k = lab[int(r * ppm) - 3:int(r * ppm) + 4, int(r * ppm) - 3:int(r * ppm) + 4].max()
+    if not k:
+        cs = ndi.center_of_mass(m, lab, range(1, n + 1)); k = 1 + int(np.argmin([math.hypot(c[1] - r * ppm, c[0] - r * ppm) for c in cs]))
+    cs = measure.find_contours(np.pad(lab == k, 1).astype(float), 0.5)
+    if not cs: return None
+    c = max(cs, key=len)
+    poly = _P([(bb[0] + (x - 1 + 0.5) / ppm, bb[1] + (y - 1 + 0.5) / ppm) for y, x in c]).buffer(0)
+    return poly.buffer(0.12).buffer(-0.12).simplify(0.05).buffer(0) if poly.area > 0.5 else None

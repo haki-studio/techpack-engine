@@ -336,7 +336,14 @@ def speck_motif(s, x, y, col="kc_white", unit=None, uniform=False, fn=None):
         # traced shape choice: a 3-4 px speck can be a tiny 4-point star (plus) — fit both, keep the better match
         sp = max(3.0, max(c["ext_w"], c["ext_h"]) * (S if uniform else math.sqrt(MM.SX * MM.SY)))
         st, i_sp = fit(KM.sparkle_cols(x, y, sp, col, unit), fn, "05", "sparkle (small)", aspect=True, starts=SP_STARTS, ret_iou=True)
-        if i_sp > i_dot + 0.03: return st
+        if i_sp > i_dot + 0.03: dr, i_dot = st, i_sp
+    if i_dot < 0.75:
+        # neither primitive matches this tiny star: stitch its traced silhouette (A14), satin across its long axis
+        cxy = unary_union([r["geom"] for r in dr]).centroid
+        tp = TR.trace_polygon(fn, cxy.x, cxy.y)
+        if tp is not None and tp.area >= 1.6 and tp.distance(cxy) < 1.5:
+            tr_log("05", "traced silhouettes", True)
+            return [KM.R(col, tp, "satin", "auto", "DOT", unit=unit, kob=0.6)]
     return dr
 nfield = {"FR": 0, "FL": 0, "SR": 0, "SL": 0}; ncn = 0
 # sleeve quads in the mockup (px): top fold at the shoulder, cuff outer, underarm, cuff inner

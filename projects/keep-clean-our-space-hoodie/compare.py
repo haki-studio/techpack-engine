@@ -64,12 +64,12 @@ def gate_lines(el=None, field=None):
 ZOOMS = {
  "01": [("宇宙 + face star (puff text, rims, halo)", dict(unit="01-text", ch="宙", h=19)), ("き れ (curved baseline, bars)", dict(unit="01-text", ch="き", h=19)),
         ("top star: dark pit + white centre, bars", dict(unit="01-star1", h=15)), ("bottom red star: solid, star pit", dict(unit="01-star3", h=13))],
- "02": [("KEEP (puff, rim)", dict(unit="02-text", ch="K", h=17)), ("CLEAN (lemon, white rim)", dict(unit="02-text", ch="L", h=17)),
+ "02": [("KEEP (puff, rim)", dict(unit="02-text", ch="K", h=17)), ("CLEAN (lemon, lemon-tint rim)", dict(unit="02-text", ch="L", h=17)),
         ("SPACE + halo", dict(unit="02-text", ch="S", h=17)), ("faceted border stars", dict(unit="02-star5", h=12))],
  "03": [("要 (flat column satin)", dict(unit="03-text", ch="要", h=17)), ("世 界", dict(unit="03-text", ch="界", h=17)),
         ("domed ring dots + halo", dict(unit="03-dots", h=14, pick=top)), ("inner sparkles", dict(unit="03-sp", h=14))],
- "04": [("i-arrow mark + 우", dict(unit="04-orn", h=14, pick=lambda rs: [r for r in rs if r["grp"] != "DOT"])), ("소중한", dict(unit="04-text", ch="중", h=16)),
-        ("accent tick + dot", dict(unit="04-orn", h=14, pick=lambda rs: [r for r in rs if r["grp"] == "DOT"])), ("oval ring + highlight", dict(unit="04-oval", h=14, pick=lambda rs: rs))],
+ "04": [("우리들 (light satin columns)", dict(unit="04-text", ch="들", h=16)), ("소중한", dict(unit="04-text", ch="중", h=16)),
+        ("우주! (the '!' the render showed rotated)", dict(unit="04-text", ch="!", h=14)), ("oval ring + highlight", dict(unit="04-oval", h=14, pick=lambda rs: rs))],
 }
 
 def label(im, s, f=FS):
