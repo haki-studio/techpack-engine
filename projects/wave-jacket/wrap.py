@@ -146,6 +146,8 @@ def seams(size):
     """list of dict(name, kind, A=(P, pts), B=(P, pts)); A and B run the same way (s = 0 at the same seam end)"""
     out = []
     bk_sh_L = edge(size, "BK", "shoulder L"); bk_sh_R = edge(size, "BK", "shoulder R")[::-1]       # neck -> shoulder point
+    top_down = lambda pts: pts if pts[0][1] <= pts[-1][1] else pts[::-1]
+    out.append(dict(name="CF zip", kind="zip", A=("FR", top_down(edge(size, "FR", "CF / zip"))), B=("FL", top_down(edge(size, "FL", "CF / zip")))))
     for side, F, S, sh in (("L", "FL", "SL", bk_sh_L), ("R", "FR", "SR", bk_sh_R)):
         back, front = cap_halves(size, S)
         out.append(dict(name=f"armhole back {side}", kind="view", A=("BK", MM.armhole_mm("back", side, size)), B=(S, back)))
@@ -319,15 +321,15 @@ def art_match(la, lb):
     both = [(x, y) for x, y in zip(la, lb) if x is not None or y is not None]
     return float(np.mean([x == y for x, y in both])) if both else 1.0
 
-CONT_E = 28.0
-def continue_across(art, src, dst, E=CONT_E):
+CONT_E = 40.0
+def continue_across(art, src, dst, E=CONT_E, lb_other=None, d0=GAP + 1.5):
     """every stripe / rope line of `src` that reaches the seam continues straight across it into `dst` (same angle to the
     seam, the band part translated along its own direction) and tapers to a point over E mm: no stripe ends in a hard
     cut at a seam, whatever the other view shows there. Added above dst's own stripes (z + 0.5). Returns count."""
     near = src.line.buffer(E).intersection(src.region)
     n = 0; L = src.L
     for r in list(art[src.P]):
-        if r["grp"] not in ("WV", "RP") or not r["geom"].intersects(near): continue
+        if r["grp"] not in ("WV", "RP") or r.get("cont") or not r["geom"].intersects(near): continue
         q_all = r["geom"].intersection(near)
         for q in polys_of(q_all):
             if q.area < 2.0 or src.line.distance(q) > GAP + 1.5: continue
@@ -354,15 +356,19 @@ def continue_across(art, src, dst, E=CONT_E):
             if on.is_empty: continue
             ss = [src.line.project(Point(c)) for g_ in polys_of(on) for c in g_.exterior.coords]
             s0, s1 = min(ss), max(ss); sc = 0.5 * (s0 + s1); slope = v[0] / abs(v[1])
-            tip = sc + slope * E
-            wedge_sd = [(s0 - 1.0, -1.0), (s1 + 1.0, -1.0), (tip + 0.3, E), (tip - 0.3, E)]
+            if lb_other is not None:                                       # one-sided only: the other piece has no stripe here
+                seg = lb_other[int(max(0, s0 * dst.L / L)):int(min(len(lb_other), s1 * dst.L / L + 1))]
+                if seg and np.mean([x is not None for x in seg]) > 0.5: continue
+            Eq = float(np.clip(2.5 * (s1 - s0) * abs(v[1]), 15.0, 40.0))   # taper length ~ 2.5 x the stripe width
+            tip = sc + slope * Eq
+            wedge_sd = [(s0 - 1.0, -1.0), (s1 + 1.0, -1.0), (tip + 0.3, Eq), (tip - 0.3, Eq)]
             wedge = Polygon([dst.point(min(max(a_ / L, 0), 1), b_) for a_, b_ in wedge_sd]).buffer(0)
             gm = map_pts(q, fn, densify=1.5)
             if gm is None or gm.is_empty: continue
             gm = gm.intersection(wedge).intersection(dst.region)
             for p in polys_of(gm):
                 if p.area > 1.0:
-                    art[dst.P].append(dict(r, geom=p, z=r["z"] + 0.5, unit=None)); n += 1
+                    art[dst.P].append(dict(r, geom=p, z=r["z"] + 0.5, unit=None, cont=True)); n += 1
     return n
 
 def unit_centres(items):
@@ -371,18 +377,54 @@ def unit_centres(items):
         if r.get("unit"): acc.setdefault(r["unit"], []).append(r["geom"])
     return {u: unary_union(g).centroid.coords[0] for u, g in acc.items()}
 
+def band_items(items): return [r for r in items if r["grp"] in BAND_GRPS]
+
+def push_units(items, side, gap, cap=25.0):
+    """rigid motifs (curls, drops) that the seam keep-out would cut are moved inward so they end gap+0.6 short of the
+    seam whole (a curl is a discrete motif: it ends before a seam, it is never sliced by one). Motifs that would need
+    more than `cap` mm stay where they are (their overflow is carried across by transfer()). Returns count moved."""
+    units = {}
+    for i, r in enumerate(items):
+        if r.get("unit") and r["geom"].intersects(side.region.buffer(1.0)) and side.line.distance(r["geom"]) < gap + 0.6:
+            units.setdefault(r["unit"], [])
+    if not units: return 0
+    for r in items:
+        if r.get("unit") in units: units[r["unit"]].append(r)
+    n = 0
+    for u, rs in units.items():
+        g = unary_union([r["geom"] for r in rs])
+        X, Y = np.asarray(g.convex_hull.exterior.coords).T if g.convex_hull.geom_type == "Polygon" else (np.array([g.centroid.x]), np.array([g.centroid.y]))
+        s_, d_, p0, t, nrm, L = _sd(side, X, Y)
+        if np.max(s_) < 0 or np.min(s_) > 1: continue
+        need = gap + 0.6 - float(np.min(d_))
+        if need <= 0 or need > cap: continue
+        for r in rs: r["geom"] = affinity.translate(r["geom"], nrm[0] * need, nrm[1] * need)
+        n += 1
+    return n
+
 def silhouettes(art, size):
-    """stretch both sides of every silhouette / internal seam, then DTW-warp side B onto side A. Edits art {P: items}."""
+    """every silhouette / internal seam (sides, shoulders, sleeve underarm, sleeve centre line):
+    1. stretch both sides so the art reaches the seam where the render had it at the outline;
+    2. curls / drops the keep-out would slice are moved inward whole (push_units);
+    3. then on EVERY seam (armholes and shoulders too, not the zip): seamfill.fill_seam - every stripe / rope line that
+       crosses the seam continues straight on into the other piece (join / taper / abut), so both sides carry the same
+       tone at every seam position with art.
+    Edits art {P: items}; returns a log per seam."""
     log = {}
     for sm in seams(size):
         if sm["kind"] not in ("silhouette", "internal"): continue
         A, B = SeamSide(size, sm, "A"), SeamSide(size, sm, "B")
+        gap = 0.5 if sm["kind"] == "internal" else GAP + 1.0
         gs = []
         for sd in (A, B):
-            its = art[sd.P]; art[sd.P], g = stretch(its, sd, unit_centres(its)); gs.append(round(g, 1))
-        keys = sorted({r["col"] for P_ in art for r in art[P_] if r["grp"] in BAND_GRPS})
-        q = quilt(art, A, B, keys) if sm["kind"] != "silhouette" or sm["name"].split()[0] != "shoulder" else dict(cut=None)
-        log[sm["name"]] = dict(gap=gs, **q)
+            its = art[sd.P]; art[sd.P], g = stretch(its, sd, unit_centres(its), gap=gap); gs.append(round(g, 1))
+        pushed = [push_units(art[sd.P], sd, gap) for sd in (A, B)] if sm["kind"] != "internal" else [0, 0]
+        log[sm["name"]] = dict(gap=gs, pushed=pushed)
+    import seamfill as SF
+    for sm in seams(size):                                   # every sewn seam + the sleeve centre line, not the zip
+        if sm["kind"] == "zip": continue
+        gap = 0.5 if sm["kind"] == "internal" else GAP + 0.4
+        log.setdefault(sm["name"], {})["fill"] = SF.fill_seam(art, size, sm, gap)
     return log
 
 # ------------------------------------------------------------------ 4. overflow transfer

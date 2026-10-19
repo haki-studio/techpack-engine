@@ -31,8 +31,8 @@ tech.COLOUR_ORDER = WV_ORDER + [c for c in tech.COLOUR_ORDER if c not in WV_ORDE
 # ---------------------------------------------------------------- region codes
 # code -> (name, stitch, angle rule, density, stitch length, underlay, pull comp, notes)
 WV_RULES = {
- "RP":      ("Rope line (cream)",            "Satin, turning",      "across the line",          "0.42", "—",   "centre run",                  "0.20", "rope lines between the wave stripes"),
- "WV":      ("Wave stripe",                  "Satin, turning / tatami along", "along the stripe (map)", "0.42 / 0.45", "3.5", "centre run (satin) · edge run + 90° lattice (tatami > 60 mm²)", "0.25", "tatami along the stripe; turning satin only on stripes < 3 wide with no holes (DST coverage ≥ 99 %)"),
+ "RP":      ("Rope line (cream cord)",       "Satin, turning",      "across the line",          "0.42", "—",   "centre run",                  "0.20", "continuous 2.4 mm cords between the stripes (fragments joined, uniform width)"),
+ "WV":      ("Wave stripe (twisted cord)",   "Tatami cord / turning satin", "stripe direction ± 28° (cord twist, alternating per tone)", "0.45 / 0.42", "3.5", "edge run + 90° lattice (tatami > 60 mm²) · centre run (satin)", "0.25", "rows slant 28° to the stripe = twisted cord (close-up); turning satin only on stripes < 3 wide with no holes"),
  "FM":      ("Foam crest / curl (raised)",   "Padded tatami",       "auto (long axis)",         "0.45", "5.0", "1 padding layer @ 90° + edge run", "0.30", "raised; chenille look from FM-loop on top [proposed — ask chenille]"),
  "FM-sh":   ("Foam shade",                   "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
  "FM-gr":   ("Curl hollow (grey)",           "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
@@ -59,6 +59,8 @@ def patch_dst2():
     dst2.TRIM_MIN = 2.0             # an exposed move > 2 mm is trimmed, never left as a float
     if not getattr(dst2, "_wave_cov_guard", False):
         dst2._orig_build_object = dst2.build_object; dst2.build_object = covered_build_object; dst2._wave_cov_guard = True
+    if not getattr(dst2, "_wave_cord", False):
+        dst2._orig_sections = dst2.sections; dst2.sections = cord_sections; dst2._wave_cord = True
     return dst2
 
 # ---------------------------------------------------------------- satin coverage guard (QA 19 Oct, ENGINE_NOTES 7)
@@ -85,7 +87,26 @@ def stitch_cover(blocks, geom, ppm=10, thread=0.6):
         ds.line([((x - x0) * ppm, (y - y0) * ppm) for x, y in b], fill=255, width=lw)
     return float((a & (np.asarray(S) > 0)).sum() / a.sum())
 
+# ---------------------------------------------------------------- twisted-cord stripes (review item 5, Rev B)
+# The close-up's stripes are twisted cords: the stitch rows of each stripe run at a slant to the stripe, not along it.
+# Tatami rows of a WV stripe are laid at the local stripe direction + CORD_TWIST (alternating sign from tone to tone, so
+# neighbouring cords twist opposite ways, as in the close-up). Everything else is the engine's along-the-stripe sections.
+CORD_TWIST = 28.0
+_CUR = {"r": None}
+def cord_sections(p, line, step=6.0, across=False):
+    import dst2
+    out = dst2._orig_sections(p, line, step, across)
+    r = _CUR["r"]
+    if r is None or r.get("grp") != "WV" or across: return out
+    sg = 1 if WV_KEYS.index(r["col"]) % 2 == 0 else -1
+    return [(q, a + sg * CORD_TWIST) for q, a in out]
+
 def covered_build_object(r, earlier_tones):
+    _CUR["r"] = r
+    try: return _covered_build_object(r, earlier_tones)
+    finally: _CUR["r"] = None
+
+def _covered_build_object(r, earlier_tones):
     """engine build_object, then: a satin object whose stitches cover < SAT_MIN_COV of it (turning satin fans out on the
     outside of a bend: drops, curl shades) is rebuilt as fixed-angle split satin, or tatami if that covers more"""
     import dst2, stitchrender as SR

@@ -273,6 +273,12 @@ def curl_lines(vis):
     for r in foam: by.setdefault(r.get("unit"), []).append(r["geom"])
     U = {u: unary_union(g) for u, g in by.items()}
     keys = list(U); tree = shapely.STRtree([U[k] for k in keys])
+    eyes = {}
+    for r in vis:
+        if r["grp"] == "FM-gr" and r.get("unit") in U:
+            e = eyes.get(r["unit"])
+            if e is None or r["geom"].area > e[1]: eyes[r["unit"]] = (r["geom"].centroid, r["geom"].area)
+    eyes = {k: v[0] for k, v in eyes.items()}
     for i, u in enumerate(keys):
         g = U[u]
         others = [U[keys[j]] for j in tree.query(g.buffer(0.8)) if j != i]
@@ -284,10 +290,25 @@ def curl_lines(vis):
                     for p in polys(q):
                         if p.area > 0.4: out.append(dict(R("w3", p, "bean", None, "FM-curl"), z=Z["foam"] + 0.6, unit=u))
         if g.area > 55:
-            c = g.representative_point(); rr = 0.42 * math.sqrt(g.area / math.pi)
-            arc = LineString([(c.x + rr * math.cos(t), c.y + rr * math.sin(t)) for t in np.radians(np.linspace(120, 360, 30))])
-            q = arc.buffer(0.35, cap_style="round").intersection(g.buffer(-0.8))
-            for p in polys(q):
+            # Rev B (review item 4): ONE continuous curl cord per curl - a spiral from the curl's eye (its grey hollow, else
+            # its innermost point) out to 0.8 mm inside the edge, 1.4 turns, the longest unbroken piece kept
+            eye = eyes.get(u)
+            inner = g.buffer(-0.8)
+            if inner.is_empty: continue
+            c = eye if (eye is not None and inner.contains(eye)) else inner.representative_point()
+            Rm = max(1.0, float(c.distance(g.exterior)) if g.geom_type == "Polygon" else 0.42 * math.sqrt(g.area / math.pi))
+            Rm = max(Rm, 0.42 * math.sqrt(g.area / math.pi))
+            hand = 1 if (sum(map(ord, str(u))) % 2) else -1
+            th = np.linspace(0, 2 * math.pi * 1.4, 160)
+            rr = 0.9 + (Rm * 0.95 - 0.9) * th / th[-1]
+            sp = LineString([(c.x + r_ * math.cos(hand * t_), c.y + r_ * math.sin(hand * t_)) for r_, t_ in zip(rr, th)])
+            sp = sp.intersection(inner)
+            segs = [x for x in getattr(sp, "geoms", [sp]) if x.geom_type == "LineString" and not x.is_empty]
+            if not segs: continue
+            seg = max(segs, key=lambda x: x.length)
+            if seg.length < 4: continue
+            q = seg.buffer(0.35, cap_style="round")
+            for p in polys(q.intersection(g)):
                 if p.area > 0.6: out.append(dict(R("w3", p, "bean", None, "FM-curl"), z=Z["foam"] + 0.6, unit=u))
     return out
 
@@ -377,7 +398,14 @@ def drop_fold_highlight(its):
     for r in its:
         if r.get("unit"): units.setdefault(r["unit"], []).append(r)
     drop = {u for u, rs in units.items() if (lambda g: g.area < 20 and abs(g.centroid.x) < 6)(unary_union([r["geom"] for r in rs]))}
-    return [r for r in its if r.get("unit") not in drop]
+    def dash(r):          # the fold highlight traced as short thin stripe / rope dashes ON the centre line (SL Rev A review)
+        if r.get("unit") or r["grp"] not in ("WV", "RP"): return False
+        b = r["geom"].bounds
+        return abs(r["geom"].centroid.x) < 8 and (b[2] - b[0]) < 6 and width(r["geom"]) < 3.0
+    def sliver(r):        # the fold highlight traced as thin foam / stripe slivers along the centre line (SL cap, Rev B)
+        g = r["geom"]; w_ = width(g)
+        return abs(g.centroid.x) < 10 and w_ < 1.3 and (g.length / 2) / max(w_, 0.1) > 8
+    return [r for r in its if r.get("unit") not in drop and not dash(r) and not sliver(r)]
 
 # ---------------------------------------------------------------- sleeve fold (QA 19 Oct: 20-50 mm bare band on the centre line)
 def close_fold(its, P):
@@ -422,6 +450,138 @@ def close_fold(its, P):
                 if not gm.is_empty: out.append(dict(r, geom=gm))
     return out, G
 
+# ---------------------------------------------------------------- Rev B structure (review items 4 + 5, LESSONS A13)
+FLECK_W, FLECK_A = 2.0, 30.0        # stand-alone flecks
+HOLE_W, HOLE_A = 3.2, 90.0          # dark dashes INSIDE a band (the render's stitch shadows) - closed into the band
+def clean_flecks(its):
+    """stripes = continuous cords (review item 5): drop the render's sub-2 mm tone flecks and close the dark dashes inside
+    the pale bands (holes < 3.2 mm wide or < 90 mm2: the render's stitch texture, not art) into the band around them;
+    pieces of another tone that sat in such a hole are dropped"""
+    out = []; n = 0; filled = []
+    for r in its:
+        if r["grp"] != "WV" or r.get("cont"): out.append(r); continue
+        for p in polys(r["geom"]):
+            if width(p) < FLECK_W and p.area < FLECK_A: n += 1; continue
+            keep, gone = [], []
+            for h in p.interiors:
+                hp = Polygon(h)
+                (gone if (hp.area < HOLE_A or width(hp) < HOLE_W) else keep).append(hp)
+            if gone: p = Polygon(p.exterior, [k.exterior for k in keep]); filled += [(g, r["col"]) for g in gone]
+            out.append(dict(r, geom=p))
+    if filled:
+        F = shapely.STRtree([g for g, _ in filled]); res = []
+        for r in out:
+            if r["grp"] == "WV" and not r.get("cont") and r["geom"].area < HOLE_A:
+                hit = [filled[int(j)] for j in F.query(r["geom"])]
+                if any(c != r["col"] and g.buffer(0.3).intersection(r["geom"]).area > 0.8 * r["geom"].area for g, c in hit): n += 1; continue
+            res.append(r)
+        out = res
+    # bare slits BETWEEN two tones of a band (the render's dark stitch shadows read as fabric): closed into the
+    # neighbouring tone with the longest shared edge
+    bands = [r for r in out if r["grp"] == "WV"]
+    if bands:
+        U = unary_union([r["geom"] for r in bands])
+        others = unary_union([r["geom"] for r in out if r["grp"] != "WV"]) if any(r["grp"] != "WV" for r in out) else Polygon()
+        slits = U.buffer(1.3, join_style=2).buffer(-1.3, join_style=2).difference(U).difference(others)
+        T = shapely.STRtree([r["geom"] for r in bands]); add = []
+        for g in polys(slits):
+            if g.area < 0.5 or g.area > 150: continue
+            best, bl = None, 0.0
+            for j in T.query(g.buffer(0.2)):
+                l_ = bands[int(j)]["geom"].buffer(0.2).intersection(g.boundary).length
+                if l_ > bl: best, bl = bands[int(j)], l_
+            if best is not None: add.append(dict(best, geom=g.buffer(0.15).buffer(0)))
+        out += add; n += len(add)
+    return out, n
+
+def rope_lines(its, half=1.2, join=16.0, max_turn=32.0):
+    """rope lines = continuous 2.4 mm cream cords: each traced rope fragment -> its centre line; fragment ends that point
+    at each other (gap <= join, turn <= max_turn deg) and whose bridge lies on the stripes are joined; every line is then
+    one uniform-width satin cord (half-width `half`)"""
+    rp = [r for r in its if r["grp"] == "RP"]; rest = [r for r in its if r["grp"] != "RP"]
+    if not rp: return its, 0
+    bands = unary_union([r["geom"] for r in its if r["grp"] == "WV"]).buffer(1.5)
+    lines = []
+    for r in rp:
+        for p in polys(r["geom"]):
+            if p.area < 1.0: continue
+            ln = dst2.centreline(p) if (p.length / 2) / max(width(p), 0.1) > 2.0 else None
+            if ln is None or ln.length < 1.5:
+                b = p.minimum_rotated_rectangle.exterior.coords
+                e = sorted([LineString([b[i], b[i + 1]]) for i in range(4)], key=lambda l: -l.length)[0]
+                c = p.centroid; dx, dy = (e.coords[1][0] - e.coords[0][0]) / 2, (e.coords[1][1] - e.coords[0][1]) / 2
+                ln = LineString([(c.x - dx, c.y - dy), (c.x + dx, c.y + dy)])
+            lines.append([tuple(map(float, q)) for q in ln.coords])
+    def tang(l, end):
+        a, b = (np.array(l[0]), np.array(l[min(3, len(l) - 1)])) if end == 0 else (np.array(l[-1]), np.array(l[max(0, len(l) - 4)]))
+        v = a - b; n_ = np.hypot(*v); return v / n_ if n_ > 1e-6 else v
+    from scipy.spatial import cKDTree
+    E = [(i, e, np.array(l[0] if e == 0 else l[-1]), tang(l, e)) for i, l in enumerate(lines) for e in (0, 1)]
+    cand = []
+    if len(E) > 1:
+        for a, b in cKDTree(np.array([x[2] for x in E])).query_pairs(join):
+            (i, ei, pi, ti), (j, ej, pj, tj) = E[a], E[b]
+            if i == j: continue
+            v = pj - pi; d = float(np.hypot(*v))
+            if d < 0.3: continue
+            v = v / d
+            if np.degrees(np.arccos(np.clip(ti @ v, -1, 1))) > max_turn or np.degrees(np.arccos(np.clip(-tj @ v, -1, 1))) > max_turn: continue
+            cand.append((d, a, b))
+    cand.sort(); used = set(); parent = list(range(len(lines))); link = {}
+    def find(x):
+        while parent[x] != x: parent[x] = parent[parent[x]]; x = parent[x]
+        return x
+    joined = 0
+    for d, a, b in cand:
+        if a in used or b in used: continue
+        i, j = E[a][0], E[b][0]
+        if find(i) == find(j): continue
+        if not bands.contains(LineString([E[a][2], E[b][2]])): continue
+        used |= {a, b}; parent[find(i)] = find(j); link[a] = b; link[b] = a; joined += 1
+    # walk chains: start at a free end (endpoint index 2*i + e), alternate line body -> link
+    seen = set(); chains = []
+    for start in range(len(E)):
+        li = E[start][0]
+        if li in seen or start in link: continue
+        cur, pts = start, []
+        while True:
+            i, e = E[cur][0], E[cur][1]; seen.add(i)
+            body = lines[i] if e == 0 else lines[i][::-1]; pts += body
+            other = 2 * i + (1 - e)
+            if other in link: cur = link[other]
+            else: break
+        chains.append(pts)
+    for i, l in enumerate(lines):
+        if i not in seen: chains.append(l)
+    lines = chains
+    out = list(rest)
+    z = Z["rope"]
+    for l in lines:
+        g = LineString(l).simplify(0.2)
+        if g.length < 2.0: continue
+        p = g.buffer(half, cap_style="round", join_style="round")
+        for q in polys(p): out.append(dict(R("w1", q, "satin", "auto", "RP"), z=z, unit=None))
+    return out, joined
+
+def grey_ridges(its, w=1.1):
+    """the curl hollows: flat grey blobs -> the close-up's thin RIDGED grey lines. Each grey blob wider than 1.6 mm becomes
+    a 1.1 mm grey satin ridge along its centre line; the rest of the blob is foam shade (it stays a hollow, in shade)"""
+    out = []; n = 0
+    for r in its:
+        if r["grp"] != "FM-gr" or width(r["geom"]) < 0.8 * w * 1.45: out.append(r); continue
+        for p in polys(r["geom"]):
+            ln = dst2.centreline(p) if p.area > 1.5 else None
+            if ln is None:
+                out.append(dict(r, geom=p)); continue
+            ridge = ln.buffer(w / 2, cap_style="round").intersection(p).buffer(0)
+            sh = p.difference(ridge.buffer(0.05)).buffer(0)
+            for q in polys(ridge):
+                if q.area > 0.3: out.append(dict(r, geom=q, st="satin"))
+            for q in polys(sh):
+                if q.area > 0.4: out.append(dict(r, col="w3", grp="FM-sh", geom=q, st="satin"))
+            n += 1
+    return out, n
+
 # ---------------------------------------------------------------- build
 def build(size):
     t0 = time.time(); res = {"info": dict(size=size, grade=MM.GRADE[size][0], scale=MM.GRADE[size][1])}
@@ -430,6 +590,11 @@ def build(size):
     res["info"]["silhouette_seams"] = WR.silhouettes(art, size)          # stretch + DTW along side/shoulder/underarm/centre
     res["info"]["transfer"] = WR.transfer(art, size)                       # overflow across every seam
     res["info"]["maps"] = {f"{v}/{s}": dict(fold_frac=round(WR.sleeve_map(v, s, size).fold_frac, 4)) for v in ("back", "front") for s in "LR"}
+    st_log = {}
+    for P in PC.PIECES:
+        art[P], nf = clean_flecks(art[P]); art[P], nj = rope_lines(art[P]); art[P], ng = grey_ridges(art[P])
+        st_log[P] = dict(flecks_dropped=nf, rope_joins=nj, grey_blobs_to_ridges=ng)
+    res["info"]["structure"] = st_log
     for P in PC.PIECES:
         clip = PC.clip_for(size, P).buffer(-0.4)        # 0.4 inside the keep-out: cleaning never crosses it
         its = art[P]
