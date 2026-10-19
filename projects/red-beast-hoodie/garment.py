@@ -56,8 +56,39 @@ def art_svg(Fl):
             u = unary_union([g.buffer(0.15) for g in gs]).simplify(0.35)
             u = affinity.translate(u, 0, Fl.fnd)
             o.append(f'<path d="{HF.poly_path(u)}" fill="{HEX[col]}" stroke="none" fill-rule="evenodd"/>')
+        o.append(sleeve_svg(Fl))
         _ART_SVG["f"] = "".join(o)
     return _ART_SVG["f"]
+def sleeve_svg(Fl):
+    """02 sleeve streaks on the front flat (schematic): sleeve pattern mm (y from the underarm line, cap top -cap_h,
+    cuff seam Lu; |x| = across the front half, 0 = top line = the flat's outer silhouette) -> flat mm, along the flat
+    sleeve by y and across it by |x| / the front-half width at that y"""
+    import numpy as np
+    from shapely.ops import transform
+    from shapely.geometry import LineString as LS
+    g, mt = F.pieces("M"); o = []
+    for P, key, sgn in (("SR", "S01", -1), ("SL", "S02", 1)):
+        pc = g[key].sew_poly(); x0, ytop, x1, ycuf = pc.bounds
+        def W(y):
+            seg = pc.intersection(LS([(0, y), (-sgn*400 if key == "S02" else 400, y)]))
+            if seg.is_empty: return 1.0
+            b = seg.bounds; return max(abs(b[0]), abs(b[2]), 1.0)
+        ys = np.linspace(ytop + 0.5, ycuf - 0.5, 120); Ws = np.array([W(y) for y in ys])
+        sp, ua, cso, csi = np.array(Fl.sp), np.array(Fl.ua), np.array(Fl.cs_out), np.array(Fl.cs_in)
+        def fmap(x, y, z=None):
+            x = np.asarray(x); y = np.asarray(y)
+            v = (y - ytop)/(ycuf - ytop); outer = sp[:, None] + (cso - sp)[:, None]*v
+            inner = np.where(y < 0, sp[:, None] + (ua - sp)[:, None]*((y - ytop)/(-ytop)), ua[:, None] + (csi - ua)[:, None]*(np.maximum(y, 0)/ycuf))
+            u = np.clip(np.abs(x)/np.interp(y, ys, Ws), 0, 1)
+            p = outer + (inner - outer)*u
+            return (sgn*p[0], p[1])
+        for col in rbcore.SEW:
+            gs = [r["geom"] for r in ART[P] if r["col"] == col and r["st"] != "bean"]
+            if not gs: continue
+            u_ = transform(fmap, unary_union([q.buffer(0.15) for q in gs]).simplify(0.35)).buffer(0)
+            o.append(f'<path d="{HF.poly_path(u_)}" fill="{HEX[col]}" stroke="none" fill-rule="evenodd"/>')
+    return "".join(o)
+
 _draw_front = HF.draw_front
 def draw_front(Fl):
     s = _draw_front(Fl)

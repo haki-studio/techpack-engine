@@ -75,7 +75,17 @@ def bg_mask(px, py):
 MOUTH = [(6, 211), (60, 206), (126, 220), (168, 241), (216, 256), (228, 274), (210, 295), (168, 304), (120, 286), (75, 268), (30, 244), (5, 235)]
 
 DIM_RED = 16.0
-def trace_front():
+NEUTRAL_BR, NEUTRAL_REACH = 6.0, 8.0
+def neutral_black(lab, rgb, inc):
+    fab = ((lab == 0) | (lab == 3)).astype(np.float32)
+    den = ndi.gaussian_filter(fab, 3) + 1e-6
+    br = ndi.gaussian_filter((rgb[..., 2] - rgb[..., 0])*fab, 3)/den
+    art = (lab >= 1) & (lab <= 4)
+    neu = (lab == 0) & inc & (br < NEUTRAL_BR) & (den > 0.3) & ndi.binary_dilation(art, structure=disk(NEUTRAL_REACH))
+    neu = ndi.binary_opening(neu, structure=disk(1.0))
+    lab = lab.copy(); lab[neu] = 3
+    return lab
+def trace_front(mouth=False):
     X, Y = grid(SPACES["F"]); fx, fy = MM.Pinv(X, Y)
     rgbm = MM.sample("front", fx, fy)
     labm, Lm = classify(rgbm, TH["front"])
@@ -100,9 +110,14 @@ def trace_front():
     sm = np.stack([ndi.gaussian_filter(rgbc[..., c], 0.8) for c in range(3)], -1)
     rsc = sm[..., 0] - np.maximum(sm[..., 1], sm[..., 2])
     labc[(labc == 3) & (rsc > DIM_RED)] = 2
+    # Rev B3 (LESSONS A14: reference from INPUT PIXELS only): black thread vs washed-denim fabric in the close-up. Both
+    # are equally dark (median L 26 vs 28), but the denim is BLUE (b - r = +8..+15) and the thread NEUTRAL (-2..+7):
+    # fabric-class pixels with a fabric-only-smoothed b - r < NEUTRAL_BR, within NEUTRAL_REACH mm of the art, are black
+    # thread (the open mouth between the teeth, black between the strands). Replaces the hand-drawn MOUTH polygon fill.
+    labc = neutral_black(labc, rgbc, inc)
     lab = np.where(inc, labc, labm); lab[~valid] = 9
     lab[welt & (lab == 4)] = 0
-    lab[(lab == 0) & shapely.contains_xy(Polygon(MOUTH), X, Y)] = 3                                                # welt-edge highlights are not thread
+    if mouth: lab[(lab == 0) & shapely.contains_xy(Polygon(MOUTH), X, Y)] = 3       # Rev B2 only (hand-drawn); Rev B3 default: off
     Lsrc = np.where(inc, Lc, Lm).astype(np.float32)
     return lab, inc, Lsrc
 
