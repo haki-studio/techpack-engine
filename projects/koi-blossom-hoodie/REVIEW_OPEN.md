@@ -1,19 +1,32 @@
-# Open review findings — Koi Blossom, Rev A review (→ Rev B). Fidelity first (A11/A12/A13). Close-up: inputs/closeup_mockup_koi.png — REGISTER and TRACE it (Rev A only used it as a look reference).
-Hard limits passed (73 files, ≤11 colours, max 7.41, M FR 43,470/263 FL 27,513/172 SR 10,862/57 SL 5,448/24 == readback; keep-outs min hem 10.6, welt 6.5, CF 18.0).
-1. BLOCKER Lily petals (FR big, FR hem, FL hem, SR cuff): fat rounded radial-fan petals with tone cuts + pale centre bar → ~6 long pointed overlapping lanceolate petals, direction along each petal axis, 2–3 long-and-short tone bands dark base → ice tip, no centre bar; petal count/overlap per close-up.
-2. BLOCKER Flower centres: symmetric ring of white pill spokes → deep-blue satin throat, 4–6 uneven cream anther knots, cream edge highlights on near petals, a few mid-blue stamen lines.
-3. HIGH Close-up never registered (compare.py maps only front.png ×4 Lanczos) — register closeup_mockup_koi.png onto FR upper and trace petal/leaf/koi-patch/fin structure; say on G1 which panels have no close-up.
-4. HIGH Compare sheets render art_<size>.pkl, not DSTs (and predate splits) — regenerate from DST readback; add close-up column; add FL hem lily-pair zoom; FL zoom 6 to include the dark flower.
-5. HIGH Koi red patches: messy fan/cross-hatch + ragged skewed hatch → two crisp angular patches per koi, one clean object each, single direction matching body bands.
-6. MED Koi body: perpendicular uniform bars + sawtooth flank → spine-following direction, scale-row texture (cream/grey dashes), forked feathered tail with long-and-short rays, fan-ray pectoral fins.
-7. MED Hem lilies sparse: FL hem needs big lily + dark flower + 10+ leaves + vine up the right (A2 counts); add dark-blue leaves beside FR hem flower.
-8. MED Leaves: single-tone herringbone → 2 tones (navy/cobalt/royal) + pale-ice lit-edge highlight on FR vine.
-9. LOW Keep disclosed deviations (lilies 15 mm off zip, art stops 10 mm above hem band) as questions.
-10. LOW L/XL share M FR art (262×503, 43,470 st) — confirm grading intent on G1.
-
-## Rev B status (19 Oct 2026) — see the builder's final report
-1 lilies traced from the close-up (petal outlines + tone regions, radial along each petal axis) · 2 throat/anthers/stamen lines traced ·
-3 close-up registered (cu_register.py, out/closeup_registration.png), G1 + spec p5 say which panels have no close-up ·
-4 compare sheets drawn from the DST read-back, close-up + fish-reference columns, FL hem pair + dark-flower zooms ·
-5/6 SUPERSEDED by the founder (koi -> tetras, kb_fish.py) · 7 FL/FR hem clusters traced from the mockup (A14) ·
-8 two-tone leaves + lit edges, then clipped/filled to the traced silhouettes · 9 zip + hem deviations asked on G4 · 10 grading asked on G1/G4.
+# Open review findings — Koi Blossom (tetra fish), Rev B review (→ Rev C). Fidelity first (A11–A15).
+Hard limits passed (75 DST/PES, max 7.47, ≤11 colours, all 7×4 doc numbers == readback, M keep-outs CF 15.7 / armhole 15.2 / hem 10.2 / welt 12.8+ / cuff 19.0, zip == docs, welt override drawn on T2/T4/T7). Gates reproduce, but they are partly circular (item 1).
+1. HIGH The A14/A15 gates are circular:
+   - Fish reference = the art's own fish regions.
+   - FR lily reference = rasterised art (PROTECT) ORed into the mask.
+   - Flora silhouettes are filled from the same traced mask they are compared to.
+   - Stems are removed from both sides; the DST mask is closed + hole-filled.
+   Rebuild every reference mask from INPUT PIXELS ONLY (mockup / close-up / reference_fish.png), never from art or scene data. Report texture primitives too (A13), not only silhouette. The stricter run shows a 40 mm² gap at FR (-190, 189).
+2. HIGH The hem and cuff lilies are template copies, not traced:
+   - FR hem = cu_lily1 mirrored +15°
+   - FL hem big lily = cu_lily0 mirrored
+   - FL dark flower = cu_lily1 darker, -20°
+   - SR cuff = cu_lily1 mirrored +10°
+   Trace each from the mockup (its own petal fan; the dark flower is a distinct shape). Until then, list all four on G1 as "generated, not traced".
+3. HIGH Tone and structure:
+   - FR big lily petals stitch pale ice/white; they should be mid-blue with ice highlights only.
+   - Petal edges are radial streak fans; they should be long stitch rows.
+   - Lily 2 fragments.
+   - FR hem leaves have random white interior blobs; they should be solid mid-blue.
+   - The FL hem lily, dark flower and SR cuff cluster read near-white; the mockup reads blue.
+   - The dark-flower stamens/anthers are weak.
+4. HIGH Leaves and vines are hand-typed (≈80 CLUSTERS tuples + rng), then clipped to the mask. Trace them leaf by leaf (position, axis, length, tone). The FL right vine and the dark leaves by the welt are thinner than the mockup.
+5. MED Fish:
+   - Size is a typed 0.82 × the mockup length (FL big fish ≈ 80 %). Use the full mockup length unless the founder says otherwise.
+   - The body is flat silver/white; the reference is lavender-blue faceted. Make the red stripe less blocky.
+   - Measure the proportions from reference_fish.png instead of typed polygons.
+6. MED Hem lilies stop 10 mm above the band and 15 mm off the zip (asked on G4). ~195 mm² of mockup blue in the band zone is unstitched. Keep as a founder question.
+7. MED The stitch count fell vs Rev A (FR 43,470 → 40,325; FL 27,513 → 25,897). Explain it (tetras vs koi) and confirm no flora was thinned.
+8. LOW Welt angle text: 61° vs 60°. Make it one value from the file.
+9. LOW Fish compare: add a reference-outline vs DST overlay at equal scale.
+10. LOW Delete the dead koi code in kb_motifs.py (KO-* groups).
+11. LOW L/XL share the M FR art. This is a founder question (grading).

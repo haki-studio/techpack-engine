@@ -129,7 +129,9 @@ def motif_match(ref, out, ppm, min_mm2=4.0, iou_min=0.70, ratio_min=0.80, pad_mm
     ref, out: bool masks on the SAME garment-mm grid (ppm px per mm). ref = the motif family traced from the mockup /
     close-up (e.g. the cream islet pixels); out = the same family rendered from the shipped DST. A motif passes when the
     stitched shape overlapping it has IoU >= iou_min and keeps >= ratio_min of the reference width AND height (a
-    generated stand-in of the right size but the wrong silhouette fails here, a flattened one fails on height)."""
+    generated stand-in of the right size but the wrong silhouette fails here, a flattened one fails on height).
+    ref MUST be derived from input pixels only (mockup / close-up / reference image) - never from the art, scene
+    data or a template, or the gate only proves DST == art (circular; Koi Rev B review)."""
     lab, n = ndi.label(ref); rows = []; pad = int(round(pad_mm * ppm))
     for k, sl in enumerate(ndi.find_objects(lab), 1):
         y0, y1 = max(0, sl[0].start - pad), min(ref.shape[0], sl[0].stop + pad)
