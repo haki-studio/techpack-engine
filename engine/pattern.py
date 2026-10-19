@@ -150,8 +150,11 @@ def collar_edges(Ln, M, N, extra=0.0):
     neck_full = mirror(rev(neckR)) + neckR[1:]                     # front L end -> CB -> front R end
     return neck_full, [E, T], rev(outerR) + mirror(outerR)[1:], [mirror([T])[0], mirror([E])[0]], neckR
 
-def draft(size, cuff_h=None):
-    """cuff_h: finished cuff height (default the jacket rib); derived blocks (hoodie) pass their own."""
+def draft(size, cuff_h=None, welt=None):
+    """cuff_h: finished cuff height (default the jacket rib); derived blocks (hoodie) pass their own.
+    welt: per-design welt override, given at size M in garment coords (wearer's-left front, x mm from CF, y mm below the
+    CF neck seam, angle deg from horizontal with the welt running down-outward): dict(cx=, cy=, angle=[, length=, width=]).
+    Graded like the default welt (x with the chest, y keeps its distance above the hem). None = the Drum Island welt."""
     b = drum.Block(size); g = {}
     n2, sh2, ch2, drop = b.neck2, b.sh2, b.chest2, b.drop
     # ------------------------------------------------ BACK (one piece, cut 1 — embroidered, not cut on fold)
@@ -194,10 +197,15 @@ def draft(size, cuff_h=None):
     u = c[1] - c[2]; u = u / np.linalg.norm(u)
     if u[1] < 0: u = -u
     wcx, wcy = wc.x * kx, hem_f - (wl_m.f_hem - wc.y)
+    wl_len, wl_w = WELT_L, WELT_W
+    if welt:
+        a = math.radians(welt["angle"]); u = np.array([math.cos(a), math.sin(a)])
+        wcx, wcy = welt["cx"] * kx, hem_f - (wl_m.f_hem - welt["cy"])
+        wl_len, wl_w = welt.get("length", WELT_L), welt.get("width", WELT_W)
     def welt_box(side):
         uu = np.array([u[0]*side, u[1]]); vv = np.array([-uu[1], uu[0]]); cc = np.array([wcx*side, wcy])
-        corners = [cc + uu*sx*WELT_L/2 + vv*sy*WELT_W/2 for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
-        drills = [tuple(cc + uu*sx*(WELT_L/2 - 3) + vv*sy*(WELT_W/2 - 3)) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+        corners = [cc + uu*sx*wl_len/2 + vv*sy*wl_w/2 for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+        drills = [tuple(cc + uu*sx*(wl_len/2 - 3) + vv*sy*(wl_w/2 - 3)) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
         return [tuple(p) for p in corners], drills
     for side, code, nm in ((1, "F01", "FRONT LEFT"), (-1, "F02", "FRONT RIGHT")):
         wb, dr = welt_box(side)

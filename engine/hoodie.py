@@ -65,9 +65,10 @@ def hood(size, Ln_half, neck_f_len):
     return dict(neck=neck, back=back, face=face, hps=hps, Q=mh, R=mw, Ls=Ls, seam=alen(back), face_len=alen(face))
 
 # ---------------------------------------------------------------- draft
-def draft(size):
+def draft(size, welt=None):
+    """welt: per-design welt override, see pattern.draft. For pattern_out pass blk=hoodie.Variant(welt=...)."""
     T = hcm("T", size)
-    g, mt = PT.draft(size, cuff_h=T)
+    g, mt = PT.draft(size, cuff_h=T, welt=welt)
     for k in ("C01", "C02", "IC01"): g.pop(k, None)
     for pc in g.values():                                        # jacket-only notes
         if pc.note.startswith("01 wrap") or "embroidery" in pc.note: pc.note = ""
@@ -159,3 +160,9 @@ def shape_checks(size):
     H = mt["hood"]; hs = Polygon(H["neck"] + H["back"][1:] + H["face"][1:]).buffer(0)
     out.append(("hood side panel is one simple shape", hs.geom_type == "Polygon" and hs.is_valid, f"{hs.area/100:.0f} cm²"))
     return out
+
+
+class Variant:
+    """hoodie with per-design options (e.g. the welt): pattern_out.write_dxf(..., blk=hoodie.Variant(welt=dict(...)))."""
+    def __init__(self, **kw): self.kw = kw
+    def draft(self, size): return draft(size, **self.kw)
