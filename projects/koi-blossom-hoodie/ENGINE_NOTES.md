@@ -79,3 +79,15 @@ Problems hit while building this product, worked around in project code only. Ea
 - `dst2.build_object` sends every elongated satin to `turning_satin` (stitches ACROSS the centreline) whatever `ang` says, so
   a long petal tone band cannot be satin-stitched along its length with a fixed angle. Workaround: radial satin from the
   flower centre (= along each petal axis). Proposed: honour an explicit numeric `ang` for satin (or `st="satin_fixed"`).
+
+## 11. Garment pages on the zip-hoodie block (19 Oct 2026)
+- **`hoodie.Variant` has no `ORDER`**: `pattern_out.write_dxf/plot_pdf` iterate `blk.ORDER`, so `blk=hoodie.Variant(welt=...)`
+  raises AttributeError. Workaround: `garment.Blk` (ORDER = hoodie.ORDER, draft = front.pieces). Fix: `Variant.ORDER = ORDER`.
+  Check: `write_dxf(["M"], tmp, blk=hoodie.Variant(welt=...))` in a test.
+- **`pattern_out.EMB_ON / EMB_NAME` are the Drum Island elements**: a design with other element names must monkeypatch them.
+  Fix: `write_dxf(..., emb_on={code: [element]}, emb_name=...)` or read them from the project's `emb_place`.
+- **Block pages are not importable as a library**: `projects/zip-hoodie-block/build.py` computes `G = {sz: HD.draft(sz)}` at
+  import; a design with a welt override has to replace `G/gM/mM` and `hflat.Flat.welt` after import (`garment.py`). Fix: move
+  the page builders to `engine/hoodie_pages.py` taking `(G, flat_cls)`.
+- **`shrink.py` re-encodes every image as RGB**: a transparent PNG (art on a flat) turns its background black. Workaround: skip
+  images with an SMask / alpha. Fix: same in the shared shrink step. Check: render the shrunk T1 and look at it.

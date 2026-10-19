@@ -173,8 +173,8 @@ def summary():
           "5. Hem band + cuffs: the mockup flowers run over the band / cuff seams; the art stops 10 above them (band + cuffs not embroidered). OK, or embroider the band?",
           f"6. Grading: A 92 % (XS–S) · B 100 % (M–XL) · C 108 % (XXL–3XL). L + XL sew the M art at 100 % (FR {ALL['L']['FR']['full']['stitches']:,} / {ALL['XL']['FR']['full']['stitches']:,} st vs M {ALL['M']['FR']['full']['stitches']:,}) — OK, or scale L/XL (e.g. 104 %)?",
           "6b. Zip: the mockup lilies touch the zip; the art keeps 15 off CF on both fronts (FR hem lily moved ~15 mm). OK?",
-          "7. Hood pattern: the hooded Drum Island variant is not drafted yet — pattern + garment pages (T*) follow; placements here use the Drum Island body.",
-          "8. Welt pockets: at the mockup position and angle (60°), Drum Island welt size 1.4 × 13. Confirm before the art is frozen.",
+          "7. Hood: CLOSED 19 Oct — founder chose the zip-hoodie block (engine hoodie.py); placements + keep-outs use it with the mockup welts (garment T pages).",
+          f"8. Welt pockets: at the mockup position and angle ({F.WELT_ANG:.0f}°, hoodie.draft welt override), 1.4 × 13 [proposed]. Confirm before the art is frozen.",
           "9. Reference: lilies traced from ONE AI close-up (FR upper); FL, the FR hem lily and the sleeves are redrawn from the low-res mockup with those templates. Fish = tetras from the founder's reference_fish.png (one reference image; sizes + headings from the mockup).",
           "9b. Product name: shown as 'Blossom Tetra' now that the fish are not koi (slug + style code HK-HD-KOIB-NV kept). Confirm the name.",
           "10. DST/PES are production-intent drafts: the factory digitizer checks density + pull on the shell and edits before the strike-off."]

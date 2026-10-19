@@ -5,6 +5,8 @@ w = PdfWriter(clone_from=src)
 for page in w.pages:
     for img in page.images:
         im = img.image
+        if im.mode in ("RGBA", "LA", "PA") or "/SMask" in img.indirect_reference.get_object():
+            continue                    # transparent art on the flats: re-encoding as RGB would turn the background black
         if max(im.size) > maxpx:
             im.thumbnail((maxpx, maxpx))
         img.replace(im.convert("RGB"), quality=q)
