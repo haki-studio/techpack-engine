@@ -53,7 +53,7 @@ def build(img, fig_exclude=True):
     tile = 7.0
     for ty in np.arange(244 - RMM, 244 + RMM, tile):
         for tx in np.arange(-RMM, RMM, tile):
-            t = box(tx - 0.12, ty - 0.12, tx + tile + 0.12, ty + tile + 0.12)     # tiles touch + 0.12 mm: no navy between tiles
+            t = box(tx - 0.7, ty - 0.7, tx + tile + 0.7, ty + tile + 0.7)     # tiles overlap 0.7 mm: rows end inside the neighbour, no navy between tiles
             if not t.intersects(disc): continue
             c = t.centroid; px = int(round(CX + c.x / K)); py = int(round(CY + (c.y - 244) / K))
             px = min(max(px, 0), W - 1); py = min(max(py, 0), H - 1)

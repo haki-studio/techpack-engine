@@ -10,7 +10,7 @@ A = json.load(open("out/results/all.json")); M = A["sizes"]["M"]; B = A["grades"
 def dst_img(entries, mmbox, ppm, bg=(37, 48, 77)):
     x0, y0, x1, y1 = mmbox
     im = Image.new("RGB", (int((x1 - x0) * ppm), int((y1 - y0) * ppm)), bg); d = ImageDraw.Draw(im)
-    w = max(1, int(round(0.35 * ppm)))
+    w = max(1, int(round(0.42 * ppm)))      # 40wt thread lies ~0.4 mm wide
     for r in entries:
         p = pe.read(r["file"] + ".pes"); cx, cy = r["centre"]; cols = [t.hex_color() for t in p.threadlist]; ci = 0; prev = None
         for x, y, c in p.stitches:
