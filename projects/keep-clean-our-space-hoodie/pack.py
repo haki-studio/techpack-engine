@@ -366,7 +366,7 @@ def text_big(x, y, txt, key, h):
     return KD.text_path(x, y, txt, key, h, "#1A1A1A")
 
 CHANGES = {
- "01": ["WHAT CHANGED vs MOCKUP (Rev B)", "Text re-set from Zen Maru Gothic Black on the mockup's CURVED", "  baseline; 17 spark bars, 2 hearts, 4 stars, 1 dot from the mockup.",
+ "01": ["WHAT CHANGED vs MOCKUP (Rev B)", "Text re-set from Zen Maru Gothic Bold on the mockup's CURVED", "  baseline; 17 spark bars, 2 hearts, 4 stars, 1 dot from the mockup.",
         "Domed puff: lighter rim on text / bars / hearts / dot, faceted stars;", "  top star slender with a dark pit + white centre; red star solid with", "  a star-shaped pit. Glow = soft halo round the letters.", "!Reference: low-res mockup only (no close-up)."],
  "02": ["WHAT CHANGED vs MOCKUP (Rev B)", "18 gold stars counted + placed (2 hidden behind 'N' not added),", "  faceted, lighter top facets. Nunito 1000 em 23 (heavier, as the",
         "  mockup), line pitch 28 + line length 138 measured. Soft halo.", "Badge moved 9 toward CF (M): clears the 15 armhole keep-out.", "!Reference: low-res mockup only (no close-up)."],

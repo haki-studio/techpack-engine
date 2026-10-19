@@ -40,27 +40,27 @@ KC_RULES = {
  "DOT":    ("Star dot",                   "Satin dot",          "across dot",               "0.40",  "—",    "none",                  "0.10", "Ø 1.45–2.0"),
  "TXF":    ("Text stroke, flat satin",    "Satin, turning",     "across the stroke",        "0.40",  "—",    "centre run if ≥ 1.6",   "0.20", "font strokes, 1 satin each"),
  "PF-TX":  ("Text stroke, 3D puff",       "Satin over 3 mm foam","across the stroke",       "0.30",  "—",    "none (foam)",           "0.35", "puff, strokes 2.5–7 wide"),
- "PF-BAR": ("Spark bar, 3D puff",         "Satin over 3 mm foam","across the bar",          "0.30",  "—",    "none (foam)",           "0.35", "rounded capsule ends"),
+ "PF-BAR": ("Spark bar, 3D puff",         "Satin over 3 mm foam","across the bar",          "0.20 zz",  "—",    "none (foam)",           "0.35", "rounded capsule ends"),
  "PF-HRT": ("Heart, 3D puff",             "Satin over 3 mm foam","across the heart (45°)",  "0.30",  "—",    "none (foam)",           "0.35", ""),
  "PF-STR": ("Big star, 3D puff",          "Satin over 3 mm foam","across each arm",         "0.30",  "—",    "none (foam)",           "0.35", "5-point, arms ≥ 2.5"),
  "BAR":    ("Spark bar, satin",           "Satin, turning",     "across the bar",           "0.40",  "—",    "centre run",            "0.20", ""),
  "STR5":   ("5-point star, satin",        "Satin",              "across each arm",          "0.40",  "—",    "centre run",            "0.20", ""),
  "STR5-o": ("Star outline (open)",        "Satin, turning",     "across the outline",       "0.40",  "—",    "none",                  "0.15", "1.4 wide"),
  "DOTB":   ("Ring dot (domed)",           "Satin, radial",      "radial from dot centre",   "0.38",  "—",    "edge run",              "0.15", "Ø 12.4"),
- "OVAL":   ("Oval ring",                  "Satin, turning",     "across the ring",          "0.40",  "—",    "edge + centre run",     "0.20", "4.0 wide"),
- "OVAL-hl":("Oval ring highlight",        "Satin, turning",     "across the ring",          "0.40",  "—",    "none",                  "0.10", "1.1 wide, on top"),
+ "OVAL":   ("Oval ring",                  "Satin column, closed", "across the ring",        "0.28 zz",  "—",    "edge + centre run",     "0.20", "4.0 wide"),
+ "OVAL-hl":("Oval ring highlight",        "Satin column, closed", "across the ring",        "0.28 zz",  "—",    "none",                  "0.10", "1.1 wide, on top"),
  "FACE":   ("Star face (eyes/centre)",    "Satin dot",          "across dot",               "0.40",  "—",    "none",                  "0.10", "Ø 1.2"),
  # Rev B codes (review Rev A): columns = one satin per stroke along its centreline (kcsatin)
  "GLOW":   ("Neon glow, stipple run",     "Run, random short stitches", "random",          "0.30 + 0.16/mm out", "1.8", "none",     "—",    "fades 0–4.5 mm from the art"),
  "GLOW-D": ("Neon halo, dense band",      "Tatami, sheer",      "along the badge line",     "0.60",  "2.5",  "none",                  "—",    "0–1.9 mm round the art"),
  "GLOW-S": ("Neon halo, soft band",       "Tatami, open",       "along the badge line +8°", "1.30",  "2.5",  "none",                  "—",    "1.9–3.8 mm, ragged edge"),
  "HAZE":   ("Sparkle haze",               "Tatami, open",       "random per sparkle",       "1.10",  "2.5",  "none",                  "—",    "under sparkles ≥ 5 mm"),
- "SPK":    ("Sparkle (concave 4-point)",  "Satin, 2 tapered columns", "across each arm",    "0.28",  "—",    "none",                  "0.10", "tips 0.25"),
- "TXC":    ("Text stroke column, flat",   "Satin column",       "across the stroke",        "0.40",  "—",    "centre run",            "0.15", "1 column per stroke"),
- "PF-TXC": ("Text stroke column, puff",   "Satin column over foam", "across the stroke",    "0.30",  "—",    "none (foam)",           "0.30", "core under the rim"),
- "PF-RIM": ("Puff rim (lighter thread)",  "Satin column over foam", "across the rim",       "0.30",  "—",    "none (foam)",           "0.15", "0.85 wide, on the edge"),
- "PF-DOT": ("Domed dot core, puff",       "Satin column (disc)", "parallel, 35°",           "0.30",  "—",    "none (foam)",           "0.25", "staggered splits"),
- "ORN":    ("Ornament (KR mark, accents)", "Satin column",      "across the stroke",        "0.40",  "—",    "none",                  "0.10", "1.0–1.2 wide"),
+ "SPK":    ("Sparkle (concave 4-point)",  "Satin, 2 tapered columns", "across each arm",    "0.24 zz",  "—",    "none",                  "0.10", "tips 0.25"),
+ "TXC":    ("Text stroke column, flat",   "Satin column",       "across the stroke",        "0.25 zz",  "—",    "centre run",            "0.15", "1 column per stroke"),
+ "PF-TXC": ("Text stroke column, puff",   "Satin column over foam", "across the stroke",    "0.20 zz",  "—",    "none (foam)",           "0.30", "core under the rim"),
+ "PF-RIM": ("Puff rim (lighter thread)",  "Satin column over foam", "across the rim",       "0.20 zz",  "—",    "none (foam)",           "0.15", "0.85 wide, on the edge"),
+ "PF-DOT": ("Domed dot core, puff",       "Satin column (disc)", "parallel, 35°",           "0.20 zz",  "—",    "none (foam)",           "0.25", "staggered splits"),
+ "ORN":    ("Ornament (KR mark, accents)", "Satin column",      "across the stroke",        "0.25 zz",  "—",    "none",                  "0.10", "1.0–1.2 wide"),
 }
 tech.RULES.update(KC_RULES)
 tech.LAYER_NAMES.update({20: "Glow halo", 21: "Star speckles", 22: "Spark bars + stars", 23: "Hearts", 24: "Ring dots",
@@ -68,6 +68,9 @@ tech.LAYER_NAMES.update({20: "Glow halo", 21: "Star speckles", 22: "Spark bars +
 
 sheet.FONT = "Liberation Sans"
 
+# column satin is a true zig-zag (each stitch crosses once): same-edge needle points are 2 x sp apart, so these are about
+# half the row spacing of the engine satin (which hits both edges every row) for the same coverage
+COL_SP = {"PF-TXC": 0.20, "PF-RIM": 0.20, "PF-BAR": 0.20, "PF-DOT": 0.20, "TXC": 0.25, "ORN": 0.25, "SPK": 0.24, "OVAL": 0.28, "OVAL-hl": 0.28}
 OPEN_TAT = {"GLOW-D": (0.60, 2.5), "GLOW-S": (1.30, 2.5), "HAZE": (1.10, 2.2)}
 PUFF_SP = 0.30          # puff satin row spacing (dense, cuts the foam at the column ends)
 PUFF = True             # region codes starting PF- are built as puff satin (no underlay, dense, +pull)
@@ -145,7 +148,7 @@ def patch_dst2():
             if r.get("ang") == "col" and r.get("col_cl"):          # Rev B satin column (kcsatin)
                 import kcsatin as KS
                 puff = PUFF and code.startswith("PF-")
-                sp = PUFF_SP if puff else (0.28 if code == "SPK" else 0.34 if code in ("TXC", "ORN") else 0.40)
+                sp = COL_SP.get(code, 0.20 if puff else 0.30)          # zig-zag spacing: one edge is hit every 2 x sp
                 pull = dst2.pull_for(code)
                 cl = r["col_cl"]; w = r["col_w"]; caps = r["col_caps"]; closed = r["col_closed"]; prof = r.get("col_prof")
                 blocks = []
