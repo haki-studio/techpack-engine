@@ -23,6 +23,10 @@ FILES = {   # element -> (file stem, stop plan [(colour, region codes)])
     "starY": ("HAKI_KJ_06_back-pocket-L-lower-star-yellow", [("kj_yellow", {"STAR"}), ("kj_yellow_hi", {"STAR-hi"})]),
     "starP": ("HAKI_KJ_05_back-pocket-R-star-pink", [("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"})]),
 }
+_FRONT_PLAN = [("kj_yellow", {"STAR"}), ("kj_yellow_hi", {"STAR-hi"}), ("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"}),
+               ("kj_blue", {"STAR"}), ("kj_blue_hi", {"STAR-hi"})]
+FILES["front1"] = ("HAKI_KJ_07a_front-leg-stars-upper_PROPOSED", _FRONT_PLAN)
+FILES["front2"] = ("HAKI_KJ_07b_front-leg-stars-lower_PROPOSED", _FRONT_PLAN)
 OUT = "out/stitch"
 
 def stops_for(vis, plan):
@@ -82,7 +86,13 @@ def colour_masks(path, ppm=20):
 
 def build(name):
     A = pickle.load(open("out/art.pkl", "rb"))
-    stem, plan = FILES[name]; vis = A[name]["vis"]
+    stem, plan = FILES[name]
+    if name.startswith("front"):
+        import kjfront
+        F = json.load(open("out/front_stars.json")); byid = {d["id"]: d for d in F["stars"]}
+        vis = kjfront.section_vis([byid[i] for i in F["sections"][int(name[-1]) - 1]])
+    else:
+        vis = A[name]["vis"]
     vis = [r for r in vis if not r["geom"].is_empty]
     stops = stops_for(vis, plan)
     b = dst2.bounds_of([r["geom"] for r in vis])

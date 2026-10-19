@@ -18,7 +18,7 @@ silhouette WITHOUT cargo pockets. Measurements: Hidden Inventory published size 
 2. Fly: button fly (the front flat shows a row of bar tacks/buttons under the fly placket, no zip pull) — 4 + 1 shank buttons.
 3. Hardware: copper/antique-copper rivets (mockup shows copper rivets on coin pocket + back pockets), 17 mm shank button.
 4. Thread: topstitch Tex 70 (bonded poly-core) copper/ochre on body seams like the mockup's tonal-gold topstitch; Tex 40 construction.
-5. Patch sizes from the 16 Oct house spec: coin pocket 76 × 56, waistband patch 80 × 54, back-pocket stars 10 mm.
+5. Patch sizes from the 16 Oct house spec: coin pocket 76 × 56, waistband patch 80 × 54; every konpeito star 10 mm.
 6. The konpeito spilling out of the coin pocket are direct embroidery on the front-right pocket facing, sewn before the
    coin-pocket patch is attached, so the patch covers their lower half (as in the mockup).
 7. Patches: embroidered on twill with a heat-cut edge (house spec), sewn on with a 1 mm edge stitch in red; coin pocket
@@ -29,3 +29,11 @@ silhouette WITHOUT cargo pockets. Measurements: Hidden Inventory published size 
 10. Placement scale on the flats: half-waist 16.6 in (size 32 relaxed waist 33.1 / 2) spans the flat's waistband.
 11. Labels: main woven label inside back waistband centre, size/care label at the left side seam inside, leather/jacron
     back patch REPLACED by the embroidered waistband patch (none other shown).
+12. Back pockets (founder update 19 Oct, inputs/back_pocket_haki.png): left pocket = light-blue "haki" + yellow star (left)
+    + pink star (right), scaled x2.14 so the stars are 10 mm like the right-pocket star (group 74 × 21 mm), yellow-star
+    centre 18 mm in from the outer edge, 27 mm below the pocket top; right pocket = one pink 10 mm star, 17 in / 25 down.
+    The lower-left yellow star of the first flat is kept as file 06, PROPOSED (confirm keep or drop).
+13. Sizes 24–40 (waist), measurements from the Hidden Inventory published chart (inches); size 24 and back rise, thigh,
+    knee, outseam MISSING (factory HI tech pack "tech pack CAMOPANTS1.pdf").
+14. Patches 01 + 03 sewn on after the garment wash (cream field stays cream); direct embroidery goes through the wash.
+15. HI knee panel seam removed (mockup shows a plain leg).

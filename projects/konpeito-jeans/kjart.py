@@ -112,7 +112,7 @@ def colsat(col, geom, code="TXC", min_w=0.8, uniform=False, ppm=40.0, spur=1.3):
         out.append(KS.column_region(col, code, s_["cl"], max(min_w, s_["w"]), s_["caps"], s_.get("closed", False)))
     return out
 
-def text_regions(col, text, mask, min_w=0.8):
+def text_regions(col, text, mask, min_w=0.8, sigma=2.5):
     """register Zen Maru Gothic glyphs per character on the traced pixels (kjtext.fit_line), best of Bold / Black,
     then satin columns per stroke."""
     import kjtext
@@ -124,11 +124,22 @@ def text_regions(col, text, mask, min_w=0.8):
         sc = float(np.mean([o["dice"] for o in fit]))
         if best is None or sc > best[0]: best = (sc, wt, fit)
     sc, wt, fit = best
-    regs = []
+    font_regs = []
     for o in fit:
-        regs += colsat(col, o["geom"], min_w=min_w)
-    return dict(regs=regs, fit=dict(weight=wt, chars=[(o["ch"], o["dice"]) for o in fit]),
-                geom=unary_union([o["geom"] for o in fit]))
+        font_regs += colsat(col, o["geom"], min_w=min_w)
+    # alternative: satin columns straight on the traced outline (no font). Keep whichever covers the traced pixels better.
+    trace_regs = colsat(col, mask_geom(mask, sigma=sigma, simp=0.08), min_w=min_w)
+    def iou(regs):
+        import kjtext
+        gg = unary_union([r["geom"] for r in regs])
+        gm = kjtext.raster(gg, 0, 0, mask.shape[1], mask.shape[0], PPM)
+        return float((gm & mask).sum() / max((gm | mask).sum(), 1))
+    i_f, i_t = iou(font_regs), iou(trace_regs)
+    use = "trace" if i_t >= i_f else "font"
+    regs = trace_regs if use == "trace" else font_regs
+    return dict(regs=regs, fit=dict(weight=wt, chars=[(o["ch"], o["dice"]) for o in fit], used=use,
+                                    iou_font=round(i_f, 2), iou_trace=round(i_t, 2)),
+                geom=unary_union([r["geom"] for r in regs]))
 
 def dot_region(col, geom, code="DOT", min_d=1.2):
     c = geom.centroid; d = max(min_d, 2 * math.sqrt(geom.area / math.pi))
@@ -153,7 +164,7 @@ def border_flower(cx, cy, d=FLOWER_D):
         px, py = cx + rr * math.cos(math.radians(a)), cy + rr * math.sin(math.radians(a))
         e = affinity.scale(Point(0, 0).buffer(1, quad_segs=16), pw / 2, pl / 2)
         petals.append(affinity.translate(affinity.rotate(e, a + 90, origin=(0, 0)), px, py))
-    return unary_union(petals).difference(Point(cx, cy).buffer(d * 0.11, quad_segs=12))
+    return unary_union(petals).difference(Point(cx, cy).buffer(d * 0.12, quad_segs=12))   # red centre Ø0.96 open (counter >= 0.6)
 
 def rrect(x0, y0, x1, y1, r):
     return box(x0 + r, y0 + r, x1 - r, y1 - r).buffer(r, quad_segs=16)
@@ -287,13 +298,13 @@ def waistband():
     T["risa"] = text_regions("kj_blue", "理砂", risa)
     vis += knots
     vis += [dot_region("kj_rose", g(m, sigma=1.0), "DOT", 1.6) for m in cheeks]
-    vis += colsat("kj_black", g(face, sigma=0.5), code="LINE", min_w=MIN_W["kj_black"], uniform=True)
+    vis += colsat("kj_black", g(face, sigma=2.0, simp=0.08), code="LINE", min_w=MIN_W["kj_black"], uniform=True)
     l1 = np.zeros_like(text); l2 = np.zeros_like(text)
     for m in comps(text, 2):
         if area(m) < 0.3: continue                       # shadow specks next to the flowers, not lettering
         (l1 if cen(m)[1] < 25.0 else l2).__ior__(m)
-    T["line1"] = text_regions("kj_black", "元気でね", l1, min_w=MIN_W["kj_black"])
-    T["line2"] = text_regions("kj_black", "また会おうね", l2, min_w=MIN_W["kj_black"])
+    T["line1"] = text_regions("kj_black", "元気でね", l1, min_w=MIN_W["kj_black"], sigma=3.5)
+    T["line2"] = text_regions("kj_black", "また会おうね", l2, min_w=MIN_W["kj_black"], sigma=3.5)
     vis += colsat("kj_red", g(frame, sigma=1.0), uniform=True)
     T["chihiro"] = text_regions("kj_red", "ちひろ", chihiro)
     for k in ("risa", "line1", "line2", "chihiro"):
@@ -302,7 +313,7 @@ def waistband():
     vis += [dot_region("kj_red", g(m, sigma=0.8), "DOT", 1.2) for m in dots if area(m) > 0.25]
     vis.append(edge)
     GENERATED["wb"] = ["border (house spec: 2.0 edge + 4.5 band, Ø4.0 flowers / Ø1.5 dots at 5.8 pitch — fixed mm, not traced)",
-                       "flower centre knots: traced centre, knot pattern (1 + 5 at r 1.6, Ø1.1) generated", "lettering: Zen Maru Gothic glyphs registered per character on the traced pixels (dice table)"]
+                       "flower centre knots: traced centre, knot pattern (1 + 5 at r 1.6, Ø1.1) generated"]
     return vis, ref, (W, H), pitch
 
 # ------------------------------------------------------------------ 01 coin pocket
@@ -345,11 +356,11 @@ def coin():
     return vis, ref, (W, H), pitch, VIS
 
 HI = {"kj_pink": "kj_pink_hi", "kj_yellow": "kj_yellow_hi", "kj_blue": "kj_blue_hi"}
-def candy(col, m, light, x0=0.0, y0=0.0, clip=None):
+def candy(col, m, light, x0=0.0, y0=0.0, clip=None, close=2, sigma=1.2):
     """traced candy silhouette -> body radial satin, tint highlight (silhouette inset 1.6 mm, nudged up-left),
     white sparkle knots at the traced light specks."""
-    fm = ndi.binary_fill_holes(ndi.binary_closing(m, np.ones((3, 3)), 2))
-    geo = mask_geom(fm, x0, y0, sigma=1.2).buffer(0.2).buffer(-0.2)
+    fm = ndi.binary_fill_holes(ndi.binary_closing(m, np.ones((3, 3)), close))
+    geo = mask_geom(fm, x0, y0, sigma=sigma).buffer(0.1).buffer(-0.1)
     if clip is not None: geo = geo.intersection(clip)
     if geo.is_empty: return None, [], []
     geo = max(polys(geo), key=lambda p: p.area) if len(polys(geo)) > 1 else geo
@@ -392,13 +403,13 @@ def spill():
     cands = []
     for col, fam, mn in (("kj_yellow", yellow, 40), ("kj_blue", blue, 40), ("kj_pink", pink, 25)):
         for m in comps(ndi.binary_closing(fam, st, 2), mn):
-            if area(m) > 1.5: cands.append((col, m))
+            if area(m) > 1.5: cands.append((col, ndi.binary_fill_holes(m)))
     # level the patch edge: rotate so the edge is horizontal at y = 0 (the coin pocket's top edge on the garment)
     ang = math.degrees(math.atan(k)); x_mid = 38.0; y_mid = k * x_mid + b
     vis = []; ref_geo = []
     order = sorted(cands, key=lambda cm: (cm[0] != "kj_pink", cen(cm[1])[0]))   # small pink ones behind: first
     for col, m in order:
-        body, hi, sparks = candy(col, m, light, 0.0, Y0)
+        body, hi, sparks = candy(col, m, light, 0.0, Y0, close=1, sigma=0.7)
         if body is None: continue
         ref_geo.append(body["geom"])
         for r in [body] + hi + sparks:
@@ -406,8 +417,8 @@ def spill():
             g = affinity.translate(g, 0, -y_mid)
             # run 3.0 mm under the coin pocket (no gap at the pocket mouth): extend the parts that reach the edge down
             if r is body and g.bounds[3] > -1.0:
-                g = unary_union([g, affinity.translate(g, 0, 1.5), affinity.translate(g, 0, 3.0)]).intersection(box(-50, -60, 150, 3.0))
-                g = g.intersection(unary_union([g.buffer(0)]))
+                band = g.intersection(box(-50, -1.6, 150, 5.0))       # only the part at the pocket line runs on under the patch
+                g = unary_union([g, affinity.translate(band, 0, 1.5), affinity.translate(band, 0, 3.0)]).intersection(box(-50, -60, 150, 3.0))
             r2 = dict(r, geom=g.buffer(0))
             if isinstance(r.get("ang"), tuple):
                 c = affinity.translate(affinity.rotate(Point(r["ang"][1], r["ang"][2]), -ang, origin=(x_mid, y_mid)), 0, -y_mid)
@@ -474,8 +485,8 @@ def haki_group():
         g, hi = puffy_star((cx - ox) * k, (cy - oy) * k, STAR_D, rot=0)
         out += [radial_region(base, g, "STAR", ((cx - ox) * k, (cy - oy) * k)), radial_region(tint, hi, "STAR-hi", (hi.centroid.x, hi.centroid.y))]
     GENERATED["haki"] = ["stars: 10 mm puffy-star shape at the traced centres (the mockup shows them at 14 px)",
-                         "'haki' strokes traced (x8 upscale only to read centrelines), one width for the whole word"]
-    ref = dict(blue=bm, k=k, scale=STAR_D / (np.mean([w for _, _, w in star_px]) / HAKI_UP) / (10.0 / 30.0))
+                         "one stroke width (2 mm) for the whole word; the stroke centrelines are traced (x8 upscale only to read them)"]
+    ref = dict(blue=bm, k=k, ox=ox, oy=oy, yel=yel, pnk=pnk, scale=STAR_D / (np.mean([w for _, _, w in star_px]) / HAKI_UP) / (10.0 / 30.0))
     return out + regs, ref
 
 def build_all():
