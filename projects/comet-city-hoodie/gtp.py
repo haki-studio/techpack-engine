@@ -12,7 +12,7 @@ import sheet as SHT
 from sheet import t, doc, INK, MUTED, RED, GREEN, SW, SH, dim_h, dim_v
 from render import f
 import drum, pattern as PT, pattern_draw as PD
-import front as F_                    # welt override before any draft
+import front as F_                    # front.WELT = this design's welt (engine per-design override)
 import hoodie as HD, hflat as HF
 import emb_place as EP, stitchrender as SR, factory as FA
 import pattern_cc as PC
@@ -28,7 +28,7 @@ def flat_g(body, b, ox, oy, s): return f'<g transform="translate({f(ox - b[0]*s)
 def qty_of(pc):
     q = pc.qty.split(); return int(q[0]) * (2 if q[1:2] == ["pair"] else 1)
 
-G = {sz: HD.draft(sz) for sz in SIZES}
+G = {sz: HD.draft(sz, welt=F_.WELT) for sz in SIZES}
 MEAS = {sz: HD.measure(sz) for sz in SIZES}
 CH = HD.chart()
 CHECK = {sz: all(abs(MEAS[sz][0][k] / 10 - CH[k][2][SIZES.index(sz)]) <= CH[k][3] for k in CH) for sz in SIZES}
@@ -102,9 +102,8 @@ def p_cover(index):
                      ("Pattern", "XS–3XL, DXF (AAMA) + 1:1 plot", False)]:
         o.append(t(ix, y, a, 1.9, 400, MUTED)); o.append(t(ix + 23, y, b_, 1.8, 600, PROP if p else INK)); y += 3.7
     y += 3
-    for l in ["Block: zip-hoodie (engine/hoodie.py = Drum Island body + 3-panel hood + self-fabric bands).",
-              "Founder to confirm vs the hooded-variant PR [proposed — confirm]; fronts identical on both,",
-              "only the sleeve length / cuff band would change (02 re-clip, see T8)."]:
+    for l in ["Block: zip-hoodie (engine/hoodie.py = Drum Island body + 3-panel hood + elastic hem + cuff bands),",
+              "founder decision 19 Oct 2026. Welts at this mockup's position via the block's welt override [proposed — confirm]."]:
         o.append(t(ix, y, l, 1.55, 700, PROP)); y += 3.1
     o.append(t(SW - 14, SH - 8, FOOT, 1.8, 400, MUTED, "end"))
     return o
@@ -340,8 +339,7 @@ def p_fit():
           "5. Shell: 12 oz washed navy duck, pre-washed before embroidery; lining: plaid flannel (body), taffeta (sleeves), cream sherpa (hood).",
           "6. Welts at the mockup position (21.8 cm from CF, 35.2 cm below the neck, 54°); embroidery keeps 8 mm clear (6 + 2 cut-out margin, DST-checked, T7).",
           "7. Sample size M first (blank fit of the hoodie block is still pending); then the size set.",
-          "8. Hood block (founder): zip-hoodie block used vs the hooded-variant PR. Fronts identical; zip-hoodie sleeves are 2.5 cm longer (5 cm",
-          "    cuff band vs 7.5 cm rib). If the other block is chosen: re-run sleeve art + 02 files + these pages; 01 files stay."]
+          "Closed 19 Oct: hood block = zip-hoodie block (engine/hoodie.py, elastic hem + cuff bands) — founder decision."]
     for q in qs: o.append(t(12, y, q, 1.7, 400, PROP)); y += 4.2
     return o
 

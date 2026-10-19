@@ -51,7 +51,8 @@ class Flat:
         w = self.sweep2 + 8
         return Polygon([(-w, self.hem_seam), (w, self.hem_seam), (w - 6, self.hem_edge), (-(w - 6), self.hem_edge)])
     def welt(self, side=1):
-        W = Polygon(drum.WELT_L_M); W = affinity.translate(W, 0, self.fnd)
+        import front as F_
+        W = affinity.translate(F_.WELT_L, 0, self.fnd)            # this design's welt (engine welt override, front.WELT)
         return self._m(W, side)
     # hood standing up (front view: sits on the neckline, face edges run into the zip; back view: centre panel up the middle)
     def _dome(self, hw_top, top, y_side, n=2.3):

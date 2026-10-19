@@ -412,8 +412,8 @@ for layer, tb, col in towers:
     # lit edge: a thin pale line down the side facing the comet glow + along the roof (separates the towers, mockup)
     if layer == "near" or crng.random() < 0.5:
         ec = "cc_cloud" if col == "cc_night" else "cc_ice"
-        sx_ = b[0] if (b[0] + b[2]) / 2 > 0 else b[2] - 0.8
-        edge = box(sx_, b[1], sx_ + 0.8, b[3]).union(box(b[0], b[1], b[2], b[1] + 0.8))
+        sx_ = b[0] if (b[0] + b[2]) / 2 > 0 else b[2] - 1.0
+        edge = box(sx_, b[1], sx_ + 1.0, b[3]).union(box(b[0], b[1], b[2], b[1] + 1.0))
         add([CM.R(ec, edge, "satin", "auto", "BLD-edge", kob=0.0)], "window", zt + 0.4); n_edge += 1
     # windows: a lit GRID per tower (whole floors / column pairs lit, the rest dark), mostly gold (mockup), some cool towers
     if layer == "near": ww, wh, px_, py_, p_floor, p_win = 1.6, 2.0, 3.2, 3.8, 0.62, 0.72

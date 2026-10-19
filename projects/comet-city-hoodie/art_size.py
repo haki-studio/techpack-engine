@@ -17,7 +17,8 @@ cccore.patch_dst2()
 SC = pickle.load(open("scene.pkl", "rb")); ITEMS = SC["items"]; META = SC["meta"]
 SL = pickle.load(open("sleeve_scene.pkl", "rb")) if os.path.exists("sleeve_scene.pkl") else None
 HEM_M = LineString(F.keep_geoms("M", "L")["hem"]).bounds[1]     # 510 on the Drum Island block
-Y0, Y1 = 200.0, 340.0                                            # hem-anchoring ramp (size-M mm): sky above Y0 stays, city below Y1 moves fully
+Y0, Y1 = 200.0, 340.0
+OPEN_GRPS = ("UG", "BLD-edge", "GLOW", "LF", "LF-hl")                                            # hem-anchoring ramp (size-M mm): sky above Y0 stays, city below Y1 moves fully
 
 def scaled(items, s, origin=(0, 0)):
     if s == 1.0: return [dict(r) for r in items]
@@ -62,6 +63,11 @@ def piece_art(its, clip, side_test):
         if not clip.buffer(0.3).contains(ug): drop.add(u)
     kept = [r for r in half if r.get("unit") not in drop]
     vis = visible(kept, clip)
+    # stitchability (spec width check): after the knock-outs, undergrowth fill and lit tower edges keep only parts >= 0.8 wide
+    # (thinner slivers are dark-on-dark / sub-column and would not sew as a column) - opening by 0.4
+    for r in vis:
+        if r["grp"] in OPEN_GRPS: r["geom"] = r["geom"].buffer(-0.4, join_style=2).buffer(0.4, join_style=2).intersection(r["geom"]).buffer(0)
+    vis = [r for r in vis if not r["geom"].is_empty]
     vis = dst2.clean_vis(vis)
     vis = [dict(r, geom=r["geom"].intersection(clip).buffer(0)) for r in vis]
     vis = [r for r in vis if not r["geom"].is_empty and r["geom"].area > 0.3]

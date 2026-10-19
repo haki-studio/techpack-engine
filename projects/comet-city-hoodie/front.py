@@ -41,27 +41,14 @@ SKEEP = {"cap": KEEP_SEAM, "underarm front": KEEP_SEAM, "underarm back": KEEP_SE
 SMIN = dict(SKEEP)
 SLEEVE_BACK_REACH = 30.0
 
-def hooded_available():
-    """the zip-hoodie block (engine/hoodie.py: Drum Island body + 3-panel sherpa hood + self-fabric bands) is in the engine"""
-    try:
-        import hoodie  # noqa: F401
-        return True
-    except ImportError:
-        return False
-
-# the engine reads the welt from block data (drum.WELT_L_M = the Drum Island welt); this jacket's welts sit where the mockup
-# draws them -> override the block data with this project's welt before any draft (older engines read WELT_L from here)
-drum.WELT_L_M = [tuple(p) for p in WELT_L.exterior.coords]
-
+# block = zip-hoodie (engine/hoodie.py on main; founder decision 19 Oct: option 1, elastic hem + cuff bands). This mockup's welts
+# differ from Drum Island -> engine per-design welt override (size-M garment coords, graded by the engine) [PROPOSED - confirm]
+WELT = dict(cx=WELT_C[0], cy=WELT_C[1], angle=WELT_ANG, length=WELT_LEN, width=WELT_W)
 _PC = {}
 def pieces(size):
     if size not in _PC:
-        if hooded_available():
-            import hoodie
-            _PC[size] = hoodie.draft(size)
-        else:
-            import pattern as PT
-            _PC[size] = PT.draft(size)
+        import hoodie
+        _PC[size] = hoodie.draft(size, welt=WELT)
     return _PC[size]
 
 def keep_geoms(size, side):

@@ -165,7 +165,7 @@ def summary():
     qs = [f"1. IP: the comet-over-city-with-figure scene evokes the film 'Your Name' (CoMix Wave). We drew our own skyline, comet bundle and figure pose — founder to decide.",
           f"2. Frame: every piece needs 2 hoopings on {FR_S} (split S1/S2 with registration crosses, G5/G6). A larger frame removes the joins — what frames does the factory have?",
           "3. Back + hood: the mockup shows only the front; plain back and hood assumed. Sleeves: art on the front-facing half only, back half plain. Confirm.",
-          "4. Hood block: zip-hoodie block (engine/hoodie.py) used — founder to confirm vs the hooded-variant PR; fronts identical either way, only 02 would re-clip.",
+          "4. Hood block: CLOSED 19 Oct — zip-hoodie block (engine/hoodie.py, elastic hem + cuff bands), founder decision. Welt position = engine welt override [proposed].",
           "5. Thread board: all targets are read from a low-res AI mockup — approve physical colours (G3), esp. the comet blues/violets and window gold on navy.",
           "6. Grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per piece; fronts scale about the CF neck so the comet + rail meet at the zip.",
           "7. Welts: at the mockup position (centre 21.8 cm from CF, 35.2 cm below the neck, 54°), Drum Island welt 1.4 × 13. Confirm.",

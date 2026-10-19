@@ -36,4 +36,4 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - Thread palette: 14 colours read from the mockup (Isacord / Madeira Polyneon matched by ΔE2000), ≤ 12 per file (fronts 12, sleeves 8). Shell washed navy duck, pre-washed before embroidery.
 - Bicycle lifted ~14 mm and the figure ends at the hem keep-out (mockup draws both touching the hem seam); bush + lamp post kept inside the side keep-out.
 - Frame 360 × 360 (factory.json, unconfirmed): every piece needs 2 hoopings (S1 top / S2 bottom split files with registration crosses sewn in stop 1's thread).
-- Pattern: zip-hoodie block (`engine/hoodie.py`: Drum Island body + 3-panel sherpa hood + 5.5 / 5 cm self-fabric bands). Founder to confirm vs the hooded-variant PR (only the sleeves would re-clip).
+- Pattern: zip-hoodie block (`engine/hoodie.py`: Drum Island body + 3-panel sherpa hood + 5.5 / 5 cm elastic hem + cuff bands) — founder decision 19 Oct 2026 (option 1). Welts via the engine per-design welt override `hoodie.draft(size, welt=front.WELT)` (centre 218 mm from CF, 352 mm below the CF neck at M, 54°) [PROPOSED].

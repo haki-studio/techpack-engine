@@ -3,8 +3,9 @@ self-fabric bands) with this jacket's welt position (front.py) and the embroider
 usage: python3 pattern_cc.py qa dxf pdf"""
 import cccore
 import sys, os, json
-import front as F                     # sets drum.WELT_L_M to this mockup's welt before any draft
+import front as F                     # front.WELT = this mockup's welt (engine per-design welt override)
 import hoodie as HD, pattern as PT, pattern_out as PO
+BLK = HD.Variant(welt=F.WELT)
 STYLE = cccore.STYLE
 OUTD = "out/pattern"; os.makedirs(OUTD, exist_ok=True)
 PO.EMB_ON = {"F01": ["FL"], "F02": ["FR"], "S01": ["SR"], "S02": ["SL"]}
@@ -48,7 +49,7 @@ if __name__ == "__main__":
     a = sys.argv[1:]
     if "qa" in a: print("PATTERN QA", "ALL PASS" if qa() else "FAIL")
     if "dxf" in a:
-        for sz in HD.SIZES: PO.write_dxf([sz], f"{OUTD}/{STYLE}_pattern_{sz}.dxf", blk=HD, style=STYLE, emb=True)
-        PO.write_dxf(HD.SIZES, f"{OUTD}/{STYLE}_pattern_ALL-SIZES.dxf", blk=HD, style=STYLE, emb=True); print("dxf ok")
+        for sz in HD.SIZES: PO.write_dxf([sz], f"{OUTD}/{STYLE}_pattern_{sz}.dxf", blk=BLK, style=STYLE, emb=True)
+        PO.write_dxf(HD.SIZES, f"{OUTD}/{STYLE}_pattern_ALL-SIZES.dxf", blk=BLK, style=STYLE, emb=True); print("dxf ok")
     if "pdf" in a:
-        PO.plot_pdf("M", f"{OUTD}/{STYLE}_pattern_M_1to1_PLOT.pdf", blk=HD, style=STYLE, emb=True); print("pdf ok")
+        PO.plot_pdf("M", f"{OUTD}/{STYLE}_pattern_M_1to1_PLOT.pdf", blk=BLK, style=STYLE, emb=True); print("pdf ok")
