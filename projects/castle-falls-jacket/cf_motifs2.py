@@ -139,17 +139,19 @@ def fall(top, bot, w_top, w_bot, rng, cols=("cf_white", "cf_white", "cf_skylt", 
     n = max(2, int(round(w_bot / (cord + gap))))
     for i in range(n):
         u = (i + 0.5) / n - 0.5                     # lateral position -1/2 .. 1/2
-        pts = [(cxat(t) + 2 * u * half(t) * 0.94, y0 + H * t) for t in np.linspace(0, 1, 30)]
-        ln = LineString(pts); L = ln.length; s = rng.uniform(0, seg); k = 0
-        wd = (cord / 2) * (0.8 + 0.4 * rng.random())
-        while s < L:
-            a, b = ln.interpolate(max(0, s - seg * 0.55)), ln.interpolate(min(L, s + seg * 0.55))
-            ang = math.degrees(math.atan2(b.y - a.y, b.x - a.x))
-            sg = LineString([a, b]).buffer(wd, cap_style="flat").intersection(outline.buffer(-0.2))
-            if not sg.is_empty and sg.area > 1.0:
-                col = cols[(i + k) % len(cols)] if rng.random() > 0.15 else "cf_white"
-                regs.append(R(col, sg.buffer(0), "satin", ang + twist * (1 if i % 2 else -1), "FALL-cord", unit=unit))
-            s += seg; k += 1
+        ph = rng.uniform(0, 2 * math.pi); amp = rng.uniform(0.3, 0.7)
+        cl = []; cr = []
+        for t in np.linspace(0, 1, 36):
+            hw = half(t); xc = cxat(t) + 2 * u * hw * 0.96 + amp * math.sin(ph + t * 9.0)
+            wd = min(cord, 2 * hw / n - gap) / 2 * (0.85 + 0.15 * math.sin(ph * 2 + t * 13.0))
+            cl.append((xc - wd, y0 + H * t)); cr.append((xc + wd, y0 + H * t))
+        strip = Polygon(cl + cr[::-1]).buffer(0).intersection(outline.buffer(-0.2))
+        if strip.is_empty or strip.area < 2: continue
+        col = cols[i % len(cols)]
+        regs.append(R(col, strip, "satin", "auto", "FALL-cord", unit=unit))
+        if col == "cf_white" and H > 30:             # light-blue twist streak down the middle of some white cords
+            core = LineString([((a[0] + b[0]) / 2, a[1]) for a, b in zip(cl[3:-6], cr[3:-6])]).buffer(0.55)
+            if rng.random() < 0.5: regs.append(R("cf_skylt", core.intersection(strip.buffer(-0.6)), "run", None, "FALL-ln", unit=unit, ko=False))
     # mist at the foot: small lobes across the base
     fw = foot_w or w_bot * 1.5
     lobes = []
