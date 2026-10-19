@@ -37,6 +37,8 @@ Size M (read back from the DST):
 Max 12 thread colours per file (factory limit, incl. registration). The files are production-intent drafts: the factory digitizer
 opens them, checks density + pull on the washed duck, edits if needed, and sews a strike-off (F1) before bulk.
 Every value marked [proposed - confirm] in the PDF is still open.
+References: the comet is traced from the founder's close-up (inputs/closeup_mockup_comet.png, registered onto the fronts); placement,
+clouds and counts from the mockup. Pattern = zip-hoodie block (engine/hoodie.py); the hood block choice is a founder question (T8).
 """)
 for z in glob.glob("out/*.zip"): os.remove(z)
 subprocess.run(f"cd {PKG} && zip -qr ../HAKI_{cccore.SHORT}_{cccore.REV_GAR.replace(' ', '')}_files.zip .", shell=True)

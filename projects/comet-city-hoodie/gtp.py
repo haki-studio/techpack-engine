@@ -102,9 +102,9 @@ def p_cover(index):
                      ("Pattern", "XS–3XL, DXF (AAMA) + 1:1 plot", False)]:
         o.append(t(ix, y, a, 1.9, 400, MUTED)); o.append(t(ix + 23, y, b_, 1.8, 600, PROP if p else INK)); y += 3.7
     y += 3
-    for l in ["PATTERN STAGE WAITING: the founder has not yet chosen the hood block (zip-hoodie block on main",
-              "vs the hooded-variant PR). T3-T7 + the DXF are drafted on the zip-hoodie block [proposed — confirm].",
-              "Fronts are identical on both; sleeve length / cuff band depend on the choice (02 re-clip, see T8)."]:
+    for l in ["Block: zip-hoodie (engine/hoodie.py = Drum Island body + 3-panel hood + self-fabric bands).",
+              "Founder to confirm vs the hooded-variant PR [proposed — confirm]; fronts identical on both,",
+              "only the sleeve length / cuff band would change (02 re-clip, see T8)."]:
         o.append(t(ix, y, l, 1.55, 700, PROP)); y += 3.1
     o.append(t(SW - 14, SH - 8, FOOT, 1.8, 400, MUTED, "end"))
     return o
@@ -119,7 +119,7 @@ NOTES = [("1", "Hood: 3 panels — side pair + 10 cm centre panel. Washed navy d
          ("8", "Lining: cotton flannel body (plaid, as mockup), polyester taffeta sleeves; hood fully lined in sherpa. Labels on the back neck facing.", True)]
 
 def p_flats():
-    o = H("FLATS + CONSTRUCTION", "Size M. Body and sleeve are the approved Drum Island jacket; numbered notes = hoodie + design specifics.", "T2")
+    o = H("FLATS + CONSTRUCTION", "Size M · zip-hoodie block (Drum Island body + 3-panel sherpa hood + self-fabric bands); numbered notes = hoodie + design specifics.", "T2")
     fr, bb = flat_png(False); bk, bb2 = flat_png(True, art=False)
     tag, h = img_tag(fr, 12, 30, 98); o.append(tag); tag, h2 = img_tag(bk, 114, 30, 86); o.append(tag)
     Fl = HF.Flat("M"); s1 = 98 / (bb[2] - bb[0]); s2 = 86 / (bb2[2] - bb2[0])
@@ -271,7 +271,7 @@ def p_bom():
             ("Zip", f"YKK #5 metal, brass, 2-way separating, {zip_l/10:.0f} cm (M)", "1", True),
             ("Elastic — hem", f"{HD.EL_HEM_W/10:.0f} cm woven elastic, {mM['el_hem']/10:.1f} cm (M)", "1", True),
             ("Elastic — cuff", f"{HD.EL_CUFF_W/10:.1f} cm woven elastic, {(mM['el_cuff']+15)/10:.1f} cm (M)", "2", True),
-            ("Embroidery thread", f"40wt polyester, {len(cols)} colours (G3) — FR + FL + SR + SL", f"{sum(CUR[p]['stitches'] for p in CUR):,} stitches (M)", True),
+            ("Embroidery thread", f"40wt polyester, {len(cols)} colours over the jacket, ≤ 12 per file (G3) — FR + FL + SR + SL", f"{sum(CUR[p]['stitches'] for p in CUR):,} stitches (M)", True),
             ("Embroidery backing", f"2.5 oz cutaway, black, 100 cm wide — {hoops} hoopings per jacket (G6), each split file + 30 per side", f"{BACKING:.2f} m", True),
             ("Thread — seams", "Coats Epic 120 (Tex 27), navy", "~ 450 m", False), ("Thread — topstitch", "Coats Gral 40 (Tex 60), tonal navy", "~ 140 m", False),
             ("Labels", "Main + size on back neck facing; care label left side seam lining", "1 set", False)]
@@ -309,6 +309,12 @@ def p_placement():
             y += 3.2
         y += 2.2
     o.append(t(12, y + 1, f"Result: {'ALL KEEP-OUTS PASS on every size' if allok else 'KEEP-OUT FAILURE — see red'}.", 2.0, 700, GREEN if allok else RED))
+    try:
+        wc = json.load(open("welt_check.json")); worst = min(v for sz in wc for P in wc[sz] for v in wc[sz][P].values())
+        okw = worst >= F_.KEEP_WELT - 0.6
+        o.append(t(150, y + 1, f"Welt line: nearest STITCH to the welt box, read from every DST (full + splits), all sizes: {worst:.1f} mm — {'no stitch on the welt' if okw else 'CHECK'}.", 1.7, 700, GREEN if okw else RED))
+    except FileNotFoundError:
+        pass
     o.append(t(12, y + 5, "Fronts: graded A 92 % (XS–S) / B 100 % (M–XL) / C 108 % (XXL–3XL) about the CF neck; the city band slides to each size's hem-band seam. Sleeves graded about the cuff seam.", 1.6, 400, MUTED))
     o.append(t(12, y + 8.4, "The art outline, art box, split line and every needle start are on DXF layer 8 / 13 of each size's pattern file.", 1.6, 400, MUTED))
     return o
@@ -332,17 +338,20 @@ def p_fit():
           "3. Hood size 36 × 26 cm (M) incl. sherpa allowance, no drawcord; hem/cuff bands 5.5 / 5 cm with elastic (zip-hoodie block, proposed).",
           "4. Zip: 2-way separating YKK #5 metal, brass (mockup shows two pullers).",
           "5. Shell: 12 oz washed navy duck, pre-washed before embroidery; lining: plaid flannel (body), taffeta (sleeves), cream sherpa (hood).",
-          "6. Welts at the mockup position (21.8 cm from CF, 35.2 cm below the neck, 54°) — the zip-hoodie block default welt is moved for this design.",
+          "6. Welts at the mockup position (21.8 cm from CF, 35.2 cm below the neck, 54°); embroidery keeps 8 mm clear (6 + 2 cut-out margin, DST-checked, T7).",
           "7. Sample size M first (blank fit of the hoodie block is still pending); then the size set.",
-          "8. HOOD BLOCK (founder): zip-hoodie block (main, used here) vs hooded-variant PR. Fronts identical; zip-hoodie sleeves are 2.5 cm longer (5 cm",
-          "    cuff band vs 7.5 cm rib). If the other block is chosen: re-run sleeve art + 02 files + these pages (about 1 h); 01 files stay."]
+          "8. Hood block (founder): zip-hoodie block used vs the hooded-variant PR. Fronts identical; zip-hoodie sleeves are 2.5 cm longer (5 cm",
+          "    cuff band vs 7.5 cm rib). If the other block is chosen: re-run sleeve art + 02 files + these pages; 01 files stay."]
     for q in qs: o.append(t(12, y, q, 1.7, 400, PROP)); y += 4.2
     return o
 
 def p_revisions():
     o = H("REVISION LOG + SAMPLE TRACKER", "Every change, newest last.", "T9")
-    revs = [("Rev A", DATE, "Comet City hooded jacket on the zip-hoodie block (Drum Island body + 3-panel sherpa hood + self-fabric bands). Embroidery: 01 front scene "
-                            "(FR + FL, split at the zip) + 02 sleeves (SR + SL), redrawn from the low-res mockup. Pattern XS–3XL with embroidery placement, DXF + 1:1 plot.")]
+    revs = [("Rev A", "16 Oct 2026", "Comet City hooded jacket on the zip-hoodie block (Drum Island body + 3-panel sherpa hood + self-fabric bands). Embroidery: 01 front scene "
+                            "(FR + FL, split at the zip) + 02 sleeves (SR + SL), redrawn from the low-res mockup. Pattern XS–3XL with embroidery placement, DXF + 1:1 plot."),
+            ("Rev B", DATE, "Fidelity rebuild after the independent review: the founder's close-up registered onto the fronts and the comet traced from it (+ tapering streaks, own core stops); "
+                            "clouds in 5 shaded tones with lobed ends; dozens of towers with window grids, neon + horizon glow; solid figure, lamp, bike, dark railing, soft bush; "
+                            "falling star + stars with glow; sleeves dense mixed foliage on undergrowth; welt cut-out margin 8 mm (DST-checked); compare sheets drawn from the DST files.")]
     y = 36
     for rv, dt, ch in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(36, y, dt, 1.7))

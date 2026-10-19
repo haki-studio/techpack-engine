@@ -352,7 +352,7 @@ for layer, wmin, wmax, top_fn, bot_fn in (("far", 6.0, 15.0, far_top, rail_mm), 
 xs = np.linspace(-300, 300, 160)
 vio = Polygon([(x, near_top(x) - 16 + 3*math.sin(x/9.0)) for x in xs] + [(x, near_top(x) + 3) for x in xs[::-1]]).buffer(0)
 ros = Polygon([(x, near_top(x) - 8 + 2*math.sin(x/6.5 + 1)) for x in xs] + [(x, near_top(x) + 3) for x in xs[::-1]]).buffer(0)
-add([CM.R("cc_violet", vio.difference(ros), "tatami", 0.0, "GLOW", kob=0.0)], "glow", Z["glow"])
+add([CM.R("cc_violet", vio.difference(ros).buffer(-0.5).buffer(0.5), "tatami", 0.0, "GLOW", kob=0.0)], "glow", Z["glow"])
 add([CM.R("cc_rose", ros, "tatami", 0.0, "GLOW", kob=0.0)], "glow", Z["glow"] + 0.1)
 n_win = n_sign = n_ant = 0
 for layer, tb, col in towers:
@@ -395,15 +395,15 @@ def rail_poly(dy, w, x0=110, x1=625):
     xs_ = np.linspace(x0, x1, 60); pts = [P(x, rail_y(x) + dy) for x in xs_]
     return LineString(pts).buffer(w/2, cap_style="flat")
 add([CM.R("cc_night", rail_poly(0.0, 2.8), "satin", "auto", "RAIL", kob=0.0)], "rail", Z["rail"])
-add([CM.R("cc_ice", rail_poly(-1.6, 0.8), "satin", "auto", "RAIL-hl", kob=0.0)], "rail", Z["rail"] + 0.1)
+add([CM.R("cc_ice", rail_poly(-1.75, 1.0), "satin", "auto", "RAIL-hl", kob=0.0)], "rail", Z["rail"] + 0.1)
 add([CM.R("cc_night", rail_poly(38.5, 1.8), "satin", "auto", "RAIL", kob=0.0)], "rail", Z["rail"])
-add([CM.R("cc_cloud", rail_poly(37.2, 0.6), "satin", "auto", "RAIL-hl", kob=0.0)], "rail", Z["rail"] + 0.1)
+add([CM.R("cc_cloud", rail_poly(37.1, 0.95), "satin", "auto", "RAIL-hl", kob=0.0)], "rail", Z["rail"] + 0.1)
 add([CM.R("cc_ice", rail_poly(47.5, 1.1), "satin", "auto", "RAIL-hl", kob=0.0)], "rail", Z["rail"])
 x = 132.0; nb = 0
 while x < 612:
     a = P(x, rail_y(x) + 1.6); b = P(x, rail_y(x) + 37.0)
     add([CM.R("cc_night", LineString([a, b]).buffer(0.7, cap_style="flat"), "satin", "auto", "RAIL-b", kob=0.0)], "rail", Z["rail"])
-    add([CM.R("cc_cloud", LineString([(a[0] - 0.95, a[1]), (b[0] - 0.95, b[1])]).buffer(0.3, cap_style="flat"), "satin", "auto", "RAIL-hl", kob=0.0)], "rail", Z["rail"] + 0.1)
+    add([CM.R("cc_cloud", LineString([(a[0] - 1.1, a[1]), (b[0] - 1.1, b[1])]).buffer(0.47, cap_style="flat"), "satin", "auto", "RAIL-hl", kob=0.0)], "rail", Z["rail"] + 0.1)
     x += 10.6; nb += 1
 
 # ================================================================ lamp post, bush, bicycle, figure (solid, in front)

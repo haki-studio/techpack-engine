@@ -95,7 +95,7 @@ def overview():
     ky = ty + 9.5 + 7*4.0 + 5
     o.append(t(tx, ky, "KEEP-OUTS (all sizes, measured on the pattern pieces — T7)", 2.1, 700))
     ko = [f"CF zip: {F.KEEP_CF:.0f} each side of CF (teeth + tape + topstitch)", f"Armhole, shoulder, side seams: {F.KEEP_SEAM:.0f} · hem-band seam: {F.KEEP_HEM:.0f}",
-          f"Hood neck seam: {F.KEEP_NECK:.0f} [proposed] · welt pocket box: {F.KEEP_WELT:.0f}",
+          f"Hood neck seam: {F.KEEP_NECK:.0f} [proposed] · welt pocket box: {F.KEEP_WELT:.0f} (6 + 2 cut-out margin) [proposed]",
           f"Sleeves: cap {F.SKEEP['cap']:.0f}, underarm seams {F.SKEEP['underarm front']:.0f}, cuff seam {F.SKEEP['cuff']:.0f}; art on the front half + {F.SLEEVE_BACK_REACH:.0f} past the centre line",
           "Back + hood: no embroidery [proposed — confirm]."]
     for i, k in enumerate(ko): o.append(t(tx, ky + 4.4 + i*3.4, k, 1.7))
@@ -165,11 +165,11 @@ def summary():
     qs = [f"1. IP: the comet-over-city-with-figure scene evokes the film 'Your Name' (CoMix Wave). We drew our own skyline, comet bundle and figure pose — founder to decide.",
           f"2. Frame: every piece needs 2 hoopings on {FR_S} (split S1/S2 with registration crosses, G5/G6). A larger frame removes the joins — what frames does the factory have?",
           "3. Back + hood: the mockup shows only the front; plain back and hood assumed. Sleeves: art on the front-facing half only, back half plain. Confirm.",
-          "4. Hood block not chosen yet (founder): files are on the zip-hoodie block (main). Fronts identical either way; sleeves +2.5 cm (5 cm cuff band) — 02 re-clips if that changes.",
+          "4. Hood block: zip-hoodie block (engine/hoodie.py) used — founder to confirm vs the hooded-variant PR; fronts identical either way, only 02 would re-clip.",
           "5. Thread board: all targets are read from a low-res AI mockup — approve physical colours (G3), esp. the comet blues/violets and window gold on navy.",
           "6. Grading: A 92% (XS–S) · B 100% (M–XL) · C 108% (XXL–3XL), one file per size per piece; fronts scale about the CF neck so the comet + rail meet at the zip.",
           "7. Welts: at the mockup position (centre 21.8 cm from CF, 35.2 cm below the neck, 54°), Drum Island welt 1.4 × 13. Confirm.",
-          "8. Close-ups: none supplied — art redrawn from the ~1 px/mm mockup (counts + positions). Close-ups (inputs/closeup_request.md) would sharpen the city + plants.",
+          "8. References: the comet is traced from the founder's close-up (registered on the fronts); clouds/placement from the mockup; per-panel close-ups would still sharpen city + sleeves.",
           "9. DST/PES are production-intent drafts: the factory digitizer checks density + pull on the washed duck and edits before the sew-out."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i*3.6, q, 1.75))
     return o

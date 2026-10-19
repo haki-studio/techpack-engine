@@ -44,3 +44,28 @@ Problems hit while building this product, worked around in project code only. Ea
 - The hooded block (`origin/hooded-variant`) changes the cuff to a 60 mm self-fabric band with cuff = opening 1:1, so the sleeve
   pieces get longer + narrower at the cuff. `front.pieces()` switches to `draft(size, variant="hooded")` automatically once the
   engine has it; re-run `sleeve_scene.py`, `art_size.py`, `build_size.py` for all sizes, then the documents.
+
+## 7. Rev B (18 Oct): registering a re-composed close-up (LESSONS A12 in practice)
+- **Problem:** the founder's detail view re-composes the scene: the comet and sky stars register (exact on 7 features), but its
+  clouds tilt and its city/figure are ~2x larger. One global fit folded the warp into a swirl (two conflicting cloud points).
+- **Fix (project):** `closeup.py` = projective fit on all matched features + thin-plate spline on the SKY features only, a Jacobian
+  fold/stretch mask, and the close-up used only where it agrees with the mockup layout (comet traced; clouds/city layout from the mockup).
+- **Proposed engine fix:** `engine/register.py` with this fit + `residuals()` + fold mask, and a reviewer overlay (close-up warped
+  over the mockup, half-transparent) as a standard compare-sheet panel.
+- **Check:** residuals printed in scene_meta.json (`closeup_residuals`): 0.0 px on the 7 sky features.
+
+## 8. Traced streaks below the reference resolution
+- **Problem:** the close-up is ~2 px per garment mm; comet strands are ~1 mm, so palette tracing gives the colour layout and extent
+  but a slab, not strands.
+- **Fix:** traced body (extent + colour bands from the close-up) + generated tapering satin streaks inside the TRACED extent
+  (per-t extent percentiles, smoothed) — the reference decides where and what colour, the motif only adds sub-pixel strands.
+- **LESSON proposal:** "Trace what the reference resolves; generate only below its resolution, constrained by the traced extent."
+
+## 9. Compare sheets from the DST, not from the art
+- `compare.py` draws every stitch of the written full DST (thread colours from the PES list) — the reviewer sees what sews.
+  Proposed: `stitchrender.dst_render(files, bbox, ppm)` in the engine.
+
+## 10. Welt keep-out checked on stitch points
+- `welt_check.py` reads every DST (full + splits) back into garment mm and measures the nearest stitch to each size's welt box
+  (Rev B: welt keep-out 8 = 6 + 2 cut-out margin; worst stitch 7.75 mm). Proposed: generic `qa.stitch_clearance(dst, origin, geom)`
+  for every keep-out (the art-outline check misses pull comp + underlay).
