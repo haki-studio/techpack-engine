@@ -18,6 +18,7 @@ from shapely.geometry import Point, Polygon, LineString, MultiLineString, box
 from shapely.ops import unary_union, transform
 from shapely import affinity
 import shapely
+from skimage import morphology
 from motifs2 import R
 import trace as TR
 
@@ -32,7 +33,7 @@ GROUND = {"m1": (247, 231, 204), "m2": (240, 212, 172), "m3": (224, 189, 143), "
 CODE = {"m1": "MN-hl", "m2": "MN", "m3": "MN-warm", "m4": "MN-crater", "m5": "MN-mare"}
 # star craters read off the close-up (px): centre, outer radius, spikes, rotation
 STARS = [(650, 128, 40, 11, 0.10), (652, 234, 34, 12, 0.35), (848, 240, 40, 12, 0.0)]
-DSEP, STEP = 0.45, 0.30
+DSEP, STEP = 0.40, 0.30          # 0.40 rows: Rev C compare showed navy between 0.45 rows at the swirl
 
 def lab(c): return TR.lab_img(np.array(c, float)[None, None, :])[0, 0]
 def polys(g):
@@ -65,7 +66,7 @@ class Field:
         t = 0.5 * math.atan2(bl(self.s), bl(self.c)); return math.cos(t), math.sin(t)
 
 # ------------------------------------------------------------------ evenly spaced streamlines (Jobard & Lefer 1997)
-def streamlines(F, inside, bounds, dsep=DSEP, dtest=0.55, h=STEP, min_len=1.2, max_pts=4000):
+def streamlines(F, inside, bounds, dsep=DSEP, dtest=0.5, h=STEP, min_len=1.2, max_pts=4000):
     cs = dsep; grid = {}
     def key(x, y): return (int(math.floor(x / cs)), int(math.floor(y / cs)))
     def near(x, y, d, lid=None, lpts=None):
@@ -166,27 +167,39 @@ def build(img):
         if p.area < 0.2: continue
         r = R("m2", p, "tatami", 0, CODE["m2"]); r["under"] = True; r["rows"] = ML.intersection(p.buffer(0.15)); vis.append(r)
     vis.append(R("m3", disc.difference(disc.buffer(-2.2)), "satin", ("radial", 0.0, MCY), "MN-warm"))
-    # ---- star craters (filled silhouettes)
+    # ---- star craters: silhouettes TRACED from the close-up (grey-green pixels within 1.15 r of each star centre; LESSONS
+    # A14 — no generated star shapes), pale centre traced (bright pixels near the centre), dark spike lines traced
     starg = []
+    smc = np.stack([ndi.gaussian_filter(a[..., i], 1.2) for i in range(3)], -1)
+    greym = ((smc[..., 0] - smc[..., 2]) < 62) & (smc.mean(2) < 208) & ~blue & ~fig
     for (sx, sy, sr, n, rot) in STARS:
-        X0, Y0 = (float(v) for v in to_mm(sx, sy)); Rm = sr * K
-        rng = np.random.RandomState(int(sx + sy))
-        pts = []
-        for i in range(2 * n):
-            t = 2 * math.pi * i / (2 * n) + rot
-            rr = Rm * (rng.uniform(0.78, 1.0) if i % 2 == 0 else rng.uniform(0.34, 0.44))
-            pts.append((X0 + rr * math.cos(t), Y0 + rr * math.sin(t)))
-        st = Polygon(pts).buffer(0.25).buffer(-0.25).intersection(disc.buffer(-2.5))
+        X0, Y0 = (float(v) for v in to_mm(sx, sy))
+        win = (np.hypot(xx - sx, yy - sy) < sr * 1.15)
+        m = morphology.binary_opening(greym & win, morphology.disk(1))
+        lab_, nl = ndi.label(m)
+        if nl == 0: continue
+        cen = np.hypot(xx - sx, yy - sy) < sr * 0.45
+        k_ = np.bincount(lab_[cen & (lab_ > 0)]).argmax() if (cen & (lab_ > 0)).any() else np.bincount(lab_[lab_ > 0]).argmax()
+        m = ndi.binary_fill_holes(lab_ == k_)
+        st = TA_map(TR.polys_of(m, 1, (0, 0, W, H), 20, simplify=0.3)).buffer(0.3).buffer(-0.3).intersection(disc.buffer(-2.5))
+        if st.is_empty: continue
         starg.append(st)
         vis.append(R("m5", st, "satin", ("radial", X0, Y0), "MN-mare"))
-        for i in range(0, 2 * n, 2):                                  # spike centre lines (dark grey), outer 2/3 of each spike
-            t = 2 * math.pi * i / (2 * n) + rot
-            ln = LineString([(X0 + Rm * 0.32 * math.cos(t), Y0 + Rm * 0.32 * math.sin(t)), (X0 + Rm * 0.70 * math.cos(t), Y0 + Rm * 0.70 * math.sin(t))])
-            vis.append(R("p3", ln.buffer(0.3), "run", None, "MN-ray"))
-        cr = Rm * 0.26
-        vis.append(R("m1", Point(X0, Y0).buffer(cr, 32), "satin", ("radial", X0, Y0), "MN-hl"))
-        vis.append(R("m4", Point(X0, Y0).buffer(cr * 0.62, 32).exterior.buffer(0.3), "run", None, "MN-ray"))
-        vis.append(R("m3", Point(X0 - cr * 0.15, Y0 - cr * 0.15).buffer(max(0.7, cr * 0.25), 16), "satin", "auto", "MN-warm"))
+        dk = TR.dark_lines(img, (int(sx - sr * 1.2), int(sy - sr * 1.2), int(sx + sr * 1.2), int(sy + sr * 1.2)), size=7, thr=26, min_len_px=9,
+                           mask=lambda X_, Y_: m[np.clip(Y_, 0, H - 1), np.clip(X_, 0, W - 1)])
+        for l in dk:
+            g_ = TA_map(l).intersection(st.buffer(-0.6))
+            if not g_.is_empty and g_.length > 1.5:
+                r_ = R("p3", g_.buffer(0.3), "run", None, "MN-ray"); r_["top"] = True; vis.append(r_)
+        pale = ~greym & (smc.mean(2) > 150) & (np.hypot(xx - sx, yy - sy) < sr * 0.32) & ~blue      # the warm centre inside the grey star
+        pl_, npl = ndi.label(pale)
+        if npl:
+            kk = np.bincount(pl_[pl_ > 0]).argmax(); pm = ndi.binary_fill_holes(pl_ == kk)
+            cg = TA_map(TR.polys_of(pm, 1, (0, 0, W, H), 6, simplify=0.2)).buffer(0.3).buffer(-0.3)
+            for p in polys(cg):
+                if p.area < 1.0: continue
+                r_ = R("m1", p, "satin", ("radial", p.centroid.x, p.centroid.y), "MN-hl"); r_["top"] = True; vis.append(r_)
+                r_ = R("m4", p.exterior.buffer(0.3), "run", None, "MN-ray"); r_["top"] = True; vis.append(r_)
     stars = unary_union(starg)
     # ---- raised oval cells (bright isotropic blobs of the close-up)
     from skimage.feature import peak_local_max, hessian_matrix, hessian_matrix_eigvals
@@ -211,6 +224,7 @@ def build(img):
     for x, y, sg, rot, el in cells:
         X0, Y0 = (float(v) for v in to_mm(x, y))
         if stars.buffer(0.8).contains(Point(X0, Y0)): continue        # star craters stay clean grey-green
+        if any(math.hypot(x - sx, y - sy) < 1.5 * sr for (sx, sy, sr, _, _) in STARS[1:]): continue   # close-up: smooth ground round stars 2 + 3
         b_ = max(1.0, sg * 1.45 * K); a_ = b_ * el
         ell = affinity.rotate(affinity.scale(Point(X0, Y0).buffer(1, 24), a_, b_), rot, origin=(X0, Y0)).intersection(disc.buffer(-1.5))
         if ell.is_empty or ell.area < 1.2: continue

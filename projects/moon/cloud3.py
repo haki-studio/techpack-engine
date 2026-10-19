@@ -105,7 +105,8 @@ def cloud(a, comp, off, f, s, layer_tag=None, tail_w=4.6):
             # tone under the upper half of the scale
             qx, qy = c.x + nx * hh * 0.45 - bx[0], c.y + ny * hh * 0.45 - bx[1]
             iy_, ix_ = int(min(max(qy * UP, 0), best.shape[0] - 1)), int(min(max(qx * UP, 0), best.shape[1] - 1))
-            sc_.append((c.y, poly, LineString(arch), int(best[iy_, ix_])))
+            ti_ = int(best[iy_, ix_])
+            if ti_ > 0: sc_.append((c.y, poly, LineString(arch), ti_))     # pale caps (c1): no scales, smooth dome rows (close-up)
             t0 += step
     sc_.sort(key=lambda t: t[0])                                 # top rows first
     cover = []
@@ -128,7 +129,7 @@ def cloud(a, comp, off, f, s, layer_tag=None, tail_w=4.6):
     gap = body.difference(scal.buffer(-0.35)) if not scal.is_empty else body
     ground = []
     for i, k in enumerate(keys):
-        g = M(TR.polys_of((bestb == i) & Mu, UP, bx, 4, simplify=0.2)).buffer(0.3).intersection(gap)
+        g = M(TR.polys_of((best == i) & Mu, UP, bx, 4, simplify=0.2)).buffer(0.3).buffer(-0.5).buffer(0.2).intersection(gap)
         for p in polys(g):
             if p.area < 0.4: continue
             w = 2 * p.area / max(p.length, 1e-6)

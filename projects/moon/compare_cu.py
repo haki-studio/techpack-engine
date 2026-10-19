@@ -28,6 +28,26 @@ def dst_img(entries, mmbox, ppm, bg=(37, 48, 77)):
 cx, cy, r = CA.CU_MOON; s0 = 120.0 / r
 def bmm(px, py): return ((px - cx) * s0, 244 + (py - cy) * s0)
 
+import os
+QA = json.load(open("out/qa_fidelity.json")) if os.path.exists("out/qa_fidelity.json") else {}
+FAM = {"01_moon": ("01", ("moon", "stars", "uncovered")), "01_pole": ("01", ("pole", "wires", "uncovered")),
+       "01_clouds_left": ("01", ("clouds", "uncovered")), "01_clouds_right": ("01", ("clouds", "uncovered")),
+       "02_03_front": ("02_03", ("clouds", "pole", "uncovered")), "04_04R": ("04R", ("clouds", "uncovered")), "04_04L": ("04L", ("clouds", "uncovered"))}
+def qa_lines(name):
+    if name not in FAM or FAM[name][0] not in QA: return ["FIDELITY GATES: qa_fidelity.py not run"]
+    el, fams = FAM[name]; R_ = QA[el]
+    L = [f"FIDELITY GATES ({el}, shipped DST vs close-up pixels; qa.motif_match IoU >= 0.70, w/h >= 80 %; qa.uncovered gaps >= 25 mm2; LESSONS A14/A15)"]
+    for f in fams:
+        rr = R_.get(f, [])
+        if f == "uncovered":
+            L.append(f"  uncovered: {len(rr)} gap(s) >= 25 mm2" + ("" if not rr else ": " + "; ".join(f"({r['x_mm']}, {r['y_mm']}) {r['area_mm2']} mm2" for r in rr[:6])))
+        else:
+            ok = sum(r["ok"] for r in rr)
+            L.append(f"  {f}: {ok}/{len(rr)} motifs pass" + "".join(f" | #{r['motif']} ({r['x_mm']}, {r['y_mm']}) {r['area_mm2']} mm2 IoU {r['iou']} w {r['w_ratio']} h {r['h_ratio']} {'ok' if r['ok'] else 'FAIL'}" for r in rr[:4]))
+            for r in [r for r in rr if not r["ok"]][:10]:
+                L.append(f"      FAIL #{r['motif']} at ({r['x_mm']}, {r['y_mm']}) {r['area_mm2']} mm2: IoU {r['iou']}, w {r['w_ratio']}, h {r['h_ratio']}")
+    return L
+
 def sheet(name, img, pxbox, entries, mmbox, ppm, zooms=(), note="", zf=3):
     """zooms: [(label, close-up px box, mm box)] — each drawn at 3x ppm"""
     ours = dst_img(entries, mmbox, ppm); cu = img.crop(pxbox).resize(ours.size, Image.LANCZOS)
@@ -43,7 +63,8 @@ def sheet(name, img, pxbox, entries, mmbox, ppm, zooms=(), note="", zf=3):
         if cur and cw + w_ > W: rows.append(cur); cur, cw = [], 0
         cur.append(z); cw += w_
     if cur: rows.append(cur)
-    H = ours.height + 30 + sum(max(z[1].height for z in rw) + 26 for rw in rows)
+    QL = qa_lines(name)
+    H = ours.height + 30 + sum(max(z[1].height for z in rw) + 26 for rw in rows) + 14 * len(QL) + 20
     out = Image.new("RGB", (W, H), "white"); d = ImageDraw.Draw(out)
     d.text((4, 4), f"{name}: CLOSE-UP (left) | FINAL DST size M / grade B, drawn stitch by stitch (right), same scale {ppm:g} px/mm. {note}", fill=(200, 0, 0))
     out.paste(cu, (0, 24)); out.paste(ours, (ours.width + 20, 24))
@@ -54,6 +75,7 @@ def sheet(name, img, pxbox, entries, mmbox, ppm, zooms=(), note="", zf=3):
             d.text((x + 2, y), f"zoom {lab} (x{zf:g}): close-up | DST", fill=(200, 0, 0))
             out.paste(zc, (x, y + 14)); out.paste(zo, (x + zc.width + 6, y + 14)); x += zc.width * 2 + 30
         y += max(z[1].height for z in rw) + 26
+    for i, l in enumerate(QL): d.text((6, y + 6 + 14 * i), l, fill=(0, 0, 0) if "FAIL" not in l else (200, 0, 0))
     out.save(f"out/compare_{name}.png")
 
 def bz(lab, px0, py0, px1, py1):

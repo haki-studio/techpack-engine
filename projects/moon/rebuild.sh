@@ -13,6 +13,8 @@ printf "%s\n" "size M" "grade B" "size XS" "size 3XL" "size S" "size L" "size XL
 grep -l Traceback build_size_*_log.txt build_grade_[ABC]_log.txt >> rebuild_log.txt && log BUILD ERRORS
 ./py.sh collect.py 2>&1 | grep -v Warn >> rebuild_log.txt
 log stitch done
+./py.sh qa_fidelity.py 2>&1 | grep -v Warn >> rebuild_log.txt
+log fidelity gates done
 $H ./py.sh pattern_moon.py qa dxf pdf 2>&1 | grep -v Warn | tail -3 >> rebuild_log.txt
 ./py.sh covers.py 2>&1 | grep -v Warn | tail -1 >> rebuild_log.txt
 ./py.sh preview.py M 1.6 2>&1 | grep -v Warn | tail -1 >> rebuild_log.txt

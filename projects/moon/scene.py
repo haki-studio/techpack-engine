@@ -16,6 +16,7 @@ the welt box on both sides (it reads as passing behind the pocket) — so 01 and
 import math, random
 import shapely
 import numpy as np
+from scipy import ndimage as ndi
 from shapely.geometry import Point, Polygon, LineString, box
 from shapely.ops import unary_union, substring
 from shapely import affinity
@@ -29,7 +30,8 @@ import tracedart as TA
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
 SCALE = {"A": 0.92, "B": 1.0, "C": 1.08}
 KEEP = dict(seam=15.0, side=15.0, cf=15.0, hem=10.0, welt=6.0, collar=6.0, neck=6.0, cuff=10.0, wrap=FR.WRAP)
-L_MOON, L_MDET, L_WIRE, L_CLOUD, L_POLE, L_HW = 11, 12, 15, 14, 15, 15     # wires + pole + hardware share one layer -> one stop per grey
+L_MOON, L_MDET, L_WIRE, L_CLOUD, L_POLE, L_HW = 11, 12, 15, 14, 15, 15
+L_MTOP = 13     # wires + pole + hardware share one layer -> one stop per grey
 
 # ---------------------------------------------------------------- placeholder box (licensed figure), M, back coords
 # mockup figure (back.png) x 318..375 px, y 362..430 px (head to feet, incl. the stick) -> 62 x 73 mm at 1.08 mm/px,
@@ -66,10 +68,50 @@ def tf_regs(regs, sc, anchor_from, anchor_to, dx=0.0):
     return out
 
 WIRE_W = 1.6
-def cord(p0, p1, sag):
+_WM = None
+def wire_mask():
+    global _WM
+    if _WM is None:
+        import closeart as CA
+        _, w = CA.pole_masks(CA.CB, (0, 470, 1448, 1086), (600, 850, 500)); _WM = ndi.binary_dilation(w, iterations=1)
+    return _WM
+
+def snap_profile(p0, p1, sag, n=90, search=5.0, tol=3.5):
+    """LESSONS A14: the wire path TRACED from the back close-up: along the straight line p0 -> p1 (M mm, moon registration),
+    the perpendicular offset of the nearest close-up wire pixel to the sag-curve guess (within tol mm), median-smoothed;
+    where the close-up shows no wire (hidden / off the image) the sag curve is kept. Returns offsets (mm) at t = 0..1."""
+    import moon3
+    W = wire_mask(); H_, W_ = W.shape
+    v = np.array(p1, float) - p0; L = np.linalg.norm(v); u = v / L; nrm = np.array([-u[1], u[0]])
+    ts = np.linspace(0, 1, n); guess = 4 * sag * ts * (1 - ts) * nrm[1]          # sag (y down) projected on the normal
+    offs = np.full(n, np.nan); os_ = np.arange(-search, search + 0.01, 0.25)
+    for i, t in enumerate(ts):
+        if t < 0.03 or t > 0.97: continue
+        q = np.array(p0) + v * t
+        P = q[None, :] + nrm[None, :] * (guess[i] + os_[:, None])
+        px, py = moon3.to_px(P[:, 0], P[:, 1]); c = np.round(px).astype(int); r = np.round(py).astype(int)
+        ok = (c >= 0) & (r >= 0) & (c < W_) & (r < H_)
+        hit = np.zeros(len(os_), bool); hit[ok] = W[r[ok], c[ok]]
+        if hit.any():
+            j = np.nonzero(hit)[0]; o = os_[j[np.argmin(np.abs(os_[j]))]]
+            if abs(o) <= tol: offs[i] = guess[i] + o
+    good = ~np.isnan(offs)
+    if good.sum() < n * 0.25: return ts, guess                                      # wire not visible enough: sag curve
+    offs[0] = guess[0]; offs[-1] = guess[-1]; good = ~np.isnan(offs)
+    offs = np.interp(ts, ts[good], offs[good])
+    offs = ndi.median_filter(offs, size=7); offs = ndi.gaussian_filter1d(offs, 2.0)
+    offs[0] = 0.0; offs[-1] = guess[-1]
+    return ts, offs
+
+def cord(p0, p1, sag, profile=None):
     """wire as a twisted rope (close-up): the 1.6 mm cord cut into 2.2 mm twists, each a satin at 55° to the wire,
-    a charcoal shade run along its lower edge, and a wrap at the insulator end (LESSONS A13)"""
-    pts = MM.wire_pts(p0, p1, sag, n=max(20, int(math.dist(p0, p1) / 2)))
+    a charcoal shade run along its lower edge, and a wrap at the insulator end (LESSONS A13). profile = (ts, offsets)
+    from snap_profile (traced path, offsets scaled with the art) or None (sag curve)."""
+    if profile is None:
+        pts = MM.wire_pts(p0, p1, sag, n=max(20, int(math.dist(p0, p1) / 2)))
+    else:
+        ts, offs = profile; v = np.array(p1, float) - p0; L = np.linalg.norm(v); u = v / L; nrm = np.array([-u[1], u[0]])
+        pts = [tuple(np.array(p0) + v * t + nrm * o) for t, o in zip(ts, offs)]
     ln = LineString(pts); L = ln.length; out = []
     k = 0; s = 0.0
     while s < L - 0.3:
@@ -122,7 +164,8 @@ def back_art(size="M"):
     cb, cw = back_clips("M")
     mv = tf_regs(T_["moon"], sc, A0, A1)
     it.add([r for r in mv if r.get("under")], L_MOON, "01")          # ground tiles first
-    it.add([r for r in mv if not r.get("under")], L_MDET, "01")      # then maria, stars, raised cells on top
+    it.add([r for r in mv if not r.get("under") and not r.get("top")], L_MDET, "01")      # then maria, stars, raised cells on top
+    it.add([r for r in mv if r.get("top")], L_MTOP, "01")            # star-crater centres + spike lines: sewn after the star fills
     # wires (behind the clouds and the hardware), to the agreed heights at this size's side seams + 3 drop wires
     tips = {k: P(*v) for k, v in T_["back_tips"].items()}
     xs = mt["block"].chest2
@@ -138,10 +181,18 @@ def back_art(size="M"):
          ("crossA", tips["crossEnd"], 0.02), ("armL1", tips["spoolT1"], 0.03), ("armL2", tips["spoolT2"], 0.03),
          ("canL", (tips["hemL"][0], mt["hem_b"] - 10), 0.02)]
     wires, ends = [], []
+    tipsM = dict(T_["back_tips"]); xsM = mM["block"].chest2
+    seamLM = lambda h: (-xsM, mM["hem_b"] - h); seamRM = lambda h: (xsM, mM["hem_b"] - h)
     for a, b, sg in W:
         p0 = tips[a]; span = abs(b[0] - p0[0])
+        # the same wire at M (close-up registration) -> traced offset profile, scaled with the art
+        bM = seamLM(mt["hem_b"] - b[1]) if abs(b[0] + xs) < 0.01 else (seamRM(mt["hem_b"] - b[1]) if abs(b[0] - xs) < 0.01 else None)
+        if bM is not None: bM = (bM[0], mM["hem_b"] - (mt["hem_b"] - b[1]) / sc)
+        else: bM = ((b[0] - A1[0]) / sc + A0[0], (b[1] - A1[1]) / sc + A0[1])
+        pM = tipsM[a]; ts, offs = snap_profile(pM, bM, sg * abs(bM[0] - pM[0]))
+        prof = (ts, offs * sc)
         if abs(abs(b[0]) - xs) < 0.01: ends.append(("R" if b[0] > 0 else "L", round(mt["hem_b"] - b[1], 1), b, p0, sg * span))
-        wires += cord(p0, b, sg * span)
+        wires += cord(p0, b, sg * span, profile=prof)
     # lower insulator -> the low right wire (joins it where the close-up does, x of close-up px 1225)
     p0, b = tips["wrap"], seamR(H_RIGHT[1]); jx = P(*T_["back_junc"])[0]
     t = (jx - p0[0]) / (b[0] - p0[0]); jy = p0[1] + (b[1] - p0[1]) * t + 4 * 0.02 * abs(b[0] - p0[0]) * t * (1 - t)
@@ -163,7 +214,7 @@ def back_art(size="M"):
 def moon_in_box(size="M"):
     """01b: our moon fill inside the placeholder box (same traced tones + concentric rows), to sew before the figure"""
     it, BOX, info = back_art(size)
-    vis = [dict(r, geom=r["geom"].intersection(BOX)) for r in it if r["el"] == "01" and r["layer"] in (L_MOON, L_MDET)]
+    vis = [dict(r, geom=r["geom"].intersection(BOX)) for r in it if r["el"] == "01" and r["layer"] in (L_MOON, L_MDET, L_MTOP)]
     return [v for v in vis if not v["geom"].is_empty and v["geom"].area > 0.3], BOX
 
 def back_clips(size):
@@ -210,12 +261,28 @@ def front_art(size="M"):
 
 def chest_art():
     """02 chest clouds at M (graded files are scaled about each piece's centre)"""
-    T_ = traced(); fc = front_clips("M"); it = Items(); moves = []
+    T_ = traced(); fc = front_clips("M"); it = Items(); CHEST_TF.clear()
     for c in T_["chest"]:
-        clip = fc["F01"][0] if c["side"] == "L" else fc["F02"][0]
-        regs, mv = fit(c["vis"], clip, max_shift=90.0, tol=0.003); moves.append(mv)
+        clip = fc["F01"][0].buffer(-2.5) if c["side"] == "L" else fc["F02"][0].buffer(-2.5)     # the graded clip (graded_art)
+        regs, sc_, org, mv = fit_or_shrink(c["vis"], clip)
+        CHEST_TF.append((sc_, org, mv))
         it.add(regs, L_CLOUD, "02")
     return it
+
+CHEST_TF = []
+def scale_regs(regs, k, org):
+    return [dict(r, geom=affinity.scale(r["geom"], k, k, origin=org), **({"rows": affinity.scale(r["rows"], k, k, origin=org)} if r.get("rows") is not None else {})) for r in regs]
+def fit_or_shrink(vis, clip, tol=0.003):
+    """smallest move that clears the keep-outs (fit); a cloud too wide for its panel is scaled down 3 % at a time about
+    its centre until it fits (Rev C: the right chest cloud was cut straight at the armhole keep-out)"""
+    U = unary_union([r["geom"] for r in vis if r["st"] not in ("bean", "run")]); org = (U.centroid.x, U.centroid.y); k = 1.0
+    for _ in range(12):
+        v_ = scale_regs(vis, k, org) if k != 1.0 else vis
+        regs, mv = fit(v_, clip, max_shift=90.0, tol=tol)
+        U2 = unary_union([r["geom"] for r in regs if r["st"] not in ("bean", "run")])
+        if U2.difference(clip).area / max(U2.area, 1e-9) <= tol: return regs, k, org, mv
+        k *= 0.97
+    return regs, k, org, mv
 
 def front_clips(size):
     g, mt = PT.draft(size); out = {}
@@ -339,7 +406,7 @@ def art_for_size(size):
     itb, BOX, info = back_art(size)
     cb, cw = back_clips(size)
     vb = build(itb, cb, cw, knock=BOX)
-    mib = [dict(r, geom=r["geom"].intersection(BOX)) for r in build([r for r in itb if r["layer"] in (L_MOON, L_MDET)], cb)]
+    mib = [dict(r, geom=r["geom"].intersection(BOX)) for r in build([r for r in itb if r["layer"] in (L_MOON, L_MDET, L_MTOP)], cb)]
     mib = [r for r in mib if not r["geom"].is_empty and r["geom"].area > 0.3]
     itf, finfo = front_art(size)
     fc = front_clips(size)

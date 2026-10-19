@@ -101,16 +101,19 @@ def spool(f, x0, x1, yc, d, out):
     return out
 
 def coil(f, p0, p1, n, d, out, taper=0.0):
-    """wire wrapped round a rod p0 -> p1: n overlapping loops (satin rings) with a charcoal shade run on each"""
-    v = np.array(p1, float) - p0; L = np.linalg.norm(v); u = v / L; ang = math.degrees(math.atan2(u[1], u[0]))
-    out.append(R("p4", M(LineString([p0, p1]).buffer(d * 0.18, cap_style="flat"), f), "satin", "auto", "PL-band"))
+    """wire wrapped round a rod p0 -> p1 (close-up): a dark-grey rod, then n slanted wraps across it, each a satin band
+    (light / grey alternating) bulging slightly forward, with a charcoal shade run along its trailing edge"""
+    v = np.array(p1, float) - p0; L = np.linalg.norm(v); u = v / L; nrm = np.array([-u[1], u[0]])
+    out.append(R("p3", M(LineString([p0, p1]).buffer(d * 0.30, cap_style="flat"), f), "satin", "auto", "PL-shade"))
+    step = L / n
     for k in range(n):
-        c = np.array(p0) + u * L * (k + 0.5) / n; dk = d * (1 - taper * k / max(1, n - 1))
-        e = affinity.rotate(affinity.scale(Point(*c).buffer(1, 28), L / n * 0.85, dk / 2), ang, origin=tuple(c))
-        ring = e.difference(e.buffer(-max(3.0, dk * 0.24)))
-        out.append(R("p1" if k % 2 == 0 else "p2", M(ring, f), "satin", ("radial",) + tuple(float(v_) for v_ in f(*c)), "PL-hl" if k % 2 == 0 else "PL"))
-        sh = affinity.rotate(LineString([(c[0] - L / n * 0.4, c[1] + dk * 0.32), (c[0] + L / n * 0.4, c[1] + dk * 0.32)]), ang, origin=tuple(c))
-        out.append(R("p4", ML(sh, f).buffer(0.3), "run", None, "PL-line"))
+        dk = d * (1 - taper * k / max(1, n - 1)); c = np.array(p0) + u * step * (k + 0.5)
+        a = c - u * step * 0.38 - nrm * dk / 2; b = c + u * step * 0.38 + nrm * dk / 2          # slanted wrap
+        mid = (a + b) / 2 + u * step * 0.12
+        ln = LineString([tuple(a), tuple(mid), tuple(b)])
+        w = max(2.2 / 0.436, step * 0.55)
+        out.append(R("p1" if k % 2 == 0 else "p2", M(ln.buffer(w / 2, cap_style="round"), f), "satin", "auto", "PL-hl" if k % 2 == 0 else "PL"))
+        out.append(R("p4", ML(ln.parallel_offset(w * 0.45, "right"), f).buffer(0.3), "run", None, "PL-line"))
     return out
 
 def drum(f, x0, x1, y0, y1, rings, out, slat=8.5):
@@ -118,7 +121,9 @@ def drum(f, x0, x1, y0, y1, rings, out, slat=8.5):
     for i, xs in enumerate(np.arange(x0 + 2, x1 - 3, slat)):                                   # clean vertical slats
         sag = 3.0 * 4 * ((xs + slat * 0.3 - x0) / (x1 - x0)) * (1 - (xs + slat * 0.3 - x0) / (x1 - x0))
         q = box(xs, y0 + 5 + sag, xs + slat * 0.62, y1 - 5 + sag)
-        out.append(R("p1" if i % 2 == 0 else "p2", M(q, f), "satin", 0, "PL-hl" if i % 2 == 0 else "PL"))
+        out.append(R("p2", M(q, f), "satin", 0, "PL"))                    # slats grey on the dark-grey drum (close-up)
+        if xs < x0 + (x1 - x0) * 0.45:                                       # light side: a highlight run on each slat
+            out.append(R("p1", ML(LineString([(xs + slat * 0.18, y0 + 9 + sag), (xs + slat * 0.18, y1 - 9 + sag)]), f).buffer(0.3), "run", None, "PL-line"))
     for yr in [y0 + 3] + list(rings):
         out.append(R("p4", M(arc_band(x0 - 3, x1 + 3, yr, 7, 3.0), f), "satin", 90, "PL-band"))
     out.append(R("p4", M(affinity.scale(Point((x0 + x1) / 2, y1).buffer(1, 32), (x1 - x0) / 2 + 2, 7), f), "satin", "auto", "PL-band"))

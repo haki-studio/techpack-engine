@@ -71,7 +71,7 @@ def cloud_comps(img, box_px, sinks, up=2):
         out.append(dict(px=p, regs=regs, lines=[l for l in ls if not l.is_empty and l.length > 6]))
     return out
 
-def place(c, centre_mm, s, flipx=False, img=None):
+def place(c, centre_mm, s, flipx=False, img=None, want_sil=False):
     """close-up cloud -> mm (Rev C final, cloud3): the close-up component under c['px'] rebuilt as stitch structure
     (silhouette, scallop rows, tones, tails) and placed at centre_mm with scale s mm/px."""
     import cloud3
@@ -94,11 +94,11 @@ def place(c, centre_mm, s, flipx=False, img=None):
     for k in range(1, n2 + 1):
         ys_, xs_ = np.nonzero(lab2 == k)
         if ys_.max() - ys_.min() > 1.6 * (xs_.max() - xs_.min() + 1) and ys_.max() - ys_.min() > 12: comp[lab2 == k] = False
-    if comp.sum() < 300: return []
+    if comp.sum() < 300: return ([], None) if want_sil else []
     sx = -s if flipx else s
     f = lambda x, y: (centre_mm[0] + (np.asarray(x) - cx) * sx, centre_mm[1] + (np.asarray(y) - cy) * s)
     regs, sil = cloud3.cloud(a, comp, (x0, y0), f, abs(s))
-    return regs
+    return (regs, sil) if want_sil else regs
 
 def mm_bbox(vis): return unary_union([r["geom"] for r in vis]).bounds
 
@@ -170,8 +170,40 @@ def back_pole():
     f = lambda x, y: moon3.to_mm(x, y)
     hem = PT.draft("M")[1]["hem_b"]; ybot = float(moon3.to_px(0, hem - 10)[1])     # pole runs to 10 above the hem seam
     vis = polepar.back(f, ybot)                  # Rev C: clean stitch objects at the close-up positions (A13)
+    vis = traced_silhouette(vis, CB, (380, 470, 1448, int(ybot) + 1), f, fig_px=(600, 850, 500))
     tips = {k: tuple(float(v) for v in f(*p)) for k, p in BACK_TIPS_CU.items()}
     return vis, tips
+
+def pole_masks(img, box_px, fig_px=None):
+    """close-up pole + hardware pixels (grey / charcoal, low saturation) and the thin wire pixels, in close-up px"""
+    a = np.asarray(img.convert("RGB")).astype(float)
+    sat = a.max(2) - a.min(2); lum = a.mean(2); blue = a[..., 2] - a[..., 0]
+    g = ((sat < 62) & (lum > 52) & (blue < 22)) | ((lum <= 52) & (lum > 18) & (blue < 12))      # greys + the brownish pin glaze
+    win = np.zeros_like(g); x0, y0, x1, y1 = box_px; win[y0:y1, x0:x1] = True; g &= win
+    if fig_px is not None: fx0, fx1, fy1 = fig_px; g[:fy1, fx0:fx1] = False
+    import cloud3
+    labc, nc, _ = cloud3.masks(img, (0, 0, img.width, img.height))
+    cl = np.zeros_like(g)
+    for k, sl in enumerate(ndi.find_objects(labc), 1):                 # real clouds only (wide); light pole strips are narrow
+        if sl is not None and sl[1].stop - sl[1].start >= 90 and sl[0].stop - sl[0].start < 2.2 * (sl[1].stop - sl[1].start): cl[sl] |= labc[sl] == k
+    g &= ~ndi.binary_dilation(cl, iterations=6)                        # cloud undersides are grey too: never pole
+    g = ndi.binary_closing(g, iterations=1)
+    pole = morphology.remove_small_objects(morphology.binary_opening(g, morphology.disk(5)), 400)
+    pole = ndi.binary_fill_holes(ndi.binary_closing(pole, iterations=2))
+    wires = morphology.remove_small_objects(g & ~ndi.binary_dilation(pole, iterations=3), 40)
+    return pole, wires
+
+def traced_silhouette(vis, img, box_px, f, fig_px=None):
+    """LESSONS A14: the pole + hardware SILHOUETTE comes from the close-up pixels: the drawn parts are clipped to the traced
+    outline's areas: every traced area no drawn part covers is filled in
+    pole dark grey, so the stitched outline is the close-up's; the drawn parts give the inside structure."""
+    pole, _ = pole_masks(img, box_px, fig_px)
+    sil = map_geom(TR.polys_of(pole, 1, (0, 0, img.width, img.height), 60, simplify=0.3), f).buffer(0.4).buffer(-0.4)
+    out = list(vis)                       # drawn parts are measured off the same close-up: kept whole (thin braces/stems)
+    drawn = unary_union([r["geom"] for r in out if r["st"] not in ("bean", "run")])
+    for p in polys(sil.difference(drawn.buffer(0.3)).buffer(-0.4).buffer(0.75).intersection(sil)):
+        if p.area > 3.0 and p.intersects(drawn.buffer(0.8)) and p.difference(drawn.buffer(6.0)).area < 0.25 * p.area: out.insert(0, R("p3", p, "tatami" if width(p) > 2.6 else "satin", "auto" if width(p) <= 2.6 else 90, "PL-shade"))
+    return out
 
 def pole_details(f, px, half_w, bands, can_box, can_rings, y0, y1):
     """close-up details the colour trace can't hold at stitch size: charcoal bands round the pole, the ribbed
@@ -209,6 +241,7 @@ FRONT_TIPS_CU = {"armL": (1107, 662), "armR": (1353, 603), "pin": (1316, 550), "
 def front_pole():
     f = front_pole_f()
     import polepar; vis = polepar.front(f)
+    vis = traced_silhouette(vis, CF, (930, 480, 1448, 1040), f)
     tips = {k: tuple(float(v) for v in f(*p)) for k, p in FRONT_TIPS_CU.items()}
     return vis, tips
 
@@ -232,8 +265,8 @@ def sleeves():
             Wy = mt["W"] + (mt["Ww"] - mt["W"]) * min(1, max(0, y / mt["Lu"]))
             fr = (cx - vx0) / (vx1 - vx0)                     # 0..1 across the view
             x = (fr - 1.0) * Wy if half < 0 else fr * Wy      # R: back half [-W, 0] | front half [0, W]; L (S02) the same in its own coords
-            v_ = place(sub, (x * 0.94, y), 0.65, img=CS)
-            if v_: out.append(dict(sleeve=sl, view=vi, vis=v_, px=(cx, cy)))
+            v_, sil_ = place(sub, (x * 0.94, y), 0.65, img=CS, want_sil=True)
+            if v_: out.append(dict(sleeve=sl, view=vi, vis=v_, sil=sil_, px=(cx, cy)))
     return out
 
 def build_all():
@@ -243,7 +276,7 @@ def build_all():
     # back clouds (Rev C final): every close-up cloud, traced as stitch structure (cloud3) and placed by the SAME
     # registration as the moon + pole (the close-up matches the mockup layout); scene.fit() keeps them off the seams
     import cloud3, moon3
-    d["back_clouds"] = [dict(vis=c["vis"], src=i) for i, c in enumerate(cloud3.clouds_in(CB, (0, 120, 1448, 760), lambda x, y: moon3.to_mm(x, y), moon3.K))]
+    d["back_clouds"] = [dict(vis=c["vis"], sil=c["sil"], src=i) for i, c in enumerate(cloud3.clouds_in(CB, (0, 120, 1448, 760), lambda x, y: moon3.to_mm(x, y), moon3.K))]
     d["back_pole"], d["back_tips"] = back_pole()
     import moon3; d["back_junc"] = tuple(float(v) for v in moon3.to_mm(1225, 804))
     # front clouds: close-up -> mockup (chest + lower)
@@ -269,7 +302,8 @@ def build_all():
     for c, ctr, s, i in M_:
         ctr = regf2(c["px"].centroid.x, c["px"].centroid.y)
         kind = "chest" if ctr[1] < 300 else "lower"; side = "L" if ctr[0] > 0 else "R"
-        d[kind].append(dict(vis=place(c, ctr, s1, img=CF), side=side, src=i))
+        v_, sil_ = place(c, ctr, s1, img=CF, want_sil=True)
+        d[kind].append(dict(vis=v_, sil=sil_, side=side, src=i))
     d["front_pole"], d["front_tips"] = front_pole()
     d["sleeves"] = sleeves()
     return TA.sanitize(d)

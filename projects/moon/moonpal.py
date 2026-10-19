@@ -44,7 +44,7 @@ def install():
     for k in ORDER:
         if k not in tech.COLOUR_ORDER: tech.COLOUR_ORDER.append(k)
     # layers (sew order, back to front)
-    tech.LAYER_NAMES.update({11: "Moon", 12: "Moon craters", 13: "Clouds", 14: "Wires", 15: "Pole", 16: "Pole hardware"})
+    tech.LAYER_NAMES.update({11: "Moon", 12: "Moon craters", 13: "Moon crater centres", 14: "Wires", 15: "Pole", 16: "Pole hardware"})
     R = {
      "MN":        ("Moon body (cream)",          "Tatami", "turning: rows concentric (15° sectors)", "0.45", "3.5", "edge run + tatami 90° @ 2.0", "0.20", "traced tonal region"),
      "MN-hl":     ("Moon highlight",             "Tatami", "concentric (15° sectors)", "0.45", "3.5", "edge run (+ lattice if > 60 mm²)", "0.20", "short-stitch blend 1.0"),
