@@ -238,6 +238,7 @@ for i_ in range(44):                                   # main streaks
     of = (f - 0.5) * 2 * 0.9
     col = fband_col(f - fcore(tc) + 0.715 + srng.uniform(-0.06, 0.06))
     col = srng.choice(STRAND_ON[col])                     # a neighbour tone of the body under it: the strand reads as texture
+    if tc < 0.25 and col in ("cc_violet", "cc_lilac"): col = srng.choice(["cc_azure", "cc_royal"])   # head below the cloud: blue (mockup)
     n_str += streak(tc, f, L, srng.uniform(1.0, 2.4) * (0.75 if edge < 0.15 else 1.0), col, drift=srng.uniform(-0.12, 0.12))
 for i_ in range(16):                                   # side strands curling off the edges toward the tail
     side = srng.choice([0, 1]); f = 0.02 if side == 0 else 0.98

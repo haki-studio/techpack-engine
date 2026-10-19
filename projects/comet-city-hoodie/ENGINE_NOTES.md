@@ -69,3 +69,22 @@ Problems hit while building this product, worked around in project code only. Ea
 - `welt_check.py` reads every DST (full + splits) back into garment mm and measures the nearest stitch to each size's welt box
   (Rev B: welt keep-out 8 = 6 + 2 cut-out margin; worst stitch 7.75 mm). Proposed: generic `qa.stitch_clearance(dst, origin, geom)`
   for every keep-out (the art-outline check misses pull comp + underlay).
+
+## 11. Rev B review round (19 Oct): tone thresholds, streak-vs-cloud, comet body
+- **Tone thresholds in thread terms.** Cloud tones were cut at mockup luminance 100 / 128 / 165, but the threads they map to
+  have luminance dusk 90, cloud 133, ice 179, white 240 — so ~half the cloud area stitched one tone too light (review: "posterised,
+  too white"). Fix (project): thresholds at the midpoints between the thread luminances (66 / 112 / 154 / 205), tone masks smoothed
+  at 1.0 mm and parts < 5 mm² dropped. **Proposed engine fix:** `tech.tone_thresholds(colours)` returning the midpoints, used by
+  every tone trace. **LESSON proposal (A14):** "Cut tone regions at the midpoints between the luminances of the threads they
+  become, never at round numbers of the mockup." Check: compare sheet tone area per thread vs mockup histogram.
+- **Saturated streaks read as cloud.** A fine azure streak beside the comet passed the cloud luminance test and stitched as a dusk
+  cloud blob (review "ghost tail"). Fix: cloud mask also needs saturation < 0.72 (clouds p90 = 0.60, streak 0.87); the streak is a
+  meteor now. Proposed: the same gate in the `qa.mockup_mask` helper (note 2).
+- **Body vs strands.** Strands alone (satin ribbons with fabric gaps) read as a hair-thin bundle; the mockup comet is a solid body
+  with streak texture. Fix: tatami body over the whole traced extent (bands placed around the traced core line), strands on top in
+  a neighbour tone. Feather edges with a CONTINUOUS arc length (projection on the spine), not the nearest-vertex index — the index
+  gave 2 mm square "battlement" steps.
+- **Speed:** `np.vectorize(spread)` over a 3 M-pixel grid inside a 40-step loop made scene.py take > 5 min; `np.interp` on the
+  array directly: 38 s. Never vectorize a scalar interp.
+- **E2/E6 hit again:** `pkill -f "cProfile.run"` killed this builder's own shell. LESSONS E2 stands; suggest `scripts/killpid.sh`
+  that refuses patterns and takes a PID only.
