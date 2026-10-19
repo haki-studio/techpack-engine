@@ -12,7 +12,7 @@ from shapely.geometry import Polygon, box
 from shapely import contains_xy
 import qa, keepout as KO, trace as TRC, scene as SC, compare as C
 
-PPM = 2.0
+PPM = 4.0          # DST drawn 1 px = 0.25 mm wide (≈ thread edge), so the stitched silhouette is not inflated
 TI = TRC.TI
 HEX2K = {v[0].upper(): k for k, v in cfcore.CF_PAL.items()}
 
@@ -38,7 +38,9 @@ def dst_masks(P, b, shape):
         for s in S[Ci == ci]:
             d.line([((s[0] - b[0]) * PPM, (s[1] - b[1]) * PPM), ((s[2] - b[0]) * PPM, (s[3] - b[1]) * PPM)], fill=255, width=1)
         m = np.asarray(im) > 0
-        out[keys[ci]] = out.get(keys[ci], np.zeros(shape, bool)) | ndi.binary_closing(m, structure=qa.disk(1.0, PPM))
+        m = ndi.binary_closing(m, structure=qa.disk(1.0, PPM))
+        m = ndi.binary_opening(m, structure=qa.disk(1.6, PPM))        # drop single travel / run lines (hidden travel, not coverage)
+        out[keys[ci]] = out.get(keys[ci], np.zeros(shape, bool)) | m
     return out
 
 def fam(dm, keys, shape):
@@ -62,8 +64,9 @@ def run(P):
     for m in dm.values(): allst |= m
     T = lambda ks: np.isin(t, [TI[k] for k in ks])
     rows = {}
-    def mm(name, ref, keys, win=None):
-        ref = ndi.binary_opening(ref & clip, structure=qa.disk(0.8, PPM)); out = fam(dm, merged(P, keys), sh)
+    def mm(name, ref, keys, win=None, close=1.0):
+        ref = ndi.binary_closing(ref, structure=qa.disk(close, PPM)) & clip      # same 1 mm closing as the DST mask (row gaps / cracks)
+        ref = ndi.binary_opening(ref, structure=qa.disk(1.6, PPM)); out = fam(dm, merged(P, keys), sh)
         if win is not None: out &= win
         rows[name] = qa.motif_match(ref, out, PPM, min_mm2=8.0)
     notsky = ~T(["cf_sky", "cf_skylt"])
@@ -73,14 +76,19 @@ def run(P):
         win = poly_mask([Z], X, Y) & notsky; bz |= win
         rows[name] = qa.motif_match(win & clip, allst & win, PPM, min_mm2=8.0)
     fz = poly_mask(SC.FALL_ZONE.get(P, []), X, Y)
-    if fz.any(): mm("falls", fz & T(["cf_white", "cf_cream", "cf_skylt"]), ["cf_white", "cf_cream", "cf_skylt"], win=fz & notsky)
+    if fz.any():
+        fref = fz & ~bz & T(["cf_white", "cf_cream", "cf_skylt"])
+        mm("falls", fref, ["cf_white", "cf_cream", "cf_skylt"], win=fz & ~bz & ~(T(["cf_sky"]) & ~ndi.binary_dilation(fref, iterations=8)), close=2.0)   # falls: blue streaks inside the stream
     vz = poly_mask([box(*z) for z in SC.VILLAGE.get(P, [])], X, Y)
     if vz.any(): mm("village roofs", vz & T(["cf_navy", "cf_sky"]), ["cf_navy", "cf_sky"], win=vz)
     mm("clouds", ~bz & ~fz & T(["cf_white", "cf_cream", "cf_mist"]), ["cf_white", "cf_cream", "cf_mist"], win=~bz & ~fz)
-    mm("blossom", T(["cf_pinklt", "cf_pink", "cf_rose"]), ["cf_pinklt", "cf_pink", "cf_rose", "cf_cream", "cf_white"])
-    mm("foliage", ~bz & T(["cf_grndk", "cf_grn", "cf_grnlt"]), ["cf_grndk", "cf_grn", "cf_grnlt", "cf_navy"], win=~bz)
+    mm("blossom", T(["cf_pinklt", "cf_pink", "cf_rose"]), ["cf_pinklt", "cf_pink", "cf_rose"])
+    mm("foliage", ~bz & T(["cf_grndk", "cf_grn", "cf_grnlt"]), ["cf_grndk", "cf_grn", "cf_grnlt"], win=~bz)
     design = (t >= 0) & clip
     gaps = qa.uncovered(design, allst, PPM)
+    for g in gaps: g["x_mm"] = round(g["x_mm"] + b[0], 1); g["y_mm"] = round(g["y_mm"] + b[1], 1)
+    for rs in rows.values():
+        for r in rs: r["x_mm"] = round(r["x_mm"] + b[0], 1); r["y_mm"] = round(r["y_mm"] + b[1], 1)
     return rows, gaps
 
 if __name__ == "__main__":

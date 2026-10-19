@@ -121,11 +121,12 @@ def zone_style(ztype, k, q, rng, info):
     cls = CLASS[k]
     return [CM.R(k, q, "satin" if thin else "tatami", "auto" if thin else rng.uniform(0, 180), GRP[cls])]
 
-def silhouette(t, f, ppm, zone, tones, open_mm=0.8, min_mm2=20.0):
+def silhouette(t, f, ppm, zone, tones, open_mm=0.8, min_mm2=20.0, close_mm=0.0):
     """traced pixels of the given tones inside zone -> cleaned polygons (the motif silhouettes, LESSONS A14)"""
     H, W = t.shape; X_, Y_ = f(np.arange(W)[None, :].repeat(H, 0), np.arange(H)[:, None].repeat(W, 1))
     from shapely import contains_xy
     m = contains_xy(zone, X_, Y_) & np.isin(t, [TI[k] for k in tones])
+    if close_mm: m = ndi.binary_closing(m, structure=TRC.disk(close_mm)) & contains_xy(zone, X_, Y_)
     m = ndi.binary_opening(m, structure=TRC.disk(open_mm))
     return [g for g in comp_polys(m, f, ppm, min_mm2)]
 
@@ -161,7 +162,7 @@ def revb_structure(P, res, t, f, rng, add, knock):
             body = _poly_tone(t, Point(l[0], l[1]).buffer(l[2] * 0.7), to_px, CLOUD_T, "cf_cream")
             return {"cf_white": ("cf_white", None, "cf_mist"), "cf_cream": ("cf_cream", "cf_white", "cf_mist"),
                     "cf_mist": ("cf_mist", "cf_cream", "cf_slate")}[body]
-        regs, _ = M2.lobe_regions(lobes, tn, C=C.buffer(0.8), grp="CL")
+        regs, _ = M2.lobe_regions(lobes, tn, C=C, grp="CL")          # lobes inside the traced outline (A14)
         add(regs, 12); nl += len(lobes)
     info["cloud_lobes"] = nl
     # 3. foliage / pine crowns -> leaf clumps with dark clump edges (item 8)
@@ -173,8 +174,8 @@ def revb_structure(P, res, t, f, rng, add, knock):
         lobes = M2.pack_lobes(C, 3.1, rng, rjit=0.28, dy=0.7, dx=1.1, rmin=1.8)
         def tf(l):
             body = _poly_tone(t, Point(l[0], l[1]).buffer(l[2] * 0.7), to_px, FOL_T, "cf_grn")
-            return {"cf_grnlt": ("cf_grnlt", None, "cf_grn"), "cf_grn": ("cf_grn", "cf_grnlt", "cf_grndk"), "cf_grndk": ("cf_grndk", "cf_grn", "cf_navy")}[body]
-        regs, _ = M2.lobe_regions(lobes, tf, C=C.buffer(0.6), grp="FOL", ex=1.1, ey=0.85)
+            return {"cf_grnlt": ("cf_grnlt", None, "cf_grn"), "cf_grn": ("cf_grn", "cf_grnlt", "cf_grndk"), "cf_grndk": ("cf_grndk", "cf_grn", "cf_grndk")}[body]
+        regs, _ = M2.lobe_regions(lobes, tf, C=C, grp="FOL", ex=1.1, ey=0.85)
         add(regs, 15); nf += len(lobes)
     info["foliage_clumps"] = nf
     zones = []
@@ -182,7 +183,7 @@ def revb_structure(P, res, t, f, rng, add, knock):
     nf_ = 0
     for Z in FALL_ZONE.get(P, []):
         Z = Polygon(Z) if not hasattr(Z, "area") else Z
-        for g in silhouette(t, f, ppm, Z, ("cf_white", "cf_cream", "cf_skylt"), open_mm=1.0, min_mm2=30.0):
+        for g in silhouette(t, f, ppm, Z, ("cf_white", "cf_cream", "cf_skylt"), open_mm=1.0, min_mm2=30.0, close_mm=2.0):
             b_ = g.bounds
             if (b_[3] - b_[1]) < 1.6 * (b_[2] - b_[0]) and g.area < 300: continue      # falls are tall streams
             add(M2.fall_in(g, rng), 16); knock = knock.union(g.buffer(0.2)); nf_ += 1
