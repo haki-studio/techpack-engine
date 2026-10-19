@@ -1,0 +1,12 @@
+# env.sh symlinks to inputs/*
+/back.png
+/brief.md
+/closeup_FL_H.npy
+/closeup_FR_H.npy
+/closeup_reg.json
+/closeup_request.md
+/closeups
+/flat.png
+/front.png
+/front_art.png
+/notes_notes.txt
