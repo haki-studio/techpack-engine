@@ -166,26 +166,30 @@ def back(f, ybot=1086):
     drum(f, 760, 858, 672, 858, [700, 745, 790, 837], o)
     can(f, 625, 690, 760, 885, o); bracket(f, (660, 752), (697, 752), o, 5)
     spool(f, 500, 542, 775, 44, o)
-    coil(f, (542, 768), (690, 744), 9, 30, o)
-    coil(f, (455, 775), (500, 772), 4, 18, o)
+    # Rev C (task 3, measured on the close-up, out/_wip/measure.py + 4x zooms): the main coil is 5 big loops next to the
+    # spool, then ~9 small wraps along the rod to the pole (was 9 equal loops); left coil 5 small wraps (was 4)
+    coil(f, (542, 768), (592, 760), 5, 30, o)
+    coil(f, (592, 760), (690, 744), 9, 14, o)
+    coil(f, (457, 775), (500, 772), 5, 15, o)
     o.append(R("p2", M(box(765, 912, 800, 958), f), "tatami", 90, "PL"))             # cone insulator block on the pole
     o.append(R("p4", M(box(795, 912, 801, 958), f), "satin", 90, "PL-band"))
-    cone(f, (802, 935), (866, 952), 8, 30, 12, o)
+    cone(f, (802, 935), (866, 952), 9, 30, 12, o)                                     # 9 ribs (measured pitch 7.4 px)
     return o
 
 def front(f):
     o = []
-    body(f, 1212, 1262, 560, 1020, [608, 700, 795, 860], o)
+    body(f, 1212, 1262, 560, 1020, [610, 695, 741, 820, 920], o)                     # bands measured (was 608/700/795/860)
     cap(f, 1237, 512, 46, o)
     crossarm(f, (1105, 668), (1212, 640), 13, [(1140, 660)], o)
     crossarm(f, (1262, 627), (1355, 600), 13, [(1300, 616)], o)
     bracket(f, (1160, 660), (1212, 720), o)
     pin(f, 1316, 606, 62, 22, o)
-    drum(f, 1268, 1345, 690, 860, [720, 765, 810], o, slat=7.5)
+    drum(f, 1268, 1345, 690, 860, [726, 763, 800], o, slat=6.6)                      # slat pitch + rings measured (was 7.5; 720/765/810)
     can(f, 1150, 1206, 780, 900, o); bracket(f, (1178, 772), (1212, 772), o, 5)
     spool(f, 990, 1040, 787, 36, o)
-    coil(f, (1040, 782), (1210, 766), 9, 26, o)
-    coil(f, (952, 788), (990, 787), 3, 14, o)
+    coil(f, (1040, 782), (1088, 777), 4, 26, o)                                      # 4 big loops, then ~9 small wraps (4x zoom)
+    coil(f, (1088, 777), (1202, 767), 9, 12, o)
+    coil(f, (950, 788), (990, 787), 6, 12, o)                                         # 6 small wraps (was 3)
     o.append(R("p2", M(box(1262, 890, 1292, 930), f), "tatami", 90, "PL"))
-    cone(f, (1294, 912), (1370, 935), 8, 26, 10, o)
+    cone(f, (1294, 912), (1350, 928), 7, 26, 10, o)                                   # 7 ribs to x 1350, then the wire (was 8 to 1370)
     return o

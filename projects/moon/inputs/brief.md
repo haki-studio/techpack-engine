@@ -55,3 +55,10 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - Back splits: 3 × 2 on every size (moon + box whole in the top-middle hooping, pole whole in the bottom-middle).
 - Wires: satin cord 1.6 mm, 12 back + 12 front, heights at the side seams notched on the pattern (W labels).
 - Density / stitches / trims are REPORTED, not limited (clean-up after the sew-out).
+
+## Rev C final (2026-10-19, builder) — A14/A15 gates, traced wires — PROPOSED where marked
+- Wire PATHS traced from the close-ups (least-cost route along the close-up wire pixels); side-seam heights re-read where the back close-up's wires cross the seam: wearer's left 153 / 85.5 / 47.3 / 41.4 / 12 (close-up 8.9, held at 12 by the 10 mm hem keep-out), wearer's right 130.5 / 80.5.
+- Assumption: a 3rd wire at the wearer's-right seam, 175 mm above the hem (back: crossarm pin -> seam, as the MOCKUP back shows 3 there; front: the front close-up's top fan wire, which crosses the welt and is cut 6 mm short of the welt box). The back close-up shows only 2 there — PROPOSED, question raised.
+- Front: the 4-wire fan from the coil as in the front close-up (3 to the right seam, 1 drop to the hem); the 5 wearer's-left-seam wires keep the back's heights (front close-up shows 3) — PROPOSED (existing question).
+- Pole hardware outline traced from every non-navy close-up pixel (dark outlines included); hardware counts measured on the close-ups: main coil 5 loops + 9 wraps (back) / 4 + 9 (front), left coil 5 / 6 wraps, cone 9 / 7 ribs, front drum slat pitch 6.6 px, front pole bands at 610/695/741/820/920 px.
+- Moon ground: gap-fill rows where the swirl rows diverge (row coverage 87.7 % -> 96.6 %); star craters without the traced "dark lines" (stitch shadows, no dark thread in the close-up).

@@ -41,9 +41,14 @@ MOON_R = TA.MOON_R_PX * TA.K
 
 # ---------------------------------------------------------------- wire network (heights above the hem seam, mm, M) read off the mockup
 # back left side seam (wearer's left)  <-> front wearer's-left side seam (03L, short wires from the pole)
-H_LEFT = [153.0, 94.0, 60.0, 50.0, 20.0]          # Rev C final: read off the back close-up wires extrapolated to the seam (M)
+# Rev C (A14): where the back close-up's wires cross the M side-seam column (wire-mask run centres, px col 30-46 =
+# x -299.5 mm; out/_wip/q.py): 153.0 (read by eye: the mask loses this wire under the cloud edge), 85.5, 47.3, 41.4 and 8.9 -> 12.0
+# (the lowest wire is held 12 above the hem seam by the 10 mm hem keep-out; listed on the spec). Assigned in height order.
+H_LEFT = [153.0, 85.5, 47.3, 41.4, 12.0]
 # back right side seam (wearer's right) <-> front wearer's-right side seam (03R, wires from the 03L pole across the zip)
-H_RIGHT = [130.0, 83.0]
+H_RIGHT = [130.5, 80.5, 175.0]                     # Rev C (A14): close-up wire crossings at the right seam column (px 1410-1420);
+# 175.0 = the front close-up's top fan wire (W1, up-left across the welt) at the seam as the MOCKUP front shows it; its back
+# half (pin -> right seam) is the mockup back's third right-seam wire, not in the back close-up: PROPOSED, generated (sag curve)
 
 def edge(g, pc, name): return LineString(next(e.pts for e in g[pc].edges if e.name == name))
 
@@ -73,7 +78,9 @@ def wire_mask():
     global _WM
     if _WM is None:
         import closeart as CA
-        _, w = CA.pole_masks(CA.CB, (0, 470, 1448, 1086), (600, 850, 500)); _WM = ndi.binary_dilation(w, iterations=1)
+        _, w = CA.pole_masks(CA.CB, (0, 470, 1448, 1086), (600, 850, 500))
+        w &= ~ndi.binary_dilation(pole_px_mask(), iterations=3)          # hardware outlines are not wires (pole_sil)
+        _WM = ndi.binary_dilation(w, iterations=1)
     return _WM
 
 def snap_profile(p0, p1, sag, n=90, search=5.0, tol=3.5):
@@ -103,7 +110,98 @@ def snap_profile(p0, p1, sag, n=90, search=5.0, tol=3.5):
     offs[0] = 0.0; offs[-1] = guess[-1]
     return ts, offs
 
-def cord(p0, p1, sag, profile=None):
+_PS = None
+def pole_px_mask():
+    global _PS
+    if _PS is None:
+        import closeart as CA
+        _PS = CA.pole_sil(CA.CB, (0, 470, 1448, 1086), (600, 850, 500))
+    return _PS
+
+_FC = None
+def front_ctx():
+    """front close-up wire tracing context: wire + pole-silhouette masks of closeup_front.png and the front-pole mapping"""
+    global _FC
+    if _FC is None:
+        import closeart as CA
+        f = CA.front_pole_f(); a0 = f(0.0, 0.0); a1 = f(1.0, 1.0)
+        kx, ky = float(a1[0] - a0[0]), float(a1[1] - a0[1]); ax, ay = float(a0[0]), float(a0[1])
+        _, w = CA.pole_masks(CA.CF, (0, 300, 1448, 1086)); ps = CA.pole_sil(CA.CF, (930, 480, 1448, 1040))
+        w &= ~ndi.binary_dilation(ps, iterations=3)
+        _FC = dict(W=ndi.binary_dilation(w, iterations=1), PS=ps, K=float(math.sqrt(abs(kx * ky))),
+                   to_px=lambda x, y: ((np.asarray(x) - ax) / kx, (np.asarray(y) - ay) / ky),
+                   to_mm=lambda x, y: (ax + np.asarray(x) * kx, ay + np.asarray(y) * ky))
+    return _FC
+
+TRACE_LOG = {}
+def trace_profile(p0, p1, sag, n=90, band=9.0, key=None, seam_end=False, free=25.0, ctx=None):
+    """LESSONS A14 (Rev C final): the wire's PATH traced from the back close-up as a least-cost route between its two
+    anchors (M mm, moon registration) over the close-up wire pixels (skimage route_through_array): cost 1 on a wire pixel,
+    6 behind the pole / hardware (wires pass behind them), 40 on bare navy, plus a pull towards the sag-curve guess
+    ((d / band)^2 * 8) so the route keeps to ITS wire where two wires run close; nothing farther than 1.6 x band from the
+    guess. Returns (ts, offsets) like snap_profile; the share of the route on wire pixels goes to TRACE_LOG[key]."""
+    import moon3
+    if ctx is None: ctx = dict(W=wire_mask(), PS=pole_px_mask(), to_px=moon3.to_px, to_mm=moon3.to_mm, K=moon3.K)
+    W, PS, to_px, to_mm, Kp = ctx["W"], ctx["PS"], ctx["to_px"], ctx["to_mm"], ctx["K"]; H_, W_ = W.shape
+    p0 = np.asarray(p0, float); p1 = np.asarray(p1, float)
+    v = p1 - p0; L = float(np.linalg.norm(v)); u = v / L; nrm = np.array([-u[1], u[0]])
+    ts = np.linspace(0, 1, n); guess = 4 * sag * ts * (1 - ts) * nrm[1]
+    gp = p0[None, :] + v[None, :] * ts[:, None] + nrm[None, :] * guess[:, None]
+    gx, gy = to_px(gp[:, 0], gp[:, 1])
+    pad = int(1.6 * band / Kp) + 4
+    x0 = max(0, int(min(gx.min(), gx.max())) - pad); x1 = min(W_, int(max(gx.min(), gx.max())) + pad + 1)
+    y0 = max(0, int(min(gy.min(), gy.max())) - pad); y1 = min(H_, int(max(gy.min(), gy.max())) + pad + 1)
+    if x1 - x0 < 4 or y1 - y0 < 4: return ts, guess
+    from shapely.geometry import LineString as _LS
+    gl = _LS(np.c_[gx, gy]); yy, xx = np.mgrid[y0:y1, x0:x1]
+    # distance to the guess polyline (px), via a raster of the densified guess
+    gm = np.ones((y1 - y0, x1 - x0), bool)
+    dens = np.array([gl.interpolate(t, normalized=True).coords[0] for t in np.linspace(0, 1, max(50, int(gl.length)))])
+    ci = np.clip(np.round(dens[:, 0]).astype(int) - x0, 0, x1 - x0 - 1); ri = np.clip(np.round(dens[:, 1]).astype(int) - y0, 0, y1 - y0 - 1)
+    gm[ri, ci] = False; d = ndi.distance_transform_edt(gm) * Kp
+    cost = np.where(W[y0:y1, x0:x1], 1.0, np.where(PS[y0:y1, x0:x1], 6.0, 40.0)) + 8.0 * (d / band) ** 2
+    cost[d > 1.6 * band] = 1e6
+    def cl(px, py): return (int(np.clip(round(py) - y0, 0, y1 - y0 - 1)), int(np.clip(round(px) - x0, 0, x1 - x0 - 1)))
+    from skimage.graph import MCP_Geometric
+    s0 = cl(*to_px(*p0)); s1 = cl(*to_px(*p1))
+    mcp = MCP_Geometric(cost, fully_connected=True); cc, _ = mcp.find_costs([s0])
+    inside = (gx >= 0) & (gx <= W_ - 1) & (gy >= 0) & (gy <= H_ - 1)
+    t_edge = None
+    if not inside[-1] and inside.any():
+        # the far anchor lies OFF the close-up: route to the image edge (free row within the band), then continue
+        # smoothly to the anchor (cubic Hermite on the offset: slope kept at the edge, sag-curve slope at the end)
+        ie = int(np.nonzero(inside)[0].max()); t_edge = float(ts[ie])
+        c_ = int(np.clip(round(gx[ie]) - x0, 0, x1 - x0 - 1)); r0 = int(np.clip(round(gy[ie]) - y0, 0, y1 - y0 - 1))
+        rr = np.arange(max(0, r0 - int(band / Kp)), min(y1 - y0, r0 + int(band / Kp) + 1))
+        s1 = (int(rr[np.argmin(cc[rr, c_])]), c_); seam_end = False
+    if seam_end:
+        # the route may meet the seam column anywhere within +-free mm of the agreed wrap height (the close-up wire need
+        # not reach the seam at exactly that height); the difference is ramped out linearly along the wire below
+        c_ = s1[1]; rr = np.arange(max(0, s1[0] - int(free / Kp)), min(y1 - y0, s1[0] + int(free / Kp) + 1))
+        s1 = (int(rr[np.argmin(cc[rr, c_])]), c_)
+    path = np.array(mcp.traceback(s1))
+    on = float(W[path[:, 0] + y0, path[:, 1] + x0].mean())
+    if key is not None: TRACE_LOG[key] = (round(on, 2), round(float(to_mm(0, s1[0] + y0)[1]), 1))
+    if on < 0.6: return ts, guess                       # mostly hidden (in front of / behind hardware): the sag curve
+    mx, my = to_mm(path[:, 1] + x0, path[:, 0] + y0); q = np.c_[mx, my] - p0
+    t_ = q @ u / L; o_ = q @ nrm
+    order = np.argsort(t_); t_, o_ = t_[order], o_[order]
+    if t_edge is not None:
+        k = ts <= t_edge; offs = np.interp(ts, t_, o_)
+        offs[k] = ndi.gaussian_filter1d(ndi.median_filter(offs[k], size=7), 2.0) if k.sum() > 8 else offs[k]
+        offs[k] -= offs[0] * (1 - ts[k] / t_edge)
+        j = np.nonzero(k)[0][-1]; j0 = max(0, j - 4); dt = ts[1] - ts[0]
+        m0 = (offs[j] - offs[j0]) / max((j - j0) * dt, 1e-9); m1 = (guess[-1] - guess[-2]) / dt
+        h = 1 - t_edge; s_ = (ts[~k] - t_edge) / h
+        offs[~k] = (2 * s_**3 - 3 * s_**2 + 1) * offs[j] + (s_**3 - 2 * s_**2 + s_) * h * m0 + (s_**3 - s_**2) * h * m1
+        return ts, offs
+    offs = np.interp(ts, t_, o_)
+    offs = ndi.gaussian_filter1d(ndi.median_filter(offs, size=7), 2.0)
+    offs = offs - offs[0] * (1 - ts) - offs[-1] * ts        # both ends exactly on the anchors (ramp, not a hook)
+    return ts, offs
+
+CORD_LINES = []          # (name, centreline coords) of every cord built since the last reset -> info["wire_lines"] (A14 gate)
+def cord(p0, p1, sag, profile=None, wid=None):
     """wire as a twisted rope (close-up): the 1.6 mm cord cut into 2.2 mm twists, each a satin at 55° to the wire,
     a charcoal shade run along its lower edge, and a wrap at the insulator end (LESSONS A13). profile = (ts, offsets)
     from snap_profile (traced path, offsets scaled with the art) or None (sag curve)."""
@@ -113,6 +211,7 @@ def cord(p0, p1, sag, profile=None):
         ts, offs = profile; v = np.array(p1, float) - p0; L = np.linalg.norm(v); u = v / L; nrm = np.array([-u[1], u[0]])
         pts = [tuple(np.array(p0) + v * t + nrm * o) for t, o in zip(ts, offs)]
     ln = LineString(pts); L = ln.length; out = []
+    CORD_LINES.append((wid or f"w{len(CORD_LINES)}", [tuple(map(float, c)) for c in ln.coords]))
     k = 0; s = 0.0
     while s < L - 0.3:
         e = min(L, s + 2.2)
@@ -174,29 +273,37 @@ def back_art(size="M"):
     # the wire wrap to the wearer's-right seam, the pins + transformer into the wrap, the lower insulator into the low right
     # wire, the second wire crossing the pole from the right pin down to the lower left wire, two short crossarm -> spool
     # wires and one drop from the small can to the hem (10 above the hem seam)
+    CORD_LINES.clear()
     W = [("coilL1", seamL(H_LEFT[0]), 0.03), ("coilL2", seamL(H_LEFT[1]), 0.03), ("poleLo", seamL(H_LEFT[2]), 0.02),
          ("coilL3", seamL(H_LEFT[3]), 0.02), ("canB", seamL(H_LEFT[4]), 0.02),
-         ("wrap", seamR(H_RIGHT[0]), 0.03), ("wrap", seamR(H_RIGHT[1]), 0.02),
+         ("wrap", seamR(H_RIGHT[0]), 0.03), ("wrap", seamR(H_RIGHT[1]), 0.02), ("pinB", seamR(H_RIGHT[2]), 0.03, False),
          ("pinB", tips["wrap"], 0.04), ("pinA", tips["wrap"], 0.05), ("drumR", tips["wrap"], 0.02),
          ("crossA", tips["crossEnd"], 0.02), ("armL1", tips["spoolT1"], 0.03), ("armL2", tips["spoolT2"], 0.03),
          ("canL", (tips["hemL"][0], mt["hem_b"] - 10), 0.02)]
     wires, ends = [], []
     tipsM = dict(T_["back_tips"]); xsM = mM["block"].chest2
     seamLM = lambda h: (-xsM, mM["hem_b"] - h); seamRM = lambda h: (xsM, mM["hem_b"] - h)
-    for a, b, sg in W:
+    for a, b, sg, *trc in W:
         p0 = tips[a]; span = abs(b[0] - p0[0])
+        b_ = (("L" if b[0] < 0 else "R") + f"{mt['hem_b'] - b[1]:.0f}", True) if abs(abs(b[0]) - xs) < 0.01 else (next((k for k, v in tips.items() if v == b), "hem"), False)
         # the same wire at M (close-up registration) -> traced offset profile, scaled with the art
         bM = seamLM(mt["hem_b"] - b[1]) if abs(b[0] + xs) < 0.01 else (seamRM(mt["hem_b"] - b[1]) if abs(b[0] - xs) < 0.01 else None)
         if bM is not None: bM = (bM[0], mM["hem_b"] - (mt["hem_b"] - b[1]) / sc)
         else: bM = ((b[0] - A1[0]) / sc + A0[0], (b[1] - A1[1]) / sc + A0[1])
-        pM = tipsM[a]; ts, offs = snap_profile(pM, bM, sg * abs(bM[0] - pM[0]))
+        pM = tipsM[a]
+        if trc and not trc[0]:                       # PROPOSED wire with no close-up reference: the sag curve (generated)
+            ts = np.linspace(0, 1, 90); offs = 4 * sg * abs(bM[0] - pM[0]) * ts * (1 - ts) * (np.array([-(bM[1] - pM[1]), bM[0] - pM[0]]) / math.dist(pM, bM))[1]
+            TRACE_LOG[f"{a}->{b_[0]}"] = ("generated", None)
+        else: ts, offs = trace_profile(pM, bM, sg * abs(bM[0] - pM[0]), key=f"{a}->{b_[0]}", seam_end=b_[1], free=3.0)
         prof = (ts, offs * sc)
         if abs(abs(b[0]) - xs) < 0.01: ends.append(("R" if b[0] > 0 else "L", round(mt["hem_b"] - b[1], 1), b, p0, sg * span))
-        wires += cord(p0, b, sg * span, profile=prof)
+        wires += cord(p0, b, sg * span, profile=prof, wid=f"{a}->{b_[0]}")
     # lower insulator -> the low right wire (joins it where the close-up does, x of close-up px 1225)
     p0, b = tips["wrap"], seamR(H_RIGHT[1]); jx = P(*T_["back_junc"])[0]
     t = (jx - p0[0]) / (b[0] - p0[0]); jy = p0[1] + (b[1] - p0[1]) * t + 4 * 0.02 * abs(b[0] - p0[0]) * t * (1 - t)
-    wires += cord(tips["insBlk"], (jx, jy), 0.02)
+    jM = ((jx - A1[0]) / sc + A0[0], (jy - A1[1]) / sc + A0[1]); pM = tipsM["insBlk"]
+    span = abs(jM[0] - pM[0]); ts, offs = trace_profile(pM, jM, 0.02 * span, key="insBlk->junc")
+    wires += cord(tips["insBlk"], (jx, jy), 0.02, profile=(ts, offs * sc), wid="insBlk->junc")
     wires.append(dict(col="p1", geom=Point(tips["wrap"]).buffer(2.6, 16), st="satin", ang="auto", grp="PL-hl"))     # wire wrap knot
     wires.append(dict(col="p4", geom=Point(tips["wrap"]).buffer(2.6, 16).exterior.buffer(0.3), st="run", ang=None, grp="PL-line"))
     it.add(wires, L_WIRE, "01")
@@ -208,7 +315,7 @@ def back_art(size="M"):
     b0 = P(BOX_M[0], BOX_M[1]); b1 = P(BOX_M[2], BOX_M[3]); BOX = box(b0[0], b0[1], b1[0], b1[1])
     mc = P(0, 244)
     info = dict(size=size, grade=GRADE[size][0], scale=sc, box=BOX.bounds, moon=dict(c=mc, r=MOON_R * sc),
-                pole=dict(x=0.0), wire_ends=[e[:3] for e in ends], wire_geo=ends, cloud_moves=clouds)
+                pole=dict(x=0.0), wire_ends=[e[:3] for e in ends], wire_geo=ends, cloud_moves=clouds, wire_lines=list(CORD_LINES))
     return it, BOX, info
 
 def moon_in_box(size="M"):
@@ -243,21 +350,27 @@ def front_art(size="M"):
     # drops to the hem, so every wire that crosses a side seam lines up with its back half.
     W = [("pin", seamL(H_LEFT[0]), 0.03), ("canR", seamL(H_LEFT[1]), 0.03), ("pole", seamL(H_LEFT[2]), 0.02), ("poleL", seamL(H_LEFT[3]), 0.02),
          ("bracket", seamL(H_LEFT[4]), 0.02),
-         ("armL", seamR(H_RIGHT[0]), 0.07), ("strL", seamR(H_RIGHT[1]), 0.06),
-         ("strL2", (P(TA.FX(150), 0)[0], mt["hem_f"] - 10), 0.03), ("canL", (P(TA.FX(330), 0)[0], mt["hem_f"] - 10), 0.02),
+         ("strT", seamR(H_RIGHT[0]), 0.03), ("strL", seamR(H_RIGHT[1]), 0.06),       # A14: the close-up's 4-wire fan from the coil
+         ("strL2", (P(TA.FX(150), 0)[0], mt["hem_f"] - 10), 0.03), ("strT", seamR(H_RIGHT[2]), 0.001), ("canL", (P(TA.FX(330), 0)[0], mt["hem_f"] - 10), 0.02),
          ("poleL", (P(TA.FX(500), 0)[0], mt["hem_f"] - 10), 0.02), ("bracket", (min(P(TA.FX(640), 0)[0] + dxp, xs - 20), mt["hem_f"] - 10), 0.02)]
-    wires, ends = [], []
+    wires, ends = [], []; CORD_LINES.clear()
     for a, b, sg in W:
         p0 = tips[a]; span = abs(b[0] - p0[0])
+        b_ = (("L" if b[0] > 0 else "R") + f"{mt['hem_f'] - b[1]:.0f}", True) if abs(abs(b[0]) - xs) < 0.01 else ("hem", False)
         if abs(abs(b[0]) - xs) < 0.01: ends.append(("L" if b[0] > 0 else "R", round(mt["hem_f"] - b[1], 1), b, p0, (sg or 0.04) * span))
-        wires += cord(p0, b, (sg or 0.04) * span)
+        # A14: the path traced from the front close-up at M (front-pole registration), offsets scaled with the art
+        pM = T_["front_tips"][a]; bM = ((b[0] - dxp - A1[0]) / sc + A0[0], (b[1] - A1[1]) / sc + A0[1])
+        if abs(abs(b[0]) - xs) < 0.01: bM = (math.copysign(mM["block"].chest2, b[0]), mM["hem_f"] - (mt["hem_f"] - b[1]) / sc)
+        ts, offs = trace_profile(pM, bM, (sg or 0.04) * abs(bM[0] - pM[0]), key=f"F:{a}->{b_[0]}", seam_end=b_[1], free=3.0, ctx=front_ctx(),
+                                  band=14.0 if b_[0] == "R175" else 9.0)      # W1 bends up towards the image edge
+        wires += cord(p0, b, (sg or 0.04) * span, profile=(ts, offs * sc), wid=f"F:{a}->{b_[0]}")
     it.add(wires, L_WIRE, "03")
     for c in T_["lower"]:
         clip = fc["F01"][0] if c["side"] == "L" else fc["F02"][0]
         regs, mv = fit(c["vis"], unary_union([fc["F01"][0], fc["F02"][0], box(-15.5, -100, 15.5, 900)]))     # wisps may cross the zip (split there)
         it.add(tf_regs(regs, sc, A0, A1), L_CLOUD, "03")
     it.add(tf_regs(T_["front_pole"], sc, A0, A1, dx=dxp), L_POLE, "03")
-    return it, dict(size=size, grade=GRADE[size][0], scale=sc, pole_x=PX * kx, wire_ends=[e[:3] for e in ends], wire_geo=ends)
+    return it, dict(size=size, grade=GRADE[size][0], scale=sc, pole_x=PX * kx, wire_ends=[e[:3] for e in ends], wire_geo=ends, wire_lines=list(CORD_LINES))
 
 def chest_art():
     """02 chest clouds at M (graded files are scaled about each piece's centre)"""
@@ -417,20 +530,28 @@ def art_for_size(size):
                            front_L=seam_check(vL, [e for e in finfo["wire_ends"] if e[0] == "L"], xs),
                            front_R=seam_check(vR, [e for e in finfo["wire_ends"] if e[0] == "R"], xs),
                            zip_L=zip_marks(vL, 1), zip_R=zip_marks(vR, -1),
-                           angles=wire_angles(info["wire_geo"], finfo["wire_geo"], xs)))
+                           angles=wire_angles(info["wire_geo"], finfo["wire_geo"], xs, info.get("wire_lines"), finfo.get("wire_lines"))))
     return dict(back=vb, moonbox=mib, F03L=vL, F03R=vR, info=info)
 
-def wire_angles(back_geo, front_geo, xs):
-    """slope of each wire at the side seam on the back and on the front (degrees below horizontal, wearer's view)"""
+def wire_angles(back_geo, front_geo, xs, back_lines=None, front_lines=None):
+    """slope of each wire at the side seam on the back and on the front (degrees below horizontal, wearer's view).
+    Rev C: read off the stitched centreline (traced path) over its last 12 mm when the lines are given."""
     def slope(p0, p1, sag):
         # quadratic sag curve y = lerp + 4 sag t(1-t); derivative at the seam end t = 1
         dx = p1[0] - p0[0]; dy = (p1[1] - p0[1]) - 4 * sag
         return math.degrees(math.atan2(dy, abs(dx)))
+    def slope_l(lines, end):
+        for _, cs in (lines or []):
+            if math.dist(cs[-1], end) < 0.6:
+                ln = LineString(cs); q = ln.interpolate(max(0.0, ln.length - 12.0))
+                return math.degrees(math.atan2(end[1] - q.y, abs(end[0] - q.x)))
+        return None
     out = []
     for s_, h, b, p0, sag in back_geo:
         f = next((e for e in front_geo if e[0] == s_ and abs(e[1] - h) < 0.6), None)
         if f is None: continue
-        out.append((s_, h, round(slope(p0, b, sag), 1), round(slope(f[3], f[2], f[4]), 1)))
+        sb = slope_l(back_lines, b); sf = slope_l(front_lines, f[2])
+        out.append((s_, h, round(sb if sb is not None else slope(p0, b, sag), 1), round(sf if sf is not None else slope(f[3], f[2], f[4]), 1)))
     return out
 
 def graded_art():

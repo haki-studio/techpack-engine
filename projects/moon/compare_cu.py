@@ -30,17 +30,26 @@ def bmm(px, py): return ((px - cx) * s0, 244 + (py - cy) * s0)
 
 import os
 QA = json.load(open("out/qa_fidelity.json")) if os.path.exists("out/qa_fidelity.json") else {}
-FAM = {"01_moon": ("01", ("moon", "stars", "uncovered")), "01_pole": ("01", ("pole", "wires", "uncovered")),
+FAM = {"01_moon": ("01", ("moon", "stars", "uncovered")), "01_pole": ("01", ("pole", "wires", "wires_missing", "uncovered")),
        "01_clouds_left": ("01", ("clouds", "uncovered")), "01_clouds_right": ("01", ("clouds", "uncovered")),
-       "02_03_front": ("02_03", ("clouds", "pole", "uncovered")), "04_04R": ("04R", ("clouds", "uncovered")), "04_04L": ("04L", ("clouds", "uncovered"))}
+       "02_03_front": ("02_03", ("clouds", "pole", "wires", "wires_missing", "uncovered")), "04_04R": ("04R", ("clouds", "uncovered")), "04_04L": ("04L", ("clouds", "uncovered"))}
 def qa_lines(name):
     if name not in FAM or FAM[name][0] not in QA: return ["FIDELITY GATES: qa_fidelity.py not run"]
     el, fams = FAM[name]; R_ = QA[el]
     L = [f"FIDELITY GATES ({el}, shipped DST vs close-up pixels; qa.motif_match IoU >= 0.70, w/h >= 80 %; qa.uncovered gaps >= 25 mm2; LESSONS A14/A15)"]
     for f in fams:
         rr = R_.get(f, [])
-        if f == "uncovered":
-            L.append(f"  uncovered: {len(rr)} gap(s) >= 25 mm2" + ("" if not rr else ": " + "; ".join(f"({r['x_mm']}, {r['y_mm']}) {r['area_mm2']} mm2" for r in rr[:6])))
+        if f in ("uncovered", "wires_missing"):
+            what = "uncovered (qa.uncovered)" if f == "uncovered" else "close-up wire not stitched (qa.uncovered on wire pixels outside every stitched wire)"
+            L.append(f"  {what}: {len(rr)} gap(s) >= 25 mm2" + ("" if rr else " - PASS"))
+            for r in rr[:12]:
+                why = r.get("why"); L.append(f"      {'explained' if why else 'FAIL'} ({r['x_mm']}, {r['y_mm']}) {r['area_mm2']} mm2" + (f": {why}" if why else ""))
+        elif f == "wires":
+            tr = [r for r in rr if not r.get("generated")]; gen = [r for r in rr if r.get("generated")]
+            L.append(f"  wires: {sum(r['ok'] for r in tr)}/{len(tr)} traced wires pass (per wire: IoU >= 0.70 = stitched path within ~1.6 mm of the close-up wire)")
+            for r in tr:
+                L.append(f"      {'ok  ' if r['ok'] else 'FAIL'} {r['motif']}: IoU {r['iou']}, w {r['w_ratio']}, h {r['h_ratio']} ({r.get('stretches', 1)} visible stretch(es))")
+            if gen: L.append("      generated, not traced (no close-up wire in the corridor): " + ", ".join(r["motif"] for r in gen))
         else:
             ok = sum(r["ok"] for r in rr)
             L.append(f"  {f}: {ok}/{len(rr)} motifs pass" + "".join(f" | #{r['motif']} ({r['x_mm']}, {r['y_mm']}) {r['area_mm2']} mm2 IoU {r['iou']} w {r['w_ratio']} h {r['h_ratio']} {'ok' if r['ok'] else 'FAIL'}" for r in rr[:4]))
@@ -87,15 +96,17 @@ def bsheet(nm, box, zooms, ppm=4):
 bsheet("01_moon", (440, 10, 1010, 580), [bz("star crater", 600, 80, 700, 180), bz("cell rim ring", 450, 240, 550, 340),
                                           bz("star + centre", 800, 190, 900, 290), bz("swirl ground", 650, 330, 750, 430)])
 bsheet("01_pole", (430, 480, 1040, 1086), [bz("pins + crossarm", 790, 520, 950, 640), bz("coil + spool", 450, 720, 610, 820),
-                                            bz("drum transformer", 750, 660, 870, 870), bz("cone insulator", 760, 890, 880, 980)])
-bsheet("01_clouds_left", (20, 160, 660, 740), [bz("dome + scales", 270, 180, 450, 280), bz("tail", 440, 280, 640, 340),
+                                            bz("drum transformer", 750, 660, 870, 870), bz("cone insulator", 760, 890, 880, 980),
+                                            bz("traced wires, lower left", 40, 820, 520, 1080), bz("wire wrap + right wires", 980, 620, 1440, 900)])
+bsheet("01_clouds_left", (20, 160, 660, 740), [bz("dome + scales", 270, 180, 450, 280), bz("tail", 40, 250, 240, 320),
                                                 bz("lower cloud", 150, 560, 400, 680)])
 bsheet("01_clouds_right", (880, 260, 1448, 660), [bz("dome", 1100, 270, 1300, 380), bz("lower dome", 1080, 480, 1280, 580),
                                                   bz("tail", 1250, 560, 1440, 620)])
 sheet("02_03_front", CA.CF, (0, 0, 1448, 1086), [M["03L"], M["03R"], B["02R"], B["02L"]], (-300, 60, 300, 512), 2.5,
       note="Front: our placement follows the mockup (close-up is framed differently) - compare shapes, not positions.", zf=1.6,
       zooms=[("02R chest clouds", (0, 0, 640, 446), (-290, 60, -10, 255)), ("02L chest clouds", (880, 100, 1448, 373), (15, 120, 285, 250)),
-             ("03L pole + hardware", (930, 470, 1400, 1091), (148, 320, 288, 505))])
+             ("03L pole + hardware", (930, 470, 1400, 1091), (148, 320, 288, 505)),
+             ("fan wires across the zip", (300, 650, 1000, 1040), (-59.5, 373, 168.7, 507))])
 import moonpattern, pattern as PT
 g, mt = PT.draft("M")
 for k, half in (("04R", (0, 0, 724, 1086)), ("04L", (724, 0, 1448, 1086))):

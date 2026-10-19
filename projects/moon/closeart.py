@@ -194,16 +194,44 @@ def pole_masks(img, box_px, fig_px=None):
     wires = morphology.remove_small_objects(g & ~ndi.binary_dilation(pole, iterations=3), 40)
     return pole, wires
 
+def pole_sil(img, box_px, fig_px=None, open_px=7):
+    """pole + hardware SILHOUETTE from the close-up (Rev C final, A14): every not-navy pixel in the window (charcoal
+    outlines and dark slats included: navy has b - r >= 14, the hardware's outlines and greys < 14), real clouds, warm
+    moon colours and the licensed figure removed, opened by a 15 px disc (drops the wires, keeps every hardware piece),
+    holes filled. The same mask is the A14 reference in qa_fidelity.py."""
+    import cloud3
+    a = np.asarray(img.convert("RGB")).astype(float); lum = a.mean(2); br = a[..., 2] - a[..., 0]; sat = a.max(2) - a.min(2)
+    nn = (br < 14) & ~((lum > 150) & (sat > 25))
+    win = np.zeros_like(nn); x0, y0, x1, y1 = box_px; win[y0:y1, x0:x1] = True; nn &= win
+    if fig_px is not None: fx0, fx1, fy1 = fig_px; nn[:fy1, fx0:fx1] = False
+    labc, _, _ = cloud3.masks(img, (0, 0, img.width, img.height)); cl = np.zeros_like(nn)
+    for k, sl in enumerate(ndi.find_objects(labc), 1):
+        if sl is not None and sl[1].stop - sl[1].start >= 90 and sl[0].stop - sl[0].start < 2.2 * (sl[1].stop - sl[1].start): cl[sl] |= labc[sl] == k
+    nn &= ~ndi.binary_dilation(cl, iterations=4); nn = ndi.binary_closing(nn, iterations=2)
+    pole = morphology.remove_small_objects(morphology.binary_opening(nn, morphology.disk(open_px)), 400)
+    return ndi.binary_fill_holes(ndi.binary_closing(pole, iterations=2))
+
 def traced_silhouette(vis, img, box_px, f, fig_px=None):
-    """LESSONS A14: the pole + hardware SILHOUETTE comes from the close-up pixels: the drawn parts are clipped to the traced
-    outline's areas: every traced area no drawn part covers is filled in
-    pole dark grey, so the stitched outline is the close-up's; the drawn parts give the inside structure."""
-    pole, _ = pole_masks(img, box_px, fig_px)
+    """LESSONS A14: the pole + hardware SILHOUETTE comes from the close-up pixels (pole_sil, outlines included): every
+    traced area no drawn part covers is filled — the charcoal outline rims round drawn hardware in pole charcoal (p4,
+    as the close-up's dark outlines), larger uncovered areas next to a drawn part in pole dark grey (p3 shade), and
+    standalone traced pieces no drawn part touches (wire wraps, end clamps) in pole grey (p2) with a charcoal edge run.
+    The drawn parts (measured off the same close-up) give the inside structure and stay whole."""
+    pole = pole_sil(img, box_px, fig_px)
     sil = map_geom(TR.polys_of(pole, 1, (0, 0, img.width, img.height), 60, simplify=0.3), f).buffer(0.4).buffer(-0.4)
-    out = list(vis)                       # drawn parts are measured off the same close-up: kept whole (thin braces/stems)
+    out = list(vis)
     drawn = unary_union([r["geom"] for r in out if r["st"] not in ("bean", "run")])
+    near = drawn.buffer(0.8)
     for p in polys(sil.difference(drawn.buffer(0.3)).buffer(-0.4).buffer(0.75).intersection(sil)):
-        if p.area > 3.0 and p.intersects(drawn.buffer(0.8)) and p.difference(drawn.buffer(6.0)).area < 0.25 * p.area: out.insert(0, R("p3", p, "tatami" if width(p) > 2.6 else "satin", "auto" if width(p) <= 2.6 else 90, "PL-shade"))
+        if p.area <= 3.0: continue
+        w_ = width(p); st = "tatami" if w_ > 2.6 else "satin"; ang = "auto" if w_ <= 2.6 else 90
+        if not p.intersects(near):                                                      # standalone hardware piece
+            out.insert(0, R("p2", p, st, ang, "PL"))
+            out.append(R("p4", p.exterior.buffer(0.3), "run", None, "PL-line"))
+        elif p.difference(drawn.buffer(2.0)).area < 0.25 * p.area and w_ <= 2.0:        # outline rim round a drawn part
+            out.insert(0, R("p4", p, st, ang, "PL-band"))
+        else:
+            out.insert(0, R("p3", p, st, ang, "PL-shade"))
     return out
 
 def pole_details(f, px, half_w, bands, can_box, can_rings, y0, y1):
@@ -237,7 +265,8 @@ def front_pole_f():
         X = P["cx"] + (x - FPX_CU) * kx; Y = P["y0"] + (y - FTOP_CU) * ky
         return X, Y
     return f
-FRONT_TIPS_CU = {"armL": (1107, 662), "armR": (1353, 603), "pin": (1316, 550), "strL": (962, 785), "strL2": (966, 792),
+# Rev C final (A14): "strT" / "strL3" = top / bottom of the coil's left end, where the close-up's 4-wire fan leaves it
+FRONT_TIPS_CU = {"strT": (956, 772), "strL3": (968, 800), "armL": (1107, 662), "armR": (1353, 603), "pin": (1316, 550), "strL": (962, 785), "strL2": (966, 792),
                  "canL": (1176, 905), "canR": (1345, 700), "pole": (1265, 830), "poleL": (1210, 900), "bracket": (1350, 935)}
 def front_pole():
     f = front_pole_f()
