@@ -180,7 +180,7 @@ def cords(mask, ppm, mode, wmin=1.2, wmax=3.0, root=2.5, tip=1.0, ramp=10.0, wfl
     D = geodesic_tip_distance(sk, ppm)
     # Rev B2 (LESSONS A14): the cord width IS the traced width (2 x distance to the traced edge) - no width cap; only the
     # last few mm before a tip narrow toward the tip width the trace itself shows (blur rounds traced tips)
-    wt = 2*dt/ppm
+    wt = 2*np.maximum(dt - 0.5, 0.5)/ppm        # EDT counts to the background pixel CENTRE: the edge is 0.5 px nearer
     if mode == "lightning":
         w = np.maximum(wt, tip)
         w = np.minimum(w, tip + (w - tip)*np.minimum(1.0, D/4.0))

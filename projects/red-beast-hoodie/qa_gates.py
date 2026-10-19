@@ -5,8 +5,8 @@ fabric specks < 25 mm2 in the black ground = thread highlights, counted as black
 area embroidery may occupy (each piece's keep-out clip: zip, seams, welts, hem/cuff bands are garment details, A15) and
 with the documented exclusions (SL cream = render highlights, review item 8; sleeve dark = fold shading, never thread).
 Stitched = the colour that SHOWS: every sewn stitch of the size-M DST read back, drawn 0.4 mm wide (thread) at 8 px/mm in sew order (later stops
-cover earlier ones and their hidden travel), closed 0.125 mm (between rows), eroded 0.375 mm = half the thread (drawn centred on the needle points) + the
-fabric pull-in the file's pull comp (0.15-0.20 mm per side) compensates, so a correctly compensated shape measures at its sewn size.
+cover earlier ones and their hidden travel), closed 0.125 mm (between rows), eroded 0.25 mm = the fabric pull-in that
+the file's pull comp (0.15-0.20 mm per side) compensates (stitch lines are butt-ended: no overshoot past the needle points), so a correctly compensated shape measures at its sewn size.
 Families: cream (cords, teeth, lightning), red (hair + crimson shade + streaks), black (ground strokes).
 usage: python3 qa_gates.py   -> qa_gates.json (+ printed tables); compare.py prints the tables on the sheets."""
 import rbcore
@@ -42,8 +42,8 @@ def visible(pieces, bb, shape):
             if col in keys: lab[np.array(im) > 0] = keys.index(col) + 1
     return lab, keys
 
-THREAD, PULL = 0.4, 0.375    # 40wt thread 0.4 mm drawn centred on the needle points, so it overshoots the satin edge by 0.2;
-                             # + the file's pull comp (0.15-0.20/side) that the fabric pulls back in: edge = needle line
+THREAD, PULL = 0.4, 0.25     # 40wt thread 0.4 mm, butt-ended lines (no overshoot past the needle points); the file adds pull
+                             # comp (0.15-0.20/side) that the fabric pulls back in -> erode by the pull comp (0.25 at 8 px/mm)
 def dst_mask(vis, keys, cols):
     m = np.isin(vis, [keys.index(c) + 1 for c in cols if c in keys])
     m = ndi.binary_closing(m, structure=np.ones((3, 3), bool)) | m          # 1 fine px (0.125 mm): between satin rows only
