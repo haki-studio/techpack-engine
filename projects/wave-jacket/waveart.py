@@ -19,7 +19,7 @@ from shapely.geometry import Point, Polygon, LineString, MultiLineString, box
 from shapely.ops import unary_union
 from shapely import affinity
 from shapely.validation import make_valid
-import mockmap as MM, pieces as PC, wavetrace as WT
+import mockmap as MM, pieces as PC, wavetrace as WT, wrap as WR
 from motifs2 import R
 import dst2
 WC.patch_dst2()
@@ -94,13 +94,11 @@ def piece_maps(size):
         quads = {}
         for P in Ps:
             if P in SLEEVE_SIDE:
-                sm = MM.sleeve_map(view, SLEEVE_SIDE[P], size)
-                # the render region that belongs to the sleeve is the SIZE-M one on every size (grading review 19 Oct): the
-                # per-size armhole moved the sleeve/body boundary in the render, so curls near it switched piece size to size
-                # (SL motifs 60/53/61/55/49/56/53 XS..3XL) and sleeve art boxes were not monotonic. Placement stays per size.
-                q = MM.sleeve_map(view, SLEEVE_SIDE[P], "M").quad_px
-                quads[P] = q
-                out[(view, P)] = (sm, q, "sleeve")
+                # Rev B seam-true wrap: harmonic map, render armhole -> cap by seam length (wrap.py). The sleeve's render
+                # region is bounded by this size's armhole drawn back into the render, the same curve the body map uses.
+                sm = WR.sleeve_map(view, SLEEVE_SIDE[P], size)
+                quads[P] = sm.quad_px
+                out[(view, P)] = (sm, sm.quad_px, "sleeve")
         for P in Ps:
             if P in SLEEVE_SIDE: continue
             pan = PC.panel(size, P)
@@ -135,6 +133,18 @@ def nonrigid(g, m):
     try: return make_valid(out).buffer(0)
     except Exception: return out.buffer(0)
 
+@functools.lru_cache(maxsize=None)
+def lobe_owner(size, view):
+    """lobe index -> piece: the piece whose render region holds the anchor, else the one its outline overlaps most"""
+    maps = piece_maps(size); regs = {P: maps[(view, P)][1] for P in VIEW_PIECES[view]}; out = {}
+    for i, lb in enumerate(traced(view)["lobes"]):
+        a = Point(lb["anchor"]); hit = [P for P, r in regs.items() if r.contains(a)]
+        if hit: out[i] = hit[0]; continue
+        ov = {P: r.intersection(lb["outline"]).area for P, r in regs.items()}
+        P = max(ov, key=ov.get)
+        if ov[P] > 0: out[i] = P
+    return out
+
 # ---------------------------------------------------------------- items per piece
 def items_for(size, P):
     its = []
@@ -162,10 +172,10 @@ def items_for(size, P):
         if not q.is_empty:
             for p in polys(nonrigid(q, m)): add("w1", p, "satin", "auto", "RP", Z["rope"])
         # rigid motifs: foam lobes + drops
+        own = lobe_owner(size, view)
         for i, lb in enumerate(tr["lobes"]):
-            if not lb["outline"].intersects(regb): continue
+            if own.get(i) != P: continue                        # Rev B: every motif belongs to ONE piece; wrap.transfer carries its overflow
             a = lb["anchor"]
-            if kind == "sleeve" and not reg.buffer(6).contains(Point(a)): continue
             A = lin_at(m, kind, view, size, a)
             a_mm = m(np.array([a[0]]), np.array([a[1]]))
             a_mm = (float(np.ravel(a_mm[0])[0]), float(np.ravel(a_mm[1])[0]))
@@ -360,6 +370,15 @@ def wrap_check(res, size):
     return out
 
 
+def drop_fold_highlight(its):
+    """the render's sleeve-fold highlight traced as tiny 'drops' on the fold (QA 19 Oct): rigid units < 20 mm2 within 6 mm
+    of the sleeve centre line"""
+    units = {}
+    for r in its:
+        if r.get("unit"): units.setdefault(r["unit"], []).append(r)
+    drop = {u for u, rs in units.items() if (lambda g: g.area < 20 and abs(g.centroid.x) < 6)(unary_union([r["geom"] for r in rs]))}
+    return [r for r in its if r.get("unit") not in drop]
+
 # ---------------------------------------------------------------- sleeve fold (QA 19 Oct: 20-50 mm bare band on the centre line)
 def close_fold(its, P):
     """The render's sleeve art reaches the silhouette edge (the fold) in both views, but the trace drops the edge shading,
@@ -406,10 +425,14 @@ def close_fold(its, P):
 # ---------------------------------------------------------------- build
 def build(size):
     t0 = time.time(); res = {"info": dict(size=size, grade=MM.GRADE[size][0], scale=MM.GRADE[size][1])}
+    art = {P: items_for(size, P) for P in PC.PIECES}
+    for P in SLEEVE_SIDE: art[P] = drop_fold_highlight(art[P])
+    res["info"]["silhouette_seams"] = WR.silhouettes(art, size)          # stretch + DTW along side/shoulder/underarm/centre
+    res["info"]["transfer"] = WR.transfer(art, size)                       # overflow across every seam
+    res["info"]["maps"] = {f"{v}/{s}": dict(fold_frac=round(WR.sleeve_map(v, s, size).fold_frac, 4)) for v in ("back", "front") for s in "LR"}
     for P in PC.PIECES:
         clip = PC.clip_for(size, P).buffer(-0.4)        # 0.4 inside the keep-out: cleaning never crosses it
-        its = items_for(size, P)
-        if P in SLEEVE_SIDE: its, res.setdefault("fold_gap", {})[P] = close_fold(its, P)
+        its = art[P]
         vis = visible(its, clip)
         vis = dst2.clean_vis(vis)
         vis = [dict(r, geom=r["geom"].intersection(clip).buffer(0)) for r in vis]
@@ -421,10 +444,11 @@ def build(size):
         res["info"][P] = dict(objects=len(vis), area=round(u.area), bbox=[round(v, 1) for v in u.bounds] if vis else None,
                               lobes=len({r["unit"] for r in vis if r.get("unit") and r["grp"] == "FM"}),
                               drops=len({r["unit"] for r in vis if r.get("unit") and r["grp"] == "DR"}))
-    res["info"]["wrap"] = wrap_check(res, size)
+    res["info"]["wrap"] = {"seams": len(WR.seams(size))}
+    res["marks"] = WR.match_marks({P: res[P] for P in PC.PIECES}, size)
     pickle.dump(res, open(f"art_{size}.pkl", "wb"))
     print(size, {P: (res["info"][P]["objects"], res["info"][P]["area"], res["info"][P]["lobes"], res["info"][P]["drops"]) for P in PC.PIECES},
-          {k: f"{v['aligned']}/{v['total']}" for k, v in res["info"]["wrap"].items()}, f"{time.time()-t0:.0f}s", flush=True)
+          res["info"]["silhouette_seams"], res["info"]["transfer"], res["info"]["maps"], f"{time.time()-t0:.0f}s", flush=True)
     return res
 
 def flat_png(size, res, path, ppm=1.6):
