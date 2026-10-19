@@ -57,7 +57,7 @@ def p1():
         o.append(t(rx + 46, y, f"{r['stops']}", 1.7)); o.append(t(rx + 56, y, f"{r['hoopings']}", 1.7)); o.append(t(rx + 68, y, f"{mh(r)*60:.0f} min", 1.7)); y += 3.5
     tot = sum(CUR[P]["stitches"] for P in WC.PIECES); tt = sum(CUR[P]["trims"] for P in WC.PIECES); th = sum(mh(CUR[P]) for P in WC.PIECES)
     o.append(t(rx, y, "All", 1.75, 700)); o.append(t(rx + 13, y, f"{tot:,}", 1.75, 700)); o.append(t(rx + 33, y, f"{tt:,}", 1.75, 700)); o.append(t(rx + 68, y, f"{th:.1f} h", 1.75, 700)); y += 4
-    o.append(t(rx, y, f"Run time = {PROF['spm']} spm + 6 s/trim + 4 s/colour change, one head (factory.machine_hours).", 1.45, 400, MUTED)); y += 6
+    o.append(t(rx, y, f"Run time = full file, {PROF['spm']} spm + 6 s/trim + 4 s/colour change, one head; as hooped (splits): G4.", 1.45, 400, MUTED)); y += 6
     o.append(t(rx, y, "KEEP-OUT CLEARANCES, SIZE M (mm, art outline → sew line)", 2.0, 700)); y += 4
     cl = EP.clearances("M")
     for P in WC.PIECES:
@@ -67,7 +67,7 @@ def p1():
         if len(items) > 70: o.append(t(rx + 6, y, items[70:140], 1.4)); y += 2.9
     y += 2
     o.append(t(rx, y, "Min: side/CF/shoulder/armhole/underarm/cap 15 · hem 10 · cuff 10", 1.45, 400, MUTED)); y += 2.9
-    o.append(t(rx, y, "welt 6 · collar lying flat 6 · neck 6. All sizes: T13.", 1.45, 400, MUTED)); y += 6
+    o.append(t(rx, y, "welt 6 · collar lying flat 6 · neck 6 (emb_place.py).", 1.45, 400, MUTED)); y += 6
     for l_ in ["!Art traced from the low-res AI render (~1.4 mm/px): stripe", "!tones, every crest + curl and every spray drop are in the", "!render; curl detail is redrawn (foam close-up = style ref).",
                "Sleeves: the render's sleeves are long + narrow, so the", "wave is placed by its position on the hanging sleeve; the", "armhole is a normal 15 mm keep-out [proposed — confirm]."]:
         col = ORANGE if l_.startswith("!") else MUTED

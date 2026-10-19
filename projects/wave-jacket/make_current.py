@@ -14,7 +14,7 @@ def fresh(r):
     return r
 
 allr = {}
-for sz in WC.SIZES:
+for sz in WC.DOC_SIZES:          # sampling package: size M only (other sizes follow after the strike-off)
     for P in WC.PIECES:
         p = f"out/01_wave/{sz}/result_{P}.json"
         if not os.path.exists(p): continue

@@ -95,8 +95,12 @@ def piece_maps(size):
         for P in Ps:
             if P in SLEEVE_SIDE:
                 sm = MM.sleeve_map(view, SLEEVE_SIDE[P], size)
-                quads[P] = sm.quad_px
-                out[(view, P)] = (sm, sm.quad_px, "sleeve")
+                # the render region that belongs to the sleeve is the SIZE-M one on every size (grading review 19 Oct): the
+                # per-size armhole moved the sleeve/body boundary in the render, so curls near it switched piece size to size
+                # (SL motifs 60/53/61/55/49/56/53 XS..3XL) and sleeve art boxes were not monotonic. Placement stays per size.
+                q = MM.sleeve_map(view, SLEEVE_SIDE[P], "M").quad_px
+                quads[P] = q
+                out[(view, P)] = (sm, q, "sleeve")
         for P in Ps:
             if P in SLEEVE_SIDE: continue
             pan = PC.panel(size, P)

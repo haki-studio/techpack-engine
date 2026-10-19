@@ -36,3 +36,12 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - Shell washed navy 12 oz duck, collar navy corduroy, rib navy, YKK #5 brass zip, welts at the Drum Island block position (engine block data since 17 Oct: centre 17.0 cm from CF, 36.8 cm below the CF neck, 43°; the render draws them ~5 cm further out).
 - Grades A 92 % (XS–S) · B 100 % (M–XL) · C 108 % (XXL–3XL), scaled about the neck point; art re-clipped to each size's keep-outs.
 - Frame 360 × 360 (factory.json, unconfirmed): pieces larger than 344 mm are split with registration crosses.
+
+## Assumptions (builder, 19 Oct 2026 — embroidery sampling) — PROPOSED in the documents
+- Founder priority: EMBROIDERY SAMPLING package first, size M strike-off only; garment pages (T1-T16) + pattern follow once the
+  jacket body revision lands (placement stays on the Drum Island block M until then).
+- Wave stripes sew tatami along the stripe; turning satin only for narrow simple stripes; every satin object that would leave
+  > 3 % bare falls back to fixed-angle split satin (DST coverage ≥ 99.6 % on every code, coverage.py).
+- Sleeves: each half stretched to meet the fold (the render's art reaches the fold in both views); fold highlight not sewn.
+- Near-empty hoop sections are folded into a neighbour when the merged section fits the frame (M: 12 hoopings, was 15).
+- Frame still 360 × 360 from factory.json (unconfirmed) — the founder is asking the factory; splits rebuild from factory.json.

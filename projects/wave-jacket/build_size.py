@@ -116,6 +116,11 @@ for P in which:
         if alog:
             print(size, P, "absorbed near-empty sections:", alog, flush=True)
             names = {k: f"S{i + 1}_{names[k].split('_', 1)[1]}" if "_" in names[k] else f"S{i + 1}" for i, k in enumerate(keys)}
+            if spl["method"] == "split_clip":            # a split line with sections on one side only is no longer a split
+                if len({k[1] for k in keys}) == 1 and spl["ys"]:
+                    spl["ys"] = []; spl["sy"] = None; names = {k: n.replace("top-", "").replace("bottom-", "").replace("_top", "").replace("_bottom", "") for k, n in names.items()}
+                if len({k[0] for k in keys}) == 1 and spl["xs"]:
+                    spl["xs"] = []; spl["sx"] = None; names = {k: n.replace("-left", "").replace("-right", "").replace("_left", "").replace("_right", "") for k, n in names.items()}
         spl["absorbed"] = alog
         for key in keys:
             sv = sp["secs"][key]; t = time.time(); stops, n0 = stops_for(sv)

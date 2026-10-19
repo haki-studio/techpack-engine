@@ -74,3 +74,15 @@ Problem → proposed fix → check. Worked around in project code only.
   Pitfall: drawing the thread at 0.45 mm against 0.42 mm rows rounds to gaps at 10 px/mm and condemned 77 % of objects.
 - **Proposed engine fix:** the same guard inside `build_object` (and `qa.dst_coverage`), counts in the build stats.
 - **Check:** coverage.py per code ≥ 98 % on every file; test: a 6 mm C-shaped satin drop sews ≥ 98 % covered.
+
+## 10. Sleeve art boxes not monotonic across sizes (coordinator review, 19 Oct 2026)
+- **Problem:** SL widths XS..3XL 379/363/411/394/333/425/390, SR heights jumping. Two causes: (a) the fold-highlight dashes (note 8)
+  set the SR top on some sizes; (b) the render region that belongs to a sleeve was rebuilt per size from that size's armhole mapped
+  back into the render, so curls near the sleeve/body boundary switched piece size to size (SL rigid motifs 60/53/61/55/49/56/53;
+  XL lost 12 vs M) and were then clipped at the keep-out.
+- **Fix (project):** the sleeve render region is the size-M one on every size (placement map still per size). After: SR
+  395/409/430/443/456/478/490 × 285/293/301/310/318/327/338; SL 378/385/411/417/445/450/480 × 340..400; motifs 55-58 / 59-61.
+- **Open:** BK heights now plateau (XS = S 457, L = XL 496) — check which motifs moved between back and sleeve before the
+  graded rebuild (after the strike-off).
+- **Proposed engine fix / check:** any per-size map keeps piece membership fixed (decided once on the base size);
+  test: art box w and h non-decreasing XS..3XL for every piece, motif count per piece within ±3 of M.

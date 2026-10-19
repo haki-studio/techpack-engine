@@ -117,3 +117,7 @@ PIECE_CODE = {"BK": "B01", "FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
 REV_EMB = "Rev A"; REV_GAR = "Rev A"; DATE = "19 Oct 2026"
+# EMBROIDERY SAMPLING package (founder, 19 Oct): size-M strike-off only; other sizes are rebuilt after the sew-out and the
+# garment pages (T1-T16, pattern) follow once the jacket body revision is done.
+DOC_SIZES = ["M"]
+GARMENT_NOTE = "Garment pages (T1-T16) + pattern to follow - jacket under revision"

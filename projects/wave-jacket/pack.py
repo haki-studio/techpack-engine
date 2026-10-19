@@ -39,6 +39,8 @@ def cover(index):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>']
     o.append(t(14, 24, "HAKI STUDIOS", 3.0, 700, MUTED))
     o.append(t(14, 36, "Wave jacket · washed navy — embroidery", 7.0, 700))
+    o.append(t(SW - 14, 30, "EMBROIDERY SAMPLING PACKAGE · size M strike-off", 2.8, 700, RED, "end"))
+    o.append(t(SW - 14, 35, WC.GARMENT_NOTE.replace(" - ", " — "), 2.2, 600, ORANGE, "end"))
     o.append(t(14, 44, f"{REV} · {DATE} · Drum Island block, size M base · 1 element (01 wave), 5 pieces · 9 threads · all dimensions mm", 2.6, 400, MUTED))
     o.append(f'<line x1="14" y1="48" x2="{SW-14}" y2="48" stroke="{INK}" stroke-width="0.4"/>')
     bk, _, _ = VW.view_png("back", "M", 1.6); fr, _, _ = VW.view_png("front", "M", 1.6)
@@ -81,18 +83,19 @@ def overview():
         o.append(t(x, y + hh + 3, f"{P} {PC.NAME[P]} ({PC.CODE[P]}) · art {ab[2]-ab[0]:.0f} × {ab[3]-ab[1]:.0f}", 1.6, 700))
     o.append(t(12, 199, f"Red line = keep-out boundary (art may not cross it). Blue dashed box = art box, blue dashed lines = hoop split lines (G6). Size M, all pieces at {SC:.3f}:1.", 1.6, 400, MUTED))
     tx = 232; ty = 30
-    o.append(t(tx, ty, "ART BOX PER SIZE (w × h mm)", 2.0, 700))
+    o.append(t(tx, ty, "ART BOX (w × h mm, DST read-back)", 2.0, 700))
     for j, P in enumerate(PS): o.append(t(tx + 9 + j * 10.5, ty + 5, P, 1.5, 700, MUTED))
     o.append(t(tx, ty + 5, "Size", 1.5, 700, MUTED))
-    for i, sz in enumerate(WC.SIZES):
+    for i, sz in enumerate(WC.DOC_SIZES):
         y = ty + 9.5 + i * 3.8
         if i % 2 == 0: o.append(f'<rect x="{tx-1}" y="{f(y-2.7)}" width="{SW - tx - 11}" height="3.8" fill="#F5F2EC"/>')
         o.append(t(tx, y, sz, 1.5, 700))
         for j, P in enumerate(PS):
             r = ALL.get(sz, {}).get(P)
             if r: o.append(t(tx + 9 + j * 10.5, y, f"{r['full']['art_box'][2]-r['full']['art_box'][0]:.0f}×{r['full']['art_box'][3]-r['full']['art_box'][1]:.0f}", 1.3))
-    ky = ty + 9.5 + 7 * 3.8 + 5
-    o.append(t(tx, ky, "KEEP-OUTS (all sizes, T13)", 2.0, 700))
+    o.append(t(tx, ty + 9.5 + len(WC.DOC_SIZES) * 3.8, "Other sizes: after the size-M strike-off.", 1.45, 400, MUTED))
+    ky = ty + 9.5 + len(WC.DOC_SIZES) * 3.8 + 7
+    o.append(t(tx, ky, "KEEP-OUTS (mm from the sew line)", 2.0, 700))
     for i, k in enumerate(["CF zip 15 each side", "side / shoulder / armhole 15", "sleeve cap + underarm 15", "hem-rib seam 10 · cuff 10",
                            "welt box 6 · collar flat 6 · neck 6", "rib + collar never embroidered", "", "Grade: A 92 % XS–S, B 100 %", "M–XL, C 108 % XXL–3XL: the",
                            "render map is scaled about the", "neck point; art re-clipped to", "each size's own keep-outs;", "one file per size per piece."]):
@@ -153,9 +156,9 @@ def summary():
     qs = [f"1. Frame: pieces > {FRAME[0]-16:.0f} mm are split for {FR_S} (G6). A larger frame (jacket-back frame) removes the joins — which frames do you have?",
           "2. Foam curls: the render shows raised looped (chenille-look) foam. Rev A = padded tatami + loop spiral + curl lines on any head. Chenille/moss heads available?",
           "3. Thread board: 9 targets read from a low-res AI render — approve physical colours (G3), especially the 6 blues against the navy shell.",
-          "4. Sleeves: the render's sleeves are long + narrow; the wave is placed from the sleeve fold/shoulder, 15 mm short of the armhole (no seam-true wrap). OK?",
-          "5. Collar: the render shows a corduroy collar; the intake note mentioned a hood — built with the Drum Island collar. Confirm.",
-          "6. Grading: A 92 % (XS–S) · B 100 % (M–XL) · C 108 % (XXL–3XL), one file per size per piece, re-clipped to each size's keep-outs. OK?",
+          "4. Sleeves: the render's sleeves are long + narrow; the wave is placed from the sleeve fold/shoulder (each half stretched to meet the fold), 15 mm short of the armhole. OK?",
+          "5. Garment: the jacket body is under revision — placement is on the Drum Island block M; re-check keep-outs when the new body lands.",
+          "6. Grading (after the sample): A 92 % (XS–S) · B 100 % (M–XL) · C 108 % (XXL–3XL), one file per size per piece, re-clipped to each size's keep-outs. OK?",
           "7. Shell dye: piece-dyed + pre-washed navy duck assumed. If garment-washed after embroidery, wash-test the sew-out (cream foam!).",
           "8. Reference: traced from the low-res render (~1.4 mm/px) + the founder's shoulder close-up (registered, FL crest). Flat close-ups of the other panels would sharpen the rest.",
           "9. DST/PES are production-intent drafts: the factory digitizer checks density + pull on 12 oz duck and edits before the sew-out."]
@@ -163,12 +166,12 @@ def summary():
     return o
 
 def files_page():
-    o = hdr("PRODUCTION STITCH FILES + HOOP SPLITS", "DST (Tajima) + PES, one set per size per piece. Counts read back from the DST. Origin = centre of each file's design ((+) on the pattern, DXF layer 13).", "G5")
+    o = hdr("PRODUCTION STITCH FILES + HOOP SPLITS", "DST (Tajima) + PES, one set per piece, size M (strike-off). Counts read back from the DST. Origin = centre of each file's design ((+) on the pattern, DXF layer 13).", "G5")
     hd = ["Size", "Art", "Piece", "Full file mm", "Stitches", "Trims", "Stops", "Hoopings: section stitches / trims", "Fits frame"]
     cx = [12, 22, 30, 40, 62, 80, 92, 104, 192]
     for x_, h in zip(cx, hd): o.append(t(x_, 31, h, 1.55, 700, MUTED))
     y = 35; allfit = True
-    for i, sz in enumerate(WC.SIZES):
+    for i, sz in enumerate(WC.DOC_SIZES):
         for p in PS:
             r = ALL.get(sz, {}).get(p)
             if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-2.1)}" width="196" height="2.9" fill="#F5F2EC"/>')
@@ -185,6 +188,8 @@ def files_page():
                 o.append(t(cx[3], y, "pending", 1.35, 400, MUTED)); allfit = False
             y += 2.9
     o.append(t(12, y + 2, f"All files fit the {FR_S} frame (incl. registration crosses): {'yes' if allfit else 'CHECK'}", 1.7, 700, GREEN if allfit else RED))
+    o.append(t(12, y + 6, "Sampling package: size M only. XS-S (grade A 92 %), L-XL (B) and XXL-3XL (C 108 %) are rebuilt from the same art after the strike-off,", 1.6, 400, MUTED))
+    o.append(t(12, y + 9, "with any density / pull changes it asks for. The frame is read from factory.json: a bigger frame re-splits every file in one rebuild.", 1.6, 400, MUTED))
     bx = 212; y2 = 31
     o.append(t(bx, y2, "WHAT IS DIGITIZED", 2.0, 700)); y2 += 4.2
     notes = [("Stripes", ["6 blues, one region per traced tone stripe:", "tatami along the stripe (6 mm sections);", "turning satin only < 3 wide w/o holes; after", "the cream rope lines (lines first, B2)."]),
@@ -206,13 +211,13 @@ def files_page():
     return o
 
 def hooping_page():
-    o = hdr("HOOPING TABLE — split lines + needle starts per file, every size",
+    o = hdr("HOOPING TABLE — split lines + needle starts per file (size M strike-off)",
             f"Frame {FR_S} mm (factory.json{'' if PROF['frames_confirmed'] else ', PROPOSED'}). Coordinates in mm on each piece's pattern (see G2). DXF layer 13 = these points.", "G6")
     hd = ["Size", "Piece", "Hoops", "Split x / y", "Needle start per file (x, y) · file mm", "Fit", "Machine time"]
     cx = [12, 22, 32, 42, 64, 250, 262]
     for x_, h in zip(cx, hd): o.append(t(x_, 31, h, 1.55, 700, MUTED))
     y = 35.5
-    for i, sz in enumerate(WC.SIZES):
+    for i, sz in enumerate(WC.DOC_SIZES):
         for P in PS:
             r = ALL.get(sz, {}).get(P)
             if not r: continue
