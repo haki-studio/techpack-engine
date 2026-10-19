@@ -14,7 +14,7 @@ PAL = {
     "royal":   ("#1E4F8A", "Chain blue",     "braided chain bark + moss ropes (close-up b: royal/teal blue)"),
     "brown":   ("#4E3B2A", "Twig brown",     "twigs (chain stitch), leaf veins"),
     "bark":    ("#2D4862", "Bark blue",      "bark body + chain underside, rock body, stream"),
-    "mossdk":  ("#2E4A3C", "Moss dark teal", "moss shade + teal strands of the chain bark / rope roots (close-up a), grass shade"),
+    "mossdk":  ("#183A33", "Moss dark teal", "moss shade + teal strands of the chain bark / rope roots (close-up a), grass shade"),
     "moss":    ("#55672C", "Moss",           "raised moss on limbs + rocks + strands"),
     "mosslt":  ("#8E9C44", "Moss light",     "moss tops + mottling, leaf shade half, grass light"),
     "leaf":    ("#C6C872", "Leaf yellow-green","leaf light half, moss highlights"),

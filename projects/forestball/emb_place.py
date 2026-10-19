@@ -25,7 +25,7 @@ def outlines():
     for k, vis in (("back", D["back"]), ("02R", F["02R"]), ("02L", F["02L"])):
         out[k] = unary_union([r["geom"].buffer(0.3) for r in vis if r["grp"] != "PH"]).buffer(-0.3).simplify(0.1)
         if k in ("02R", "02L"):     # main-limb bark at the zip, for the per-size zip match marks
-            out["_bark_" + k] = unary_union([r["geom"] for r in vis if r["grp"] in ("TB", "TBS", "TM", "TMS", "TH", "THS")]).buffer(1.5).buffer(-1.5)
+            out["_bark_" + k] = unary_union([r["geom"] for r in vis if r["grp"] in ("TB", "TBS", "TM", "TMS", "TH", "THS")]).buffer(4.0).buffer(-4.0)   # Rev C: traced limb has fabric gaps between links — close 4 mm so the band reads whole
     import back as B
     out["_ph"] = B.PH_BOX
     pickle.dump(out, open(cp, "wb")); return out
@@ -95,8 +95,13 @@ def place(size, OL=None):
         bk = affinity.translate(affinity.scale(OL["_bark_" + k], sc, sc, origin=c), dx, dy)
         seg = bk.intersection(LineString([(xx + (1.3 if xx > 0 else -1.3), -200), (xx + (1.3 if xx > 0 else -1.3), 900)]))
         segs = [gg for gg in (getattr(seg, "geoms", None) or [seg]) if not gg.is_empty and gg.geom_type == "LineString"]
-        if segs:      # the limb = the longest run of art on the line just outside the zip keep-out
-            L_ = max(segs, key=lambda q: q.length); ys = [c_[1] for c_ in L_.coords]; marks[k] = (min(ys), max(ys))
+        if segs:      # the limb = the longest run of art on the line just outside the zip keep-out; Rev C: runs split by
+            # a fabric gap <= 12 mm between traced links / strands count as one band
+            iv = sorted((g_.bounds[1], g_.bounds[3]) for g_ in segs); runs = [list(iv[0])]
+            for a_, b_ in iv[1:]:
+                if a_ - runs[-1][1] <= 12.0: runs[-1][1] = max(runs[-1][1], b_)
+                else: runs.append([a_, b_])
+            marks[k] = tuple(max(runs, key=lambda r_: r_[1] - r_[0]))
         else: marks[k] = None
     res["_zip"] = marks
     return res, g, mt

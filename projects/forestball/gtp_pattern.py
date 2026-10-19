@@ -271,7 +271,7 @@ REVS = [("Garment Rev A", "16 Oct 2026", "Forestball pack on the Drum Island pat
                                                        "(factory limit), DST read-back numbers; fidelity-first art in the close-up stitch vocabulary."),
         ("Garment + embroidery Rev C", "19 Oct 2026", "Art TRACED from the registered close-ups (LESSONS A12/A13): back from close-up a (pool, ripple rings and "
                                                        "rapids included), 02R + zip half of 02L from close-up c (SIFT fit, 54 inliers), mockup x4 elsewhere; tones re-calibrated "
-                                                       "(mid blues / teal / greens no longer collapse to navy; Moss dark -> dark teal #2E4A3C); leaves at a keep-out left out whole; "
+                                                       "(mid blues / teal / greens no longer collapse to navy; Moss dark -> dark teal #183A33); leaves at a keep-out left out whole; "
                                                        "5 broad sheer light-ray bands sewn FIRST under the art (cream core, sage edges); thread codes re-checked (one code per "
                                                        "thread); keep-outs >= 15.5 on XXL/3XL shoulders; merged pack rebuilt from the current specs.")]
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]

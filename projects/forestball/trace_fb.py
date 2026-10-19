@@ -23,7 +23,10 @@ import back as B, front as F
 
 PPM = 4.0
 LAST_FINE = None
-GAMMA, W_L, NAVY_L = 0.6, 0.4, 10.0                             # Rev C re-tone (see classify)
+GAMMA, W_L, NAVY_L = 0.6, 0.4, 10.0                             # Rev C re-tone (see classify); set per source below
+TONE_BACK = (0.7, 0.5, 14.0)       # close-up a: brighter photo (fabric median #2D3A30) — picked on a render-compare of 3 settings
+TONE_FRONT = (0.6, 0.4, 10.0)
+ZIP_SHEAR = 9.6                    # mm, each front piece (measured step at x = ±16.3 before: 181 vs 200 mm)      # close-up c: darker photo (fabric median #263429)
 FABRICS = ["#38433A", "#2E3830", "#424E43", "#26302A",          # washed shell: mid, shade, highlight, crease
            "#1D271F", "#222D24"]                                 # Rev C: close-up c/b fabric + its shade (sampled: median #263429,
                                                                  # shade #1D271F) — without them the close-ups' dark fabric read as navy art
@@ -104,11 +107,12 @@ def classify(img, art_mask):
         hs = ndi.sum(holes, hl, range(1, hn+1)) / PPM**2
         # only gaps ringed by LIMB tones are crevices; fabric between leaves stays fabric (Rev C final: the gaps inside leaf
         # clusters had become navy squares)
-        limbset = [TONES.index(k) for k in ("navy", "bark", "royal", "mossdk", "moss", "brown")]
+        limbset = [TONES.index(k) for k in ("navy", "bark", "royal", "mossdk", "moss", "brown", "mosslt", "grass", "cream", "waterlt")]
         ring = ndi.grey_dilation(hl, size=(5, 5)) * (~holes)
-        rl = ring[ring > 0]; rv = np.isin(lbl[ring > 0], limbset)
+        rl = ring[ring > 0]; rv = np.isin(lbl[ring > 0], limbset); lv = lbl[ring > 0] == TONES.index("leaf")
         tot = np.bincount(rl, minlength=hn + 1)[1:]; lim = np.bincount(rl, weights=rv, minlength=hn + 1)[1:]
-        keep = (hs < 60) & (lim >= 0.6 * np.maximum(tot, 1))
+        lf = np.bincount(rl, weights=lv, minlength=hn + 1)[1:]
+        keep = (hs < 60) & (lim >= 0.6 * np.maximum(tot, 1)) & (lf < 0.3 * np.maximum(tot, 1))
         holes = np.isin(hl, 1 + np.where(keep)[0])
     # Rev C final: only ENCLOSED gaps become navy crevices; the closing fringe round leaves / twigs (fabric within 1.5 mm
     # of art) stays fabric — it read as a dark halo round every spray.
@@ -245,7 +249,58 @@ def compose(mpx_fn, sources, bbox, clip, art_hint=None):
     return img, have & inside
 
 CLOSEUP_BOX = (95.9, 425.9, 158.1, 449.1)                      # close-up a's drawn box, garment mm (closereg H)
+# ---------------------------------------------------------------- twigs as continuous cords (LESSONS A13: cords are objects)
+# The x4 mockup (and close-up c at the panel edge) reads thin twigs as dashes: per-pixel tones gave broken twig pieces.
+# 1) bridge: endpoints of dark thin fragments are joined (<= 7 mm) where the line between them follows a dark ridge (sato)
+# 2) 02L outside close-up c: the twig centrelines traced by hand on the mockup x6 grid (out/dbg/grid_02L_*.png), mockup px.
+TWIGS_02L_PX = [
+    [(490, 243), (500, 235), (512, 224), (525, 213), (540, 207), (560, 204), (580, 203), (598, 206)],
+    [(480, 265), (500, 262), (520, 260), (540, 262), (560, 268), (580, 272), (600, 277)],
+    [(520, 262), (523, 275), (528, 290), (537, 300), (550, 305), (563, 312), (575, 320)],
+    [(588, 274), (593, 284), (598, 295)],
+    [(500, 247), (512, 254), (522, 260)],
+    [(500, 378), (520, 384), (540, 387), (557, 391), (572, 395), (590, 397), (603, 398)],
+    [(512, 390), (530, 399), (545, 405), (560, 410), (578, 416), (592, 421)]]
+def twig_cords(img, lbl, extra_lines=(), bbox=None):
+    from skimage.filters import sato
+    from skimage.morphology import skeletonize, disk
+    from skimage.draw import line as dline
+    from scipy.spatial import cKDTree
+    nT = len(TONES); lum = img @ np.array([0.3, 0.59, 0.11], np.float32)
+    R = sato(lum, sigmas=[1.5, 2.5, 3.5], black_ridges=True)
+    L = color.rgb2lab(np.clip(img, 0, 1))[..., 0]; Lbg = ndi.gaussian_filter(L, 3 * PPM)
+    artm = lbl < nT; leafm = np.isin(lbl, [TONES.index("leaf"), TONES.index("mosslt")])
+    thick = ndi.binary_dilation(ndi.binary_opening(artm, structure=disk(int(2.5 * PPM))), iterations=4)
+    dk = np.isin(lbl, [TONES.index(k) for k in ("navy", "brown", "bark", "royal")]) & ~thick
+    frag = skeletonize(ndi.binary_dilation(dk, iterations=1))
+    lab_, n = ndi.label(frag, structure=np.ones((3, 3)))
+    nb = ndi.convolve(frag.astype(int), np.ones((3, 3), int), mode="constant") - frag
+    ep = np.argwhere(frag & (nb <= 1)); epl = lab_[ep[:, 0], ep[:, 1]]; con = np.zeros_like(frag)
+    if len(ep) > 1:
+        for i, j in cKDTree(ep).query_pairs(7 * PPM):
+            if epl[i] == epl[j]: continue
+            rr, cc = dline(*ep[i], *ep[j])
+            if leafm[rr, cc].mean() > 0.2: continue
+            if R[rr, cc].mean() > 0.02 and (L[rr, cc] < Lbg[rr, cc] - 1.5).mean() > 0.6: con[rr, cc] = True
+    sk = frag | con
+    l2, n2 = ndi.label(sk, structure=np.ones((3, 3))); sz = ndi.sum(sk, l2, range(1, n2 + 1))
+    sk = np.isin(l2, 1 + np.where(sz >= int(4 * PPM))[0])
+    cord = ndi.binary_dilation(sk, structure=disk(2))                    # ~1.25 mm cord (>= 0.8 satin minimum)
+    nodes = np.zeros_like(cord)
+    if extra_lines:
+        XXg, YYg = grid(bbox)
+        for ln, w in extra_lines:
+            cord |= shapely.contains_xy(ln.buffer(w / 2, cap_style="round"), XXg, YYg)
+            for d_ in np.arange(3.0, ln.length - 2.0, 6.5):              # cream/tan nodes along the twig, as on the mockup
+                q = ln.interpolate(d_); nodes |= shapely.contains_xy(Point(q.x, q.y).buffer(0.7), XXg, YYg)
+    keep = np.isin(lbl, [TONES.index(k) for k in ("leaf", "mosslt", "cream")]) | thick
+    out = lbl.copy(); out[cord & ~keep] = TONES.index("brown"); out[nodes & ~np.isin(lbl, [TONES.index("leaf")])] = TONES.index("cream")
+    print("   twig cords: bridged", int(con.sum() / PPM), "mm, cord", int(cord.sum() / PPM**2), "mm²", flush=True)
+    return out
+
 def trace_back():
+    global GAMMA, W_L, NAVY_L
+    GAMMA, W_L, NAVY_L = TONE_BACK
     t = time.time(); bbox = (-300, -20, 300, 600)
     H = np.load("inputs/closeup_BACK_H.npy")
     # Rev C: the close-up is used in the pool too (it shows the pool, its ripple rings and a placeholder box at the same place,
@@ -271,13 +326,28 @@ def trace_front():
     """Rev C final: close-up c registered on front.png by SIFT + RANSAC (closereg.py '02Rc': 54 inliers, median residual
     ~1 mockup px) covers mockup x 130-505, y 122-495 = all of 02R (hanging moss, limb, sprays) and the zip-side half of
     02L, continuously across the zip. Close-up b (8 inliers, drifted) is no longer used. Outside c: the mockup x4."""
+    global GAMMA, W_L, NAVY_L
+    GAMMA, W_L, NAVY_L = TONE_FRONT
     t = time.time(); out = {}
     H = np.load("inputs/closeup_02Rc_H.npy"); res = np.array(json.load(open("inputs/closeup_reg.json"))["02Rc"]["resid_px_median"], ndmin=1)
     for piece, side in (("02R", "R"), ("02L", "L")):
         clip = F.clip_for(side); bb = clip.bounds; bbox = (bb[0]-6, bb[1]-6, bb[2]+6, bb[3]+6)
         srcs = [("inputs/closeups/closeup_front_right_c.png", H, None), ("inputs/front.png", None, None)]
-        img, art = compose(front_px, srcs, bbox, clip)
+        # zip continuity (review: limb centres within 3 mm at x = ±15): close-up c draws the limb straight on across the zip,
+        # so it drops ~19 mm over the 30 mm zip gap. A smooth vertical shear over the 70 mm next to the zip on EACH piece
+        # (02R down ZIP_SHEAR, 02L up ZIP_SHEAR) closes the step; no effect beyond 85 mm from CF.
+        sgn = -1.0 if piece == "02R" else 1.0
+        mfn = lambda X, Y, sgn=sgn: front_px(X, Y + sgn * ZIP_SHEAR * np.clip(1 - (np.abs(X) - 15.0) / 70.0, 0, 1))
+        img, art = compose(mfn, srcs, bbox, clip)
         lbl = classify(img, art)
+        extra = []
+        if piece == "02L":
+            from shapely.geometry import LineString as _LS
+            for k_, pts in enumerate(TWIGS_02L_PX):
+                gp = [((x - F.CFX) * F.SX, (y - F.NECKY) * F.SY) for x, y in pts]
+                gp = [(gx, gy - ZIP_SHEAR * max(0.0, min(1.0, 1 - (abs(gx) - 15.0) / 70.0))) for gx, gy in gp]   # same shear as the art
+                extra.append((_LS(gp), 1.8 if k_ >= 5 else 1.3))
+            lbl = twig_cords(img, lbl, extra, bbox)      # 02R: close-up c reads its twigs whole; bridging there webbed the moss
         regs, sil = regions_from(lbl, img, bbox, clip)
         Image.fromarray((img*255).astype(np.uint8)).save(f"out/art/trace_src_{piece}.png")
         out[piece] = regs; print(piece, "traced", len(regs), f"{time.time()-t:.0f}s", flush=True)
