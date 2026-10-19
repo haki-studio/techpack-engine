@@ -214,7 +214,7 @@ def sleeve_front_x(P, y):
     return (max(xs) if P == "SR" else min(xs)) if xs else 0.0
 SL_TOP = {P: SLV[P].sew_poly().bounds[1] for P in SLV}; SL_BOT = {P: SLV[P].sew_poly().bounds[3] for P in SLV}
 _SIL = ndi.binary_fill_holes(ndi.binary_opening(MM.mock().min(2) < 235, iterations=2))
-SL_Y0, SL_Y1 = 425.0, 1268.0                      # shoulder point .. cuff edge (mockup px)
+SL_Y0, SL_Y1 = 425.0, 1180.0                      # shoulder point .. cuff SEAM (mockup px; Rev B: the cuff is its own piece)
 _INNER = {"SR": ([425, 565, 1100, 1140, 1200, 1268], [203, 226, 240, 245, 221, 190]),
           "SL": ([425, 565, 1100, 1140, 1200, 1268], [912, 887, 875, 873, 898, 930])}
 def sleeve_uv(P, px, py):
@@ -268,6 +268,7 @@ for P in ("SR", "SL"):
         add(P, speck_motif(s, *q, unit=f"05-{P}{nfield[P]}"), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
     META["counts"][P + "_front_mapped"] = nf; META["counts"][P + "_back_seeded"] = len(pts)
 META["counts"].update({k + "_field": v for k, v in nfield.items()}, cn_sparkles=ncn, specks_detected=len(SP), **{"excluded_" + k: v for k, v in EXCL.items()})
+META["counts"]["glints"] = json.load(open("out/ref/specks_glints.json"))
 spans = [SPAN(max(s["w"], s["h"])) for s in SP if 5 <= max(s["w"], s["h"]) <= 9]
 META["counts"]["sparkle_spans"] = dict(n=len(spans), lt5=sum(1 for v in spans if v < 5), s5_8=sum(1 for v in spans if 5 <= v <= 8), gt8=sum(1 for v in spans if v > 8))
 META["S"] = S; META["SX"] = MM.SX; META["SY"] = MM.SY

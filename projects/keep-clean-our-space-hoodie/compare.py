@@ -80,8 +80,9 @@ def sheet(el):
     out = Image.new("RGB", (W * 2 + 40 + zw * 2 + 30, max(H + 70, zcol_h + 50)), (255, 255, 255))
     out.paste(mk, (10, 60)); out.paste(st, (W + 30, 60)); d = ImageDraw.Draw(out)
     d.text((10, 6), f"{el} {kccore.ELEMENTS[el][1]} — Rev B, size {size}", fill=(0, 0, 0), font=ImageFont.truetype("inputs/fonts/_inst_kr_560.ttf", 22) if el == "04" else FONT)
-    d.text((10, 34), f"MOCKUP (flat.png, motif scale {MM.S:.3f} mm/px; low-res render, no close-up)", fill=(0, 0, 0), font=FS)
-    d.text((W + 30, 34), f"WRITTEN DST read back ({os.path.basename(base(P))}.dst, {ppm:.0f} px/mm, same scale)", fill=(0, 0, 0), font=FS)
+    narrow = W < 700
+    d.text((10, 34), "MOCKUP (flat.png, low-res)" if narrow else f"MOCKUP (flat.png, motif scale {MM.S:.3f} mm/px; low-res render, no close-up)", fill=(0, 0, 0), font=FS)
+    d.text((W + 30, 34), f"DST read back ({os.path.basename(base(P))}.dst)" if narrow else f"WRITTEN DST read back ({os.path.basename(base(P))}.dst, {ppm:.0f} px/mm, same scale)", fill=(0, 0, 0), font=FS)
     for _, z in zs:
         for X in (10, W + 30):
             d.rectangle([X + (z[0]-bb[0])*ppm, 60 + (z[1]-bb[1])*ppm, X + (z[2]-bb[0])*ppm, 60 + (z[3]-bb[1])*ppm], outline=(255, 60, 60), width=2)

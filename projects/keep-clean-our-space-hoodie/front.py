@@ -31,21 +31,21 @@ KEEP_CF, KEEP_SEAM, KEEP_HEM, KEEP_WELT, KEEP_NECK = 15.0, 15.0, 10.0, 6.0, 10.0
 KEEP = {"CF / zip": KEEP_CF, "armhole": KEEP_SEAM, "shoulder": KEEP_SEAM, "side": KEEP_SEAM, "hem": KEEP_HEM, "neck": KEEP_NECK}
 MIN = dict(KEEP, welt=KEEP_WELT)
 
+# Founder decision 19 Oct 2026: block = engine zip hoodie (hoodie.draft: Drum Island body + hood + elastic bands), with
+# this mockup's slash welt as a per-design override (graded by the engine: x with the chest, y with the hem). [PROPOSED]
+WELT = dict(cx=WELT_C[0], cy=WELT_C[1], angle=WELT_ANG, length=WELT_LEN, width=WELT_W)
 _PC = {}
 def pieces(size):
     if size not in _PC:
-        import pattern as PT
-        _PC[size] = PT.draft(size)
+        import hoodie
+        _PC[size] = hoodie.draft(size, welt=WELT)
     return _PC[size]
 
 def keep_geoms(size, side):
     """named keep-out references for one front piece of one size, from that size's pattern (sew lines)."""
     g, mt = pieces(size); pc = g["F02" if side == "R" else "F01"]
     out = {e.name: LineString(e.pts) for e in pc.edges}
-    # the merged engine block drafts the Drum Island welt (38 deg, centre ~170 from CF) — it sits on badges 03 / 04. Until
-    # pattern.draft takes a welt override (ENGINE_NOTES 10) the keep-out uses THIS mockup's slash welt (as Rev A did).
-    out["welt"] = WELT_R if side == "R" else WELT_L
-    out["welt_engine"] = Polygon(pc.internal[0][1]).buffer(0)
+    out["welt"] = Polygon(pc.internal[0][1]).buffer(0)          # the drafted (graded) slash welt of this size
     out["panel"] = pc.sew_poly()
     return out
 
