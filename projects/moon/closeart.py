@@ -71,16 +71,27 @@ def cloud_comps(img, box_px, sinks, up=2):
         out.append(dict(px=p, regs=regs, lines=[l for l in ls if not l.is_empty and l.length > 6]))
     return out
 
-def place(c, centre_mm, s, flipx=False):
-    """close-up cloud -> mm: the traced SILHOUETTE (lobes + tails) placed at centre_mm, scale s; inside it the sewn look
-    of the close-up is rebuilt as tone bands + seigaiha scale rows (moonmotifs.cloud_texture)."""
-    import moonmotifs as MM
+def place(c, centre_mm, s, flipx=False, img=None):
+    """close-up cloud -> mm (Rev C final, cloud3): the close-up component under c['px'] rebuilt as stitch structure
+    (silhouette, scallop rows, tones, tails) and placed at centre_mm with scale s mm/px."""
+    import cloud3
+    from PIL import ImageDraw
+    img = img or c.get("img")
     cx, cy = c["px"].centroid.x, c["px"].centroid.y
+    x0, y0, x1, y1 = (int(v) for v in c["px"].buffer(8).bounds); x0, y0 = max(0, x0), max(0, y0)
+    x1, y1 = min(img.width, x1), min(img.height, y1)
+    a = np.asarray(img.crop((x0, y0, x1, y1)).convert("RGB")).astype(float)
+    im = Image.new("L", (x1 - x0, y1 - y0), 0); d = ImageDraw.Draw(im)
+    for p in polys(c["px"]):
+        d.polygon([(x - x0, y - y0) for x, y in p.exterior.coords], fill=255)
+        for h in p.interiors: d.polygon([(x - x0, y - y0) for x, y in h.coords], fill=0)
+    lab_, n_, _ = cloud3.masks(img, (x0, y0, x1, y1))
+    comp = (np.array(im) > 127) & (lab_ > 0)
+    comp = ndi.binary_fill_holes(ndi.binary_closing(comp, iterations=2))
     sx = -s if flipx else s
     f = lambda x, y: (centre_mm[0] + (np.asarray(x) - cx) * sx, centre_mm[1] + (np.asarray(y) - cy) * s)
-    sil = map_geom(c["px"], f).buffer(0)
-    sil = MM.profile_sil(MM.smooth_sil(unary_union([Polygon(p.exterior) for p in polys(sil)]), r=max(0.6, 1.2 * abs(s)), keep_frac=0.01).buffer(-0.6))
-    return MM.cloud_contour(sil)
+    regs, sil = cloud3.cloud(a, comp, (x0, y0), f, abs(s))
+    return regs
 
 def mm_bbox(vis): return unary_union([r["geom"] for r in vis]).bounds
 
@@ -139,13 +150,18 @@ def back_pole_f():
     mt = TA.bpole_f(346.5, 430)[1]; ml = TA.bpole_f(346.5, 603)[1]          # mockup pole top / lower insulator (mm)
     ky = (float(ml) - float(mt)) / (BLOW - BTOP); kx = (25.0 * TA.K) / 58.0     # pole width: mockup 25 px*1.08 / close-up 58 px
     return (lambda x, y: ((np.asarray(x) - BPX) * kx, float(mt) + (np.asarray(y) - BTOP) * ky)), kx, ky, float(mt)
-BACK_TIPS_CU = {"armL": (590, 652), "armR": (938, 585), "pinA": (828, 540), "pinB": (898, 532), "strL": (452, 772), "strL2": (456, 780),
-                "canL": (655, 888), "insR": (868, 958), "canR": (858, 700), "pole": (726, 950)}
+# wire anchor points read off the back close-up (px, 2x grid crops out/_wip/cu_low.png, cu_right.png); scene.back_art
+# runs the wires between them / to the side seams exactly as the close-up does (review item 6)
+BACK_TIPS_CU = {"coilL1": (455, 772), "coilL2": (462, 762), "coilL3": (470, 768), "poleLo": (690, 955), "canB": (660, 885),
+                "pinB": (900, 598), "pinA": (858, 606), "wrap": (1057, 712), "drumR": (857, 737), "insBlk": (812, 925),
+                "crossA": (842, 608), "crossEnd": (645, 962), "armL1": (600, 662), "spoolT1": (522, 750), "armL2": (628, 674),
+                "spoolT2": (545, 752), "canL": (625, 852), "hemL": (500, 1086)}
 def back_pole():
-    f, kx, ky, top = back_pole_f()
-    fig = lambda xx, yy: (yy < BTOP + 4) & (np.abs(xx - BPX) < 130)       # the figure sits above the pole top: never traced
-    import polepar
-    hem = PT.draft("M")[1]["hem_b"]; ybot = BTOP + (hem - 10 - top) / ky          # pole runs to 10 above the hem seam
+    # Rev C final: ONE uniform registration for the whole back close-up (the moon: K = 0.436 mm/px); it puts the crossarm
+    # and the lower insulator within 11 / 5 mm of the mockup (the Rev B pole-only fit squashed the hardware to 69 % height)
+    import moon3, polepar
+    f = lambda x, y: moon3.to_mm(x, y)
+    hem = PT.draft("M")[1]["hem_b"]; ybot = float(moon3.to_px(0, hem - 10)[1])     # pole runs to 10 above the hem seam
     vis = polepar.back(f, ybot)                  # Rev C: clean stitch objects at the close-up positions (A13)
     tips = {k: tuple(float(v) for v in f(*p)) for k, p in BACK_TIPS_CU.items()}
     return vis, tips
@@ -194,7 +210,9 @@ VIEWS = [("04R", -1, (0, 335)), ("04R", +1, (340, 715)), ("04L", -1, (725, 1100)
 CAP_Y, CUFF_Y = 60.0, 950.0
 def sleeves():
     mt = PT.draft("M")[1]; L = mt["cap_h"] + mt["Lu"]
-    comps = cloud_comps(CS, (0, 100, 1448, 900), NAVY + POLE)
+    import cloud3
+    lab_, n_, _ = cloud3.masks(CS, (0, 100, 1448, 900))           # Rev C final: cloud3 mask (keeps the pale caps)
+    comps = [dict(px=TR.polys_of(lab_ == i, 1, (0, 100, 1448, 900), 30), regs=[], lines=[]) for i in range(1, n_ + 1) if (lab_ == i).sum() > 500]
     out = []
     for c in comps:
         for vi, (sl, half, (vx0, vx1)) in enumerate(VIEWS):
@@ -207,25 +225,24 @@ def sleeves():
             Wy = mt["W"] + (mt["Ww"] - mt["W"]) * min(1, max(0, y / mt["Lu"]))
             fr = (cx - vx0) / (vx1 - vx0)                     # 0..1 across the view
             x = (fr - 1.0) * Wy if half < 0 else fr * Wy      # R: back half [-W, 0] | front half [0, W]; L (S02) the same in its own coords
-            out.append(dict(sleeve=sl, view=vi, vis=place(sub, (x * 0.94, y), 0.65), px=(cx, cy)))
+            out.append(dict(sleeve=sl, view=vi, vis=place(sub, (x * 0.94, y), 0.65, img=CS), px=(cx, cy)))
     return out
 
 def build_all():
     mock = TA.load()                                  # mockup trace = placement + scale reference
     d = dict(mock=mock)
     d["moon"], d["disc"] = moon()
-    # back clouds: close-up clouds onto the mockup clouds
-    cu = cloud_comps(CB, (0, 120, 1448, 760), MOON + ["m5b"] + POLE + NAVY)
-    cx, cy, r = CU_MOON; s0 = TA.MOON_R_PX * TA.K / r
-    reg = lambda x, y: (float((x - cx) * s0), float(244 + (y - cy) * s0))
-    mk = [((lambda b: ((b[0] + b[2]) / 2, (b[1] + b[3]) / 2))(mm_bbox(c["vis"])), mm_bbox(c["vis"])[2] - mm_bbox(c["vis"])[0]) for c in mock["back_clouds"]]
-    d["back_clouds"] = []
-    for c, ctr, s, i in match(cu, reg, mk):
-        if s is None: continue                                     # close-up cloud with no mockup partner (mockup wins)
-        d["back_clouds"].append(dict(vis=place(c, ctr, s), src=i))
+    # back clouds (Rev C final): every close-up cloud, traced as stitch structure (cloud3) and placed by the SAME
+    # registration as the moon + pole (the close-up matches the mockup layout); scene.fit() keeps them off the seams
+    import cloud3, moon3
+    d["back_clouds"] = [dict(vis=c["vis"], src=i) for i, c in enumerate(cloud3.clouds_in(CB, (0, 120, 1448, 760), lambda x, y: moon3.to_mm(x, y), moon3.K))]
     d["back_pole"], d["back_tips"] = back_pole()
+    import moon3; d["back_junc"] = tuple(float(v) for v in moon3.to_mm(1225, 804))
     # front clouds: close-up -> mockup (chest + lower)
-    cuf = cloud_comps(CF, (0, 0, 1448, 740), POLE + NAVY)
+    import cloud3
+    lab_, n_, _ = cloud3.masks(CF, (0, 0, 1448, 740))            # Rev C final: cloud3 mask (keeps the pale caps)
+    cuf = [dict(px=TR.polys_of(lab_ == i, 1, (0, 0, 1448, 740), 30)) for i in range(1, n_ + 1) if (lab_ == i).sum() > 500]
+    cuf = [c for c in cuf if not c["px"].is_empty and c["px"].bounds[2] - c["px"].bounds[0] > 60]
     mockf = [("chest", c) for c in mock["chest"]] + [("lower", c) for c in mock["lower"]]
     mkf = [((lambda b: ((b[0] + b[2]) / 2, (b[1] + b[3]) / 2))(mm_bbox(c["vis"])), mm_bbox(c["vis"])[2] - mm_bbox(c["vis"])[0]) for _, c in mockf]
     zx = 727.0; sf = 246.0 / (FPX_CU - zx)
@@ -238,13 +255,13 @@ def build_all():
         regf2 = lambda x, y: (float(np.polyval(ax_, x)), float(np.polyval(ay_, y)))
     else:
         regf2, sm = regf, 0.4
+    # Rev C final: every front cloud placed by the ONE fitted close-up -> garment mapping (not each by its own mockup
+    # partner): neighbouring clouds keep the close-up's overlap (no 'mid-right hole' between the two right chest clouds)
+    s1 = float(math.sqrt(abs(ax_[0] * ay_[0]))) if len(pairs) >= 2 else sm
     for c, ctr, s, i in M_:
-        if s is None:               # close-up cloud / wisp with no mockup partner: keep it (close-up count), mapped by the fit
-            ctr = regf2(c["px"].centroid.x, c["px"].centroid.y); s = sm
-            kind = "chest" if ctr[1] < 300 else "lower"; side = "L" if ctr[0] > 0 else "R"
-        else:
-            kind, mc = mockf[i]; side = mc["side"]
-        d[kind].append(dict(vis=place(c, ctr, s), side=side, src=i))
+        ctr = regf2(c["px"].centroid.x, c["px"].centroid.y)
+        kind = "chest" if ctr[1] < 300 else "lower"; side = "L" if ctr[0] > 0 else "R"
+        d[kind].append(dict(vis=place(c, ctr, s1, img=CF), side=side, src=i))
     d["front_pole"], d["front_tips"] = front_pole()
     d["sleeves"] = sleeves()
     return TA.sanitize(d)

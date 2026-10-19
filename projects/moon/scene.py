@@ -39,9 +39,9 @@ MOON_R = TA.MOON_R_PX * TA.K
 
 # ---------------------------------------------------------------- wire network (heights above the hem seam, mm, M) read off the mockup
 # back left side seam (wearer's left)  <-> front wearer's-left side seam (03L, short wires from the pole)
-H_LEFT = [159.0, 128.0, 89.0, 49.0]
+H_LEFT = [153.0, 94.0, 60.0, 50.0, 20.0]          # Rev C final: read off the back close-up wires extrapolated to the seam (M)
 # back right side seam (wearer's right) <-> front wearer's-right side seam (03R, wires from the 03L pole across the zip)
-H_RIGHT = [175.0, 135.0, 105.0, 50.0, 18.0]
+H_RIGHT = [130.0, 83.0]
 
 def edge(g, pc, name): return LineString(next(e.pts for e in g[pc].edges if e.name == name))
 
@@ -104,7 +104,7 @@ def fit(regs, clip, max_shift=60.0, tol=0.015):
             if out_frac(dx, dy) <= tol: best = (dx, dy); break
         if best: break
     if best is None: return regs, (0.0, 0.0)
-    return [dict(r, geom=affinity.translate(r["geom"], *best)) for r in regs], best
+    return [dict(r, geom=affinity.translate(r["geom"], *best), **({"rows": affinity.translate(r["rows"], *best)} if r.get("rows") is not None else {})) for r in regs], best
 
 _T = None
 def traced():
@@ -127,16 +127,27 @@ def back_art(size="M"):
     tips = {k: P(*v) for k, v in T_["back_tips"].items()}
     xs = mt["block"].chest2
     seamL = lambda h: (-xs, mt["hem_b"] - h * sc); seamR = lambda h: (xs, mt["hem_b"] - h * sc)
-    W = [("armL", seamL(H_LEFT[0])), ("strL", seamL(H_LEFT[1])), ("strL2", seamL(H_LEFT[2])), ("canL", seamL(H_LEFT[3])),
-         ("pinA", seamR(H_RIGHT[0])), ("pinB", seamR(H_RIGHT[1])), ("armR", seamR(H_RIGHT[2])), ("canR", seamR(H_RIGHT[3])), ("insR", seamR(H_RIGHT[4])),
-         ("strL2", (P(TA.BX(205), 0)[0], mt["hem_b"] - 4)), ("canL", (P(TA.BX(300), 0)[0], mt["hem_b"] - 4)), ("insR", (P(TA.BX(445), 0)[0], mt["hem_b"] - 4)),
-         ("canR", (P(TA.BX(250), 0)[0], mt["hem_b"] - 4))]          # close-up: second wire crossing the pole from the right
+    # Rev C final: the back close-up's wire layout (closeart.BACK_TIPS_CU): 5 wires to the wearer's-left side seam, 2 out of
+    # the wire wrap to the wearer's-right seam, the pins + transformer into the wrap, the lower insulator into the low right
+    # wire, the second wire crossing the pole from the right pin down to the lower left wire, two short crossarm -> spool
+    # wires and one drop from the small can to the hem (10 above the hem seam)
+    W = [("coilL1", seamL(H_LEFT[0]), 0.03), ("coilL2", seamL(H_LEFT[1]), 0.03), ("poleLo", seamL(H_LEFT[2]), 0.02),
+         ("coilL3", seamL(H_LEFT[3]), 0.02), ("canB", seamL(H_LEFT[4]), 0.02),
+         ("wrap", seamR(H_RIGHT[0]), 0.03), ("wrap", seamR(H_RIGHT[1]), 0.02),
+         ("pinB", tips["wrap"], 0.04), ("pinA", tips["wrap"], 0.05), ("drumR", tips["wrap"], 0.02),
+         ("crossA", tips["crossEnd"], 0.02), ("armL1", tips["spoolT1"], 0.03), ("armL2", tips["spoolT2"], 0.03),
+         ("canL", (tips["hemL"][0], mt["hem_b"] - 10), 0.02)]
     wires, ends = [], []
-    for a, b in W:
+    for a, b, sg in W:
         p0 = tips[a]; span = abs(b[0] - p0[0])
-        drop = abs(b[1] - mt["hem_b"]) < 8
-        if abs(abs(b[0]) - xs) < 0.01: ends.append(("R" if b[0] > 0 else "L", round(mt["hem_b"] - b[1], 1), b, p0, 0.07 * span))
-        wires += cord(p0, b, (0.02 if drop else 0.07) * span)
+        if abs(abs(b[0]) - xs) < 0.01: ends.append(("R" if b[0] > 0 else "L", round(mt["hem_b"] - b[1], 1), b, p0, sg * span))
+        wires += cord(p0, b, sg * span)
+    # lower insulator -> the low right wire (joins it where the close-up does, x of close-up px 1225)
+    p0, b = tips["wrap"], seamR(H_RIGHT[1]); jx = P(*T_["back_junc"])[0]
+    t = (jx - p0[0]) / (b[0] - p0[0]); jy = p0[1] + (b[1] - p0[1]) * t + 4 * 0.02 * abs(b[0] - p0[0]) * t * (1 - t)
+    wires += cord(tips["insBlk"], (jx, jy), 0.02)
+    wires.append(dict(col="p1", geom=Point(tips["wrap"]).buffer(2.6, 16), st="satin", ang="auto", grp="PL-hl"))     # wire wrap knot
+    wires.append(dict(col="p4", geom=Point(tips["wrap"]).buffer(2.6, 16).exterior.buffer(0.3), st="run", ang=None, grp="PL-line"))
     it.add(wires, L_WIRE, "01")
     clouds = []
     for c in T_["back_clouds"]:
@@ -176,9 +187,14 @@ def front_art(size="M"):
     tips = {k: Pp(*v) for k, v in T_["front_tips"].items()}
     xs = mt["block"].chest2
     seamL = lambda h: (xs, mt["hem_f"] - h * sc); seamR = lambda h: (-xs, mt["hem_f"] - h * sc)
-    W = [("armR", seamL(H_LEFT[0]), 0.0), ("canR", seamL(H_LEFT[1]), 0.0), ("pole", seamL(H_LEFT[2]), 0.0), ("bracket", seamL(H_LEFT[3]), 0.0),
-         ("pin", seamR(H_RIGHT[0]), 0.07), ("armL", seamR(H_RIGHT[1]), 0.07), ("strL", seamR(H_RIGHT[2]), 0.07), ("strL2", seamR(H_RIGHT[3]), 0.06), ("canL", seamR(H_RIGHT[4]), 0.03),
-         ("strL", (P(TA.FX(330), 0)[0], mt["hem_f"] - 4), 0.02), ("poleL", (P(TA.FX(500), 0)[0], mt["hem_f"] - 4), 0.02), ("bracket", (min(P(TA.FX(640), 0)[0] + dxp, xs - 20), mt["hem_f"] - 4), 0.02)]
+    # Rev C final: seam heights follow the BACK close-up (5 wires at the wearer's-left seam, 2 at the wearer's-right one).
+    # The front close-up shows 3 / 4 there (the two close-ups disagree, PROPOSED); its two extra left-going wires become
+    # drops to the hem, so every wire that crosses a side seam lines up with its back half.
+    W = [("pin", seamL(H_LEFT[0]), 0.03), ("canR", seamL(H_LEFT[1]), 0.03), ("pole", seamL(H_LEFT[2]), 0.02), ("poleL", seamL(H_LEFT[3]), 0.02),
+         ("bracket", seamL(H_LEFT[4]), 0.02),
+         ("armL", seamR(H_RIGHT[0]), 0.07), ("strL", seamR(H_RIGHT[1]), 0.06),
+         ("strL2", (P(TA.FX(150), 0)[0], mt["hem_f"] - 10), 0.03), ("canL", (P(TA.FX(330), 0)[0], mt["hem_f"] - 10), 0.02),
+         ("poleL", (P(TA.FX(500), 0)[0], mt["hem_f"] - 10), 0.02), ("bracket", (min(P(TA.FX(640), 0)[0] + dxp, xs - 20), mt["hem_f"] - 10), 0.02)]
     wires, ends = [], []
     for a, b, sg in W:
         p0 = tips[a]; span = abs(b[0] - p0[0])
@@ -197,7 +213,7 @@ def chest_art():
     T_ = traced(); fc = front_clips("M"); it = Items(); moves = []
     for c in T_["chest"]:
         clip = fc["F01"][0] if c["side"] == "L" else fc["F02"][0]
-        regs, mv = fit(c["vis"], clip); moves.append(mv)
+        regs, mv = fit(c["vis"], clip, max_shift=90.0, tol=0.003); moves.append(mv)
         it.add(regs, L_CLOUD, "02")
     return it
 

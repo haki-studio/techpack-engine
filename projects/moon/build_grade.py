@@ -13,7 +13,8 @@ DIRS = {"02R": "02_chest-clouds", "02L": "02_chest-clouds", "04R": "04_sleeve-cl
 for k in which:
     t = time.time(); vis = A[k]
     ub = unary_union([r["geom"] for r in vis]).bounds; c = ((ub[0] + ub[2]) / 2, (ub[1] + ub[3]) / 2)
-    vis = [dict(r, geom=affinity.scale(r["geom"], SC, SC, origin=c)) for r in vis] if SC != 1 else vis
+    if SC != 1:
+        vis = [dict(r, geom=affinity.scale(r["geom"], SC, SC, origin=c), **({"rows": affinity.scale(r["rows"], SC, SC, origin=c)} if r.get("rows") is not None else {})) for r in vis]
     base = f"out/{DIRS[k]}/grade-{G}/HAKI_moon_{DIRS[k]}_{k}_{G}-{LAB}"
     r = MS.make(vis, base, 1.0, origin=c); r["m_centre"] = c
     w, h = r["size"]
