@@ -238,14 +238,18 @@ for r in items:
 # ================================================================ sun (Rev D, close-up): small soft half sun, thin tapered rays with dot ends; faint glow
 BURST = []
 for k, a in enumerate(np.linspace(-170, -10, 20)):
-    L = (40 if k % 4 == 0 else (30 if k % 2 == 0 else 19)) * (0.88 + 0.24*abs(math.sin(k*1.7)))
+    L = (31 if k % 4 == 0 else (23 if k % 2 == 0 else 15)) * (0.88 + 0.24*abs(math.sin(k*1.7)))     # Rev E: shorter
     BURST.append((float(a), float(L)))
-add(GM.sun(*SUN, r_core=4.2, r_ring=5.4, flat_y=HORIZON + 0.6), 15)                  # one thin ring only (2nd ring removed)
-add(GM.burst(*SUN, BURST, 7.0, 0.85, 0.8), 15)
+add([r for r in GM.sun(*SUN, r_core=4.2, r_ring=5.0, flat_y=HORIZON + 0.6) if r["grp"] != "SUN-ring"], 15)   # Rev E: ring dropped
+for a, L in BURST:                                     # Rev E: hairline bean rays (0.55 mm) in pale gold-cream, not satin wedges
+    t = math.radians(a)
+    add([GM.R("gl_gold", LineString([(SUN[0] + 6.2*math.cos(t), SUN[1] + 6.2*math.sin(t)), (SUN[0] + L*math.cos(t), SUN[1] + L*math.sin(t))]).buffer(0.28, cap_style="round"),
+              "bean", None, "BURST", kob=0.3)], 15)
 for a, L in BURST:
-    if L >= 28:
-        t = math.radians(a); add([GM.R("gl_gold", Point(SUN[0] + (L + 1.8)*math.cos(t), SUN[1] + (L + 1.8)*math.sin(t)).buffer(0.8, quad_segs=10), "satin", "auto", "DOT", kob=0.4)], 15)
-add(GM.burst(*SUN, [(-178.5, 40), (-1.5, 40)], 7.0, 0.9, 0.8, col="gl_pale"), 15)
+    if L >= 22:
+        t = math.radians(a); add([GM.R("gl_gold", Point(SUN[0] + (L + 1.6)*math.cos(t), SUN[1] + (L + 1.6)*math.sin(t)).buffer(0.62, quad_segs=10), "satin", "auto", "DOT", kob=0.4)], 15)
+for a in (-178.5, -1.5):
+    t = math.radians(a); add([GM.R("gl_pale", LineString([(SUN[0] + 6.2*math.cos(t), SUN[1] + 6.2*math.sin(t)), (SUN[0] + 30*math.cos(t), SUN[1] + 30*math.sin(t))]).buffer(0.28, cap_style="round"), "bean", None, "BURST", kob=0.3)], 15)
 # glow: sparse hairlines (every 2.2 deg), ragged ends, the outer part in sea deep so it fades to navy; no envelope edge
 rng_g = random.Random(5)
 for k, a in enumerate(np.arange(-178.0, -1.0, 2.2)):
@@ -285,6 +289,8 @@ def sea_col(lv):
     if lv < 34: return None                         # Rev D: navy gaps as in the mockup
     return "gl_deep" if lv < 54 else ("gl_teal" if lv < 78 else ("gl_tealt" if lv < 112 else "gl_foam"))
 GLITTER_X = (SUN[0] - 15, SUN[0] + 15)
+def glit_half(y):                                       # Rev E: the glitter column's own half width at row y (sea fills both sides)
+    t = min(0.99, (y - HORIZON) / 200.0); return (17*(1 - t)**1.2 + 3) / 2 + 1.2
 rng = random.Random(7); sea_bars = 0; y = HORIZON + 1.9; rows = 0
 def place_dash(x, x1, y, hgt, col, grp="SEA", layer=12):
     """dash kept if inside the sea and the keep-outs; at a keep-out it is shortened (runs right up to the welt clearance)"""
@@ -305,16 +311,17 @@ while y < 470:
     hgt0 = 1.5 + 0.8*t; vgap = (0.42 + 0.75*t) * rng.uniform(0.7, 1.4)
     x = -300 + rng.uniform(0, 5)
     while x < 300:
-        L = min(40.0, rng.lognormvariate(math.log(11), 0.65)) * (1.3 - 0.5*t)      # Rev D: irregular lengths
+        L = min(40.0, rng.lognormvariate(math.log(11), 0.65)) * (1.3 - 0.5*t) * (1 - 0.35*t)      # irregular, shorter toward the hem
         hgt = hgt0 * rng.uniform(0.75, 1.25)                                            # and thicknesses
         x1 = x + L; mid = Point((x + x1)/2, y)
-        if (x < 15.5 and x1 > -15.5) or (GLITTER_X[0] - 1.5 < x1 and x < GLITTER_X[1] + 1.5 and y < 400) or not SEA_SIL.contains(mid):
+        if (x < 15.5 and x1 > -15.5) or (SUN[0] - glit_half(y) < x1 and x < SUN[0] + glit_half(y) and y < 405) or not SEA_SIL.contains(mid):
             x += rng.uniform(1.0, 2.5); continue
         d = SIL_EDGE.distance(mid)                                   # fade toward the sea's outer edge
         if d < 16:
             if rng.random() > 0.25 + 0.75*(d/16): x = x1 + rng.uniform(1, 4); continue
             x1 = x + L*(0.35 + 0.65*d/16)
-        col = sea_col(lum_at(x, x1, y, 75))
+        lv = lum_at(x, x1, y, 75) + (14 if t < 0.2 else 0) - 26*t        # Rev E: bright near the horizon, darker toward the hem
+        col = "gl_deep" if y < HORIZON + 5.0 else sea_col(lv)               # dark band right under the horizon line
         if col and x1 - x >= 3.0: sea_bars += place_dash(x, x1, y, hgt, col, "SEA-hl" if col == "gl_foam" else "SEA")
         x = x1 + rng.uniform(0.5, 1.2) + (2.5*rng.random() if rng.random() < 0.25 else 0) + 1.0*t*rng.random()
     y += hgt0 + vgap; rows += 1
@@ -325,13 +332,14 @@ while y < 405:
     wcol = 17*(1 - t)**1.2 + 3
     hgt = 1.3 + 0.5*t
     lv = lum_at(SUN[0] - wcol/2, SUN[0] + wcol/2, y, 70)
-    if lv > 70 and rng.random() > 0.15 + 0.35*t:
-        w = wcol*rng.uniform(0.5, 1.0); cx = SUN[0] + rng.uniform(-1.2, 1.2)*(1 + t)
+    if lv > 70 and rng.random() > 0.15 + 0.55*t:                       # Rev E: fades out with distance
+        w = wcol*rng.uniform(0.3, 1.0); cx = SUN[0] + rng.uniform(-2.0, 2.0)*(1 + t)
+        hgt = hgt * rng.uniform(0.7, 1.15)
         parts = [(cx - w/2, cx + w/2)] if rng.random() < 0.35 else [(cx - w/2, cx - rng.uniform(0.8, 2.5)), (cx + rng.uniform(0.8, 2.5), cx + w/2)]
         for a_, b_ in parts:
-            if b_ - a_ >= 2.6: place_dash(a_, b_, y, hgt, "gl_pale" if (lv > 120 and t < 0.6) else "gl_foam", "GLT", 12.5)
+            if b_ - a_ >= 2.6: place_dash(a_, b_, y, hgt, "gl_pale" if (lv > 120 and t < 0.35) else ("gl_foam" if t < 0.7 else "gl_tealt"), "GLT", 12.5)
     y += hgt + 0.7 + 1.1*t
-add([GM.R("gl_pale", LineString([(SUN[0], HORIZON + 1.5), (SUN[0], 392)]).buffer(0.25), "run", None, "GLT-line", kob=0.0, ko=False)], 13)
+# Rev E: glitter centre line removed (read as a ladder)
 
 # ================================================================ hairline dashed rays, slightly curved, to the welts
 RAYS = [8.0, 20.0, 42.0, 68.0, 88.0, 125.5, 142.0, 162.0, 171.0, 176.5]
@@ -372,14 +380,14 @@ for kind, pts in STARS_PX.items():
             from shapely.ops import nearest_points
             q = nearest_points(inner, Point(cx, cy))[0]; cx, cy = q.x, q.y; star_moved += 1
         u = f"star{len(stars)}"; stars.append((cx, cy, kind))
-        if kind == "big":     regs = GM.star(cx, cy, 16.0, 11.0, 1.7, "big", u)
-        elif kind == "med":   regs = GM.star(cx, cy, 10.5, 6.5, 1.5, "sparkle", u)
-        elif kind == "small": regs = GM.star(cx, cy, 4.0, 3.2, 1.2, "cross", u)
+        if kind == "big":     regs = GM.star(cx, cy, 16.0, 10.0, 1.25, "big", u)       # Rev E: slimmer arms
+        elif kind == "med":   regs = GM.star(cx, cy, 10.5, 6.0, 1.1, "sparkle", u)
+        elif kind == "small": regs = GM.star(cx, cy, 4.0, 3.0, 1.0, "cross", u)
         else:                 regs = GM.star(cx, cy, 2.3, 0, 0, "dot", u)
         add(regs, 18, unit=u)
 
 for r in items:                                                   # Rev D: stars pale cream (close-up), not gold
-    if r["layer"] == 18 and r["col"] == "gl_gold": r["col"] = "gl_pale"
+    if r["layer"] == 18: r["col"] = "gl_gold"                       # Rev E: warm gold-cream (#E3C890), centres included
 
 # ================================================================ sew order: one stop per thread (scale dashes after the cloud bodies)
 SEW = ["gl_deep", "gl_teal", "gl_tealt", "gl_foam", "gl_pale", "gl_gold", "gl_shadow", "gl_slate", "gl_sage", "gl_sagelt", "gl_sand", "gl_cream"]

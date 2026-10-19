@@ -20,8 +20,10 @@ def dst_pats():
     if not _PATS:
         for P in ("FR", "FL"):
             r = json.load(open(f"out/01_front-scene/{size}/result_{P}.json"))["full"]
-            p = pe.read(r["file"] + ".pes"); dp = pe.read(r["file"] + ".dst")
-            _PATS[P] = (dp, [t.hex_color() for t in p.threadlist], r["origin"], os.path.getmtime(r["file"] + ".dst"))
+            from motifs2 import HEX as _HX
+            dp = pe.read(r["file"] + ".dst")
+            cols = [_HX[s["col"]] for s in r["per_stop"]]          # colour per DST stop from the read-back record (PES dedupes repeats)
+            _PATS[P] = (dp, cols, r["origin"], os.path.getmtime(r["file"] + ".dst"))
     return _PATS
 def dst_render(bb, ppm):
     """stitch-by-stitch render of the shipped DSTs (travel stitches included, jumps/trims not drawn)"""

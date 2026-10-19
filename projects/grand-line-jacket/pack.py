@@ -147,7 +147,7 @@ def summary():
     y = 36 + len(P2)*4.6 + 1
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.9, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.9, 700)); o.append(t(cx[8], y, f"{MH:.1f} h", 1.9, 700))
     o.append(t(12, y + 4.5, f"Width check: fills + satins are at or above the 0.8 mm minimum except tapered ends. Hairline runs (sky-glow lines, dashed rays, glitter centre line) are INTENTIONALLY 0.45 mm, under the 0.6 mm line minimum: {HAIR_PCT:.1f} % of the stitched area. Check them on the sew-out.", 1.6, 600, ORANGE))
-    o.append(t(12, y + 7.8, f"Run time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one hooping (split files: {MH_SPLIT:.1f} h per jacket). Rev D traces the clouds from the close-ups; cost is reported, cleaned up after the sew-out.", 1.7, 400, MUTED))
+    o.append(t(12, y + 7.8, f"Run time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one hooping (split files: {MH_SPLIT:.1f} h per jacket). Rev E: clouds traced from the close-ups; cost is reported, cleaned up after the sew-out.", 1.7, 400, MUTED))
     qy = y + 16
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
     qs = [f"1. Frame: each piece is ~420–505 tall → 2 hoopings on {FR_S} (split S1/S2, registration crosses, G5/G6), or 1 hooping on a ≥ 300 × 520 frame (full files). Which?",
@@ -157,7 +157,7 @@ def summary():
           "5. Zip: art stops 15 each side of CF (assumes ≤ 12 tape + 10 mm topstitch). Confirm tape width.",
           "6. Welts: placed at the mockup position (moved 18 toward CF), Drum Island welt size 1.4 × 13. Confirm before the art is frozen.",
           "7. Fidelity first (Devin): dashed rays, dash-field sea, soft florets and hairline glow are built as in the close-ups; trims + run time are reported, clean up after the sew-out.",
-          "8. Reference: layout from the mockup, detail from AI close-ups (inputs/closeups) - not originals. Real artwork files would still be better.",
+          "8. Reference: clouds traced from the AI close-ups (fitted into the keep-outs; FR loses ~2,400 mm2 at the armhole top); layout from the mockup.",
           "9. Name: 'Grand Line' is a One Piece term (Shueisha/Toei) — internal slug only; the art itself is generic (no characters/logos).",
           "10. DST/PES are production-intent drafts: the factory digitizer checks density + pull on 12 oz duck and edits before the sew-out."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i*3.6, q, 1.8))

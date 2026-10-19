@@ -83,3 +83,31 @@ Problems hit while building this product, worked around in project code only. Ea
   pulls with `--no-autostash` (abort if the tree is dirty outside the project); never autostash other projects' files.
 - **Check:** two builders with uncommitted edits commit at the same time; both trees keep their edits.
 - Also seen: background jobs of this project killed externally ("Terminated") at the same time (E2/E6).
+
+## 11. Per-stop labels shift when a build stop sews nothing (Rev E)
+- **Problem:** a colour stop whose objects all fall below the sewable minimum emits a COLOR_CHANGE with 0 stitches; the DST writer
+  drops it, so DST stop *n* is build stop *n+1* from there on. Pairing per-stop labels by position (or by the PES thread list, which
+  also folds repeated colours) shifted every later colour label (Rev D/E p4: e.g. "gold 15,573" was really the cloud shadow stop).
+  Totals were right; per-stop colours were not.
+- **Fix (project):** `build_size.record()` counts stitches per build stop in the pattern before writing, drops empty stops, pairs the
+  rest 1:1 with `readback.dst()` and asserts the counts agree (±2 %).
+- **Proposed engine fix:** `make_pattern` skips stops with no blocks (no COLOR_CHANGE), and `readback` gains a `labels=` check.
+- **Check:** test with an empty middle stop: per_stop colours from the DST match the build.
+
+## 12. Radial tatami leaves gaps at the outer edge (Rev E)
+- **Problem:** `build_object` radial tatami uses `SR.radial(p, cx, cy, SP_TAT)` with a ray count from 0.55 x the max radius, so rows
+  diverge to ~0.8 mm at the outer edge of a lobe fan: visible navy "ticks" in cloud lobes.
+- **Workaround:** fans built as 14-degree sectors, each a plain tatami at its own angle (even 0.45 rows).
+- **Proposed fix:** radial tatami adds intermediate short rows where the ray spacing exceeds 1.3 x SP (like radial satin short stitches).
+- **Check:** coverage raster of a 20 mm fan lobe: no uncovered pixel > 0.3 mm inside the outline.
+
+## 13. A post-processing pass swallowed a COLOR_CHANGE (Rev E, caught before shipping)
+- **Problem:** `build_size.trim_exposed()` (replaces exposed travel runs with TRIM + JUMP) matched a run by its FIRST stitch only and
+  then skipped the run's length; on a false match it skipped over a COLOR_CHANGE, so sea teal + sea light sewed as ONE stop in the DST
+  (14 DST stops for 15 build stops). The readback-vs-build check passed because `zip()` truncated the longer list.
+- **Fix:** match every stitch of the run; assert the number of COLOR_CHANGEs is unchanged; `record()` asserts colour segments ==
+  build stops and per-stop counts within ±(4 x trims + 5 %).
+- **LESSON proposal (B21):** any pass that edits a stitch stream after `make_pattern` must assert command counts (COLOR_CHANGE, END)
+  are preserved; per-stop labels are paired by emitted stitches, never by position or thread list; never `zip()` two lists whose
+  lengths are the thing being checked.
+- **Check:** unit test: a pattern with two adjacent stops and a travel run ending at the stop boundary keeps both stops.

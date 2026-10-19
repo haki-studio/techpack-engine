@@ -14,13 +14,13 @@ GL_PAL = {   # key: (hex, name, use)
     "gl_sand":   ("#C9BB9C", "Cloud sand",    "cream-lobe shadows, islet bases"),
     "gl_sagelt": ("#B9BFA0", "Sage light",    "upper-lobe rims"),
     "gl_sage":   ("#87917A", "Sage",          "upper cloud lobes"),
-    "gl_slate":  ("#6D7F93", "Slate blue",    "middle cloud lobes"),
+    "gl_slate":  ("#627779", "Slate grey-teal",    "middle cloud lobes"),
     "gl_shadow": ("#4B575E", "Cloud shadow",  "lobe bases, deep cloud gaps"),
     "gl_deep":   ("#1F4A50", "Sea deep",      "sea bars (dark), sky-glow arcs"),
     "gl_teal":   ("#2E6B6C", "Sea teal",      "sea bars (main)"),
     "gl_tealt":  ("#4E9590", "Sea light",     "sea bars (light), near the horizon"),
     "gl_foam":   ("#A9C9B8", "Sea foam",      "highlight bars, horizon line"),
-    "gl_gold":   ("#D6B06A", "Star gold",     "ray lines, star arms, sunburst"),
+    "gl_gold":   ("#E3C890", "Star gold-cream",     "ray lines, star arms, sunburst"),
     "gl_pale":   ("#F7EDD2", "Sun pale",      "sun core, glitter path, star sparkle"),
 }
 GL_KEYS = list(GL_PAL)      # Rev D: 12 threads (cloud shadow is back as the lobe shadow band traced from the close-ups)
@@ -89,4 +89,4 @@ PIECE_NAME = {"FR": "wearer's right front", "FL": "wearer's left front"}
 PIECE_CODE = {"FR": "F02", "FL": "F01"}        # pattern piece codes (pattern.py)
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
-REV_EMB = "Rev D"; REV_GAR = "Rev D"; DATE = "17 Oct 2026"
+REV_EMB = "Rev E"; REV_GAR = "Rev E"; DATE = "18 Oct 2026"

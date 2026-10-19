@@ -73,8 +73,12 @@ def trim_exposed(pat, stops, runs, origin, limit=2.0, forgive=0.8, tol=0.3):
     import pyembroidery as pe
     ox, oy = origin; S = pat.stitches; out = []; k = 0; ri = 0; n_fix = 0; U = dst2.U
     def at(k, tr):
-        tx, ty = (tr[0][0]-ox)*U, (tr[0][1]-oy)*U
-        return (S[k][2] & pe.COMMAND_MASK) == pe.STITCH and abs(S[k][0]-tx) < 0.05 and abs(S[k][1]-ty) < 0.05
+        """the whole run must match stitch by stitch (a first-stitch-only match once swallowed a COLOR_CHANGE)"""
+        if k + len(tr) > len(S): return False
+        for i, q in enumerate(tr):
+            x_, y_, c_ = S[k + i]
+            if (c_ & pe.COMMAND_MASK) != pe.STITCH or abs(x_ - (q[0]-ox)*U) > 0.05 or abs(y_ - (q[1]-oy)*U) > 0.05: return False
+        return True
     while k < len(S):
         while ri < len(runs) and not runs[ri][1][1:-1]: ri += 1
         if ri < len(runs) and at(k, runs[ri][1][1:-1]):
@@ -86,6 +90,8 @@ def trim_exposed(pat, stops, runs, origin, limit=2.0, forgive=0.8, tol=0.3):
                 out.extend(S[k:k+len(tr)])
             k += len(tr); ri += 1; continue
         out.append(S[k]); k += 1
+    n_cc = lambda L: sum(1 for x_, y_, c_ in L if (c_ & pe.COMMAND_MASK) == pe.COLOR_CHANGE)
+    assert n_cc(out) == n_cc(S), "trim_exposed changed the number of colour changes"
     pat.stitches = out
     return pat, dict(runs=len(runs), exposed_over_limit=int(sum(bad)), trimmed=n_fix)
 
@@ -102,18 +108,24 @@ def sews(stops, basting=False):
     if basting and out: out[0]["codes"] = ["REG crosses"] + out[0]["codes"]
     return out
 
-def record(base, stops, extra, basting=False):
+def record(base, stops, extra, basting=False, pat=None):
     rb = readback.dst(base + ".dst"); rb["threads"] = factory.check_threads(base + ".pes")
     info = sews(stops, basting)
-    # align build stops to the DST stops by thread colour (a stop whose objects were all below the sewable minimum is empty in the file)
+    # pair build stops with DST stops by the stitches each build stop actually emitted: a stop with 0 stitches has no
+    # colour change in the written DST, so pairing by position or by thread list shifts every later label (Rev D bug)
     import pyembroidery as pe
-    from motifs2 import HEX
-    hexes = [t.hex_color().upper() for t in pe.read(base + ".pes").threadlist]
-    j = 0
-    for i, ps in enumerate(rb["per_stop"]):
-        while j < len(info) and HEX.get(info[j]["col"], "").upper() != hexes[min(i, len(hexes) - 1)]: j += 1
-        assert j < len(info), f"{base}: DST stop {i+1} colour {hexes[i]} not in the build stops"
-        ps.update(info[j]); j += 1
+    counts = [0]
+    for x, y, c in pat.stitches:
+        k = c & pe.COMMAND_MASK
+        if k == pe.COLOR_CHANGE: counts.append(0)
+        elif k == pe.STITCH: counts[-1] += 1
+    if basting and len(counts) == len(info) + 1: counts = [counts[0] + counts[1]] + counts[2:]   # crosses sew at the start of stop 1
+    assert len(counts) == len(info), f"{base}: {len(counts)} colour segments in the pattern vs {len(info)} build stops"
+    live = [s for s, n in zip(info, counts) if n > 0]
+    assert len(live) == rb["stops"], f"{base}: {len(live)} non-empty build stops vs {rb['stops']} DST stops"
+    for ps, si, n in zip(rb["per_stop"], live, [n for n in counts if n > 0]):
+        assert abs(ps["stitches"] - n) <= 10*(ps["trims"] + 2) + 0.06*n, f"{base}: stop {ps['stop']} DST {ps['stitches']} vs build {n}"
+        ps.update(si)
     rb.update(extra, file=base); return rb
 
 for P in which:
@@ -127,7 +139,7 @@ for P in which:
         pat, tfix = trim_exposed(pat, stops, st.get("runs", []), c)
         base = f"{OUT}/HAKI_GRLN_01_front-scene_{P}_{size}"
         dst2.write(cap_stitches(pat), base); dst2.render(base, base + "_preview.png", s=0.5)
-        res["full"] = record(base, stops, dict(origin=c, art_box=ub, stops_before_merge=n0, secs=round(time.time()-t), exposed_travel=tfix,
+        res["full"] = record(base, stops, pat=pat, extra=dict(origin=c, art_box=ub, stops_before_merge=n0, secs=round(time.time()-t), exposed_travel=tfix,
                                                build_trims_by_code=sorted(st.get("by", {}).items(), key=lambda kv: -kv[1])[:10]))
         f_ = res["full"]
         print(size, P, {k: f_[k] for k in ("stitches", "trims", "jumps", "stops", "size_mm", "max_stitch")}, f"{f_['secs']}s", flush=True)
@@ -147,7 +159,7 @@ for P in which:
             pat, tfix = trim_exposed(pat, stops, st.get("runs", []), cc)
             base = f"{OUT}/splits/HAKI_GRLN_01_front-scene_{P}_{size}_{names[key]}"; os.makedirs(os.path.dirname(base), exist_ok=True)
             dst2.write(cap_stitches(reg_in_first_colour(pat)), base); dst2.render(base, base + "_preview.png", s=0.5)
-            r = record(base, stops, dict(bbox=bb, origin=cc, marks=marks[key], secs=round(time.time()-t), exposed_travel=tfix), basting=True)
+            r = record(base, stops, pat=pat, basting=True, extra=dict(bbox=bb, origin=cc, marks=marks[key], secs=round(time.time()-t), exposed_travel=tfix))
             r["fits"] = r["size_mm"][0] <= FRAME[0] - 16 and r["size_mm"][1] <= FRAME[1] - 16
             spl["sections"][names[key]] = r
             print(size, P, names[key], {k: r[k] for k in ("stitches", "trims", "stops", "size_mm", "fits")}, "split y", round(sp["sy"] or 0, 1), flush=True)

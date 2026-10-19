@@ -283,7 +283,11 @@ REVS = [("Garment Rev A", "16 Oct 2026", "First garment pack for the Grand Line 
                                              "Exposed travel > 2 mm trimmed. Clouds still failed review (towers, tones, fish-scale texture)."),
         ("Garment + Embroidery Rev D", "17 Oct 2026", "Clouds TRACED from the close-ups (registered, colour-clustered into 7 tones, stitch angle from the close-up texture, "
                                              "whole lobes at the keep-outs). Smaller sun (1 ring, 20 rays), faint glow, narrow glitter + centre line, pale stars, "
-                                             "irregular sea; sea connectors > 0.8 mm trimmed. 12 threads. Compare sheets drawn from the shipped DSTs.")]
+                                             "irregular sea; sea connectors > 0.8 mm trimmed. 12 threads. Compare sheets drawn from the shipped DSTs."),
+        ("Garment + Embroidery Rev E", "18 Oct 2026", "Clouds: close-ups fitted row by row into the keep-outs (no more tower / clipped banks), whole lobes along the seam edges, "
+                                             "tones smoothed (min 18 mm2) and ordered (sage tops, cream bases), lobes from the close-up's luminance, each a fan of short rows + "
+                                             "arc rows on top. Slate duller, stars + rays gold-cream, sun ring dropped, hairline rays, glitter centre line removed, sea graded. "
+                                             "Fixed: a stitch-stream pass could drop a colour change; per-stop labels paired by emitted stitches.")]
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]
 
 def p_revisions():
