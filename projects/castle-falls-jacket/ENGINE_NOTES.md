@@ -94,3 +94,24 @@ Problems hit while building this product, worked around in project code only. Ea
 - **Rule proposal (E8):** select processes by their working directory (`readlink /proc/<pid>/cwd` inside the project) AND an
   exact argv, never by a substring that other projects share. Better: each launcher writes its PIDs to `out/pids` and stops
   only those. Check: a stop helper `scripts/stop_project.sh <slug>` that only touches PIDs whose cwd is in the project.
+
+## 14. Stale split files in the package (proposed LESSON D4)
+- **Problem:** the XXL/3XL front splits were renamed (S1_top/S2_bottom -> S1_r1c1/S2_r2c1, grid fallback) between builds; the old
+  16 Oct files stayed in `out/02_front-scene/<size>/splits/` and `finish.py` copied whole folders into the zip, so the factory
+  package carried 8 DST/PES files no document describes (and from an older art build).
+- **Fix (project):** `finish.py` prunes every DST/PES/preview/thread-chart whose stem is not referenced by a current
+  `result_<piece>.json` before packaging (prints each pruned file).
+- **Proposed engine fix:** `pack.package(results)` copies only the files listed in the results, never a folder. Check: a test that
+  plants an orphan .dst next to a result and asserts it is not in the zip.
+
+## 15. Thread board claimed from the palette, not from the files (proposed LESSON B25)
+- **Problem:** G1/G3/T1/T6/T9 said "18-thread board" (the traced tones); the files sew only 15 distinct threads (sky light, moss
+  light, far lavender are merged away on every piece). F1 asked the factory to lab-dip two threads that are never sewn.
+- **Fix (project):** `cfcore.sewn_threads()` reads the distinct colours from `dst_all.json` (all sizes); every page prints that count;
+  G3 marks unsewn tones "NOT SEWN"; F1 lists only sewn threads.
+- **Proposed engine fix:** `readback.threads_used(files)` + a test; the thread page and F1 take it as input.
+
+## 16. Compare sheets from the final DSTs
+- `compare.py` now draws the size-M DST stitch by stitch (PES thread colours, placed by the file origin) beside the mockup at the
+  same scale, + a 3-up row on the back: raw close-up panel (inverse of the A12 registration) | mockup composite | DST.
+  Proposed for the engine as `compare.dst_pair(piece, bbox, ppm)`.

@@ -222,7 +222,7 @@ def hooping_page():
 def f1_pages():
     import sheet as _SH; _SH.FOOT = SB.FOOT
     so = [dict(file=os.path.basename(CUR[p]["file"]) + ".dst", piece=f"{p} {cfcore.PIECE_NAME[p]} (full file)", stitches=CUR[p]["stitches"], trims=CUR[p]["trims"]) for p in PC]
-    th = [dict(name=PAL[k][1], code=f"Isacord {SB.TH[k]['isacord'][0]} / Polyneon {SB.TH[k]['polyneon'][0]}", de=min(SB.TH[k]["isacord"][3], SB.TH[k]["polyneon"][3])) for k in cfcore.CF_KEYS]
+    th = [dict(name=PAL[k][1], code=f"Isacord {SB.TH[k]['isacord'][0]} / Polyneon {SB.TH[k]['polyneon'][0]}", de=min(SB.TH[k]["isacord"][3], SB.TH[k]["polyneon"][3])) for k in cfcore.sewn_threads()]
     pcs = [dict(piece=f"{cfcore.PIECE_ELEM[p]} {p}", w=CUR[p]["size_mm"][0], h=CUR[p]["size_mm"][1], hoopings=len(CUR[p]["splits"]["sections"])) for p in PC]
     return FA.requests_page(cfcore.NAME, so, th, pcs, page="F1", prof=PROF)
 
