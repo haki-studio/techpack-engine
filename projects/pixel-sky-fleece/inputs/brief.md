@@ -17,7 +17,12 @@ The pixel clouds cover about half the garment, so they are almost certainly **no
 2. **Pieced colour-block:** blue and cream sherpa joined along the cloud line, with the pixel detail as appliqué or embroidery. Cheaper, but the pixels are simplified.
 3. **Embroidery:** only for the bird and the sparkles, on top of either option. Use a water-soluble topping so the stitches sit on the pile.
 
-PROPOSED: option 1 for the clouds, with the bird and sparkles embroidered (gold as metallic or satin yellow/ochre). Confirm with the factory.
+**Founder decision 2026-10-19:**
+- **Sparkles** are embroidered (yellow + gold).
+- **Bird** goes into the knitted pattern with the clouds if the mill can add a third colour (black) in that area. Otherwise it is embroidered too. Founder: "if we have to embroider the bird too, then we'll go with that".
+- **Clouds:** option 1 (jacquard) is preferred. Confirm with the factory.
+
+Build both bird versions: a jacquard grid cell map and an embroidery file. The factory answer then decides between them without a rebuild.
 
 ## Assumptions (PROPOSED — confirm)
 - **Fit:** derived from the approved Drum Island jacket block, with extra ease for pile thickness (about +4 cm chest, +2 cm sleeve length). A fit sample is mandatory, since this is the first fleece.
