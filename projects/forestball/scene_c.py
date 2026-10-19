@@ -14,8 +14,27 @@ import back as B, front as F
 
 LAYER = {"TB": 5, "TBS": 5, "TT": 5.5, "TTS": 5.5, "TM": 6, "TMS": 6, "TL": 4.5, "TLS": 4.5, "TH": 8, "THS": 8, "WA": 2, "WAS": 2}
 
+def split_wide_satin(regs):
+    """Rev C final (found by the A15 uncovered gate): the trace sent a region to satin when its MEAN width (2A/P) was < 3.2,
+    so big convoluted regions with holes (a 1,380 mm² stream area, moss mats) became one 'satin' whose centreline is garbage —
+    the engine left most of them unsewn. Now: the parts wider than 3.2 mm (an opening by 1.6 mm) sew as tatami (stream
+    horizontal, others along the region's own axis), the thin remainder stays satin strands."""
+    out = []; moved = 0.0
+    for r in regs:
+        if r["st"] != "satin" or r["geom"].buffer(-1.6).is_empty: out.append(r); continue
+        g = r["geom"]; wide = g.buffer(-1.6).buffer(1.6, join_style="round").intersection(g)
+        thin = g.difference(wide.buffer(0.05))
+        fam = r["grp"].split("-")[0]; moved += wide.area
+        if not wide.is_empty and wide.area > 1.0:
+            out.append(dict(r, geom=wide, st="tatami", grp=fam, ang=0.0 if fam == "WA" else "auto"))
+        for q in polys(thin):
+            if q.area > 1.0: out.append(dict(r, geom=q))
+    print("   wide satin -> tatami:", round(moved), "mm²", flush=True)
+    return out
+
 def norm(regs):
     out = []
+    regs = split_wide_satin(regs)
     for r in regs:
         if r["st"] == "tatami":                        # tatami tracing slivers (< 0.8 mm mean width, < 20 mm²) are not stitchable: dropped
             g = r["geom"]; w_ = 2 * g.area / max(g.length, 1e-6)
@@ -85,6 +104,7 @@ def ray_stripes(clip, voids, under, sp_cream=1.3, sp_sage=1.6, w=0.32, cream_ex=
         if P.is_empty or P.area < 3: continue
         d = np.array(st["dir"]); d = d / np.linalg.norm(d); n = np.array([-d[1], d[0]])
         col = "cream" if st["excess"] >= cream_ex else "sage"; sp = sp_cream if col == "cream" else sp_sage
+        sp = min(sp, max(0.7, st["width"] / 2.2))       # narrow stripes keep >= 2 rows (they read as a stripe, not a hairline)
         us = [n @ np.array(q) for q in P.exterior.coords]; u0, u1 = min(us), max(us); c = np.array(P.centroid.coords[0])
         span = max(P.bounds[2] - P.bounds[0], P.bounds[3] - P.bounds[1]) * 1.5 + 10
         rows = []
@@ -92,7 +112,7 @@ def ray_stripes(clip, voids, under, sp_cream=1.3, sp_sage=1.6, w=0.32, cream_ex=
             base = n * u + d * (d @ c)
             ln = LineString([tuple(base - d * span), tuple(base + d * span)]).intersection(P.buffer(-0.2))
             for seg in ([ln] if ln.geom_type == "LineString" else list(getattr(ln, "geoms", []))):
-                if seg.geom_type == "LineString" and seg.length >= 4: rows.append(list(seg.coords))
+                if seg.geom_type == "LineString" and seg.length >= 2.5: rows.append(list(seg.coords))
         if not rows: continue
         rows.sort(key=lambda cs: n @ np.array(cs[0])); seq = []
         for i, cs in enumerate(rows): seq += cs if i % 2 == 0 else cs[::-1]

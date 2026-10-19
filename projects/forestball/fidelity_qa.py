@@ -19,8 +19,18 @@ CUR = json.load(open("dst_current.json"))
 FAM = {"leaves": ["leaf"], "moss + grass": ["moss", "mosslt", "grass"], "bark / chain / stream dark": ["navy", "bark", "royal", "mossdk", "brown"],
        "highlights + water light": ["cream", "waterlt"]}
 
-def dst_mask(key, bbox, ppm, cols=None, close_mm=0.0):
-    x0, y0, x1, y1 = bbox; W, H = int(round((x1 - x0) * ppm)), int(round((y1 - y0) * ppm))
+def ray_stops(key):
+    """0-based colour-stop indices of the light rays: the sage / cream stops sewn first, right after the placeholder outline"""
+    f = CUR[key]["file"]; tl = [t.hex_color().upper() for t in pe.read(f + ".pes").threadlist]; out = set()
+    rc = {HEX["sage"].upper(), HEX["cream"].upper()}
+    for i, c in enumerate(tl):
+        if i == 0: continue
+        if c in rc: out.add(i)
+        else: break
+    return out
+
+def dst_mask(key, bbox, ppm, cols=None, close_mm=0.0, open_mm=0.9, only_stops=None, skip_stops=None):
+    x0, y0, x1, y1 = bbox; W, H = int((x1 - x0) * ppm), int((y1 - y0) * ppm)   # same as trace_fb.grid
     im = Image.new("L", (W, H), 0); d = ImageDraw.Draw(im); f = CUR[key]["file"]; cx, cy = CUR[key]["centre"]
     tl = [t.hex_color().upper() for t in pe.read(f + ".pes").threadlist]; p = pe.read(f + ".dst"); ci = 0; prev = None
     want = None if cols is None else {HEX[c].upper() for c in cols}
@@ -30,29 +40,69 @@ def dst_mask(key, bbox, ppm, cols=None, close_mm=0.0):
         if k == pe.COLOR_CHANGE: ci += 1; prev = None; continue
         if k != pe.STITCH: prev = None; continue
         P_ = ((x / 10 + cx - x0) * ppm, (y / 10 + cy - y0) * ppm)
-        if prev and (want is None or tl[min(ci, len(tl) - 1)] in want): d.line([prev, P_], fill=255, width=lw)
+        use = (want is None or tl[min(ci, len(tl) - 1)] in want) and (only_stops is None or ci in only_stops) and (skip_stops is None or ci not in skip_stops)
+        if prev and use: d.line([prev, P_], fill=255, width=lw)
         prev = P_
     m = np.array(im) > 0
     if close_mm > 0: m = ndi.binary_closing(m, structure=qa.disk(close_mm, ppm))
+    # the sewn COVERAGE, not the travel: single running lines (travel / centre runs hidden under later fills, 0.4 mm) are
+    # opened away, so a spray's leaves are not chained into one "motif" by the run that travels between them
+    if open_mm > 0: m = ndi.binary_opening(m, structure=qa.disk(open_mm, ppm))
     return m
 
+def motif_match_cells(ref, out, ppm, min_mm2=4.0, iou_min=0.70, ratio_min=0.80):
+    """qa.motif_match, with every stitched pixel assigned to its NEAREST reference motif (its Voronoi cell) before the
+    comparison. Plain qa.motif_match unions every out component touching a motif, so on dense traced art (sprays,
+    grass, chain links) a correct leaf "fails" because the DST joins it to its neighbour (Forestball: 706 back leaves, 44 pass).
+    Cells keep the gate's teeth: a stand-in larger than its reference overshoots inside its own cell and lowers IoU; a missing
+    or flattened motif fails on IoU / height. Same thresholds as the engine gate."""
+    lab, n = ndi.label(ref)
+    if n == 0: return []
+    idx = ndi.distance_transform_edt(lab == 0, return_distances=False, return_indices=True)
+    near = lab[idx[0], idx[1]]; own = np.where(out, near, 0)
+    rows = []
+    for k, sl in enumerate(ndi.find_objects(lab), 1):
+        r = lab == k if False else None
+        pad = int(4 * ppm); y0, y1 = max(0, sl[0].start - pad), min(ref.shape[0], sl[0].stop + pad)
+        x0, x1 = max(0, sl[1].start - pad), min(ref.shape[1], sl[1].stop + pad)
+        r = lab[y0:y1, x0:x1] == k; area = r.sum() / ppm**2
+        if area < min_mm2: continue
+        o = own[y0:y1, x0:x1] == k
+        iou = (r & o).sum() / max((r | o).sum(), 1)
+        def ext(m, ax):
+            ii = np.nonzero(m.any(axis=ax))[0]; return (ii[-1] - ii[0] + 1) / ppm if len(ii) else 0.0
+        wr, hr = ext(o, 0) / max(ext(r, 0), 1e-9), ext(o, 1) / max(ext(r, 1), 1e-9)
+        ok = iou >= iou_min and min(wr, 1 / max(wr, 1e-9)) >= ratio_min and min(hr, 1 / max(hr, 1e-9)) >= ratio_min
+        rows.append(dict(motif=k, x_mm=round((x0 + x1) / 2 / ppm, 1), y_mm=round((y0 + y1) / 2 / ppm, 1), area_mm2=round(float(area), 1),
+                         iou=round(float(iou), 2), w_ratio=round(float(wr), 2), h_ratio=round(float(hr), 2), ok=bool(ok)))
+    return rows
+
 def summarise(rows):
-    n = len(rows); ok = sum(r["ok"] for r in rows)
-    return dict(motifs=n, passed=ok, failed=n - ok, worst=sorted([r for r in rows if not r["ok"]], key=lambda r: r["iou"])[:8])
+    n = len(rows); ok = sum(r["ok"] for r in rows); ko = sum((not r["ok"]) and r.get("why") == "keep-out" for r in rows)
+    fails = [r for r in rows if not r["ok"] and r.get("why") != "keep-out"]
+    return dict(motifs=n, passed=ok, keepout=ko, failed=len(fails), failed_large=sum(r["area_mm2"] >= 25 for r in fails),
+                worst=sorted(fails, key=lambda r: -r["area_mm2"])[:8])
 
 def piece_qa(key, lbl_path, bbox, clip, extra_ref=None):
     lbl = np.load(lbl_path); ppm = 4.0; nT = len(T.TONES)
     XX, YY = T.grid(bbox) if True else None
     res = {"families": {}, "uncovered": []}
+    RS = ray_stops(key) if key == "back" else set()
+    kz = clip.boundary.buffer(1.5)
     for fam, cols in FAM.items():
         ref = np.isin(lbl, [T.TONES.index(c) for c in cols])
         if key == "back": ref &= ~shapely.contains_xy(B.PH_BOX.buffer(1.5), XX, YY)
-        out = dst_mask(key, bbox, ppm, cols=[fbcore.col(c) for c in cols], close_mm=0.6)
-        rows = qa.motif_match(ref, out, ppm, min_mm2=4.0)
-        res["families"][fam] = summarise(rows)
+        out = dst_mask(key, bbox, ppm, cols=[fbcore.col(c) for c in cols], close_mm=0.6, skip_stops=RS)
+        out = ndi.binary_erosion(out, iterations=1)          # stitched coverage = outline + pull comp (~0.25 mm)
+        rows = motif_match_cells(ref, out, ppm, min_mm2=4.0)
+        for r in rows:                                       # motifs the keep-out cut: left out whole on purpose (A8, review 6)
+            if not r["ok"] and kz.intersects(shapely.geometry.Point(r["x_mm"] + bbox[0], r["y_mm"] + bbox[1]).buffer(max(3.0, (r["area_mm2"] ** 0.5)))):
+                r["why"] = "keep-out"
+        eng = qa.motif_match(ref, out, ppm, min_mm2=4.0)
+        res["families"][fam] = dict(summarise(rows), engine_passed=sum(r["ok"] for r in eng), engine_motifs=len(eng))
     design = lbl < nT
     if key == "back": design &= ~shapely.contains_xy(B.PH_BOX.buffer(1.5), XX, YY)
-    allout = dst_mask(key, bbox, ppm, close_mm=0.8)
+    allout = dst_mask(key, bbox, ppm, close_mm=0.8, skip_stops=RS)
     gaps = qa.uncovered(design, allout, ppm, min_mm2=25.0)
     edge = clip.boundary
     for g in gaps:
@@ -62,8 +112,8 @@ def piece_qa(key, lbl_path, bbox, clip, extra_ref=None):
     res["uncovered"] = gaps
     if extra_ref is not None:
         rref, rbare, rbbox, rppm = extra_ref
-        out = dst_mask(key, rbbox, rppm, cols=["sage", "cream"], close_mm=1.6) & rbare
-        rows = qa.motif_match(rref, out, rppm, min_mm2=8.0)
+        out = dst_mask(key, rbbox, rppm, cols=["sage", "cream"], close_mm=1.8, open_mm=0.0, only_stops=RS) & rbare
+        rows = motif_match_cells(rref, out, rppm, min_mm2=8.0)
         res["families"]["light rays (mockup stripes)"] = summarise(rows); res["ray_rows"] = rows
         # per-ray angle: the mockup stripe's traced axis vs the axis of what the DST sews inside it (PCA of the stitched pixels)
         R = json.load(open("rays_trace2.json")); XXr, YYr = np.meshgrid(rbbox[0] + (np.arange(out.shape[1]) + 0.5) / rppm, rbbox[1] + (np.arange(out.shape[0]) + 0.5) / rppm)
@@ -82,8 +132,9 @@ def piece_qa(key, lbl_path, bbox, clip, extra_ref=None):
 def table_png(name, res, path):
     lines = [f"FIDELITY GATES {name} (grade B DST vs traced reference; LESSONS A14 motif_match / A15 uncovered)"]
     for fam, s in res["families"].items():
-        lines.append(f"  {fam:32s} motifs {s['motifs']:5d}   pass {s['passed']:5d}   fail {s['failed']:4d}" +
-                     (("   worst IoU " + ", ".join(f"{w['iou']:.2f}@({w['x_mm']:.0f},{w['y_mm']:.0f})" for w in s["worst"][:3])) if s["failed"] else ""))
+        lines.append(f"  {fam:30s} motifs {s['motifs']:4d}  pass {s['passed']:4d}  keep-out (left out whole) {s.get('keepout', 0):3d}  "
+                     f"fail {s['failed']:3d} (>= 25 mm²: {s.get('failed_large', 0)})" +
+                     (f"   [engine qa.motif_match, neighbours merged: {s['engine_passed']}/{s['engine_motifs']}]" if "engine_motifs" in s else ""))
     un = [g for g in res["uncovered"] if g["why"] == "UNEXPLAINED"]
     lines.append(f"  uncovered >= 25 mm²: {len(res['uncovered'])} gaps, {len(un)} unexplained" +
                  ("" if not res["uncovered"] else "   largest " + ", ".join(f"{g['area_mm2']:.0f} mm² @({g['x_mm']:.0f},{g['y_mm']:.0f}) {g['why'][:9]}" for g in res["uncovered"][:3])))

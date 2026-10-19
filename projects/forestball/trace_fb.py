@@ -26,6 +26,8 @@ LAST_FINE = None
 GAMMA, W_L, NAVY_L = 0.6, 0.4, 10.0                             # Rev C re-tone (see classify); set per source below
 TONE_BACK = (0.7, 0.5, 14.0)       # close-up a: brighter photo (fabric median #2D3A30) — picked on a render-compare of 3 settings
 TONE_FRONT = (0.6, 0.4, 10.0)
+HOLE_CLOSE, HOLE_MAX = 2.5, 120.0  # Rev C final (A15 gate): the dark gaps between the bank's rope strands read as bare shell;
+                                   # enclosed gaps (after a 2.5 mm closing, < 120 mm², ringed by limb / moss tones) are navy crevices
 C_ZIP = 55.0                          # mm from CF: inside this, 02R is traced from the mockup x4 (zip continuity)
 ZIP_SHEAR_R, ZIP_SHEAR_L = 0.0, 0.0   # mm: 02R (close-up c) unsheared; 02L (mockup x4) lifted next to the zip — the mockup limb
                                       # drops across the zip gap (measured on the zip band check, emb_place.zip_check)      # close-up c: darker photo (fabric median #263429)
@@ -107,7 +109,7 @@ def classify(img, art_mask):
     lbl[lbl >= nT] = nT
     # dark crevices: fabric-classed pixels enclosed by art (holes < 60 mm² after a 1.5 mm closing) are navy, not fabric
     artpx = lbl < nT
-    closed = ndi.binary_closing(artpx, structure=np.ones((int(1.5*PPM)*2+1,)*2, bool))
+    closed = ndi.binary_closing(artpx, structure=np.ones((int(HOLE_CLOSE*PPM)*2+1,)*2, bool))
     holes = ndi.binary_fill_holes(closed) & ~closed
     hl, hn = ndi.label(holes)
     if hn:
@@ -119,7 +121,7 @@ def classify(img, art_mask):
         rl = ring[ring > 0]; rv = np.isin(lbl[ring > 0], limbset); lv = lbl[ring > 0] == TONES.index("leaf")
         tot = np.bincount(rl, minlength=hn + 1)[1:]; lim = np.bincount(rl, weights=rv, minlength=hn + 1)[1:]
         lf = np.bincount(rl, weights=lv, minlength=hn + 1)[1:]
-        keep = (hs < 60) & (lim >= 0.6 * np.maximum(tot, 1)) & (lf < 0.3 * np.maximum(tot, 1))
+        keep = (hs < HOLE_MAX) & (lim >= 0.6 * np.maximum(tot, 1)) & (lf < 0.3 * np.maximum(tot, 1))
         holes = np.isin(hl, 1 + np.where(keep)[0])
     # Rev C final: only ENCLOSED gaps become navy crevices; the closing fringe round leaves / twigs (fabric within 1.5 mm
     # of art) stays fabric — it read as a dark halo round every spray.

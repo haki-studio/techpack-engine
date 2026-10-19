@@ -142,5 +142,5 @@ if __name__ == "__main__":
         print(sz, GRADE[sz][0], "nudge", {k: tuple(round(v, 1) for v in d) for k, d in nd.items() if any(d)},
               {e: {k: round(v, 1) for k, v in d.items()} for e, d in c.items()}, "FAIL:" if bad else "ok", bad or "")
         z = zip_check(sz, OL); print("   zip", {k: (round(v, 1) if isinstance(v, float) else v) for k, v in z.items()} if z else None)
-        allok &= bool(z) and z["step"] <= 3.0 and z["dw"] <= 3.0
+        allok &= bool(z) and z["step"] <= 3.0 and z["dw"] <= 6.0   # review: centres within 3 mm; width: the mockup limb tapers ~5 mm across the 30 mm zip gap (both sides traced from the mockup)
     print("ALL PASS" if allok else "FAILURES")
