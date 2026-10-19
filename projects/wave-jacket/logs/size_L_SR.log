@@ -1,5 +1,0 @@
-L SR {'stitches': 143831, 'trims': 707, 'jumps': 1667, 'stops': 13, 'size_mm': (436.9, 427.2), 'max_stitch': 7.08} 45s
-L SR S1_top-right {'stitches': 471, 'trims': 11, 'stops': 3, 'size_mm': (251.8, 144.2), 'fits': True} split y 113.1
-L SR S2_bottom-left {'stitches': 68291, 'trims': 324, 'stops': 12, 'size_mm': (216.8, 315.0), 'fits': True} split y 113.1
-L SR S3_bottom-right {'stitches': 75284, 'trims': 382, 'stops': 13, 'size_mm': (251.8, 315.0), 'fits': True} split y 113.1
-DONE L ['SR']

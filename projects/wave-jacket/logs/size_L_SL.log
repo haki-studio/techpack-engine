@@ -1,5 +1,0 @@
-L SL {'stitches': 105935, 'trims': 590, 'jumps': 1486, 'stops': 17, 'size_mm': (393.9, 370.5), 'max_stitch': 7.33} 33s
-L SL S1_top-left {'stitches': 29792, 'trims': 185, 'stops': 12, 'size_mm': (197.0, 319.4), 'fits': True} split y 215.9
-L SL S2_top-right {'stitches': 67914, 'trims': 351, 'stops': 17, 'size_mm': (228.6, 330.7), 'fits': True} split y 215.9
-L SL S3_bottom-right {'stitches': 8653, 'trims': 63, 'stops': 8, 'size_mm': (228.6, 85.0), 'fits': True} split y 215.9
-DONE L ['SL']

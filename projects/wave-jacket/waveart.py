@@ -355,12 +355,57 @@ def wrap_check(res, size):
                                                aligned=sum(ok), total=len(ok), body_len=round(bl, 1), cap_len=round(half.length, 1))
     return out
 
+
+# ---------------------------------------------------------------- sleeve fold (QA 19 Oct: 20-50 mm bare band on the centre line)
+def close_fold(its, P):
+    """The render's sleeve art reaches the silhouette edge (the fold) in both views, but the trace drops the edge shading,
+    so each mapped half stopped g = 8-25 mm short of the centre line and the sewn sleeve got a bare vertical band.
+    Per half: g = 25th percentile of the innermost art per 10 mm row; the half is stretched from its underarm side
+    (|x| = Xu fixed, |x| = g -> 0; stripes + rope lines point-mapped, curls + drops moved rigidly so they stay round).
+    The fold highlight (tiny 'drops' within 6 mm of the centre line) is dropped. Returns (items, {sign: g})."""
+    units = {}
+    for r in its:
+        if r.get("unit"): units.setdefault(r["unit"], []).append(r)
+    drop = set()
+    for u, rs in units.items():
+        g_ = unary_union([r["geom"] for r in rs]); 
+        if g_.area < 20 and abs(g_.centroid.x) < 6: drop.add(u)
+    its = [r for r in its if r.get("unit") not in drop]
+    out = []; G = {}
+    for sgn in (1, -1):
+        half = [r for r in its if r["geom"].centroid.x * sgn > 0]
+        if not half: continue
+        U = unary_union([r["geom"] for r in half]); b = U.bounds; rows = []
+        for y in np.arange(b[1], b[3], 10.0):
+            q = U.intersection(box(-400, y, 400, y + 10))
+            if q.is_empty: continue
+            xs = [min(abs(c[0]) for c in (p.exterior.coords)) for p in polys(q) if p.area > 2]
+            if xs: rows.append(min(xs))
+        g = float(np.clip(np.percentile(rows, 25), 0, 25)) if rows else 0.0
+        Xu = max(abs(b[0]), abs(b[2])); G[sgn] = round(g, 1)
+        if g < 1.0: out += half; continue
+        def f(ax): return np.maximum(Xu - (Xu - ax) * Xu / (Xu - g), 0.0)
+        side = box(0, -1000, 1000, 1000) if sgn > 0 else box(-1000, -1000, 0, 1000)
+        moved = {}
+        for r in half:
+            if r.get("unit"):
+                u = r["unit"]
+                if u not in moved:
+                    c = unary_union([q["geom"] for q in units[u]]).centroid; moved[u] = sgn * (float(f(abs(c.x))) - abs(c.x))
+                out.append(dict(r, geom=affinity.translate(r["geom"], moved[u], 0)))
+            else:
+                gm = MM.map_geom(r["geom"], lambda x, y: (np.sign(x) * f(np.abs(x)), y), densify=1.0)
+                gm = make_valid(gm).buffer(0).intersection(side)
+                if not gm.is_empty: out.append(dict(r, geom=gm))
+    return out, G
+
 # ---------------------------------------------------------------- build
 def build(size):
     t0 = time.time(); res = {"info": dict(size=size, grade=MM.GRADE[size][0], scale=MM.GRADE[size][1])}
     for P in PC.PIECES:
         clip = PC.clip_for(size, P).buffer(-0.4)        # 0.4 inside the keep-out: cleaning never crosses it
         its = items_for(size, P)
+        if P in SLEEVE_SIDE: its, res.setdefault("fold_gap", {})[P] = close_fold(its, P)
         vis = visible(its, clip)
         vis = dst2.clean_vis(vis)
         vis = [dict(r, geom=r["geom"].intersection(clip).buffer(0)) for r in vis]

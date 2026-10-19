@@ -262,9 +262,9 @@ def p_operations():
     return o
 
 # ---------------------------------------------------------------- revision log + sample tracker
-REVS = [("Garment Rev A", "16 Oct 2026", "First garment pack for the Wave jacket on the Drum Island block + pattern: flats, details, size chart, grading, BOM, construction, labels, "
+REVS = [("Garment Rev A", "19 Oct 2026", "First garment pack for the Wave jacket on the Drum Island block + pattern: flats, details, size chart, grading, BOM, construction, labels, "
                                           "colourway, pattern XS–3XL (DXF + 1:1 plot), embroidery placement per size, inside view, operations, this log. Welts at the render position."),
-        ("Embroidery Rev A", "16 Oct 2026", "01 wave on BK, FR, FL, SR, SL, fidelity first: stripes, crests, curls and spray drops traced from the low-res render (6 blues, foam whites + grey, "
+        ("Embroidery Rev A", "19 Oct 2026", "01 wave on BK, FR, FL, SR, SL, fidelity first: stripes, crests, curls and spray drops traced from the low-res render (6 blues, foam whites + grey, "
                                              "9 threads), raised padded foam with loop spiral + curl lines, per-size stitch files XS–3XL + hoop splits for the factory frame, every number "
                                              "read back from the DST, G6 hooping table, F1 factory requests.")]
 SAMPLES = ["Proto / fit sample (M)", "Embroidery strike-off (sew-out on 12 oz duck)", "Lab dips: shell, corduroy, ribs, lining", "Size set (XS, M, 3XL)", "PP sample", "TOP (top of production)"]

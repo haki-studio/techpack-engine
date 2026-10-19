@@ -1,4 +1,4 @@
-XL FR {'stitches': 113132, 'trims': 534, 'jumps': 1527, 'stops': 11, 'size_mm': (294.8, 396.8), 'max_stitch': 7.2} 57s
-XL FR S1_top {'stitches': 59764, 'trims': 287, 'stops': 11, 'size_mm': (314.2, 240.1), 'fits': True} split y 364.9
-XL FR S2_bottom {'stitches': 53359, 'trims': 249, 'stops': 11, 'size_mm': (314.2, 180.0), 'fits': True} split y 364.9
+XL FR {'stitches': 123521, 'trims': 539, 'jumps': 1524, 'stops': 11, 'size_mm': (294.8, 396.8), 'max_stitch': 7.08} 55s
+XL FR S1_top {'stitches': 63440, 'trims': 288, 'stops': 11, 'size_mm': (314.2, 240.1), 'fits': True} split_clip
+XL FR S2_bottom {'stitches': 60030, 'trims': 254, 'stops': 11, 'size_mm': (314.2, 179.8), 'fits': True} split_clip
 DONE XL ['FR']

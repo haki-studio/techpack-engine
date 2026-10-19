@@ -1,4 +1,4 @@
-S FL {'stitches': 112086, 'trims': 610, 'jumps': 1310, 'stops': 12, 'size_mm': (256.8, 416.7), 'max_stitch': 7.07} 39s
-S FL S1_top {'stitches': 108290, 'trims': 572, 'stops': 12, 'size_mm': (276.2, 318.5), 'fits': True} split y 264.7
-S FL S2_bottom {'stitches': 3796, 'trims': 29, 'stops': 7, 'size_mm': (276.2, 110.3), 'fits': True} split y 264.7
+S FL {'stitches': 122833, 'trims': 608, 'jumps': 1338, 'stops': 12, 'size_mm': (256.8, 416.7), 'max_stitch': 7.04} 64s
+S FL S1_top {'stitches': 118965, 'trims': 565, 'stops': 12, 'size_mm': (276.2, 318.5), 'fits': True} split_clip
+S FL S2_bottom {'stitches': 3837, 'trims': 29, 'stops': 7, 'size_mm': (276.2, 110.3), 'fits': True} split_clip
 DONE S ['FL']

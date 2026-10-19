@@ -1,5 +1,2 @@
-3XL SR {'stitches': 163463, 'trims': 703, 'jumps': 1615, 'stops': 13, 'size_mm': (476.5, 488.0), 'max_stitch': 7.38} 57s
-3XL SR S1_top-right {'stitches': 2693, 'trims': 23, 'stops': 6, 'size_mm': (273.2, 212.4), 'fits': True} split y 152.3
-3XL SR S2_bottom-left {'stitches': 76899, 'trims': 318, 'stops': 12, 'size_mm': (235.0, 313.6), 'fits': True} split y 152.3
-3XL SR S3_bottom-right {'stitches': 84101, 'trims': 359, 'stops': 13, 'size_mm': (273.2, 313.6), 'fits': True} split y 152.3
-DONE 3XL ['SR']
+3XL SR {'stitches': 173779, 'trims': 703, 'jumps': 1638, 'stops': 13, 'size_mm': (476.5, 488.0), 'max_stitch': 7.38} 71s
+3XL SR S1_top-right {'stitches': 2693, 'trims': 23, 'stops': 6, 'size_mm': (273.2, 212.4), 'fits': True} split_clip

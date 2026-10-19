@@ -1,5 +1,0 @@
-XXL BK S1_r1c1 {'stitches': 84098, 'trims': 376, 'stops': 13, 'size_mm': (328.8, 250.9), 'fits': True} grid_split
-XXL BK S2_r1c2 {'stitches': 8993, 'trims': 75, 'stops': 7, 'size_mm': (331.6, 226.2), 'fits': True} grid_split
-XXL BK S3_r2c1 {'stitches': 67273, 'trims': 351, 'stops': 11, 'size_mm': (332.7, 341.4), 'fits': True} grid_split
-XXL BK S4_r2c2 {'stitches': 134580, 'trims': 602, 'stops': 11, 'size_mm': (341.5, 328.1), 'fits': True} grid_split
-DONE XXL ['BK']

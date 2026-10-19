@@ -1,6 +1,0 @@
-XL SL {'stitches': 91475, 'trims': 524, 'jumps': 1363, 'stops': 17, 'size_mm': (333.1, 380.4), 'max_stitch': 7.26} 27s
-XL SL S1_r1c1 {'stitches': 20964, 'trims': 113, 'stops': 12, 'size_mm': (151.6, 154.5), 'fits': True} grid_split
-XL SL S2_r1c2 {'stitches': 8955, 'trims': 69, 'stops': 9, 'size_mm': (193.4, 106.7), 'fits': True} grid_split
-XL SL S3_r2c1 {'stitches': 3381, 'trims': 41, 'stops': 8, 'size_mm': (151.6, 243.4), 'fits': True} grid_split
-XL SL S4_r2c2 {'stitches': 58742, 'trims': 313, 'stops': 17, 'size_mm': (193.5, 250.3), 'fits': True} grid_split
-DONE XL ['SL']

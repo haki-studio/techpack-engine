@@ -32,7 +32,7 @@ tech.COLOUR_ORDER = WV_ORDER + [c for c in tech.COLOUR_ORDER if c not in WV_ORDE
 # code -> (name, stitch, angle rule, density, stitch length, underlay, pull comp, notes)
 WV_RULES = {
  "RP":      ("Rope line (cream)",            "Satin, turning",      "across the line",          "0.42", "—",   "centre run",                  "0.20", "rope lines between the wave stripes"),
- "WV":      ("Wave stripe",                  "Satin, turning / tatami along", "along the stripe (map)", "0.42 / 0.45", "3.5", "centre run (satin) · edge run + 90° lattice (tatami > 60 mm²)", "0.25", "satin < 5 wide, split > 7"),
+ "WV":      ("Wave stripe",                  "Satin, turning / tatami along", "along the stripe (map)", "0.42 / 0.45", "3.5", "centre run (satin) · edge run + 90° lattice (tatami > 60 mm²)", "0.25", "tatami along the stripe; turning satin only on stripes < 3 wide with no holes (DST coverage ≥ 99 %)"),
  "FM":      ("Foam crest / curl (raised)",   "Padded tatami",       "auto (long axis)",         "0.45", "5.0", "1 padding layer @ 90° + edge run", "0.30", "raised; chenille look from FM-loop on top [proposed — ask chenille]"),
  "FM-sh":   ("Foam shade",                   "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
  "FM-gr":   ("Curl hollow (grey)",           "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
@@ -67,4 +67,4 @@ PIECE_NAME = {"BK": "back", "FR": "wearer's right front", "FL": "wearer's left f
 PIECE_CODE = {"BK": "B01", "FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
-REV_EMB = "Rev A"; REV_GAR = "Rev A"; DATE = "16 Oct 2026"
+REV_EMB = "Rev A"; REV_GAR = "Rev A"; DATE = "19 Oct 2026"

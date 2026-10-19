@@ -1,6 +1,6 @@
-XS BK {'stitches': 207555, 'trims': 1117, 'jumps': 2876, 'stops': 13, 'size_mm': (520.8, 456.9), 'max_stitch': 7.36} 78s
-XS BK S1_top-left {'stitches': 46521, 'trims': 256, 'stops': 13, 'size_mm': (281.4, 176.1), 'fits': True} split y 228.7
-XS BK S2_top-right {'stitches': 4635, 'trims': 42, 'stops': 7, 'size_mm': (298.8, 166.6), 'fits': True} split y 228.7
-XS BK S3_bottom-left {'stitches': 61616, 'trims': 329, 'stops': 11, 'size_mm': (282.4, 322.6), 'fits': True} split y 228.7
-XS BK S4_bottom-right {'stitches': 97614, 'trims': 519, 'stops': 11, 'size_mm': (286.1, 334.7), 'fits': True} split y 228.7
+XS BK {'stitches': 240936, 'trims': 1125, 'jumps': 2875, 'stops': 13, 'size_mm': (520.8, 456.9), 'max_stitch': 7.18} 129s
+XS BK S1_top-left {'stitches': 51942, 'trims': 255, 'stops': 13, 'size_mm': (281.4, 176.1), 'fits': True} split_clip
+XS BK S2_top-right {'stitches': 4657, 'trims': 42, 'stops': 7, 'size_mm': (298.8, 166.6), 'fits': True} split_clip
+XS BK S3_bottom-left {'stitches': 73718, 'trims': 332, 'stops': 11, 'size_mm': (282.4, 322.5), 'fits': True} split_clip
+XS BK S4_bottom-right {'stitches': 112057, 'trims': 521, 'stops': 11, 'size_mm': (286.1, 334.7), 'fits': True} split_clip
 DONE XS ['BK']

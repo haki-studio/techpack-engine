@@ -1,7 +1,8 @@
-3XL BK S1_r1c1 {'stitches': 88030, 'trims': 375, 'stops': 12, 'size_mm': (221.9, 320.4), 'fits': True} grid_split
-3XL BK S2_r1c2 {'stitches': 68611, 'trims': 373, 'stops': 13, 'size_mm': (271.8, 330.2), 'fits': True} grid_split
-3XL BK S3_r1c3 {'stitches': 25286, 'trims': 161, 'stops': 11, 'size_mm': (215.6, 323.4), 'fits': True} grid_split
-3XL BK S4_r2c1 {'stitches': 8699, 'trims': 66, 'stops': 8, 'size_mm': (215.6, 248.0), 'fits': True} grid_split
-3XL BK S5_r2c2 {'stitches': 43771, 'trims': 212, 'stops': 11, 'size_mm': (286.8, 258.7), 'fits': True} grid_split
-3XL BK S6_r2c3 {'stitches': 71524, 'trims': 300, 'stops': 11, 'size_mm': (221.8, 248.2), 'fits': True} grid_split
+3XL BK {'stitches': 344066, 'trims': 1419, 'jumps': 3708, 'stops': 13, 'size_mm': (670.7, 553.4), 'max_stitch': 7.17} 164s
+3XL BK S1_r1c1 {'stitches': 102654, 'trims': 374, 'stops': 12, 'size_mm': (221.9, 320.4), 'fits': True} grid_split
+3XL BK S2_r1c2 {'stitches': 77670, 'trims': 374, 'stops': 13, 'size_mm': (271.8, 330.1), 'fits': True} grid_split
+3XL BK S3_r1c3 {'stitches': 25701, 'trims': 161, 'stops': 11, 'size_mm': (215.6, 323.4), 'fits': True} grid_split
+3XL BK S4_r2c1 {'stitches': 8780, 'trims': 66, 'stops': 8, 'size_mm': (215.6, 248.0), 'fits': True} grid_split
+3XL BK S5_r2c2 {'stitches': 49775, 'trims': 213, 'stops': 11, 'size_mm': (286.8, 258.5), 'fits': True} grid_split
+3XL BK S6_r2c3 {'stitches': 81363, 'trims': 300, 'stops': 11, 'size_mm': (221.8, 248.2), 'fits': True} grid_split
 DONE 3XL ['BK']

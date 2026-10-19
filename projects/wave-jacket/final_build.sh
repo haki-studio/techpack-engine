@@ -4,6 +4,7 @@ cd "$(dirname "$0")"; set -e
 H=../../scripts/heavy.sh
 ./py.sh make_current.py
 ./py.sh emb_place.py | tail -1
+$H ./py.sh coverage.py | tail -1
 $H ./py.sh pattern_wave.py qa dxf pdf | tail -3
 ./py.sh covers.py
 $H ./py.sh compare.py M

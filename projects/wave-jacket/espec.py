@@ -86,7 +86,7 @@ def p2():
     zy = 128; zx = 12
     o.append(t(zx, zy, "DETAIL CROPS (2:1)", 2.2, 700))
     b = BB["BK"]; crops = [((b[0] + 40, b[1] + 60, b[0] + 100, b[1] + 100), "Crest: padded foam, curl lines, loops, grey hollow"),
-                           ((-40, 300, 20, 340), "Stripes: turning satin per tone + cream rope lines"),
+                           ((-40, 300, 20, 340), "Stripes: tatami along each tone + cream rope lines"),
                            ((b[2] - 100, b[3] - 70, b[2] - 40, b[3] - 30), "Drops + crests at the lower right")]
     for c, cap in crops:
         im = direction_map(V["BK"], c, 12, label_min=25, label_mm=1.4)
@@ -168,6 +168,9 @@ def p6():
     o.append(t(14, my + 3 + max(hh, hh2) + 12.5, "onto the render (A12); elsewhere it is the foam texture reference.", 1.55, 700, ORANGE))
     cx = 92
     o.append(t(cx, my, "WHAT CHANGED vs THE RENDER (and why)", 2.3, 700))
+    import pickle as _pk
+    _fg = [v for d in _pk.load(open("art_M.pkl", "rb")).get("fold_gap", {}).values() for v in d.values() if v >= 1.0]
+    _fgs = f"{min(_fg):.0f}-{max(_fg):.0f}" if _fg else "0"
     ch = ["Layout: render mapped onto the Drum Island pattern, x 1.45 mm/px,",
           "  y from neck → hem seam (back 1.14, front 1.24 mm/px).",
           "Curls + drops keep their render shape (mean scale) — no oval curls.",
@@ -181,6 +184,10 @@ def p6():
           "  its inner edge meets the underarm keep-out) [proposed — confirm].",
           "No seam-true wrap across the armhole (can't be mapped from the",
           "  render) — art ends 15 short of the armhole on both pieces.",
+          f"Sleeve fold (M): the trace stopped {_fgs} short of the fold, so each",
+          "  half is stretched from the underarm to meet the centre line",
+          "  (curls moved whole); the fold highlight is not sewn.",
+          "Stripes sew tatami along the stripe (turning satin left gaps).",
           "Threads: 9 (12 allowed): 2 creams + grey for the foam, 6 blues."]
     for i, c in enumerate(ch): o.append(t(cx, my + 4.5 + i * 3.3, c, 1.7))
     px = 206

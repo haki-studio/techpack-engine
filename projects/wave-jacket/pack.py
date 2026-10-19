@@ -187,7 +187,7 @@ def files_page():
     o.append(t(12, y + 2, f"All files fit the {FR_S} frame (incl. registration crosses): {'yes' if allfit else 'CHECK'}", 1.7, 700, GREEN if allfit else RED))
     bx = 212; y2 = 31
     o.append(t(bx, y2, "WHAT IS DIGITIZED", 2.0, 700)); y2 += 4.2
-    notes = [("Stripes", ["6 blues, one region per traced tone stripe:", "turning satin < 5 wide, tatami along the", "stripe (6 mm sections) wider; sewn after", "the cream rope lines (lines first, B2)."]),
+    notes = [("Stripes", ["6 blues, one region per traced tone stripe:", "tatami along the stripe (6 mm sections);", "turning satin only < 3 wide w/o holes; after", "the cream rope lines (lines first, B2)."]),
              ("Foam", ["curl details (grey hollow, shade, blue", "claw) first, then the raised foam: padded", "tatami per curl, then curl lines + a", "scalloped loop spiral in Foam shade."]),
              ("Drops", ["blue underside then white satin per drop;", "every drop is its own island (1 trim)."]),
              ("Ties", ["3-stitch tie-on/off at every trim + colour", "change; max sewn stitch ≤ 7.5 mm;", f"≤ {FA.max_threads(PROF)} colours per file incl. registration."])]

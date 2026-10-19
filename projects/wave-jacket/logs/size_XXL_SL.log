@@ -1,6 +1,6 @@
-XXL SL {'stitches': 121209, 'trims': 683, 'jumps': 1598, 'stops': 17, 'size_mm': (424.7, 390.7), 'max_stitch': 7.07} 33s
-XXL SL S1_top-left {'stitches': 35080, 'trims': 211, 'stops': 11, 'size_mm': (211.2, 332.2), 'fits': True} split_clip
-XXL SL S2_top-right {'stitches': 74204, 'trims': 382, 'stops': 15, 'size_mm': (245.2, 333.6), 'fits': True} split_clip
-XXL SL S3_bottom-left {'stitches': 318, 'trims': 9, 'stops': 1, 'size_mm': (296.7, 96.8), 'fits': True} split_clip
-XXL SL S4_bottom-right {'stitches': 11894, 'trims': 84, 'stops': 8, 'size_mm': (245.2, 105.3), 'fits': True} split_clip
+XXL SL {'stitches': 126069, 'trims': 679, 'jumps': 1621, 'stops': 17, 'size_mm': (424.7, 390.6), 'max_stitch': 7.05} 53s
+XXL SL absorbed near-empty sections: ['(0, 1) (57 mm2) -> (1, 0)']
+XXL SL S1_top-left {'stitches': 36248, 'trims': 210, 'stops': 11, 'size_mm': (211.2, 332.2), 'fits': True} split_clip
+XXL SL S2_top-right {'stitches': 78027, 'trims': 379, 'stops': 15, 'size_mm': (245.2, 338.4), 'fits': True} split_clip
+XXL SL S3_bottom-right {'stitches': 11974, 'trims': 84, 'stops': 8, 'size_mm': (245.2, 105.3), 'fits': True} split_clip
 DONE XXL ['SL']

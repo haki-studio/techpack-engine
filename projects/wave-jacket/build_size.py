@@ -111,6 +111,12 @@ for P in which:
             sp = dict(secs=gp["secs"], sy=None, sx=None); marks = gp["marks"]
             keys = sorted(gp["secs"], key=lambda k: (k[1], k[0])); names = gp["names"]
             spl = dict(frame=FRAME, sx=None, sy=None, xs=gp["xs"], ys=gp["ys"], grid=[gp["nx"], gp["ny"]], cut_mm=gp["cut"], whole_max=70.0, method="grid_split", sections={})
+        import absorb
+        keys, alog = absorb.absorb_tiny(sp["secs"], marks, keys, FRAME)
+        if alog:
+            print(size, P, "absorbed near-empty sections:", alog, flush=True)
+            names = {k: f"S{i + 1}_{names[k].split('_', 1)[1]}" if "_" in names[k] else f"S{i + 1}" for i, k in enumerate(keys)}
+        spl["absorbed"] = alog
         for key in keys:
             sv = sp["secs"][key]; t = time.time(); stops, n0 = stops_for(sv)
             bb = unary_union([r["geom"] for r in sv] + [Point(m).buffer(6) for m in marks[key]]).bounds

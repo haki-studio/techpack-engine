@@ -1,5 +1,5 @@
-3XL SL {'stitches': 115224, 'trims': 616, 'jumps': 1531, 'stops': 17, 'size_mm': (390.2, 400.7), 'max_stitch': 7.31} 31s
-3XL SL S1_top-left {'stitches': 33176, 'trims': 189, 'stops': 11, 'size_mm': (211.0, 316.2), 'fits': True} split_clip
-3XL SL S2_top-right {'stitches': 64720, 'trims': 317, 'stops': 13, 'size_mm': (211.0, 328.6), 'fits': True} split_clip
-3XL SL S3_bottom-right {'stitches': 18011, 'trims': 125, 'stops': 12, 'size_mm': (211.0, 116.0), 'fits': True} split_clip
+3XL SL {'stitches': 119072, 'trims': 612, 'jumps': 1527, 'stops': 17, 'size_mm': (390.2, 400.6), 'max_stitch': 7.07} 55s
+3XL SL S1_top-left {'stitches': 34051, 'trims': 187, 'stops': 11, 'size_mm': (211.0, 316.2), 'fits': True} split_clip
+3XL SL S2_top-right {'stitches': 67560, 'trims': 312, 'stops': 13, 'size_mm': (211.0, 328.6), 'fits': True} split_clip
+3XL SL S3_bottom-right {'stitches': 18087, 'trims': 125, 'stops': 12, 'size_mm': (211.0, 116.0), 'fits': True} split_clip
 DONE 3XL ['SL']
