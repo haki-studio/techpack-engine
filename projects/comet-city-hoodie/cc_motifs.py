@@ -265,6 +265,9 @@ def falling_star(cx, cy, r=6.0, unit="redstar"):
         regs.append(R("cc_red", taper_arm(cx, cy, a - 90, L, 1.6 if k % 2 == 0 else 1.2, 0.8, 1.6).difference(core.buffer(0.3)), "satin", "auto", "RSTAR", unit=unit, kob=0.4))
     for a in range(0, 360, 45):
         regs.append(R("cc_white", taper_arm(cx, cy, a - 67.5, r * 0.45, 1.0, 0.8, 1.6).difference(core.buffer(0.3)), "satin", "auto", "RSTAR", unit=unit, kob=0.4))
+    for a in range(0, 360, 45):                                     # 8 short red rays between, outside the white ones: a denser burst (mockup glow)
+        g_ = taper_arm(cx, cy, a - 67.5, r * 0.78, 1.1, 0.8, r * 0.5)
+        regs.append(R("cc_red", g_, "satin", "auto", "RSTAR", unit=unit, kob=0.4))
     regs.append(R("cc_white", core, "satin", ("radial", cx, cy), "STAR-c", unit=unit, kob=0.4))
     for a in range(0, 360, 30):                                     # halo: 12 white sparks just outside the rays
         t_ = math.radians(a + 15); d_ = r * 1.18

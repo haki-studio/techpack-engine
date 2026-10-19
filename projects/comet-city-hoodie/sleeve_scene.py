@@ -49,7 +49,7 @@ def mask_polys(mask, bb, min_area=1.5, simplify=0.22, min_hole=4.0):
         if g.area >= min_area: out.append(g)
     return out
 
-ITEMS = {}; META = {}
+ITEMS = {}; META = {}; REF = {}
 for side in "RL":
     Pc = "SR" if side == "R" else "SL"; sgn = 1 if side == "R" else -1
     pc = g0["S01" if side == "R" else "S02"].sew_poly(); b = pc.bounds; bb = b
@@ -66,7 +66,7 @@ for side in "RL":
     XMM = bb[0] + (np.arange(W) + 0.5)/PPM; YMM = bb[1] + (np.arange(H) + 0.5)/PPM
     _, _, _ys, _ws = MM.sleeve_dims()
     Wy = np.interp(YMM, _ys, _ws)[:, None]
-    readable = ((XMM * sgn)[None, :] > 28.0) & ((XMM * sgn)[None, :] < 0.93 * Wy)
+    readable = ((XMM * sgn)[None, :] > 28.0) & ((XMM * sgn)[None, :] < 0.82 * Wy)   # beyond ~0.85 the hanging sleeve's inner edge highlight reads as cloud (A15)
     im = Image.new("L", (W, H), 0); ImageDraw.Draw(im).polygon([((x - bb[0])*PPM, (y - bb[1])*PPM) for x, y in clip.exterior.coords], fill=255)
     CLIPm = np.array(im) > 127
     inside = CLIPm & readable
@@ -107,6 +107,13 @@ for side in "RL":
     cl = np.isin(lb, 1 + np.nonzero(ss >= 60.0)[0])
     hh = ndi.binary_fill_holes(cl) & ~cl; hl, hn = ndi.label(hh); hs = ndi.sum(hh, hl, range(1, hn + 1))/PPM**2
     cl |= np.isin(hl, 1 + np.nonzero(hs < 10.0)[0])
+    # cloud undersides: the mockup's sleeve clouds have saturated blue bottoms (they pass the 'leafy' test) - the blue pixels just
+    # below a cloud (<= 5 mm) are the cloud's dark underside, not foliage (A15 gate: Rev B left them bare)
+    _dn = np.zeros_like(cl)
+    for _d in range(1, int(5*PPM) + 1): _dn[_d:] |= cl[:-_d]            # cloud pixels shifted DOWN up to 5 mm (y down)
+    _under = _dn & leafy & ~cl
+    cl |= ndi.binary_opening(_under, structure=np.ones((3, 3)))
+    cl = ndi.gaussian_filter(cl.astype(np.float32), 0.8*PPM) > 0.5
     soft = ndi.gaussian_filter(cl.astype(np.float32), 1.8*PPM); gsh = np.zeros_like(soft); sh = int(2.2*PPM)
     gsh[sh:-sh] = soft[:-2*sh] - soft[2*sh:]
     T = ndi.gaussian_filter(L, 0.8*PPM) - 55.0*gsh
@@ -163,7 +170,8 @@ for side in "RL":
         if not clip.contains(ug_) or ug_.intersects(CLOUD_G): continue
         put(regs, zz, u); nmot += 1
     # soft undergrowth: hugs the foliage (grown + rounded), never a slab
-    UGF = unary_union(placed).buffer(3.2).buffer(-2.0).intersection(clip).difference(CLOUD_G).buffer(0)
+    _lf = unary_union(mask_polys(ndi.gaussian_filter((leafy & ~cl).astype(np.float32), 1.0*PPM) > 0.4, bb, min_area=6.0, simplify=0.3, min_hole=6.0))
+    UGF = unary_union([unary_union(placed).buffer(3.2).buffer(-2.0), _lf.buffer(0)]).intersection(clip).difference(CLOUD_G).buffer(0)   # + the mockup's whole foliage area (A15)
     UGF = unary_union([p for p in CM.polys(UGF) if p.area > 40])
     add([CM.R("cc_night", g, "tatami", 60.0, "UG", kob=0.0, kgrp="ug") for g in CM.polys(UGF)], 2)
     # fireflies: clear light dots in the foliage area
@@ -185,8 +193,13 @@ for side in "RL":
         add(CM.meteor(SPp(*h), SPp(*t), w_head=w + 0.3, unit=f"met{i}"), 5, unit=f"met{i}")
     COLSEQ = ["cc_lilac", "cc_white", "cc_azure", "cc_leaflt", "cc_royal", "cc_leaf", "cc_ice", "cc_cloud", "cc_dusk", "cc_night"]
     for r in items: r["layer"] = 20 + COLSEQ.index(r["col"])
+    _rd = unary_union(mask_polys(readable & CLIPm, bb, min_area=50.0, simplify=0.5, min_hole=50.0))
+    REF[Pc + "_edge"] = _rd.boundary
+    REF[Pc + "_glow"] = unary_union([r["geom"] for r in items if r["grp"] in ("MET", "STAR", "STAR-c", "DOT")])
+    REF[Pc] = dict(bb=bb, cloud=cl.copy(), design=(ndi.binary_opening(leafy, structure=np.ones((3, 3))) | cl) & CLIPm)   # fidelity.py
     ITEMS[Pc] = items
     META[Pc] = dict(rosettes=len(ANCHORS[side]), plants=nmot, stars=len(STARS[side]), meteors=len(METEORS[side]), fireflies=fly,
                     cloud_regions=ncl, undergrowth_mm2=round(UGF.area))
 pickle.dump(dict(items=ITEMS, meta=META), open("sleeve_scene.pkl", "wb"))
+pickle.dump(REF, open("sleeve_ref.pkl", "wb"))
 print({k: len(v) for k, v in ITEMS.items()}, META)

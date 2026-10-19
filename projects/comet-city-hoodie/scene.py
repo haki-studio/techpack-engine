@@ -80,6 +80,30 @@ def add(regs, sew, z=None, **kw):
         items.append(r)
 Z = dict(comet=3, meteor=4, cloud=5, star=6, glow=7, far=8, farwin=9, near=10, nearwin=11, rail=14, bush=15, lamp=16, bike=17, figure=18)
 
+METEORS_PX = [((207, 421), (246, 381), 1.6), ((297, 486), (342, 419), 1.5), ((392, 394), (431, 341), 1.4), ((500, 330), (530, 301), 1.2),
+              ((530, 394), (578, 352), 1.4), ((495, 490), (548, 434), 1.5), ((451, 599), (495, 542), 1.5),
+              ((415, 430), (500, 355), 1.2)]   # seeds (mockup px); the streaks are traced below
+# A14: each meteor is TRACED - the hand-picked mockup px are seeds only; the streak's own pixels (bright, blue > red) within 5 mm of
+# the seed line give its axis (PCA), its two ends (2nd / 98th percentile along the axis) and its width (perpendicular spread)
+_streak_px = (_rgb[..., 2] > _rgb[..., 0] + 35) & (LUM > 62)
+_pts_all = np.c_[XMM[_streak_px], YMM[_streak_px]]
+from scipy.spatial import cKDTree as _KD
+_kd_s = _KD(_pts_all)
+MET_TRACED = []
+for i, (h, t, w) in enumerate(METEORS_PX):
+    a_, b_ = np.array(P(*h)), np.array(P(*t)); seg = LineString([a_, b_])
+    cand = _pts_all[_kd_s.query_ball_point((a_ + b_)/2, np.linalg.norm(b_ - a_)/2 + 6)]
+    if len(cand): cand = cand[np.array([seg.distance(Point(*q)) < 5.0 for q in cand])]
+    if len(cand) >= 30:
+        c0 = cand.mean(0); u_, s_, vt = np.linalg.svd(cand - c0, full_matrices=False); d_ = vt[0]
+        if np.dot(d_, b_ - a_) < 0: d_ = -d_
+        pr = (cand - c0) @ d_; pp = (cand - c0) @ np.array([-d_[1], d_[0]])
+        hh, tt = c0 + d_*np.percentile(pr, 2), c0 + d_*np.percentile(pr, 98)
+        wd = float(np.clip(2.8 * np.std(pp), 1.6, 4.2))
+    else:
+        hh, tt, wd = a_, b_, w + 1.2
+    MET_TRACED.append((tuple(np.round(hh, 1)), tuple(np.round(tt, 1)), round(wd, 2), int(len(cand))))
+
 # ================================================================ comet: traced from the registered close-up
 SPINE_MM = [(-80, 320), (-50, 273), (-17, 231), (23, 199), (43, 181), (87, 150), (133, 117), (175, 82), (205, 55), (232, 30), (252, 12)]
 SPINE = CM.smooth_pts(SPINE_MM, 220)
@@ -107,6 +131,7 @@ _ml = rgb2lab(_mk / 255.0); _mch = np.hypot(_ml[..., 1], _ml[..., 2])
 _zall = rast([ZONE], CB, CPPM, (_ch, _cw))
 _mcand = _zall & ((_mch > 26) | ((_ml[..., 0] > 66) & (_mch > 10)))
 _mcand = ndi.binary_opening(_mcand, structure=np.ones((2, 2)))
+_mcand &= ~rast([LineString([h_, t_]).buffer(w_/2 + 1.0) for h_, t_, w_, n_ in MET_TRACED], CB, CPPM, (_ch, _cw))   # meteors are their own motifs
 _md = np.stack([deltaE_ciede2000(_ml, np.broadcast_to(r_, _ml.shape)) for r_ in _ref[:len(COMET_COLS)]], -1)
 _use_m = _mcand & ~_cand                                           # mockup fills where the close-up has no comet pixel
 _cand = _cand | _mcand
@@ -147,6 +172,10 @@ _cl_lab, _cl_n = ndi.label(_cloudm); _cl_s = ndi.sum(_cloudm, _cl_lab, range(1, 
 _cl_y = np.array([c[0] for c in ndi.center_of_mass(_cloudm, _cl_lab, range(1, _cl_n + 1))]) / CPPM + CB[1] if _cl_n else np.array([])
 # only the cloud bank the comet really passes behind (y > 170 at M): faded comet pixels higher up read as cloud tones = ghost tails
 _cloudm = np.isin(_cl_lab, 1 + np.nonzero((_cl_s >= 25.0) & (_cl_y > 170.0))[0])
+_mcl = _zall & (_ml[..., 0] > 45) & (_ml[..., 0] < 78) & (_mch < 18) & (_py > 170.0)    # the MOCKUP's cloud in front of the comet (A14)
+_mcl = ndi.binary_opening(ndi.binary_closing(_mcl, structure=np.ones((3, 3))), structure=np.ones((3, 3)))
+_cloudm = _cloudm | _mcl
+_cloudm &= ~ndi.binary_dilation(_mcand, iterations=2)                 # the mockup shows the comet here: cloud stays off it
 _cl_tone = {c: _cloudm & (_lab == len(COMET_COLS) + i) for i, c in enumerate(CLOUD_COLS)}
 for zz, (col, m) in enumerate((("cc_dusk", _cloudm), ("cc_cloud", _cl_tone["cc_cloud"] | _cl_tone["cc_ice"]), ("cc_ice", _cl_tone["cc_ice"]))):
     m = ndi.binary_opening(m & _cloudm, structure=np.ones((2, 2)))
@@ -158,7 +187,7 @@ for zz, (col, m) in enumerate((("cc_dusk", _cloudm), ("cc_cloud", _cl_tone["cc_c
 _OMM = _o * (spread_v(_t)*1.35 + 7.0)
 _tb = np.linspace(0, 1, 41); _ext = []
 for i_ in range(40):
-    sel = _cand & (_t >= _tb[i_]) & (_t < _tb[i_ + 1])
+    sel = _mcand & (_t >= _tb[i_]) & (_t < _tb[i_ + 1])         # A12/A14: the body extent follows the MOCKUP's comet pixels (placement ref)
     if sel.sum() < 20: _ext.append(None); continue
     ov = _OMM[sel]
     _ext.append((np.percentile(ov, 4), np.percentile(ov, 96)))
@@ -173,7 +202,7 @@ _LO = np.interp(_t, _tm, _lo); _HI = np.interp(_t, _tm, _hi)
 _f = (_omm - _LO) / np.maximum(_HI - _LO, 0.5)
 _fe = (0.03 + 0.22*_t**1.5) * np.clip(0.5 + 0.3*np.sin(_s/2.3 + 7.0*_t) + 0.25*np.sin(_s/5.3 + 1.0) + 0.15*np.sin(_s/0.97 + 2.0), 0, 1)      # feather depth (fraction)
 _bodym = _zall & (_f > _fe) & (_f < 1 - _fe) & (_t > 0.015) & (_t < 0.985)
-_bodym = ndi.binary_opening(_bodym, structure=np.ones((2, 2)))
+_bodym = ndi.binary_opening(_bodym | (ndi.binary_closing(_mcand, structure=np.ones((3, 3))) & _zall), structure=np.ones((2, 2)))   # + every mockup comet pixel (A14)
 # white core line position across the bundle traced from the close-up (median f of its white/pink pixels per t), smoothed
 _corem = _cu_core & _zall & (_f > 0) & (_f < 1)
 _fc_t, _fc_v = [], []
@@ -250,21 +279,17 @@ for df, L, tc, w, col in ((-0.09, 0.66, 0.46, 1.8, "cc_lilac"), (0.05, 0.6, 0.42
 COMET_U = unary_union([r["geom"] for r in items if r["sew"] == "comet"]).buffer(0)
 
 # ================================================================ meteors (outside the comet zone), falling star
-METEORS_PX = [((207, 421), (246, 381), 1.6), ((297, 486), (342, 419), 1.5), ((392, 394), (431, 341), 1.4), ((500, 330), (530, 301), 1.2),
-              ((530, 394), (578, 352), 1.4), ((495, 490), (548, 434), 1.5), ((451, 599), (495, 542), 1.5),
-              ((415, 430), (500, 355), 1.2)]   # long fine streak parallel to the comet (Rev A/B read it as a cloud = ghost tail)
 _mrng = random.Random(8); n_met = 0
-for i, (h, t, w) in enumerate(METEORS_PX):
-    seg = LineString([P(*h), P(*t)])
-    if ZONE.buffer(-3).intersects(seg.interpolate(0.5, normalized=True)): continue
-    add(CM.meteor(P(*h), P(*t), w_head=w + _mrng.uniform(0.0, 0.6), unit=f"met{i}"), "meteor", Z["meteor"], unit=f"met{i}"); n_met += 1
+for i, (hh, tt, wd, _n) in enumerate(MET_TRACED):
+    seg = LineString([hh, tt])
+    add(CM.meteor(tuple(hh), tuple(tt), w_head=wd, w_tail=max(1.2, wd*0.9), unit=None), "meteor", Z["meteor"] + (1.0 if ZONE.buffer(-3).intersects(seg) else 0), kob=(1.2 if ZONE.intersects(seg) else 0.4), kgrp=f"met{i}"); n_met += 1   # kgrp: head dot + core knock the streak exactly (no ring)   # clipped at keep-outs, not dropped
 RS = P(403.5, 597.5)
 trail = CM.smooth_pts([P(404.7, 530.0), P(404.3, 560.0), P(403.9, 589.0)], 30)
-_tw = np.linspace(1.0, 1.7, len(trail)); _n3 = len(trail)//3
+_tw = np.linspace(1.6, 2.5, len(trail)); _n3 = len(trail)//3      # mockup trail ~2.5 mm at the star
 add([CM.R("cc_violet", CM.ribbon(trail[:2*_n3 + 1], _tw[:2*_n3 + 1]), "satin", "auto", "MET", kob=0.3)], "meteor", Z["meteor"], unit="redstar")
 add([CM.R("cc_lilac", CM.ribbon(trail[2*_n3:], _tw[2*_n3:]), "satin", "auto", "MET", kob=0.3)], "meteor", Z["meteor"], unit="redstar")
 add([CM.R("cc_white", CM.ribbon(trail[2*_n3 + 3:], np.full(len(trail) - 2*_n3 - 3, 0.7)), "satin", "auto", "MET", kob=0.0)], "meteor", Z["meteor"] + 0.2, unit="redstar")
-add(CM.falling_star(*RS, r=7.6), "meteor", Z["meteor"] + 0.5, unit="redstar")
+add(CM.falling_star(*RS, r=9.5), "meteor", Z["meteor"] + 0.5, unit="redstar")
 for (sx, sy, kk) in ((411, 582, 0.8), (395, 588, 0.7), (413, 606, 0.65)):
     add(CM.star(*P(sx, sy), "cross", "cc_white", "redstar", k=kk), "meteor", Z["meteor"], unit="redstar")
 for (sx, sy) in ((398, 604), (409, 592)):
@@ -312,14 +337,14 @@ STREAK_U = unary_union([ZONE] + [r["geom"].buffer(4.0) for r in items if r["grp"
 streakm = rast([STREAK_U])
 Ls = ndi.gaussian_filter(LUM, 0.5*PPM)
 _inner = rast([F.PANEL_R.buffer(-13), F.PANEL_L.buffer(-13), box(-400, 330, 400, 600).intersection(unary_union([F.PANEL_R, F.PANEL_L]))])
-_inner &= ~rast([F.WELT_R.buffer(12), F.WELT_L.buffer(12)]) & (np.abs(XMM) > 16)
+_inner &= ~rast([F.WELT_R.buffer(9), F.WELT_L.buffer(9)]) & (np.abs(XMM) > 16)
 cl = (Ls > 60) & (ndi.gaussian_filter(SAT, 0.5*PPM) < 0.72) & PANEL & _inner & (YMM > 88) & (YMM < 408) & ~streakm   # saturated blue = streaks, not cloud
 cl = ndi.binary_opening(cl, structure=disk(0.9))
-cl = ndi.gaussian_filter(cl.astype(np.float32), 1.1*PPM) > 0.5                  # soft, rounded lobe outlines
+cl = ndi.gaussian_filter(cl.astype(np.float32), 1.1*PPM) > np.where(YMM > 290, 0.25, 0.5)   # soft lobes; the speckled low band above the city (A15 gate) needs a lower density cut
 lab, n = ndi.label(cl)
 sizes = ndi.sum(cl, lab, range(1, n + 1)) / PPM**2
 _cy = np.array([c[0] for c in ndi.center_of_mass(cl, lab, range(1, n + 1))]) / PPM + BB[1] if n else np.array([])
-cl = np.isin(lab, 1 + np.nonzero((sizes >= 30.0) & ((sizes >= 60.0) | (_cy > 200)))[0])
+cl = np.isin(lab, 1 + np.nonzero(sizes >= 8.0)[0])                               # A14: every cloud, however small
 _holes = ndi.binary_fill_holes(cl) & ~cl
 _hl, _hn = ndi.label(_holes); _hs = ndi.sum(_holes, _hl, range(1, _hn + 1)) / PPM**2
 cl |= np.isin(_hl, 1 + np.nonzero(_hs < 12.0)[0])                               # no pinholes
@@ -334,7 +359,7 @@ ALLOW = unary_union([_inner_lim] + _lob).intersection(LIM_U.buffer(-0.8)).buffer
 cl &= rast([ALLOW])
 cl = ndi.binary_opening(cl, structure=disk(0.8))
 lab, n = ndi.label(cl); sizes = ndi.sum(cl, lab, range(1, n + 1)) / PPM**2
-cl = np.isin(lab, 1 + np.nonzero(sizes >= 25.0)[0])
+cl = np.isin(lab, 1 + np.nonzero(sizes >= 8.0)[0])
 # shading: pale tops, dark undersides (vertical derivative of the soft cloud mask) + the mockup's own tone
 soft = ndi.gaussian_filter(cl.astype(np.float32), 2.0*PPM)
 g = np.zeros_like(soft); sh = int(2.5*PPM)
@@ -354,7 +379,7 @@ TONES = [("cc_dusk", cl, 0.0), ("cc_night", tone(T < THR["cc_night"]), 0.1), ("c
          ("cc_ice", tone(T >= THR["cc_ice"]), 0.3), ("cc_white", tone(T >= THR["cc_white"]), 0.4)]
 n_cloud = 0
 for col, m, zz in TONES:
-    for gg in mask_polys(m, min_area=3.0 if col != "cc_dusk" else 25.0, simplify=0.2, min_hole=6.0):
+    for gg in mask_polys(m, min_area=3.0 if col != "cc_dusk" else 8.0, simplify=0.2, min_hole=6.0):
         add([CM.R(col, gg, "tatami", 0.0 if col in ("cc_dusk", "cc_night") else 8.0, "CL", kob=0.0, kgrp="clouds")], "cloud", Z["cloud"] + zz); n_cloud += 1
 _sil = [r["geom"] for r in items if r["grp"] in ("CL", "COM-cl") and r["col"] == "cc_dusk"]
 _tree = shapely.STRtree(_sil)
@@ -396,7 +421,7 @@ for layer, wmin, wmax, top_fn, bot_fn in (("far", 6.0, 15.0, far_top, rail_mm), 
         x += w + (crng.uniform(0, 2.5) if layer == "far" else crng.uniform(0.0, 1.2))
 # horizon glow (review 3): pale haze band behind the whole skyline + violet / rose glow concentrated toward the zip (mockup)
 xs = np.linspace(-300, 300, 200)
-haze = Polygon([(x, far_top(x) - 10 + 2.5*math.sin(x/11.0)) for x in xs] + [(x, near_top(x) + 3) for x in xs[::-1]]).buffer(0)
+haze = Polygon([(x, far_top(x) - 14 + 3.0*math.sin(x/11.0)) for x in xs] + [(x, near_top(x) + 3) for x in xs[::-1]]).buffer(0)
 add([CM.R("cc_cloud", haze, "tatami", 0.0, "GLOW", kob=0.0)], "glow", Z["glow"] - 0.2)
 def _glow_band(h0, amp, per, ph, xr):
     xx = np.linspace(-xr, xr, 120); env = np.clip(1.15 - np.abs(xx)/xr, 0, 1) ** 0.6
@@ -459,6 +484,10 @@ add([CM.R("cc_ice", rail_poly(-1.75, 1.0), "satin", "auto", "RAIL-hl", kob=0.0)]
 add([CM.R("cc_night", rail_poly(38.5, 1.8), "satin", "auto", "RAIL", kob=0.0)], "rail", Z["rail"])
 add([CM.R("cc_cloud", rail_poly(37.1, 0.95), "satin", "auto", "RAIL-hl", kob=0.0)], "rail", Z["rail"] + 0.1)
 add([CM.R("cc_ice", rail_poly(47.5, 1.1), "satin", "auto", "RAIL-hl", kob=0.0)], "rail", Z["rail"])
+# walkway (A15 gate: the mockup's pale pavement band below the kerb was left bare in Rev B): dusk tatami from the kerb down to the
+# hem keep-out (art_size slides it with the city band), a pale ice line along its far edge
+_wk = Polygon([P(x, rail_y(x) + 40.5) for x in np.linspace(110, 625, 60)] + [(P(x, 0)[0], 540.0) for x in np.linspace(625, 110, 60)]).buffer(0)
+add([CM.R("cc_dusk", _wk, "tatami", 0.0, "GND", kob=0.0)], "rail", Z["rail"] - 0.5)
 x = 132.0; nb = 0
 while x < 612:
     a = P(x, rail_y(x) + 1.6); b = P(x, rail_y(x) + 37.0)
@@ -497,8 +526,9 @@ for r in items: r["layer"] = 20 + COLSEQ.index(r["col"])
 
 META = dict(n_comet_strands=n_str, spine=SPINE.tolist(), n_stars=len(stars), star_moved=star_moved, n_meteors=n_met, n_comet_regions=n_comet, n_cloud_regions=n_cloud,
             n_towers=len(towers), n_lit_edges=n_edge, n_far=sum(1 for t in towers if t[0] == "far"), n_near=sum(1 for t in towers if t[0] == "near"),
-            n_windows=n_win, n_signs=n_sign, n_antennas=n_ant, n_balusters=nb, closeup_residuals=CU.residuals(),
+            n_windows=n_win, n_signs=n_sign, n_antennas=n_ant, n_balusters=nb, closeup_residuals=CU.residuals(), meteors_traced=MET_TRACED,
             lamp_dx=lamp_dx, bush_dx=bush_dx, mock_map=dict(cfx=MM.CFX, necky=MM.NECKY, sx=MM.SX, sy=MM.SY), bike_rear=BIKE_REAR, figure_feet=FIG_FEET)
 pickle.dump(dict(items=items, meta=META), open("scene.pkl", "wb"))
+pickle.dump(dict(zone=ZONE, streak=STREAK_U, lim=LIM_ALL, glows=unary_union([r["geom"] for r in items if r["grp"] in ("MET", "STAR", "STAR-c", "DOT", "RSTAR")])), open("scene_ref.pkl", "wb"))       # reference exclusions for fidelity.py (A14/A15 gates)
 from collections import Counter
 print("items", len(items), dict(Counter(r["sew"] for r in items)), {k: v for k, v in META.items() if k.startswith("n_")})
