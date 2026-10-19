@@ -88,6 +88,13 @@ def place(c, centre_mm, s, flipx=False, img=None):
     lab_, n_, _ = cloud3.masks(img, (x0, y0, x1, y1))
     comp = (np.array(im) > 127) & (lab_ > 0)
     comp = ndi.binary_fill_holes(ndi.binary_closing(comp, iterations=2))
+    # drop thin VERTICAL strokes stuck to a cloud (light sleeve topstitching / garment edges in the close-ups); tails are horizontal
+    core = ndi.binary_dilation(morphology.binary_opening(comp, morphology.disk(3)), iterations=3)
+    lab2, n2 = ndi.label(comp & ~core)
+    for k in range(1, n2 + 1):
+        ys_, xs_ = np.nonzero(lab2 == k)
+        if ys_.max() - ys_.min() > 1.6 * (xs_.max() - xs_.min() + 1) and ys_.max() - ys_.min() > 12: comp[lab2 == k] = False
+    if comp.sum() < 300: return []
     sx = -s if flipx else s
     f = lambda x, y: (centre_mm[0] + (np.asarray(x) - cx) * sx, centre_mm[1] + (np.asarray(y) - cy) * s)
     regs, sil = cloud3.cloud(a, comp, (x0, y0), f, abs(s))
@@ -216,7 +223,7 @@ def sleeves():
     out = []
     for c in comps:
         for vi, (sl, half, (vx0, vx1)) in enumerate(VIEWS):
-            q = c["px"].intersection(box(vx0, 0, vx1, 1086))
+            q = c["px"].intersection(box(vx0 + 14, 0, vx1 - 14, 1086))      # 14 px in: never the light sleeve-edge seam lines
             if q.is_empty or q.area < 600: continue
             sub = dict(px=q, regs=[(n, g.intersection(q)) for n, g in c["regs"] if not g.intersection(q).is_empty],
                        lines=[l.intersection(q.buffer(1)) for l in c["lines"] if l.intersects(q)])
@@ -225,7 +232,8 @@ def sleeves():
             Wy = mt["W"] + (mt["Ww"] - mt["W"]) * min(1, max(0, y / mt["Lu"]))
             fr = (cx - vx0) / (vx1 - vx0)                     # 0..1 across the view
             x = (fr - 1.0) * Wy if half < 0 else fr * Wy      # R: back half [-W, 0] | front half [0, W]; L (S02) the same in its own coords
-            out.append(dict(sleeve=sl, view=vi, vis=place(sub, (x * 0.94, y), 0.65, img=CS), px=(cx, cy)))
+            v_ = place(sub, (x * 0.94, y), 0.65, img=CS)
+            if v_: out.append(dict(sleeve=sl, view=vi, vis=v_, px=(cx, cy)))
     return out
 
 def build_all():
