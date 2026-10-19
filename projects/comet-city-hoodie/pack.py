@@ -1,6 +1,7 @@
 """Embroidery pack G1-G6 + F1 for the Comet City hoodie (01 front scene FR + FL, 02 sleeves SR + SL).
 Every count comes from the stitch files (dst_current.json / dst_all.json = readback.dst of the written DSTs)."""
 import cccore
+import json
 import os, json, pickle, glob
 import cairosvg
 from PIL import Image, ImageDraw
@@ -172,6 +173,20 @@ def summary():
           "8. References: the comet is traced from the founder's close-up (registered on the fronts); clouds/placement from the mockup; per-panel close-ups would still sharpen city + sleeves.",
           "9. DST/PES are production-intent drafts: the factory digitizer checks density + pull on the washed duck and edits before the sew-out."]
     for i, q in enumerate(qs): o.append(t(12, qy + 5 + i*3.6, q, 1.75))
+    # fidelity gates (LESSONS A14 / A15) on the shipped size-M DSTs - fidelity.json (tables on out/compare_<piece>.png)
+    fy = qy + 5 + len(qs)*3.6 + 6
+    FD = json.load(open("fidelity.json"))
+    ok = not (FD["failing_motifs"] or FD["unexplained"])
+    o.append(t(12, fy, f"FIDELITY GATES (LESSONS A14 / A15) — {FD['mode']}, size M: " + ("PASS" if ok else "BLOCKED"), 2.6, 700, GREEN if ok else RED))
+    fy += 5
+    from collections import Counter
+    for grp in ("fronts", "sleeves"):
+        for P, d in FD[grp].items():
+            fam = "  ·  ".join(f"{k} {sum(r['ok'] for r in v)}/{len(v)} traced motifs match" for k, v in d.items() if k in ("clouds", "comet"))
+            why = Counter(g["why"].split(":")[0] for g in d["gaps"])
+            o.append(t(12, fy, f"{P}: {fam}  ·  uncovered gaps >= 25 mm²: {len(d['gaps'])} (" + ", ".join(f"{n} {k}" for k, n in why.items()) + ")", 1.7)); fy += 3.6
+    o.append(t(12, fy + 1, "motif_match: IoU >= 0.70 and width/height >= 80 % per traced motif. uncovered: mockup design area (garment details masked: zip, welts, seams) not stitched; every gap explained.", 1.6, 400, MUTED))
+    o.append(t(12, fy + 4.2, "Generated, not traced: skyline + figure (original on purpose, IP), lamp, bicycle, railing, bush, star shapes, comet strand texture, sleeve leaves (see element specs p5).", 1.6, 400, MUTED))
     return o
 
 def files_page():

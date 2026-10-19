@@ -349,7 +349,9 @@ def p_revisions():
                             "(FR + FL, split at the zip) + 02 sleeves (SR + SL), redrawn from the low-res mockup. Pattern XS–3XL with embroidery placement, DXF + 1:1 plot."),
             ("Rev B", DATE, "Fidelity rebuild after the independent review: the founder's close-up registered onto the fronts and the comet traced from it (+ tapering streaks, own core stops); "
                             "clouds in 5 shaded tones with lobed ends; dozens of towers with window grids, neon + horizon glow; solid figure, lamp, bike, dark railing, soft bush; "
-                            "falling star + stars with glow; sleeves dense mixed foliage on undergrowth; welt cut-out margin 8 mm (DST-checked); compare sheets drawn from the DST files.")]
+                            "falling star + stars with glow; sleeves dense mixed foliage on undergrowth; welt cut-out margin 8 mm (DST-checked); compare sheets drawn from the DST files. "
+                            "19 Oct (review round): broad comet body over the mockup's traced extent, traced meteors + clouds (A14/A15 gates pass on the DSTs), walkway, "
+                            "thread-luminance cloud tones; hood block closed (zip-hoodie, founder); welts via the block's welt override.")]
     y = 36
     for rv, dt, ch in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(36, y, dt, 1.7))
