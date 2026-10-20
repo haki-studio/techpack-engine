@@ -252,7 +252,7 @@ class Run:
     # ------------------------------------------------------------ compile
     def compile(self):
         t0 = time.time(); plan = ObjectPlan.from_json(self.f("plan.json"))
-        res = CP.write(plan, self.base, self.origin)
+        res = CP.write(plan, self.base, self.origin, **(self.cfg.get("compile") or {}))   # G1: run.yaml compile: {exact_travel: {..., unsewn_only: true}}
         if len(res["seg_parts"]) != len(res["segs"]): raise RuntimeError("compile: labels out of step with stitches")
         json.dump(dict(base=os.path.basename(self.base), origin=res["origin"], build=res["build"], readback=res["readback"], stops=res["stops"]),
                   open(self.f("readback.json"), "w"), indent=1)
@@ -322,6 +322,14 @@ class Run:
         row["direction_by_kind"] = {k: dict(tiles=sum(v), ok=v[0], dev=v[1], chaos=v[2], pct_ok=round(100 * v[0] / max(1, sum(v)), 1),
                                             pct_chaos=round(100 * v[2] / max(1, sum(v)), 1)) for k, v in sorted(per.items())}
         row["direction_by_source"] = audit.direction_by_source(dm, part_at, self.rb, plan.parts)   # M3b: one constructed basis
+        if self.cfg.get("labels"):                          # --- G1 --- the label-angle tiles on their own line (counted independent)
+            lab = [0, 0, 0]
+            for k_, tiles in ((0, dm["ok_tiles"]), (1, [r["at_mm"] for r in dm["fail_dev"]]), (2, [r["at_mm"] for r in dm["fail_chaos"]])):
+                for c in tiles:
+                    p_ = part_at(c)
+                    if p_ is not None and p_.dir.source == "label": lab[k_] += 1
+            row["direction_label"] = dict(tiles=sum(lab), ok=lab[0], dev=lab[1], chaos=lab[2], pct_ok=round(100 * lab[0] / max(1, sum(lab)), 1),
+                                          note="tiles whose top part's angle is the labeller's (source label); included in 'independent'")
         # --- M4c --- radial-floret exemption (gates_radial): raw chaos stays in row["direction"]; exempt tiles -> "radial"
         from digitize import gates_radial as GR
         ex = GR.tag_buckets(GR.exempt(dm, vis, [sp[i] for i in idx], plan.parts, GR.config(self.rb), ppm, origin=self.crop[:2]),

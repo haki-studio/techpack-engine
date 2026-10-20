@@ -328,7 +328,7 @@ kinds:
     note: one radial cluster member, rays from its centre
   bead:                        # eyes, studs, knots: a bead (= knot / stud)
     techniques: [dot]
-    dir: label
+    dir: 0                     # a round bead has no grain: one row angle by rule (= stud)
     params: {min_d: 0.9}
     note: a bead dot
   line:                        # outlines, cracks, tile lines: run / bean along the traced line (= stratum_crack)

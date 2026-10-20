@@ -6,7 +6,7 @@ writes the labels (today the Claude Code session, later the PLM vision call) rea
 the sheet in garment mm. Optional: an overlay of an existing labels file (each part's hint polygon / seed in its colour)
 to check the labels against the picture before running the compiler. No Anthropic API calls.
 
-  python3 -m digitize.labels.sheet <run.yaml> <out.png> [--scale 4] [--step 5] [--window x0 y0 x1 y1] [--labels f.json]
+  python3 -m digitize.labels.sheet <run.yaml> <out.png> [--scale 4] [--step 5] [--view x0 y0 x1 y1] [--labels f.json]
 """
 import argparse, json, os, sys
 
@@ -18,13 +18,13 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 
-def draw(rgb, bounds, ppm, out, scale=4.0, step=5.0, label_every=10.0, window=None, labels=None):
+def draw(rgb, bounds, ppm, out, scale=4.0, step=5.0, label_every=10.0, view=None, labels=None):
     x0, y0, x1, y1 = bounds
     im = Image.fromarray(np.asarray(rgb).clip(0, 255).astype(np.uint8))
     W, H = int(round((x1 - x0) * scale)), int(round((y1 - y0) * scale))
     im = im.resize((W, H), Image.LANCZOS)
-    if window:                                                       # a zoomed window (garment mm)
-        wx0, wy0, wx1, wy1 = window
+    if view:                                                       # a zoomed window (garment mm)
+        wx0, wy0, wx1, wy1 = view
         im = im.crop((int((wx0 - x0) * scale), int((wy0 - y0) * scale), int((wx1 - x0) * scale), int((wy1 - y0) * scale)))
         x0, y0, x1, y1 = wx0, wy0, wx1, wy1; W, H = im.size
     pad = 34; sheet = Image.new("RGB", (W + 2 * pad, H + 2 * pad), (255, 255, 255)); sheet.paste(im, (pad, pad))
@@ -66,7 +66,7 @@ def main(argv=None):
     ap.add_argument("run_yaml"); ap.add_argument("out")
     ap.add_argument("--scale", type=float, default=4.0); ap.add_argument("--step", type=float, default=5.0)
     ap.add_argument("--label-every", type=float, default=10.0)
-    ap.add_argument("--window", type=float, nargs=4); ap.add_argument("--labels")
+    ap.add_argument("--view", type=float, nargs=4); ap.add_argument("--labels")
     a = ap.parse_args(argv)
     from digitize import config
     from digitize.extract import register
@@ -74,7 +74,7 @@ def main(argv=None):
     reg = register.load(config.path(cfg, cfg.get("registration") or b["registration"]))
     ref = register.reference(reg, b["view"], tuple(b["crop"]), ppm=float(b["ppm"]))
     labels = config.path(cfg, a.labels) if a.labels else None
-    print(draw(ref["rgb"], ref["bounds"], ref["ppm"], a.out, a.scale, a.step, a.label_every, a.window, labels))
+    print(draw(ref["rgb"], ref["bounds"], ref["ppm"], a.out, a.scale, a.step, a.label_every, a.view, labels))
 
 
 if __name__ == "__main__":

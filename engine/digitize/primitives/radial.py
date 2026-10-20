@@ -5,16 +5,16 @@
      reads as a lit dome), >= sep_mm / 2 apart. params.centres = "seeds" uses the label's hint seeds instead.
   3. each centre owns its Voronoi cell inside the mass; radius = fit x the distance to the cell edge, capped at r_max
      (a WHOLE floret that fits: a clipped radial reads as a satin blob, not a fan).
-  4. outline: params.petals >= 3 -> an n-petal notched outline (petal axes every 360/n deg, the first pointing away from
+  4. outline: params.lobes >= 3 -> an n-petal notched outline (petal axes every 360/n deg, the first pointing away from
      the mass centre); 0 -> a disc. Minus the knot hole. One `radial` part (radial satin; DirSpec mode radial, construct
      rule radial, meta centre). Under r_min / min_mm2: no petals, only the knot (rule 9).
-  5. knot (params.knot, default true): a `bead` at the centre (dot technique) in the palest other thread of the label's
+  5. bead (params.bead, default true): a `bead` at the centre (dot technique) in the palest other thread of the label's
      tones, else a thread different from what surrounds it (never an invisible bead); sewn first.
   6. ground (params.ground: "angle" | "grain" | null): the mass minus the florets and knots as ONE `plane` part (angle:
      params.ground_angle, source label) or `band_grain`-like guided part (grain), in the darkest thread covering
      >= ground_share, sewn LAST with the florets and knots knocked out of it (B2 / B37: details first, the darkest
      connected tone last hides the travel between them).
-params: min_mass_mm2 15, sep_mm 4, r_max 3.2, r_min 1.5, fit 1.35, min_mm2 5, petals 5, notch_mm 0.6, knot true, knot_d 1.5,
+params: min_mass_mm2 15, sep_mm 4, r_max 3.2, r_min 1.5, fit 1.35, min_mm2 5, lobes 5, notch_mm 0.6, bead true, bead_d 1.5,
 peak_sigma_mm 0.6, tophat_mm 3, prominence 4, ground null, ground_angle null, ground_share 0.15, centres "lightness"."""
 import math
 import numpy as np
@@ -23,13 +23,13 @@ from shapely.geometry import Point, Polygon
 from digitize.primitives import register, part, forced_thread, label_dir, union, lum, silhouette, threads_in
 from digitize.schema import DirSpec
 
-D = dict(min_mass_mm2=15.0, sep_mm=4.0, r_max=3.2, r_min=1.5, fit=1.35, min_mm2=5.0, petals=5, notch_mm=0.6, notch_deg=8.0,
-         waist=0.7, knot=True, knot_d=1.5, peak_sigma_mm=0.6, tophat_mm=3.0, prominence=4.0, ground=None, ground_angle=None,
+D = dict(min_mass_mm2=15.0, sep_mm=4.0, r_max=3.2, r_min=1.5, fit=1.35, min_mm2=5.0, lobes=5, notch_mm=0.6, notch_deg=8.0,
+         waist=0.7, bead=True, bead_d=1.5, peak_sigma_mm=0.6, tophat_mm=3.0, prominence=4.0, ground=None, ground_angle=None,
          ground_share=0.15, centres="lightness")
 
 
-def petal_outline(c, r, phase, n=5, notch=0.6, notch_deg=8.0, waist=0.7, pts=180):
-    """a face-on n-petal outline (blossom.five_petals for any n; n < 3 = a disc)"""
+def lobed_outline(c, r, phase, n=5, notch=0.6, notch_deg=8.0, waist=0.7, pts=180):
+    """a face-on n-lobed outline (blossom.five_petals for any n; n < 3 = a disc)"""
     if n < 3: return Point(c).buffer(r, 32)
     per = 360.0 / n; out = []
     for i in range(pts):
@@ -52,8 +52,8 @@ def recognise(ctx, lp, z, claim):
     lab, n = ndi.label(sil); sizes = np.bincount(lab.ravel(), minlength=n + 1) / ppm ** 2
     tones = [ctx.tone_thread[t] for t in (lp["tones"] if lp["tones"] != "all" else ev.keys) if ctx.tone_thread.get(t)]
     tones = sorted(set(tones), key=lambda t: lum(ctx, t))
-    ft = forced_thread(ctx, lp); k_fl = 0
-    bc = dict(peak_sigma_mm=P["peak_sigma_mm"], tophat_mm=P["tophat_mm"], prominence=P["prominence"], floret_sep_mm=P["sep_mm"])
+    ft = forced_thread(ctx, lp); k_member = 0
+    bc = dict(peak_sigma_mm=P["peak_sigma_mm"], tophat_mm=P["tophat_mm"], prominence=P["prominence"], sep_mm=P["sep_mm"])
     for mi in range(1, n + 1):
         if sizes[mi] < P["min_mass_mm2"]: continue
         M = lab == mi; used |= M
@@ -87,11 +87,11 @@ def recognise(ctx, lp, z, claim):
                 vv = ctx.thread_lab[cm]; vv = vv[vv >= 0]
                 cc = {t: int((vv == ctx.threads.index(t)).sum()) for t in lighter}
                 fl_t = ft or (max(cc, key=lambda t: (cc[t], lum(ctx, t))) if cc else lighter[-1])
-                ph = math.degrees(math.atan2(c[1] - gc.y, c[0] - gc.x)) % (360.0 / max(P["petals"], 1))
-                kd = P["knot_d"] if P["knot"] else 0.0
-                fg = petal_outline(c, r, ph, int(P["petals"]), P["notch_mm"], P["notch_deg"], P["waist"]).intersection(reg)
+                ph = math.degrees(math.atan2(c[1] - gc.y, c[0] - gc.x)) % (360.0 / max(P["lobes"], 1))
+                kd = P["bead_d"] if P["bead"] else 0.0
+                fg = lobed_outline(c, r, ph, int(P["lobes"]), P["notch_mm"], P["notch_deg"], P["waist"]).intersection(reg)
                 if kd: fg = fg.difference(Point(c).buffer(kd / 2))
-                fg = fg.buffer(0); k_fl += 1
+                fg = fg.buffer(0); k_member += 1
                 fl = None
                 if r >= P["r_min"] and not fg.is_empty and fg.area >= P["min_mm2"]:
                     fl = part(ctx, lp, "radial", fg, fl_t, z - 0.1, DirSpec(0.0, mode="radial", source="splitter", note="radial from its centre"),
@@ -101,13 +101,12 @@ def recognise(ctx, lp, z, claim):
                 if kd:
                     around = fl_t if fl is not None else ground_t
                     others = [t for t in tones if t not in (fl_t, ground_t)]
-                    knot_t = (others[-1] if others and lum(ctx, others[-1]) > lum(ctx, fl_t) else (others[0] if others else (ground_t if around == fl_t else fl_t)))
-                    con = dict(rule="between_petals", phase=round(ph, 2))
-                    ang = cbasis(Part(id="_", kind="bead", geom=Point(c).buffer(kd / 2), thread="", z=0, dir=DirSpec(0.0), meta=dict(construct=con)))[0]
+                    bead_t = (others[-1] if others and lum(ctx, others[-1]) > lum(ctx, fl_t) else (others[0] if others else (ground_t if around == fl_t else fl_t)))
+                    ang = 0.0                                               # a bead: one row angle by rule (house kind bead)
                     kg = Point(c).buffer(kd / 2, 16); beads.append(kg)
-                    parts.append(part(ctx, lp, "bead", kg, knot_t, z - 0.2, DirSpec(ang, source="splitter", note="bead rows between two petal axes"),
-                                      None, knots=[(float(c[0]), float(c[1]), kd, ang)], art_d=kd, house_min=False, construct=con,
-                                      floret=fl.id if fl is not None else None, group=f"{lp['pid']}.m{mi}"))
+                    parts.append(part(ctx, lp, "bead", kg, bead_t, z - 0.2, DirSpec(ang, source="rule", note="a bead: rows at the rule angle"),
+                                      None, knots=[(float(c[0]), float(c[1]), kd, ang)], art_d=kd, house_min=False,
+                                      member_of=fl.id if fl is not None else None, group=f"{lp['pid']}.m{mi}"))
         if P["ground"]:
             gg = G.difference(union(beads)).buffer(0) if beads else G
             if gg.is_empty: continue

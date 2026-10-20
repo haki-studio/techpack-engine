@@ -91,3 +91,275 @@ def test_compile_regions_carry_block_roles():
                       blocks={"a": [Block("a", "underlay", [(0, 0), (1, 1)]), Block("a", "top", [(0, 0), (5, 0)])]})
     regs = CP.regions(plan)
     assert regs[0]["regions"][0]["block_roles"] == ["underlay", "top"]
+
+
+# ------------------------------------------------------------------ the labels contract
+PAL = {"navy": "#22355C", "white": "#EEEAE0", "pink": "#DE8EA6", "rose": "#B4506F", "gold": "#D3A63F", "grn": "#5A7240"}
+
+
+def _labels(**part):
+    p = dict(id="a", primitive="plane", z=1, confidence=0.9, direction={"intent": "angle", "angle": 30},
+             hint={"polygons": [[[0, 0], [10, 0], [10, 10]]]}, tones=["navy"])
+    p.update(part)
+    return {"schema": "techpack.labels/1", "motifs": [{"id": "m", "parts": [p]}]}
+
+
+@pytest.mark.parametrize("bad, why", [
+    (dict(direction={"intent": "auto"}), "never 'auto'"),
+    (dict(primitive="cord", direction={"intent": "angle", "angle": 0}), "takes direction"),
+    (dict(direction={"intent": "angle"}), "needs a number"),
+    (dict(confidence=1.5), "confidence"),
+    (dict(hint={}), "hint.polygons"),
+    (dict(tones=["teal"]), "not in the run palette"),
+    (dict(primitive="blob"), "not in"),
+    (dict(hint={"polygons": [[[0, 0], [1, 1]]]}), ">= 3"),
+    (dict(hint={"polygons": [[[0, 0], [10, 0], [10, 10]]], "except": ["m.zz"]}), "unknown part"),
+    (dict(colour="teal"), "colour"),
+    (dict(z="high"), "z must be a number"),
+    (dict(alternatives=["fish"]), "not a primitive"),
+    (dict(shape="fish"), "unknown keys"),
+])
+def test_labels_schema_rejects(bad, why):
+    from digitize.labels import schema as LS
+    with pytest.raises(LS.LabelsError, match=why):
+        LS.validate(_labels(**bad), PAL)
+
+
+def test_labels_schema_accepts_and_defaults_the_intent():
+    from digitize.labels import schema as LS
+    d = _labels(primitive="cord", direction=None)
+    d["motifs"][0]["parts"][0].pop("direction")
+    LS.validate(d, PAL)
+    assert LS.intent_of(d["motifs"][0]["parts"][0]) == "along"
+
+
+def test_labels_schema_one_rest_and_duplicate_ids():
+    from digitize.labels import schema as LS
+    d = _labels(); p = dict(d["motifs"][0]["parts"][0])
+    d["motifs"][0]["parts"].append(dict(p))                          # duplicate id
+    with pytest.raises(LS.LabelsError, match="duplicate"): LS.validate(d, PAL)
+    d = _labels(rest=True); q = dict(d["motifs"][0]["parts"][0], id="b", rest=True)
+    d["motifs"][0]["parts"].append(q)
+    with pytest.raises(LS.LabelsError, match="more than one rest"): LS.validate(d, PAL)
+
+
+def test_castle_labels_file_validates_against_its_run_palette():
+    from digitize import config
+    from digitize.labels import schema as LS
+    cfg = config.load(os.path.join(ROOT, "projects", "castle-falls-jacket", "bench", "run_bk_crop_labels.yaml"))
+    d = LS.load(config.path(cfg, cfg["labels"]), palette=cfg["threads"]["palette"])
+    prims = {p["primitive"] for _, p in LS.iter_parts(d)}
+    assert {"cord", "band", "lobe", "plane", "radial", "stroke", "dot"} <= prims
+
+
+def test_low_confidence_labels_become_review_questions_and_answers_change_the_next_compile():
+    from digitize.labels import compile as LC
+    from digitize import review as RV
+    d = _labels(confidence=0.4, alternatives=["band"], question="is this a far roof row?")
+    qs = LC.questions(d)
+    assert [q["id"] for q in qs] == ["label:m.a"] and qs[0]["default"] == "plane"
+    assert qs[0]["options"] == ["plane", "band", "drop"] and "far roof row" in qs[0]["text"]
+    assert LC.questions(_labels(confidence=0.9)) == []                 # sure parts ask nothing
+    cfg, rep = RV.apply_answers({"x": 1}, {"label:m.a": "band"}, qs)
+    assert cfg["review"]["labels"] == {"m.a": "band"}
+    R = LC.resolve(d, cfg["review"]["labels"])
+    assert R[0]["primitive"] == "band" and R[0]["intent"] in ("along", "angle")   # the label's own intent if the new primitive takes it
+    assert LC.resolve(d, {"m.a": "drop"}) == []
+    with pytest.raises(RV.AnswerError):
+        RV.apply_answers({}, {"label:m.a": "fish"}, qs)
+
+
+# ------------------------------------------------------------------ primitives on synthetic evidence
+def _ctx(img_fn, W=60, H=60, ppm_ref=8):
+    """a Ctx over a synthetic reference: img_fn(X, Y) -> palette key per pixel (garment mm)"""
+    from digitize.extract.evidence import Evidence, hex_rgb
+    from digitize.extract.splitters import Ctx
+    from digitize.rulebook import Rulebook
+    xs = (np.arange(W * ppm_ref) + 0.5) / ppm_ref; ys = (np.arange(H * ppm_ref) + 0.5) / ppm_ref
+    X, Y = np.meshgrid(xs, ys); key = img_fn(X, Y)
+    rgb = np.zeros(X.shape + (3,))
+    for k, h in PAL.items(): rgb[key == k] = hex_rgb(h)
+    rng = np.random.default_rng(0); rgb = rgb + rng.normal(0, 2.0, rgb.shape)
+    ref = dict(rgb=rgb, grey=rgb @ np.array([0.299, 0.587, 0.114]), bounds=(0, 0, W, H), ppm=ppm_ref, closeup_weight=None)
+    ev = Evidence(ref, PAL, ppm=4.0, smooth_mm=0.2, mode_mm=0.3)
+    cfg = dict(stub=dict(min_part_mm2=20.0, min_protected_mm2=4.0), direction=dict(sigma_mm=2.0, fill_sigma_mm=6.0, min_coh=0.2))
+    return Ctx(ev, Rulebook(), cfg, {k: k for k in PAL}, ())
+
+
+def _lp(prim, intent=None, angle=None, tones="all", params=None, colour="auto"):
+    from digitize.labels import schema as LS
+    return dict(pid=f"t.{prim}", motif="t", primitive=prim, intent=intent or LS.PRIMITIVES[prim][0], angle=angle, z=1.0,
+                colour=colour, confidence=0.9, params=params or {}, tones=tones, seeds=[], what="")
+
+
+def _claim(ctx, keys):
+    return np.isin(ctx.ev.tone, [ctx.ev.keys.index(k) for k in keys])
+
+
+def _audit(parts):
+    from digitize import audit
+    from digitize.schema import ObjectPlan
+    from digitize.rulebook import Rulebook
+    return audit.angle_audit(ObjectPlan(name="t", parts=parts), Rulebook())
+
+
+def test_cord_runs_along_a_vertical_mass_with_constructed_audited_angles():
+    from digitize import primitives
+    ctx = _ctx(lambda X, Y: np.where((X > 20) & (X < 40), "white", "navy"))
+    parts, used = primitives.get("cord")(ctx, _lp("cord", params=dict(cord_mm=5, cords_min=2)), 3.0, _claim(ctx, ["white"]))
+    assert len(parts) >= 3 and all(p.kind == "cord" for p in parts)
+    assert all(abs(((p.dir.angle - 90) + 90) % 180 - 90) < 5 for p in parts)          # along the fall: vertical
+    assert all(p.dir.source == "splitter" and p.meta["construct"]["rule"] == "axis" for p in parts)
+    assert _audit(parts)["random_angles"] == 0
+    parts[0].dir.angle = (parts[0].dir.angle + 30) % 180                                 # a typed-in angle is caught
+    assert _audit(parts)["random_angles"] == 1
+
+
+def test_band_along_follows_the_mass_run_and_cuts_strips_by_tone():
+    from digitize import primitives
+    def img(X, Y):
+        return np.where((Y > 10) & (Y < 18), "white", np.where((Y >= 18) & (Y < 26), "pink", "navy"))
+    ctx = _ctx(img)
+    parts, _ = primitives.get("band")(ctx, _lp("band", params=dict(min_band_mm=3)), 0.0, _claim(ctx, ["white", "pink"]))
+    assert {p.thread for p in parts} == {"white", "pink"}
+    assert all(min(p.dir.angle, 180 - p.dir.angle) < 5 for p in parts)                 # horizontal run
+    assert _audit(parts)["random_angles"] == 0
+
+
+def test_plane_takes_the_labelled_angle_and_the_audit_reads_it():
+    from digitize import primitives, audit
+    ctx = _ctx(lambda X, Y: np.where((X > 10) & (X < 40) & (Y > 10) & (Y < 40), "navy", "white"))
+    parts, _ = primitives.get("plane")(ctx, _lp("plane", angle=100.0), 5.0, _claim(ctx, ["navy"]))
+    assert len(parts) == 1 and parts[0].dir.source == "label" and parts[0].dir.angle == 100.0
+    assert audit.bucket(parts[0].dir.source) == "independent"
+    assert _audit(parts)["random_angles"] == 0
+    parts[0].meta["label_angle"] = 10.0                                                  # angle and its record disagree
+    assert _audit(parts)["random_angles"] == 1
+
+
+def test_lobe_outline_angle_is_rebuilt_from_geometry_and_reported_as_outline():
+    from digitize import primitives, audit
+    from shapely.affinity import rotate
+    ctx = _ctx(lambda X, Y: np.where(((X - 30) / 18) ** 2 + ((Y - 30) / 7) ** 2 < 1, "grn", "navy"))
+    parts, _ = primitives.get("lobe")(ctx, _lp("lobe", params=dict(lobe_sep_mm=40, min_lobe_mm2=20)), 2.0, _claim(ctx, ["grn"]))
+    assert len(parts) == 1 and parts[0].meta["construct"]["rule"] == "long_axis"
+    assert min(parts[0].dir.angle, 180 - parts[0].dir.angle) < 5                        # the ellipse's long axis
+    assert audit.bucket_of(parts[0]) == "outline"
+    assert _audit(parts)["random_angles"] == 0
+    parts[0].geom = rotate(parts[0].geom, 60, origin="centroid")                         # the geometry moved, the angle did not
+    assert _audit(parts)["random_angles"] == 1
+
+
+def test_radial_finds_lit_centres_and_sews_rays_with_beads_and_a_knocked_out_ground():
+    from digitize import primitives
+    cs = [(15, 15), (30, 15), (45, 15), (15, 32), (30, 32), (45, 32)]
+    def img(X, Y):
+        out = np.where((X > 6) & (X < 54) & (Y > 6) & (Y < 41), "rose", "navy").astype(object)
+        for cx, cy in cs: out[(X - cx) ** 2 + (Y - cy) ** 2 < 3.0 ** 2] = "pink"
+        for cx, cy in cs: out[(X - cx) ** 2 + (Y - cy) ** 2 < 0.8 ** 2] = "white"
+        return out
+    ctx = _ctx(img)
+    lp = _lp("radial", tones=["pink", "rose", "white"], params=dict(sep_mm=6, ground="grain", r_max=4.0, prominence=2.0))
+    parts, _ = primitives.get("radial")(ctx, lp, 7.0, _claim(ctx, ["pink", "rose", "white"]))
+    fl = [p for p in parts if p.kind == "radial"]; bd = [p for p in parts if p.kind == "bead"]; gr = [p for p in parts if p.meta.get("ground")]
+    assert len(fl) == len(cs) and len(bd) == len(cs) and len(gr) == 1
+    for p in fl:
+        c = p.meta["centre"]; assert min(math.dist(c, q) for q in cs) < 1.0
+        assert p.dir.mode == "radial" and p.meta["knockout_of"] == gr[0].id
+    assert _audit(parts)["random_angles"] == 0
+
+
+def test_stroke_gives_back_blobs_and_columns_strokes():
+    from digitize import primitives
+    def img(X, Y):
+        out = np.where((np.abs(Y - 15) < 1.5) & (X > 5) & (X < 55), "gold", "navy").astype(object)
+        out[(X - 30) ** 2 + (Y - 42) ** 2 < 8 ** 2] = "gold"                            # a round blob: not a stroke
+        return out
+    ctx = _ctx(img)
+    claim = _claim(ctx, ["gold"])
+    parts, used = primitives.get("stroke")(ctx, _lp("stroke"), 5.0, claim)
+    assert len(parts) == 1 and parts[0].kind == "stroke" and parts[0].dir.mode == "contour"
+    assert abs(parts[0].dir.angle - 90) < 5                                             # across a horizontal stroke
+    blob = ctx.ev.mask(Point(30, 42).buffer(6))
+    assert not (used & blob).any()                                                      # the blob went back
+    assert _audit(parts)["random_angles"] == 0
+
+
+def test_dot_beads_small_components_and_line_follows_a_thin_mark():
+    from digitize import primitives
+    def img(X, Y):
+        out = np.full(X.shape, "navy", object)
+        for cx in (10, 20, 30): out[(X - cx) ** 2 + (Y - 10) ** 2 < 0.8 ** 2] = "gold"
+        out[(np.abs(Y - 40) < 0.5) & (X > 10) & (X < 50)] = "white"
+        return out
+    ctx = _ctx(img)
+    beads, _ = primitives.get("dot")(ctx, _lp("dot"), 5.6, _claim(ctx, ["gold"]))
+    assert len(beads) == 3 and all(p.kind == "bead" and 1.0 <= p.meta["knots"][0][2] <= 3.0 for p in beads)
+    lines, _ = primitives.get("line")(ctx, _lp("line"), 5.6, _claim(ctx, ["white"]))
+    assert len(lines) == 1 and lines[0].kind == "line" and min(lines[0].dir.angle, 180 - lines[0].dir.angle) < 5
+    assert _audit(beads + lines)["random_angles"] == 0
+
+
+def test_compile_claims_highest_z_first_and_seeds_keep_only_their_component():
+    from digitize.labels import compile as LC
+    ctx = _ctx(lambda X, Y: np.where(((X - 15) ** 2 + (Y - 15) ** 2 < 36) | ((X - 45) ** 2 + (Y - 45) ** 2 < 36), "pink", "navy"))
+    d = {"schema": "techpack.labels/1", "motifs": [{"id": "m", "parts": [
+        {"id": "seeded", "primitive": "plane", "z": 5, "confidence": 0.9, "direction": {"intent": "angle", "angle": 45},
+         "hint": {"polygons": [[[0, 0], [60, 0], [60, 60], [0, 60]]], "seeds": [[15, 15]]}, "tones": ["pink"]},
+        {"id": "low", "primitive": "plane", "z": 1, "confidence": 0.9, "direction": {"intent": "angle", "angle": 0},
+         "hint": {"polygons": [[[0, 0], [60, 0], [60, 60], [0, 60]]]}, "tones": ["pink"]},
+        {"id": "rest", "primitive": "plane", "z": 0, "confidence": 0.9, "rest": True, "direction": {"intent": "angle", "angle": 90}}]}]}
+    from digitize.labels import schema as LS
+    LS.validate(d, PAL)
+    parts, log, qs = LC.extract(ctx, ctx.ev, d)
+    by = {}
+    for p in parts: by.setdefault(p.meta["label"], []).append(p)
+    assert by["m.seeded"][0].geom.distance(Point(15, 15)) == 0 and by["m.seeded"][0].geom.distance(Point(45, 45)) > 10
+    assert by["m.low"][0].geom.distance(Point(45, 45)) == 0 and by["m.low"][0].geom.distance(Point(15, 15)) > 10
+    assert by["m.rest"][0].thread == "navy" and qs == []
+    assert all(p.meta["splitter"] == "labels" and p.zone == "m" for p in parts)
+
+
+# ------------------------------------------------------------------ no subject code in the generic engine
+SUBJECT_WORDS = ("fall", "waterfall", "sky", "cloud", "castle", "temple", "pagoda", "blossom", "cherry", "floret", "crown",
+                 "trunk", "branch", "roof", "wall", "window", "fish", "koi", "lily", "tree", "leaf", "flower", "petal", "stratum",
+                 "cliff", "rock", "building", "village", "pool", "foam", "canopy", "knot", "stud", "eave")
+
+
+def _code_words(path):
+    """identifiers and string constants of a module, minus docstrings, comments and import paths"""
+    import ast, re
+    tree = ast.parse(open(path).read()); docs = set()
+    for n in ast.walk(tree):
+        if isinstance(n, (ast.Module, ast.FunctionDef, ast.ClassDef)) and n.body and isinstance(n.body[0], ast.Expr) \
+                and isinstance(getattr(n.body[0], "value", None), ast.Constant) and isinstance(n.body[0].value.value, str):
+            docs.add(id(n.body[0].value))
+    out = []
+    for n in ast.walk(tree):
+        if isinstance(n, (ast.Import, ast.ImportFrom)): continue
+        if isinstance(n, ast.Constant) and isinstance(n.value, str) and id(n) not in docs: out.append(n.value)
+        elif isinstance(n, ast.Name): out.append(n.id)
+        elif isinstance(n, ast.Attribute): out.append(n.attr)
+        elif isinstance(n, ast.FunctionDef): out.append(n.name)
+        elif isinstance(n, ast.arg): out.append(n.arg)
+        elif isinstance(n, ast.keyword) and n.arg: out.append(n.arg)
+    words = set()
+    for s in out: words |= set(re.findall(r"[a-z]+", s.lower()))
+    return words
+
+
+def test_primitives_and_labels_carry_no_subject_code():
+    import glob
+    files = glob.glob(os.path.join(ROOT, "engine", "digitize", "primitives", "*.py")) + \
+        glob.glob(os.path.join(ROOT, "engine", "digitize", "labels", "*.py"))
+    assert len(files) >= 11
+    hits = {os.path.basename(f): sorted(w for w in _code_words(f) if w in SUBJECT_WORDS) for f in files}
+    assert {f: h for f, h in hits.items() if h} == {}
+
+
+def test_subject_word_guard_catches_a_subject_branch(tmp_path):
+    p = tmp_path / "x.py"
+    p.write_text('"""a generic module about falls"""\nfrom digitize.extract.splitters.fall import cords\n'
+                 'def f(lp):\n    if lp["what"] == "koi": return 1\n')
+    w = _code_words(str(p))
+    assert "koi" in w and "falls" not in w and "fall" not in w            # docstring + import path ignored, the branch caught

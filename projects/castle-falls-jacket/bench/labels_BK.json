@@ -147,7 +147,7 @@
         "direction": {"intent": "radial"},
         "hint": {"polygons": [[[-180, 365], [20, 365], [20, 565], [-180, 565]]]},
         "tones": ["cf_pinklt", "cf_pink", "cf_rose"],
-        "params": {"min_mass_mm2": 15, "sep_mm": 3.0, "r_max": 3.2, "r_min": 1.5, "fit": 1.35, "petals": 5, "knot": true, "knot_d": 1.5,
+        "params": {"min_mass_mm2": 15, "sep_mm": 3.0, "r_max": 3.2, "r_min": 1.5, "fit": 1.35, "lobes": 5, "bead": true, "bead_d": 1.5,
                    "ground": "grain", "ground_share": 0.15},
         "alternatives": ["lobe"]}
      ]},

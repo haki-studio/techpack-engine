@@ -12,6 +12,7 @@ params: cord_mm 5, cords_min 1, cords_max 10, close_mm 1.5, open_mm 0.5, min_mas
 import math
 import numpy as np
 from shapely.geometry import LineString
+from shapely.ops import substring
 import dst2
 from digitize.primitives import register, part, forced_thread, silhouette, axis_chord
 from digitize.schema import DirSpec
@@ -43,10 +44,11 @@ def recognise(ctx, lp, z, claim):
         tones = [ft] if ft else ([ctx.threads[i] for i in np.argsort(-cnt) if cnt[i] >= P["tone_share"]] or [ctx.threads[int(cnt.argmax())]])
         tlab = to_lab(np.array([[_rgb(ev.hex[ev.keys.index(t)]) if t in ev.keys else (128, 128, 128) for t in tones]], float))[0]
         k_cord = 0
-        for si, (seg, _) in enumerate(segments(Gp, line, P["max_turn_deg"], 3.0)):
-            sl = dst2.centreline(seg if seg.geom_type == "Polygon" else max(seg.geoms, key=lambda q: q.area))
-            if sl is None: continue
-            sl = LineString(sl.simplify(1.0).coords)
+        w = Gp.area / max(line.length, 1e-6)
+        if line.length > 3 * w: line = substring(line, w / 2, line.length - w / 2)   # the axis' last half-width runs into the corners
+        for si, (seg, (s0, s1)) in enumerate(segments(Gp, line, P["max_turn_deg"], max(3.0, 2.0 * w))):
+            sl = substring(line, s0, s1)
+            if sl.length < 1.0: continue
             widths = [math.dist(a, b) for _, a, b in sections(seg, sl, step=2.0)] or [seg.area / max(sl.length, 1e-6)]
             n = int(np.clip(round(np.median(widths) / P["cord_mm"]), P["cords_min"], P["cords_max"]))
             prev = None
