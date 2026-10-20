@@ -70,8 +70,7 @@ Founder: hold all product work until the shared parts-based digitizing engine is
 docs/DIGITIZING_PRINCIPLES.md = founder-approved house rules). Techniques are plugins, toggled per run; the end goal is a PLM
 self-serve flow (memory: techpack-end-goal-plm).
 - **M0** honest gates + bench: MERGED (PR #3, 73ae3dd). Baseline on the Castle crop: 0/8 gates.
-- **M1** skeleton: PR #4 https://github.com/haki-studio/techpack-engine/pull/4 (head 853961b), reviewer APPROVED. Waiting
-  for the founder to merge. Crop: 89 % direction OK / 7 % chaos, 0 blob satins / fans / random angles, red + gold sewn,
+- **M1** skeleton: PR #4 https://github.com/haki-studio/techpack-engine/pull/4 (head 853961b), reviewer APPROVED, MERGED 2026-10-20 (ed278f9). Crop: 89 % direction OK / 7 % chaos, 0 blob satins / fans / random angles, red + gold sewn,
   33 trims per 100 cm², 84k stitches, 3/8 gates. The live view reads as flat paint-by-numbers (stubs), as expected.
 - **Fold into M2 first** (from the M1 review):
   - (1) derive random_angles in run.py (it is hard-coded 0 today)
@@ -89,3 +88,5 @@ self-serve flow (memory: techpack-end-goal-plm).
 - **Konpeito:** pack final (21 pp), only the front-leg art is open. The handoff prompt is out/HANDOFF_PROMPT_front-leg-07.md
   (skill /techpack-handoff).
 - **Factory (Mandy):** answers are in factory.json. Still to ask her: which frame takes the 340×505 front; whether a sleeve (~500×510) fits one hooping; whether the 580×490 back needs 3–4 hoopings on 400×450; her thread brand + colour book; the sherpa design review.
+
+- Wave paused WIP in projects/wave-jacket/gates.py was saved to projects/wave-jacket/WIP_gates_py_before_M1_merge.patch (it clashed with M1's change to that file); re-apply by hand when Wave resumes.
