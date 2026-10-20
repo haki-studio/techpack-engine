@@ -384,7 +384,7 @@ def test_neighbour_separation_turns_within_limits():
 
 
 def test_merge_specks_keeps_wisps_and_cracks():
-    """rule 1 / LESSONS A19: a speck (< 20 mm2; protected accents < 4 mm2) merges into the touching part it shares most
+    """rule 1 / LESSONS A22: a speck (< 20 mm2; protected accents < 4 mm2) merges into the touching part it shares most
     border with; wisps, shade layers and crack lines are deliberate small parts and stay. Mutation (keep_small
     ignored) -> red."""
     big = Part(id="big", kind="zone_stub", geom=box(0, 0, 20, 20), thread="g", z=2, dir=DirSpec(0.0))

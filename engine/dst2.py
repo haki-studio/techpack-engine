@@ -211,6 +211,7 @@ def turning_satin(p, line, sp=None, pull=0.2, short=True):
         R = 40.0
         seg = LineString([(c.x - R*math.cos(th), c.y - R*math.sin(th)), (c.x + R*math.cos(th), c.y + R*math.sin(th))]).intersection(pp)
         segs = [seg] if seg.geom_type == "LineString" else [g for g in getattr(seg, "geoms", []) if g.geom_type == "LineString"]
+        segs = [g for g in segs if len(g.coords) >= 2]      # empty perpendicular (centreline overshoots the outline): skip, never IndexError (konpeito ENGINE_NOTES 2)
         if not segs: continue
         sg = min(segs, key=lambda g: g.distance(c))
         a, b = sg.coords[0], sg.coords[-1]
@@ -510,7 +511,60 @@ class Cover:
 # ------------------------------------------------------------------ pattern assembly
 FILL_ST = ("tatami", "padded", "satin")
 
-def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=False, threads=None):
+class ExactCover:
+    """make_pattern(exact_travel=...) (ENGINE_PLAN M5, konpeito ENGINE_NOTES 9): before a travel run / short move is
+    accepted it is checked against the EXACT geometry (shapely), not the router's raster: the part of the move that lies
+    outside (this stop's art + halo) and outside everything sewn by later stops must be <= max_ex mm, else the move
+    becomes TRIM + JUMP. The raster lets travel hide under narrow, not-yet-sewn columns it can overshoot (bare fabric
+    between face strokes and glyphs on the konpeito patch: 27 runs on one file)."""
+    def __init__(self, stops, halo=0.3, max_ex=0.5, **_):
+        from shapely.prepared import prep
+        geo = [unary_union([r["geom"] for r in s["regions"]]) for s in stops]
+        later = [None] * len(geo); acc = Polygon()
+        for i in range(len(geo) - 1, -1, -1):
+            later[i] = acc; acc = unary_union([acc, geo[i]]) if not geo[i].is_empty else acc
+        self.cover = [unary_union([geo[i].buffer(halo), later[i]]) for i in range(len(geo))]
+        self.prep = [prep(c) for c in self.cover]; self.max_ex = max_ex; self.trims = 0
+
+    def exposed(self, si, pts):
+        if len(pts) < 2: return 0.0
+        ln = LineString(pts)
+        if ln.length < 1e-6 or self.prep[si].contains(ln): return 0.0
+        return ln.difference(self.cover[si]).length
+
+    def ok(self, si, pts):
+        return self.exposed(si, pts) <= self.max_ex
+
+
+def _unsewn_init(objs, cov, si, sewn_same):
+    """exact_travel unsewn_only (keep-clean / konpeito ENGINE_NOTES 11 + 1, native): inside a stop, travel hides under
+    the stop's objects only while they are still UNSEWN (travel on top of a sewn satin shows); later stops still hide.
+    A per-pixel count of unsewn objects is kept and decremented as each object is sewn."""
+    base = (cov.later > si) | cov.merged(si + 1)
+    cnt = np.zeros(base.shape, np.int16); loc = {}
+    for o in objs:
+        g = o["r"]["geom"].buffer(0.1); bb = g.bounds
+        c0 = max(0, int((bb[0] - cov.x0) * cov.ppm) - 1); r0 = max(0, int((bb[1] - cov.y0) * cov.ppm) - 1)
+        c1 = min(cov.W, int((bb[2] - cov.x0) * cov.ppm) + 2); r1 = min(cov.H, int((bb[3] - cov.y0) * cov.ppm) + 2)
+        if c1 <= c0 or r1 <= r0: continue
+        im = Image.new("L", (c1 - c0, r1 - r0), 0); d = ImageDraw.Draw(im)
+        for p in polys(g):
+            T = lambda cs: [((x - cov.x0) * cov.ppm - c0, (y - cov.y0) * cov.ppm - r0) for x, y in cs]
+            d.polygon(T(p.exterior.coords), fill=255)
+            for q in p.interiors: d.polygon(T(q.coords), fill=0)
+        m = np.array(im) > 127; cnt[r0:r1, c0:c1] += m; loc[id(o)] = (r0, r1, c0, c1, m)
+    sewn_same[:] = base | (cnt > 0)
+    return dict(base=base, cnt=cnt, loc=loc)
+
+
+def _unsewn_done(uo, o, sewn_same):
+    L = uo["loc"].pop(id(o), None)
+    if L is not None:
+        r0, r1, c0, c1, m = L; uo["cnt"][r0:r1, c0:c1] -= m
+    sewn_same[:] = uo["base"] | (uo["cnt"] > 0)        # full refresh: also drops the tatami stamp made just before
+
+
+def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=False, threads=None, exact_travel=None):
     """Regions -> pyembroidery pattern, with hidden travel and trims (see the module doc).
     Hooks for engine/digitize/compile.py (ENGINE_PLAN M1); the defaults reproduce the old behaviour exactly:
       builder(r, earlier_tones) -> [blocks]  replaces build_object; called once per REGION (not per polygon piece), so a
@@ -518,7 +572,11 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
       keep_order   sew each stop's regions in the given order (no stitch-type sort, no nearest-first reordering): the
                    plan's rank is the sew order
       threads      {col: dict(hex, description, catalog, brand)} for colours that are not motifs2.HEX keys
+      exact_travel dict(halo=0.3, max_ex=0.5, unsewn_only=True) (ENGINE_PLAN M5): every travel run / short move is
+                   checked on the exact geometry (ExactCover) and trimmed when it would lie > max_ex mm on bare fabric;
+                   unsewn_only: travel hides under this stop's objects only until they are sewn. None = old behaviour.
     stats["labels"] holds one entry per STITCH added: the region's r.get("part") (None = travel / registration)."""
+    ex = ExactCover(stops, **exact_travel) if exact_travel else None
     cov = Cover(bounds_of([r["geom"] for r in vis]))
     for i, s in enumerate(stops):
         g = unary_union([r["geom"] for r in s["regions"] if r["st"] in FILL_ST])
@@ -583,6 +641,7 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
         for o in objs:
             o["c0"] = comp(o["blocks"][0][0]); o["c1"] = comp(o["blocks"][-1][-1])
         sewn_same = base_hid.copy()
+        _uo = _unsewn_init(objs, cov, si, sewn_same) if ex is not None and exact_travel.get("unsewn_only") else None
         # ordering: stay inside the current hidden component (nearest first); jump (trim) only when it is exhausted
         rest = [] if keep_order else list(range(len(objs))); order = list(range(len(objs))) if keep_order else []
         pos = cur; pc = comp(cur) if cur is not None else 0
@@ -613,6 +672,9 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
                         rp = cov.route(cur, (x0, y0), si, sewn_same, o["own"] if o is prev_o or o.get("started") else None,
                                        pad=max(12.0, 0.5 * d))
                         if rp: route = path_resample(rp, TRAVEL_L)
+                    if ex is not None and d >= 0.3 and (route is not None or d < TRIM_MIN) and \
+                            not ex.ok(si, [tuple(cur)] + [tuple(q) for q in (route or [(x0, y0)])]):
+                        route = None; d = max(d, TRIM_MIN); ex.trims += 1          # exposed on the exact geometry: trim
                     if route is not None:
                         if len(route) > 1: stats["runs"].append((si, [tuple(cur)] + [tuple(q) for q in route]))
                         for x, y in route[:-1] if len(route) > 1 else route:
@@ -639,10 +701,12 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
                     pat.add_stitch_absolute(pe.STITCH, (x-ox)*U, (y-oy)*U); stats["stitches"] += 1; last = (x, y); stitch_labels.append(o["r"].get("part"))
                 cur = b[-1]; o["started"] = True
             if o["r"]["st"] in ("tatami", "padded"): cov.stamp(sewn_same, o["r"]["geom"])
+            if _uo is not None: _unsewn_done(_uo, o, sewn_same)
             prev_o = o
         fills = [r["geom"] for r in s["regions"] if r["st"] in FILL_ST]
         if fills: tones.add(unary_union(fills))
     pat.add_command(pe.TRIM); pat.add_command(pe.END)
+    if ex is not None: stats["exact_trims"] = ex.trims
     return pat, stats
 
 def exposed_travel(stops, runs, forgive=0.8, tol=0.3):

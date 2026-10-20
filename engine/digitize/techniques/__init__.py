@@ -79,3 +79,15 @@ class Technique:
 
     def issue(self, part, text, **kw):
         return dict(part=part.id, technique=self.name, kind=part.kind, text=text, **kw)
+
+
+# ---------------------------------------------------------------- ENGINE_PLAN M5 (SVG parity on Konpeito): patch plugins
+# column_satin (lettering / line art / heat-cut edge, density as same_side), dot (bead dots), radial (florets, stars,
+# rings), turning_satin (petals / candy lobes along a declared axis). Registered on top of the M1 set by an appended
+# hook, so the M1/M2 import line in _load_all above stays untouched (fold it in once both milestones are merged).
+_load_m1 = _load_all
+
+
+def _load_all():
+    _load_m1()
+    from digitize.techniques import column_satin, dot, radial, turning  # noqa: F401  (registers)

@@ -148,6 +148,8 @@ SYNTH = {"tatami": (box(0, 0, 30, 20), 30.0), "split_satin": (box(0, 0, 6, 40), 
          "guided_fill": (box(0, 0, 30, 20), 30.0), "contour_fill": (box(0, 0, 20, 14), 0.0), "blend": (box(0, 0, 30, 6), 0.0)}
 SYNTH_META = {"guided_fill": dict(field=dict(x0=-2.0, y0=-2.0, step=1.0, nx=35, ny=25, deg=[30.0] * (35 * 25)), field_mean=30.0),
               "blend": dict(blend_from=[[-1.0, 0.0], [31.0, 0.0]])}
+SYNTH.update({"column_satin": (box(0, 0, 2, 20), 0.0), "dot": (Point(5, 5).buffer(0.8), 30.0),       # M5 patch plugins
+              "radial": (Point(5, 5).buffer(3.0), 0.0), "turning_satin": (box(0, 0, 3, 12), 0.0)})
 
 
 def test_registry_contract():

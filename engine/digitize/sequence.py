@@ -73,7 +73,7 @@ KEEP_SMALL = ("cloud_wisp", "cloud_shade")      # deliberately small parts: a wi
 
 
 def merge_specks(parts, min_mm2=20.0, protected=(), min_protected_mm2=4.0, touch=0.3, line_kinds=LINE_KINDS, keep_small=KEEP_SMALL):
-    """rule 1 (parts, not colours; LESSONS A19): a traced part smaller than min_mm2 (protected accents: min_protected_mm2)
+    """rule 1 (parts, not colours; LESSONS A22): a traced part smaller than min_mm2 (protected accents: min_protected_mm2)
     is a SPECK: merged into the touching part it shares the most border with, whatever zone that is (a navy shadow
     between leaves, a rock speck left between zones). Smallest first; a speck that touches nothing is kept. Line parts
     (cracks) and deliberately small parts (keep_small: wisps, shade layers) neither merge nor take specks.

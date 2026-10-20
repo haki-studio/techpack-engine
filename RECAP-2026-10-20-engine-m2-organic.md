@@ -12,7 +12,7 @@ Branch `engine-m2-organic` (off origin/main 755faf6), builder worktree. Command:
 | 4 | gates read the WRITTEN DST: `compile.labelled_dst` matches the plan's labelled segments onto `qa.dst_segments(dst)` in sew order; a missing planned stitch raises | compile.py, run.gates |
 | 5 | thread `importance` (x area in the merge cost); Castle crop: `{cf_skylt: 3, cf_rose: 3}` | threads.py, run_bk_crop.yaml |
 | 6 | bench idempotent: same label + git sha replaces its json row and BENCH.md line | bench.append |
-| 7 | LESSONS A19 (no-visible-stitches: flag, never pass; fix upstream) and A20 (gates on the file, audited angles) | LESSONS.md |
+| 7 | LESSONS A22 (no-visible-stitches: flag, never pass; fix upstream) and A23 (gates on the file, audited angles); first numbered A19/A20, renumbered after M5 (A19-A21) merged | LESSONS.md |
 | LOW | split_row docstring no longer promises "never aligned"; stub raises instead of a silent 0 deg; column.py jitter fenced (legacy only, test) | |
 
 Re-scoring M1's plan with the file-based gates gives the same numbers (89.0 % OK / 7.0 % chaos, coherence 109 fails):
@@ -50,7 +50,7 @@ bucketed as independent; importance ignored; bench always appends; satin via col
   stays a tested plugin (toggle guided_fill off to use it).
 - **Field smoothing 4 mm** (not 2.5): stratum tiles 90.9 -> 92.7-93.5 %; also keeps the plan field from being the gate's
   own 2.7 mm tensor.
-- **merge_specks** (rule 1, A19): 326 of 693 traced parts were specks; merging them cut parts 823 -> 367, no-visible
+- **merge_specks** (rule 1, A22): 326 of 693 traced parts were specks; merging them cut parts 823 -> 367, no-visible
   fails 412 -> 12 and trims 283 -> 111. Applied to every zone (village / blossom stubs too).
 - **Open layers cut nothing under them** (M1 bug: the sky band was cut away under its own blend).
 - **Coherence scope**: angle-spread is a rule for fixed-angle parts; a guided part varies on purpose and is checked
