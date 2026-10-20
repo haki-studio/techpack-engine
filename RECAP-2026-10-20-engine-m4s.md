@@ -26,10 +26,20 @@ Write-up with every number: `projects/castle-falls-jacket/bench/BENCH_m4s.md`.
   5.1 m geometry, M4g 4.6 vs 3.8, main 5.4 vs 5.8 (None-labelled travel). Target 0 exposed stitches (the M5 house standard).
 - Travel = label None (dst2 hidden travel + writer ties) + planned role "travel" blocks (found on the file from plan.blocks).
 
-## Crop numbers
-See BENCH_m4s.md (proof table + gates x/11 and x/9).
+## Crop numbers (BENCH_m4s.md has all of them)
+| file | plan >= 3 deep | strict stack | part gate /100 cm2 | travel on fill |
+|---|---|---|---|---|
+| M2 0d86f00be8e9f8fa | 3.84 cm2 | 4 / 9.07 | 5.88 FAIL | 1,937 st / 5.64 m |
+| limit_stack off (M4g code) 9db212085de09b6d | 3.84 cm2 | 5 / 8.67 | 6.19 FAIL | 1,761 st / 4.82 m |
+| limit_stack partial, max_layers 3 (current main) b0906325a2cc15a5 | 17.62 cm2 | 6 / 30.56 | 80.27 FAIL | 2,490 st / 5.81 m |
+| M4g 239edce864f8fdd3 | 0.00 cm2 | 4 / 4.41 | 0.00 PASS | 1,800 st / 4.79 m |
+| main 1963d24fc2d3d862 | 0.02 cm2 | 5 / 19.78 | 1.08 PASS | 2,487 st / 5.82 m |
+Main crop gates: 3/11 (old 9: 2/9). The full limit_stack-off run on current main hung 3.5 h in plan (killed by PID);
+the partial cut (max_layers 3) is the fresh real-file mutation.
 
 ## Left / next
-- Founder: approve (or not) retiring the strict run-based stack gate in favour of the part gate (BENCH_m4s.md).
-- The travel gate fails every crop file (~2,000 exposed stitches, ~5 m): the fix is in dst2's travel mask (it counts this
-  stop's already-SEWN fills as cover: MERGE_LATER) or M5's `exact_travel unsewn_only` for the crop; not in this PR.
+- Founder: approve (or not) retiring the strict run-based stack gate in favour of the part gate (BENCH_m4s.md "what
+  retiring the strict gate needs": floor, cap, the thin-band blind spot).
+- The travel gate fails every crop file (~2,000 exposed stitches, ~5 m): dst2's hidden-travel mask counts all of the
+  current stop's own fills as cover, sewn or not; M5's `exact_travel: {unsewn_only: true}` is the existing fix (patches).
+  Switching it on for the crop (trim cost to measure) is the next PR, not this one.

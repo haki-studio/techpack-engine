@@ -21,9 +21,16 @@ parts, no stitches involved).
 |---|---|---|---|---|---|---|---|
 | M2 crop (known bad) | 0d86f00be8e9f8fa | 3.84 cm2 (max 4) | 4 / 9.07 | 142.6 mm2 | 23.5 mm2 (3 regions) | 5.88 | **FAIL** |
 | limit_stack off, M4g code (old run, `BK_M_crop_nostack`) | 9db212085de09b6d | 3.84 cm2 (max 4) | 5 / 8.67 | 134.6 mm2 | 24.8 mm2 (3) | 6.19 | **FAIL** |
-| limit_stack off, current main (fresh mutation run, `sequence.max_layers: 99`) | MUT_SHA | MUT_PLAN | MUT_STRICT | MUT_RAW | MUT_OVER | MUT_PER | **MUT_V** |
+| limit_stack PARTIAL, current main (fresh mutation run, `sequence.max_layers: 3`, see note) | b0906325a2cc15a5 | 17.62 cm2 | 6 / 30.56 | 811.9 mm2 | 320.6 mm2 | 80.27 | **FAIL** |
 | M4g alone (known good) | 239edce864f8fdd3 | 0.00 cm2 (max 2) | 4 / 4.41 | 21.1 mm2 | 0 | 0.00 | **PASS** |
 | current main crop | 1963d24fc2d3d862 | 0.02 cm2 (max 3) | 5 / 19.78 | 94.2 mm2 | 4.3 mm2 (1) | 1.08 | **PASS** |
+
+**Mutation note.** The fresh run with limit_stack fully OFF (`sequence.max_layers: 99`) on current main never finished:
+it sat 3.5 h in the plan stage (CPU 2:57 h, killed by PID) because, with nothing cut, the rule-6 stack checks enumerate
+k-part combinations over the many overlapping village / crown parts. So the fresh real-file mutation is a PARTIAL cut,
+`max_layers: 3` (limit_stack still runs but allows 3 layers and cuts only 4+ deep): plan geometry goes 0.02 -> 17.62 cm2
+three deep and the part gate goes 1.08 -> 80.27 /100 cm2 (FAIL, 32x the cap). The full-off mutation is represented by the
+older run on M4g code (`BK_M_crop_nostack`, limit_stack off, 3.84 cm2 three deep: FAIL at 6.19).
 
 The M4g file is truly <= 2 deep in plan geometry (exact area 0.00 cm2, `sequence.stack_count` 2), so it must pass, and it
 does. The strict gate fails ALL five files (max 4-5), including the one that is <= 2 deep in plan geometry: that is
@@ -40,6 +47,29 @@ the junction-cell / crossing-travel problem the reviewer of PR #8 described.
 
 Why a 1 mm window: one row of thread gives 1.0 mm/mm2 (< 1.5, so a lone row or an edge run is not a layer) and a fill
 with rows <= 0.5 mm apart gives >= 2.0 in every window.
+
+### The 4 mm2 floor and the 2.5 /100 cm2 cap, justified WITHOUT the main crop
+**Floor 4 mm2.** Two independent reasons, neither uses a crop file:
+1. It is the strict gate's own flag size (`qa.stack_map(min_flag_mm2=4.0)`, set in M0, before M4s).
+2. Derived from the house rules on synthetic junctions (scratchpad `m4s/junction.py`): parts built with keep_mm 1.0
+   underlap, cut by the REAL `sequence.limit_stack` (reach 1.0, keep_band 1.0), every part sewn with pull comp, rows 0.35-0.45
+   mm. The largest over-2 speck a CORRECT junction leaves on the file:
+
+   | junction | plan geometry >= 3 deep | pull comp 0.15 | 0.30 | 0.45 mm |
+   |---|---|---|---|---|
+   | 3-part T (two lower parts under a top one) | 0 | 0 | 0.56 mm2 | 1.00 mm2 |
+   | 4-part cross | 0 | - | 0 | 0.88 mm2 |
+   | 5-part fan | 0 | - | 0.06 mm2 | 1.00 mm2 (2.06 raw in 3 specks) |
+
+   A correct junction leaves <= 1.0 mm2 per speck even at 0.45 mm pull comp; 4 mm2 is 4x that.
+
+**Cap 2.5 mm2 per 100 cm2.** Set from the KNOWN files only: known-good M4g file = 0; known-bad M2 = 5.88, limit_stack off
+(M4g code) = 6.19, limit_stack partial (current main) = 80.27. Any cap in (0, 5.88) separates them; 2.5 is < half of the
+smallest known-bad value, so a file with HALF of M2's stacked area still fails, and it equals ONE floor-sized (4 mm2) region
+per 160 cm2. Sensitivity, stated plainly: the main crop (1.08 = one 4.3 mm2 region in 400 cm2, at a village junction
+whose plan depth is 2: wall / canopy / window / roof) passes for any cap >= 1.08 and FAILS at cap 0 ("not a single region")
+or with the floor lowered to 2 mm2 (then 3.05 /100 cm2: four village regions 2.3-4.3 mm2, plan depth 2 in all). Main was
+not used to set either number, but its verdict is not robust to them: the founder sets both if the strict gate is retired.
 
 ### Limits (stated, not hidden)
 - **It under-counts thin 3-deep bands.** On the M2 file it flags 23.5 mm2 of the 384 mm2 that is 3 deep in plan geometry:
@@ -71,7 +101,7 @@ M5 house standard; bench.json `targets.travel_on_fill_exposed_max` to change it)
 | M2 crop | 1,937 | 5.64 m | 1,410 mm | 0 | 2,079 st / 5.14 m | FAIL |
 | M4g alone | 1,800 | 4.79 m | 1,197 mm | 214 st | 1,510 st / 3.75 m (None only: raster 1,586 / 4.58 m) | FAIL |
 | current main crop | 2,487 | 5.82 m | 1,457 mm | 376 st | 2,494 st / 5.83 m (None only: raster 2,111 / 5.43 m) | FAIL |
-| M5 Konpeito wb (svgrun) | WB_N | WB_MM | WB_PER | WB_PL | M5's own gate `exposed_stitches`: WB_M5 | WB_V |
+| M5 Konpeito wb (svgrun, DST 449c14f6e8f693b6) | 15 | 14.9 mm | 336 mm (44 cm2 covered) | 0 | M5's own gate `exposed_stitches`: 0 | FAIL (report only: wb is not in the crop verdict) |
 
 The independent check uses no raster: for each travel stitch, its length inside the union of fill parts FULLY sewn
 before it minus the parts whose first stitch comes after it. It agrees with the raster to within ~20 % (the PR #8
@@ -83,10 +113,35 @@ Why the crop has so much: dst2's hidden-travel mask counts ALL of the current st
 ("travel under an object that is about to be sewn over"); once those fills are sewn, travel across them lies on top.
 M5's `exact_travel: {unsewn_only: true}` is the existing fix (used on patches); not switched on for the crop here.
 
-WB_NOTE
+**The new gate DISAGREES with M5's on the wb patch (15 vs 0), and why.** `qa.exposed_stitches` accepts any stitch of a
+stop that lies on that stop's OWN art (+0.25 mm halo) or under later art: by construction it cannot see travel on top of
+art of the same stop that is already sewn. The 15 are: 12 dst2 travel hops of 0.9-2.5 mm (0.36-1.48 mm of each on sewn
+fill) between consecutive petals / letters / line-art parts of one stop (petal 06.006 -> 06.007, lettering 15.008 ->
+15.009, ...), each lying on the part just sewn, and 3 writer tie stitches (0.50-0.58 mm) on line art sewn just before. M5's `unsewn_only` routing keeps longer travel off sewn art; these short straight hops are not routed. They are
+real thread on top of a sewn satin (short, same colour). The tie stitches are the writer's lock stitches (standard, buried
+in the satin texture); a follow-up could drop writer-added segments from "travel" (labelled_dst counts them:
+writer_added 670 on wb). Nothing is changed in M5 or the wb file by this PR (DST still 449c14f6e8f693b6).
 
 ## 3. Crop verdict (current main code + M4s gates)
-GATES_TABLE
+Re-run on this branch after merging origin/main (crop DST 1963d24fc2d3d862, unchanged: the M4s gates read the file, they
+change nothing in it). Scored only, no SCOREBOARD row added (the file is the M3b row's file; a new row would duplicate it).
+
+| gate | main crop | limit_stack partial (mutation) |
+|---|---|---|
+| direction_ok (independent 49.5 % of 194) | FAIL | FAIL |
+| direction_chaos (24.8 %) | FAIL | FAIL |
+| angle_coherence | FAIL | FAIL |
+| density (167 flags) | FAIL | FAIL |
+| trims (36.8 /100 cm2) | FAIL | FAIL |
+| satin_shape | PASS | PASS |
+| stack (strict, runs per 1 mm cell: max 5) | FAIL | FAIL |
+| colours | PASS | PASS |
+| separation | FAIL | FAIL |
+| **stack_parts (NEW)** | **PASS (1.08)** | **FAIL (80.27)** |
+| **travel_on_fill (NEW)** | **FAIL (2,487 st, 5.82 m)** | **FAIL (2,490 st, 5.81 m)** |
+| **total** | **3/11 (old 9: 2/9)** | **2/11 (old 9: 2/9)** |
+
+The old 9 are unchanged (2/9 on main, as before M4s).
 
 ## Mutations (scratchpad m4s/mutate_m4s.py): 20/20 RED, restored green
 max_parts 2 -> 3; erosion off by default; region filter dropped; region filter inverted; travel (None) counted as a part;
