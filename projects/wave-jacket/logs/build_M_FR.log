@@ -1,0 +1,5 @@
+M FR {'stitches': 114107, 'trims': 481, 'jumps': 1369, 'stops': 11, 'size_mm': (281.2, 369.1), 'max_stitch': 7.41} 55s
+M FR S1_top {'stitches': 60718, 'trims': 261, 'stops': 11, 'size_mm': (291.0, 249.5), 'fits': True} split_clip
+M FR S2_bottom {'stitches': 53604, 'trims': 221, 'stops': 11, 'size_mm': (291.0, 131.6), 'fits': True} split_clip
+DONE M ['FR']
+EXIT 0

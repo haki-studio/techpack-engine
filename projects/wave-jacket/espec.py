@@ -66,10 +66,10 @@ def p1():
         o.append(t(rx, y, P, 1.6, 700, GREEN if ok else RED)); o.append(t(rx + 6, y, items[:70], 1.4)); y += 2.9
         if len(items) > 70: o.append(t(rx + 6, y, items[70:140], 1.4)); y += 2.9
     y += 2
-    o.append(t(rx, y, "Min: side/CF/shoulder/armhole/underarm/cap 15 · hem 10 · cuff 10", 1.45, 400, MUTED)); y += 2.9
-    o.append(t(rx, y, "welt 6 · collar lying flat 6 · neck 6 (emb_place.py).", 1.45, 400, MUTED)); y += 6
-    for l_ in ["!Art traced from the low-res AI render (~1.4 mm/px): stripe", "!tones, every crest + curl and every spray drop are in the", "!render; curl detail is redrawn (foam close-up = style ref).",
-               "Sleeves: the render's sleeves are long + narrow, so the", "wave is placed by its position on the hanging sleeve; the", "armhole is a normal 15 mm keep-out [proposed — confirm]."]:
+    o.append(t(rx, y, "Min: every seam the wave crosses 3 (armhole/cap, side, shoulder, underarm) ·", 1.45, 400, MUTED)); y += 2.9
+    o.append(t(rx, y, "CF zip 15 · hem 10 · cuff 10 · welt 6 · collar flat 6 · neck 6 (emb_place.py).", 1.45, 400, MUTED)); y += 6
+    for l_ in ["!Art traced from the low-res AI render (~1.4 mm/px) + the founder's", "!close-up on the FL crest. Seam continuations are generated (G7).",
+               "Rev B SEAMLESS wave: armhole mapped cap <-> body by seam length,", "stripes continue across every seam, 3 mm short, match notches", "on both pieces; each sleeve one continuous trace (no fold seam)."]:
         col = ORANGE if l_.startswith("!") else MUTED
         o.append(t(rx, y, l_.lstrip("!"), 1.6, 600 if col == ORANGE else 400, col)); y += 2.9
     return o
@@ -119,9 +119,9 @@ def p3():
         q = WCK.get(k, 0.0); qc = GREEN if q < 1.0 else (ORANGE if q < 3.5 else RED)
         o.append(t(cx[10], y, "single run" if st.startswith("Run") else f"{q:.1f}%", 1.5, 600, MUTED if st.startswith("Run") else qc)); o.append(t(cx[11], y, f"{s_['n']}", 1.5, 400, MUTED))
     yb = 36 + len(order) * rh + 3
-    notes = ["Globals: 40wt polyester, 75/11 sharp needle, 2.5 oz cutaway backing (navy / charcoal), no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; exposed moves > 2.0 trimmed.",
-             "FOAM: the render's raised looped white curls look like chenille. Rev A digitizes them as padded tatami (1 padding layer) + a scalloped contour 'loop' spiral and curl lines in Foam shade on top,",
-             "      sewn on any multi-needle head. If the factory has chenille / moss-stitch heads, FM + FM-loop can become chenille loops (same outlines) — [proposed — confirm, F1].",
+    notes = ["Globals: 40wt polyester, 75/11 sharp needle, 3.0 oz cutaway + 1.5 oz tearaway under the foam [proposed], no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; exposed moves > 2.0 trimmed.",
+             "FOAM: padded tatami per curl + ONE continuous spiral curl cord + scalloped loop spiral (Foam shade); grey hollows = thin 1.1 mm grey ridges (rest of the hollow in shade). The F1 swatch",
+             "      also sews a moss / chenille look and the ecru candidate. If the factory has chenille / moss heads, FM outlines = chenille regions [proposed — confirm, F1]. Stripes = twisted cords (rows at 28°).",
              "Width = qa.check_geom share below the minimum (fill/satin 0.8, line 0.6). Amber/red codes are tapered ends + traced flecks: kept for fidelity, check on the sew-out.",
              "Stitch counts are never estimated per region: per-file and per-stop counts (p1, p4, p5, G4, G5) are read back from the DST files."]
     for i, n_ in enumerate(notes): o.append(t(12, yb + i * 3.3, n_, 1.55, 400, ORANGE if "FOAM" in n_ else MUTED))
@@ -171,29 +171,26 @@ def p6():
     import pickle as _pk
     _fg = [v for d in _pk.load(open("art_M.pkl", "rb")).get("fold_gap", {}).values() for v in d.values() if v >= 1.0]
     _fgs = f"{min(_fg):.0f}-{max(_fg):.0f}" if _fg else "0"
-    ch = ["Layout: render mapped onto the Drum Island pattern, x 1.45 mm/px,",
-          "  y from neck → hem seam (back 1.14, front 1.24 mm/px).",
+    ch = ["Layout: render mapped onto the Drum Island pattern (body unchanged),
+          "  x 1.45 mm/px, y neck → hem seam (back 1.14, front 1.24 mm/px).",
           "Curls + drops keep their render shape (mean scale) — no oval curls.",
-          "Crests cut into curls (watershed): each curl is one raised motif with",
-          "  its curl line, grey hollow + shade; loop spiral = chenille look.",
-          "Stripes: 6 blues traced, smoothed over ~2 render px; cream rope lines.",
-          "Keep-outs (15 seams/CF/armhole, 10 hem/cuff, 6 welt/collar) clip",
-          "  the render's art where it ran over seams, rib and pockets.",
-          "Sleeves: placed from the fold + shoulder of the hanging sleeve (the",
-          "  render's sleeve is ~1/2 the pattern width: widened up to 1.45 so",
-          "  its inner edge meets the underarm keep-out) [proposed — confirm].",
-          "No seam-true wrap across the armhole (can't be mapped from the",
-          "  render) — art ends 15 short of the armhole on both pieces.",
-          f"Sleeve fold (M): the trace stopped {_fgs} short of the fold, so each",
-          "  half is stretched from the underarm to meet the centre line",
-          "  (curls moved whole); the fold highlight is not sewn.",
-          "Stripes sew tatami along the stripe (turning satin left gaps).",
-          "Threads: 9 (12 allowed): 2 creams + grey for the foam, 6 blues."]
-    for i, c in enumerate(ch): o.append(t(cx, my + 4.5 + i * 3.3, c, 1.7))
+          "Rev B SEAMLESS wrap: sleeves mapped by a harmonic map, render armhole",
+          "  → cap by SEAM LENGTH; both sleeve halves (back + front view) form",
+          "  one continuous trace; art reaches 3 mm from every seam it crosses;",
+          "  each stripe crossing a seam continues into the next piece (join /",
+          "  taper / abut, generated), curls moved whole out of keep-outs (G7).",
+          "Stripes: twisted cords (rows at 28°), sub-2 mm flecks dropped, dark",
+          "  slits closed; rope lines = continuous 2.4 mm cream cords.",
+          "Foam: grey blobs → thin ridges; one continuous spiral cord per curl.",
+          "Keep-outs: seams 3, CF zip 15, hem/cuff 10, welt/collar 6.",
+          "Threads: 9 (12 allowed): 2 creams + grey for the foam, 6 blues.",
+          "!Re-check threads + hem/cuff keep-outs on the new shell + rib."]
+    for i, c in enumerate(ch): o.append(t(cx, my + 4.5 + i * 3.3, c.lstrip("!"), 1.7, 700 if c.startswith("!") else 400, ORANGE if c.startswith("!") else INK))
     px = 206
     o.append(t(px, my, "PRODUCTION", 2.3, 700))
     pr = ["Embroider the 5 cut pieces flat, BEFORE any", "  seam, welt or zip. Pre-wash the shell first.",
-          f"9 threads, 40wt polyester (G3); ≤ {FA.max_threads(PROF)} per file.", "Navy 12 oz duck: 75/11 sharp, 2.5 oz", "  cutaway, no topping.",
+          f"9 threads, 40wt polyester (G3); ≤ {FA.max_threads(PROF)} per file.", "12 oz duck: 75/11 sharp, 3.0 oz cutaway +", "  1.5 oz tearaway under foam [proposed].",
+          "Notch the match marks (1:1 plot) on both", "  pieces; no armhole topstitch.",
           "Foam: padded (raised) — check loft + loop", "  look on the strike-off; chenille heads?",
           "Mark CF, welt box (drills), split lines +", "  needle starts (DXF layer 13) before hooping.",
           f"Frame {FA.largest_frame(PROF)[0]:.0f} × {FA.largest_frame(PROF)[1]:.0f} (factory.json): split files,", "  registration crosses open stop 1 (G6).",

@@ -11,6 +11,7 @@ from shapely.geometry import Polygon, box
 from shapely.ops import unary_union
 import stitchrender as SR, mockmap as MM, pieces as PC
 import front as FRT
+import wrap as WR
 
 BODY = {"back": ["BK"], "front": ["FR", "FL"]}
 SLEEVES = {"back": [("SL", "L"), ("SR", "R")], "front": [("SR", "R"), ("SL", "L")]}
@@ -19,7 +20,7 @@ SLEEVES = {"back": [("SL", "L"), ("SR", "R")], "front": [("SR", "R"), ("SL", "L"
 def art(size): return pickle.load(open(f"art_{size}.pkl", "rb"))
 
 def sleeve_to_view(view, side, size):
-    sm = MM.sleeve_map(view, side, size); f, finv = MM.body_tf(view, size)
+    sm = WR.sleeve_map(view, side, size); f, finv = MM.body_tf(view, size)        # Rev B harmonic map (the art's map)
     def g(x, y):
         q = sm.inv(np.c_[np.atleast_1d(x), np.atleast_1d(y)]); return f(q[:, 0], q[:, 1])
     return sm, g
@@ -53,7 +54,7 @@ def view_png(view, size="M", ppm=2.0, pad=12):
     sw = drum_sweep(size)
     d.rectangle([T([(-sw, hem)])[0], T([(sw, hem + 55)])[0]], fill=rib, outline=(80, 80, 90))
     for P, side in SLEEVES[view]:
-        sm = MM.sleeve_map(view, side, size); f, _ = MM.body_tf(view, size)
+        sm = WR.sleeve_map(view, side, size); f, _ = MM.body_tf(view, size)
         co, ci = MM.CUFF_PX[(view, side)]; a_ = np.array(f(*np.array([co, ci]).T)).T
         d.polygon(T([tuple(a_[0]), tuple(a_[1]), (a_[1][0], a_[1][1] + 70), (a_[0][0], a_[0][1] + 70)]), fill=rib, outline=(80, 80, 90))
     for p in pans: d.polygon(T(p.exterior.coords), fill=fab, outline=(70, 75, 95))

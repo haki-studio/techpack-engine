@@ -25,7 +25,8 @@ import qa, mockmap as MM, pieces as PC, wrap as WR, waveart as WA, wavetrace as 
 SIZE = "M"; PPM = 4.0; ART = "--art" in sys.argv
 D = pickle.load(open(f"art_{SIZE}.pkl", "rb"))
 FAM_TONES = {"curls": WT.CREAM + WT.GREY, "drops": WT.CREAM, "stripes": WT.BLUES}
-FAM_THREADS = {"curls": ["w1", "w3", "g1"], "drops": ["w1", "b0"], "stripes": ["b0", "b1", "b2", "b3", "b4", "b5"]}
+FAM_LABEL = {"curls": "curls (crests)", "drops": "drops", "stripes": "wave masses (stripes + crests)"}
+FAM_THREADS = {"curls": ["w1", "w3", "g1"], "drops": ["w1"], "stripes": ["b0", "b1", "b2", "b3", "b4", "b5"]}
 DROP_MAX = 100.0; SHIFT = 40.0
 
 _LAB = {}
@@ -75,6 +76,42 @@ def ref_family(cls, fam):
         for i, a in enumerate(area, 1): keep[i] = (a >= DROP_MAX) if fam == "curls" else (4.0 <= a < DROP_MAX)
         m = keep[lab]
     return m
+
+def rigid_ref(P, fam, bb, shape):
+    """CURLS / DROPS reference: each motif's own render pixels (cream + grey classes inside its traced outline), placed the
+    way the art places it - rigid, at the local mean scale about its anchor (waveart.items_for: no oval curls). The Rev B wrap
+    then moves some of them (seam stretch / push): align() finds that shift."""
+    from PIL import Image, ImageDraw
+    import trace as TR
+    im = Image.new("L", shape[::-1], 0); d = ImageDraw.Draw(im); maps = WA.piece_maps(SIZE)
+    ids = [WT.NAMES.index(n) for n in FAM_TONES["curls"]]
+    for view in ("back", "front"):
+        if P not in WA.VIEW_PIECES[view]: continue
+        lab, up, b = labels(view); m, reg, kind = maps[(view, P)]; own = WA.lobe_owner(SIZE, view)
+        for i, lb in enumerate(WA.traced(view)["lobes"]):
+            if own.get(i) != P: continue
+            if (lb["kind"] == "dot") != (fam == "drops"): continue
+            o = lb["outline"]; ob = o.bounds
+            x0, y0 = int((ob[0] - b[0]) * up) - 2, int((ob[1] - b[1]) * up) - 2
+            x1, y1 = int((ob[2] - b[0]) * up) + 3, int((ob[3] - b[1]) * up) + 3
+            if x1 <= 0 or y1 <= 0 or x0 >= lab.shape[1] or y0 >= lab.shape[0]: continue
+            x0, y0 = max(0, x0), max(0, y0)
+            sub = np.isin(lab[y0:y1, x0:x1], ids)
+            mk = WA.rasterize(o, (b[0] + x0 / up, b[1] + y0 / up, b[0] + x1 / up, b[1] + y1 / up), up)[:sub.shape[0], :sub.shape[1]]
+            sub = sub[:mk.shape[0], :mk.shape[1]] & mk
+            if not sub.any(): continue
+            g = TR.polys_of(sub, up, (b[0] + x0 / up, b[1] + y0 / up), min_px=1, simplify=0.05)
+            if g.is_empty: continue
+            a = lb["anchor"]; A = WA.lin_at(m, kind, view, SIZE, a)
+            a_mm = m(np.array([a[0]]), np.array([a[1]])); a_mm = (float(np.ravel(a_mm[0])[0]), float(np.ravel(a_mm[1])[0]))
+            if A is None or not all(map(np.isfinite, a_mm)): continue
+            g = WA.rigid(g, a, A, a_mm)
+            for q in WR.polys_of(g):
+                d.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in q.exterior.coords], fill=255)
+                for h in q.interiors: d.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in h.coords], fill=0)
+    r = np.asarray(im) > 0
+    clipm = shapely.contains_xy(PC.clip_for(SIZE, P).buffer(-0.4), *grid(P)[1:])
+    return r & clipm
 
 _PAT = {}
 def dst_family(P, bb, fam):
@@ -126,12 +163,22 @@ def align(ref, out, max_mm=SHIFT):
 
 def gate_piece(P):
     cls, bb = ref_classes(P); res = {}
+    allart = [WT.NAMES.index(n) for n in WT.CREAM + WT.GREY + WT.BLUES]
     for fam in ("curls", "drops", "stripes"):
-        ref = ref_family(cls, fam); out = dst_family(P, bb, fam)
         if fam == "stripes":
+            # WAVE silhouette: the band masses (stripes with their crests + rope lines), mockup through the art's map
+            ref = ndi.binary_closing(np.isin(cls, allart), iterations=4)
+            lab_, n_ = ndi.label(ref); ar_ = ndi.sum(ref, lab_, range(1, n_ + 1)) / PPM**2 if n_ else []
+            keep = np.zeros(n_ + 1, bool)
+            for i_, a_ in enumerate(ar_, 1): keep[i_] = a_ >= 400
+            ref = keep[lab_]
+            out = ndi.binary_closing(dst_family(P, bb, "stripes") | dst_family(P, bb, "curls"), iterations=4)
             al, Aid, sh = ref, None, {}
-            rows = qa.motif_match(ref, out | dst_family(P, bb, "curls"), PPM, min_mm2=25.0)    # the band runs on under its crests
+            rows = qa.motif_match(ref, out, PPM, min_mm2=400.0)
         else:
+            ref = rigid_ref(P, fam, bb, cls.shape); out = dst_family(P, bb, fam)
+            if fam == "curls":                                     # crests: the art's lobes merge into crests, compare crest by crest
+                ref = ndi.binary_closing(ref, iterations=2)
             al, Aid, sh = align(ref, out)
             rows = qa.motif_match(al, out, PPM, min_mm2=4.0)
         for r_ in rows:
@@ -141,7 +188,10 @@ def gate_piece(P):
                 r_["moved_mm"] = sh.get(int(np.bincount(ids).argmax()), 0.0) if len(ids) else 0.0
             r_["x_mm"] = round(r_["x_mm"] + bb[0], 1); r_["y_mm"] = round(r_["y_mm"] + bb[1], 1)
         ok = sum(r_["ok"] for r_ in rows)
-        res[fam] = dict(n=len(rows), passed=ok, rows=rows, shifts=sh)
+        lab_o, n_o = ndi.label(out); ar = ndi.sum(out, lab_o, range(1, n_o + 1)) / PPM**2 if n_o else []
+        lo, hi = {"curls": (DROP_MAX, 1e9), "drops": (4.0, DROP_MAX), "stripes": (400.0, 1e9)}[fam]
+        dst_count = int(sum(1 for a in ar if lo <= a < hi))
+        res[fam] = dict(n=len(rows), passed=ok, rows=rows, shifts=sh, dst_count=dst_count)
     # coverage (A15): any-art reference vs any stitch
     ref_any = np.isin(cls, [WT.NAMES.index(n) for n in WT.CREAM + WT.GREY + WT.BLUES]); ref_any = ndi.binary_opening(ref_any, iterations=1)
     out_any = dst_family(P, bb, "curls") | dst_family(P, bb, "stripes") | dst_family(P, bb, "drops")

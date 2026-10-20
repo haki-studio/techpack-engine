@@ -1,7 +1,7 @@
 """Embroidery placement per size on the pattern + keep-out clearances (read by pattern_out via pattern_wave.py).
 The per-size art (art_<size>.pkl, waveart.py) is already in that size's pattern-piece coordinates: placement = the art."""
 import wavecore as WC
-import os, pickle
+import os, pickle, sys
 from shapely.ops import unary_union
 import pieces as PC
 
@@ -24,7 +24,7 @@ MIN = PC.MIN
 
 if __name__ == "__main__":
     allok = True
-    for sz in WC.SIZES:
+    for sz in (sys.argv[1:] or WC.DOC_SIZES):         # sampling package: size M (other sizes are Rev A until rebuilt)
         c = clearances(sz)
         bad = {P: {k: round(v, 1) for k, v in d.items() if v < MIN[P][k] - 0.3} for P, d in c.items()}
         allok &= not any(bad.values())

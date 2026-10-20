@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 from shapely.geometry import box
 from shapely.ops import unary_union
-import stitchrender as SR, mockmap as MM, pieces as PC
+import stitchrender as SR, mockmap as MM, pieces as PC, wrap as WR
 
 size = sys.argv[1] if len(sys.argv) > 1 else "M"
 D = pickle.load(open(f"art_{size}.pkl", "rb"))
@@ -21,12 +21,15 @@ def mock(P, bb, ppm):
     else:
         out = np.full((H, W, 3), 255, np.uint8)
         XX, YY = np.meshgrid(bb[0] + (np.arange(W) + 0.5) / ppm, bb[1] + (np.arange(H) + 0.5) / ppm)
+        from scipy.ndimage import map_coordinates
+        from shapely import contains_xy
         for view, side in VIEWS[P]:
-            sm = MM.sleeve_map(view, side, size); a = np.asarray(MM.warp_sleeve(view, side, size, bb, ppm))
-            q = sm.inv(np.c_[XX.ravel(), YY.ravel()])
-            from shapely import contains_xy
-            m = ((XX * sm.sgn) >= 0) & contains_xy(sm.quad_px, q[:, 0], q[:, 1]).reshape(XX.shape)
-            out[m] = a[m]
+            sm = WR.sleeve_map(view, side, size)                      # the seam-length harmonic map the art uses (Rev B)
+            q = sm.inv(np.c_[XX.ravel(), YY.ravel()]); px, py = q[:, 0].reshape(XX.shape), q[:, 1].reshape(XX.shape)
+            fin = np.isfinite(px); px = np.where(fin, px, 0); py = np.where(fin, py, 0)
+            m = fin & ((XX * sm.sgn) >= 0) & contains_xy(sm.quad_px, px, py)
+            a = np.asarray(MM.image(view)).astype(np.float32)
+            for c in range(3): out[..., c] = np.where(m, map_coordinates(a[..., c], [py, px], order=1).clip(0, 255), out[..., c])
         im = Image.fromarray(out)
     # outside the panel: white
     pan = PC.panel(size, P); msk = Image.new("L", im.size, 0); d = ImageDraw.Draw(msk)
@@ -83,7 +86,7 @@ def sheet(P, ppm=1.6):
     b0 = PC.panel(size, P).bounds; bb = (b0[0] - 5, b0[1] - 5, b0[2] + 5, b0[3] + 5)
     mk, st = mock(P, bb, ppm), stitch(P, bb, ppm)
     W, H = st.size; zw = 360; Z = zooms(P)
-    out = Image.new("RGB", (W*2 + 40 + zw*2 + 30, max(H + 40, 4*(zw*6//7 + 34) + 30)), (255, 255, 255))
+    out = Image.new("RGB", (W*2 + 40 + zw*2 + 30, max(H + 40 + 175, 4*(zw*6//7 + 34) + 30)), (255, 255, 255))
     out.paste(mk, (10, 30)); out.paste(st, (W + 30, 30)); d = ImageDraw.Draw(out)
     d.text((10, 10), f"RENDER {P} {PC.NAME[P]} (mockup mapped to size-{size} pattern mm)", fill=(0, 0, 0))
     d.text((W + 30, 10), f"SHIPPED DST {P} size {size}, every stitch (same scale; red = keep-out line)", fill=(0, 0, 0))
@@ -97,7 +100,34 @@ def sheet(P, ppm=1.6):
         for (X, Y) in ((10, 30), (W + 30, 30)):
             d.rectangle([X + (zb[0]-bb[0])*ppm, Y + (zb[1]-bb[1])*ppm, X + (zb[2]-bb[0])*ppm, Y + (zb[3]-bb[1])*ppm], outline=(255, 60, 60), width=2)
         y += a.height + 34
+    gate_table(out, P, 10, H + 50)
     out.save(f"out/compare_{P}.png"); return out.size
+
+def gate_table(im, P, x, y):
+    """LESSONS A14 / A15 gate tables (gates.py on the shipped DST) + the render-vs-DST motif counts (review item 9)"""
+    import json as _j, os as _o
+    d = ImageDraw.Draw(im)
+    if not _o.path.exists(f"gates_{size}.json"):
+        d.text((x, y), "gates_M.json missing - run gates.py", fill=(200, 0, 0)); return
+    G = _j.load(open(f"gates_{size}.json")); g = G["pieces"][P]; mode = G.get("mode")
+    d.text((x, y), f"FIDELITY GATES (LESSONS A14 qa.motif_match / A15 qa.uncovered) on the shipped DST, {P} size {size} ({mode})", fill=(0, 0, 0)); y += 16
+    hd = ["family", "render motifs", "DST motifs", "pass", "FAIL", "moved > 3 mm (max)", "IoU median", "width/height ratio min"]
+    xs = [x, x + 80, x + 180, x + 270, x + 320, x + 380, x + 520, x + 610]
+    for xx, h in zip(xs, hd): d.text((xx, y), h, fill=(90, 90, 90))
+    y += 14
+    for fam in ("curls", "drops", "stripes"):
+        f_ = g[fam]; rows = f_["rows"]; mv = [r_.get("moved_mm", 0) or 0 for r_ in rows]; mvn = [v for v in mv if v > 3]
+        fail = f_["n"] - f_["passed"]
+        wr = min([min(r_["w_ratio"], r_["h_ratio"]) for r_ in rows], default=0)
+        vals = [fam, f"{f_['n']}", f"{f_.get('dst_count', '-')}", f"{f_['passed']}", f"{fail}", f"{len(mvn)} ({max(mvn) if mvn else 0:.0f} mm)",
+                f"{np.median([r_['iou'] for r_ in rows]):.2f}" if rows else "-", f"{wr:.2f}" if rows else "-"]
+        for xx, v in zip(xs, vals): d.text((xx, y), v, fill=(200, 0, 0) if (v == vals[4] and fail) else (0, 0, 0))
+        y += 14
+    un = g["uncovered"]; ue = [u for u in un if u["why"] == "UNEXPLAINED"]
+    d.text((x, y), f"uncovered >= 25 mm2: {len(un)} areas ({sum(u['area_mm2'] for u in un):.0f} mm2) - keep-out edge {sum(1 for u in un if u['why']=='keep-out edge')}, moved by the wrap {sum(1 for u in un if u['why']=='moved by the wrap')}, UNEXPLAINED {len(ue)}",
+           fill=(200, 0, 0) if ue else (0, 120, 50)); y += 14
+    for u in un[:6]:
+        d.text((x + 10, y), f"({u['x_mm']:.0f}, {u['y_mm']:.0f}) {u['w_mm']:.0f} x {u['h_mm']:.0f} mm, {u['area_mm2']:.0f} mm2 - {u['why']}", fill=(90, 90, 90)); y += 13
 
 if __name__ == "__main__":
     for P in PC.PIECES: print(P, sheet(P))

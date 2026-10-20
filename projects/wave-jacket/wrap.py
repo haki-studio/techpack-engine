@@ -134,8 +134,13 @@ class HarmonicSleeveMap:
         if self._inv is None:
             from scipy.interpolate import LinearNDInterpolator
             m = self.inside; XX, YY = np.meshgrid(self.x0 + np.arange(m.shape[1]) * self.h, self.y0 + np.arange(m.shape[0]) * self.h)
+            from scipy.interpolate import NearestNDInterpolator
             self._inv = LinearNDInterpolator(np.c_[self.GX[m], self.GY[m]], np.c_[XX[m], YY[m]])
-        r = self._inv(np.atleast_2d(Pm)); return r
+            self._inv_nn = NearestNDInterpolator(np.c_[self.GX[m], self.GY[m]], np.c_[XX[m], YY[m]])
+        P_ = np.atleast_2d(Pm); r = self._inv(P_)
+        bad = ~np.isfinite(r).all(1)
+        if bad.any(): r[bad] = self._inv_nn(P_[bad])                   # just outside the grid hull: nearest grid point
+        return r
 
 @functools.lru_cache(maxsize=None)
 def sleeve_map(view, side, size="M"): return HarmonicSleeveMap(view, side, size)
