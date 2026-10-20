@@ -38,7 +38,8 @@ from digitize.extract.splitters.construct import basis as cbasis, line_angle
 
 DEFAULTS = dict(reference="inputs/reference_fish.png", length_factor=0.82, bg_dist=55.0, min_fish_mm2=40.0, fish_tones=None,
                 light_tones=["kb_white", "kb_lav", "kb_ice", "kb_sky"], stripe_tones=["kb_red", "kb_cyan", "kb_corn", "kb_royal"],
-                eye_tones=["kb_black"], dorsal_tones=["kb_cyan"], edge_tones=["kb_navy", "kb_cobalt"], fin_open_frac=0.28, min_fin_mm2=2.0, min_piece_mm2=8.0, eye_min_d=1.0,
+                eye_tones=["kb_black"], dorsal_tones=["kb_cyan"], edge_tones=["kb_navy", "kb_cobalt"], fin_open_frac=0.28, min_fin_mm2=1.5, min_piece_mm2=8.0, eye_min_d=1.3,
+                body_threads=["kb_white", "kb_lav", "kb_ice"], fin_thread="kb_white", wide_stripe_mm=2.0, min_stripe_mm2=3.0,
                 fin_z=-0.2, stripe_z=0.2, eye_z=0.4)
 
 _TEMPLATE = {}
@@ -68,6 +69,19 @@ def pose(mask, eye=None, scale=1.0, origin=(0.0, 0.0)):
     if not head_is_lo: a = -a; t = -t; lo, hi = -hi, -lo
     head = c + a * lo; tail = c + a * hi
     return dict(head=head, tail=tail, axis=a, normal=np.array([-a[1], a[0]]), length=float(hi - lo), centre=(head + tail) / 2)
+
+
+def tail_mask(mask, po, lo=0.60, hi=0.92, nb=40):
+    """the tail fin of a fish mask: every pixel behind the PEDUNCLE, the thinnest cross-section between lo and hi of the
+    length from the head (pose po in the mask's px). The opening that strips the other fins keeps a broad tail joined to
+    the body through a wide peduncle, so it would be sewn as body along the axis (Koi trial re-run: tails lost)."""
+    ys, xs = np.nonzero(mask); Pp = np.c_[xs + 0.5, ys + 0.5]
+    t = (Pp - po["head"]) @ po["axis"]; n = (Pp - po["centre"]) @ po["normal"]; L = max(po["length"], 1e-9)
+    b = np.clip((t / L * nb).astype(int), 0, nb - 1)
+    wid = np.array([np.ptp(n[b == k]) if (b == k).any() else np.inf for k in range(nb)])
+    k0, k1 = int(lo * nb), int(hi * nb); k = k0 + int(np.argmin(wid[k0:k1]))
+    out = np.zeros_like(mask); sel = t > (k + 0.5) / nb * L; out[ys[sel], xs[sel]] = True
+    return out
 
 
 def _nearest_tone(rgb, keys, hexes):
@@ -203,6 +217,8 @@ def split(ctx, zone, z, claim):
     body = ndi.binary_opening(m, xx * xx + yy * yy <= r_open * r_open)
     bl, bn = ndi.label(body)
     if bn: bs = np.bincount(bl.ravel()); bs[0] = 0; body = bl == int(bs.argmax())
+    tail = tail_mask(m, T["pose"])                         # the tail fin is a FIN (behind the peduncle), never body
+    body = body & ~tail
     fins = m & ~ndi.binary_dilation(body, np.ones((3, 3), bool))
     ti = lambda names: np.isin(tone, [tk.index(k) for k in names if k in tk])
     eyeT = body & ti(sc["eye_tones"]) & (T["rgb"] @ np.array([0.299, 0.587, 0.114]) < 70)
@@ -216,48 +232,45 @@ def split(ctx, zone, z, claim):
     bodyg = _one(_polys(body, fn))
     def add(kind, g, thread, zz, d, meta):
         parts.append(Part(id=ctx.new_id(zone["id"]), kind=kind, geom=g, thread=thread, z=zz, dir=d, zone=zone["id"], rgb=None,
-                          meta=dict(splitter="fish", fish=zone["id"], pose=pose_meta, group=gid, **meta)))
+                          meta=dict(splitter="fish", fish=zone["id"], pose=pose_meta, group=gid, tone_group=gid, **meta)))
         stats["parts"][kind] = stats["parts"].get(kind, 0) + 1
-    # stripes (inside the body): red first, then the blue / cyan line
-    taken = eyeT.copy(); body_pieces = []
+    # stripes (inside the body): red first, then the blue / cyan line. A stripe at least wide_stripe_mm wide is a BAND of
+    # the body (tatami along the fish axis, like the body: a light, flat colour band, not a heavy satin slab, and the
+    # same direction as the body so the tile reads one grain); a thinner line is a light satin column across it.
+    taken = eyeT.copy(); bands = []
     for sk in sc["stripe_tones"][:2]:
         if sk not in tk: continue
         sm = body & ti([sk]) & ~taken
         sm = ndi.binary_opening(sm, np.ones((2, 2), bool))
         for g in _polys(sm, fn):
-            if g.area < sc["min_piece_mm2"]: continue
+            if g.area < sc["min_stripe_mm2"]: continue
             gp = g if g.geom_type == "Polygon" else max(g.geoms, key=lambda q: q.area)
             line = dst2.centreline(gp)
-            ok = line is not None and line.length >= 1.0
-            if ok:
-                line = LineString(line.simplify(0.4).coords); w = gp.area / line.length
-                ok = w >= 1.0 and line.length >= 1.5 * w
-            if ok:
-                cl = [list(map(float, q)) for q in line.coords]; con = dict(rule="column", cl=cl)
-                probe = Part(id="_", kind="fish_stripe", geom=gp, thread="", z=0, dir=DirSpec(0.0, mode="contour", source="splitter"), meta=dict(construct=con))
-                a2, why = cbasis(probe)
-                if a2 is not None:
-                    add("fish_stripe", gp, _thread(ctx, sk), z + sc["stripe_z"], DirSpec(a2, mode="contour", source="splitter",
-                        note="satin across the stripe, along its centreline"), dict(cl=cl, w=round(w, 2), construct=con))
-                    continue
-            body_pieces.append((sk, g))                            # not a stroke: sewn as a body piece along the axis
+            if line is None or line.length < 1.0: bands.append((sk, g)); continue
+            line = LineString(line.simplify(0.4).coords); w = gp.area / line.length
+            if w >= sc["wide_stripe_mm"] or w < 1.0 or line.length < 1.5 * w: bands.append((sk, g)); continue
+            cl = [list(map(float, q)) for q in line.coords]; con = dict(rule="column", cl=cl)
+            probe = Part(id="_", kind="fish_stripe", geom=gp, thread="", z=0, dir=DirSpec(0.0, mode="contour", source="splitter"), meta=dict(construct=con))
+            a2, why = cbasis(probe)
+            if a2 is None: bands.append((sk, g)); continue
+            add("fish_stripe", gp, _thread(ctx, sk), z + sc["stripe_z"], DirSpec(a2, mode="contour", source="splitter",
+                note="light satin across the line, along its centreline"), dict(cl=cl, w=round(w, 2), construct=con))
         taken |= body & ti([sk])
-    # body tones (everything in the body not yet taken), partitioned by tone, small pieces absorbed into the body's main tone
+    # body: SILVER / LAVENDER bands. Every body pixel of the founder's tetra is read against the light body threads only
+    # (body_threads: silver white, lavender grey, ice blue; nearest in Lab), majority-filtered, so the reference's shading
+    # (light back, lavender flank and belly) becomes 2-3 bands instead of nearest-thread blues of an anti-aliased image.
     rest = body & ~taken
     if bodyg is not None and rest.any():
-        edge = [tk.index(k) for k in sc["edge_tones"] if k in tk]      # the reference image's anti-aliased dark rim: not a body tone
-        cnt = np.bincount(tone[rest], minlength=len(tk)); cnt[edge] = 0; main = tk[int(cnt.argmax())]
-        tone = np.where(np.isin(tone, edge), tk.index(main), tone)
-        groups = {}
-        for k in [tk[i] for i in np.nonzero(cnt)[0]]:
-            for g in _polys(rest & (tone == tk.index(k)), fn):
-                groups.setdefault(k, []).append(g)
-        pieces = [(k, g) for k, gs in groups.items() for g in gs]
-        big = [(k, g) for k, g in pieces if g.area >= sc["min_piece_mm2"] and k != main]
-        small = [g for k, g in pieces if g.area < sc["min_piece_mm2"] or k == main]
-        mg = _one([g.buffer(0.05) for g in small] + [g for kk, g in body_pieces])
-        keep = []
-        for k, g in big:
+        bt = [k for k in sc["body_threads"] if k in pal]
+        bi = _nearest_tone(T["rgb"], bt, [pal[k] for k in bt])
+        r_m = 2; cnt = np.stack([ndi.uniform_filter((bi == i).astype(np.float32), 2 * r_m + 1) for i in range(len(bt))], -1); bi = cnt.argmax(-1)
+        bc = np.bincount(bi[rest], minlength=len(bt)); main = bt[int(bc.argmax())]
+        pieces = [(bt[i], g) for i in range(len(bt)) if bc[i] for g in _polys(rest & (bi == i), fn)]
+        pieces += bands
+        keep = []; mg = None
+        for k, g in pieces:
+            if k == main or g.area < sc["min_piece_mm2"]:
+                mg = g if mg is None else mg.union(g.buffer(0.05)).buffer(0); continue
             c = axis_chord(g, ang)
             if c is None: mg = g if mg is None else mg.union(g).buffer(0); continue     # not along the axis: main piece
             keep.append((k, g, c))
@@ -267,34 +280,34 @@ def split(ctx, zone, z, claim):
             else: stats["no_construct"] = stats.get("no_construct", 0) + 1
         for k, g, c in keep:
             con = dict(rule="axis", line=[list(map(float, c[0])), list(map(float, c[1]))])
-            add("fish_body", g, _thread(ctx, k), z + (0.0 if k == main else 0.05), DirSpec(line_angle(*con["line"]), source="splitter",
+            zz = z + (sc["stripe_z"] if k in sc["stripe_tones"][:2] else (0.0 if k == main else 0.05))
+            add("fish_body", g, _thread(ctx, k), zz, DirSpec(line_angle(*con["line"]), source="splitter",
                 note="along the fish axis"), dict(construct=con, tone=k))
-    # fins: fan from the root on the body
+    # fins and tail: satin ALONG THE RAYS, fanning from the fin's root on the body (radial technique, centre = the root;
+    # house.yaml fish_fin, rule 4 exception asked for by the founder 20 Oct 2026), in the lightest body thread so they read crisp
     if bodyg is not None:
         fl, fnum = ndi.label(fins)
+        fin_k = sc["fin_thread"] if sc["fin_thread"] in pal else main_tone
         for j in range(1, fnum + 1):
             fmask = fl == j
             g = _one(_polys(fmask, fn))
             if g is None or g.area < sc["min_fin_mm2"]: continue
             gp = g if g.geom_type == "Polygon" else max(g.geoms, key=lambda q: q.area)
-            root = nearest_points(bodyg, gp.centroid)[0]
-            far = max((Point(q) for q in gp.exterior.coords), key=lambda q: q.distance(root))
-            con = dict(rule="fan", **{"from": [root.x, root.y], "to": [far.x, far.y]})
-            probe = Part(id="_", kind="fish_fin", geom=g, thread="", z=0, dir=DirSpec(0.0, source="splitter"), meta=dict(construct=con))
+            root = nearest_points(bodyg, gp.centroid)[0]; cen = [float(root.x), float(root.y)]
+            con = dict(rule="radial")
+            probe = Part(id="_", kind="fish_fin", geom=g, thread="", z=0, dir=DirSpec(0.0, mode="radial", source="splitter"),
+                         meta=dict(construct=con, centre=cen))
             a3, why = cbasis(probe)
             if a3 is None: stats["fin_no_construct"] = stats.get("fin_no_construct", 0) + 1; continue
-            fc = np.bincount(tone[fmask], minlength=len(tk))
-            fc[[tk.index(e) for e in sc["edge_tones"] if e in tk]] = 0          # the dark anti-aliased rim is not the fin's colour
-            k = tk[int(fc.argmax())] if fc.any() else main_tone
-            add("fish_fin", g, _thread(ctx, k), z + sc["fin_z"], DirSpec(a3, source="splitter", note="fans from the fin root"),
-                dict(construct=con, tone=k, keep_small=True, min_fragment_mm2=1.0))       # small fins are deliberate detail
+            add("fish_fin", g, _thread(ctx, fin_k), z + sc["fin_z"], DirSpec(0.0, mode="radial", source="splitter", note="satin along the fin rays, from the root"),
+                dict(construct=con, centre=cen, tone=fin_k, keep_small=True, min_fragment_mm2=1.0))       # small fins are deliberate detail
     # eye: one bead
     if eyeT.any():
         ys, xs = np.nonzero(eyeT); X, Y = fn(xs + 0.5, ys + 0.5); cx, cy = float(X.mean()), float(Y.mean())
         art_d = 2.0 * math.sqrt(eyeT.sum() * s * s / math.pi)
         from digitize.techniques.dot import needle_d
         d, hm = needle_d(art_d, sc["eye_min_d"])
-        ek = tk[int(np.bincount(tone[eyeT], minlength=len(tk)).argmax())]
+        ek = sc["eye_tones"][0] if sc["eye_tones"][0] in pal else tk[int(np.bincount(tone[eyeT], minlength=len(tk)).argmax())]
         add("fish_eye", Point(cx, cy).buffer(max(d, art_d) / 2, 16), _thread(ctx, ek), z + sc["eye_z"], DirSpec(0.0, source="rule"),
             dict(knots=[[cx, cy, d, 0.0]], art_d=round(art_d, 2), house_min=hm, keep_small=True, min_fragment_mm2=0.5))   # a 1-2 mm bead: never a speck
     ctx.stats = getattr(ctx, "stats", {}); ctx.stats[zone["id"]] = stats

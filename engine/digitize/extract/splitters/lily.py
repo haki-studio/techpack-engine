@@ -14,7 +14,8 @@ traced from the input pixels and sewn as long rows ALONG that petal.
      the neighbour with the longest border). Every piece of a petal gets ONE angle, the petal's ray heart -> tip
      (construct rule "ray", rebuilt by digitize.audit; a piece more than 3 mm off its petal's ray fails the rule and
      merges into the petal's largest piece; pieces of one thread in one petal are one part). Darker pieces sew first (lower z), lighter on top: the long-and-short shading
-     of the close-up as abutting tone pieces, no streaks.
+     of the close-up as abutting tone pieces, no streaks; the pieces of one flower share meta tone_group, so they
+     overlap by sequence.TONE_SEAM_MM (0.3 mm), not the 1 mm underlap (Koi trial: a second layer at every tone seam).
   5. kind `lily_petal`, tatami along the petal (house.yaml). Rule 3 between petals: neighbouring petals of one flower
      differ by their own fan angle; same-thread neighbours closer than 15 deg are turned by DR.separate (separate_kinds).
 meta: splitter "lily", flower, petal, heart, tip, construct; M4g hint group = the flower."""
@@ -130,7 +131,7 @@ def split(ctx, zone, z, claim):
                               dir=DirSpec(ang, source="splitter", note="along the petal, heart -> tip (one angle per petal)"),
                               zone=zone["id"], rgb=ev.mean_rgb(pm),
                               meta=dict(splitter="lily", flower=zone["id"], petal=i, heart=list(heart), tip=list(tip), construct=con,
-                                        group=f"{zone['id']}.flower")))
+                                        group=f"{zone['id']}.flower", tone_group=f"{zone['id']}.flower")))
             stats["pieces"] += 1
     ctx.stats = getattr(ctx, "stats", {}); ctx.stats[zone["id"]] = stats
     return parts, used

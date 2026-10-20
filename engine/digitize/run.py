@@ -97,7 +97,8 @@ class Run:
 
     def ref(self):
         if self._ref is None:
-            reg = register.load(config.path(self.cfg, self.cfg_b["registration"]))
+            reg = register.load(config.path(self.cfg, self.cfg.get("registration") or self.cfg_b["registration"]))   # --- KOI --- run.yaml
+            # `registration:` = the EXTRACTION source (mockup + informing close-ups); bench.json's stays the gate reference
             self._ref = register.reference(reg, self.view, self.crop, ppm=float(self.cfg_b["ppm"]))
         return self._ref
 

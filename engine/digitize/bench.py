@@ -57,8 +57,8 @@ def run_gates(cfg_b, project, dst, origin, regions_pkl=None, coherence=None):
     attributes stitches to its plan's part ids); else read from regions_pkl when given."""
     t0 = time.time(); crop = tuple(cfg_b["crop"]); view = cfg_b["view"]; ppm = float(cfg_b["ppm"])
     reg = register.load(os.path.join(project, cfg_b["registration"]))
-    min_w = register.crop_inside(reg, view, crop, cfg_b["closeup"])
-    if min_w <= cfg_b.get("min_weight", 0.6):
+    min_w = register.crop_inside(reg, view, crop, cfg_b["closeup"]) if cfg_b.get("closeup") else None   # --- KOI --- closeup null:
+    if min_w is not None and min_w <= cfg_b.get("min_weight", 0.6):                                  # a mockup-only reference
         raise SystemExit(f"crop {crop} is not inside close-up {cfg_b['closeup']} (min feather weight {min_w:.2f}); "
                          f"register.fit_crop suggests {register.fit_crop(reg, view, crop, cfg_b['closeup'])}")
     ref = register.reference(reg, view, crop, ppm=ppm)
@@ -69,11 +69,11 @@ def run_gates(cfg_b, project, dst, origin, regions_pkl=None, coherence=None):
     order = [s for s in allsegs if near(s)]                          # sew order kept
     local = [(a - x0, b - y0, c - x0, d - y0) for a, b, c, d in order]
     clipped = qa.clip_segments(order, crop)
-    out = dict(crop=list(crop), crop_min_closeup_weight=round(min_w, 3), source_ppm_median=ref.get("source_ppm_median"),
+    out = dict(crop=list(crop), crop_min_closeup_weight=round(min_w, 3) if min_w is not None else None, source_ppm_median=ref.get("source_ppm_median"),
                stitches_in_crop=len(clipped))
 
     # direction: the visible top layer (gate) and every stitch (info, the old behaviour)
-    wmask = ref.get("closeup_weight"); mw = cfg_b.get("min_weight", 0.6)
+    wmask = ref.get("closeup_weight") if cfg_b.get("closeup") else None; mw = cfg_b.get("min_weight", 0.6)   # KOI: no close-up, no mask
     dm = qa.direction_match(ref["grey"], ppm, local, weight=wmask, min_weight=mw)
     dm_all = qa.direction_match(ref["grey"], ppm, local, visible=False, weight=wmask, min_weight=mw)
     out["direction"] = dict(tiles=dm["tiles"], pct_ok=dm["pct_ok"], pct_chaos=dm["pct_chaos"], n_dev=len(dm["fail_dev"]), masked=dm["masked"],

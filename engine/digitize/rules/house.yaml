@@ -32,7 +32,7 @@ techniques:                    # defaults; a kind may override any of these numb
   # spacing is half of it; `spacing` is not read. dot: needle = art - allow, never below min_d (house-min reported).
   column_satin:  {spacing: 0.20, stitch_len: 5.5, underlay: [centre_run], pull_comp: 0.10, same_side: {40wt: 0.40, 60wt: 0.28}, centre_run_min_w: 1.4, centre_run_min_len: 2.5, max_piece: 5.5, stagger: 0.25}
   dot:           {spacing: 0.18, stitch_len: 1.5, underlay: [cross], pull_comp: 0.0, min_d: 1.1, allow: 0.2}
-  radial:        {spacing: 0.36, stitch_len: 7.0, underlay: [edge_run], pull_comp: 0.10, allowed_kinds: [floret, star, star_tint, ring]}
+  radial:        {spacing: 0.36, stitch_len: 7.0, underlay: [edge_run], pull_comp: 0.10, allowed_kinds: [floret, star, star_tint, ring, fish_fin]}   # KOI: fish_fin
   turning_satin: {spacing: 0.30, stitch_len: 7.0, underlay: [centre_run], pull_comp: 0.15, short: false}
   # M6: puff = dense satin over foam, no underlay (allowed: [tack]), rows never split; chenille / chain on a chenille
   # head (spacing = moss path spacing); faux_chain = lock-stitch chain loops for the Brother heads.
@@ -293,14 +293,18 @@ kinds:
     dir: construct             # a satin column across the stripe along its traced centreline (construct rule "column")
     follows: [split_satin]
     params: {mode: column}
-    stitch_len: 7.0            # stripes are 2-6 mm: one stitch per row up to the 7 mm satin limit (rule 4), never split
-    note: the fish's red / cyan stripe, satin across the stripe along its centreline
+    stitch_len: 7.0            # one stitch per row up to the 7 mm satin limit (rule 4), never split
+    spacing: 0.55              # a LIGHT line (re-run: the 0.42 satin read as a heavy slab); stripes >= 2 mm are body bands
+    note: the fish's thin neon line (< 2 mm), satin across it; wider stripes are fish_body bands along the axis, satin across the stripe along its centreline
   fish_fin:
-    techniques: [tatami]
-    dir: construct             # fans from the fin's root on the body to the fin's middle (rule "fan")
-    spacing: 0.5
-    underlay: [edge_run]
-    note: a fin or the tail, rows from the root out along the fin
+    techniques: [radial]       # satin ALONG THE FIN RAYS from the fin's root on the body (meta centre = the root; construct
+                               # rule "radial"). Rule 4 says radial only for face-on florets: fins are the founder-asked
+                               # exception (20 Oct 2026, Koi trial re-run: "crisp fins / tail with satin along rays")
+    dir: construct
+    spacing: 0.40
+    underlay: []
+    pull_comp: 0.10
+    note: a fin or the tail, satin rays fanning from the root, in the lightest body thread
   fish_eye:
     techniques: [dot]
     dir: 0                     # a bead: one row angle by rule (as stud)
