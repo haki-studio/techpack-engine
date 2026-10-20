@@ -92,7 +92,7 @@ bucket_of; depth-rule angles bucketed "outline", not independent); `scripts/iden
 4. Gate for same-colour travel stitched on top of sewn fill (ungated today, lower than M2).
 5. Blossom: floret recall 216/339 (64 %) → gate at ≥ 80 % (M3c); colour reads darker rose than the pale-pink reference
    (pale merged into pink by the 12-thread plan).
-6. Village: gold ridge/eave edges, windows (14 of ~45), upturned eaves; 0.6 px/mm source detail may be the limit — ask for
+6. Village: gold ridge/eave edges, windows (14 of ~45), upturned eaves; ~2.6 px/mm source detail may be the limit — ask for
    close-ups / vector art.
 7. Note in BENCH_m3a.md that independent tiles dropped 62.1 → 49.5 % when far tiers moved to "outline".
 
