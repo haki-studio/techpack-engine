@@ -79,12 +79,13 @@ def front_svg(sil):
     o.append(topst(T([(888, 51), (1105, 53), (1320, 51)], ox))); o.append(topst(T([(887, 90), (1105, 93), (1321, 90)], ox)))
     for bx in (1040, 1190):
         o.append(path(T([(bx - 7, 42), (bx + 7, 42), (bx + 7, 104), (bx - 7, 104)], ox), close=True, fill=DENIM_LT))
-    # shank button + fly (button fly: J topstitch) + CF
+    # shank button + fly (zip fly, founder 19 Oct: YKK #4.5 close-end, 6 in; J topstitch) + CF
     o.append(f'<circle cx="{f((1112 - ox) * MM)}" cy="{f(72 * MM)}" r="8.5" fill="#B8826A" stroke="#7A4E3A" stroke-width="0.4"/>')
     o.append(path(T([(1105, 98), (1100, 470)], ox)))
     o.append(topst(T(bez((1075, 98), (1072, 250), (1070, 330), (1100, 368)), ox)))
-    for by in (150, 205, 260, 315):      # fly buttons (hidden, shown dashed)
-        o.append(f'<circle cx="{f((1090 - ox) * MM)}" cy="{f(by * MM)}" r="5.5" fill="none" stroke="{STITCH}" stroke-width="0.35" stroke-dasharray="0.8 0.6"/>')
+    zt, zb = 100 * MM, 100 * MM + 152.4             # 6 in zip under the fly (hidden, shown dashed) + slider at the top
+    o.append(f'<line x1="{f((1092 - ox) * MM)}" y1="{f(zt)}" x2="{f((1092 - ox) * MM)}" y2="{f(zb)}" stroke="{STITCH}" stroke-width="1.6" stroke-dasharray="0.5 0.5"/>')
+    o.append(f'<rect x="{f((1092 - ox) * MM - 2.2)}" y="{f(zt + 1)}" width="4.4" height="7" rx="1" fill="none" stroke="{STITCH}" stroke-width="0.35" stroke-dasharray="0.8 0.6"/>')
     # front pockets: wearer's right (image left) scoop with the coin pocket; wearer's left scoop
     o.append(path(T(bez((1012, 96), (995, 170), (940, 215), (868, 232)), ox)))
     o.append(topst(T(bez((1020, 96), (1003, 175), (946, 222), (870, 240)), ox)))
