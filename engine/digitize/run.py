@@ -50,7 +50,7 @@ def florets_by_part_map(row, segs, labels, plan, crop):
         if not inside(f["at_mm"]): continue
         lab = [labels[i] for i in range(f["i0"], f["i1"] + 1)]
         if sum(1 for l in lab if l in radial) > 0.5 * len(lab): moved[f["kind"]] += 1
-        elif all(l in beads for l in lab) and f["width_mm"] <= 1.5: bead[f["kind"]] += 1
+        elif sum(1 for l in lab if l in beads) > 0.5 * len(lab) and f["width_mm"] <= 1.5: bead[f["kind"]] += 1
     s = row["satin"]
     for k, key in (("blob", "blob"), ("too-narrow", "too_narrow"), ("too-wide", "too_wide")): s[key] -= moved[k] + bead[k]
     s["floret_runs_by_part_map"] = moved; s["bead_runs_by_part_map"] = bead
