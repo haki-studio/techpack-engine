@@ -1,0 +1,60 @@
+# Decoration methods — the spec block printed on each decoration page. Shared by every family (tee, jacket, hoodie).
+# Each field's default is PROPOSED (amber, on the F1 page) until a variant gives a confirmed value in its `spec:` block.
+# Add a method here (with its fields) and it is available to every variant; a variant naming a method that is not
+# listed here fails with a clear error.
+
+screen:
+  label: Screen print
+  fields:
+    separations: {label: "Colours / separations", default: "spot colours as listed on the colourway page; halftones where the art fades"}
+    pantones: {label: "Ink colours (Pantone)", default: "match to the art file; send ink drawdowns for approval"}
+    ink: {label: "Ink type", default: "water-based (Haki asked for water-based, no plastisol)"}
+    mesh: {label: "Mesh", default: "156-230 for solids, 305 for halftones"}
+    underbase: {label: "Underbase", default: "none on a white / light body; white underbase on dark bodies"}
+    halftone: {label: "Halftone", default: "45-55 lpi, round dot; fade edges to 0 % (no hard edge)"}
+    flash_cure: {label: "Flash / cure", default: "flash between colours as needed; cure per ink supplier (water-based ~160 °C, 2-3 min tunnel)"}
+    hand: {label: "Hand feel", default: "soft (ink in the fabric, not on it)"}
+    art_file: {label: "Art file", default: "1:1 separated file, 300 dpi at print size"}
+    test: {label: "Test", default: "wash test 5 x 40 °C, no cracking / fading; crock test"}
+
+dtg:
+  label: DTG (direct to garment)
+  fields:
+    pretreat: {label: "Pretreatment", default: "required on dark bodies, even coat, heat-pressed flat"}
+    underbase: {label: "White underbase", default: "on coloured / dark bodies; none on white"}
+    resolution: {label: "Resolution", default: "art at 300 dpi at print size, sRGB, transparent PNG"}
+    ink: {label: "Ink", default: "water-based pigment (printer's standard)"}
+    cure: {label: "Cure", default: "heat press / tunnel per ink supplier"}
+    test: {label: "Test", default: "wash test 5 x 40 °C inside out"}
+
+dtf:
+  label: DTF (direct to film transfer)
+  fields:
+    film: {label: "Film", default: "PET film, matte, hot or cold peel"}
+    powder: {label: "Adhesive powder", default: "fine TPU powder, even coverage"}
+    press: {label: "Press", default: "150-160 °C, 12-15 s, medium pressure; pre-press garment 3 s"}
+    peel: {label: "Peel", default: "cold peel, then 5 s re-press with a cover sheet"}
+    hand: {label: "Hand feel", default: "thin, flexible, no rubbery edge; no visible film box around the art"}
+    resolution: {label: "Art", default: "300 dpi at print size, transparent PNG, no semi-transparent pixels at the edge"}
+    test: {label: "Test", default: "wash test 5 x 40 °C, stretch test 2 x across the print, no lifting"}
+
+puff_print:
+  label: Puff print (screen)
+  fields:
+    ink: {label: "Puff ink", default: "puff additive in plastisol or water-based puff base (confirm which)"}
+    base: {label: "Base / flat colours", default: "flat colours printed first, puff last"}
+    mesh: {label: "Mesh", default: "83-110 (thick deposit)"}
+    cure: {label: "Cure", default: "per ink supplier, typically 160-170 °C until fully risen"}
+    height: {label: "Puff height", default: "0.5-1.0 mm after cure"}
+    min_line: {label: "Min line width", default: "1.5 mm (thinner lines do not rise); min gap 1.0 mm"}
+    test: {label: "Test", default: "wash test 5 x 40 °C, no cracking at the rise"}
+
+embroidery:
+  label: Embroidery
+  stub: true
+  fields:
+    digitising: {label: "Stitch files", default: "digitised by the techpack-engine stitch path (engine/digitize, techpack-pipeline); DST/PES + thread list come with the G pages"}
+    threads: {label: "Threads", default: "max {needles} colours per file (factory.json)"}
+    backing: {label: "Backing", default: "cutaway 2.5 oz on knit; trimmed 5 mm from the stitching"}
+    frame: {label: "Hooping", default: "embroider the cut front panel flat before sewing (as the jackets)"}
+    strikeoff: {label: "Strike-off", default: "sew-out on the washed body fabric before bulk (F1)"}
