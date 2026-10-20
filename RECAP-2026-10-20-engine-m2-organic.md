@@ -59,8 +59,8 @@ bucketed as independent; importance ignored; bench always appends; satin via col
   unexplained; turns are now capped at sep[1] = 25 deg (unresolved clashes recorded).
 - **Cracks** at top-hat depth 35: 19 found on the crop (depth 25 gives 27). A founder-eye threshold.
 
-### Crop table (BENCH.md "M2 organic parts"; first PR at 4dae159, after the review fixes at 9d0c4cf)
-| | M1 | M2 first PR (4dae159) | M2 after review (9d0c4cf) |
+### Crop table (BENCH.md "M2 organic parts"; first PR at 4dae159, after the review fixes at 40357b5)
+| | M1 | M2 first PR (4dae159) | M2 after review (40357b5) |
 |---|---|---|---|
 | direction gate: INDEPENDENT tiles | 95.8 % of 71 | 97.3 % of 73 | 98.6 % of 73 = 11.7 % coverage -> FAIL (needs >= 50 %) |
 | (combined, info) | 89.0 | 90.1 | 91.7 |
@@ -76,10 +76,10 @@ bucketed as independent; importance ignored; bench always appends; satin via col
 | gates | 3/8 | 3/8 (combined direction counted) | 3/9: chaos, satin + cords, colours |
 | stub area | - | 60.4 % | 60.4 % |
 
-## Part C: PR #6 review fixes (commits 04c6c3f, 9d0c4cf)
+## Part C: PR #6 review fixes (commits 04c6c3f..40357b5)
 | # | review finding | fix | guard (red -> green) |
 |---|---|---|---|
-| 1 | re-run on the same commit added a `+dirty` row: the first bench run dirtied the tracked BENCH.md / SCOREBOARD.json | `bench.git_sha`: sha = last commit outside `bench/` folders (a bench-only commit is not a new engine), and changes under `bench/` do not count as dirty | `test_bench_rerun_on_same_commit_through_real_git` (real git repo in tmp): mutations "dirty check counts bench/" and "sha includes bench-only commits" -> red. On the branch: two `bench` runs at 9d0c4cf -> one M2 row |
+| 1 | re-run on the same commit added a `+dirty` row: the first bench run dirtied the tracked BENCH.md / SCOREBOARD.json | `bench.git_sha`: sha = last commit outside `bench/` folders (a bench-only commit is not a new engine), and changes under `bench/` do not count as dirty | `test_bench_rerun_on_same_commit_through_real_git` (real git repo in tmp): mutations "dirty check counts bench/" and "sha includes bench-only commits" -> red. On the branch: two `bench` runs at 40357b5 -> one M2 row |
 | 2 | headline direction counted 545 self-derived tiles | `verdict.direction_ok` = independent tiles >= 85 % AND >= 50 % coverage; chaos stays on all tiles (DST only); BENCH row shows "indep. (n of N); all" | `test_direction_verdict_gates_on_independent_tiles`: mutation "gate on the combined rate" -> red |
 | 3 | random_angles could be forged via meta field_mean / field_angle | `audit.field_basis` recomputes `direction.grid_mean(meta["field"], geom)` (0.5 deg tol for the 1 micron WKT rounding); stubs + cloud shades store their grid; `direction.refresh_field_basis` re-measures on the final geometry in the plan stage, then separation runs again | `test_field_basis_is_recomputed_not_trusted`: mutation "basis read from meta" -> red |
 | 4 | rule 3 unmet on 29/118 pairs, unflagged | verdict line `separation` (close <= 0, stubs included), BENCH section documents it | same verdict test: mutation "separation line dropped" -> red |

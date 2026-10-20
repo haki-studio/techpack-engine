@@ -75,7 +75,7 @@ buildings). Thread v0 merged the two water blues away (area-weighted), so the fa
 
 Same command, run config `run_bk_crop.yaml` (now with `direction`, `stratum`, `cloud`, `specks` and thread `importance`),
 zones `zones_BK.json` (new: `cliffs` = stratum splitter, `cloud_centre` = cloud splitter, `foliage` stub claimed before the
-cliffs). Scored at engine commit 9d0c4cf (row `git_sha`; after the PR #6 review fixes). Gates read the WRITTEN DST
+cliffs). Scored at engine commit 40357b5 (row `git_sha`; after the PR #6 review fixes). Gates read the WRITTEN DST
 (`compile.labelled_dst`). Every number below is from `out/digitize/BK_M_crop/gates.json`.
 
 **Gate changes from the PR #6 review (M2 rows are judged by 9 lines, older rows keep 8):**
@@ -90,7 +90,7 @@ cliffs). Scored at engine commit 9d0c4cf (row `git_sha`; after the PR #6 review 
   the geometry actually sewn. Side effect: stub angles are the mean of the filled 4 mm field instead of the raw tensor
   sum, which moved stub tiles 87.5 -> 89.6 % OK and their chaos 6.8 -> 3.9 %.
 - The bench key is the last commit outside bench/ folders, and bench/ changes do not make it dirty: two bench runs at
-  9d0c4cf leave one M2 row (earlier M2 rows from this unmerged branch were removed).
+  40357b5 leave one M2 row (earlier M2 rows from this unmerged branch were removed).
 
 ![M2 panel](panel_2026-10-20_m2-organic-parts--strata---clouds--guide.png)
 

@@ -969,7 +969,7 @@
    "red": true,
    "gold": true
   },
-  "secs": 9.6,
+  "secs": 10.1,
   "readback_match": {
    "file_segs": 86021,
    "planned_segs": 85564,
@@ -1135,10 +1135,10 @@
     "pct_within": 94.4
    },
    "dir_sources": {
-    "rule": 20,
     "outline": 19,
+    "field-mean": 241,
     "field": 87,
-    "field-mean": 241
+    "rule": 20
    }
   },
   "stub_area": {
@@ -1247,7 +1247,7 @@
    "colours": true,
    "separation": false
   },
-  "git_sha": "9d0c4cfa6545",
+  "git_sha": "40357b581947",
   "panel": "panel_2026-10-20_m2-organic-parts--strata---clouds--guide.png"
  }
 ]
