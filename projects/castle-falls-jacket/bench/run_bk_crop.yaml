@@ -67,7 +67,7 @@ threads:
     cf_brown: Bark dark
 
 evidence: {ppm: 4.0, smooth_mm: 0.35, mode_mm: 0.6}
-sequence: {keep_mm: 1.0, min_fragment_mm2: 2.0}
+sequence: {keep_mm: 1.0, min_fragment_mm2: 2.0}   # M4g defaults: sequence.SEQ_DEFAULTS (planner m4; {planner: m1} = M2)
 stub: {min_part_mm2: 20.0, min_protected_mm2: 4.0, close_mm: 0.6}
 fall: {cords_min: 4, cords_max: 10, cord_mm: 5.0}
 sky: {min_band_mm: 3.0, blend_mm: 2.5}
