@@ -147,6 +147,8 @@ def verdict(row, T):
     }
     if "separation" in row:                   # rule 3 (M2): touching same-thread parts closer than 15 deg, stubs included
         checks["separation"] = row["separation"]["close"] <= T.get("separation_close_max", 0)
+    # --- M4c --- chaos after the radial-floret exemption (digitize.gates_radial), same threshold, same tile count
+    if "radial_exemption" in row: checks["direction_chaos"] = row["radial_exemption"]["pct_chaos_after"] <= T["direction_pct_chaos_max"]
     return checks
 
 
@@ -190,7 +192,9 @@ def md_row(row):
     ind = (row.get("direction_by_source") or {}).get("independent")
     dok = f"{ind['pct_ok']} indep. ({ind['tiles']} of {d['tiles']} tiles); all {d['pct_ok']}" if ind else f"{d['pct_ok']}"
     sep = f"; sep. close {row['separation']['close']}" if "separation" in row else ""
-    return (f"| {row['date']} | {row['label']} | {dok} | {d['pct_chaos']} | {d['pct_ok_all_stitches']} | {acs} | "
+    rx = row.get("radial_exemption")                                    # M4c: raw chaos, then after the radial exemption
+    chs = f"{d['pct_chaos']} raw; {rx['pct_chaos_after']} after radial exemption ({rx['n_exempt']} tiles)" if rx else f"{d['pct_chaos']}"
+    return (f"| {row['date']} | {row['label']} | {dok} | {chs} | {d['pct_ok_all_stitches']} | {acs} | "
             f"{de['mean']} / {de['p95']} / {de['flags']} | {tr['per_100cm2']} ({tr['trims']}) | {sa['satins']} / {sa['blob']} / {sa['too_wide']} / {sa['too_narrow']} / {sa['fans']} | "
             f"{st['max']} / {st['over_cm2']} | {co['threads_in_file']} ({'y' if co['red'] else 'n'}, {'y' if co['gold'] else 'n'}) | "
             f"{npass}/{len(v)}{sep} |\n")

@@ -1,0 +1,201 @@
+"""ENGINE_PLAN M4c: radial-floret exemption for the 8 mm chaos gate (engine/digitize/gates_radial.py) and crown clumps
+(extract/splitters/crown.py). Every guard here was proven RED by a mutation of the code it guards (scratchpad
+m4c/mutate.py, listed in RECAP-2026-10-20-engine-m4c.md) and is GREEN on this branch.
+
+The chaos tiles are produced by the real gate (qa.direction_match on the visible layer of synthetic stitches over a flat
+reference: no reference grain, so only chaos can fail), never typed in."""
+import json, math, os
+import numpy as np
+import pytest
+from shapely.geometry import Point, box
+import qa
+from digitize.schema import Part, DirSpec
+from digitize.rulebook import Rulebook
+from digitize import gates_radial as GR, bench
+
+PPM = 12.0
+ORIGIN = (-40.0, 300.0)               # a crop that does not start at 0, 0 (garment mm), like the bench crop
+SIZE = 16.0                           # 2 x 2 tiles of 8 mm
+
+
+def floret(pid, c, r=3.0, mode="radial", centre=True):
+    meta = dict(construct=dict(rule="radial"))
+    if centre: meta["centre"] = [c[0], c[1]]
+    return Part(id=pid, kind="floret", geom=Point(c).buffer(r, 32).difference(Point(c).buffer(0.75)), thread="cf_pink", z=0,
+                dir=DirSpec(0.0, mode=mode, source="splitter"), meta=meta)
+
+
+def fill(pid, geom):
+    return Part(id=pid, kind="canopy", geom=geom, thread="cf_rose", z=1, dir=DirSpec(30.0, source="field-mean"), meta={})
+
+
+def rays(c, r, n=36, r0=0.8, step=7.0):
+    """radial satin from the centre: ray stitches in short pieces (a real floret's rows)"""
+    out = []
+    for k in range(n):
+        t = 2 * math.pi * k / n; ca, sa = math.cos(t), math.sin(t); a = r0
+        while a < r - 1e-6:
+            b = min(r, a + step); out.append((c[0] + a * ca, c[1] + a * sa, c[0] + b * ca, c[1] + b * sa)); a = b
+    return out
+
+
+def random_stitches(c, r, n, rng, L=1.0):
+    out = []
+    for _ in range(n):
+        rr = r * math.sqrt(rng.random()) * 0.9; t = rng.random() * 2 * math.pi; a = rng.random() * math.pi
+        x, y = c[0] + rr * math.cos(t), c[1] + rr * math.sin(t)
+        out.append((x - L / 2 * math.cos(a), y - L / 2 * math.sin(a), x + L / 2 * math.cos(a), y + L / 2 * math.sin(a)))
+    return out
+
+
+def parallel(x0, y0, x1, y1, ang=30.0, sp=0.45, L=2.0):
+    """a fixed-angle fill over a box: segments of length L along ang"""
+    out = []; ca, sa = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+    for y in np.arange(y0, y1, sp):
+        for x in np.arange(x0, x1, L):
+            out.append((x, y, x + L * ca, y + L * sa))
+    return out
+
+
+def judge(groups, parts, cfg=None):
+    """groups: [(part id, segs)] in sew order (garment mm). -> (dm, exemption) through the real chaos gate"""
+    segs, labels = [], []
+    for pid, ss in groups:
+        segs += ss; labels += [pid] * len(ss)
+    x0, y0 = ORIGIN; ref = np.full((int(SIZE * PPM), int(SIZE * PPM)), 128.0)
+    local = [(a - x0, b - y0, c - x0, d - y0) for a, b, c, d in segs]
+    dm = qa.direction_match(ref, PPM, local)
+    vis, idx = qa.visible_segments(segs, (x0, y0, x0 + SIZE, y0 + SIZE), ppm=PPM, return_index=True)
+    return dm, GR.exempt(dm, vis, [labels[i] for i in idx], parts, cfg, PPM, origin=ORIGIN)
+
+
+def at(tx, ty):
+    return (ORIGIN[0] + 8 * tx + 4.0, ORIGIN[1] + 8 * ty + 4.0)
+
+
+def floret_tile(tx, ty, r=2.8, prefix="f"):
+    """4 florets in one 8 mm tile (2 x 2, 4 mm apart): rays in every direction -> chaotic by construction"""
+    cx, cy = at(tx, ty); parts, groups = [], []
+    for i, (dx, dy) in enumerate(((-2, -2), (2, -2), (-2, 2), (2, 2))):
+        c = (cx + dx, cy + dy); p = floret(f"{prefix}{tx}{ty}.{i}", c, r); parts.append(p); groups.append((p.id, rays(c, r)))
+    return parts, groups
+
+
+# ---------------------------------------------------------------- the exemption
+def test_floret_tiles_are_chaotic_raw_and_exempt_when_proven():
+    parts, groups = floret_tile(0, 0)
+    dm, ex = judge(groups, parts)
+    assert len(dm["fail_chaos"]) == 1 and dm["tiles"] == 1                   # the raw gate does call it chaos
+    assert ex["n_exempt"] == 1 and ex["chaos_raw"] == 1 and ex["chaos_after"] == 0
+    assert ex["pct_chaos_raw"] == 100.0 and ex["pct_chaos_after"] == 0.0       # raw figure kept next to the exempted one
+    t = ex["exempt"][0]; assert t["share"] >= 0.99 and t["adherence"] >= 99.0
+
+
+def test_non_floret_radial_blob_with_random_stitches_stays_chaotic():
+    """review (i): a LARGE radial-mode blob is not floret size: never exempt, even sewn perfectly radial; sewn at random it
+    also fails the plan-wide radial adherence"""
+    from digitize.extract.splitters import blossom
+    from digitize.schema import ObjectPlan
+    c = at(0, 0); big = floret("blob", c, r=6.0)
+    rng = np.random.default_rng(1)
+    dm, ex = judge([("blob", random_stitches(c, 6.0, 400, rng))], [big])
+    assert len(dm["fail_chaos"]) >= 1 and ex["n_exempt"] == 0 and ex["chaos_after"] == ex["chaos_raw"]
+    assert ex["n_radial_not_eligible"] == 1 and "not floret size" in ex["radial_parts_not_eligible"][0]["why"]
+    dm2, ex2 = judge([("blob", rays(c, 6.0, n=90))], [big])                     # perfectly radial but too big: still chaos
+    assert len(dm2["fail_chaos"]) >= 1 and ex2["n_exempt"] == 0
+    segs = random_stitches(c, 6.0, 400, np.random.default_rng(1))
+    plan = ObjectPlan(name="t", parts=[big])
+    ra = blossom.radial_adherence(plan, segs, ["blob"] * len(segs), (ORIGIN[0], ORIGIN[1], ORIGIN[0] + SIZE, ORIGIN[1] + SIZE))
+    assert not ra["ok"] and ra["pct_within"] < 85.0
+
+
+def test_floret_size_parts_with_random_stitches_are_not_exempt():
+    """review (ii): the adherence condition carries the exemption; without it random stitches in floret-size parts pass"""
+    rng = np.random.default_rng(2); parts, groups = floret_tile(0, 0)
+    groups = [(pid, random_stitches(p.meta["centre"], 2.8, 60, rng)) for (pid, _), p in zip(groups, parts)]
+    dm, ex = judge(groups, parts)
+    assert len(dm["fail_chaos"]) == 1 and ex["n_exempt"] == 0
+    assert ex["n_refused"] == 1 and "adherence" in ex["candidates_refused"][0]["why"]
+
+
+def test_tile_under_70_pct_radial_is_not_exempt():
+    """review (iii): half the tile's visible thread is a random-angle fill -> not exempt; the florets alone are"""
+    rng = np.random.default_rng(3); cx, cy = at(0, 0)
+    parts = [floret("f0", (cx, cy), 2.8)]; groups = [("f0", rays((cx, cy), 2.8))]
+    filler = fill("can", box(cx - 4, cy - 4, cx + 4, cy + 4))
+    cen = [p.meta["centre"] for p in parts]
+    ring = [s for s in random_stitches((cx, cy), 5.6, 4000, rng)
+            if abs((s[0] + s[2]) / 2 - cx) < 4 and abs((s[1] + s[3]) / 2 - cy) < 4
+            and min(math.dist(((s[0] + s[2]) / 2, (s[1] + s[3]) / 2), q) for q in cen) > 3.0]
+    dm, ex = judge([("can", ring)] + groups, parts + [filler])
+    assert len(dm["fail_chaos"]) == 1
+    sh = (ex["candidates_refused"] + ex["exempt"])[0]["share"]
+    assert 0.3 < sh < 0.70, f"fixture should be between 30 and 70 % radial, got {sh}"
+    assert ex["n_exempt"] == 0 and "radial share" in ex["candidates_refused"][0]["why"]
+    dm2, ex2 = judge(groups, parts)                                           # the same florets without the fill: exempt
+    assert ex2["n_exempt"] == 1
+
+
+def test_part_without_centre_and_non_radial_mode_are_not_eligible():
+    parts, groups = floret_tile(0, 0)
+    noc = [floret(p.id, p.meta["centre"], 2.8, centre=False) for p in parts]
+    dm, ex = judge(groups, noc)
+    assert ex["n_exempt"] == 0 and ex["eligible_parts"] == 0 and all(r["why"] == "no centre" for r in ex["radial_parts_not_eligible"])
+    fixed = [Part(id=p.id, kind="floret", geom=p.geom, thread="x", z=0, dir=DirSpec(0.0, source="splitter"), meta=dict(p.meta)) for p in parts]
+    dm, ex = judge(groups, fixed)
+    assert ex["n_exempt"] == 0 and ex["eligible_parts"] == 0
+
+
+def test_tiles_map_through_the_crop_origin():
+    """a floret tile in the SECOND tile column is exempt there, and a chaotic non-radial tile next to it is not"""
+    rng = np.random.default_rng(4)
+    parts, groups = floret_tile(1, 0)
+    c = at(0, 1); junk = fill("junk", box(c[0] - 4, c[1] - 4, c[0] + 4, c[1] + 4))
+    dm, ex = judge(groups + [("junk", random_stitches(c, 5.0, 300, rng))], parts + [junk])
+    assert len(dm["fail_chaos"]) == 2
+    assert [tuple(t["at_mm"]) for t in ex["exempt"]] == [(12.0, 4.0)] and ex["chaos_after"] == 1
+
+
+def test_house_numbers_and_threshold_unchanged():
+    d = GR.config(Rulebook())
+    assert (d["min_radial_share"], d["min_adherence_pct"], d["floret_r_max_mm"], d["max_dev_deg"]) == (0.70, 85.0, 4.0, 15.0)
+    b = json.load(open(os.path.join(os.path.dirname(__file__), "..", "projects", "castle-falls-jacket", "bench", "bench.json")))
+    assert b["targets"]["direction_pct_chaos_max"] == 5.0
+
+
+def _row(pct_raw, ex=None):
+    row = dict(direction=dict(tiles=100, pct_ok=50.0, pct_chaos=pct_raw), angle_coherence=dict(ok=False),
+               density=dict(flags=0), trims=dict(per_100cm2=0), satin=dict(blob=0, too_wide=0, too_narrow=0),
+               stack=dict(max=1), colours=dict(threads_in_file=12, red=True, gold=True))
+    if ex is not None: row["radial_exemption"] = ex
+    return row
+
+
+def test_verdict_reads_chaos_after_exemption_at_the_same_threshold():
+    T = dict(direction_pct_ok_min=85.0, direction_pct_chaos_max=5.0, stack_max_layers=2, trims_per_100cm2_max=25, satin_blobs_max=0,
+             colours_max=12, density_flags_max=0)
+    assert not bench.verdict(_row(12.0), T)["direction_chaos"]
+    assert bench.verdict(_row(12.0, dict(pct_chaos_after=4.0, pct_chaos_raw=12.0, n_exempt=8)), T)["direction_chaos"]
+    assert not bench.verdict(_row(12.0, dict(pct_chaos_after=6.0, pct_chaos_raw=12.0, n_exempt=6)), T)["direction_chaos"]
+    assert not bench.verdict(_row(3.0, dict(pct_chaos_after=5.1, pct_chaos_raw=5.1, n_exempt=0)), T)["direction_chaos"]
+
+
+def test_exempt_tiles_go_to_their_own_bucket_never_independent_ok():
+    parts, groups = floret_tile(0, 0)
+    dm, ex = judge(groups, parts)
+    by = {"independent": dict(tiles=10, ok=5, dev=2, chaos=3, pct_ok=50.0, pct_chaos=30.0)}
+    GR.tag_buckets(ex, lambda c: parts[0])                                     # the floret's own bucket is "independent"
+    assert ex["exempt"][0]["bucket"] == "independent"
+    out = GR.rebucket(by, ex)
+    assert out["radial"]["tiles"] == 1 and out["radial"]["ok"] == 0
+    assert out["independent"]["ok"] == 5 and out["independent"]["tiles"] == 9 and out["independent"]["chaos"] == 2
+    assert sum(v["tiles"] for v in out.values()) == 10                         # a partition: no tile counted twice
+    with pytest.raises(ValueError):
+        GR.rebucket(by, dict(exempt=[dict(at_mm=(4, 4))]))                     # an untagged tile is an error, not a guess
+
+
+def test_panel_and_scoreboard_show_raw_and_after():
+    from digitize import panel
+    row = _row(24.8, dict(pct_chaos_after=21.0, pct_chaos_raw=24.8, n_exempt=23))
+    f = panel._m4c(row)["dir_chaos"]
+    assert "24.8% raw" in f and "21.0" in f and "23 tiles" in f

@@ -279,6 +279,12 @@ class Run:
         row["direction_by_kind"] = {k: dict(tiles=sum(v), ok=v[0], dev=v[1], chaos=v[2], pct_ok=round(100 * v[0] / max(1, sum(v)), 1),
                                             pct_chaos=round(100 * v[2] / max(1, sum(v)), 1)) for k, v in sorted(per.items())}
         row["direction_by_source"] = audit.direction_by_source(dm, part_at, self.rb, plan.parts)   # M3b: one constructed basis
+        # --- M4c --- radial-floret exemption (gates_radial): raw chaos stays in row["direction"]; exempt tiles -> "radial"
+        from digitize import gates_radial as GR
+        ex = GR.tag_buckets(GR.exempt(dm, vis, [sp[i] for i in idx], plan.parts, GR.config(self.rb), ppm, origin=self.crop[:2]),
+                            part_at, self.rb, plan.parts)
+        row["direction_by_source_raw"] = row["direction_by_source"]; row["direction_by_source"] = GR.rebucket(row["direction_by_source"], ex)
+        row["radial_exemption"] = ex; aux["radial_exempt"] = [t["at_mm"] for t in ex["exempt"]]
         aa = audit.angle_audit(plan, self.rb); sw = audit.sewn_angles(plan, segs, sp, self.crop, ppm=ppm)
         areas = np.array([p.area for p in plan.parts])
         ev_mm2 = plan.meta.get("evidence_tone_mm2", {})
