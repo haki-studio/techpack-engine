@@ -362,7 +362,7 @@ def p_revisions():
                             "Garment: zip-hoodie block (founder decision 19 Oct) with this mockup's slash welts (engine welt override); pattern XS–3XL, DXF + 1:1 plot, T pages."),
             ("Rev C", DATE, f"Factory answers (19 Oct): hoop splits for the {KD.FR_S} frame (factory.json) instead of the assumed 360 × 360, F1 updated; 3D puff: foam on its own "
                             f"machine stop, flat glow cut back under the puff to a {kccore.CUT_KEEP_MM:.0f} mm edge band (house rule 6, checked on every DST); every file rebuilt from the "
-                            "current art (the Rev B files predated the last sparkle fix); page checks (sleeve flat front half, CJK text as outlines, thread estimates flagged).")]
+                            "current art (the Rev B files predated the last sparkle fix); glow + haze stipple no longer bridge long hops with straight lines (up to 57 mm in Rev B; trims reported); page checks (sleeve flat front half, CJK text as outlines, thread estimates flagged).")]
     y = 36
     for rv, dt, ch in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(36, y, dt, 1.7))

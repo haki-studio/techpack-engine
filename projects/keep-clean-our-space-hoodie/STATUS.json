@@ -90,6 +90,11 @@
    "2026-10-20T11:40:00",
    "stitch",
    "Rev C stitch build: 400x450 splits (fronts 2, sleeves 4 hoopings at M); foam gate caught 1 flat point in XS/S FR S1_top -> glow cut 0.3 mm inside puff edge, full rebuild running"
+  ],
+  [
+   "2026-10-20T14:21:12",
+   "delivered",
+   "Rev C delivered: 25-page merged PDF + zip; 112 files pass prod_gates (frame 400x450, <=12 colours, max stitch 7.07, foam stop + 0 flat points in foam, no straight sheer lines), A14 blocking 0, keep-outs + pattern QA pass. M: FR 58,696/500, FL 45,938/351, SR 6,700/199, SL 6,888/192"
   ]
  ],
  "questions": [
@@ -101,9 +106,9 @@
   "KR text: the source glyph reads \uc18c\uc911\ud568; set as the grammatical \uc6b0\ub9ac\ub4e4 \uc18c\uc911\ud55c \uc6b0\uc8fc!. OK, or keep \uc18c\uc911\ud568 exactly as drawn?",
   "Optional: add the source frame's small 'WE WANT NO DIRTY COSMOS' text (near the ship)? It is not on the mockup, left out."
  ],
- "stage": "stitch",
- "stage_index": 4,
+ "stage": "delivered",
+ "stage_index": 7,
  "blocked": false,
- "updated": "2026-10-20T11:40:00",
- "preview": "out/stitch/M/HAKI_KCOS_FR_M_preview.png"
+ "updated": "2026-10-20T14:21:12",
+ "preview": "out/compare_front_M.png"
 }

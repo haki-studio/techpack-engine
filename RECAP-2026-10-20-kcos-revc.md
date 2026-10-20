@@ -23,6 +23,21 @@
 - Founder ruling (20 Oct): the garment mockup governs; reference.png only for the text wording. Checked: no close-ups
   exist and nothing traces or grades from reference.png (only shown on compare sheets / E pages).
 
+- Page check (D1) found straight glow-green lines across the JP halo: the stipple walk bridged long hops with
+  straight stitches (13 chains >= 15 mm on Rev B FR M, longest 57.5 mm) and travel hid inside unsewn sheer runs.
+  Fix: `stipple_band(max_hop=3)` starts a new run; sheer runs never hide travel; `prod_gates.straight_chains` gate
+  (red on Rev B, green on all Rev C files). Cost: FR M 301 -> 500 trims, FL 229 -> 351, sleeves ~130 -> ~195 (reported).
+- R1 / E pages: HAZE is a stipple run, not open tatami (text was wrong since Rev B).
+
+## Final numbers (size M, read from the DSTs)
+| Piece | Stitches | Trims | Colours | Max st | Hoopings (400x450) | Foam stop | Flat pts in foam |
+|---|---|---|---|---|---|---|---|
+| FR | 58,696 | 500 | 12 | 7.07 | 2 | ok (pause before stop 6) | 0 |
+| FL | 45,938 | 351 | 8 | 7.00 | 2 | ok (pause before stop 6) | 0 |
+| SR | 6,700 | 199 | 2 | 3.83 | 4 | n/a | n/a |
+| SL | 6,888 | 192 | 2 | 4.22 | 4 | n/a | n/a |
+All 112 files (7 sizes x 4 pieces + splits) pass prod_gates; A14/A15 blocking 0; keep-outs pass every size; pattern QA pass.
+
 ## Decisions
 - Fronts do NOT fit 400 × 450 in one hooping (M 267 × 512): 2 hoopings each; full single-hooping files ship too and F1
   asks which frame takes a whole front (factory confirmed 340 × 505 without naming the frame).

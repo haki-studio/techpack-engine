@@ -51,10 +51,10 @@ KC_RULES = {
  "OVAL-hl":("Oval ring highlight",        "Satin column, closed", "across the ring",        "0.28 zz",  "—",    "none",                  "0.10", "1.1 wide, on top"),
  "FACE":   ("Star face (eyes/centre)",    "Satin dot",          "across dot",               "0.40",  "—",    "none",                  "0.10", "Ø 1.2"),
  # Rev B codes (review Rev A): columns = one satin per stroke along its centreline (kcsatin)
- "GLOW":   ("Neon glow, stipple run",     "Run, random short stitches", "random",          "0.30 + 0.16/mm out", "1.8", "none",     "—",    "fades 0–4.5 mm from the art"),
+ "GLOW":   ("Neon glow, stipple run",     "Run, random short stitches", "random",          "0.30+0.16/mm", "1.8", "none",     "—",    "fades 0–4.5 mm from the art"),
  "GLOW-D": ("Neon halo, dense band",      "Tatami, sheer",      "along the badge line",     "0.60",  "2.5",  "none",                  "—",    "0–1.9 mm round the art"),
  "GLOW-S": ("Neon halo, soft band",       "Tatami, open",       "along the badge line +8°", "1.30",  "2.5",  "none",                  "—",    "1.9–3.8 mm, ragged edge"),
- "HAZE":   ("Sparkle haze",               "Tatami, open",       "random per sparkle",       "1.10",  "2.5",  "none",                  "—",    "under sparkles ≥ 5 mm"),
+ "HAZE":   ("Sparkle haze, stipple run",  "Run, random short stitch", "random",          "0.55+0.35/mm", "1.5", "none",            "—",    "ring 0–r round sparkles ≥ 5 mm"),
  "SPK":    ("Sparkle (concave 4-point)",  "Satin, 2 tapered columns", "across each arm",    "0.24 zz",  "—",    "none",                  "0.00", "tips stop 0.3 short"),
  "TXC":    ("Text stroke column, flat",   "Satin column",       "across the stroke",        "0.25 zz",  "—",    "centre run",            "0.15", "1 column per stroke"),
  "PF-TXC": ("Text stroke column, puff",   "Satin column over foam", "across the stroke",    "0.20 zz",  "—",    "none (foam)",           "0.30", "core under the rim"),
