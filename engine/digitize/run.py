@@ -37,19 +37,23 @@ NO_FILL_DIRECTION = ("dot",)                                          # beads: j
 def florets_by_part_map(row, segs, labels, plan, crop):
     """M3b: qa.satin_shape reads satin runs from the DST alone and cannot tell a floret from a fan in a window (its own
     docstring: "needs the part map"). A flagged run whose stitches are mostly labelled with a RADIAL part (a face-on
-    floret, rule 4) is re-filed as a floret fan; the count moved is recorded. Everything else stays flagged."""
+    floret, rule 4) is re-filed as a floret fan; a flagged run inside a BEAD (dot technique: its tiny cross underlay and
+    end rows read as a < 1 mm satin) is re-filed as a bead (rule 9 studs). The counts moved are recorded; everything
+    else stays flagged."""
     import qa
     radial = {p.id for p in plan.parts if p.dir.mode == "radial"}
-    if not radial: return
+    beads = {p.id for p in plan.parts if p.technique in NO_FILL_DIRECTION}
+    if not radial and not beads: return
     x0, y0, x1, y1 = crop; inside = lambda q: x0 <= q[0] < x1 and y0 <= q[1] < y1
-    moved = {"blob": 0, "too-narrow": 0, "too-wide": 0}
+    moved = {"blob": 0, "too-narrow": 0, "too-wide": 0}; bead = {"blob": 0, "too-narrow": 0, "too-wide": 0}
     for f in qa.satin_shape(segs)["flags"]:
         if not inside(f["at_mm"]): continue
         lab = [labels[i] for i in range(f["i0"], f["i1"] + 1)]
         if sum(1 for l in lab if l in radial) > 0.5 * len(lab): moved[f["kind"]] += 1
+        elif all(l in beads for l in lab) and f["width_mm"] <= 1.5: bead[f["kind"]] += 1
     s = row["satin"]
-    s["blob"] -= moved["blob"]; s["too_narrow"] -= moved["too-narrow"]; s["too_wide"] -= moved["too-wide"]
-    s["floret_runs_by_part_map"] = moved
+    for k, key in (("blob", "blob"), ("too-narrow", "too_narrow"), ("too-wide", "too_wide")): s[key] -= moved[k] + bead[k]
+    s["floret_runs_by_part_map"] = moved; s["bead_runs_by_part_map"] = bead
 
 
 class Run:

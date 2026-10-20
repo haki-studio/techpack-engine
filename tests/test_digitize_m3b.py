@@ -210,17 +210,22 @@ def test_crown_splitter_clumps_from_lit_tops_dark_after_lit():
 # ------------------------------------------------------------------ plumbing
 def test_florets_by_part_map_refiles_only_radial_runs(monkeypatch):
     """qa.satin_shape cannot tell a floret from a fan; the part map can. A flagged run labelled with a RADIAL part is
-    re-filed as a floret fan; a blob on a fixed-angle part stays flagged. Mutation (re-file every flag) -> red."""
+    re-filed as a floret fan, a < 1 mm run inside a bead (its cross underlay) as a bead; a blob on a fixed-angle part
+    stays flagged. Mutation (re-file every flag) -> red."""
     import qa
     from digitize import run as RN
     flags = [dict(kind="blob", i0=0, i1=5, at_mm=(1.0, 1.0)), dict(kind="blob", i0=6, i1=11, at_mm=(2.0, 2.0)),
              dict(kind="too-narrow", i0=0, i1=5, at_mm=(1.0, 1.0))]
     monkeypatch.setattr(qa, "satin_shape", lambda segs, **k: dict(flags=flags))
     fl = Part(id="f", kind="floret", geom=Point(1, 1).buffer(2), thread="t", z=7, dir=DirSpec(0.0, mode="radial", source="splitter"))
-    st = Part(id="s", kind="zone_stub", geom=box(0, 0, 4, 4), thread="t", z=1, dir=DirSpec(0.0))
-    row = dict(satin=dict(blob=2, too_narrow=1, too_wide=0))
-    RN.florets_by_part_map(row, [(0, 0, 1, 1)] * 12, ["f"] * 6 + ["s"] * 6, ObjectPlan(name="t", parts=[fl, st]), (0, 0, 10, 10))
+    st = Part(id="s", kind="zone_stub", geom=box(0, 0, 4, 4), thread="t", z=1, dir=DirSpec(0.0)); st.technique = "tatami"
+    kn = Part(id="k", kind="knot", geom=Point(3, 3).buffer(0.75), thread="t", z=7, dir=DirSpec(18.0, source="splitter")); kn.technique = "dot"
+    flags.append(dict(kind="too-narrow", i0=12, i1=17, at_mm=(3.0, 3.0), width_mm=0.34))
+    for f in flags: f.setdefault("width_mm", 2.0)
+    row = dict(satin=dict(blob=2, too_narrow=2, too_wide=0))
+    RN.florets_by_part_map(row, [(0, 0, 1, 1)] * 18, ["f"] * 6 + ["s"] * 6 + ["k"] * 6, ObjectPlan(name="t", parts=[fl, st, kn]), (0, 0, 10, 10))
     assert row["satin"]["blob"] == 1 and row["satin"]["too_narrow"] == 0, row
+    assert row["satin"]["bead_runs_by_part_map"]["too-narrow"] == 1
 
 
 def test_beads_neither_grow_nor_drop():
