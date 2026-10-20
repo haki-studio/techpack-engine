@@ -41,5 +41,9 @@
   "puff_3d": true,
   "jacquard_sherpa": true,
   "embroidery_on_sherpa": true,
-  "factory_answers_2026_10_19": "Brother machines, biggest 750 mm; frames 300x300 and 400x450; embroider cut pieces; front 340x505 single hooping OK; back 690x575 = two hoopings combined; chenille yes; 3D puff yes; jacquard sherpa normally no problem; embroidery on sherpa yes; thread colour book from their supplier. Open: which frame holds the 340x505 front (505 > 450); sleeve 500x510 in one hooping?; thread brand name; send the colour book; sherpa design for review."
+  "factory_answers_2026_10_19": "Brother machines, biggest 750 mm; frames 300x300 and 400x450; embroider cut pieces; front 340x505 single hooping OK; back 690x575 = two hoopings combined; chenille yes; 3D puff yes; jacquard sherpa normally no problem; embroidery on sherpa yes; thread colour book from their supplier. Open: which frame holds the 340x505 front (505 > 450); sleeve 500x510 in one hooping?; thread brand name; send the colour book; sherpa design for review.",
+  "chenille_format": null,
+  "open_questions": [
+    "chenille: which machine (Tajima TMCE / Barudan BEMR / other), which file format, loop (moss) / chain mode and needle (loop) height set in the file or at the machine, which chenille yarns + colours (engine M6: chenille + true chain are planned, the machine file raises FactoryFormatNeeded until chenille_format is set)"
+  ]
 }

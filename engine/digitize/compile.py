@@ -87,6 +87,11 @@ def labelled_dst(dst, origin, segs, labels, tol=0.16, skip_mm=0.2):
 
 def write(plan, base, origin, **mp_kw):
     """mp_kw: extra dst2.make_pattern options (M5: exact_travel=dict(...) for patches); none = the M1 behaviour"""
+    # --- M6 --- a chenille-head part (chenille moss, true chain) never goes into a lock-stitch file
+    from digitize.techniques.specialty import machine_of, OtherMachine
+    other = [p.id for p in plan.parts if p.technique and machine_of(p) != "lockstitch"]
+    if other: raise OtherMachine(f"{base}: parts {other[:6]} are planned for the chenille head, not this lock-stitch file: "
+                                 f"split them out (specialty.export_chenille) or switch the run to faux_chain")
     stops = regions(plan)
     vis = [r for s in stops for r in s["regions"]]
     pat, stats = dst2.make_pattern(vis, stops, origin, builder=prebuilt, keep_order=True, threads=thread_table(plan), **mp_kw)

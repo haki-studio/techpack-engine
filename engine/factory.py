@@ -103,4 +103,10 @@ def requests_page(style, strikeoff, threads, pieces, page="F1", prof=None):
     h2("4  Quote basis")
     line("How do you price embroidery: per 1,000 stitches, per trim, per hooping, or per piece? Price the strike-off files above.")
     line("Total stitches and trims per piece are on the embroidery pages (G).", MUTED)
+    # --- M6 --- chenille: the factory said yes, but not on which head / in which file format (never guessed)
+    if prof.get("chenille") and not prof.get("chenille_format"):
+        y += 2; h2("5  Chenille machine + file format")
+        line("You can sew chenille - please tell us: which chenille machine (e.g. Tajima TMCE / Barudan BEMR / other) and which", ORANGE)
+        line("file format it reads; are loop (moss) / chain modes and needle (loop) height set in the file or at the machine;", ORANGE)
+        line("which chenille yarns + colours you stock. Until then chenille parts are sent as a path plan, not a machine file.", ORANGE)
     return [doc(o)]
