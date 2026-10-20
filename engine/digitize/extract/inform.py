@@ -1,35 +1,41 @@
-"""Informing close-ups (founder ruling 2026-10-20, Koi engine trial): the GARMENT MOCKUP governs, a close-up only INFORMS.
+"""Informing close-ups (founder ruling 2026-10-20): the GARMENT MOCKUP governs, a close-up only INFORMS.
 "The close-up is just an AI image, it's not showing the garment ... closeups can help, but the closeup should inform."
+Generic: no motif kind, colour or subject is assumed; a motif is whatever the mockup draws away from its fabric colour.
 
 So a close-up never moves, adds or removes a motif, and never changes its silhouette or colour. It may only add
-INTERIOR detail (petal structure, shading pattern, thread grain) inside a motif the mockup already has, where the
-mockup has it:
+INTERIOR detail (structure, shading pattern, thread grain) inside a motif the mockup already has, where the mockup
+has it:
 
   1. motif by motif: each informed motif is a window on the mockup (flat px) plus a SIMILARITY map
      flat px -> close-up px (cx = a*px - b*py + tx, cy = b*px + a*py + ty), fitted to THAT motif alone
-     (fit_similarity: rotation x scale grid around the global fit, best translation by cross-correlation of the two
-     motif masks). Never one global warp: the AI close-up drifts 13 mm (up to 30 mm) from the mockup (Koi
-     trace/closeup_reg.json), differently per motif.
-  2. the mockup decides WHERE: only pixels inside the mockup's own motif silhouette (the largest one in the window) (far from the fabric colour AND
-     blue or light, closed close_mm, holes filled) inside the window can take close-up detail. A close-up motif with
-     no mockup motif under it is never sampled; a mockup motif with no close-up detail under it stays mockup.
-  3. inside the silhouette a pixel takes the close-up only where the close-up shows embroidery there (not its
-     fabric), and its colour is TRANSFERRED to the mockup motif's colour (per-motif mean in Lab), so the
-     mockup's colours stay; the close-up gives the pattern of light and dark, not the hue.
+     (fit_similarity: rotation x scale grid around an initial guess, best translation by cross-correlation of the two
+     motif masks). Never one global warp: an AI close-up drifts from the mockup differently per motif (Koi trial:
+     13 mm mean, 30 mm max).
+  2. acceptance: a motif whose best fit overlays the mockup motif with IoU < min_iou (MIN_IOU 0.5, per close-up
+     "min_iou") is NOT informed: the close-up does not show that mockup motif, so the mockup wins.
+  3. the mockup decides WHERE: only pixels inside the mockup's own motif silhouette (the largest one in the window;
+     far from the fabric colour, closed close_mm, holes filled) can take close-up detail. A close-up motif with no
+     mockup motif under it is never sampled; a mockup motif with no close-up detail under it stays mockup.
+  4. inside the silhouette a pixel takes the close-up only where the close-up shows embroidery there (not its
+     fabric), and its colour is shifted to the mockup motif's MEAN colour (Lab), so the mockup's colours stay; the
+     close-up gives the pattern of light and dark, not the hue.
 Outputs (register.reference): rgb, closeup_weight = 1 where close-up detail was used (direction gates may read grain
 there), source_ppm there = the close-up's resolution, weights[<close-up name>] = that mask.
 
 registration.json close-up entry:
-  {"name", "view", "file", "mode": "inform", "motif_test": {dist, blue, lum, close_mm},
+  {"name", "view", "file", "mode": "inform", "min_iou": 0.5, "motif_test": {dist, blue, lum, close_mm},
    "motifs": [{"name", "window": [x0, y0, x1, y1] flat px, "sim": [a, b, tx, ty], "fit": {iou, rot, scale},
                "exclude": [[x0, y0, x1, y1] flat px, ...] (optional: parts of the window that are another motif)}]}
+motif_test: dist = colour distance from the fabric; blue / lum are OPTIONAL extra filters (None = off) for a design
+whose motifs are known to be blue or light (the Koi trial used blue 18, lum 110).
 Input pixels only (LESSONS A14): nothing here reads art, scene data or templates."""
 import math
 import numpy as np
 from scipy import ndimage as ndi
 from scipy.ndimage import map_coordinates
 
-TEST = dict(dist=45.0, blue=18.0, lum=110.0, close_mm=1.0)
+TEST = dict(dist=45.0, blue=None, lum=None, close_mm=1.0)
+MIN_IOU = 0.5                 # a fitted close-up motif informs only when it overlays the mockup motif at least this well
 _FAB = {}
 
 
@@ -39,11 +45,12 @@ def fabric_of(rgb):
     return np.median(a[l <= np.median(l)], axis=0)
 
 
-def motif_like(rgb, fab, dist=45.0, blue=18.0, lum=110.0, **_):
-    """embroidery pixels: far from the fabric colour AND blue or light (the Koi motifs are blues, whites and red)"""
-    a = np.asarray(rgb, float); d = np.sqrt(((a - fab) ** 2).sum(-1))
+def motif_like(rgb, fab, dist=45.0, blue=None, lum=None, **_):
+    """embroidery pixels: far from the fabric colour; with blue / lum given, also blue-ish or light (or red)"""
+    a = np.asarray(rgb, float); m = np.sqrt(((a - fab) ** 2).sum(-1)) > dist
+    if blue is None and lum is None: return m
     l = a @ np.array([0.299, 0.587, 0.114]); b = a[..., 2] - a[..., 0]; red = (a[..., 0] - a[..., 2]) > 60
-    return (d > dist) & ((b > blue) | (l > lum) | red)
+    return m & ((b > (blue if blue is not None else 1e9)) | (l > (lum if lum is not None else 1e9)) | red)
 
 
 def silhouette(rgb, fab, ppm, test):
@@ -90,6 +97,7 @@ def composite(cfg, view, XX, YY, px, py, rgb, cw, sppm, weights, mock_ppm):
         fab_c = np.asarray(cu["fabric_closeup"], float) if cu.get("fabric_closeup") else _FAB[key]
         used = np.zeros(px.shape, bool)
         for m in cu.get("motifs", []):
+            if m.get("fit", {}).get("iou", 1.0) < cu.get("min_iou", MIN_IOU): continue   # the close-up does not show it
             x0, y0, x1, y1 = m["window"]
             sel = sil & (px >= x0) & (px < x1) & (py >= y0) & (py < y1) & ~used
             for ex in m.get("exclude", []):                # hand-drawn "not this motif" boxes (a fish tail touching a petal)
