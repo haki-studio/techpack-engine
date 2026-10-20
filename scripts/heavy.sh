@@ -1,6 +1,8 @@
 #!/bin/bash
 # run a CPU-heavy job (stitch builds, splits, specs) in one of N shared slots so parallel product builds don't
 # overload the machine. N = $TECHPACK_SLOTS or half the cores.  usage: scripts/heavy.sh python3 build_size.py M
+# priority lane (founder deadlines): TECHPACK_PRIORITY=1 runs at once, outside the shared slots
+if [ "${TECHPACK_PRIORITY:-0}" = "1" ]; then exec "$@"; fi
 N="${TECHPACK_SLOTS:-$(( $(nproc) / 2 > 0 ? $(nproc) / 2 : 1 ))}"
 R="$(cd "$(dirname "$0")/.." && pwd)"
 if ! python3 "$R/scripts/storage.py" free-ok; then
