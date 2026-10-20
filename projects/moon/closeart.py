@@ -160,7 +160,7 @@ def back_pole_f():
     return (lambda x, y: ((np.asarray(x) - BPX) * kx, float(mt) + (np.asarray(y) - BTOP) * ky)), kx, ky, float(mt)
 # wire anchor points read off the back close-up (px, 2x grid crops out/_wip/cu_low.png, cu_right.png); scene.back_art
 # runs the wires between them / to the side seams exactly as the close-up does (review item 6)
-BACK_TIPS_CU = {"coilL1": (455, 772), "coilL2": (462, 762), "coilL3": (470, 768), "poleLo": (690, 955), "canB": (660, 885),
+BACK_TIPS_CU = {"braceT": (807, 617), "braceB": (757, 670), "coilL1": (455, 772), "coilL2": (462, 762), "coilL3": (470, 768), "poleLo": (690, 955), "canB": (660, 885),
                 "pinB": (900, 598), "pinA": (858, 606), "wrap": (1057, 712), "drumR": (857, 737), "insBlk": (812, 925),
                 "crossA": (842, 608), "crossEnd": (645, 962), "armL1": (600, 662), "spoolT1": (522, 750), "armL2": (628, 674),
                 "spoolT2": (545, 752), "canL": (625, 852), "hemL": (500, 1086)}
@@ -171,9 +171,15 @@ def back_pole():
     f = lambda x, y: moon3.to_mm(x, y)
     hem = PT.draft("M")[1]["hem_b"]; ybot = float(moon3.to_px(0, hem - 10)[1])     # pole runs to 10 above the hem seam
     vis = polepar.back(f, ybot)                  # Rev C: clean stitch objects at the close-up positions (A13)
-    vis = traced_silhouette(vis, CB, (380, 470, 1448, int(ybot) + 1), f, fig_px=(600, 850, 500))
+    vis = traced_silhouette(vis, CB, (380, 470, 1448, int(ybot) + 1), f, fig_px=(600, 850, 500), keep_px=BACK_HW_PX)
     tips = {k: tuple(float(v) for v in f(*p)) for k, p in BACK_TIPS_CU.items()}
     return vis, tips
+
+def cloud_core(m):
+    """the thick body of a cloud-mask component: cloud3's colour mask (b - r > -16) also catches the light wires, and
+    thin wire strands joined to a cloud must not be excluded as 'cloud' (Rev C final: a back wire lost 45 mm this way)"""
+    core = morphology.binary_opening(m, morphology.disk(6))
+    return ndi.binary_dilation(core, iterations=6) & m
 
 def pole_masks(img, box_px, fig_px=None):
     """close-up pole + hardware pixels (grey / charcoal, low saturation) and the thin wire pixels, in close-up px"""
@@ -186,7 +192,7 @@ def pole_masks(img, box_px, fig_px=None):
     labc, nc, _ = cloud3.masks(img, (0, 0, img.width, img.height))
     cl = np.zeros_like(g)
     for k, sl in enumerate(ndi.find_objects(labc), 1):                 # real clouds only (wide); light pole strips are narrow
-        if sl is not None and sl[1].stop - sl[1].start >= 90 and sl[0].stop - sl[0].start < 2.2 * (sl[1].stop - sl[1].start): cl[sl] |= labc[sl] == k
+        if sl is not None and sl[1].stop - sl[1].start >= 90 and sl[0].stop - sl[0].start < 2.2 * (sl[1].stop - sl[1].start): cl[sl] |= cloud_core(labc[sl] == k)
     g &= ~ndi.binary_dilation(cl, iterations=6)                        # cloud undersides are grey too: never pole
     g = ndi.binary_closing(g, iterations=1)
     pole = morphology.remove_small_objects(morphology.binary_opening(g, morphology.disk(5)), 400)
@@ -194,7 +200,7 @@ def pole_masks(img, box_px, fig_px=None):
     wires = morphology.remove_small_objects(g & ~ndi.binary_dilation(pole, iterations=3), 40)
     return pole, wires
 
-def pole_sil(img, box_px, fig_px=None, open_px=7):
+def pole_sil(img, box_px, fig_px=None, open_px=7, keep_px=None):
     """pole + hardware SILHOUETTE from the close-up (Rev C final, A14): every not-navy pixel in the window (charcoal
     outlines and dark slats included: navy has b - r >= 14, the hardware's outlines and greys < 14), real clouds, warm
     moon colours and the licensed figure removed, opened by a 15 px disc (drops the wires, keeps every hardware piece),
@@ -206,18 +212,40 @@ def pole_sil(img, box_px, fig_px=None, open_px=7):
     if fig_px is not None: fx0, fx1, fy1 = fig_px; nn[:fy1, fx0:fx1] = False
     labc, _, _ = cloud3.masks(img, (0, 0, img.width, img.height)); cl = np.zeros_like(nn)
     for k, sl in enumerate(ndi.find_objects(labc), 1):
-        if sl is not None and sl[1].stop - sl[1].start >= 90 and sl[0].stop - sl[0].start < 2.2 * (sl[1].stop - sl[1].start): cl[sl] |= labc[sl] == k
+        if sl is not None and sl[1].stop - sl[1].start >= 90 and sl[0].stop - sl[0].start < 2.2 * (sl[1].stop - sl[1].start): cl[sl] |= cloud_core(labc[sl] == k)
     nn &= ~ndi.binary_dilation(cl, iterations=4); nn = ndi.binary_closing(nn, iterations=2)
     pole = morphology.remove_small_objects(morphology.binary_opening(nn, morphology.disk(open_px)), 400)
+    # keep the pole itself (largest piece) + standalone hardware at the close-up's anchors (the wire wrap, the crossing
+    # wire's clamp); other surviving blobs are shallow wire crossings (two cords side by side > 15 px), not hardware
+    lab, n = ndi.label(pole)
+    if n > 1:
+        sizes = ndi.sum(pole, lab, range(1, n + 1)); keep = {int(np.argmax(sizes)) + 1}
+        dtk = ndi.distance_transform_edt(lab == 0, return_distances=True, return_indices=True)[1]
+        for x, y in (keep_px or []):
+            iy, ix = dtk[0][y, x], dtk[1][y, x]
+            if math.hypot(ix - x, iy - y) <= 10: keep.add(int(lab[iy, ix]))
+        pole = np.isin(lab, list(keep))
     return ndi.binary_fill_holes(ndi.binary_closing(pole, iterations=2))
 
-def traced_silhouette(vis, img, box_px, f, fig_px=None):
+def front_detail_mask():
+    """LESSONS A15 on the front close-up: garment details that are NOT embroidery (zip teeth + tape + its topstitching,
+    both welt pockets, the hem rib) as a px mask - removed before any wire tracing / reference mask"""
+    from PIL import ImageDraw as _D
+    im = Image.new("L", CF.size, 0); d = _D.Draw(im)
+    d.rectangle([680, 0, 765, CF.height], fill=255)                                   # zip + tape + placket stitching
+    for (x0, y0, x1, y1) in ((50, 690, 370, 400), (1080, 400, 1380, 660)):            # welt pockets (diagonal boxes)
+        d.line([(x0, y0), (x1, y1)], fill=255, width=76)
+    d.rectangle([0, 1040, CF.width, CF.height], fill=255)                             # hem rib
+    return np.asarray(im) > 0
+
+BACK_HW_PX = [(1057, 712), (645, 962)]          # standalone hardware anchors on the back close-up: wire wrap, crossing clamp
+def traced_silhouette(vis, img, box_px, f, fig_px=None, keep_px=None):
     """LESSONS A14: the pole + hardware SILHOUETTE comes from the close-up pixels (pole_sil, outlines included): every
     traced area no drawn part covers is filled — the charcoal outline rims round drawn hardware in pole charcoal (p4,
     as the close-up's dark outlines), larger uncovered areas next to a drawn part in pole dark grey (p3 shade), and
     standalone traced pieces no drawn part touches (wire wraps, end clamps) in pole grey (p2) with a charcoal edge run.
     The drawn parts (measured off the same close-up) give the inside structure and stay whole."""
-    pole = pole_sil(img, box_px, fig_px)
+    pole = pole_sil(img, box_px, fig_px, keep_px=keep_px)
     sil = map_geom(TR.polys_of(pole, 1, (0, 0, img.width, img.height), 60, simplify=0.3), f).buffer(0.4).buffer(-0.4)
     out = list(vis)
     drawn = unary_union([r["geom"] for r in out if r["st"] not in ("bean", "run")])
@@ -266,7 +294,7 @@ def front_pole_f():
         return X, Y
     return f
 # Rev C final (A14): "strT" / "strL3" = top / bottom of the coil's left end, where the close-up's 4-wire fan leaves it
-FRONT_TIPS_CU = {"strT": (956, 772), "strL3": (968, 800), "armL": (1107, 662), "armR": (1353, 603), "pin": (1316, 550), "strL": (962, 785), "strL2": (966, 792),
+FRONT_TIPS_CU = {"strT": (956, 772), "strL3": (968, 800), "armL": (1107, 662), "arm2": (1150, 664), "spoolT": (1000, 757), "coilT": (1085, 752), "armR": (1353, 603), "pin": (1316, 550), "strL": (962, 785), "strL2": (966, 792),
                  "canL": (1176, 905), "canR": (1345, 700), "pole": (1265, 830), "poleL": (1210, 900), "bracket": (1350, 935)}
 def front_pole():
     f = front_pole_f()

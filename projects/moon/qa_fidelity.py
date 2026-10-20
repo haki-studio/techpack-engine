@@ -128,7 +128,8 @@ def wire_rows(G, ref_w, out_w, lines, excl, clip):
         iou = float((r & o).sum() / max((r | o).sum(), 1))
         rows.append(dict(base, iou=round(iou, 2), w_ratio=min([f["w_ratio"] for f in fr] or [1.0]), h_ratio=min([f["h_ratio"] for f in fr] or [1.0]),
                          stretches=len(fr), ok=bool(all(f["ok"] for f in fr)), generated=False))
-    miss = qa.uncovered(dref & ~allc, dout, PPM, min_mm2=25.0, open_mm=0)
+    # reference wire pixels themselves (not the tolerance band) outside every corridor: a close-up wire with no stitched wire
+    miss = qa.uncovered(ref_w & ~excl & clip & ~allc, dout, PPM, min_mm2=25.0, open_mm=0.8)
     return rows, miss
 
 def run():
@@ -146,13 +147,14 @@ def run():
     ref_cl = G.raster(cl)
     # pole + wires (close-up pixels; figure + box never traced)
     fig = np.zeros(CA.CB.size[::-1], bool); fig[:500, 600:850] = True
-    pp = pole_sil(CA.CB, (380, 470, 1448, 1086), (600, 850, 500)); ww = scene.wire_mask()
+    pp = pole_sil(CA.CB, (380, 470, 1448, 1086), (600, 850, 500), keep_px=CA.BACK_HW_PX); ww = scene.wire_mask()
     ref_pole = G.from_px(pp, to_px) & clipm & ~boxm
     ref_cl &= ~ndi.binary_dilation(ref_pole, iterations=2)          # the pole + hardware sit in front of the clouds
     ref_wire = G.from_px(ww, to_px) & wirem & ~ref_cl & ~ref_moon
     allp = cover(is_(lab, keys, {"p2", "p3", "p4", "c1"}))
     out_pole = ndi.binary_fill_holes(morphology.binary_opening(allp, qa.disk(OPEN_MM, PPM))) & ~cover(ref_cl, 0)
     out_cl = cover(is_(lab, keys, {"c1", "c2", "c3", "c5"})) & ~ndi.binary_dilation(out_pole, iterations=4)
+    occl = ndi.binary_dilation(ref_pole | out_pole, iterations=4); ref_cl &= ~occl; out_cl &= ~occl     # same occlusion both sides
     out_wire = cover(is_(lab, keys, {"p2", "p4", "c1"}), 0.6) & ~ndi.binary_dilation(out_pole, iterations=4) & ~out_cl
     # stars: traced star regions (MN-mare radial) are the close-up grey-green pixels (moon3); out = m5 stitches near them
     st = [r["geom"] for r in T_["moon"] if r["grp"] == "MN-mare" and isinstance(r["ang"], tuple)]
@@ -192,6 +194,7 @@ def run():
     allp = cover(is_(lab, keys, {"p2", "p3", "p4", "c1"}))
     out_pole = ndi.binary_fill_holes(morphology.binary_opening(allp, qa.disk(OPEN_MM, PPM))) & ~cover(ref_cl, 0)
     out_cl = cover(is_(lab, keys, {"c1", "c2", "c3", "c5"})) & ~ndi.binary_dilation(out_pole, iterations=4)
+    occl = ndi.binary_dilation(ref_pole | out_pole, iterations=4); ref_cl &= ~occl; out_cl &= ~occl     # same occlusion both sides
     res["02_03"] = dict(clouds=qa.motif_match(*keep("02_03","clouds",ref_cl, out_cl,G), PPM, min_mm2=20),
                         pole=qa.motif_match(*keep("02_03","pole",ref_pole, out_pole,G), PPM, min_mm2=50),
                         uncovered=qa.uncovered((ref_cl | ref_pole) & clipm, cover(lab > 0), PPM))

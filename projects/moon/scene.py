@@ -78,8 +78,10 @@ def wire_mask():
     global _WM
     if _WM is None:
         import closeart as CA
-        _, w = CA.pole_masks(CA.CB, (0, 470, 1448, 1086), (600, 850, 500))
-        w &= ~ndi.binary_dilation(pole_px_mask(), iterations=3)          # hardware outlines are not wires (pole_sil)
+        po, w = CA.pole_masks(CA.CB, (0, 470, 1448, 1086), (600, 850, 500))
+        # pole_masks' own "pole" (grey pixels opened by 11 px) also swallows shallow wire crossings (two cords side by side):
+        # those blobs are wires again; only the hardware silhouette (pole_sil) is not a wire
+        w = (w | po) & ~ndi.binary_dilation(pole_px_mask(), iterations=3)
         _WM = ndi.binary_dilation(w, iterations=1)
     return _WM
 
@@ -115,7 +117,7 @@ def pole_px_mask():
     global _PS
     if _PS is None:
         import closeart as CA
-        _PS = CA.pole_sil(CA.CB, (0, 470, 1448, 1086), (600, 850, 500))
+        _PS = CA.pole_sil(CA.CB, (0, 470, 1448, 1086), (600, 850, 500), keep_px=CA.BACK_HW_PX)
     return _PS
 
 _FC = None
@@ -126,15 +128,15 @@ def front_ctx():
         import closeart as CA
         f = CA.front_pole_f(); a0 = f(0.0, 0.0); a1 = f(1.0, 1.0)
         kx, ky = float(a1[0] - a0[0]), float(a1[1] - a0[1]); ax, ay = float(a0[0]), float(a0[1])
-        _, w = CA.pole_masks(CA.CF, (0, 300, 1448, 1086)); ps = CA.pole_sil(CA.CF, (930, 480, 1448, 1040))
-        w &= ~ndi.binary_dilation(ps, iterations=3)
+        po, w = CA.pole_masks(CA.CF, (0, 300, 1448, 1086)); ps = CA.pole_sil(CA.CF, (930, 480, 1448, 1040))
+        w = (w | po) & ~ndi.binary_dilation(ps, iterations=3) & ~CA.front_detail_mask()      # A15: zip, welts, rib are not wires
         _FC = dict(W=ndi.binary_dilation(w, iterations=1), PS=ps, K=float(math.sqrt(abs(kx * ky))),
                    to_px=lambda x, y: ((np.asarray(x) - ax) / kx, (np.asarray(y) - ay) / ky),
                    to_mm=lambda x, y: (ax + np.asarray(x) * kx, ay + np.asarray(y) * ky))
     return _FC
 
 TRACE_LOG = {}
-def trace_profile(p0, p1, sag, n=90, band=9.0, key=None, seam_end=False, free=25.0, ctx=None):
+def trace_profile(p0, p1, sag, n=90, band=9.0, key=None, seam_end=False, free=25.0, ctx=None, hem_end=False, free_h=8.0):
     """LESSONS A14 (Rev C final): the wire's PATH traced from the back close-up as a least-cost route between its two
     anchors (M mm, moon registration) over the close-up wire pixels (skimage route_through_array): cost 1 on a wire pixel,
     6 behind the pole / hardware (wires pass behind them), 40 on bare navy, plus a pull towards the sag-curve guess
@@ -174,6 +176,11 @@ def trace_profile(p0, p1, sag, n=90, band=9.0, key=None, seam_end=False, free=25
         c_ = int(np.clip(round(gx[ie]) - x0, 0, x1 - x0 - 1)); r0 = int(np.clip(round(gy[ie]) - y0, 0, y1 - y0 - 1))
         rr = np.arange(max(0, r0 - int(band / Kp)), min(y1 - y0, r0 + int(band / Kp) + 1))
         s1 = (int(rr[np.argmin(cc[rr, c_])]), c_); seam_end = False
+    if hem_end and t_edge is None:
+        # a drop wire may meet the hem line (10 above the hem seam) anywhere within +-free_h mm of its guess: the close-up
+        # wire decides where it lands; the end anchor moves there (returned in TRACE_LOG as the new x)
+        r_ = s1[0]; cc_ = np.arange(max(0, s1[1] - int(free_h / Kp)), min(x1 - x0, s1[1] + int(free_h / Kp) + 1))
+        s1 = (r_, int(cc_[np.argmin(cc[r_, cc_])]))
     if seam_end:
         # the route may meet the seam column anywhere within +-free mm of the agreed wrap height (the close-up wire need
         # not reach the seam at exactly that height); the difference is ramped out linearly along the wire below
@@ -181,7 +188,8 @@ def trace_profile(p0, p1, sag, n=90, band=9.0, key=None, seam_end=False, free=25
         s1 = (int(rr[np.argmin(cc[rr, c_])]), c_)
     path = np.array(mcp.traceback(s1))
     on = float(W[path[:, 0] + y0, path[:, 1] + x0].mean())
-    if key is not None: TRACE_LOG[key] = (round(on, 2), round(float(to_mm(0, s1[0] + y0)[1]), 1))
+    end_mm = tuple(float(v) for v in to_mm(s1[1] + x0, s1[0] + y0))
+    if key is not None: TRACE_LOG[key] = (round(on, 2), round(end_mm[1], 1), round(end_mm[0], 1))
     if on < 0.6: return ts, guess                       # mostly hidden (in front of / behind hardware): the sag curve
     mx, my = to_mm(path[:, 1] + x0, path[:, 0] + y0); q = np.c_[mx, my] - p0
     t_ = q @ u / L; o_ = q @ nrm
@@ -278,7 +286,7 @@ def back_art(size="M"):
          ("coilL3", seamL(H_LEFT[3]), 0.02), ("canB", seamL(H_LEFT[4]), 0.02),
          ("wrap", seamR(H_RIGHT[0]), 0.03), ("wrap", seamR(H_RIGHT[1]), 0.02), ("pinB", seamR(H_RIGHT[2]), 0.03, False),
          ("pinB", tips["wrap"], 0.04), ("pinA", tips["wrap"], 0.05), ("drumR", tips["wrap"], 0.02),
-         ("crossA", tips["crossEnd"], 0.02), ("armL1", tips["spoolT1"], 0.03), ("armL2", tips["spoolT2"], 0.03),
+         ("crossA", tips["crossEnd"], 0.02), ("armL1", tips["spoolT1"], 0.03), ("armL2", tips["spoolT2"], 0.03), ("braceT", tips["braceB"], 0.01),
          ("canL", (tips["hemL"][0], mt["hem_b"] - 10), 0.02)]
     wires, ends = [], []
     tipsM = dict(T_["back_tips"]); xsM = mM["block"].chest2
@@ -291,6 +299,10 @@ def back_art(size="M"):
         if bM is not None: bM = (bM[0], mM["hem_b"] - (mt["hem_b"] - b[1]) / sc)
         else: bM = ((b[0] - A1[0]) / sc + A0[0], (b[1] - A1[1]) / sc + A0[1])
         pM = tipsM[a]
+        if b_[0] == "hem":                           # drop wire: land where the close-up wire meets the hem line (+-8 mm)
+            trace_profile(pM, bM, sg * abs(bM[0] - pM[0]), key="_drop", hem_end=True)
+            e_ = TRACE_LOG.pop("_drop", None)
+            if e_ and abs(e_[1] - bM[1]) < 1.0: bM = (e_[2], bM[1]); b = (A1[0] + (bM[0] - A0[0]) * sc, b[1]); span = abs(b[0] - p0[0])
         if trc and not trc[0]:                       # PROPOSED wire with no close-up reference: the sag curve (generated)
             ts = np.linspace(0, 1, 90); offs = 4 * sg * abs(bM[0] - pM[0]) * ts * (1 - ts) * (np.array([-(bM[1] - pM[1]), bM[0] - pM[0]]) / math.dist(pM, bM))[1]
             TRACE_LOG[f"{a}->{b_[0]}"] = ("generated", None)
@@ -351,16 +363,25 @@ def front_art(size="M"):
     W = [("pin", seamL(H_LEFT[0]), 0.03), ("canR", seamL(H_LEFT[1]), 0.03), ("pole", seamL(H_LEFT[2]), 0.02), ("poleL", seamL(H_LEFT[3]), 0.02),
          ("bracket", seamL(H_LEFT[4]), 0.02),
          ("strT", seamR(H_RIGHT[0]), 0.03), ("strL", seamR(H_RIGHT[1]), 0.06),       # A14: the close-up's 4-wire fan from the coil
-         ("strL2", (P(TA.FX(150), 0)[0], mt["hem_f"] - 10), 0.03), ("strT", seamR(H_RIGHT[2]), 0.001), ("canL", (P(TA.FX(330), 0)[0], mt["hem_f"] - 10), 0.02),
-         ("poleL", (P(TA.FX(500), 0)[0], mt["hem_f"] - 10), 0.02), ("bracket", (min(P(TA.FX(640), 0)[0] + dxp, xs - 20), mt["hem_f"] - 10), 0.02)]
+         ("strL2", (P(TA.FX(150), 0)[0], mt["hem_f"] - 10), 0.03), ("strT", seamR(H_RIGHT[2]), 0.001), ("canL", (P(155.7, 0)[0] + dxp, mt["hem_f"] - 10), 0.02),
+         ("poleL", (P(201.0, 0)[0] + dxp, mt["hem_f"] - 10), 0.02),
+         ("armL", tips["spoolT"], 0.03), ("arm2", tips["coilT"], 0.03)]          # the close-up's 2 crossarm -> coil wires
+    # Rev C final (A14): the two short drops at the pole foot are the close-up's (can -> hem at close-up px 960, pole -> hem
+    # at px 1100); the Rev C draft's long can -> CF-side hem wire and the bracket -> hem drop are in neither the close-up
+    # nor the mockup: removed
     wires, ends = [], []; CORD_LINES.clear()
     for a, b, sg in W:
         p0 = tips[a]; span = abs(b[0] - p0[0])
-        b_ = (("L" if b[0] > 0 else "R") + f"{mt['hem_f'] - b[1]:.0f}", True) if abs(abs(b[0]) - xs) < 0.01 else ("hem", False)
+        b_ = (("L" if b[0] > 0 else "R") + f"{mt['hem_f'] - b[1]:.0f}", True) if abs(abs(b[0]) - xs) < 0.01 else (next((k for k, v in tips.items() if v == b), "hem"), False)
         if abs(abs(b[0]) - xs) < 0.01: ends.append(("L" if b[0] > 0 else "R", round(mt["hem_f"] - b[1], 1), b, p0, (sg or 0.04) * span))
         # A14: the path traced from the front close-up at M (front-pole registration), offsets scaled with the art
         pM = T_["front_tips"][a]; bM = ((b[0] - dxp - A1[0]) / sc + A0[0], (b[1] - A1[1]) / sc + A0[1])
         if abs(abs(b[0]) - xs) < 0.01: bM = (math.copysign(mM["block"].chest2, b[0]), mM["hem_f"] - (mt["hem_f"] - b[1]) / sc)
+        if b_[0] in T_["front_tips"]: bM = T_["front_tips"][b_[0]]
+        if b_[0] == "hem":                           # drop wire: land where the close-up wire meets the hem line (+-8 mm)
+            trace_profile(pM, bM, (sg or 0.04) * abs(bM[0] - pM[0]), key="_drop", hem_end=True, ctx=front_ctx())
+            e_ = TRACE_LOG.pop("_drop", None)
+            if e_ and abs(e_[1] - bM[1]) < 1.0: ex = e_[2]; b = (b[0] + (ex - bM[0]) * sc, b[1]); bM = (ex, bM[1]); span = abs(b[0] - p0[0])
         ts, offs = trace_profile(pM, bM, (sg or 0.04) * abs(bM[0] - pM[0]), key=f"F:{a}->{b_[0]}", seam_end=b_[1], free=3.0, ctx=front_ctx(),
                                   band=14.0 if b_[0] == "R175" else 9.0)      # W1 bends up towards the image edge
         wires += cord(p0, b, (sg or 0.04) * span, profile=(ts, offs * sc), wid=f"F:{a}->{b_[0]}")

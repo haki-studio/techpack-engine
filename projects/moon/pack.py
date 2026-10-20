@@ -173,7 +173,7 @@ def summary():
     tot = sum(e[4]["stitches"] for e in ELEMENTS); tr = sum(e[4]["trims_dst"] for e in ELEMENTS)
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{tot:,}", 1.9, 700)); o.append(t(cx[4], y, f"{tr:,}", 1.9, 700)); o.append(t(cx[8], y, f"{sum(hours(e[4]) for e in ELEMENTS):.1f} h", 1.9, 700))
     o.append(t(12, y + 4.5, f"Size M (01, 03 per size) / grade B (02, 04). Counts from the DST read-back (LESSONS B8/B20). Machine h = factory.machine_hours at {PROF['spm']} spm + 6 s/trim + 4 s/colour change, one head, excl. hooping.", 1.7, 400, MUTED))
-    o.append(t(12, y + 8, "Stops include the placeholder basting stop (01). Max stitch ≤ 7.5 mm and ≤ 12 thread colours in every file (factory.check_threads) (gate checked on all 7 sizes + 3 grades + every split file).", 1.7, 400, MUTED))
+    o.append(t(12, y + 8, "Stops include the placeholder outline stop (01). Max stitch ≤ 7.5 mm and ≤ 12 thread colours in every file (factory.check_threads) (gate checked on all 7 sizes + 3 grades + every split file).", 1.7, 400, MUTED))
     qy = y + 16; o.append(t(12, qy, "OPEN QUESTIONS — embroidery (confirm before sampling)", 2.6, 700))
     for i, q in enumerate(EMB_Q): o.append(t(12, qy + 5 + i * 3.6, q, 1.85))
     return o
@@ -227,16 +227,16 @@ def files_page():
             mx, my = X(m[0]), Y(m[1]); o.append(f'<path d="M{f(mx-1.4)} {f(my)} H{f(mx+1.4)} M{f(mx)} {f(my-1.4)} V{f(my+1.4)}" stroke="#00A3FF" stroke-width="0.45"/>')
     for x_ in sp["xs"]: o.append(f'<line x1="{f(X(x_))}" y1="{f(Y(100))}" x2="{f(X(x_))}" y2="{f(Y(590))}" stroke="{RED}" stroke-width="0.3" stroke-dasharray="1.5 0.8"/>')
     for y_ in sp["ys"]: o.append(f'<line x1="{f(X(-305))}" y1="{f(Y(y_))}" x2="{f(X(305))}" y2="{f(Y(y_))}" stroke="{RED}" stroke-width="0.3" stroke-dasharray="1.5 0.8"/>')
-    o.append(t(bx, by - 2, "Size M back splits: blue = each file's extent, + = basting crosses, red = split lines", 1.5, 700))
+    o.append(t(bx, by - 2, "Size M back splits: blue = each file's extent, + = registration crosses, red = split lines", 1.5, 700))
     sy0 = 118; sx0 = 12
     o.append(t(sx0 + 120, 31 + 0, "", 1))
     steps = ["SEWING THE SPLIT BACK (no border frame)",
              "1. Mark CB + the split lines on the cut back (chalk), from the pattern (B01) — x / y per size on 01 p6.",
-             "2. Hoop S1. Stop 1 = basting crosses. Sew S1.",
+             "2. Hoop S1. Stop 1 = registration crosses (pole grey run). Sew S1.",
              "3. Re-hoop for the next section; align the needle on the crosses it shares; sew its",
              "    crosses over them (check), then the art. Order S1 → Sn (top row, then bottom).",
              "4. Fills crossing a split overlap 1.2 mm; motif clusters < 70 mm go whole to one section.",
-             "5. The placeholder outline is basted in the section(s) listed above; remove basting + trim backing at the end.",
+             "5. The placeholder outline (moon-cream run, covered by 01b) sews in the section(s) listed above; pick out the crosses + trim backing at the end.",
              "Every size has its own split set (by-size/<size>/splits): 3 × 2, moon + box whole in S2, pole whole in S5."]
     for i, st_ in enumerate(steps): o.append(t(12, y + 3 + i * 3.1, st_, 1.5, 700 if i == 0 else 400))
     return o

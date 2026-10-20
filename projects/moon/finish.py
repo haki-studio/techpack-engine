@@ -6,8 +6,11 @@ def shrink(p):
 for p in [OUT] + glob.glob("out/0*/*SPEC_RevC.pdf"): shrink(p)
 PKG = "out/pkg"; shutil.rmtree(PKG, ignore_errors=True); os.makedirs(f"{PKG}/elements")
 for e in ("01_back-scene", "02_chest-clouds", "03_lower-front", "04_sleeve-clouds"):
-    shutil.copytree(f"out/{e}", f"{PKG}/elements/{e}", ignore=shutil.ignore_patterns("summary.json", "result.json"))
+    shutil.copytree(f"out/{e}", f"{PKG}/elements/{e}", ignore=shutil.ignore_patterns("summary.json", "result.json", "*_RevA.pdf", "*_RevB.pdf"))
 shutil.copytree("out/pattern", f"{PKG}/pattern"); shutil.copy(OUT, PKG)
+os.makedirs(f"{PKG}/compare")
+for c in glob.glob("out/compare_*.png"): shutil.copy(c, f"{PKG}/compare/")
+shutil.copy("out/qa_fidelity.json", f"{PKG}/compare/")
 open(f"{PKG}/README.txt", "w").write("""HAKI STUDIOS - Drum Island Jacket, MOON colourway (style HK-JK-DRUM-MOON)
 Garment tech pack Rev C + embroidery Rev C - 19 Oct 2026
 
@@ -17,8 +20,8 @@ HAKI_Drum-Island_moon_FULL-TECHPACK_RevC.pdf
 
 LICENSED FIGURE: the figure on the pole is a licensed character (licence confirmed by client 2026-10-16). It is NOT
 drawn in these files. Its area is a placeholder box: knocked out of our art, marked on the pattern (B01, DXF layer 8)
-and basted (pink, water-soluble) as the last stop of every 01 back file. The factory digitizer adds the figure from
-the licensor-approved artwork.
+and outlined as the last stop of every 01 back file (a run in moon cream, covered by the 01b moon-in-box fill). Nothing
+else is sewn inside it. The factory digitizer adds the figure from the licensor-approved artwork.
 
 pattern/
     HK-JK-DRUM-MOON_pattern_<size>.dxf     AAMA-layer DXF per size (1 cut, 14 sew, 4 notches, 7 grain, 8 internal +
@@ -28,11 +31,13 @@ pattern/
     Same Drum Island first pattern as plum + pine: sew + fit a size-M sample before cutting the size set.
 
 elements/01_back-scene/by-size/<size>/     01 back stitch file for that size (DST + PES, preview, thread chart) and
-                                           splits/ (360 x 360 hoopings, stop 1 = basting crosses; 4 sections, 3XL 6)
+                                           splits/ (360 x 360 hoopings, stop 1 = registration crosses; 6 sections = 3 x 2 on every size)
 elements/03_lower-front/by-size/<size>/    03L (pole + wires) + 03R (wires) for that size - wires meet the side seams
 elements/02_chest-clouds/grade-<A|B|C>/    02R/02L per art grade: A = XS-S, B = M-XL, C = XXL-3XL
 elements/04_sleeve-clouds/grade-<A|B|C>/   04R/04L per grade; the full-sleeve file + _S1/_S2 split files (2 hoopings per sleeve)
 elements/*/*_SPEC_RevC.pdf, *_ART*.svg     element specs + region art with digitizing attributes (size M / grade B)
+compare/compare_<element>.png              close-up (tracing reference) | final DST drawn stitch by stitch, same scale,
+                                           zoomed regions + the fidelity-gate tables (LESSONS A14/A15); qa_fidelity.json
 
 All stitch files: <= 12 thread colours per file incl. registration + placeholder (manufacturer limit), max stitch 7.5 mm, trims counted from the DST. They are
 production-intent drafts: the factory digitizer opens them, checks density + pull on 12 oz duck, edits if needed,

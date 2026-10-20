@@ -252,7 +252,7 @@ def p_bom():
         ("Zip", "YKK #5 metal separating, auto-lock, one-way", "antique brass teeth, navy tape", "CF", "YKK", "1 × 56 cm (M)", False),
         ("Thread — seams", "Coats Epic 120 (Tex 27) corespun poly/cotton", "tonal to shell", "all seams + overlock", "Coats", "~ 450 m", True),
         ("Thread — topstitch", "Coats Gral 40 (Tex 60) poly", "tonal to shell", "topstitch, bartacks", "Coats", "~ 120 m", True),
-        ("Embroidery thread", "Madeira Polyneon 40 (14 colours + basting, see G3)", "per embroidery spec", "01–04", "Madeira", "per spec", False),
+        ("Embroidery thread", "Madeira Polyneon 40 (14 tones, max 12 per file, see G3)", "per embroidery spec", "01–04", "Madeira", "per spec", False),
         ("Embroidery backing", "2.5 oz cutaway", "black / navy (dark ground)", "behind each element", "TBC", "8 pieces", False),
         ("Main label", "woven damask, HAKI logo, 7 × 2 cm, folded", "black / cream", "CB neck facing", "TBC", "1", True),
         ("Size label", "woven, 2 × 1.5 cm", "black / cream", "under main label", "TBC", "1", True),

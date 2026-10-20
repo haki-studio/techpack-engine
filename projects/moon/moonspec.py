@@ -231,7 +231,7 @@ def page6_01(NP):
         bx = R_["info"]["box"]
         o.append(f'<rect x="{f(X(bx[0]))}" y="{f(Y(bx[1]))}" width="{f((bx[2]-bx[0])*s_)}" height="{f((bx[3]-bx[1])*s_)}" fill="none" stroke="#FF2D9B" stroke-width="0.3"/>')
         o.append(t(xx, yy - 1.2, sz, 1.6, 700)); xx += 40
-    o.append(t(12, yy + 45, "Blue = each split file's extent (art + crosses); + = basting crosses; pink = licensed-figure box. Hooping order S1 → Sn (top row left → right, then bottom row).", 1.5, 400, MUTED))
+    o.append(t(12, yy + 45, "Blue = each split file's extent (art + crosses); + = registration crosses; pink = licensed-figure box. Hooping order S1 → Sn (top row left → right, then bottom row).", 1.5, 400, MUTED))
     o.append(t(12, yy + 49, "01b MOON-IN-BOX (per size): our moon fill inside the box (same tones, concentric rows), origin = box centre; sew it before the licensed figure.", 1.55, 700, PROP))
     o.append(t(12, yy + 52.5, "Ownership [proposed — confirm]: Haki supplies the moon-in-box file; the factory digitizer adds the figure on top of it from the licensor-approved art.", 1.55, 600, PROP))
     return o
@@ -388,7 +388,7 @@ def build(n):
                 if mi: o.append(t(hc[4], y, ", ".join(sorted({tech.rule_for(r['grp']) for r in mi['regions']}))[:26], 1.35, 400, MUTED))
             else:
                 o.append(f'<rect x="{hc[1]}" y="{f(y-2.0)}" width="3.2" height="2.2" fill="{hx}"/>')
-                o.append(t(hc[1] + 4.2, y, "PLACEHOLDER basting outline — licensed insert" if p == "back" and i == rb["stops"] - 1 else "basting (registration)", 1.45, 600, RED))
+                o.append(t(hc[1] + 4.2, y, "PLACEHOLDER outline (moon cream, under 01b) — licensed insert" if p == "back" and i == rb["stops"] - 1 else "registration crosses", 1.45, 600, RED))
             o.append(t(hc[5], y, f"{ps['stitches']:,}", 1.45)); o.append(t(hc[6], y, f"{ps['trims']}", 1.45))
     if len(pieces) == 1:
         sx = 160; used = sorted({r["col"] for r in ALL}, key=lambda c: tech.COLOUR_ORDER.index(c))
@@ -413,7 +413,7 @@ def build(n):
     o.append(t(196, my, "PRODUCTION", 2.4, 700))
     _ab = unary_union([r["geom"] for r in VIS["back"]]).bounds
     pr = PROD + ([f"Back: border frame ≥ {_ab[2]-_ab[0]+14:.0f} × {_ab[3]-_ab[1]+14:.0f} (M) single file, or", "  the 6 split files (3 × 2, frame from factory.json) (p6, G5)."] if n == "01" else [])
-    pr += (["Sleeves: two hoopings per sleeve (split files S1 +", "  S2, front + back half) with basting crosses."] if n == "04" else [])
+    pr += (["Sleeves: two hoopings per sleeve (split files S1 +", "  S2, front + back half) with registration crosses."] if n == "04" else [])
     pr += ["Wires: satin cord 1.6; side-seam ends 3 mm short —", "  match the W notches when closing (no topstitch)."] if n in ("01", "03") else []
     pr += {"01": ["Hooping order: S1 → S6 (top row L→R, bottom row);", "  01b moon-in-box in the S2 hooping, then the figure."],
            "02": ["Hooping order: 02 first on each cut front panel,", "  then 03 (pole + wires) on the same panel."],

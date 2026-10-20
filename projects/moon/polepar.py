@@ -161,7 +161,7 @@ def back(f, ybot=1086):
     cap(f, 727, 486, 62, o)
     crossarm(f, (583, 660), (697, 632), 15, [(630, 648)], o)                         # left of the pole
     crossarm(f, (757, 618), (940, 586), 15, [(785, 613), (828, 606), (898, 594)], o)  # right of the pole
-    bracket(f, (628, 672), (697, 645), o); bracket(f, (790, 612), (762, 672), o)
+    bracket(f, (628, 672), (697, 645), o)          # (790,612)->(762,672) is a WIRE in the close-up (light cord): scene.back_art
     pin(f, 828, 598, 66, 26, o); pin(f, 900, 588, 70, 26, o)
     drum(f, 760, 858, 672, 858, [700, 745, 790, 837], o)
     can(f, 625, 690, 760, 885, o); bracket(f, (660, 752), (697, 752), o, 5)
