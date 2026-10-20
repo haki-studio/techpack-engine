@@ -66,7 +66,8 @@ def piece_art(its, clip, side_test):
     # stitchability (spec width check): after the knock-outs, undergrowth fill and lit tower edges keep only parts >= 0.8 wide
     # (thinner slivers are dark-on-dark / sub-column and would not sew as a column) - opening by 0.4
     for r in vis:
-        if r["grp"] in OPEN_GRPS: r["geom"] = r["geom"].buffer(-0.4, join_style=2).buffer(0.4, join_style=2).intersection(r["geom"]).buffer(0)
+        if r["grp"] in OPEN_GRPS or (r["grp"] in ("COM-core", "COM") and r["st"] == "tatami"):
+            r["geom"] = r["geom"].buffer(-0.4, join_style=2).buffer(0.4, join_style=2).intersection(r["geom"]).buffer(0)
     vis = [r for r in vis if not r["geom"].is_empty]
     vis = dst2.clean_vis(vis)
     vis = [dict(r, geom=r["geom"].intersection(clip).buffer(0)) for r in vis]

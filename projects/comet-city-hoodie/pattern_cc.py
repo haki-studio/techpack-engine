@@ -5,7 +5,10 @@ import cccore
 import sys, os, json
 import front as F                     # front.WELT = this mockup's welt (engine per-design welt override)
 import hoodie as HD, pattern as PT, pattern_out as PO
-BLK = HD.Variant(welt=F.WELT)
+class _Blk(HD.Variant):
+    """engine hoodie.Variant + the module's block data (pattern_out reads blk.ORDER etc.; Variant only carries draft) - ENGINE_NOTES 13"""
+    def __getattr__(self, k): return getattr(HD, k)
+BLK = _Blk(welt=F.WELT)
 STYLE = cccore.STYLE
 OUTD = "out/pattern"; os.makedirs(OUTD, exist_ok=True)
 PO.EMB_ON = {"F01": ["FL"], "F02": ["FR"], "S01": ["SR"], "S02": ["SL"]}

@@ -302,7 +302,7 @@ _mrng = random.Random(8); n_met = 0
 for i, (hh, tt, wd, _n) in enumerate(MET_TRACED):
     seg = LineString([hh, tt])
     _regs = CM.meteor(tuple(hh), tuple(tt), w_head=wd, w_tail=max(1.2, wd*0.9), unit=None)
-    if not MET_SIL[i].is_empty: _regs[0] = dict(_regs[0], geom=_regs[0]["geom"].intersection(MET_SIL[i].buffer(0.3)).union(MET_SIL[i]).buffer(0))   # traced silhouette (A14)
+    if not MET_SIL[i].is_empty: _regs[0] = dict(_regs[0], geom=_regs[0]["geom"].intersection(MET_SIL[i].buffer(0.6)).union(MET_SIL[i].buffer(0.25)).buffer(0))   # traced silhouette (A14)
     add(_regs, "meteor", Z["meteor"] + (1.0 if ZONE.buffer(-3).intersects(seg) else 0), kob=(2.0 if ZONE.intersects(seg) else 0.4), kgrp=f"met{i}"); n_met += 1   # kgrp: head dot + core knock the streak exactly (no ring)   # clipped at keep-outs, not dropped
 RS = P(403.5, 597.5)
 trail = CM.smooth_pts([P(404.7, 530.0), P(404.3, 560.0), P(403.9, 589.0)], 30)
