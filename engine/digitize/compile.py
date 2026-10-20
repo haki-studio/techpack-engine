@@ -18,7 +18,7 @@ def plan_blocks(plan):
     return plan.blocks
 
 
-def regions(plan, roles=True):
+def regions(plan, roles=True, guard="parallel"):
     """dst2 stops: [dict(col, regions=[dict(col, geom, st, ang, grp, part, blocks)])] in the plan's sew order"""
     stops = []
     for s in plan.stops:
@@ -27,7 +27,7 @@ def regions(plan, roles=True):
             p = plan.part(pid); bl = plan.blocks.get(pid) or []
             if not bl: continue
             regs.append(dict(col=s["thread"], geom=p.geom, st=techniques.get(p.technique).stype, ang=p.dir.angle, grp=p.kind,
-                             part=p.id, blocks=[list(b.pts) for b in bl], **({"block_roles": [b.role for b in bl]} if roles else {})))   # B39 (G1)
+                             part=p.id, blocks=[list(b.pts) for b in bl], **({"block_roles": [b.role for b in bl], "join_guard": guard} if roles else {})))   # B39 (G1)
         if regs: stops.append(dict(col=s["thread"], regions=regs))
     return stops
 
@@ -87,7 +87,7 @@ def labelled_dst(dst, origin, segs, labels, tol=0.16, skip_mm=0.2):
 
 def write(plan, base, origin, join_guard=True, **mp_kw):
     """mp_kw: extra dst2.make_pattern options (M5: exact_travel=dict(...) for patches); none = the M1 behaviour.
-    join_guard (B39, G1): regions carry block_roles, so a hop between two blocks of one part never lies on that part's
+    join_guard (B39, G1): True / "parallel" (default) or "all" (strict); regions carry block_roles, so a hop between two blocks of one part never lies on that part's
     own sewn rows (a trim instead). On by default; digitize.svgrun passes False unless its run.yaml sets
     compile: {join_guard: true} (it moves one join to a trim on the M5 wb patch: scripts/identity_check.sh stays the reference)."""
     # --- M6 --- a chenille-head part (chenille moss, true chain) never goes into a lock-stitch file
@@ -97,7 +97,7 @@ def write(plan, base, origin, join_guard=True, **mp_kw):
                                  f"split them out (specialty.export_chenille) or switch the run to faux_chain")
     from digitize.techniques.specialty import guard_puff
     guard_puff(plan)                                       # puff: own "+foam" stop, nothing flat inside the foam, never fill
-    stops = regions(plan, roles=join_guard)
+    stops = regions(plan, roles=bool(join_guard), guard=join_guard if isinstance(join_guard, str) else "parallel")
     vis = [r for s in stops for r in s["regions"]]
     pat, stats = dst2.make_pattern(vis, stops, origin, builder=prebuilt, keep_order=True, threads=thread_table(plan), **mp_kw)
     segs, lab = pattern_segments(pat, stats["labels"], origin)

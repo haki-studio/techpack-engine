@@ -42,13 +42,45 @@ def _travel_over(pat_stats, pat, origin, footprint, planned, ex=0.4):
     return bad
 
 
+def _interiors(bl, half=0.2, row_end=0.6):
+    """the B39 footprint of sewn rows: each stitch's INTERIOR (row_end mm off both ends), buffered half"""
+    from shapely.ops import substring, unary_union
+    gs = [substring(LineString([p, q]), row_end, math.dist(p, q) - row_end).buffer(half) for p, q in zip(bl, bl[1:]) if math.dist(p, q) > 2 * row_end + 0.1]
+    return unary_union(gs)
+
+
 def _two_block_region(b2_start_left=True, b1_rows=(0.2, 3.8), b2=(6.5, 11.5)):
     import dst2
     g = box(0, 0, 12, 4)
     b1 = _rows(0.5, 5.5, *b1_rows)                         # 10 rows -> ends on the LEFT side at the top (0.5, 3.8)
     b2p = _rows(b2[0], b2[1], 0.2, 3.8, start_left=b2_start_left)
-    r = dict(col="#336699", geom=g, st="tatami", ang=0.0, grp="t", part="P1", blocks=[b1, b2p], block_roles=["top", "top"])
+    r = dict(col="#336699", geom=g, st="tatami", ang=0.0, grp="t", part="P1", blocks=[b1, b2p], block_roles=["top", "top"], join_guard="all")
     return g, b1, b2p, r
+
+
+def test_block_join_parallel_hop_over_own_rows_is_never_sewn():
+    """B39 as seen on the crop (default mode "parallel"): the hop from block 1's end runs ALONG the rows (4 deg off),
+    over block 1's sewn rows, to block 2 beside it: sewn, it is one more row among the rows and the run reads as satin."""
+    import dst2
+    from digitize import compile as CP
+    g = box(0, 0, 12, 4)
+    b1 = _rows(0.5, 5.5, 0.2, 3.8)                                    # ends at (0.5, 3.8)
+    b2p = list(reversed(_rows(6.5, 11.5, 0.2, 3.4)))                  # starts at the top right of block 2: (6.5 or 11.5, 3.4)
+    if b2p[0][0] > 9: b2p = [(6.5 + 11.5 - x, y) for x, y in b2p]      # make it start at (6.5, 3.4)
+    r = dict(col="#336699", geom=g, st="tatami", ang=0.0, grp="t", part="P1", blocks=[b1, b2p], block_roles=["top", "top"])
+    pat, st = dst2.make_pattern([r], [dict(col=r["col"], regions=[r])], (6.0, 2.0), builder=CP.prebuilt, keep_order=True)
+    assert _travel_over(st, pat, (6.0, 2.0), _interiors(b1), r["blocks"]) == []
+    assert st.get("join_trims", 0) + st.get("join_routes", 0) == 1
+
+
+def test_block_join_parallel_mode_leaves_a_crossing_hop_to_the_travel_gate():
+    """mode "parallel" judges only hops along the rows; a hop ACROSS them (31 deg here) is a travel line for the M4s
+    travel-on-fill gate (strict mode "all" trims it: the next test). Measured on the crop: strict 156 -> 722 trims."""
+    import dst2
+    from digitize import compile as CP
+    g, b1, b2p, r = _two_block_region(); r["join_guard"] = "parallel"
+    pat, st = dst2.make_pattern([r], [dict(col=r["col"], regions=[r])], (6.0, 2.0), builder=CP.prebuilt, keep_order=True)
+    assert st.get("join_trims", 0) + st.get("join_routes", 0) == 0
 
 
 def test_block_join_never_sews_over_the_parts_own_rows():
@@ -60,7 +92,7 @@ def test_block_join_never_sews_over_the_parts_own_rows():
     g, b1, b2p, r = _two_block_region()
     stops = [dict(col=r["col"], regions=[r])]
     pat, st = dst2.make_pattern([r], stops, (6.0, 2.0), builder=CP.prebuilt, keep_order=True)
-    foot = LineString(b1).buffer(0.2)
+    foot = _interiors(b1)
     assert _travel_over(st, pat, (6.0, 2.0), foot, r["blocks"]) == []
 
 
@@ -74,9 +106,9 @@ def test_block_join_routes_round_the_sewn_rows_through_the_unsewn_part():
     b1 = _rows(0.5, 5.5, 0.2, 3.8)                         # ends at (0.5, 3.8)
     b2p = _rows(6.5, 11.5, 0.2, 3.8)                       # starts at (6.5, 0.2)
     b3 = _rows(0.5, 11.5, 4.6, 6.6)                        # the corridor y 4.2..6.8, sewn last
-    r = dict(col="#336699", geom=g, st="tatami", ang=0.0, grp="t", part="P1", blocks=[b1, b2p, b3], block_roles=["top"] * 3)
+    r = dict(col="#336699", geom=g, st="tatami", ang=0.0, grp="t", part="P1", blocks=[b1, b2p, b3], block_roles=["top"] * 3, join_guard="all")
     pat, st = dst2.make_pattern([r], [dict(col=r["col"], regions=[r])], (6.0, 3.5), builder=CP.prebuilt, keep_order=True)
-    assert _travel_over(st, pat, (6.0, 3.5), LineString(b1).buffer(0.2), r["blocks"]) == []
+    assert _travel_over(st, pat, (6.0, 3.5), _interiors(b1), r["blocks"]) == []
     assert st.get("join_routes", 0) >= 1 and st["trims"] == 0
 
 
@@ -100,7 +132,7 @@ def test_block_join_guard_is_off_without_block_roles():
     g, b1, b2p, r = _two_block_region()
     r.pop("block_roles")
     pat, st = dst2.make_pattern([r], [dict(col=r["col"], regions=[r])], (6.0, 2.0), builder=CP.prebuilt, keep_order=True)
-    assert _travel_over(st, pat, (6.0, 2.0), LineString(b1).buffer(0.2), r["blocks"]) != []      # the old behaviour, unchanged
+    assert _travel_over(st, pat, (6.0, 2.0), _interiors(b1), r["blocks"]) != []      # the old behaviour, unchanged
 
 
 def test_compile_regions_carry_block_roles():
@@ -110,7 +142,7 @@ def test_compile_regions_carry_block_roles():
     plan = ObjectPlan(name="x", parts=[p], stops=[dict(thread="t", parts=["a"])],
                       blocks={"a": [Block("a", "underlay", [(0, 0), (1, 1)]), Block("a", "top", [(0, 0), (5, 0)])]})
     regs = CP.regions(plan)
-    assert regs[0]["regions"][0]["block_roles"] == ["underlay", "top"]
+    assert regs[0]["regions"][0]["block_roles"] == ["underlay", "top"] and regs[0]["regions"][0]["join_guard"] == "parallel"
 
 
 # ------------------------------------------------------------------ the labels contract
@@ -266,7 +298,12 @@ def test_lobe_outline_angle_is_rebuilt_from_geometry_and_reported_as_outline():
     assert min(parts[0].dir.angle, 180 - parts[0].dir.angle) < 5                        # the ellipse's long axis
     assert audit.bucket_of(parts[0]) == "outline"
     assert _audit(parts)["random_angles"] == 0
-    parts[0].geom = rotate(parts[0].geom, 60, origin="centroid")                         # the geometry moved, the angle did not
+    parts[0].geom = parts[0].geom.buffer(1.0)                                            # sequencing reshapes it: still rebuilds
+    assert _audit(parts)["random_angles"] == 0                                            # from the recorded outline
+    parts[0].dir.angle = (parts[0].dir.angle + 30) % 180                                 # a typed-in angle is caught
+    assert _audit(parts)["random_angles"] == 1
+    parts[0].dir.angle = (parts[0].dir.angle - 30) % 180
+    parts[0].meta["construct"]["of"] = [[x + 40, y] for x, y in parts[0].meta["construct"]["of"]]   # an outline elsewhere
     assert _audit(parts)["random_angles"] == 1
 
 

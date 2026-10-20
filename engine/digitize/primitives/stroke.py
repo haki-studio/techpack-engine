@@ -3,7 +3,7 @@
   1. components of the claim (closed close_mm) >= min_mm2; each is cut into LIMBS at its skeleton junctions (trunk.limbs:
      spurs dropped, every pixel to the nearest kept limb).
   2. per limb: the medial axis (dst2.centreline); mean width w = area / axis length. A stroke needs min_w_mm <= w and
-     axis >= min_aspect x w; the axis' last half-width (it runs into a square end's corners) is trimmed.
+     axis >= min_aspect x (w + sewn_extra_mm) (LESSONS B36: a column sews ~0.25-0.5 mm wider than its art); the axis' last half-width (it runs into a square end's corners) is trimmed.
   3. w <= max_w_mm: ONE `stroke` part, split satin in column mode along the centreline (construct rule "column": across
      the centreline's mean direction; judged on the file per stitch by trunk.column_adherence). Wider: the limb is a
      cord (its own primitive), so it goes back to the zones below unless params.wide = "cord" (then sewn as cords).
@@ -17,7 +17,7 @@ import dst2
 from digitize.primitives import register, part, forced_thread
 from digitize.schema import DirSpec, Part
 
-D = dict(min_mm2=3.0, close_mm=0.5, min_w_mm=1.0, max_w_mm=7.0, min_aspect=2.5, min_limb_mm=2.0, wide="give_back")
+D = dict(min_mm2=3.0, close_mm=0.5, min_w_mm=1.0, max_w_mm=7.0, min_aspect=2.5, min_limb_mm=2.0, wide="give_back", sewn_extra_mm=0.5)
 
 
 @register("stroke")
@@ -42,7 +42,7 @@ def recognise(ctx, lp, z, claim):
             line = dst2.centreline(G)
             if line is None or line.length < 1.0: continue
             line = LineString(line.simplify(0.8).coords); w = G.area / line.length
-            if w < P["min_w_mm"] or line.length < P["min_aspect"] * w: continue
+            if w < P["min_w_mm"] or line.length < P["min_aspect"] * (w + P["sewn_extra_mm"]): continue   # B36: it sews wider
             if w > P["max_w_mm"]: wide.append(Lm); continue
             if line.length > 3 * w: line = substring(line, w / 2, line.length - w / 2)
             cl = [list(map(float, q)) for q in line.coords]; con = dict(rule="column", cl=cl)

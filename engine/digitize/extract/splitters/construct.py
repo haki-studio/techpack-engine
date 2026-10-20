@@ -181,15 +181,16 @@ def _fan_smooth(p, c, peers=None):
 
 def _long_axis(p, c):
     """G1 rule "long_axis" (primitives lobe, cord stubs): rows along the long mid-line of the minimum rotated rectangle of
-    the part, or of construct["of"] (the outline of the lobe a lit / shade layer belongs to; the layer must lie inside it,
-    0.5 mm). Read off a traced outline: "outline" bucket (OUTLINE_RULES), never independent (A24)."""
+    construct["of"], the TRACED outline recorded at extraction (the lobe itself, or the lobe a lit / shade layer belongs
+    to), else of the part. Sequencing reshapes a part afterwards (speck merges, underlap, cut-under), so the outline is
+    recorded like M3b's fan points; the part must still overlap it by >= 50 % of the smaller area. Read off a traced outline: "outline" bucket (OUTLINE_RULES), never independent (A24)."""
     from shapely.geometry import Polygon
     from digitize.techniques.turning import long_axis
     g = p.geom
     if c.get("of"):
         g = Polygon(c["of"]).buffer(0)
         if g.is_empty: return None, "long_axis `of` outline is empty"
-        if p.geom.difference(g.buffer(0.5)).area > 0.05 * max(p.geom.area, 1e-9): return None, "long_axis layer is not inside its `of` outline"
+        if p.geom.intersection(g).area < 0.5 * min(p.geom.area, g.area): return None, "long_axis: the part does not overlap its recorded `of` outline"
     gp = g if g.geom_type == "Polygon" else max(getattr(g, "geoms", [g]), key=lambda q: q.area)
     if gp.is_empty or gp.area <= 0: return None, "long_axis on an empty part"
     a, b = long_axis(gp)

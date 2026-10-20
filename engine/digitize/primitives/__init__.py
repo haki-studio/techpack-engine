@@ -113,7 +113,9 @@ def axis_chord(g):
 def long_axis_dir(g, note=""):
     """intent 'outline': the part's own long axis, construct rule long_axis (rebuilt by the audit from the geometry)"""
     from digitize.extract.splitters.construct import basis as cbasis
-    probe = Part(id="_", kind="lobe", geom=g, thread="", z=0, dir=DirSpec(0.0, source="splitter"), meta=dict(construct=dict(rule="long_axis")))
+    gp = g if g.geom_type == "Polygon" else max(g.geoms, key=lambda q: q.area)
+    con = dict(rule="long_axis", of=[[round(x, 3), round(y, 3)] for x, y in gp.exterior.coords])   # the traced outline, recorded
+    probe = Part(id="_", kind="lobe", geom=g, thread="", z=0, dir=DirSpec(0.0, source="splitter"), meta=dict(construct=con))
     ang, why = cbasis(probe)
     if ang is None: return None, why
-    return DirSpec(ang, source="splitter", note=note or "the part's own long axis"), dict(construct=dict(rule="long_axis"))
+    return DirSpec(ang, source="splitter", note=note or "the part's own long axis"), dict(construct=con)

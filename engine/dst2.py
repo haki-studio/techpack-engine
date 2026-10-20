@@ -564,17 +564,40 @@ def _unsewn_done(uo, o, sewn_same):
     sewn_same[:] = uo["base"] | (uo["cnt"] > 0)        # full refresh: also drops the tatami stamp made just before
 
 
-def _over_rows(a, b, blocks, half=0.25, ends=0.5, ex=0.5):
+def _over_rows(a, b, blocks, half=0.25, ends=0.5, ex=0.5, row_end=0.6):
     """B39 (G1): True when the straight hop a -> b lies on the rows of `blocks` (already sewn top blocks of the same
-    part, each row buffered by half a row spacing) for more than ex mm, ignoring `ends` mm at either end (the hop starts
-    on the last row it left)"""
+    part) for more than ex mm, ignoring `ends` mm at either end of the hop (it starts on the row it left). Only row
+    INTERIORS count: every stitch of a block is trimmed row_end mm at both ends and buffered half a row spacing, so a hop
+    that runs along the part's edge past the row ends (hidden by the pull compensation and the next block's edge) is not
+    a hop over the rows (PR review: counting the end caps turned ~1,300 edge hops on the crop into trims)."""
     ln = LineString([a, b])
     if ln.length <= 2 * ends: return False
     ln = substring(ln, ends, ln.length - ends)
+    segs = []
     for bl in blocks:
-        if len(bl) < 2: continue
-        if ln.intersection(LineString(bl).buffer(half, 4)).length > ex: return True
-    return False
+        for p, q in zip(bl, bl[1:]):
+            L = math.dist(p, q)
+            if L <= 2 * row_end + 0.1: continue
+            segs.append(substring(LineString([p, q]), row_end, L - row_end))
+    if not segs: return False
+    from shapely.strtree import STRtree
+    hit = [segs[i] for i in STRtree(segs).query(ln.buffer(half))]
+    if not hit: return False
+    return ln.intersection(unary_union([g.buffer(half, 2) for g in hit])).length > ex
+
+
+JOIN_GUARD_DEG = 30.0     # B39 (G1) mode "parallel": a hop within this of the part's row angle is an extra ROW (reads as satin)
+
+
+def _guarded(o, a, b):
+    """B39 (G1): which hops the join guard judges. r["join_guard"] = "all": every hop between blocks (strict LESSONS B39);
+    "parallel" (compile default): hops within JOIN_GUARD_DEG of the part's declared row angle r["ang"], the ones that
+    become an extra row among the rows and read back as satin (the B39 blob: 6.6 deg off its rows); a hop ACROSS the rows
+    is a travel line, judged by the travel-on-fill gate (M4s), not trimmed here."""
+    mode = o["r"].get("join_guard", "parallel")
+    if mode == "all": return True
+    t = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])) % 180.0; d = abs(t - float(o["r"].get("ang", 0.0)) % 180.0)
+    return min(d, 180.0 - d) <= JOIN_GUARD_DEG
 
 
 def _join_route(cov, a, b, si, o, own_top):
@@ -699,7 +722,7 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
                 if cur is not None:
                     d = math.hypot(x0 - cur[0], y0 - cur[1])
                     route = None
-                    over_rows = d > 1.0 and own_top and _over_rows(cur, (x0, y0), own_top)
+                    over_rows = d > 1.0 and own_top and _guarded(o, cur, (x0, y0)) and _over_rows(cur, (x0, y0), own_top)
                     if d < 0.3: route = []
                     elif d <= 1.0: route = [(x0, y0)]
                     elif over_rows:                    # B39 (G1): a hop between two blocks of ONE part that would lie on the
