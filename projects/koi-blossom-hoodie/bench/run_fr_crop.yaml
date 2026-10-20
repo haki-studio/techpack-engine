@@ -4,7 +4,8 @@
 # The bench stage is NOT run for this trial (its SCOREBOARD row would be a Castle-style row); bench/TRIAL.md has the table.
 name: KOI_FR_M_crop
 label: "KOI trial: engine on the Koi FR upper panel"
-bench: bench/bench.json            # crop, view, registration, close-up, targets
+bench: bench/bench.json            # crop, view, targets; its registration (MOCKUP ONLY) is the gate reference
+registration: bench/registration.json   # --- KOI --- EXTRACTION source: the mockup + the close-up informing motif by motif
 zones: bench/zones_FR.json         # hand-authored windows (what each region IS); silhouettes traced from the input pixels
 out_dir: out/digitize/KOI_FR_M_crop
 
@@ -20,7 +21,7 @@ techniques:
 
 threads:
   needles: factory                 # factory.json: 12 colours per stitch file
-  protected: [kb_red, kb_cyan]      # the tetra's neon red + neon cyan stripes (founder fish reference): accents, never merged;
+  protected: [kb_red, kb_cyan, kb_black]   # the tetra's neon red + cyan stripes and its eye (founder fish reference): never merged;
                                    # cyan has no pixels in the koi close-up, so only protection keeps a needle for it
   # candidate palette = the delivered Rev B thread card (out/pkg/.../FR_M_thread-chart.txt), so both files choose from the
   # same threads; plus the bare navy duck (two tones: the twill's shadow and its lit threads), which is NEVER sewn
@@ -69,4 +70,4 @@ fish:
   length_factor: 0.82                        # founder decision 19 Oct 2026: "82 % is fine" (x the mockup fish length)
 lily: {min_prom: 0.05, min_sep_deg: 14.0, smooth_deg: 4.0}
 crown: {support_tones: [kb_navy, kb_cobalt], support_mm: 3.0, min_mass_mm2: 6.0, min_clump_mm2: 8.0, min_lit_mm2: 3.0, clump_sep_mm: 4.0, min_seed_mm2: 2.0}
-trunk: {support_tones: [kb_royal, kb_corn, kb_sky, kb_cobalt], min_mm2: 4.0, min_w_mm: 0.8, strip_split_mm: 4.0}
+trunk: {support_tones: [kb_royal, kb_corn, kb_sky, kb_cobalt, kb_ice, kb_white], min_mm2: 4.0, min_w_mm: 0.8, strip_split_mm: 4.0, support_frac: 0.05}   # the vine zone window says it is a vine: support only rules out a stray blob

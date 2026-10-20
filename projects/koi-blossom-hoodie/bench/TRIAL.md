@@ -1,142 +1,155 @@
-# Koi Blossom: engine trial vs the delivered Rev B file (2026-10-20, tag koi)
+# Koi Blossom: engine trial vs the delivered Rev B file (re-run 2026-10-20, tag koi)
 
-**The question:** is the parts-based engine's embroidery better than what we delivered?
+**The founder's question:** is the engine's embroidery better than what we delivered?
 
-**Short answer:** it is better on the **flowers and leaves**. It is worse on the **fish**. Neither file passes the house
-gates (Rev B passes 1 of 8, the engine 2 of 8, plus separation). The engine is **not ready for a full Koi rebuild**.
-The reasons are listed under "What blocks a full Koi rebuild".
+**Founder ruling for this re-run (2026-10-20):** the GARMENT MOCKUP governs; the AI close-up only informs. Every fish, lily,
+leaf, petal and the vine is placed, posed, sized, counted, outlined and coloured from `inputs/front.png`. The close-up may
+only add interior detail (petal structure, shading) inside a motif the mockup already has, and only where the mockup has
+it. Every gate is graded against MOCKUP pixels.
 
-## Pictures (look at these first)
+## Short answer
+On the mockup's own terms, **the engine's file now matches the design better than Rev B**:
+- It follows the mockup's layout. The flora matches on 23 of 34 motifs against Rev B's 12; the bare area the mockup
+  shows as embroidered is 239 mm² against 741 mm².
+- It has far fewer satin blobs (3 against 90).
+- It puts far less stitching where the mockup shows bare duck: 109 mm² against 1,934 mm².
+
+**The fish are now close.** Both files place 4 of the 5 mockup fish within tolerance. The engine's fish have a crisp white
+tail, a visible eye, a red band and a neon line. Rev B's tetras are still a little cleaner: whiter body, longer fin rays.
+
+**The vine is still the engine's weak spot.** Neither file passes the house gates: Rev B passes 1 of 8, the engine 1 of 8.
+Do not ship the engine's file yet (see "What still blocks").
+
+## Pictures
+They are in this folder and copied to `C:\Users\devin\Desktop\koi-trial\`.
+
 | file | what it shows |
 |---|---|
-| `trial_side_by_side.png` | the whole crop at the same scale (4 px/mm): reference, then Rev B, then the engine |
-| `trial_zoom_lily.png` | the big upper lily at 10 px/mm |
-| `trial_zoom_fish.png` | one fish at 10 px/mm |
-| `trial_zoom_leaves.png` | leaves and the vine at 10 px/mm |
-| `../out/digitize/KOI_FR_M_crop/panel.png` (git-ignored) | the engine's own panel: reference, part map, live view, direction heat-map, density |
+| `trial_side_by_side.png` | the whole crop at the same scale (4 px/mm): MOCKUP, then Rev B, then the engine |
+| `trial_zoom_lily.png`, `trial_zoom_fish.png`, `trial_zoom_leaves.png` | 10 px/mm, four columns: mockup, Rev B, engine, and the detail source (the close-up inside the mockup's motif, colour-matched to the mockup) |
+| `engine_panel.png` (desktop copy of the git-ignored engine panel) | mockup, part map, live view, direction heat-map, density |
 
-"Live view" means the engine's thread-sheen render (dstlive) of each WRITTEN DST. Neither image is the art.
+**Note:** the mockup column is the mockup upscaled. It holds only about 0.9 px/mm of real detail, so it looks soft.
 
-## The crop
-- **Piece and size:** FR (the wearer's right front), size M.
-- **Box:** x -220 to -50 mm, y 30 to 300 mm. That is 170 × 270 mm, in garment mm with x measured from CF and y from the
-  CF neck seam.
-- **Why this box:** it is the largest box inside the close-up's registered area (close-up feather weight at least 0.797).
-  A 200 × 200 square does not fit, because the close-up's frame is rotated relative to the garment.
-- **What it holds:** both close-up lilies, their leaves, the floating petals, and the four close-up fish. The fish at the
-  bottom right has its snout on the crop edge.
-- **Registration:** `registration.json`. The flat image is `inputs/front.png`, mapped with the mockmap constants. The
-  close-up is bent onto the mockup by a thin-plate spline through the 10 tie points in `trace/closeup_reg.json`.
-- **Rev B file:** `out/revB/` holds a copy of the delivered `HAKI_KOIB_01_front-fish_FR_M.dst`. The delivered files were
-  not touched. Its origin is (-146.775, 247.30). I got this by aligning it on the Rev C build's recorded origin; the
-  residual is 0 mm at 5 px/mm. Both DSTs are centred on their art box.
+## How the close-up informs, motif by motif
+This is `engine/digitize/extract/inform.py` together with `bench/inform_fit.py`.
+
+**The fit.** Each close-up motif is fitted to its mockup motif on its own (a rotation, scale and shift per motif; no
+global warp). A motif is informed only when its fitted silhouette overlaps the mockup's silhouette with IoU of at least
+0.5.
+
+**Inside a fitted motif:**
+- Only pixels inside the mockup's own silhouette (the largest one in the window) take close-up detail.
+- A pixel takes detail only where the close-up shows embroidery.
+- Colours are shifted to the mockup motif's mean colour.
+- The close-up adds light and dark pattern only, never shape, position or hue.
+
+| motif | fit IoU | informed? |
+|---|---|---|
+| upper pale lily | 0.66 | **yes**: petal structure and shading inside the mockup's lily, mockup colours |
+| lower dark flower | 0.41 | **no**: the close-up's lower lily (mid-blue, a different shape) is not this mockup flower, so the mockup wins |
+| lower leaves | 0.40 | **no**: the close-up's leaves do not line up with the mockup's |
+| fish (all) | n/a | **no**: the close-up shows koi; the founder's fish are tetras (`inputs/reference_fish.png`), placed at the MOCKUP poses × 0.82 |
+| floating petals | n/a | **no**: a few mockup pixels each, and their close-up counterparts sit elsewhere |
+
+**Where the close-up disagrees with the mockup (the mockup won every time):**
+1. It shows 4 koi; the mockup shows 5 fish in this crop, the fifth at the right edge, and every fish sits about 13 mm
+   (up to 30 mm) away from its mockup position.
+2. Its lower lily is mid-blue with cream stamens. The mockup's lower flower is a dark navy flower of a different shape.
+3. Its floating petals and lower leaves sit in different places.
+4. It shows koi markings, not the founder's tetras.
 
 ## Same gates on both written files
 
-**Sources.** `trial_gates.json` holds every number; `trial_compare.py` re-makes them. Every number is read from the DST,
-and the thread colours from its PES.
+**Crop:** FR, size M, x -220 to -50, y 30 to 300 mm.
 
-**The two motif references.** Both are built from input pixels only:
-- **(a) `refmask.py`:** the Rev C module. It cannot import any art. It uses the mockup positions plus the close-up lilies
-  pasted in their discs, and it builds fish from the founder's tetra at the mockup poses × 0.82.
-- **(b) the close-up as registered here:** a plain colour test on the same reference the engine traced from. It shows
-  the flora only.
+**Gate reference: mockup pixels only** (`bench.json` uses `registration_mockup.json`, with no close-up).
+- **Fish reference:** `refmask.fish_ref`, the founder's tetra at the MOCKUP poses × 0.82. It is the Rev C code, and it
+  runs with the art modules blocked.
+- **Flora reference:** a colour test on the mockup crop, with the mockup's fish removed.
+- **Source of every number:** `trial_gates.json`.
 
-| gate (crop) | Rev B delivered | Engine | better |
+| gate | Rev B delivered | Engine | better |
 |---|---|---|---|
-| stitches in the crop (whole file) | 21,937 (40,325) | 30,257 (33,369; the file is the crop only) | reported, not a target |
+| stitches in the crop | 21,937 | 24,812 | reported, not a target |
 | thread colours (red present) | 11 (yes) | 11 (yes) | = |
-| direction OK, all visible tiles vs the reference grain | 34.2 % of 275 | 66.7 % of 258 | engine |
-| direction from **independent** angles | n/a (a DST has no part ids) | 34.3 % of 35 tiles (coverage 14 %, FAIL) | neither passes |
-| direction from **self-derived / outline** angles | n/a | outline bucket 73.4 % of 124 (lily rays, leaf fans: not independent, A24) | (not a pass) |
-| chaos (tiles with no single grain) | 20.4 % | 15.1 % | engine (target ≤ 5 %: both fail) |
-| satin blobs / fans / too narrow | 90 / 10 / 19 | 0 / 0 / 0 | engine |
-| density mean / p95 mm/mm² / flags > 7 | 3.56 / 7.43 / 19 | 4.48 / 9.08 / 31 | Rev B |
-| max stacked layers (cm² > 2) | 3 (0.57) | 4 (2.86) | Rev B |
-| trims per 100 cm² covered (trims) | 107.8 (148) | 100.0 (121) | engine (both far over 25: sparse motifs on bare duck) |
-| exposed stitches (DST-only proxy: > 1 mm over bare cells) | 263 (447 mm) | 94 (127 mm) | engine |
-| angle coherence per part | cannot be judged (no part ids) | fails: 46 parts with no visible stitches, 42 angle-spread | neither |
-| rule-3 separation (same thread, < 15°) | n/a | 0 close pairs | engine |
-| random / unexplained angles | not knowable from a DST | 2 (crown clumps whose fan no longer rebuilds after the cut-under) | |
-| **(a) fish** motif_match, ok of 5 (mean IoU) | **4 (0.71)** | 2 (0.54) | **Rev B** |
-| **(a) flora** motif_match, ok of 28 (mean IoU) | **9 (0.54)** | 0 (0.13) | **Rev B** |
-| **(a)** uncovered gaps ≥ 25 mm² | 18 / 2,193 mm² | 39 / 5,234 mm² | Rev B |
-| **(b) flora** motif_match, ok of 32 (mean IoU) | 0 (0.28) | **16 (0.63)** | **engine** |
-| **(b)** uncovered gaps ≥ 25 mm² | 37 / 3,480 mm² | 15 / 903 mm² | engine |
-| bench gates passed | 1 / 8 (colours) | 2 / 8 (colours, satin shape) + separation | |
-| zone-stub area | n/a | 0 % (every part came from a real splitter) | |
+| **fish motif_match vs the mockup poses (ok of 5, mean IoU)** | 4 (0.71) | 4 (0.73) | = |
+| **flora motif_match vs the mockup (ok of 34, mean IoU)** | 12 (0.59) | **23 (0.66)** | engine |
+| **uncovered: mockup embroidery left bare (gaps ≥ 25 mm²)** | 9 / 741 mm² | **4 / 239 mm²** | engine |
+| stitched where the mockup shows bare duck | 1,934 mm² | **109 mm²** | engine |
+| direction OK vs MOCKUP pixels (all visible tiles) | 21.8 % of 275 | 61.8 % of 249 | engine* |
+| direction OK vs informed reference (info only) | 22.2 % | 64.3 % | engine* |
+| independent-angle tiles (engine only, needs part ids) | n/a | 68.9 % of 45 tiles (coverage 18 %, FAIL) | |
+| chaos | 20.4 % | 14.9 % | engine (target ≤ 5 %: both fail) |
+| satin blobs / fans / too narrow | 90 / 10 / 19 | 3 / 1 / 0 | engine |
+| density mean / p95 / flags > 7 | 3.56 / 7.43 / 19 | 4.08 / 8.15 / 29 | Rev B |
+| max stack (cm² > 2 layers) | 3 (0.57) | 3 (0.84) | about = |
+| trims per 100 cm² covered | 107.8 (148) | 98.1 (111) | engine (both far over 25) |
+| exposed stitches (DST-only proxy) | 263 (447 mm) | 97 (140 mm) | engine |
+| bench gates passed | 1 / 8 (colours) | 1 / 8 (colours) | = |
 
-**References (a) and (b) disagree because the two INPUT images disagree about where things are.** The close-up drifts
-13 mm on average (up to 30 mm) from the mockup (`trace/closeup_reg.json`). Rev B took its positions from the mockup.
-The engine took them from the registered close-up. Each file therefore wins on the reference that matches its own
-choice. This is a registration decision for the founder, not a digitizing result: should petal and leaf positions come
-from the mockup or from the close-up?
+\* The mockup holds about 0.9 px/mm of real detail, so its "grain" is mostly the AI render's shading. Read these two rows
+as "the engine's stitch directions are smoother and consistent", not as proof of a correct grain.
+
+**From the engine's plan:**
+- 196 parts, 0 % zone stubs.
+- 2 unexplained angles: crown clumps whose fan no longer rebuilds after the cut-under.
+- Angle coherence fails: 30 parts with no visible stitches, 31 with angle spread.
+- Rule-3 separation: 1 close pair.
+
+## What changed since the first trial
+| what changed | before → after |
+|---|---|
+| positions and silhouettes | close-up (TPS) → **mockup**; the close-up informs the upper lily's interior only |
+| fish body | cornflower (nearest-thread blues of an anti-aliased image) → **silver / lavender bands** (the reference tetra read against silver white, lavender grey, ice blue only) |
+| tail | sewn as body along the axis → cut at the peduncle and sewn as **satin along the rays** (radial from the root; fins too) |
+| eye | lost (merged as a speck) → **bead in eye black** (protected thread) |
+| red stripe | 6 mm satin column (a slab) → a **band of the body**, tatami along the axis; the cyan line (< 2 mm) is a light satin column at 0.55 mm |
+| tone seams | 1 mm underlap between abutting tone pieces → **0.3 mm seam** within one motif (`meta tone_group`, `sequence.TONE_SEAM_MM`); density flags 31 → 29, max stack 4 → 3 |
+| vine | 1 branch (8 of 9 components rejected) → 21 branch columns + 3 strips, traced from the mockup; still broken up (below) |
 
 ## Verdict, in plain words
 **Where the engine is better:**
-- **Lilies.** The petals are mid-blue with pale highlights, as in the close-up. Each petal is sewn as long rows along
-  that petal (one angle per petal, from the flower's heart to the petal tip). Rev B is pale ice/white radial streak fans,
-  which is REVIEW_OPEN item 3. The engine also matches the close-up's petal layout: it traced each lily's own petals
-  (7 petals on the upper lily, 6 on the lower), with no template copies.
-- **Clean satin.** There are no satin blobs or fans: 0 against Rev B's 90 blobs and 10 fans.
-- **Fewer floats and trims.** There are fewer exposed stitches and slightly fewer trims for the area.
-- **Leaves.** They are traced leaf by leaf from the close-up and read as solid blue (REVIEW_OPEN items 3 and 4). Rev B's
-  leaves are white-streaked and their positions were hand-typed.
+- **Layout.** It follows the mockup: lily, dark flower, petals and leaves sit where the mockup has them. Rev B's lilies
+  were rotated templates and its leaves were typed by hand.
+- **Lily rendering.** The upper lily reads as the mockup's pale lily with a blue heart. It has long rows along each petal
+  and close-up shading inside, but no radial streaks.
+- **File cleanliness.** Fewer satin blobs, fewer floats, slightly fewer trims, and almost nothing stitched on bare duck.
 
-**Where the engine is worse:**
-- **Fish.** Rev B's tetras are crisp: silver body, clear fins and tail, red and cyan stripes and the eye. The engine's
-  fish read muddy blue. The body takes the reference tetra's flank blue (cornflower). The fins and tail are small,
-  blobby pieces that barely show. The stripes are heavy satin columns. The eye is a bead that is hard to see. The
-  engine places the fish at the close-up poses, which are not the mockup poses, so on reference (a) it scores 2 of 5
-  against Rev B's 4.
-- **Edges and density.** The lily tone pieces have jagged, pixel-traced edges. The abutting tone pieces with 1 mm
-  underlaps push density up (31 flags against 19) and stack to 4 layers.
-- **The vine.** The deep-navy stem along the bottom is mostly lost: the trunk splitter kept 2 short branches, 38 mm².
-  Rev B has clean satin stems, but they were typed by hand.
+**Where Rev B is still better:**
+- **Fish finish.** Rev B's tetras read whiter, with longer and cleaner fin rays. The engine's body reads lavender-grey
+  and its dorsal and pelvic fins are small.
+- **Stems.** Rev B has long continuous satin stems (hand-typed, not traced). The engine's vine is traced but broken into
+  short pieces, because the mockup draws the stems faintly at about 1 px/mm.
+- **Density.** 29 flags against 19.
 
-**Overall:** I would not send the engine file instead of Rev B today. The fish alone rule it out. For the flowers, the
-engine's output is the better starting point, and it fixes the review's main flora findings.
+**Weak in both:** the lower dark flower. The engine finds only 2 petals and renders the rest as dark leaf clumps. Rev B
+drew a template lily there.
 
-## What blocks a full Koi rebuild
-1. **Fish quality.** The new `fish.py` places the founder's tetra correctly (head, dorsal side up the garment, 0.82 ×
-   length). It still needs:
-   - (a) a body tone plan: silver / lavender bands, not nearest-colour pieces of an anti-aliased image;
-   - (b) fins and tail as satin along the fin rays, sized up to the reference;
-   - (c) lighter stripes (satin at 0.42 mm on a 6 mm stripe reads as a slab);
-   - (d) a decision on pose source: mockup poses (as delivered) or close-up poses (as the engine does).
-2. **Registration choice.** Mockup positions or close-up positions? The founder decides (see the table). The engine can
-   do either: give it the mockup positions as tie points.
-3. **Close-up coverage.** Only the FR upper panel has a close-up. FL, the hem lilies and both sleeves would be traced
-   from the ~1 px/mm mockup, which is the same limit Rev B had (A10 / A12).
-4. **Lily splitter.** The sector cut between two petals is a straight line from the heart. Overlapping petals become one
-   sector; on the upper lily, the left and bottom petals are partly merged. Tone pieces need smoothing (long-and-short
-   edges, not pixel steps).
-5. **Gates still red.** Angle coherence fails because 46 parts have no visible stitches (small tone pieces buried under
-   later ones). Direction independence is 14 % of tiles, because organic motifs are outline-derived (A24); the gate
-   cannot pass on a flowers-and-fish design without an independent rule for petals. Density and stack are over target
-   (underlaps between tone pieces), and chaos is 15 % (stripe satin across a body fill in every fish tile). Trims per
-   100 cm² cannot reach 25 on a design of separate motifs on bare duck: the target is calibrated for full-coverage
-   scenes and needs a Koi value from the founder.
-6. **Pack path (M7).** The engine writes a crop DST. Per-size placement, keep-outs, hoop splits and the pack pages for an
-   engine-built design do not exist yet.
-
-## What the trial added to the engine
-| file | change |
-|---|---|
-| `engine/digitize/extract/splitters/lily.py` | new: petal fan from the heart, one ray angle per petal across its tones |
-| `engine/digitize/extract/splitters/fish.py` | new: founder tetra template placed at each fish pose |
-| `construct.py` | rule `ray`, in the outline bucket |
-| `run.py` | `threads.bare`: tones that are bare shell are never threads; splitter dispatch |
-| `bench.py` | `targets.accents`, because Koi has no gold |
-| `splitters/__init__.py` | `Ctx.tone_thread` |
-| `rules/house.yaml` | KOI kinds: `lily_petal`, `fish_body`, `fish_stripe`, `fish_fin`, `fish_eye` |
-
-Every change is default-preserving. Tests are in `tests/test_digitize_koi.py`, each proven red by a mutation.
+## What still blocks a full Koi rebuild
+1. **Vine continuity.** The engine needs a stem tracer that follows a faint 2 mm stroke across leaves (a centreline
+   through gaps), or a founder vector stem.
+2. **Fish finish.** The body needs a brighter silver base, and the dorsal and pelvic fins need to be enlarged to the
+   reference's ray length.
+3. **Lower dark flower.** The petal fan fails on a dark flower against dark leaves (2 petals found). It needs either a
+   better close-up of that flower or tone separation.
+4. **Gates.**
+   - There is no independent rule for organic motifs (independent coverage 18 %).
+   - Coherence fails on buried tone pieces.
+   - Chaos is 15 %.
+   - Density is still over target.
+   - The trims target of 25 per 100 cm² does not fit a design of separate motifs on bare duck; the founder needs to set
+     a Koi value.
+5. **Only one close-up**, and only one of its three motifs informs. FL, the hem flowers and the sleeves would be
+   mockup-only.
+6. **Pack path (M7).** Per-size placement, splits and pages for an engine-built design.
 
 ## Re-run
 ```bash
+PYTHONPATH=engine python3 projects/koi-blossom-hoodie/bench/inform_fit.py       # per-motif close-up fits -> registration.json
 PYTHONPATH=engine python3 -m digitize.run projects/koi-blossom-hoodie/bench/run_fr_crop.yaml --stages extract,plan,review,compile,gates,panel --no-api
 PYTHONPATH=engine python3 projects/koi-blossom-hoodie/bench/trial_compare.py
 ```
-The bench stage is deliberately not run for this trial: it would add a Castle-style scoreboard row. This file is the
-record.
+- **Rev B file:** a git-ignored copy of the delivered `HAKI_KOIB_01_front-fish_FR_M.dst`. Its origin is (-146.775, 247.30),
+  aligned on the Rev C build's recorded origin; the delivered files were not touched.
+- **Bench stage:** not run, so there is no SCOREBOARD row.

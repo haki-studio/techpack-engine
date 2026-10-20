@@ -1,19 +1,20 @@
-"""Koi engine trial (tag koi, 2026-10-20): the delivered Rev B FR file vs the engine's file, SAME crop, SAME gates.
+"""Koi engine trial (tag koi, 2026-10-20, re-run after the founder ruling: the GARMENT MOCKUP governs, close-ups only
+inform): the delivered Rev B FR file vs the engine's file, SAME crop, SAME gates, MOCKUP references.
 
   PYTHONPATH=engine python3 projects/koi-blossom-hoodie/bench/trial_compare.py      (no Anthropic API calls)
 
 Reads only the two WRITTEN DSTs (+ their .pes thread lists) and input pixels:
-  - bench gates (engine/digitize/bench.run_gates): direction on the visible layer vs the 12 ppm reference, chaos,
-    density, trims per covered area, satin shape (blobs / fans), stack, colours;
-  - motif_match + uncovered (LESSONS A14 / A15) against refmask.py (Rev C, written to be independent of ANY art: it
-    imports nothing from the art side, which is blocked here with sys.modules[...] = None): flora = mockup + close-up
-    pixels, fish = the founder's reference tetra at the MOCKUP fish poses x 0.82. Neither the Rev B art nor the engine's
-    parts feed it, so the same reference grades both files;
-  - exposed stitches (DST-only proxy for travel on bare fabric): stitch length >= 1 mm lying over cells that no OTHER
-    stitch covers (< 0.3 mm/mm2 of other thread, > 1 mm of it bare, 1 mm cells: a 0.5 mm cell
-    aliases with 0.45 mm tatami rows and flags thousands of covered stitches), counted when > 0.5 mm of it is bare.
+  - bench gates (engine/digitize/bench.run_gates on bench.json = registration_mockup.json, no close-up): direction on the
+    visible layer vs the MOCKUP pixels at 12 ppm (the mockup carries ~0.9 px/mm of detail, so its "grain" is weak:
+    reported, and also read against the informed reference as INFO), chaos, density, trims, satin shape, stack, colours;
+  - motif_match + uncovered (LESSONS A14 / A15) against MOCKUP pixels only: flora = a plain colour test on the mockup
+    crop written here (not the engine's evidence), fish = refmask.fish_ref (the founder's reference tetra at the MOCKUP
+    fish poses x 0.82; refmask imports nothing from the art side, which is blocked here). The same references grade both;
+  - exposed stitches (DST-only proxy for travel on bare fabric): stitch length >= 1 mm with > 1 mm over 1 mm cells
+    holding < 0.3 mm/mm2 of other thread (1 mm cells: 0.5 mm cells alias with 0.45 mm tatami rows).
 The engine's own gates.json adds what only a plan can give (part ids: angle coherence, direction by source).
-Writes bench/trial_gates.json and the side-by-side PNGs bench/trial_*.png."""
+Writes bench/trial_gates.json and the PNGs bench/trial_*.png (reference column = the MOCKUP crop; the zooms add the
+informed reference = the close-up's detail inside the mockup's motifs, as a 4th column)."""
 import json, math, os, sys
 HERE = os.path.dirname(os.path.abspath(__file__)); PROJ = os.path.dirname(HERE); ROOT = os.path.dirname(os.path.dirname(PROJ))
 os.chdir(PROJ); sys.path[:0] = [os.path.join(ROOT, "engine"), PROJ]
@@ -64,27 +65,31 @@ def exposed(dst, origin, cell=1.0, other_min=0.3, min_len=1.0, min_bare=1.0):
     return dict(stitches=n, bare_mm=round(bare_mm, 1), note="DST-only proxy: >= 1 mm stitches with > 1 mm over 1 mm cells holding < 0.3 mm/mm2 of other thread")
 
 
-def refmasks():
+def flora_mask(P, reg):
+    """embroidery pixels of a registration's reference crop by a plain colour test written here (not the engine's
+    evidence / tone trace): far from the duck's median colour AND blue or light; opened 1 mm, holes < 2 mm2 filled"""
+    rgb = register.reference(reg, "F", CROP, ppm=P)["rgb"]
+    lum = rgb @ np.array([0.299, 0.587, 0.114]); fab = np.median(rgb[lum < np.percentile(lum, 50)], axis=0)
+    dist = np.sqrt(((rgb - fab) ** 2).sum(-1)); blue = rgb[..., 2] - rgb[..., 0]
+    m = (dist > 45) & ((blue > 18) | (lum > 110))
+    r = int(round(0.5 * P)); yy, xx = np.ogrid[-r:r + 1, -r:r + 1]; m = ndi.binary_opening(m, xx * xx + yy * yy <= r * r)
+    lab, n = ndi.label(~m); sz = np.bincount(lab.ravel()) / P ** 2; m |= (sz < 2.0)[lab] & (lab > 0)
+    return m
+
+
+def refmasks(reg_mock):
+    """MOCKUP references: flora from the mockup crop minus the fish (the mockup fish are koi; the founder's fish are
+    tetras, graded on fish_ref), fish = refmask.fish_ref (reference tetra at the mockup poses x 0.82)"""
     import refmask as RM
-    fl = RM.flora("FR"); fish = RM.fish_ref("FR"); bb = RM.BB["FR"]; P = RM.PPM
+    fish = RM.fish_ref("FR"); bb = RM.BB["FR"]; P = RM.PPM
     c0, r0 = int(round((CROP[0] - bb[0]) * P)), int(round((CROP[1] - bb[1]) * P))
     c1, r1 = int(round((CROP[2] - bb[0]) * P)), int(round((CROP[3] - bb[1]) * P))
     cut = lambda m: m[r0:r1, c0:c1]
     fishes = [cut(m) for _, m in fish if cut(m).sum() / P ** 2 >= 20]
-    return P, cut(fl), fishes
-
-
-def closeup_flora(P, reg):
-    """reference (b): embroidery pixels of THIS registration (TPS-bent close-up over the crop, the engine's source), by a
-    plain colour test written here (not the engine's evidence / tone trace): far from the duck's median colour AND blue
-    or light; opened 1 mm, holes < 2 mm2 filled. Fish windows are not removed: fish are graded on reference (a) only."""
-    rgb = register.reference(reg, "F", CROP, ppm=P)["rgb"]
-    lum = rgb @ np.array([0.299, 0.587, 0.114]); fab = np.median(rgb[lum < np.percentile(lum, 50)], axis=0)
-    dist = np.sqrt(((rgb - fab) ** 2).sum(-1)); blue = rgb[..., 2] - rgb[..., 0]
-    m = (dist > 60) & ((blue > 25) | (lum > 120))
-    r = int(round(0.5 * P)); yy, xx = np.ogrid[-r:r + 1, -r:r + 1]; m = ndi.binary_opening(m, xx * xx + yy * yy <= r * r)
-    lab, n = ndi.label(~m); sz = np.bincount(lab.ravel()) / P ** 2; m |= (sz < 2.0)[lab] & (lab > 0)
-    return m
+    fl = flora_mask(P, reg_mock)
+    fpx = np.asarray(cut(RM.fish_px("FR")[0]), bool)    # the mockup's own koi pixels (light blobs holding red, mockup alone)
+    fl = fl & ~ndi.binary_dilation(fpx, iterations=int(1.0 * P))
+    return P, fl, fishes
 
 
 def dst_mask(dst, origin, shape, P):
@@ -122,28 +127,35 @@ def sheet(tiles, path, title):
     im = im.quantize(256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE); im.save(path, optimize=True); return path
 
 
-def views(box, ppm, reg):
-    ref = Image.fromarray(register.reference(reg, "F", box, ppm=ppm)["rgb"].astype(np.uint8))
-    out = [(ref, "reference (mockup + close-up, input pixels)")]
+def views(box, ppm, reg_mock, reg_inf=None):
+    ref = Image.fromarray(register.reference(reg_mock, "F", box, ppm=ppm)["rgb"].astype(np.uint8))
+    out = [(ref, "MOCKUP (the reference that governs)")]
     for k, (dst, o) in FILES.items():
         out.append((dstlive.render(dst, colours(dst), ppm=ppm, shell=CFG["shell"], bounds=box, origin=o), NAMES[k] + " - live view"))
+    if reg_inf is not None:
+        inf = Image.fromarray(register.reference(reg_inf, "F", box, ppm=ppm)["rgb"].astype(np.uint8))
+        out.append((inf, "detail source: close-up inside mockup motifs (informs only)"))
     return out
 
 
 def main():
-    reg = register.load(os.path.join(PROJ, CFG["registration"]))
-    res = {"crop": list(CROP), "files": {}}
-    P, flora, fishes = refmasks(); flora_b = closeup_flora(P, reg)
+    reg_mock = register.load(os.path.join(PROJ, CFG["registration"]))                 # bench.json: MOCKUP ONLY
+    reg_inf = register.load(os.path.join(PROJ, "bench/registration.json"))            # the engine's extraction source
+    cfg_inf = dict(CFG, registration="bench/registration.json")
+    res = {"crop": list(CROP), "files": {}, "references": dict(gates="bench/registration_mockup.json (mockup only)",
+           fish="refmask.fish_ref: reference tetra at the mockup poses x 0.82", flora="colour test on the mockup crop, mockup fish removed",
+           info="direction also read against bench/registration.json (close-up detail inside mockup motifs): INFO, not a grade")}
+    P, flora, fishes = refmasks(reg_mock)
     for k, (dst, o) in FILES.items():
         row, aux = bench.run_gates(CFG, PROJ, dst, o)
+        row_inf, _ = bench.run_gates(cfg_inf, PROJ, dst, o)
         out = dst_mask(dst, o, flora.shape, P)
-        fb = qa.motif_match(flora_b, out, P, min_mm2=8.0, near_mm=1.5)
-        unc_b = qa.uncovered(flora_b, out, P, min_mm2=25.0)
         res["files"][k] = dict(dst=os.path.relpath(dst, PROJ), origin=list(o), counts=file_counts(dst, o), gates=row,
                                verdict=bench.verdict(row, CFG["targets"]), exposed=exposed(dst, o), fidelity=fidelity(P, flora, fishes, out),
-                               fidelity_closeup=dict(flora=dict(n=len(fb), ok=sum(r["ok"] for r in fb), mean_iou=round(float(np.mean([r["iou"] for r in fb])), 2) if fb else 0.0),
-                                                     uncovered=dict(n=len(unc_b), mm2=round(sum(u["area_mm2"] for u in unc_b), 1))))
-        print(k, json.dumps({kk: res["files"][k][kk] for kk in ("counts", "exposed")}), res["files"][k]["fidelity"]["fish"], res["files"][k]["fidelity"]["flora"], res["files"][k]["fidelity_closeup"], flush=True)
+                               info_direction_vs_informed=dict(pct_ok=row_inf["direction"]["pct_ok"], tiles=row_inf["direction"]["tiles"],
+                                                               pct_chaos=row_inf["direction"]["pct_chaos"]))
+        print(k, json.dumps({kk: res["files"][k][kk] for kk in ("counts", "exposed", "info_direction_vs_informed")}),
+              res["files"][k]["fidelity"]["fish"], res["files"][k]["fidelity"]["flora"], res["files"][k]["fidelity"]["uncovered"]["mm2"], flush=True)
     eg = json.load(open(os.path.join(ENG_DIR, "gates.json")))
     res["engine_plan"] = dict(parts=eg["parts"], direction_by_source=eg["direction_by_source"], direction_by_kind=eg["direction_by_kind"],
                               angle_coherence={kk: eg["angle_coherence"].get(kk) for kk in ("ok", "parts", "fails", "kinds", "by_kind")},
@@ -152,12 +164,14 @@ def main():
     res["engine_plan"]["splitter_stats"] = pj["meta"].get("splitter_stats")
     res["engine_plan"]["area_by_kind_mm2"] = {}
     for q in pj["parts"]: res["engine_plan"]["area_by_kind_mm2"][q["kind"]] = round(res["engine_plan"]["area_by_kind_mm2"].get(q["kind"], 0) + q["area_mm2"], 1)
+    res["inform"] = [dict(name=m["name"], informed=True, fit=m["fit"]) for c in reg_inf["closeups"] for m in c.get("motifs", [])] + \
+                    [dict(name=m["name"], informed=False, fit=m["fit"], why=m.get("why")) for c in reg_inf["closeups"] for m in c.get("not_informed", [])]
     json.dump(res, open(os.path.join(HERE, "trial_gates.json"), "w"), indent=1, default=float)
-    sheet(views(CROP, 4.0, reg), os.path.join(HERE, "trial_side_by_side.png"),
-          f"Koi Blossom FR size M, crop x {CROP[0]}..{CROP[2]}, y {CROP[1]}..{CROP[3]} mm (garment mm), equal scale 4 px/mm")
-    for name, box in (("lily", (-220, 88, -140, 185)), ("fish", (-148, 76, -82, 132)), ("leaves", (-220, 228, -150, 300))):
-        sheet(views(box, 10.0, reg), os.path.join(HERE, f"trial_zoom_{name}.png"),
-              f"zoom ({name}): x {box[0]}..{box[2]}, y {box[1]}..{box[3]} mm, 10 px/mm (2.5 x the side-by-side)")
+    sheet(views(CROP, 4.0, reg_mock), os.path.join(HERE, "trial_side_by_side.png"),
+          f"Koi Blossom FR size M, crop x {CROP[0]}..{CROP[2]}, y {CROP[1]}..{CROP[3]} mm (garment mm), equal scale 4 px/mm - the MOCKUP governs")
+    for name, box in (("lily", (-222, 88, -142, 185)), ("fish", (-150, 82, -84, 134)), ("leaves", (-222, 228, -150, 300))):
+        sheet(views(box, 10.0, reg_mock, reg_inf), os.path.join(HERE, f"trial_zoom_{name}.png"),
+              f"zoom ({name}): x {box[0]}..{box[2]}, y {box[1]}..{box[3]} mm, 10 px/mm (2.5 x the side-by-side; mockup upscaled from ~0.9 px/mm)")
     print("wrote", os.path.join(HERE, "trial_gates.json"))
 
 

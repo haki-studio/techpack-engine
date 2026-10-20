@@ -94,3 +94,78 @@ Full pytest: 212 passed. `scripts/identity_check.sh`: dst2 probe 84ff50ea7493867
 3. **Vines:** the trunk splitter's support test rejected 8 of 9 components.
 4. **Gates:** an independent petal rule, or a founder call on organic-only designs; and a Koi trims target.
 5. **M7 pack path** for an engine-built design.
+
+---
+
+# Re-run after the founder ruling (2026-10-20, same branch / PR #13)
+
+**Ruling (via the coordinator):** the GARMENT MOCKUP governs; the AI close-up only informs interior detail inside mockup
+motifs. The gate references come from MOCKUP pixels.
+
+## What changed
+
+### Registration
+- `bench/registration.json`: the close-up entry is now `mode: inform`, with one similarity fit per motif (written by
+  `bench/inform_fit.py`).
+- `bench/registration_mockup.json` (mockup only) is the gate reference.
+- `bench.json` sets `closeup: null`. `bench.run_gates` accepts that: no feather mask.
+- `run.yaml` gains `registration:`, the extraction source.
+
+### Engine (each change additive)
+| file | change |
+|---|---|
+| `extract/inform.py` (new) | `composite()` adds close-up detail only inside the mockup's largest silhouette in each window, where the close-up shows embroidery, shifted to the mockup motif's mean colour in Lab (the mean only, so the detail survives a flat 1 px/mm motif); `fit_similarity()` searches rotation × scale × cross-correlated shift |
+| `register.reference` | hooks the informing close-ups |
+| `sequence.underlap` | `meta tone_group`: tone pieces of one motif overlap by `TONE_SEAM_MM` 0.3 mm instead of 1 mm |
+| `fish.py` | silver / lavender body bands (body read against `body_threads` only); tail cut at the peduncle (`tail_mask`); fins and tail as radial satin from the root; stripes ≥ 2 mm become body bands along the axis; thinner lines a light satin column (0.55 mm); eye in eye black (protected thread) |
+| `house.yaml` | `fish_fin` uses radial and is added to radial `allowed_kinds` (a rule-4 exception asked for by the founder); `fish_stripe` spacing 0.55 |
+
+### Fit results
+| motif | IoU | informed? |
+|---|---|---|
+| upper lily | 0.66 | yes |
+| lower dark flower | 0.41 | no (the mockup wins) |
+| lower leaves | 0.40 | no |
+
+### Zones
+Re-authored on the MOCKUP layout: 4 fish, the pale upper lily, the dark lower flower, vines and foliage. The fish at the
+crop's right edge is not built: its head lies outside the crop.
+
+## Results
+Mockup reference, Rev B vs engine:
+
+| gate | Rev B | engine |
+|---|---|---|
+| fish motif_match | 4/5 | 4/5 |
+| flora motif_match | 12/34 | 23/34 |
+| uncovered | 741 mm² | 239 mm² |
+| stitched on bare duck | 1,934 mm² | 109 mm² |
+| satin blobs | 90 | 3 |
+| density flags | 19 | 29 |
+| max stack | 3 | 3 |
+| bench gates | 1/8 | 1/8 |
+
+**Verdict:** the engine is better on layout, the lily, and file cleanliness. Rev B is still better on fish finish (whiter
+body, longer fin rays) and on stems: the engine's vine is broken up because the mockup's stems are faint at about
+1 px/mm.
+
+## Tests
+`tests/test_digitize_koi.py` has 16 tests. Each guard has a red mutation (13 in the scratchpad at `koi/mutate.py`). The
+new ones:
+- inform: silhouette ignored
+- inform: translation not searched
+- inform: colour transfer off
+- tone_group ignored
+- tail cut at the widest section
+
+Full pytest: 216 passed.
+
+## PNGs
+Copied to `C:\Users\devin\Desktop\koi-trial\`.
+
+## Left for the next session
+1. A vine continuity tracer.
+2. Fish: a brighter body, and dorsal / pelvic fin size.
+3. The dark lower flower's petals.
+4. Gates: an independent organic rule; a Koi trims value from the founder.
+5. M7 pack path.
