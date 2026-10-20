@@ -26,6 +26,10 @@ _src = _src.replace("xs = np.linspace(b[0] + (b[2]-b[0])*0.40, b[0] + (b[2]-b[0]
 assert "0.85, 57" in _src and "0.75, 41" in _src, "engine split_clip changed: update the search patch"
 _ns = dict(vars(dst2)); exec(_src, _ns); split_clip_wide = _ns["split_clip"]
 
+# Rev C (glyph gate): every travel move is checked on the EXACT geometry (dst2.ExactCover, LESSONS B27): more than 0.5 mm
+# on bare fabric -> trim. The raster router forgave a 1.6 mm float between the KR "!" stem and its dot.
+EXACT = dict(halo=0.25, max_ex=0.5)
+
 def is_puff(r): return tech.rule_for(r["grp"]).startswith("PF-") and kccore.PUFF
 
 def is_top(r): return r["layer"] >= 30 and not is_puff(r)      # details sewn ON the puff (star centre), after the foam is torn
@@ -58,31 +62,10 @@ def sews(stops, basting=False):
     return out
 
 def foam_gates(base, rb, regs, origin, tol=0.25):
-    """FOAM-ISOLATION contract (LESSONS B31 / B34, house rule 6) read from the WRITTEN DST:
-    foam_stop      every puff stop holds only puff codes; no flat stop after the first puff stop except 'top' details sewn
-                   after the foam is torn; the stop before the first puff stop is a real colour change in the file
-                   (readback stop count == built stop count) and the first puff stop is not stop 1
-    base_under_puff  needle points of the flat stops sewn before the foam that lie inside the puff footprint shrunk by
-                   cut_keep_mm + tol (target 0)"""
-    import pyembroidery as pe
-    from shapely.prepared import prep
-    ps = rb["per_stop"]; first = next((p["stop"] for p in ps if p.get("puff")), None)
-    if first is None: return dict(puff=False)
-    mixed = [p["stop"] for p in ps if p.get("puff") and not all(c.startswith("PF-") for c in p["codes"] if c != "REG crosses")]
-    late = [p["stop"] for p in ps if p["stop"] > first and not p.get("puff") and not p.get("top")]
-    puffg = unary_union([r["geom"] for r in regs if is_puff(r)])
-    core = prep(puffg.buffer(-(kccore.CUT_KEEP_MM + tol)))
-    pat = pe.read(base + ".dst"); si = 1; hits = {}
-    for x, y, c in pat.stitches:
-        k = c & pe.COMMAND_MASK
-        if k == pe.COLOR_CHANGE: si += 1; continue
-        if k == pe.END: break
-        if k != pe.STITCH or si >= first: continue
-        if core.contains(Point(x / 10.0 + origin[0], y / 10.0 + origin[1])): hits[si] = hits.get(si, 0) + 1
-    return dict(puff=True, pause_before_stop=first, mixed_stops=mixed, flat_after_puff=late,
-                foam_stop_ok=not mixed and not late and first > 1,
-                base_under_puff={f"stop {k} {ps[k-1]['col']}": v for k, v in hits.items()}, base_under_puff_ok=not hits,
-                keep_mm=kccore.CUT_KEEP_MM, tol_mm=tol)
+    """kcgates.foam_gates on this written file, puff footprint = the union of its puff regions (tested in tests/test_kcos_gates.py)"""
+    import kcgates
+    return kcgates.foam_gates(base + ".dst", rb["per_stop"], unary_union([r["geom"] for r in regs if is_puff(r)]), origin,
+                              keep=kccore.CUT_KEEP_MM, tol=tol)
 
 def record(base, stops, extra, basting=False, regs=None):
     rb = readback.dst(base + ".dst"); rb["threads"] = factory.check_threads(base + ".pes")
@@ -108,7 +91,7 @@ for P in which:
     if "splitsonly" not in sys.argv:
         t = time.time()
         ub = dst2.bounds_of([r["geom"] for r in vis]); c = ((ub[0]+ub[2])/2, (ub[1]+ub[3])/2)
-        stops, n0 = stops_for(vis); pat, st = dst2.make_pattern(vis, stops, c)
+        stops, n0 = stops_for(vis); pat, st = dst2.make_pattern(vis, stops, c, exact_travel=EXACT)
         base = f"{OUT}/{PREFIX}_{P}_{size}"
         dst2.write(pat, base); dst2.render(base, base + "_preview.png", bg=(25, 28, 36), s=0.5)
         res["full"] = record(base, stops, dict(origin=c, art_box=ub, stops_before_merge=n0, secs=round(time.time()-t),
@@ -135,7 +118,7 @@ for P in which:
                 t = time.time(); stops, n0 = stops_for(sv)
                 bb = dst2.bounds_of([r["geom"] for r in sv] + [Point(m).buffer(6) for m in marks[key]])
                 cc = ((bb[0]+bb[2])/2, (bb[1]+bb[3])/2)
-                pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=marks[key])
+                pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=marks[key], exact_travel=EXACT)
                 base = f"{OUT}/splits/{PREFIX}_{P}_{size}_{names[key]}"; os.makedirs(os.path.dirname(base), exist_ok=True)
                 dst2.write(reg_in_first_colour(pat), base); dst2.render(base, base + "_preview.png", bg=(25, 28, 36), s=0.5)
                 r = record(base, stops, dict(bbox=bb, origin=cc, marks=marks[key], secs=round(time.time()-t)), basting=True, regs=sv)

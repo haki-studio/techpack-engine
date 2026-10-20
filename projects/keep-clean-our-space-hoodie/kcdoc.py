@@ -53,6 +53,20 @@ def auto(x, y, s, size=2.2, fill="#1A1A1A", w=400):
         else: parts.append((seg, None))
     return mixed(x, y, parts, size, fill, w)[0]
 
+FOAM_WHERE = {"01": "badge 01 (JP)", "02": "badge 02 (EN)", "03": "the 03 CN dot ring"}
+def foam_steps(r):
+    """THE foam procedure of one written file (full or split section), read from its own stop list (review of PR #20:
+    every page and the README print this, nothing else). Returns None for a file without puff, else dict(lay, tear,
+    where, line) - lay = stop number to pause BEFORE; tear = stop to pause before, or None = after the last stop."""
+    ps = r.get("per_stop", []); lay = r.get("foam_pause_before_stop")
+    if not lay: return None
+    els = sorted({e for p in ps if p.get("puff") for e in p.get("elements", [])})
+    where = " + ".join(FOAM_WHERE.get(e, e) for e in els)
+    tear = r.get("foam_tear_before_stop"); last = ps[-1]["stop"] if ps else None
+    t_txt = f"STOP before stop {tear}: tear the foam away, then continue" if tear else f"after stop {last} (the last stop): unhoop, tear the loose foam away"
+    return dict(lay=lay, tear=tear, last=last, where=where,
+                line=f"STOP before stop {lay}: lay 3 mm black foam over {where}; {t_txt}.")
+
 def load():
     CUR = json.load(open("dst_current.json")); ALL = json.load(open("dst_all.json")); META = json.load(open("scene_meta.json"))
     D = pickle.load(open("art_M.pkl", "rb"))

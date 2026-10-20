@@ -13,7 +13,15 @@ for f_ in glob.glob("out/art/*_flat.png") + glob.glob("out/compare_*.png"): shut
 if os.path.isdir("out/pattern"): shutil.copytree("out/pattern", f"{PKG}/pattern", ignore=shutil.ignore_patterns("*.png"))
 full = f"out/HAKI_{kccore.SHORT}_FULL-TECHPACK_{kccore.REV_EMB.replace(' ', '')}.pdf"; shutil.copy(full, PKG)
 cur = json.load(open("dst_current.json"))
-import factory as FA
+import factory as FA, kcdoc as KD
+ALL = json.load(open("dst_all.json")); _fl = ["FOAM PROCEDURE (read from each file's own stop list; the same on F2 + S1):"]
+for _sz in kccore.SIZES:
+    for _p in ("FR", "FL"):
+        _r = ALL[_sz][_p]
+        for _nm, _f in [("full", _r["full"])] + list(_r.get("splits", {}).get("sections", {}).items()):
+            _fs = KD.foam_steps(_f)
+            _fl.append(f"  {os.path.basename(_f['file'])}.dst: " + (_fs["line"] if _fs else "no puff in this hooping - no foam."))
+FOAM = "\n".join(_fl) + "\n"
 FR = " x ".join(f"{v:.0f}" for v in FA.largest_frame(FA.load()))
 open(f"{PKG}/README.txt", "w").write(f"""HAKI STUDIOS - {kccore.NAME} (style {kccore.STYLE})
 Embroidery {kccore.REV_EMB} - {kccore.DATE}
@@ -26,8 +34,7 @@ pattern/                        DXF per size + all sizes, 1:1 plot PDF (size M).
 elements/stitch-files/<size>/   per size: FR (wearer's right front), FL (wearer's left front), SR (right sleeve), SL (left sleeve)
                                 stitch files (DST + PES), previews, thread charts. splits/ = hoop sections for the """ + FR + """ frame
                                 (stop 1 opens with registration crosses in its own thread - pick out after the last hooping).
-                                Fronts FR + FL: PAUSE before the first puff stop (lay 3 mm black foam: FR over badge 01 + the 03 dot
-                                ring, FL over badge 02), tear the foam before the last stop on FR (white star centre) - see S1.
+                                Fronts FR + FL carry 3D puff: see FOAM PROCEDURE below (one machine STOP per puff hooping).
 elements/art/                   per-size flat art previews + mockup comparison sheets.
 
 Size M: """ + ", ".join(f"{P} {cur[P]['stitches']:,} stitches / {cur[P]['trims']} trims" for P in kccore.PIECES) + """ (read from the DST).
@@ -36,6 +43,7 @@ Full files (no splits/) = one hooping on a frame that holds the whole piece (siz
 Rev C: splits for the factory's frames (factory.json), foam on its own machine stop, no flat stitches inside the foam
 beyond a 1 mm edge band (checked on every file, S1), all files rebuilt from the current art. Compare sheets in
 elements/art are drawn from the DST files; the art is traced from the garment mockup (source of truth).
+""" + FOAM + """
 Files are production-intent drafts: the factory digitizer checks
 density, pull and puff on the washed duck, edits if needed, and sews out size M before bulk. Every value marked
 [proposed - confirm] in the PDF is still open.

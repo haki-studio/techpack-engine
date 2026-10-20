@@ -51,12 +51,13 @@ def ref_panel(el, H):
 def gate_lines(el=None, field=None):
     """A14 / A15 gate rows from gates.json (shipped DST) for this element"""
     if not os.path.exists("gates.json"): return ["A14/A15 gates: gates.json missing — run gates.py"]
-    G = json.load(open("gates.json")); out = [f"A14 / A15 GATES ({G.get('source', '')}; IoU >= 0.70, size within 0.8-1.25, bare gap < 25 mm²)"]
+    G = json.load(open("gates.json")); out = [f"A14 / A15 GATES ({G.get('source', '')}; IoU >= 0.70, size within 0.8-1.25, bare gap < 25 mm²)",
+                                               "  text tier (JP / EN letters): IoU >= 0.40, size 0.55-1.45; each stitched letter also gated vs its font glyph"]
     keys = [k for k in G["summary"] if (el and k.startswith(el + " ")) or (field and k.startswith("05 field"))]
     for k in keys:
         v = G["summary"][k]; st = "PASS" if v["fail"] == 0 and v["gaps_ge25"] == 0 else "FAIL"
         out.append(f"  {k:12s} {st}: {v['n']} motifs — {v['ok']} match (median IoU {v['iou_med']}), {v['moved']} moved by the art (keep-out), "
-                   f"{v.get('text', 0)} font-set text, {v.get('occluded', 0)} hidden in the render, {v['fail']} FAIL; bare gaps >= 25 mm²: {v['gaps_ge25']}")
+                   f"{v.get('text', 0)} text-tier, {v.get('occluded', 0)} hidden in the render, {v['fail']} FAIL; bare gaps >= 25 mm²: {v['gaps_ge25']}")
     for n in G.get("not_traced", []):
         if (el and n.startswith(el)) or (field and n.startswith("05")) or (el in ("01", "02") and n.startswith("01 + 02")): out.append("  generated, not traced: " + n)
     return out
@@ -67,7 +68,7 @@ ZOOMS = {
  "02": [("KEEP (puff, rim)", dict(unit="02-text", ch="K", h=17)), ("CLEAN (lemon, lemon-tint rim)", dict(unit="02-text", ch="L", h=17)),
         ("SPACE + halo", dict(unit="02-text", ch="S", h=17)), ("faceted border stars", dict(unit="02-star5", h=12))],
  "03": [("要 (flat column satin)", dict(unit="03-text", ch="要", h=17)), ("世 界", dict(unit="03-text", ch="界", h=17)),
-        ("domed ring dots + halo", dict(unit="03-dots", h=14, pick=top)), ("inner sparkles", dict(unit="03-sp", h=14))],
+        ("domed ring dots + halo", dict(unit="03-dots", h=14, pick=lambda rs: [min(rs, key=lambda r: r["geom"].bounds[1])])), ("inner sparkles", dict(unit="03-sp9", h=10))],
  "04": [("우리들 (light satin columns)", dict(unit="04-text", ch="들", h=16)), ("소중한", dict(unit="04-text", ch="중", h=16)),
         ("우주! (the '!' the render showed rotated)", dict(unit="04-text", ch="!", h=14)), ("oval ring + highlight", dict(unit="04-oval", h=14, pick=lambda rs: rs))],
 }
@@ -105,7 +106,7 @@ def sheet(el):
     if rp is not None:
         out.paste(rp, (2 * W + 50, 60)); d.text((2 * W + 50, 34), "SOURCE FRAME (founder; text + lettering)" + (" — turned upright" if el == "04" else ""), fill=(0, 0, 0), font=FS)
     for i, l in enumerate(gl): d.text((10, H + 80 + i * 26), l, fill=(0, 0, 0) if i else (20, 20, 120), font=FS_KR if any("\uac00" <= c <= "\ud7af" for c in l) else FS)
-    d.text((10, 6), f"{el} {kccore.ELEMENTS[el][1]} — Rev B, size {size}", fill=(0, 0, 0), font=ImageFont.truetype("inputs/fonts/_inst_kr_560.ttf", 22) if el == "04" else FONT)
+    d.text((10, 6), f"{el} {kccore.ELEMENTS[el][1]} — {kccore.REV_EMB}, size {size}", fill=(0, 0, 0), font=ImageFont.truetype("inputs/fonts/_inst_kr_560.ttf", 22) if el == "04" else FONT)
     narrow = W < 700
     d.text((10, 34), "MOCKUP (flat.png, low-res)" if narrow else f"MOCKUP (flat.png, motif scale {MM.S:.3f} mm/px; low-res render, no close-up)", fill=(0, 0, 0), font=FS)
     d.text((W + 30, 34), f"DST read back ({os.path.basename(base(P))}.dst)" if narrow else f"WRITTEN DST read back ({os.path.basename(base(P))}.dst, {ppm:.0f} px/mm, same scale)", fill=(0, 0, 0), font=FS)

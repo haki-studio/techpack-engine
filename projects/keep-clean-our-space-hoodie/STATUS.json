@@ -95,6 +95,11 @@
    "2026-10-20T14:21:12",
    "delivered",
    "Rev C delivered: 25-page merged PDF + zip; 112 files pass prod_gates (frame 400x450, <=12 colours, max stitch 7.07, foam stop + 0 flat points in foam, no straight sheer lines), A14 blocking 0, keep-outs + pattern QA pass. M: FR 58,696/500, FL 45,938/351, SR 6,700/199, SL 6,888/192"
+  ],
+  [
+   "2026-10-20T15:57:46",
+   "delivered",
+   "Rev C review fixes (PR #20): \u754c/\u8981 glyph fill (nonzero), per-glyph gate (all sizes green), one foam procedure from the stop lists, exact travel, JP mint dot, tests + LESSONS A32/B40/B41/D5. M: FR 58,974/524, FL 46,764/378, SR 6,735/204, SL 6,944/200"
   ]
  ],
  "questions": [
@@ -109,6 +114,6 @@
  "stage": "delivered",
  "stage_index": 7,
  "blocked": false,
- "updated": "2026-10-20T14:21:12",
- "preview": "out/compare_front_M.png"
+ "updated": "2026-10-20T15:57:46",
+ "preview": "out/compare_03_cn-badge.png"
 }

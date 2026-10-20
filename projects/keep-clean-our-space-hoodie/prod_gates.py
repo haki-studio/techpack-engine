@@ -12,29 +12,7 @@ PROF = factory.load(); FRAME = factory.largest_frame(PROF); LIM = factory.max_th
 ALL = json.load(open("dst_all.json"))
 fails = []; files = 0; rows = {}
 
-SHEER = {"GLOW", "HAZE", "REG crosses"}
-def straight_chains(path, per_stop, min_len=15.0, tol_deg=10.0):
-    """straight lines inside sheer stipple stops (glow / haze): chains of >= 4 near-collinear stitches >= min_len mm
-    (ENGINE_NOTES 22: Rev B FR M had 13, up to 57 mm) made of short stitches (0.5-2 mm: a stipple bridge; router travel
-    is longer and is measured by dst2.exposed_travel). Returns [(stop, length mm)]."""
-    import math, pyembroidery as pe
-    sheer = {ps["stop"] for ps in per_stop if ps.get("codes") and set(ps["codes"]) <= SHEER}
-    out = []; stop = 1; ch = []
-    def flush():
-        if len(ch) >= 4 and stop in sheer:
-            d = math.dist(ch[0], ch[-1])
-            if d >= min_len: out.append((stop, round(d, 1)))
-    for x, y, c in pe.read(path).stitches:
-        k = c & pe.COMMAND_MASK; P = (x / 10, y / 10)
-        if k != pe.STITCH:
-            flush(); ch = []
-            if k == pe.COLOR_CHANGE: stop += 1
-            continue
-        if len(ch) >= 2:
-            a = math.atan2(ch[-1][1] - ch[-2][1], ch[-1][0] - ch[-2][0]); b = math.atan2(P[1] - ch[-1][1], P[0] - ch[-1][0])
-            if abs((b - a + math.pi) % (2 * math.pi) - math.pi) > math.radians(tol_deg) or not 0.5 <= math.dist(P, ch[-1]) <= 2.0: flush(); ch = [ch[-1]]
-        ch.append(P)
-    flush(); return out
+from kcgates import straight_chains, SHEER        # tested in tests/test_kcos_gates.py
 
 def check(label, r, section=False):
     global files

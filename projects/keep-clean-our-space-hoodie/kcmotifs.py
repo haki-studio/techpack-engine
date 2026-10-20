@@ -161,12 +161,36 @@ RIM_OVL = 0.3         # the core runs this far under the rim
 
 def _core_w(w, rw=RIM_W): return max(0.9, w - 2 * (rw - RIM_OVL))
 
+def gap_fillers(P, sts, min_mm2=2.0):
+    """Rev C (glyph gate): parts of the font glyph that no stroke column covers get their own short column across the
+    piece's long axis (the KR '!' dot had no skeleton at all; an A apex cut at the corner left its outer point bare).
+    One filler per uncovered piece >= min_mm2; width = the piece's narrow side, round caps."""
+    covered = KS.strokes_geom(sts).buffer(0.1) if sts else None
+    left = P.difference(covered) if covered is not None else P
+    out = []
+    for q in polys(left.buffer(-0.05).buffer(0.05)):
+        if q.area < min_mm2: continue
+        r = q.minimum_rotated_rectangle; cs = list(r.exterior.coords)
+        e0 = np.subtract(cs[1], cs[0]); e1 = np.subtract(cs[2], cs[1])
+        L, W, ax = (np.linalg.norm(e0), np.linalg.norm(e1), e0) if np.linalg.norm(e0) >= np.linalg.norm(e1) else (np.linalg.norm(e1), np.linalg.norm(e0), e1)
+        from shapely.ops import polylabel
+        pc = polylabel(q, 0.03); rr = q.exterior.distance(pc)          # widest inscribed disc: the filler stays inside
+        if rr < 0.3: continue                                             # a sliver under the neighbours' pull comp
+        w = max(0.9, 2 * rr)                            # the inscribed width (pull comp is added by the satin builder)
+        u = ax / max(np.linalg.norm(ax), 1e-9)
+        c = np.array(pc.coords[0])
+        # a round piece (a dot) is one disc column across its diameter (round caps shrink inside the ends, as disc_rc);
+        # a long sliver gets a short column centred on its widest point (spills less at the sliver tips)
+        h = L / 2 - 0.1 if L <= 3.2 * rr else max(0.1, (L - w) / 2)
+        out.append(dict(cl=[tuple(c - u * h), tuple(c + u * h)], w=w, caps=("round", "round"), closed=False, filler=True))
+    return out
+
 def text_columns(glyphs, col, code, cap, unit, rim=False, rim_code="PF-RIM", **kw):
     """font glyphs -> stroke columns (core) [+ lighter rim columns round the stroke outline, puff dome look]."""
     core, rims = [], []
     for ch, g in glyphs:
         for P in polys(g):
-            sts = KS.glyph_columns(P, cap)
+            sts = KS.glyph_columns(P, cap); sts = sts + gap_fillers(P, sts)
             if not sts: continue
             for s in sts:
                 w = _core_w(s["w"]) if rim else s["w"]

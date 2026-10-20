@@ -166,7 +166,11 @@ for P, side in (("FR", "R"), ("FL", "L")):
     for g_ in gaps: g_["x_mm"] = round(g_["x_mm"] + bb[0], 1); g_["y_mm"] = round(g_["y_mm"] + bb[1], 1)
     RES["field"][P] = dict(rows=rows, gaps=gaps)
 
-# text glyphs are font-set (A14 "generated, not traced" list): their rows are reported, not blocking
+# Rev C (review of PR #20): JP + EN text is set from fonts (the AI render draws its own letter shapes: longer curls,
+# bolder strokes, letters merged with the spark bars), so a glyph row cannot reach the motif tier. It is NOT exempt: it
+# passes the stated TEXT TIER (IoU >= TEXT_IOU, width and height ratio within TEXT_SIZE) or it FAILS. That the stitched
+# letters ARE the font's letters is gated separately per glyph (glyph_gate.py, IoU 0.80 + no dropped stroke + counters).
+TEXT_IOU, TEXT_SIZE = 0.40, (0.55, 1.45)
 for el, units in (("01", ["01-text"]), ("02", ["02-text"])):
     P = kccore.ELEMENTS[el][2]
     tm = unary_union([r["geom"] for r in D[P] if r.get("unit") in units])
@@ -174,7 +178,9 @@ for el, units in (("01", ["01-text"]), ("02", ["02-text"])):
         for r in d["rows"]:
             if r["state"] == "FAIL" and tm.distance(Point(r["x_mm"], r["y_mm"])) < 6.0 and fam != "yellow" or (
                r["state"] == "FAIL" and fam == "yellow" and el == "02" and r["area_mm2"] > 90 and tm.distance(Point(r["x_mm"], r["y_mm"])) < 6.0):
-                r["state"] = "text (font-set)"
+                if r["iou"] >= TEXT_IOU and all(TEXT_SIZE[0] <= r[k] <= TEXT_SIZE[1] for k in ("w_ratio", "h_ratio")):
+                    r["state"] = "text (font-set)"
+RES["text_tier"] = dict(iou=TEXT_IOU, size=TEXT_SIZE)
 # EN border stars the render partly hides behind the letter N (the AI drew CLEAN over them): kept whole by design
 # EN border stars whose mockup silhouette is cut off by the lettering (the AI drew CLEAN over them): the stitched star
 # (kept whole by design) touches the letters

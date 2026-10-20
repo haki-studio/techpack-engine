@@ -163,7 +163,7 @@ def threads():
         o.append(t(12, yb + 6.6, "SAME CARD CODE for two threads — pick distinct shades (the tint must read lighter than its core): " + "; ".join(dup), 1.75, 700, RED)); yb += 3.4
     o.append(t(12, yb + 10, "TRIMS + CONSUMABLES (per jacket)", 2.2, 700))
     tr = [("Backing", "2.5 oz cutaway, black (washed black shell), 30 larger than each hooping; trim to 5 from stitching after embroidery"),
-          ("3D puff foam", "3 mm embroidery foam, BLACK: FR one sheet over 01 JP + the 03 CN dot ring, FL one over 02 EN, at the pause stop; tear away after the puff stops " + PROP),
+          ("3D puff foam", "3 mm embroidery foam, BLACK, one sheet per puff hooping: laid at the STOP before the first puff stop, torn away after the last stop of that file (per file: S1, F2) " + PROP),
           ("Topping", "none (duck surface is firm; foam acts as topping under the puff satin)"), ("Needles", "75/11 sharp (duck); 80/12 for the puff stops"),
           ("Bobbin", "60wt black polyester pre-wound"),
           ("Frames", f"{FR_S} (factory.json{'' if PROF['frames_confirmed'] else ', PROPOSED'}): fronts {HOOP['FR']} + {HOOP['FL']} hoopings, sleeves {HOOP['SR']} + {HOOP['SL']} (split files, G5/G6)"),
@@ -193,7 +193,7 @@ WC = width_check([r for p in P4 for r in D[p]])
 
 def summary():
     o = hdr("G4 · STITCH SUMMARY + OPEN QUESTIONS", "Size M files. Every count read back from the written DST (stitches, trims, stops, max stitch).", "G4")
-    hd = ["Piece", "Elements", "Art box", "Stitches", "Trims", "Trims/10k", "Stops", "Threads", "Max stitch", "Hoopings", "Run time (1 head)"]
+    hd = ["Piece", "Elements", "Design mm (DST)", "Stitches", "Trims", "Trims/10k", "Stops", "Threads", "Max stitch", "Hoopings", "Run time (1 head)"]
     cx = [12, 44, 82, 104, 122, 136, 152, 164, 178, 194, 210]
     for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.8, 700, MUTED))
     for i, p in enumerate(P4):
@@ -201,7 +201,7 @@ def summary():
         if i % 2 == 0: stripe(o, y - 3, 4.6)
         els = sorted({ps_ for s in r["per_stop"] for ps_ in s.get("elements", [])})
         o.append(t(cx[0], y, f"{p} {kccore.PIECE_NAME[p]}", 1.8, 600)); o.append(t(cx[1], y, " + ".join(els), 1.8))
-        o.append(t(cx[2], y, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.8)); o.append(t(cx[3], y, f"{r['stitches']:,}", 1.8, 600))
+        o.append(t(cx[2], y, f"{r['size_mm'][0]:.0f} × {r['size_mm'][1]:.0f}", 1.8)); o.append(t(cx[3], y, f"{r['stitches']:,}", 1.8, 600))
         o.append(t(cx[4], y, f"{r['trims']:,}", 1.8)); o.append(t(cx[5], y, f"{r['trims']/max(r['stitches'],1)*1e4:.0f}", 1.8))
         o.append(t(cx[6], y, f"{r['stops']}", 1.8)); o.append(t(cx[7], y, f"{r['threads']}", 1.8))
         o.append(t(cx[8], y, f"{r['max_stitch']:.2f} mm", 1.8, 600, GREEN if r["max_stitch"] <= 7.5 else RED))
@@ -233,6 +233,13 @@ def summary():
           ("10. Factory (F1): a frame that holds a whole front in one hooping? DST/PES are production-intent drafts: their digitizer checks density, pull and puff end caps before the sew-out.", False),
           ("Closed: block = zip-hoodie (engine/hoodie.py) with the slash-welt override (19 Oct); frames 300 × 300 + 400 × 450, 12 colours, puff / chenille yes (factory, 19 Oct).", False)]
     for i, (q, pr) in enumerate(qs): o.append(KD.auto(12, qy + 5 + i*3.9, q + (" " + PROP if pr else ""), 1.75, ORANGE if pr else INK))
+    # Q5 at a size where the difference shows (review of PR #20): the stitched form next to the Simplified form, same font
+    zy = qy + 5 + len(qs) * 3.9 + 4
+    o.append(t(12, zy, "Q5, large (Noto Sans SC, the stitched font):", 2.0, 700))
+    o.append(KD.text_path(20, zy + 26, "汚", "cn", 22, INK)); o.append(t(31, zy + 30, "U+6C5A — stitched (as the source frame draws it)", 1.8, 400, INK, "middle"))
+    o.append(KD.text_path(80, zy + 26, "污", "cn", 22, ORANGE)); o.append(t(91, zy + 30, "U+6C61 — Simplified Chinese (alternative)", 1.8, 400, ORANGE, "middle"))
+    o.append(t(120, zy + 12, "Difference (right-hand part): in the stitched form the hook stroke starts at the TOP bar and runs down through the middle bar;", 1.8, 400, INK))
+    o.append(t(120, zy + 16, "in the Simplified form the top bar stands alone and the hook starts under the middle bar. The choice changes only this one glyph.", 1.8, 400, INK))
     return o
 
 # ================================================================ G5 files
@@ -259,7 +266,7 @@ def files_page():
             y += 2.95
     y += 2.5
     o.append(t(12, y, "WHAT IS DIGITIZED", 2.0, 700)); y += 4
-    notes = [("Order", "per file: glow halo (stipple run) → star haze → white stars → flat parts (CN text, KR oval + text) → PAUSE: lay 3 mm foam → puff cores → lighter rims → tear foam → star centre."),
+    notes = [("Order", "per file: glow halo (stipple run) → star haze → white stars → flat parts (CN text, KR oval + text) → STOP: lay 3 mm foam → puff cores → lighter rims (last stops) → after the last stop: tear the foam away (S1, F2)."),
              ("Foam", f"puff stops are their own machine stops after every flat stop; flat work under the puff is cut back to a {kccore.CUT_KEEP_MM:.0f} mm band under the puff edge (house rule 6), checked on every written file (S1)."),
              ("Text", "set from fonts (E01–E04), one satin COLUMN per stroke along its centreline (no skipped rows, no fans); puff 0.30 + 0.85 lighter rim; flat 0.40 + centre run."),
              ("Stars", "concave 4-point sparkles (two tapered columns, haze under ≥ 5 mm) + satin dots Ø 1.45–2.0 — each speckle is an island on bare fabric = one trim (reported)."),
@@ -422,6 +429,8 @@ def star_page():
     sl_txt = "; ".join(f"{'/'.join(v)}: SR {k[0]:,} + SL {k[1]:,} st" for k, v in groups.items() if k[0])
     spn = c["sparkle_spans"]
     lines = [f"Mockup speckles detected: {c['specks_detected']} = fronts {c['FR_field']} + {c['FL_field']} + sleeves (front half) {c['SR_front_mapped']} + {c['SL_front_mapped']} + CN ring {c['cn_sparkles']} (E03)",
+             f"  Front stars stitched: FR {c['FR_field']} + FL {c['FL_field']} = {c['FR_field'] + c['FL_field']} field stars + {c['cn_sparkles']} CN ring sparkles = {c['FR_field'] + c['FL_field'] + c['cn_sparkles']} "
+             "(the '190' in the 19 Oct 13:57 status log was counted before the seam / cuff glints were excluded, commit 5bc5364, 15:48).",
              f"  + not field stars: {c['excluded_in_badge']} inside badge zones, {c['excluded_hood']} on the hood (hood plain {PROP}), {c['excluded_zip']} on the zip, {c['excluded_big_glint']} large glints;",
              "  removed before counting (seam glints checked on x4 crops, not stars): " + ", ".join(f"{v} {k}" for k, v in c.get("glints", {}).items()) + ".",
              f"Fronts: every detected star is placed on every size (dropped = 0, review item 8). A star in a keep-out moves to the nearest free spot (≤ 8 = nudged);",
@@ -454,7 +463,7 @@ def star_page():
 # ================================================================ stop tables (read back)
 def stops_page(pieces, page):
     o = hdr(f"{page} · COLOUR STOP SEQUENCE (size M, read back from the DST) — {' + '.join(pieces)}",
-            "Stitches / trims per stop counted in the written .dst. PAUSE rows = programme a machine stop: lay 3 mm foam / tear the foam. 'Sews' = region codes in the stop.", page)
+            "Stitches / trims per stop counted in the written .dst. STOP rows = programme a machine stop there (lay 3 mm foam); TEAR row = after the last stop. 'Sews' = region codes in the stop.", page)
     colx = [12, 154]
     for ci, p in enumerate(pieces):
         x0 = colx[ci]; r = CUR[p]; ps = r["per_stop"]
@@ -463,8 +472,9 @@ def stops_page(pieces, page):
         for x, hd in zip(hc, ["Stop", "Thread", "Isacord", "Polyneon", "Sews (codes · elements)", "Stitches", "Trims"]): o.append(t(x, 34.5, hd, 1.5, 700, MUTED))
         y = 38.5; rh = 4.0
         for s_ in ps:
-            if r.get("foam_pause_before_stop") == s_["stop"] or r.get("foam_tear_before_stop") == s_["stop"]:
-                lab = "PAUSE — lay 3 mm black foam over " + ("badge 01 + the 03 dot ring" if p == "FR" else "badge 02") if r.get("foam_pause_before_stop") == s_["stop"] else "PAUSE — tear away the foam, then continue"
+            fs = KD.foam_steps(r)
+            if fs and s_["stop"] in (fs["lay"], fs["tear"]):
+                lab = f"STOP — lay 3 mm black foam over {fs['where']}" if s_["stop"] == fs["lay"] else "STOP — tear the foam away, then continue"
                 o.append(f'<rect x="{x0-1}" y="{f(y-2.6)}" width="138" height="3.6" fill="#FFE9D6"/>'); o.append(t(x0 + 7, y, lab, 1.5, 700, ORANGE)); y += rh
             k = s_["col"]; iso, pn = SB.TH[k]["isacord"], SB.TH[k]["polyneon"]
             if s_["stop"] % 2: o.append(f'<rect x="{x0-1}" y="{f(y-2.6)}" width="138" height="{rh}" fill="#F5F2EC"/>')
@@ -472,6 +482,10 @@ def stops_page(pieces, page):
             o.append(t(hc[2], y, f"{iso[0]} {iso[1]}"[:20], 1.3)); o.append(t(hc[3], y, f"{pn[0]} {pn[1]}"[:20], 1.3))
             o.append(t(hc[4], y, (", ".join(s_.get("codes", [])) + " · " + "+".join(s_.get("elements", [])))[:34], 1.3, 400, MUTED))
             o.append(t(hc[5], y, f"{s_['stitches']:,}", 1.5, 600)); o.append(t(hc[6], y, f"{s_['trims']}", 1.5)); y += rh
+        fs = KD.foam_steps(r)
+        if fs and not fs["tear"]:
+            o.append(f'<rect x="{x0-1}" y="{f(y-2.6)}" width="138" height="3.6" fill="#FFE9D6"/>')
+            o.append(t(x0 + 7, y, f"TEAR — after stop {fs['last']} (the last): unhoop, tear the loose foam away", 1.5, 700, ORANGE)); y += rh
         y += 1
         o.append(t(hc[4], y, "FILE TOTAL (sum of stops)", 1.5, 700)); o.append(t(hc[5], y, f"{sum(q['stitches'] for q in ps):,}", 1.5, 700)); o.append(t(hc[6], y, f"{sum(q['trims'] for q in ps)}", 1.5, 700))
         o.append(t(hc[4], y + 3.2, f"= DST {r['stitches']:,} stitches / {r['trims']} trims · {r['threads']} colours · max {r['max_stitch']:.2f} mm", 1.4, 400, MUTED))
@@ -516,7 +530,7 @@ def f1_pages():
     so += [dict(file=os.path.basename(s["file"]) + ".dst", piece=f"{p} split {nm}", stitches=s["stitches"], trims=s["trims"]) for p in ("FR", "FL") for nm, s in CUR[p]["splits"]["sections"].items()]
     th = [dict(name=PAL[k][1], code=f"Isacord {SB.TH[k]['isacord'][0]} / Polyneon {SB.TH[k]['polyneon'][0]}", de=min(SB.TH[k]["isacord"][3], SB.TH[k]["polyneon"][3])) for k in kccore.KC_KEYS]
     pcs = [dict(piece=f"{p} {kccore.PIECE_NAME[p]}", w=CUR[p]["size_mm"][0], h=CUR[p]["size_mm"][1], hoopings=HOOP[p]) for p in P4]
-    svgs = FA.requests_page(kccore.NAME, so, th, pcs, page="F1", prof=PROF)
+    svgs = FA.requests_page(kccore.NAME, so, th, pcs, page="F1", prof=dict(PROF, chenille=False))     # no chenille on this jacket: the chenille section does not apply
     # hoopings on the confirmed frames (the engine page lists them only while frames are unconfirmed)
     one = PROF.get("single_hooping_confirmed_mm", {}).get("front")
     lines = [(f"Files are split for your largest frame {FR_S}: " + ", ".join(f"{p} {HOOP[p]}" for p in P4) + f" hoopings per jacket at M ({sum(HOOP.values())} in all):", INK)]
@@ -530,14 +544,22 @@ def f1_pages():
                   f"{CUR['SR']['size_mm'][0]:.0f} × {CUR['SR']['size_mm'][1]:.0f})? Full single-hooping files are in the package next to the splits.", ORANGE))
     # the engine page is full (sections 1-5): hoopings + puff go on a second page, F2
     o = hdr("F2 · Factory requests (cont.) — hoopings + 3D puff", f"{kccore.NAME} · what we need from the embroidery factory", "F2")
+    # sleeves turned 90 deg: the narrow side against the frame's 450 side (usable 450 - 16), two hoopings along the length
+    rot = [f"{sz} {p} {ALL[sz][p]['full']['size_mm'][0]:.0f}" for sz in kccore.SIZES for p in ("SR", "SL") if ALL[sz][p]["full"]["size_mm"][0] <= FRAME[1] - 16]
+    lines.append(("Sleeves turned 90° on the 400 × 450 frame: the design width fits the 434 mm usable side for " + (", ".join(rot) if rot else "no size") + " mm —", ORANGE))
+    lines.append(("2 hoopings instead of 4 if your frame margin allows (the files are split 2 × 2 with our 8 mm margin + registration crosses). Tell us your usable sewing field.", ORANGE))
     y0 = 36; o.append(t(12, y0, "6  Hoopings on your frames", 3.2, 700))
     for i, (l, c) in enumerate(lines): o.append(t(16, y0 + 6 + i*4.2, l, 2.3, 400, c))
     y1 = y0 + 8 + len(lines)*4.2 + 4
-    o += [t(12, y1, "7  3D puff (you confirmed puff, 19 Oct)", 3.2, 700),
-          t(16, y1 + 6, "Programme a machine STOP before the first puff stop (lay 3 mm black foam) and before the white star centre on FR (tear the foam): stop numbers on S1.", 2.3, 400, INK),
-          t(16, y1 + 10.2, f"Puff stops are separate machine stops; no flat stitch lies inside the foam beyond a {kccore.CUT_KEEP_MM:.0f} mm band under the puff edge (checked on every file, S1).", 2.3, 400, INK),
-          t(16, y1 + 14.4, "Which foam do you stock (3 mm, black)? Puff columns are capped at 7 mm (no split stitch inside the foam): can your Brother heads sew longer satins over foam?", 2.3, 400, ORANGE),
-          t(16, y1 + 18.6, "Price the puff hoopings separately (foam + two machine stops).", 2.3, 400, ORANGE)]
+    o.append(t(12, y1, "7  3D puff — the foam procedure, per file (read from each file's own stop list; you confirmed puff, 19 Oct)", 3.2, 700))
+    yy = y1 + 6
+    for p in ("FR", "FL"):
+        for nm, r in [("full file", CUR[p])] + [(f"split {k}", s) for k, s in CUR[p]["splits"]["sections"].items()]:
+            fs = KD.foam_steps(r)
+            o.append(t(16, yy, f"{os.path.basename(r['file'])}.dst ({p} {nm}): " + (fs["line"] if fs else "no puff in this hooping — no foam."), 2.1, 400, INK)); yy += 3.8
+    o += [t(16, yy + 1, f"Other sizes: the same steps; the stop numbers per file are printed in the README. Puff stops never share a stop with flat work; no flat stitch lies inside the foam beyond a {kccore.CUT_KEEP_MM:.0f} mm band under the puff edge (S1).", 2.1, 400, INK),
+          t(16, yy + 5.2, "Which foam do you stock (3 mm, black)? Puff columns are capped at 7 mm (no split stitch inside the foam): can your Brother heads sew longer satins over foam?", 2.3, 400, ORANGE),
+          t(16, yy + 9.4, "Price the puff hoopings separately (foam + one machine stop each).", 2.3, 400, ORANGE)]
     return svgs + [doc(o)]
 
 def build():

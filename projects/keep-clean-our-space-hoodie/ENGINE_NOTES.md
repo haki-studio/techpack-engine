@@ -185,7 +185,7 @@ Chinese phrase, upside-down mirrored Hangul)." Check: the spec page prints the s
   (29.7 mm once the foam mask stopped travel hiding under the puff letters). `dst2.exposed_travel` did not see (a)
   (it is a block, not travel) nor (b) (runs are not cover, but the line was "hidden" under later puff satin in Rev B).
 - **Fix (project):** hops > 3 mm start a new run (`max_hop`); sheer run objects never hide travel (kccore `_kc_init`).
-  Cost: FR M trims 352 -> ~500 (reported, fidelity first).
+  Cost: FR M trims 301 (Rev B file) -> ~500 (reported, fidelity first).
 - **Proposed engine check:** a "straight chain" gate on the DST: no run of >= 4 near-collinear stitches longer than
   15 mm in a stop whose codes are all sheer / stipple (scratch check found 13 chains on Rev B FR M, 0 after the fix).
 
