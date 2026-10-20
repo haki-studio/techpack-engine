@@ -13,6 +13,8 @@ date: 20 Oct 2026
 # printed first on the F1 page (most important open questions for the factory)
 factory_questions:
   - "Please send the full graded measurement chart for the new tee shape (as produced for the black From the Shadows tee), XS-2XL, with tolerances."
+  - "Sleeve length E and armhole F on the new shape: E (size M {pom:E:M:in} in = {pom:E:M:cm} cm) was not in the recorded changes, although the shoulder moved out by about 1 in per side. Should E be shorter? Also armhole straight F (M {pom:F:M:cm} cm) against the bicep circumference (M 2 x {pom:G:M:cm} = {pom:G:M:cm:x2} cm): please confirm both on the Shadows sample."
+  - "The shoulder seam is VISIBLE on this tee (chosen 2026-03-13). How do you finish it (e.g. 4-thread overlock + coverstitch topstitch, or flatlock)? Please send a close-up photo from the Shadows sample."
   - "Please confirm the print method for each design (screen / DTG / DTF / puff) and the ink type (we ask for water-based, no plastisol)."
 
 # ---------------------------------------------------------------------------------------------------- POM CHART
@@ -73,6 +75,8 @@ block:
   shoulder_slope_cm: {proposed: 3.5, note: "HPS to shoulder point drop; not on the chart"}
   body_hem_cm: {proposed: 2.5}
   sleeve_hem_cm: {proposed: 2.5}
+  drop_shoulder: true          # the sleeve top continues the shoulder line on the flat (no set-in kink)
+  sleeve_angle_change_deg: {proposed: 12, note: "sketch only: angle between the shoulder line and the sleeve top on the flat"}
   fit: {value: "oversized boxy, drop shoulder (the 'From the Shadows' new tee shape, March 2026)", source: "8dba68f5 / 6c9cb56c, 2026-01-22"}
 
 # ---------------------------------------------------------------------------------------------------- BLANK
@@ -81,7 +85,8 @@ blank:
   weight: {value: "250 gsm", source: "same quotes (heavier asked Jan 2026, never confirmed)"}
   knit: {proposed: "single jersey, combed ring-spun", note: "knit / yarn count not recorded ('jersey')"}
   wash: {value: "garment washed to pre-shrink (every tee)", source: "chat fbfa7179, 2026-03-26"}
-  shrinkage: {proposed: "residual ≤ 5 % length and width after 3 x 40 °C wash"}
+  shrinkage: {proposed: "residual ≤ 3 % length, ≤ 3 % width after 3 x 40 °C home wash (the tee is already garment washed)"}
+  measured_after_wash: {proposed: "every chart measurement is taken on the finished, garment-washed tee"}
   rib: {proposed: "1x1 cotton rib (with ~5 % elastane), dyed to body colour"}
   care: {value: "hang dry advised", source: "Mandy chat"}
 
@@ -92,7 +97,8 @@ construction:
   - {area: Shoulder, spec: "visible sewing line on the shoulder, matching the neck stitching", source: "chosen 2026-03-13 (6e30e2ea, 5d7a6b86)"}
   - {area: Shoulder tape, spec: {proposed: "self-fabric tape at shoulder seams + back neck (stops the neck stretching)"}}
   - {area: Side seams, spec: {proposed: "side-seamed (not tubular), 4-thread overlock"}}
-  - {area: Sleeve, spec: {proposed: "set-in flat, 4-thread overlock; sleeve hem twin-needle coverstitch 2.5 cm"}}
+  - {area: Sleeve, spec: {proposed: "sleeve attached at the dropped shoulder seam (visible seam), sewn flat before the side seams; 4-thread overlock + coverstitch topstitch toward the body; sleeve hem twin-needle coverstitch 2.5 cm"}}
+  - {area: Sewing order, spec: {proposed: "shoulders (taped) → neck rib → sleeves flat → side + underarm seam in one → sleeve hems → body hem with main label"}}
   - {area: Body hem, spec: {proposed: "twin-needle coverstitch, 2.5 cm"}}
   - {area: Stitch density, spec: {proposed: "12 stitches per inch (SPI) on all seams"}}
   - {area: Thread, spec: {proposed: "polyester core-spun Tex 27, dyed to match body colour"}}
@@ -104,9 +110,9 @@ labels:
     text: "hakistop  AS ALWAYS, MADE WITH LOVE  + size"
     size_cm: [3.75, 3]
     material: {proposed: "woven damask, black ground, white text"}
-    position: "hem label — sewn into the body hem, size shown on the label"
+    position: "hem label (folded into the body hem seam); size on the label"
     # placement: view front/back; side wearer_left/wearer_right; at hem / side_seam / cb_neck; distances in cm
-    placement: {proposed: {view: front, side: wearer_left, at: hem, from_side_cm: 3}}
+    placement: {proposed: {view: front, side: wearer_left, at: hem, from_side_cm: 3, inside: false}}
     source: "2025-10-17; 2026-01-26; From the Shadows tech-pack slide: 'Hem label'; 614babf4"
   care:
     item: Care label

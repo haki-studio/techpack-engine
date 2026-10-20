@@ -162,6 +162,7 @@ def reference(cfg, view, bounds, ppm=12.0):
     cw = np.zeros(XX.shape, np.float32); sppm = np.full(XX.shape, mock_ppm, np.float32)
     for cu in cfg["closeups"]:
         if cu.get("view") != view: continue
+        if cu.get("mode") == "inform": continue                     # --- mockup-governs --- informing close-ups: extract/inform.py, below
         x0, y0, x1, y1 = cu["region"]
         if px.max() < x0 or px.min() > x1 or py.max() < y0 or py.min() > y1: continue
         q, m = _cu_fields(cu, cfg, up)
@@ -175,6 +176,9 @@ def reference(cfg, view, bounds, ppm=12.0):
         dxs, dys = np.gradient(sx), np.gradient(sy)                 # close-up px per output px (rows, cols)
         cu_ppm = np.sqrt(np.abs(dxs[1] * dys[0] - dxs[0] * dys[1])) * ppm
         sppm = sppm * (1 - w) + cu_ppm * w; cw = np.maximum(cw, w)
+    if any(cu.get("mode") == "inform" and cu.get("view") == view for cu in cfg["closeups"]):   # --- mockup-governs --- the mockup governs
+        from digitize.extract import inform
+        rgb, cw, sppm, weights = inform.composite(cfg, view, XX, YY, px, py, rgb, cw, sppm, weights, mock_ppm)
     rgb = rgb.clip(0, 255)
     return dict(rgb=rgb, grey=rgb @ np.array([0.299, 0.587, 0.114]), weights=weights, closeup_weight=cw, source_ppm=sppm,
                 source_ppm_median=round(float(np.median(sppm)), 2), bounds=tuple(bounds), ppm=ppm, view=view)

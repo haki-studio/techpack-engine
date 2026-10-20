@@ -41,6 +41,9 @@ SEAM_MM["crown_clump_lit"] = 0.3                # --- M4c --- lit pieces are kno
                                                 # (PR #14 review: grown lit pieces' 1 mm underlap, density flags 167 -> 181)
 
 
+TONE_SEAM_MM = 0.3                              # --- mockup-governs --- = SEAM_MM["floret"]: tone pieces of one motif (meta tone_group)
+
+
 def underlap(parts, keep=1.0):
     """each part grows `keep` mm into any HIGHER part it borders (traced partitions have no overlap; a seam needs one)"""
     if not parts: return parts
@@ -50,6 +53,15 @@ def underlap(parts, keep=1.0):
         if p.kind in NO_UNDERLAP: continue                  # M3b: beads sew their knots
         k = SEAM_MM.get(p.kind, keep)                       # M3b: florets only overlap their knocked-out canopy by a seam
         hi = _higher(parts, i, tree, pad=k)
+        tg = p.meta.get("tone_group")                       # --- mockup-governs --- abutting TONE pieces of one motif (a petal's shades,
+        if hi and tg is not None:                           # a motif's bands) overlap by TONE_SEAM_MM, not the 1 mm underlap:
+            same = [j for j in hi if parts[j].meta.get("tone_group") == tg]          # the underlap ring was a second layer at
+            other = [j for j in hi if parts[j].meta.get("tone_group") != tg]         # every tone seam (Koi trial: 31 density flags)
+            bands = [clean(p.geom.buffer(TONE_SEAM_MM).intersection(unary_union([parts[j].geom for j in same])))] if same else []
+            bands += [clean(p.geom.buffer(k).intersection(unary_union([parts[j].geom for j in other])))] if other else []
+            band = unary_union([b for b in bands if not b.is_empty]) if bands else None
+            if band is not None and not band.is_empty: grow[i] = clean(p.geom.union(band))
+            continue
         if hi:
             band = clean(p.geom.buffer(k).intersection(unary_union([parts[j].geom for j in hi])))
             if not band.is_empty: grow[i] = clean(p.geom.union(band))

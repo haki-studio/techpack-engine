@@ -39,7 +39,7 @@ git clean. Full suite 218 passed. Identity: dst2 probe 84ff50ea74938675 / 1ecd8f
    independent pct_ok that direction_ok reads (99/194 -> 99/184 with 10 exempt). Now the source buckets are untouched
    (gain only a `radial_exempt` count) and "radial" is a view. Red test: `test_exemption_cannot_raise_the_direction_ok_inputs`
    (3 mutations red: counted OK, denominator shrink, pct_ok-only shrink through bench.verdict).
-2. LESSONS numbered A30 / B38 (main still ended A29 / B37 at f8acc64) + B39 for the block-join satin blob.
+2. LESSONS numbered A31 / B38 / B39 (after the merge of PR #13/#18/#19: main took A30, still ends B37). B39 = the block-join satin blob.
 3. SEAM_MM["crown_clump_lit"] = 0.3 (sequence.py, appended). r2 -> r3: density flags 181 -> 174, p95 9.84 -> 9.65,
    area > 7: 62.0 -> 56.8 cm2; no bare cluster at any lit seam (0 of 83 clusters >= 0.1 mm2 within 0.5 mm of a lit
    outline). Cost: trims 144 -> 152, unseen florets 7 -> 10, chaos 146 -> 149 tiles.

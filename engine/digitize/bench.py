@@ -57,8 +57,8 @@ def run_gates(cfg_b, project, dst, origin, regions_pkl=None, coherence=None):
     attributes stitches to its plan's part ids); else read from regions_pkl when given."""
     t0 = time.time(); crop = tuple(cfg_b["crop"]); view = cfg_b["view"]; ppm = float(cfg_b["ppm"])
     reg = register.load(os.path.join(project, cfg_b["registration"]))
-    min_w = register.crop_inside(reg, view, crop, cfg_b["closeup"])
-    if min_w <= cfg_b.get("min_weight", 0.6):
+    min_w = register.crop_inside(reg, view, crop, cfg_b["closeup"]) if cfg_b.get("closeup") else None   # --- mockup-governs --- closeup null:
+    if min_w is not None and min_w <= cfg_b.get("min_weight", 0.6):                                  # a mockup-only reference
         raise SystemExit(f"crop {crop} is not inside close-up {cfg_b['closeup']} (min feather weight {min_w:.2f}); "
                          f"register.fit_crop suggests {register.fit_crop(reg, view, crop, cfg_b['closeup'])}")
     ref = register.reference(reg, view, crop, ppm=ppm)
@@ -69,11 +69,11 @@ def run_gates(cfg_b, project, dst, origin, regions_pkl=None, coherence=None):
     order = [s for s in allsegs if near(s)]                          # sew order kept
     local = [(a - x0, b - y0, c - x0, d - y0) for a, b, c, d in order]
     clipped = qa.clip_segments(order, crop)
-    out = dict(crop=list(crop), crop_min_closeup_weight=round(min_w, 3), source_ppm_median=ref.get("source_ppm_median"),
+    out = dict(crop=list(crop), crop_min_closeup_weight=round(min_w, 3) if min_w is not None else None, source_ppm_median=ref.get("source_ppm_median"),
                stitches_in_crop=len(clipped))
 
     # direction: the visible top layer (gate) and every stitch (info, the old behaviour)
-    wmask = ref.get("closeup_weight"); mw = cfg_b.get("min_weight", 0.6)
+    wmask = ref.get("closeup_weight") if cfg_b.get("closeup") else None; mw = cfg_b.get("min_weight", 0.6)   # no close-up: no feather mask
     dm = qa.direction_match(ref["grey"], ppm, local, weight=wmask, min_weight=mw)
     dm_all = qa.direction_match(ref["grey"], ppm, local, visible=False, weight=wmask, min_weight=mw)
     out["direction"] = dict(tiles=dm["tiles"], pct_ok=dm["pct_ok"], pct_chaos=dm["pct_chaos"], n_dev=len(dm["fail_dev"]), masked=dm["masked"],
@@ -143,8 +143,8 @@ def verdict(row, T):
         "satin_shape": row["satin"]["blob"] <= T["satin_blobs_max"] and row["satin"]["too_wide"] == 0 and row["satin"]["too_narrow"] == 0
                        and row["satin"].get("cord_flags", 0) == 0,            # split-satin cords read from the DST (M2)
         "stack": s["max"] <= T["stack_max_layers"],
-        "colours": row["colours"]["threads_in_file"] <= T["colours_max"] and row["colours"]["red"] and row["colours"]["gold"],
-    }
+        "colours": row["colours"]["threads_in_file"] <= T["colours_max"] and all(row["colours"][a] for a in T.get("accents", ("red", "gold"))),
+    }                                         # targets.accents: the accents THIS design has (default red + gold, the Castle bench)
     if "separation" in row:                   # rule 3 (M2): touching same-thread parts closer than 15 deg, stubs included
         checks["separation"] = row["separation"]["close"] <= T.get("separation_close_max", 0)
     # --- M4c --- chaos after the radial-floret exemption (digitize.gates_radial), same threshold, same tile count

@@ -48,16 +48,24 @@ class TeeFlat:
         dx = self.chest2 - self.sh2
         self.ua = (self.chest2, self.slope + math.sqrt(max(self.arm ** 2 - dx ** 2, 1.0)))
         self.hem = (self.bottom2, self.L)
-        # sleeve angle: perpendicular distance from the underarm to the sleeve top line = bicep (half, flat)
-        ux, uy = self.ua[0] - self.sp[0], self.ua[1] - self.sp[1]
-        lo, hi = 0.0, math.radians(80)
-        d = lambda th: math.cos(th) * uy - math.sin(th) * ux
-        if d(lo) < self.bicep_flat: self.theta = 0.0
-        else:
-            for _ in range(60):
-                mid = (lo + hi) / 2
-                lo, hi = (mid, hi) if d(mid) > self.bicep_flat else (lo, mid)
-            self.theta = (lo + hi) / 2
+        # DROP SHOULDER (family block: oversized boxy, the Shadows tee): the shoulder seam sits at the shoulder point at
+        # the body edge and the sleeve top CONTINUES the shoulder line with only a small angle change (block constant),
+        # so the flat has no set-in kink. The sketch is indicative: the chart governs every measurement.
+        self.drop_shoulder = bool(val(blk.get("drop_shoulder"), True))
+        self.shoulder_angle = math.atan2(self.slope, self.sh2 - self.neck2)
+        self.sleeve_change = math.radians(float(val(blk.get("sleeve_angle_change_deg"), 12)))
+        if self.drop_shoulder:
+            self.theta = self.shoulder_angle + self.sleeve_change
+        else:   # set-in sleeve: perpendicular distance from the underarm to the sleeve top line = bicep (half, flat)
+            ux, uy = self.ua[0] - self.sp[0], self.ua[1] - self.sp[1]
+            lo, hi = 0.0, math.radians(80)
+            d = lambda th: math.cos(th) * uy - math.sin(th) * ux
+            if d(lo) < self.bicep_flat: self.theta = 0.0
+            else:
+                for _ in range(60):
+                    mid = (lo + hi) / 2
+                    lo, hi = (mid, hi) if d(mid) > self.bicep_flat else (lo, mid)
+                self.theta = (lo + hi) / 2
         u = np.array([math.cos(self.theta), math.sin(self.theta)]); n = np.array([-u[1], u[0]])   # n points down/in
         self.u, self.n = u, n
         self.cuff_out = tuple(np.array(self.sp) + self.slv * u)
@@ -73,7 +81,8 @@ class TeeFlat:
         return quad((0, drop), (self.neck2 * (0.96 if not back else 1.0), drop), self.hps, 20)
 
     def armhole_curve(self):
-        mid = (np.array(self.sp) + np.array(self.ua)) / 2 + np.array([-8.0, 0])
+        bow = 0.0 if self.drop_shoulder else -8.0      # a dropped sleeve seam is straight on the flat
+        mid = (np.array(self.sp) + np.array(self.ua)) / 2 + np.array([bow, 0])
         return quad(self.sp, mid, self.ua, 18)
 
     def body_half(self, back=False):
