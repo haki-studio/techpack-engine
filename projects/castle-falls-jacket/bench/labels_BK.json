@@ -30,7 +30,7 @@
         "direction": {"intent": "outline"},
         "hint": {"polygons": [[[-180, 365], [20, 365], [20, 565], [-180, 565]]], "except": ["sky.haze"]},
         "tones": ["cf_grndk", "cf_grn", "cf_grnlt"],
-        "params": {"claim_close_mm": 1.5, "layers": "lit", "lobe_sep_mm": 6, "min_lobe_mm2": 20, "min_layer_mm2": 6, "min_mass_mm2": 20},
+        "params": {"claim_close_mm": 1.5, "layers": "lit", "lobe_sep_mm": 6, "min_lobe_mm2": 30, "min_layer_mm2": 20, "min_mass_mm2": 20},
         "alternatives": ["band"]}
      ]},
     {"id": "fall_left", "what": "the big left waterfall and its lower cascade", "confidence": 0.9,
@@ -89,7 +89,7 @@
        {"id": "finials", "primitive": "dot", "z": 5.6, "confidence": 0.6,
         "hint": {"polygons": [[[-170, 522], [-98, 522], [-98, 565], [-170, 565]]]},
         "tones": ["cf_gold"],
-        "params": {"max_mm2": 10, "min_d": 1.0, "max_d": 2.5}}
+        "params": {"max_mm2": 10, "min_d": 1.0, "max_d": 1.5}}
      ]},
     {"id": "pagoda", "what": "the pagoda in the middle: blue curved roof, gold ornaments, small windows", "confidence": 0.7,
      "parts": [
@@ -110,7 +110,7 @@
        {"id": "studs", "primitive": "dot", "z": 5.6, "confidence": 0.6,
         "hint": {"polygons": [[[-114, 476], [-56, 476], [-56, 522], [-114, 522]]]},
         "tones": ["cf_gold"],
-        "params": {"max_mm2": 10, "min_d": 1.0, "max_d": 2.5}}
+        "params": {"max_mm2": 10, "min_d": 1.0, "max_d": 1.5}}
      ]},
     {"id": "castle", "what": "the castle centre-right: stacked blue roof tiers, red walls with window rows, gold ornaments", "confidence": 0.75,
      "parts": [
@@ -131,7 +131,7 @@
        {"id": "studs", "primitive": "dot", "z": 5.6, "confidence": 0.6,
         "hint": {"polygons": [[[-68, 484], [20, 484], [20, 565], [-80, 565], [-80, 524], [-68, 524]]]},
         "tones": ["cf_gold"],
-        "params": {"max_mm2": 10, "min_d": 1.0, "max_d": 2.5}}
+        "params": {"max_mm2": 10, "min_d": 1.0, "max_d": 1.5}}
      ]},
     {"id": "trees", "what": "cherry trunks and branches carrying the blossoms", "confidence": 0.7,
      "parts": [

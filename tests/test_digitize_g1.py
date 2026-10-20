@@ -31,7 +31,11 @@ def _travel_over(pat_stats, pat, origin, footprint, planned, ex=0.4):
         if cmd == pe.STITCH:
             q = (x / 10.0 + ox, y / 10.0 + oy)
             if prev is not None and math.dist(prev, q) > 0.3 and key(prev, q) not in plan:
-                L = LineString([prev, q]).intersection(footprint).length
+                ln = LineString([prev, q])
+                if ln.length > 1.0:                              # the hop starts on the row it leaves: 0.5 mm each end forgiven
+                    from shapely.ops import substring
+                    ln = substring(ln, 0.5, ln.length - 0.5)
+                L = ln.intersection(footprint).length
                 if L > ex: bad.append((prev, q, round(L, 2)))
             prev = q
         else: prev = None
@@ -58,6 +62,22 @@ def test_block_join_never_sews_over_the_parts_own_rows():
     pat, st = dst2.make_pattern([r], stops, (6.0, 2.0), builder=CP.prebuilt, keep_order=True)
     foot = LineString(b1).buffer(0.2)
     assert _travel_over(st, pat, (6.0, 2.0), foot, r["blocks"]) == []
+
+
+def test_block_join_routes_round_the_sewn_rows_through_the_unsewn_part():
+    """the guard first looks for a hidden path through what is still UNSEWN of the part (here a corridor above the first
+    block, sewn later by a third block): no trim, and still nothing sewn over the first block's rows (PR review: a trim
+    per guarded hop cost the crop 156 -> 1,445 trims)"""
+    import dst2
+    from digitize import compile as CP
+    g = box(0, 0, 12, 7)
+    b1 = _rows(0.5, 5.5, 0.2, 3.8)                         # ends at (0.5, 3.8)
+    b2p = _rows(6.5, 11.5, 0.2, 3.8)                       # starts at (6.5, 0.2)
+    b3 = _rows(0.5, 11.5, 4.6, 6.6)                        # the corridor y 4.2..6.8, sewn last
+    r = dict(col="#336699", geom=g, st="tatami", ang=0.0, grp="t", part="P1", blocks=[b1, b2p, b3], block_roles=["top"] * 3)
+    pat, st = dst2.make_pattern([r], [dict(col=r["col"], regions=[r])], (6.0, 3.5), builder=CP.prebuilt, keep_order=True)
+    assert _travel_over(st, pat, (6.0, 3.5), LineString(b1).buffer(0.2), r["blocks"]) == []
+    assert st.get("join_routes", 0) >= 1 and st["trims"] == 0
 
 
 def test_block_join_guard_keeps_a_hop_over_unsewn_rows():

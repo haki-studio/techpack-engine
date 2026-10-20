@@ -577,6 +577,22 @@ def _over_rows(a, b, blocks, half=0.25, ends=0.5, ex=0.5):
     return False
 
 
+def _join_route(cov, a, b, si, o, own_top):
+    """B39 (G1): a hidden path a -> b for a hop between two blocks of one part: through what is still UNSEWN of the part
+    (its outline minus its sewn top rows, 0.6 mm each side: the raster router hugs edges) or under later stops; never over the part's own sewn rows.
+    Resampled at TRAVEL_L; None when there is no such path (the caller trims)."""
+    g = o["r"]["geom"].difference(unary_union([LineString(bl).buffer(0.6, 4) for bl in own_top if len(bl) > 1]))   # clear of the rows
+    m = cov.blank()
+    if not g.is_empty: m |= cov._draw(g, 0.0)
+    rp = cov.route(a, b, si, m, None, pad=max(6.0, 0.5 * math.hypot(b[0] - a[0], b[1] - a[1])))
+    if not rp: return None
+    pts = path_resample(rp, TRAVEL_L)
+    seq = [tuple(a)] + [tuple(q) for q in pts]
+    for p_, q_ in zip(seq, seq[1:]):
+        if math.dist(p_, q_) > 1.0 and _over_rows(p_, q_, own_top, ends=0.3): return None
+    return pts
+
+
 def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=False, threads=None, exact_travel=None):
     """Regions -> pyembroidery pattern, with hidden travel and trims (see the module doc).
     Hooks for engine/digitize/compile.py (ENGINE_PLAN M1); the defaults reproduce the old behaviour exactly:
@@ -687,8 +703,10 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
                     if d < 0.3: route = []
                     elif d <= 1.0: route = [(x0, y0)]
                     elif over_rows:                    # B39 (G1): a hop between two blocks of ONE part that would lie on the
-                        d = max(d, TRIM_MIN); stats["join_trims"] = stats.get("join_trims", 0) + 1   # rows it already sewed
-                                                       # (a zig-zag that reads as satin): a trim, never a sewn hop over them
+                        route = _join_route(cov, cur, (x0, y0), si, o, own_top)   # rows it already sewed (a zig-zag that
+                        if route is None:                                         # reads as satin): routed through the part's
+                            d = max(d, TRIM_MIN); stats["join_trims"] = stats.get("join_trims", 0) + 1   # UNSEWN area / later
+                        else: stats["join_routes"] = stats.get("join_routes", 0) + 1                    # stops, else a trim
                     elif LineString([cur, (x0, y0)]).within(o["own"]) or cov.hidden(cur, (x0, y0), si, sewn_same):
                         route = path_resample([cur, (x0, y0)], TRAVEL_L)
                     else:
