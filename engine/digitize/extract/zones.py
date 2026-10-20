@@ -4,6 +4,9 @@ splitter is not built yet); the evidence says which pixels in the window look li
 window AND those tones, so geometry always comes from input pixels (LESSONS A14), never from the hand-drawn window.
 
 Claims are exclusive: zones claim pixels from the highest z down; the zone marked "rest" takes what is left over.
+Options (M2): "except": [zone ids] removes those zones' windows from this one (a low zone with a whole-crop window must
+not claim the sky's pixels first); "close_mm": a morphological closing of the zone's tone mask inside its window, so
+specks of other tones enclosed by the zone (navy shadows between leaves) are claimed with it.
 
   zs = zones.load("projects/castle-falls-jacket/bench/zones_BK.json")
   parts, log = zones.claim_and_split(zs, ev, z_of, split)   # split(zone, z, mask) -> (parts, used mask)
@@ -19,6 +22,11 @@ def load(path):
     for z in d["zones"]:
         z["geoms"] = [Polygon(w) for w in z.get("windows", [])]
         if not z.get("rest") and not z["geoms"]: raise ValueError(f"zone {z['id']}: no windows and not the rest zone")
+    ids = {z["id"]: z for z in d["zones"]}
+    for z in d["zones"]:                        # "except": [zone ids] -> this zone's windows minus theirs (e.g. cliffs vs sky)
+        for o in z.get("except", []):
+            if o not in ids: raise ValueError(f"zone {z['id']}: except names unknown zone {o!r}")
+            cut = unary_union(ids[o]["geoms"]); z["geoms"] = [g.difference(cut) for g in z["geoms"] if not g.difference(cut).is_empty]
     if sum(1 for z in d["zones"] if z.get("rest")) > 1: raise ValueError("more than one rest zone")
     return d
 
@@ -39,6 +47,11 @@ def claim_and_split(zs, ev, z_of, split):
         if z.get("tones", "all") != "all":
             idx = [ev.keys.index(k) for k in z["tones"] if k in ev.keys]
             m &= np.isin(ev.tone, idx)
+        if z.get("close_mm"):                   # small specks of other tones inside the zone's own tones belong to it
+            from scipy import ndimage as ndi
+            r = max(1, int(round(z["close_mm"] * ev.ppm / 2))); yy, xx = np.ogrid[-r:r + 1, -r:r + 1]
+            win = np.ones_like(taken) if z.get("rest") else ev.mask(window(z))
+            m = (m | (ndi.binary_closing(m, xx * xx + yy * yy <= r * r) & win))
         m &= ~taken
         ps, used = split(z, z_of(z), m)
         used = used & ~taken; taken |= used; parts += ps

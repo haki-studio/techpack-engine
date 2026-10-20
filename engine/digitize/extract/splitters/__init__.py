@@ -2,6 +2,9 @@
 
   sky.split   luminance bands at 0 deg + two-colour blends between them; sewn first, cut under (playbook: sky)
   fall.split  traced silhouette -> 4-10 cords along the medial axis, alternating tones, split satin at 90 deg
+  stratum.split  (M2) cliffs: one part per bedding band x thread, guided fill along the reference grain, bands
+              alternating +-10 deg, cracks as run on top
+  cloud.split    (M2) clouds: one part per lobe (contour fill), shade as an open layer, wisps at the sky angle
   stub.split  zone_stub: one part per connected tone component >= 20 mm2 of the zone (smaller ones absorbed into the
               neighbour they share most border with), tatami at the FIELD-MEAN angle of the reference grain over the
               part. No blobs, no random angles. pools use the same partition at the rulebook's fixed 0 deg.
@@ -22,6 +25,16 @@ class Ctx:
         lut = np.array([ti[tone_thread[k]] if tone_thread.get(k) else -1 for k in keys], int)
         self.thread_lab = lut[ev.tone]                     # (H, W) index into self.threads
         self.n = 0
+        self._field = None
+
+    def field(self):
+        """the reference grain as a direction field on the evidence grid (digitize.direction.Field), built once"""
+        if self._field is None:
+            from digitize import direction as DR
+            dc = self.cfg.get("direction", {}) or {}
+            self._field = DR.Field.from_evidence(self.ev, sigma_mm=dc.get("sigma_mm", 4.0), fill_sigma_mm=dc.get("fill_sigma_mm", 10.0),
+                                                 min_coh=dc.get("min_coh", 0.25))
+        return self._field
 
     def new_id(self, prefix):
         self.n += 1; return f"{prefix}.{self.n:03d}"

@@ -24,7 +24,8 @@ from digitize import config, threads as TH, sequence as SQ, compile as CP, revie
 from digitize.schema import ObjectPlan, Layer, DIR_SOURCES
 from digitize.rulebook import Rulebook
 from digitize.extract import register, evidence, zones as ZN
-from digitize.extract.splitters import Ctx, sky, fall, stub
+from digitize.extract.splitters import Ctx, sky, fall, stub, stratum, cloud
+from digitize import direction as DR
 
 STAGES = ["extract", "review", "plan", "compile", "gates", "panel", "bench"]
 SPLIT_KIND = {"sky": "sky_band", "fall": "fall_cord", "pool": "pool"}
@@ -68,16 +69,26 @@ class Run:
             if k == "fall": return fall.split(ctx, z, zz, m)
             if k == "pool": return stub.split_pool(ctx, z, zz, m)
             if k == "stub": return stub.split(ctx, z, zz, m)
+            if k == "stratum": return stratum.split(ctx, z, zz, m)
+            if k == "cloud": return cloud.split(ctx, z, zz, m)
             raise ValueError(f"zone {z['id']}: unknown splitter {k!r}")
         parts, log = ZN.claim_and_split(zs, ev, z_of, split)
+        n_traced = len(parts); sk = cfg.get("specks", {}) or {}
+        parts, merged = SQ.merge_specks(parts, sk.get("min_mm2", cfg["stub"]["min_part_mm2"]), protected=T["protected"],
+                                        min_protected_mm2=cfg["stub"]["min_protected_mm2"])
+        sep = self.rb.principles["neighbour_sep_deg"]
+        moves = DR.separate(parts, sep=tuple(sep), kinds=set(self.cfg.get("separate_kinds", ["stratum_band", "cloud_shade", "cloud_wisp"])))
         layers = sorted({(p.kind if p.kind != "zone_stub" else p.zone, p.z) for p in parts}, key=lambda t: t[1])
         plan = ObjectPlan(name=self.name, parts=parts, layers=[Layer(n, z) for n, z in layers],
                           threads=tp["threads"], meta=dict(crop=list(self.crop), view=self.view, extract_log=log, thread_merges=tp["merges"],
                                                            tone_map=tp["map"], evidence_tone_mm2={k: round(float(v), 1) for k, v in zip(ev.keys, w)},
-                                                           source_ppm_median=self.ref()["source_ppm_median"]))
+                                                           source_ppm_median=self.ref()["source_ppm_median"],
+                                                           separation_moves=[list(m) for m in moves], traced_parts=n_traced,
+                                                           specks_merged=[list(m) for m in merged]))
         plan.to_json(self.f("parts.json"), with_blocks=False)
         self.plan = plan
-        print(f"extract: {len(parts)} parts from {len(zs['zones'])} zones, {len(tp['threads'])} threads ({time.time() - t0:.1f} s)")
+        print(f"extract: {len(parts)} parts from {len(zs['zones'])} zones ({n_traced} traced, {len(merged)} specks merged, "
+              f"{len(moves)} turned for neighbour separation), {len(tp['threads'])} threads ({time.time() - t0:.1f} s)")
         for l in log: print("   ", l)
         return plan
 
@@ -86,6 +97,10 @@ class Run:
         t0 = time.time(); plan = ObjectPlan.from_json(self.f("parts.json")); P = self.rb.principles; issues = []
         for p in plan.parts:
             p.technique = self.rb.technique_for(p.kind); p.stitch = self.rb.stitch_spec(p.kind, p.technique)
+            k = self.rb.rule(p.kind)
+            if p.dir.mode in ("field", "contour") and p.technique not in k.get("follows", ("guided_fill", "contour_fill")):
+                p.meta["dir_was"] = dict(angle=p.dir.angle, mode=p.dir.mode, source=p.dir.source)   # toggled off: the kind's alt_dir
+                p.dir = self.rb.direction(p.kind, technique=p.technique); p.meta.pop("sep_deg", None); p.meta.pop("band_offset_deg", None)
         sq = self.cfg["sequence"]; n0 = len(plan.parts)
         SQ.underlap(plan.parts, sq["keep_mm"]); SQ.cut_under(plan.parts, sq["keep_mm"])
         plan.parts, dropped = SQ.absorb_fragments(plan.parts, sq["min_fragment_mm2"])
@@ -138,13 +153,17 @@ class Run:
         ppm = float(self.cfg_b["ppm"])
         vis, idx = qa.visible_segments(segs, self.crop, ppm=ppm, return_index=True)
         kinds = tuple(sorted({p.kind for p in plan.parts}))
-        regs = [dict(geom=p.geom, stype=p.technique, angle=p.dir.angle, grp=p.kind, part=p.id) for p in plan.parts]
+        # angle_coherence (one deliberate angle per part) applies to FIXED-angle fill parts. Guided / contour parts vary
+        # on purpose: they are judged per stitch against their own planned field (audit.sewn_angles field_adherence);
+        # line parts (run / bean) have no fill direction.
+        fixed = [p for p in plan.parts if p.dir.mode == "fixed" and techniques.get(p.technique).stype not in ("run", "bean")]
+        regs = [dict(geom=p.geom, stype=p.technique, angle=p.dir.angle, grp=p.kind, part=p.id) for p in fixed]
         bad = qa.angle_coherence(regs, groups=kinds, segs=vis, seg_parts=[sp[i] for i in idx])
         kc = {}
         for b in bad: kc[b["kind"]] = kc.get(b["kind"], 0) + 1
         bk = {}
         for b in bad: bk[f"{b['kind']} / {b['grp']}"] = bk.get(f"{b['kind']} / {b['grp']}", 0) + 1
-        coh = dict(source="plan part ids carried onto the written DST (compile.labelled_dst)", parts=len(plan.parts), ok=not bad,
+        coh = dict(source="plan part ids carried onto the written DST (compile.labelled_dst)", parts=len(fixed), ok=not bad,
                    fails=len(bad), kinds=kc, by_kind=bk, failing=[dict(b) for b in bad[:40]])
         project = self.cfg["project"]
         row, aux = bench.run_gates(self.cfg_b, project, dst, self.origin, coherence=coh)
@@ -189,6 +208,14 @@ class Run:
                             random_angles=aa["random_angles"], unexplained_angles=aa["unexplained"], sewn_off_angle=sw["sewn_off_angle"],
                             sewn_off=sw["off"], field_adherence=sw["field_adherence"],
                             dir_sources={s: sum(1 for p in plan.parts if p.dir.source == s) for s in {p.dir.source for p in plan.parts}})
+        tot = sum(p.area for p in plan.parts) or 1.0
+        by_zone = {}
+        for p in plan.parts:
+            if p.kind == "zone_stub": by_zone[p.zone] = by_zone.get(p.zone, 0.0) + p.area
+        row["stub_area"] = dict(mm2=round(sum(by_zone.values()), 1), pct_of_parts=round(100 * sum(by_zone.values()) / tot, 1),
+                                by_zone={k: round(v, 1) for k, v in sorted(by_zone.items())},
+                                note="zone stubs left for M3 (buildings, trunks, crowns, florets)")
+        row["separation"] = DR.separation_report(plan.parts, sep=float(self.rb.principles["neighbour_sep_deg"][0]))
         row["accents"] = {k: dict(evidence_mm2=ev_mm2.get(k, 0.0), parts=sum(1 for p in plan.parts if p.thread == k),
                                   sewn_in_crop=k in plan.threads and plan.threads[k]["hex"].lower() in [h.lower() for h in row["colours"]["hex"]])
                           for k in self.cfg["threads"]["protected"]}
@@ -198,6 +225,9 @@ class Run:
         row["date"] = datetime.date.today().isoformat(); row["label"] = self.cfg.get("label", self.name); row["bench"] = self.cfg_b["name"]
         row["dst"] = os.path.relpath(dst, bench.main_checkout()) if self.base.startswith(bench.main_checkout()) else dst
         row["dst_sha256"] = hashlib.sha256(open(dst, "rb").read()).hexdigest()[:16]; row["origin"] = list(self.origin)
+        fa = sw["field_adherence"]
+        if fa["parts"]:                                     # guided / contour parts: >= 85 % of their visible stitches within 15 deg
+            coh["field_adherence"] = fa; coh["ok"] = coh["ok"] and fa["pct_within"] >= 85.0
         row["verdict"] = bench.verdict(row, self.cfg_b["targets"])
         json.dump(row, open(self.f("gates.json"), "w"), indent=1, default=float)
         self._row, self._aux = row, aux

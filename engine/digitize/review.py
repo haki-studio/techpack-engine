@@ -21,6 +21,9 @@ def _col(p, threads):
     if p.kind == "zone_stub":                             # stubs: their thread colour, washed 45 % toward grey
         h = threads.get(p.thread, {}).get("hex", "#969696").lstrip("#"); c = [int(h[i:i + 2], 16) for i in (0, 2, 4)]
         return tuple(int(v * 0.55 + 150 * 0.45) for v in c)
+    if p.kind in ("stratum_band", "stratum_crack", "cloud_shade", "cloud_wisp"):   # M2 organic parts: their own thread colour
+        h = threads.get(p.thread, {}).get("hex", "#969696").lstrip("#"); return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+    if p.kind == "cloud_lobe": return (250, 250, 245) if p.meta.get("lobe", 0) % 2 == 0 else (225, 228, 240)
     if p.kind == "fall_cord": return (235, 240, 250) if p.meta.get("cord", 0) % 2 == 0 else (190, 210, 240)
     return KIND_COL.get(p.kind, (200, 200, 200))
 
@@ -56,7 +59,7 @@ def questions(plan, issues, extract_log=None, gates=None):
         if p.kind == "zone_stub": stubs.setdefault(p.zone, []).append(p.id)
     for z, ids in sorted(stubs.items()):
         q(f"Zone '{z}' is a STUB ({len(ids)} parts, tatami at the reference grain's mean angle per part). Its real splitter "
-          f"comes in M2/M3. Accept the stub for this proof, or leave the zone out?", ids,
+          f"comes in M3 (buildings, trunks, crowns, florets). Accept the stub for this proof, or leave the zone out?", ids,
           ["accept stub", "leave out", "re-draw zone"], "accept stub", topic="zone_stub")
     low = [p.id for p in plan.parts if p.kind == "zone_stub" and (p.meta.get("coherence") or 0) < 0.15]
     if low:
