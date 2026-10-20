@@ -356,6 +356,9 @@ class Run:
         ca = trunk.column_adherence(plan, segs, sp, self.crop, ppm=ppm)     # M3b: branch columns, across the centreline
         if ca["parts"]:
             coh["column_adherence"] = ca; coh["ok"] = coh["ok"] and ca["pct_within"] >= 85.0
+        # --- M4s --- part-based stack + travel on sewn fill, on the labelled written file (two new verdict lines)
+        from digitize import gates_stack
+        gates_stack.run_hook(row, plan, segs, sp, self.crop, self.cfg.get("gates_m4s"))
         row["verdict"] = bench.verdict(row, self.cfg_b["targets"])
         json.dump(row, open(self.f("gates.json"), "w"), indent=1, default=float)
         self._row, self._aux = row, aux
@@ -364,7 +367,10 @@ class Run:
               ", ".join(f"{k} {v['pct_ok']}% of {v['tiles']}" for k, v in row["direction_by_kind"].items()) +
               "; by source " + ", ".join(f"{k} {v['pct_ok']}% of {v['tiles']}" for k, v in row["direction_by_source"].items()) +
               f"; random angles {aa['random_angles']}, sewn off angle {sw['sewn_off_angle']}; cords {len(cords)} ({len(cflags)} flags)"
-              f"; coherence {'pass' if coh['ok'] else coh['kinds']}; {sum(row['verdict'].values())}/{len(row['verdict'])} gates")
+              f"; coherence {'pass' if coh['ok'] else coh['kinds']}; {gates_stack.summary(row['verdict'])} gates"
+              f"; M4s stack by parts {row['stack_parts']['over_mm2']} mm2 in regions > 2 = {row['stack_parts']['per_100cm2']} /100 cm2"
+              f" (cap {row['stack_parts']['cap_per_100cm2']})"
+              f", travel on sewn fill {row['travel_on_fill']['n_exposed']} stitches / {row['travel_on_fill']['exposed_mm']} mm")
         return row, aux
 
     def _gated(self):
