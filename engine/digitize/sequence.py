@@ -33,9 +33,10 @@ def _higher(parts, i, tree, pad=0.0):
 
 
 KEEP_TINY = ("knot",)                           # M3b: a bead is a designed 1 mm2 object, not a cut-under sliver
-NO_UNDERLAP = KEEP_TINY + ("floret",)           # M3b: knocked out of the fill around them, so a 1 mm underlap is a SECOND
-                                                # layer under the canopy (PR #10 review: florets 9.4 mm/mm2); the seam is the
-                                                # two pull comps meeting
+NO_UNDERLAP = KEEP_TINY                         # M3b: beads sew their declared knots: their outline never grows
+SEAM_MM = {"floret": 0.3}                       # M3b: a floret is knocked out of the canopy, so the full 1 mm underlap is a
+                                                # SECOND layer ring under it (PR #10 review: florets 9.4 mm/mm2); 0.3 mm
+                                                # closes the seam (no-underlap left 9 gaps >= 0.1 mm2 at floret edges)
 
 
 def underlap(parts, keep=1.0):
@@ -44,10 +45,11 @@ def underlap(parts, keep=1.0):
     for p in parts: p.geom = clean(p.geom)
     tree = STRtree([p.geom for p in parts]); grow = {}
     for i, p in enumerate(parts):
-        if p.kind in NO_UNDERLAP: continue                  # M3b: beads sew their knots; florets are knocked out of the canopy
-        hi = _higher(parts, i, tree, pad=keep)
+        if p.kind in NO_UNDERLAP: continue                  # M3b: beads sew their knots
+        k = SEAM_MM.get(p.kind, keep)                       # M3b: florets only overlap their knocked-out canopy by a seam
+        hi = _higher(parts, i, tree, pad=k)
         if hi:
-            band = clean(p.geom.buffer(keep).intersection(unary_union([parts[j].geom for j in hi])))
+            band = clean(p.geom.buffer(k).intersection(unary_union([parts[j].geom for j in hi])))
             if not band.is_empty: grow[i] = clean(p.geom.union(band))
     for i, g in grow.items(): parts[i].geom = g
     return parts

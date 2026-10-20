@@ -302,11 +302,13 @@ def test_beads_neither_grow_nor_drop():
     kept, dropped = SQ.absorb_fragments([k, c], 2.0)
     assert "k" not in dropped and len(kept) == 2
     # PR #10 review: a floret is knocked out of the canopy too; a 1 mm underlap under it is a second layer (florets read
-    # 9.4 mm/mm2 on the crop file). Mutation (floret out of NO_UNDERLAP) -> red.
+    # 9.4 mm/mm2 on the crop file): it grows a 0.3 mm seam only. Mutations: (c) SEAM_MM emptied (1 mm) -> red;
+    # (d) no growth at all (florets in NO_UNDERLAP: gaps at the seam) -> red.
     f = Part(id="f", kind="floret", geom=Point(20, 5).buffer(3), thread="p", z=6.9, dir=DirSpec(0.0, mode="radial", source="splitter"))
     c2 = Part(id="c2", kind="canopy", geom=box(12, 0, 28, 10).difference(Point(20, 5).buffer(3)), thread="r", z=7, dir=DirSpec(30.0))
-    a1 = f.geom.area; SQ.underlap([f, c2], 1.0)
-    assert abs(f.geom.area - a1) < 0.05, f.geom.area
+    g0 = f.geom; SQ.underlap([f, c2], 1.0)
+    grew = f.geom.difference(g0).area / g0.length                     # mean growth into the canopy, mm
+    assert 0.15 < grew < 0.4, grew                                    # a 0.3 mm seam, not the 1 mm second layer
 
 
 def test_radial_parts_are_a_different_texture_for_rule_3():
