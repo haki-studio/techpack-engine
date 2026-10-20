@@ -17,6 +17,11 @@ techniques:                        # toggles: the rulebook takes the first ENABL
 threads:
   needles: factory                 # factory.json: 12 colours per stitch file
   protected: [cf_red, cf_gold]     # never merged (founder: red and gold present wherever the design has them)
+  # importance x area in the merge cost (threads.py). M1 merged BOTH water blues away (area-weighted), so the falls were
+  # cream + mist only. 12 needles cannot hold all 18 tones: keeping sky light (the falls' blue streaks) and blossom deep
+  # costs mist grey -> sky light (dE 14.9); keeping both blues as well would cost blossom deep or cloud cream
+  # (RECAP-2026-10-20-engine-m2-organic.md). Change these numbers to move the trade-off.
+  importance: {cf_skylt: 3, cf_rose: 3}
   # candidate palette = the Castle Falls tones read from the mockup (cfcore.CF_PAL, PROPOSED threads); the evidence
   # classifies every reference pixel to the nearest one, then threads.py merges down to the needle limit
   palette:
