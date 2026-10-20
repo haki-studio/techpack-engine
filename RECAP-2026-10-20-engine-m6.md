@@ -27,7 +27,7 @@
   - test_digitize_m1 SYNTH: 4 entries.
   - factory.py F1 page section 5 (chenille machine + format).
   - factory.json: `chenille_format: null` + `open_questions`.
-  - LESSONS: 4 rows `B?? (M6)`.
+  - LESSONS: rows B30-B33.
 
 ## Decisions (and the reasons, which the code does not show)
 - **Puff max width is 7 mm, not the 10-12 mm in the brief.** The swatch showed it on the file: dst2.make_pattern splits
@@ -88,7 +88,7 @@
    **Foam-isolation contract (for M4g):** a puff part's thread / stop key ends in `+foam` (`specialty.FOAM`); that stop
    is the machine stop where the foam is laid and must NEVER be merged with a flat stop of the same colour (merging by hex
    colour would collapse it). Whoever plans puff parts calls `specialty.isolate_foam(plan)` before `sequence.order`;
-   `compile.write` refuses the plan otherwise. LESSONS row `B?? (M6)`.
+   `compile.write` refuses the plan otherwise. LESSONS row B34.
 2. **Base under puff: knocked out** (coordinator decision, house rule 6). `specialty.knockout_under_puff(parts, keep)`
    removes the puff footprint minus `cut_keep_mm` (1 mm, house.yaml) from every LOWER lock-stitch part it overlaps (the
    run path already does this through `sequence.cut_under`; the swatch now calls the puff step). Gate

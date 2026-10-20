@@ -79,7 +79,7 @@ are listed in RECAP-2026-10-20-engine-m6.md.
   does not lift ([EmbPunch](https://www.embpunch.com/blog/What-is-3D-Puff-embroidery)). The plugin does both:
   perforation first, then the cap.
 - **Width cap.** Published practice allows 10-12 mm. The house caps puff at 7 mm because of LESSONS B7 / B17 (no sewn stitch
-  over 7.5 mm, and make_pattern splits at 7.4). This is a deliberate departure, and the swatch measured it (see LESSONS B?? (M6)).
+  over 7.5 mm, and make_pattern splits at 7.4). This is a deliberate departure, and the swatch measured it (see LESSONS B30).
 - **Foam.** 3 mm, matched to the thread colour. Madeira E-Zee 3D foam is 3 mm and comes in colours ([Madeira E-Zee](https://www.madeirausa.com/e-zee-3d-foam/),
   [Madeira: creating 3D embroidery](https://www.madeirausa.com/resources/creating-3d-embroidery-with-3d-foam/)).
 - **Chenille.** Loop height is set by the needle height of the chenille head, not by a stitch, and the stitch length must
