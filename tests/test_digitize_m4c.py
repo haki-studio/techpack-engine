@@ -210,3 +210,114 @@ def test_panel_and_scoreboard_show_raw_and_after():
     assert "24.8 raw; 21.0 after radial exemption (23 tiles)" in md
     plain = _row(24.8); plain.update({k: row[k] for k in row if k not in ("direction", "radial_exemption")}); plain["direction"] = dict(row["direction"])
     assert "| 24.8 |" in bench.md_row(plain) and "raw" not in panel.labels(plain, b)["heat"]   # no exemption: unchanged
+
+
+# ---------------------------------------------------------------- crown clumps (extract/splitters/crown.py)
+from shapely.geometry import Polygon
+from digitize.schema import ObjectPlan
+from digitize.direction import axial_diff
+from digitize import audit
+
+
+def _crown(paint):
+    from test_digitize_m3b import _canvas, _ctx, _paint
+    from digitize.extract.splitters import crown
+    x, y, rgb = _canvas(70, 45)
+    paint(x, y, rgb, _paint)
+    ctx, ev = _ctx(rgb, (0, 0, 70, 45))
+    claim = np.isin(ev.tone, [ev.keys.index("cf_grndk"), ev.keys.index("cf_grn")])
+    parts, _ = crown.split(ctx, {"id": "foliage", "tones": ["cf_grndk", "cf_grn"]}, 2.0, claim)
+    return parts, ctx.stats["foliage"]
+
+
+def _two_clumps(x, y, rgb, P):
+    """a slanted clump and a wide one touching it: their own long axes are ~55-65 deg apart"""
+    tall = (np.abs((x - 14) - (29 - y) * 0.6) < 5) & (y > 2) & (y <= 29); wide = (x >= 12) & (x < 62) & (y > 28) & (y < 40)
+    P(rgb, tall | wide, "cf_grndk")
+    P(rgb, (np.hypot(x - 22, (y - 14) / 2.0) < 3.0), "cf_grn")              # one lit top per clump
+    P(rgb, (np.hypot((x - 45) / 2.5, y - 32) < 3.0), "cf_grn")
+
+
+def test_crown_fan_is_smooth_across_touching_clumps_and_lit_shares_it():
+    """rule 2: one deliberate angle per clump (dark AND its lit side), a smooth fan across the crown: touching clumps whose
+    own axes are ~90 deg apart end up closer; every angle rebuilds in the audit. Mutations: (a) smoothing off -> red;
+    (b) lit pieces keep their own long axis -> red."""
+    from digitize.extract.splitters import crown
+    parts, st = _crown(_two_clumps)
+    dark = [p for p in parts if p.kind == "crown_clump_dark"]; lit = [p for p in parts if p.kind == "crown_clump_lit"]
+    assert len(dark) == 2 and len(lit) >= 2, (len(dark), len(lit))
+    own = [crown.smooth_angle(p.meta["construct"]["axes"][:1]) for p in dark]
+    raw, smooth = axial_diff(*own), axial_diff(dark[0].dir.angle, dark[1].dir.angle)
+    assert raw > 45 and smooth < raw - 15, (raw, smooth)
+    for l in lit:
+        d = next(p for p in dark if p.id == l.meta["lit_of"])
+        assert axial_diff(l.dir.angle, d.dir.angle) < 0.01, (l.dir.angle, d.dir.angle)
+    assert audit.angle_audit(ObjectPlan(name="t", parts=parts), Rulebook())["random_angles"] == 0
+    assert st["smoothed"] == 2
+
+
+def _specks(x, y, rgb, P):
+    """one clump with a big lit top and a small (~10 mm2) lit speck near its edge"""
+    m = (x > 10) & (x < 50) & (y > 10) & (y < 32)
+    P(rgb, m, "cf_grndk")
+    P(rgb, (np.hypot((x - 22) / 2, y - 18) < 3.5), "cf_grn")
+    P(rgb, (np.hypot(x - 42, y - 27) < 1.8), "cf_grn")
+
+
+def test_small_lit_highlight_is_grown_to_a_visible_size_not_dropped():
+    """fidelity first (A11): a lit speck too small to hold a visible tatami (< 20 mm2 or < 2.5 mm wide) is GROWN inside its
+    clump, never dropped; lit and dark do not overlap. Mutations: (a) small pieces dropped -> red; (b) growth off -> red."""
+    parts, st = _crown(_specks)
+    lit = [p for p in parts if p.kind == "crown_clump_lit"]; dark = [p for p in parts if p.kind == "crown_clump_dark"]
+    near = [p for p in lit if p.geom.distance(Point(42, 27)) < 0.5]
+    assert near, "the small highlight was dropped"
+    sp = near[0].geom
+    assert sp.area >= 20.0 - 0.5 and not sp.buffer(-1.2).is_empty, (sp.area,)
+    assert st["lit_grown"] >= 1
+    from shapely.ops import unary_union
+    for d in dark:
+        mine = [p.geom for p in lit if p.meta["lit_of"] == d.id]
+        assert unary_union(mine).intersection(d.geom).area < 0.5
+
+
+def _edge_lit(x, y, rgb, P):
+    """a lit top 0.3 mm short of the clump's edge: the dark between them is a sliver"""
+    m = (x > 10) & (x < 50) & (y > 10) & (y < 32)
+    P(rgb, m, "cf_grndk")
+    P(rgb, m & (x > 14) & (x < 30) & (y > 10.3) & (y < 18), "cf_grn")
+
+
+def test_dark_slivers_join_the_lit_piece():
+    """a dark sliver (< 0.5 mm) between a lit piece and the clump edge sews as short edge stitches at every angle (part of
+    the M3b angle spread): it joins the lit piece; lit and dark do not overlap. Mutation (sliver step off) -> red."""
+    parts, st = _crown(_edge_lit)
+    dark = [p for p in parts if p.kind == "crown_clump_dark"][0]
+    lit = [p for p in parts if p.kind == "crown_clump_lit"]
+    opened = dark.geom.buffer(-0.25).buffer(0.25)
+    assert dark.geom.difference(opened).area < 0.6, dark.geom.difference(opened).area
+    from shapely.ops import unary_union
+    whole = unary_union([dark.geom] + [p.geom for p in lit])
+    assert abs(whole.area - (dark.geom.area + sum(p.geom.area for p in lit))) < 0.5        # no overlap
+    assert st["slivers_to_lit_mm2"] > 0
+
+
+def test_fan_smooth_is_rebuilt_by_the_audit_and_reported_as_outline():
+    """the smoothed angle is RE-BUILT from the stored axes (a typed-in angle is random, A23); a dark clump whose own axis
+    starts far from it does not touch its support; a neighbour axis 40 mm away is not a neighbour; a lit piece must hold
+    its `at` point; the bucket is outline (A24). Mutations: (a) audit trusts the declared angle -> red; (b) neighbour
+    distance check off -> red; (c) fan_smooth removed from OUTLINE_RULES -> red."""
+    from digitize.extract.splitters import crown
+    g = Polygon([(0, 0), (12, 0), (12, 6), (0, 6)])
+    own = {"from": [0.5, 3.0], "to": [6.0, 3.0], "w": 72.0}; nb = {"from": [14.0, 0.0], "to": [14.0, 6.0], "w": 20.0}
+    far = {"from": [52.0, 0.0], "to": [52.0, 3.0], "w": 20.0}
+    def mk(pid, ang, axes, kind="crown_clump_dark", **m):
+        return Part(id=pid, kind=kind, geom=g, thread="t", z=2, dir=DirSpec(ang, source="splitter"),
+                    meta=dict(construct=dict(rule="fan_smooth", axes=axes, **m)))
+    a = crown.smooth_angle([own, nb]); assert 0 < a < 90
+    good = mk("good", a, [own, nb]); forged = mk("forged", a + 30.0, [own, nb])
+    far_nb = mk("far", crown.smooth_angle([own, far]), [own, far])
+    unsupported = mk("unsup", 0.0, [{"from": [-20.0, 3.0], "to": [6.0, 3.0], "w": 72.0}])
+    lit_ok = mk("lit", a, [own, nb], kind="crown_clump_lit", at=[3.0, 3.0]); lit_noat = mk("lit_noat", a, [own, nb], kind="crown_clump_lit")
+    r = audit.angle_audit(ObjectPlan(name="t", parts=[good, forged, far_nb, unsupported, lit_ok, lit_noat]), Rulebook())
+    assert {b["part"] for b in r["unexplained"]} == {"forged", "far", "unsup", "lit_noat"}, r["unexplained"]
+    assert audit.bucket_of(good) == "outline" and audit.bucket_of(lit_ok) == "outline"

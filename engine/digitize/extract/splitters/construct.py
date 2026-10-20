@@ -33,9 +33,9 @@ outline and the grain are not fully separable (its own edges run along the axis 
 elongation: reported as "outline", never as independent."""
 import math
 
-RULES = ("axis", "fan", "between_petals", "radial", "column")
+RULES = ("axis", "fan", "between_petals", "radial", "column", "fan_smooth")   # --- M4c --- fan_smooth (crown.py)
 M3A_RULES = ("course", "down_slope", "across")   # building fitter (extract/building_fit.py), registered behind basis()
-OUTLINE_RULES = ("fan",)          # angles read off the traced outline's shape: not independent of the reference (A24)
+OUTLINE_RULES = ("fan", "fan_smooth")          # angles read off the traced outline's shape: not independent of the reference (A24)
 DEPTH_RULES = ("course", "down_slope")   # M3a rule 3 depth: a FAR tier's angle (rows along the eave) was chosen where the
                                          # render's grain agreed (BENCH_m3a.md "partly grain-informed"): reported as outline
 
@@ -135,4 +135,38 @@ def _m3b_basis(p):
         if not cen: return None, "radial part without meta centre (the field the plugin sews from and the file check reads)"
         if p.geom.distance(Point(cen)) > 1.5: return None, "radial centre is not on the floret"
         return 0.0, None
+    if r == "fan_smooth":                                             # --- M4c --- crown clumps, a smooth fan
+        return _fan_smooth(p, c)
     return None, f"unknown construction rule {r!r} (have {RULES})"
+
+
+SMOOTH_NB_MM = 25.0      # a neighbour's axis middle lies within this of the part (the clumps touch; a clump is <= ~20 mm)
+LIT_AXIS_MM = 12.0       # a lit piece lies inside its clump: the clump's axis middle within this of the piece
+
+
+def _fan_smooth(p, c):
+    """M4c rule "fan_smooth" (crown clumps): construct = {rule, axes: [{from, to, w}, ...], at (lit pieces)}. The first axis
+    is the clump's own fan (its long axis from the attachment end, as rule "fan"), the others the touching clumps' fans;
+    angle = their weighted AXIAL mean (crown.smooth_angle). Checks: a dark clump's own axis passes the "fan" checks (`to`
+    on the clump within 2 mm, `from` within 6 mm: the clump touches its support); a lit piece holds its `at` point (1.5 mm)
+    and its clump's axis middle is within LIT_AXIS_MM; every neighbour's axis middle within SMOOTH_NB_MM; weights > 0.
+    Built from traced outlines: reported as "outline" (OUTLINE_RULES), never independent (A24)."""
+    from shapely.geometry import Point
+    ax = c.get("axes") or []
+    if not ax: return None, "fan_smooth without axes"
+    for a in ax:
+        if not (a.get("w", 0) > 0): return None, "fan_smooth axis with weight <= 0"
+        if math.dist(a["from"], a["to"]) < 0.5: return None, "fan_smooth axis origin and middle coincide"
+    own = ax[0]
+    if p.kind == "crown_clump_lit":
+        if not c.get("at") or p.geom.distance(Point(c["at"])) > 1.5: return None, "fan_smooth lit piece does not hold its `at` point"
+        if p.geom.distance(Point(own["to"])) > LIT_AXIS_MM: return None, f"fan_smooth: the clump's axis is more than {LIT_AXIS_MM} mm from its lit piece"
+    else:
+        if p.geom.distance(Point(own["to"])) > 2.0: return None, "fan target is not on the clump"
+        if p.geom.distance(Point(own["from"])) > 6.0: return None, "fan origin is more than 6 mm from the clump (clump does not touch its support)"
+    for a in ax[1:]:
+        if p.geom.distance(Point(a["to"])) > SMOOTH_NB_MM: return None, f"fan_smooth neighbour axis more than {SMOOTH_NB_MM} mm away (not a neighbour)"
+    C = S = 0.0
+    for a in ax:
+        t = math.atan2(a["to"][1] - a["from"][1], a["to"][0] - a["from"][0]); C += a["w"] * math.cos(2 * t); S += a["w"] * math.sin(2 * t)
+    return math.degrees(0.5 * math.atan2(S, C)) % 180.0, None
