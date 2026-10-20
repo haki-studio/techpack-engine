@@ -1249,5 +1249,819 @@
   },
   "git_sha": "71f00977d90b",
   "panel": "panel_2026-10-20_m2-organic-parts--strata---clouds--guide.png"
+ },
+ {
+  "crop": [
+   -180,
+   365,
+   20,
+   565
+  ],
+  "crop_min_closeup_weight": 0.647,
+  "source_ppm_median": 2.58,
+  "stitches_in_crop": 118844,
+  "direction": {
+   "tiles": 625,
+   "pct_ok": 80.6,
+   "pct_chaos": 14.2,
+   "n_dev": 32,
+   "masked": 0,
+   "n_chaos": 89,
+   "pct_ok_all_stitches": 55.5,
+   "pct_chaos_all_stitches": 43.5
+  },
+  "angle_coherence": {
+   "source": "plan part ids carried onto the written DST (compile.labelled_dst)",
+   "parts": 314,
+   "ok": false,
+   "fails": 104,
+   "kinds": {
+    "no-visible-stitches": 32,
+    "angle-spread": 72
+   },
+   "by_kind": {
+    "no-visible-stitches / trunk_strip": 1,
+    "no-visible-stitches / zone_stub": 14,
+    "no-visible-stitches / crown_clump_lit": 17,
+    "angle-spread / canopy": 6,
+    "angle-spread / cloud_wisp": 1,
+    "angle-spread / crown_clump_dark": 21,
+    "angle-spread / crown_clump_lit": 13,
+    "angle-spread / zone_stub": 29,
+    "angle-spread / pool": 1,
+    "angle-spread / trunk_strip": 1
+   },
+   "failing": [
+    {
+     "kind": "no-visible-stitches",
+     "part": "trunks.055",
+     "grp": "trunk_strip",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.092",
+     "grp": "zone_stub",
+     "n": 1,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.093",
+     "grp": "zone_stub",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.095",
+     "grp": "zone_stub",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.096",
+     "grp": "zone_stub",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.097",
+     "grp": "zone_stub",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.100",
+     "grp": "zone_stub",
+     "n": 1,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.146",
+     "grp": "zone_stub",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.148",
+     "grp": "zone_stub",
+     "n": 9,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.150",
+     "grp": "zone_stub",
+     "n": 11,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.158",
+     "grp": "zone_stub",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.169",
+     "grp": "zone_stub",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.172",
+     "grp": "zone_stub",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.242",
+     "grp": "crown_clump_lit",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.244",
+     "grp": "crown_clump_lit",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.248",
+     "grp": "crown_clump_lit",
+     "n": 5,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.252",
+     "grp": "crown_clump_lit",
+     "n": 2,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.253",
+     "grp": "crown_clump_lit",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.265",
+     "grp": "crown_clump_lit",
+     "n": 1,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.267",
+     "grp": "crown_clump_lit",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.269",
+     "grp": "crown_clump_lit",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.271",
+     "grp": "crown_clump_lit",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.287",
+     "grp": "crown_clump_lit",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.296",
+     "grp": "crown_clump_lit",
+     "n": 9,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.299",
+     "grp": "crown_clump_lit",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.301",
+     "grp": "crown_clump_lit",
+     "n": 4,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.305",
+     "grp": "crown_clump_lit",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.317",
+     "grp": "crown_clump_lit",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.328",
+     "grp": "crown_clump_lit",
+     "n": 4,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "foliage.356",
+     "grp": "crown_clump_lit",
+     "n": 5,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.670",
+     "grp": "zone_stub",
+     "n": 4,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.675",
+     "grp": "zone_stub",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.002",
+     "grp": "canopy",
+     "n": 93,
+     "spread_deg": 13.0,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.003",
+     "grp": "canopy",
+     "n": 70,
+     "spread_deg": 10.8,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.007",
+     "grp": "canopy",
+     "n": 3006,
+     "spread_deg": 14.0,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.008",
+     "grp": "canopy",
+     "n": 43,
+     "spread_deg": 13.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.010",
+     "grp": "canopy",
+     "n": 44,
+     "spread_deg": 10.5,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.011",
+     "grp": "canopy",
+     "n": 499,
+     "spread_deg": 12.5,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "cloud_centre.214",
+     "grp": "cloud_wisp",
+     "n": 21,
+     "spread_deg": 36.0,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.237",
+     "grp": "crown_clump_dark",
+     "n": 34,
+     "spread_deg": 14.2,
+     "source": "dst-part"
+    }
+   ],
+   "field_adherence": {
+    "parts": 85,
+    "stitches": 8033,
+    "within": 7534,
+    "pct_within": 93.8
+   },
+   "radial_adherence": {
+    "parts": 184,
+    "stitches": 1740,
+    "within": 1727,
+    "pct_within": 99.3
+   },
+   "column_adherence": {
+    "parts": 46,
+    "stitches": 564,
+    "within": 479,
+    "pct_within": 84.9
+   }
+  },
+  "density": {
+   "covered_cm2": 399.9,
+   "mean": 5.52,
+   "p95": 11.03,
+   "max_smoothed": 14.94,
+   "over_cm2": 88.27,
+   "flags": 107,
+   "threshold": 7.0,
+   "flags_by_zones_meeting": {
+    "1": 9,
+    "2": 56,
+    "3": 34,
+    "4+": 8
+   },
+   "flags_touching_kind": {
+    "branch": 11,
+    "canopy": 21,
+    "cloud_lobe": 7,
+    "cloud_shade": 6,
+    "cloud_wisp": 1,
+    "crown_clump_dark": 49,
+    "crown_clump_lit": 36,
+    "fall_cord": 15,
+    "floret": 9,
+    "knot": 16,
+    "pool": 10,
+    "sky_band": 6,
+    "stratum_band": 82,
+    "stratum_crack": 18,
+    "trunk_strip": 4,
+    "zone_stub": 59
+   }
+  },
+  "trims": {
+   "trims": 136,
+   "per_100cm2": 34.0,
+   "area_cm2": 399.9
+  },
+  "satin": {
+   "satins": 884,
+   "fans": 11,
+   "blob": 0,
+   "too_wide": 0,
+   "too_narrow": 0,
+   "cord_flags": 0,
+   "floret_runs_by_part_map": {
+    "blob": 193,
+    "too-narrow": 30,
+    "too-wide": 0
+   },
+   "bead_runs_by_part_map": {
+    "blob": 0,
+    "too-narrow": 1,
+    "too-wide": 0
+   }
+  },
+  "stack": {
+   "max": 5,
+   "over_cm2": 21.28,
+   "flags": 166,
+   "pct_cells_over": 5.3
+  },
+  "runs_in_crop": 170,
+  "colours": {
+   "stops_in_crop": 29,
+   "threads_in_crop": 12,
+   "threads_in_file": 12,
+   "hex": [
+    "#22355c",
+    "#2f402d",
+    "#4e3f31",
+    "#566577",
+    "#5a7240",
+    "#79a4d0",
+    "#958262",
+    "#b23f2e",
+    "#b4506f",
+    "#d3a63f",
+    "#d4caba",
+    "#de8ea6"
+   ],
+   "red": true,
+   "gold": true
+  },
+  "secs": 12.2,
+  "readback_match": {
+   "file_segs": 119308,
+   "planned_segs": 118704,
+   "matched": 118640,
+   "writer_added": 668,
+   "skipped_subgrid": 64,
+   "labelled": 112350
+  },
+  "cords": {
+   "n": 67,
+   "flags": 0,
+   "failing": [],
+   "max_piece": 7.01,
+   "aligned_max": 0.5,
+   "column_w": [
+    1.84,
+    2.3,
+    2.74,
+    2.85,
+    3.17,
+    3.22,
+    3.26,
+    3.34,
+    3.4,
+    3.42,
+    3.48,
+    3.73,
+    3.8,
+    4.09,
+    4.11,
+    4.13,
+    4.22,
+    4.58,
+    4.76,
+    4.84,
+    4.87,
+    4.95,
+    5.06,
+    5.18,
+    5.22,
+    5.26,
+    5.35,
+    5.38,
+    5.4,
+    5.43,
+    5.44,
+    5.61,
+    5.69,
+    5.72,
+    5.77,
+    5.78,
+    5.85,
+    6.0,
+    6.03,
+    6.16,
+    6.6,
+    6.73,
+    6.74,
+    6.98,
+    7.06,
+    7.07,
+    7.1,
+    7.95,
+    8.06,
+    8.32,
+    8.45,
+    9.99,
+    10.71,
+    11.55,
+    15.35,
+    15.46,
+    18.39,
+    18.92,
+    21.0,
+    22.69,
+    23.92,
+    27.44,
+    27.7,
+    27.97,
+    30.16,
+    31.02,
+    31.05
+   ]
+  },
+  "direction_by_kind": {
+   "branch": {
+    "tiles": 6,
+    "ok": 0,
+    "dev": 1,
+    "chaos": 5,
+    "pct_ok": 0.0,
+    "pct_chaos": 83.3
+   },
+   "canopy": {
+    "tiles": 62,
+    "ok": 38,
+    "dev": 5,
+    "chaos": 19,
+    "pct_ok": 61.3,
+    "pct_chaos": 30.6
+   },
+   "cloud_lobe": {
+    "tiles": 6,
+    "ok": 5,
+    "dev": 0,
+    "chaos": 1,
+    "pct_ok": 83.3,
+    "pct_chaos": 16.7
+   },
+   "cloud_shade": {
+    "tiles": 3,
+    "ok": 3,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "crown_clump_dark": {
+    "tiles": 70,
+    "ok": 41,
+    "dev": 10,
+    "chaos": 19,
+    "pct_ok": 58.6,
+    "pct_chaos": 27.1
+   },
+   "crown_clump_lit": {
+    "tiles": 25,
+    "ok": 17,
+    "dev": 4,
+    "chaos": 4,
+    "pct_ok": 68.0,
+    "pct_chaos": 16.0
+   },
+   "fall_cord": {
+    "tiles": 63,
+    "ok": 62,
+    "dev": 0,
+    "chaos": 1,
+    "pct_ok": 98.4,
+    "pct_chaos": 1.6
+   },
+   "floret": {
+    "tiles": 38,
+    "ok": 13,
+    "dev": 2,
+    "chaos": 23,
+    "pct_ok": 34.2,
+    "pct_chaos": 60.5
+   },
+   "knot": {
+    "tiles": 5,
+    "ok": 4,
+    "dev": 1,
+    "chaos": 0,
+    "pct_ok": 80.0,
+    "pct_chaos": 0.0
+   },
+   "pool": {
+    "tiles": 9,
+    "ok": 8,
+    "dev": 0,
+    "chaos": 1,
+    "pct_ok": 88.9,
+    "pct_chaos": 11.1
+   },
+   "sky_band": {
+    "tiles": 2,
+    "ok": 2,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "stratum_band": {
+    "tiles": 146,
+    "ok": 135,
+    "dev": 2,
+    "chaos": 9,
+    "pct_ok": 92.5,
+    "pct_chaos": 6.2
+   },
+   "stratum_crack": {
+    "tiles": 4,
+    "ok": 4,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "trunk_strip": {
+    "tiles": 2,
+    "ok": 0,
+    "dev": 0,
+    "chaos": 2,
+    "pct_ok": 0.0,
+    "pct_chaos": 100.0
+   },
+   "zone_stub": {
+    "tiles": 184,
+    "ok": 172,
+    "dev": 7,
+    "chaos": 5,
+    "pct_ok": 93.5,
+    "pct_chaos": 2.7
+   }
+  },
+  "direction_by_source": {
+   "independent": {
+    "tiles": 125,
+    "ok": 89,
+    "dev": 4,
+    "chaos": 32,
+    "pct_ok": 71.2,
+    "pct_chaos": 25.6
+   },
+   "outline": {
+    "tiles": 99,
+    "ok": 62,
+    "dev": 14,
+    "chaos": 23,
+    "pct_ok": 62.6,
+    "pct_chaos": 23.2
+   },
+   "self-derived": {
+    "tiles": 401,
+    "ok": 353,
+    "dev": 14,
+    "chaos": 34,
+    "pct_ok": 88.0,
+    "pct_chaos": 8.5
+   }
+  },
+  "parts": {
+   "n": 981,
+   "pct_under_20mm2": 49.1,
+   "by_kind": {
+    "branch": 46,
+    "canopy": 12,
+    "cloud_lobe": 3,
+    "cloud_shade": 2,
+    "cloud_wisp": 1,
+    "crown_clump_dark": 52,
+    "crown_clump_lit": 59,
+    "fall_cord": 14,
+    "floret": 216,
+    "knot": 299,
+    "pool": 3,
+    "sky_band": 2,
+    "stratum_band": 82,
+    "stratum_crack": 19,
+    "trunk_strip": 7,
+    "zone_stub": 164
+   },
+   "undeclared_angles": 0,
+   "random_angles": 0,
+   "unexplained_angles": [],
+   "sewn_off_angle": 0,
+   "sewn_off": [],
+   "field_adherence": {
+    "parts": 85,
+    "stitches": 8033,
+    "within": 7534,
+    "pct_within": 93.8
+   },
+   "dir_sources": {
+    "rule": 20,
+    "splitter": 679,
+    "field-mean": 178,
+    "outline": 19,
+    "field": 85
+   }
+  },
+  "stub_area": {
+   "mm2": 13791.7,
+   "pct_of_parts": 27.4,
+   "by_zone": {
+    "ground": 2890.4,
+    "village": 10901.3
+   },
+   "note": "zone stubs left for M3 (buildings, trunks, crowns, florets)"
+  },
+  "separation": {
+   "pairs": 239,
+   "close": 43,
+   "examples": [
+    [
+     "blossom.007",
+     "blossom.f213.k",
+     7.3
+    ],
+    [
+     "village.068",
+     "village.069",
+     5.5
+    ],
+    [
+     "village.073",
+     "village.074",
+     0.8
+    ],
+    [
+     "village.085",
+     "village.087",
+     8.2
+    ],
+    [
+     "village.115",
+     "village.116",
+     6.0
+    ],
+    [
+     "village.125",
+     "village.129",
+     8.2
+    ],
+    [
+     "village.127",
+     "cliffs.403",
+     4.7
+    ],
+    [
+     "village.128",
+     "village.129",
+     13.3
+    ],
+    [
+     "village.128",
+     "village.131",
+     11.5
+    ],
+    [
+     "village.133",
+     "village.135",
+     1.5
+    ]
+   ]
+  },
+  "accents": {
+   "cf_red": {
+    "evidence_mm2": 593.4,
+    "parts": 21,
+    "sewn_in_crop": true
+   },
+   "cf_gold": {
+    "evidence_mm2": 167.2,
+    "parts": 13,
+    "sewn_in_crop": true
+   }
+  },
+  "file": {
+   "stitches": 127760,
+   "trims": 142,
+   "stops": 29,
+   "colours": 12,
+   "max_stitch": 7.06
+  },
+  "date": "2026-10-20",
+  "label": "M3b trees, crowns, florets",
+  "bench": "castle-bk-m",
+  "dst": ".claude/worktrees/agent-a9dfa9246d48adf9a/projects/castle-falls-jacket/out/digitize/BK_M_crop/BK_M_crop.dst",
+  "dst_sha256": "62b6a2306a19cb49",
+  "origin": [
+   -80.0,
+   465.0
+  ],
+  "verdict": {
+   "direction_ok": false,
+   "direction_chaos": false,
+   "angle_coherence": false,
+   "density": false,
+   "trims": false,
+   "satin_shape": true,
+   "stack": false,
+   "colours": true,
+   "separation": false
+  },
+  "git_sha": "04af3534d2cd",
+  "panel": "panel_2026-10-20_m3b-trees--crowns--florets.png"
  }
 ]
