@@ -17,7 +17,7 @@ digitizer. Every design follows these rules, and the engine enforces them (LESSO
    - Run or bean below 1 mm.
    - Radial only for face-on florets.
 5. **Back to front with hidden travel.** The overlapped part sews first. Entry and exit points are planned. Knocked-out details sew before their fill.
-6. **Cut what is covered.** Remove overlaps, keeping ~1 mm. Use a minimum fragment size. Never more than 2 stacked top layers. Keep a stitch budget (a full jacket back is ~250–350k).
+6. **Cut what is covered.** Remove overlaps, keeping ~1 mm. Use a minimum fragment size. Never more than 2 stacked top layers. Report the stitch count against a reference budget (a full jacket back is ~250–350k); it is a reference, not a limit: large embroidery runs higher and the founder accepts that (2026-10-20).
 7. **Underlay and compensation per object.**
    - Tatami 90° plus edge run on big fills.
    - Centre run on narrow parts; edge run plus zigzag on wide ones.
