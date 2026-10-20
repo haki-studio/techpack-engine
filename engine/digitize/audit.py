@@ -38,9 +38,10 @@ def _depth(t):
     return depth_angle(t)
 
 
-def field_basis(p, tol=0.05):
+def field_basis(p, tol=0.5):
     """(basis, why): for field / field-mean parts the basis is RECOMPUTED from the stored field grid over the part's
-    geometry (direction.grid_mean), never read from meta alone; a recorded basis that disagrees is reported"""
+    geometry (direction.grid_mean), never read from meta alone; a recorded basis that disagrees by more than tol is
+    reported (0.5 deg: plan.json stores geometry to 1 micron, which moves a grid point on the outline in or out)"""
     from digitize.direction import grid_mean
     key = {"field": "field_mean", "field-mean": "field_angle"}[p.dir.source]
     if not p.meta.get("field"): return None, f"{p.dir.source} part without a stored field grid: its basis cannot be recomputed"
@@ -70,7 +71,7 @@ def angle_audit(plan, rb, tol=0.05):
         if b is None: why = (field_basis(p)[1] if p.dir.source in ("field", "field-mean") else None) or f"no basis for source {p.dir.source!r}"
         elif abs(sep) > SEP_MAX + tol: why = f"separation turn {sep} > {SEP_MAX}"
         elif abs(band) > BAND_MAX + tol: why = f"band offset {band} > {BAND_MAX}"
-        elif axial_diff(float(b) + sep + band, p.dir.angle) > tol:
+        elif axial_diff(float(b) + sep + band, p.dir.angle) > (0.5 if p.dir.source in SELF_DERIVED else tol):
             why = f"declared {p.dir.angle} != {p.dir.source} basis {round(float(b), 2)} + sep {sep} + band {band}"
         if why: bad.append(dict(part=p.id, kind=p.kind, source=p.dir.source, angle=p.dir.angle, why=why))
     return dict(random_angles=len(bad), unexplained=bad[:40])
