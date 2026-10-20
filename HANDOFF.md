@@ -65,6 +65,21 @@ PAUSED (work committed; restart with a FRESH builder per product, short brief + 
 - koi: Rev C started (refmask, floratrace).
 Factory answered (factory.json): Brother, 750 mm field, frames 300×300 + 400×450, front single hooping, back 2, chenille/puff/sherpa yes.
 
+## NOW — 2026-10-20 evening (session 093e980c) — START HERE
+Workers run as their own background sessions now (LESSONS E10, scripts/dispatch.sh, board ~/.techpack/board, `python3
+scripts/status.py`, `claude agents`). Closing a session never stops them.
+- **Running:** `tp-build-engine-g1` (G1, branch engine-g1, opens its own PR + reviewer); `tp-build-wave-jacket` (Wave Rev B M,
+  DUE TONIGHT, branch tp-wave-jacket holds the rescued Rev B WIP; copies the final PDF+zip to Desktop/wave-RevB);
+  `tp-build-pixel-sky-fleece` (intake → proposed pack, both bird versions).
+- **Due tonight, founder-blocked:** Konpeito front leg (soot sprites: keep / replace / ship as MISSING; the outside Rev E
+  07a/07b files are NOT sewable — half-filled bodies, ~80 trims, 411 mm single file); KCOS Rev C ready pending the 7 answers.
+- **Next to start when a slot frees** (6/6 background sessions were live): S1 SVG drop-in (docs/ENGINE_PLAN.md SVG → DST track),
+  then S2 the PLM window. P1 image → DST in PLM after G2.
+- **API cost probe:** mock path works (scratch probe, --no-api); the real call (< $1, Opus 5.5) waits for the founder to pick a key
+  (no techpack-engine key exists). Estimate until measured: $0.25–1 per image.
+- **Tee packer** is a local command (scripts/family_build.py, ~1 min, 12 pages); no PLM page yet; art photos missing.
+- **Founder yes/no pending:** company rules (long jobs as background sessions; drop "wait for running helpers" from the hand-off hook).
+
 ## FINAL STATE of coordinator session 19b9021e (2026-10-21) — START HERE
 - **Keep Clean Our Space Rev C: APPROVED, ready for the factory** (PR #20 kcos-revc; deliverables copied to C:\Users\devin\Desktop\keep-clean-RevC\).
   Founder still to answer the 7 G4 questions (back/hood plain; puff JP+EN; FR 12 colours; CN ring dots puff; 汚/污; 소중한/소중함;
