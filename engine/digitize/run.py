@@ -29,6 +29,27 @@ from digitize import direction as DR
 
 STAGES = ["extract", "review", "plan", "compile", "gates", "panel", "bench"]
 SPLIT_KIND = {"sky": "sky_band", "fall": "fall_cord", "pool": "pool"}
+from digitize.extract.splitters import trunk, crown, blossom          # --- M3b ---
+M3B_SPLITTERS = {"trunk": trunk.split, "crown": crown.split, "blossom": blossom.split}
+NO_FILL_DIRECTION = ("dot",)                                          # beads: judged by size (rule 9), not by angle
+
+
+def florets_by_part_map(row, segs, labels, plan, crop):
+    """M3b: qa.satin_shape reads satin runs from the DST alone and cannot tell a floret from a fan in a window (its own
+    docstring: "needs the part map"). A flagged run whose stitches are mostly labelled with a RADIAL part (a face-on
+    floret, rule 4) is re-filed as a floret fan; the count moved is recorded. Everything else stays flagged."""
+    import qa
+    radial = {p.id for p in plan.parts if p.dir.mode == "radial"}
+    if not radial: return
+    x0, y0, x1, y1 = crop; inside = lambda q: x0 <= q[0] < x1 and y0 <= q[1] < y1
+    moved = {"blob": 0, "too-narrow": 0, "too-wide": 0}
+    for f in qa.satin_shape(segs)["flags"]:
+        if not inside(f["at_mm"]): continue
+        lab = [labels[i] for i in range(f["i0"], f["i1"] + 1)]
+        if sum(1 for l in lab if l in radial) > 0.5 * len(lab): moved[f["kind"]] += 1
+    s = row["satin"]
+    s["blob"] -= moved["blob"]; s["too_narrow"] -= moved["too-narrow"]; s["too_wide"] -= moved["too-wide"]
+    s["floret_runs_by_part_map"] = moved
 
 
 class Run:
@@ -71,6 +92,7 @@ class Run:
             if k == "stub": return stub.split(ctx, z, zz, m)
             if k == "stratum": return stratum.split(ctx, z, zz, m)
             if k == "cloud": return cloud.split(ctx, z, zz, m)
+            if k in M3B_SPLITTERS: return M3B_SPLITTERS[k](ctx, z, zz, m)          # M3b: trunk, crown, blossom
             raise ValueError(f"zone {z['id']}: unknown splitter {k!r}")
         parts, log = ZN.claim_and_split(zs, ev, z_of, split)
         n_traced = len(parts); sk = cfg.get("specks", {}) or {}
@@ -84,7 +106,8 @@ class Run:
                                                            tone_map=tp["map"], evidence_tone_mm2={k: round(float(v), 1) for k, v in zip(ev.keys, w)},
                                                            source_ppm_median=self.ref()["source_ppm_median"],
                                                            separation_moves=[list(m) for m in moves], traced_parts=n_traced,
-                                                           specks_merged=[list(m) for m in merged]))
+                                                           specks_merged=[list(m) for m in merged],
+                                                           splitter_stats=getattr(ctx, "stats", {})))   # M3b: florets / clumps / trunks
         plan.to_json(self.f("parts.json"), with_blocks=False)
         self.plan = plan
         print(f"extract: {len(parts)} parts from {len(zs['zones'])} zones ({n_traced} traced, {len(merged)} specks merged, "
@@ -160,7 +183,8 @@ class Run:
         # angle_coherence (one deliberate angle per part) applies to FIXED-angle fill parts. Guided / contour parts vary
         # on purpose: they are judged per stitch against their own planned field (audit.sewn_angles field_adherence);
         # line parts (run / bean) have no fill direction.
-        fixed = [p for p in plan.parts if p.dir.mode == "fixed" and techniques.get(p.technique).stype not in ("run", "bean")]
+        fixed = [p for p in plan.parts if p.dir.mode == "fixed" and techniques.get(p.technique).stype not in ("run", "bean")
+                 and p.technique not in NO_FILL_DIRECTION]                     # M3b: a 1.2 mm bead has no fill direction
         regs = [dict(geom=p.geom, stype=p.technique, angle=p.dir.angle, grp=p.kind, part=p.id) for p in fixed]
         bad = qa.angle_coherence(regs, groups=kinds, segs=vis, seg_parts=[sp[i] for i in idx])
         kc = {}
@@ -187,6 +211,7 @@ class Run:
                             aligned_max=max([r["aligned"] for r in cords.values()] or [0.0]),
                             column_w=sorted(r["column_w"] for r in cords.values()))
         row["satin"]["cord_flags"] = len(cflags)
+        florets_by_part_map(row, segs, sp, plan, self.crop)               # M3b: radial floret runs are fans, by the part map
         # direction per part kind and per direction SOURCE: each 8 mm tile belongs to the top-most part under its centre
         from shapely.strtree import STRtree
         x0, y0 = self.crop[:2]; geoms = [p.geom for p in plan.parts]; tree = STRtree(geoms)
@@ -241,6 +266,12 @@ class Run:
         fa = sw["field_adherence"]
         if fa["parts"]:                                     # guided / contour parts: >= 85 % of their visible stitches within 15 deg
             coh["field_adherence"] = fa; coh["ok"] = coh["ok"] and fa["pct_within"] >= 85.0
+        ra = blossom.radial_adherence(plan, segs, sp, self.crop, ppm=ppm)    # M3b: radial florets, every stitch on its ray
+        if ra["parts"]:
+            coh["radial_adherence"] = ra; coh["ok"] = coh["ok"] and ra["pct_within"] >= 85.0
+        ca = trunk.column_adherence(plan, segs, sp, self.crop, ppm=ppm)     # M3b: branch columns, across the centreline
+        if ca["parts"]:
+            coh["column_adherence"] = ca; coh["ok"] = coh["ok"] and ca["pct_within"] >= 85.0
         row["verdict"] = bench.verdict(row, self.cfg_b["targets"])
         json.dump(row, open(self.f("gates.json"), "w"), indent=1, default=float)
         self._row, self._aux = row, aux

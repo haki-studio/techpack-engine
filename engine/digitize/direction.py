@@ -180,6 +180,9 @@ def axial_diff(a, b):
     d = abs((a - b) % 180.0); return min(d, 180.0 - d)
 
 
+NO_SINGLE_ANGLE = ("contour", "radial")     # rows follow an outline / rays from a centre: a different texture (rule 3); M3b adds radial
+
+
 def separate(parts, sep=(15.0, 25.0), touch=0.3, kinds=None, field_of=None):
     """DIGITIZING_PRINCIPLES rule 3: same-colour neighbours (same thread, touching within `touch` mm) differ by >= sep[0]
     degrees or use a different texture. Parts in contour mode ARE a different texture (rows follow the outline) and are
@@ -195,10 +198,10 @@ def separate(parts, sep=(15.0, 25.0), touch=0.3, kinds=None, field_of=None):
     fixed = set(); moves = []; mid = (sep[0] + sep[1]) / 2.0
     for i in order:
         p = parts[i]
-        if p.dir.mode == "contour" or (kinds is not None and p.kind not in kinds):
+        if p.dir.mode in NO_SINGLE_ANGLE or (kinds is not None and p.kind not in kinds):
             fixed.add(i); continue
         nbs = [int(j) for j in tree.query(p.geom.buffer(touch), predicate="intersects")
-               if int(j) != i and int(j) in fixed and parts[j].thread == p.thread and parts[j].dir.mode != "contour"]
+               if int(j) != i and int(j) in fixed and parts[j].thread == p.thread and parts[j].dir.mode not in NO_SINGLE_ANGLE]
         clash = [j for j in nbs if axial_diff(parts[j].dir.angle, p.dir.angle) < sep[0]]
         if clash:
             base = p.dir.angle - p.meta.get("sep_deg", 0.0)                   # the part's own (evidence) angle
@@ -227,7 +230,7 @@ def separation_report(parts, sep=15.0, touch=0.3):
     for i, p in enumerate(parts):
         for j in tree.query(p.geom.buffer(touch), predicate="intersects"):
             j = int(j)
-            if j <= i or parts[j].thread != p.thread or "contour" in (p.dir.mode, parts[j].dir.mode): continue
+            if j <= i or parts[j].thread != p.thread or p.dir.mode in NO_SINGLE_ANGLE or parts[j].dir.mode in NO_SINGLE_ANGLE: continue
             n += 1
             if axial_diff(p.dir.angle, parts[j].dir.angle) < sep:
                 close += 1

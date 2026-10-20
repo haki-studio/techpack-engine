@@ -32,12 +32,16 @@ def _higher(parts, i, tree, pad=0.0):
     return [j for j in tree.query(p.geom.buffer(pad) if pad else p.geom, predicate="intersects") if parts[j].z > p.z]
 
 
+KEEP_TINY = ("knot",)                           # M3b: a bead is a designed 1 mm2 object, not a cut-under sliver
+
+
 def underlap(parts, keep=1.0):
     """each part grows `keep` mm into any HIGHER part it borders (traced partitions have no overlap; a seam needs one)"""
     if not parts: return parts
     for p in parts: p.geom = clean(p.geom)
     tree = STRtree([p.geom for p in parts]); grow = {}
     for i, p in enumerate(parts):
+        if p.kind in KEEP_TINY: continue                    # M3b: a bead sews its declared knots, not its outline: no growth
         hi = _higher(parts, i, tree, pad=keep)
         if hi:
             band = clean(p.geom.buffer(keep).intersection(unary_union([parts[j].geom for j in hi])))
@@ -70,6 +74,7 @@ def cut_under(parts, keep=1.0):
 
 LINE_KINDS = ("stratum_crack",)
 KEEP_SMALL = ("cloud_wisp", "cloud_shade")      # deliberately small parts: a wisp, a shade layer (never a speck, never a target)
+KEEP_SMALL += ("floret", "knot", "branch", "trunk_strip", "crown_clump_lit")   # M3b: floret parts, branches, lit clump sides are motifs
 
 
 def merge_specks(parts, min_mm2=20.0, protected=(), min_protected_mm2=4.0, touch=0.3, line_kinds=LINE_KINDS, keep_small=KEEP_SMALL):
@@ -101,13 +106,13 @@ def merge_specks(parts, min_mm2=20.0, protected=(), min_protected_mm2=4.0, touch
     return out, moves
 
 
-def absorb_fragments(parts, min_mm2=2.0):
+def absorb_fragments(parts, min_mm2=2.0, tiny_kinds=KEEP_TINY, tiny_mm2=0.5):
     """drop the pieces of a part smaller than min_mm2 (slivers left by cut_under: they sit under a neighbour's edge, or
     are too small to sew); a part left with nothing is removed. Returns (parts, dropped ids)."""
     from digitize.techniques import polys
     keep, dropped = [], []
     for p in parts:
-        ps = [q for q in polys(p.geom) if q.area >= min_mm2]
+        ps = [q for q in polys(p.geom) if q.area >= (tiny_mm2 if p.kind in tiny_kinds else min_mm2)]
         if not ps: dropped.append(p.id); continue
         p.geom = unary_union(ps) if len(ps) > 1 else ps[0]; keep.append(p)
     return keep, dropped
