@@ -63,6 +63,19 @@ def bank_ref(P):
     ok = (r >= 0) & (c >= 0) & (r < m.shape[0]) & (c < m.shape[1])
     out = np.zeros((H, W), bool); out[ok] = m[r[ok], c[ok]]; return out
 
+def star_sky(P, ref_b=None, clip=None):
+    """the star family's sky (no clouds within 3 mm, no sun glow, no zip) and its background: shared by the gate and by the star
+    fit in scene.py (Rev E3: the fit used a local background, the gate this one, so a star could fit at 0.72 and gate at 0.63)"""
+    x0, y0, W, H = grid(P); side = "R" if P == "FR" else "L"
+    if ref_b is None: ref_b = bank_ref(P) & raster([F.clip_for(size, side).buffer(-1.0)], P)
+    if clip is None: clip = raster([F.clip_for(size, side).buffer(-1.0)], P)
+    YY = y0 + (np.arange(H)[:, None] + .5)/PPM + np.zeros((1, W)); XX = x0 + (np.arange(W)[None, :] + .5)/PPM + np.zeros((H, 1))
+    m = mock_rgb(P); lum = m @ np.array([0.3, 0.59, 0.11])
+    sx, sy = META["sun"]
+    sungl = ((XX - sx)/75.0)**2 + ((YY - sy)/50.0)**2 < 1                     # sun + glow: own motif, not stars
+    sky = (YY < HZ - 6) & ~ndi.binary_dilation(ref_b, iterations=int(3*PPM)) & clip & (np.abs(XX) > 16) & ~sungl   # zip teeth are not stars (A15)
+    return m, lum, sky, float(np.median(lum[sky]))
+
 def run():
     res = {}
     art = pickle.load(open(f"front_{size}.pkl", "rb"))
@@ -87,10 +100,7 @@ def run():
         rows_b = qa.motif_match(ref_b, out_b, PPM, min_mm2=200.0)
         # stars: the mockup is ~1 px/mm, so both sides go through the SAME operator: resampled to the mockup's pixel grid
         # (1.2 mm px), then each star = pixels above half its own peak over the sky (half-max silhouette, A14 like with like)
-        m = mock_rgb(P); lum = m @ np.array([0.3, 0.59, 0.11])
-        sx, sy = META["sun"]
-        sungl = ((XX - sx)/75.0)**2 + ((YY - sy)/50.0)**2 < 1                     # sun + glow: own motif, not stars
-        sky = (YY < HZ - 6) & ~ndi.binary_dilation(ref_b, iterations=int(3*PPM)) & clip & (np.abs(XX) > 16) & ~sungl   # zip teeth are not stars (A15)
+        m, lum, sky, _bg = star_sky(P, ref_b, clip)
         warm = (m[..., 0] - m[..., 2]) > 45     # star gold, not cream / sage cloud tops
         st = is_({"gl_gold", "gl_pale"}).astype(np.float32)
         k = max(1, int(round(MM.S*PPM)))
@@ -98,7 +108,7 @@ def run():
         def halfmax(a, bg):
             pk = ndi.maximum_filter(a, size=int(8*PPM)); return STR.halfmax(a, bg, PPM) & ((pk - bg) > 0.25*(np.percentile(a[sky], 99.9) - bg)) & sky
         mock_res = lambda a: STR.observe(a, PPM)
-        bgm = float(np.median(lum[sky])); ref_s = halfmax(lum, bgm)
+        bgm = _bg; ref_s = halfmax(lum, bgm)
         lab_s, _ = ndi.label(ref_s); ref_s = np.isin(lab_s, np.unique(lab_s[ref_s & warm]))          # keep the gold blobs whole
         out_s = halfmax(mock_res(st), 0.0)
         rows_s = qa.motif_match(ref_s, out_s, PPM, min_mm2=2.0)

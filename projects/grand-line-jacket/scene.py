@@ -483,13 +483,17 @@ STARS_PX = {
 }
 SIZE = {"big": 16.0, "med": 10.5, "small": 4.0, "dot": 1.2}
 stars = []; star_moved = 0; star_trace = []
+import qa_fidelity as _QF                       # the gate's own sky background per side (fit and gate see the same reference blob)
+GATE_BG = {"R": _QF.star_sky("FR")[3], "L": _QF.star_sky("FL")[3]}
 import startrace as STR
 def star_free(cx, cy, p, kind, u):
     """Rev E3 (A14): a star with its OWN arm lengths (up, right, down, left [, 4 diagonals + diagonal angle offset]) and root width
     p[-1], all fitted to the mockup's star. Same stitch build as GM.star (tapered satin arms, pale centre)."""
-    w0 = float(np.clip(p[-1], 0.9, 1.6)); R_ = GM.R
+    w0 = float(np.clip(p[-1], 0.8, 1.6)); R_ = GM.R           # 0.8 = 40wt satin minimum stroke
     if kind == "dot":                              # Rev E3: elliptical dot (width, height fitted)
-        return [R_("gl_gold", affinity.scale(Point(cx, cy).buffer(1.0, quad_segs=10), max(0.55, p[0]/2), max(0.55, p[1]/2)), "satin", "auto", "DOT", unit=u, kob=0.5)]
+        a_, b_ = max(0.55, p[0]/2), max(0.55, p[1]/2)        # rhombus (the mockup's tiny 4-point glints) U ellipse of fraction p[2]
+        g_ = Polygon([(cx - a_, cy), (cx, cy - b_), (cx + a_, cy), (cx, cy + b_)]).union(affinity.scale(Point(cx, cy).buffer(1.0, quad_segs=10), max(0.5, a_*p[2]), max(0.5, b_*p[2])))
+        return [R_("gl_gold", g_.buffer(0), "satin", "auto", "DOT", unit=u, kob=0.5)]
     L4 = p[:4]; ang4 = (-90, 0, 90, 180)
     MINA = 1.6                                     # Rev E3: what clean_vis keeps (satin part >= 1.5 mm2): the fit sees only sewable arms
     if kind in ("cross", "small"):                 # small cross: one thread, each arm overlaps the centre (no sliver arms)
@@ -518,7 +522,7 @@ for kind, pts in STARS_PX.items():
         geo = lambda regs: [r["geom"] for r in regs]
         if kind == "dot":
             core = sorted(m["arms"])[1:3]; dia = float(np.clip(2*np.mean(core) - 1.2, 1.5, 3.2))
-            p0 = [dia, dia, 1.0]; steps = [MUL, MUL, (1.0,)]; lo = [1.1, 1.1, 1.0]; hi = [5.0, 5.0, 1.0]
+            p0 = [dia, dia, 1.0]; steps = [MUL, MUL, tuple(("add", d_) for d_ in (-0.3, -0.15, 0.15))]; lo = [1.1, 1.1, 0.55]; hi = [5.5, 5.5, 1.0]
         else:
             up, dn, lf, rt = [max(a_, 2.0) for a_ in m["arms"]]
             Lv, Lh = max(m["Lv"], 2.0), max(m["Lh"], 2.0)
@@ -528,20 +532,46 @@ for kind, pts in STARS_PX.items():
                 Ld = max(m["Ld"], 2.0) if kind == "big" else 0.35*min(Lv, Lh)
                 DADD = tuple(("add", d_) for d_ in (-3.0, -1.5, -0.7, 0.7, 1.5, 3.0))
                 p0 = arm0 + [Ld]*4 + [0.0, w0]; steps = [MUL]*4 + [MUL if kind == "big" else DADD]*4 + [tuple(("add", d_) for d_ in (-12, -6, -3, 3, 6, 12)), MUL]
-                lo = [1.5]*4 + [1.5 if kind == "big" else 0.0]*4 + [-20.0, 0.9]; hi = [2.5*v for v in arm0] + [max(2.5*Ld, 6.0)]*4 + [20.0, 1.6]
+                lo = [1.5]*4 + [1.5 if kind == "big" else 0.0]*4 + [-20.0, 0.8]; hi = [max(2.5*v, 30.0 if kind == "big" else 14.0) for v in arm0] + [max(2.5*Ld, 12.0 if kind == "big" else 6.0)]*4 + [20.0, 1.6]
             else:
-                p0 = arm0 + [w0]; steps = [MUL]*5; lo = [1.2]*4 + [0.9]; hi = [2.5*v for v in arm0] + [1.6]
-        mk = lambda x_, y_, p, kind=kind, u=u: geo(star_free(x_, y_, p, kind, u))
-        pf, (fx_, fy_), iou_ = STR.fit_free(cx, cy, mk, p0, steps, lo, hi, clip=CLIP_M[side].buffer(-1.0))
+                p0 = arm0 + [w0]; steps = [MUL]*5; lo = [1.2]*4 + [0.8]; hi = [max(2.5*v, 8.0) for v in arm0] + [1.6]
+        _cl = CLIP_M[side].buffer(-0.4)
+        def _sewn(gs, _cl=_cl):          # what art_size + clean_vis keep of it at size M: cut at the keep-out, slivers dropped
+            out_ = []
+            for g_ in gs:
+                if not _cl.contains(g_): g_ = g_.intersection(_cl)
+                out_ += [q for q in GM.polys(g_) if q.area >= 1.5 and not q.buffer(-0.35).is_empty]
+            return out_
+        mk = lambda x_, y_, p, kind=kind, u=u: _sewn(geo(star_free(x_, y_, p, kind, u)))
+        RW = 32.0 if kind == "big" else 22.0           # window: the big stars' arms run past 22 mm
+        if kind == "big": p0 = [max(v, 12.0) for v in p0[:4]] + [max(v, 6.0) for v in p0[4:8]] + p0[8:]     # measure() undershoots when its centre is off
+        pf, (fx_, fy_), iou_ = STR.fit_free(cx, cy, mk, p0, steps, lo, hi, clip=CLIP_M[side].buffer(-1.0), R=RW, bg=GATE_BG[side],
+                                            centre_steps=(1.6, 0.4) if kind == "big" else (0.8, 0.4))
+        # Rev E3: refine through the STITCH model (engine stitch blocks drawn as thread, the gate's own operator)
+        def mkr(x_, y_, p, kind=kind, u=u, _cl=_cl):
+            out_ = []
+            for r_ in star_free(x_, y_, p, kind, u):
+                g_ = r_["geom"] if _cl.contains(r_["geom"]) else r_["geom"].intersection(_cl)
+                ps_ = [q for q in GM.polys(g_) if q.area >= 1.5 and not q.buffer(-0.35).is_empty]
+                if ps_: out_.append(dict(r_, geom=unary_union(ps_)))
+            return out_
+        fine = tuple(("add", d_) for d_ in (-2, -1, 1, 2))
+        st2 = [MUL if s_ is MUL else s_ for s_ in steps]
+        pf, (fx_, fy_), iou_ = STR.fit_free(fx_, fy_, mkr, pf, st2, lo, hi, clip=CLIP_M[side].buffer(-1.0), render=STR.stitch_render, rounds=2, centre_steps=(0.4, 0.2), bg=GATE_BG[side], R=RW)
+        if kind == "dot":          # Rev E3: a "dot" may be a tiny 4-point glint: fit it as a small cross too, keep the better
+            mkc = lambda x_, y_, p, u=u: mkr(x_, y_, p, "small", u)
+            pc_, cc_, ic_ = STR.fit_free(fx_, fy_, mkc, [max(1.2, pf[0]/2)]*2 + [max(1.2, pf[1]/2)]*2 + [0.9], [MUL]*5, [1.0]*4 + [0.8], [6.0]*4 + [1.4],
+                                     clip=CLIP_M[side].buffer(-1.0), render=STR.stitch_render, rounds=2, centre_steps=(0.4, 0.2), bg=GATE_BG[side])
+            if ic_ > iou_ + 0.03: kind, pf, (fx_, fy_), iou_ = "small", pc_, cc_, ic_
         cx, cy = fx_, fy_
         # Rev E3 (A14): a star at a keep-out is CUT by the keep-out per size (art_size), never shrunk, moved or dropped
         regs = star_free(cx, cy, pf, kind, u)
         if not any(r["geom"].intersects(LIM_ALL[side].buffer(-0.5)) for r in regs) and not any(r["geom"].intersects(CLIP_M[side]) for r in regs):
-            star_trace.append(dict(kind=kind, mm=(round(cx, 1), round(cy, 1)), dropped="fully inside the keep-out", fit_iou=round(iou_, 2), moved_mm=0.0))
+            star_trace.append(dict(kind=kind, mm=(round(cx, 1), round(cy, 1)), dropped="fully inside the keep-out", fit_score=round(iou_, 2), moved_mm=0.0))
             continue
         stars.append((cx, cy, kind))
         cut = not all(CLIP_M[side].buffer(-0.4).contains(r["geom"]) for r in regs)
-        star_trace.append(dict(kind=kind, mm=(round(cx, 1), round(cy, 1)), arms=[round(v, 1) for v in pf[:-1]], w=round(float(pf[-1]), 2), fit_iou=round(iou_, 2),
+        star_trace.append(dict(kind=kind, mm=(round(cx, 1), round(cy, 1)), arms=[round(v, 1) for v in pf[:-1]], w=round(float(pf[-1]), 2), fit_score=round(iou_, 2),
                                traced_at=(round(ocx, 1), round(ocy, 1)), moved_mm=0.0, cut_by_keepout=bool(cut),
                                Lv=round(max(pf[0], pf[2]) if kind != "dot" else pf[0], 1), Lh=round(max(pf[1], pf[3]) if kind != "dot" else pf[0], 1)))
         add(regs, 18, unit=u, kgrp=u)        # Rev E3: arms of one star knock each other out exactly (the kob gap cut small arms to slivers)

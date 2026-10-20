@@ -156,3 +156,20 @@ Problems hit while building this product, worked around in project code only. Ea
 - **Proposed engine fix:** in build_object, if centreline().length < 0.6 x the polygon's long side (minimum_rotated_rectangle),
   fall back to fixed_satin at auto_angle (or the longest skeleton path of the largest component); log it.
 - **Check:** unit test: a tapered 16 x 1.2 mm arm with two 0.5 mm notches at its root -> centreline >= 14 mm.
+
+## 19. The fit and the gate must share the reference operator (Rev E3)
+- **Problem:** the star fit used a local background (30th percentile of a 44 mm window) and a 22 mm window; the gate uses the
+  panel's sky median and the whole panel. Same star: fit IoU 0.72, gate 0.63; a big star whose arms ran past the window fitted
+  at 0.08. Polygon fill + 0.25 mm grow also differed from the shipped stitches (pull comp, satin ends).
+- **Fix (project):** qa_fidelity.star_sky() gives the gate's sky + background to the fit; window snapped to the gate's pixel
+  grid, 32 mm for big stars; a second fit round through `startrace.stitch_render` (dst2.build_object blocks drawn as 0.45 mm
+  thread, the gate's own DST operator); score = IoU - 0.8 x shortfall of width/height below 0.88.
+- **Proposed engine fix:** `qa.reference_blob()` + `qa.stitch_coverage(regions)` used by both a fitter and `qa.motif_match`.
+- **Check:** fit score in scene_meta.star_trace >= gate IoU - 0.05 for every star (printed on the compare sheet).
+
+## 20. heavy.sh slot lottery starves a builder (Rev E3)
+- **Problem:** `flock -n` polling every 5 s gives no order: a size-M stitch build waited 60 min while other projects' jobs
+  took every freed slot.
+- **Proposed fix:** FIFO ticket (append pid to a queue file under a lock; take a slot only when first in line), or
+  `flock` blocking on one shared semaphore directory with per-slot fairness.
+- **Check:** 8 jobs queued from 3 projects start in submission order.

@@ -15,6 +15,7 @@ which = [a for a in sys.argv[2:] if a in glcore.PIECES] or list(glcore.PIECES)
 D = pickle.load(open(f"front_{size}.pkl", "rb"))
 OUT = f"out/01_front-scene/{size}"; os.makedirs(OUT, exist_ok=True)
 FRAME = tuple(float(v) for v in factory.largest_frame(factory.load()))
+HZ_S = 199.0 * glcore.GRADE[size][1]           # horizon of this size (scene.HORIZON scaled about the CF neck point)
 
 # split_clip with a wider split-line search (engine searches 40-60 % of the height only): every frame-legal y is tried
 _src = inspect.getsource(dst2.split_clip).replace(
@@ -69,7 +70,9 @@ def trim_exposed(pat, stops, runs, origin, limit=2.0, forgive=0.8, tol=0.3):
             bare = ln2.difference(unary_union([gs[h].buffer(tol, 4) for h in hits])) if hits else ln2
             if not bare.is_empty: e = max(g.length for g in getattr(bare, "geoms", [bare]))
         sea = stops[si]["col"] in ("gl_deep", "gl_teal", "gl_tealt", "gl_foam")
-        bad.append(e > (0.8 if sea else limit))            # Rev D item 10: in the sea any visible connector > 0.8 mm is trimmed
+        # Rev E3: a cloud / islet thread travelling over the SEA (below the horizon) shows on the dashes just the same
+        over_sea = min(p_[1] for p_ in pts) > HZ_S + 1.0
+        bad.append(e > (0.8 if (sea or over_sea) else limit))            # Rev D item 10: in the sea any visible connector > 0.8 mm is trimmed
     import pyembroidery as pe
     ox, oy = origin; S = pat.stitches; out = []; k = 0; ri = 0; n_fix = 0; U = dst2.U
     def at(k, tr):
