@@ -56,3 +56,20 @@ Mutate scripts restore from an in-memory copy; never use checkout to undo.
 - Crown chaos / coherence (51 crown fails): clumps smaller than an 8 mm tile at different angles.
 - Pines show no trunk: clumps attach to dark "bark" pixels that are often shadow.
 - Density / stack 5 where branch, canopy, floret and bead meet: M4.
+
+## Part B: PR #10 review fixes (after merging #8 M4g and #9 M3a)
+| # | review finding | fix | guard (red -> green) |
+|---|---|---|---|
+| 1 | crash with M4g: `knockout_of 'foliage.172' names no part` (dark clumps folded away by merge_specks) | `extract/splitters/hints.py`: `repoint` after merge_specks (follows the merge chain) and after absorb (drops, logged in plan meta `hint_repairs`); 18 repairs on the crop, incl. foliage.173 -> cliffs.342 | `test_knockout_hints_survive_merges` (scene that triggers the merge; runs M4g's `sequence.apply_hints`); mutation "repoint does nothing" |
+| 2 | radial guard hole: audit read `meta.construct.centre`, file check `meta.centre` | one field `meta.centre`; `radial_adherence` lists `no_centre` (ok False) and `unseen` (flagged into coherence, A22) | `test_radial_part_without_centre_fails_audit_and_file_check`; mutations "adherence skips no-centre parts", "audit reads construct.centre" |
+| 3 | blossom density: silhouette 8.4 mm/mm2 (florets 9.3) on the file | florets overlap the knocked-out canopy by a 0.3 mm seam (`SEAM_MM`), jacket floret spacing 0.45 (rule_overrides); silhouette 6.55, florets 7.0 on the final merged file; seam gaps checked (no-underlap 9, seam 1-5, largest 0.73 mm2) | `test_beads_neither_grow_nor_drop` (seam 0.15-0.4); mutations "1 mm underlap", "no growth" |
+| + | M3a / M3b constructed angles audited in two places | `construct.basis` / `bucket_of` = one entry; M3a rules registered (`M3A_RULES`), far tiers -> outline (`DEPTH_RULES`) | `test_one_constructed_basis_for_m3a_and_m3b`; mutations "DEPTH_RULES empty", "M3a branch trusts the declared angle" (red in test_digitize_m3a) |
+| + | parts target, generated florets, budget | BENCH_m3b.md: per-kind parts target (fills 275, 3.6 % under 20 mm2), florets "generated, not traced" (64 %), budget ~890k at crop density vs 250-350k | doc |
+
+Merges: #8 (M4g) and #9 (M3a), merge commits, conflicts resolved by hand (run.py dispatch + meta kwargs from all three,
+sequence.absorb_fragments per-part limit else bead floor, house.yaml appends, zones village = M3a building, ONE
+`separate_kinds` union list, LESSONS renumbered A28 / A29 / B37 after M3a's A26-A27 / B36, SCOREBOARD = main's + the one
+re-run M3b row). pytest 202 passed. identity: probe 84ff50ea74938675 / 1ecd8f657db3f53a, wb 449c14f6e8f693b6 unchanged;
+crop 1963d24fc2d3d862 (changed on purpose). Mutations 25/25 red -> green (scratchpad m3b/mutate.py).
+Crop on the merged tree: 2/9 (satin, colours), chaos 24.8 % (main after #9: 11.2 %), independent 49.5 % of 194,
+separation 23, stub area 6.9 %, trims 36.8, density flags 167, stack 5. Chaos is the open item (canopy, crowns, florets).
