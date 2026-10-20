@@ -34,6 +34,12 @@ techniques:                    # defaults; a kind may override any of these numb
   dot:           {spacing: 0.18, stitch_len: 1.5, underlay: [cross], pull_comp: 0.0, min_d: 1.1, allow: 0.2}
   radial:        {spacing: 0.36, stitch_len: 7.0, underlay: [edge_run], pull_comp: 0.10, allowed_kinds: [floret, star, star_tint, ring]}
   turning_satin: {spacing: 0.30, stitch_len: 7.0, underlay: [centre_run], pull_comp: 0.15, short: false}
+  # M6: puff = dense satin over foam, no underlay (allowed: [tack]), rows never split; chenille / chain on a chenille
+  # head (spacing = moss path spacing); faux_chain = lock-stitch chain loops for the Brother heads.
+  puff:        {spacing: 0.20, stitch_len: 7.0, underlay: [], pull_comp: 0.0, min_w: 3.0, max_w: 7.0, max_spacing: 0.30, cap_w: 1.5, cap_ext: 0.5, perf_step: 0.5, foam_mm: 3.0, foam_min_mm: 2.0, foam_max_mm: 4.0, foam_colour: match thread, needle: "75/11 sharp [proposed - confirm]", spm: "600 [proposed - confirm]"}
+  chenille:    {spacing: 2.0, stitch_len: 2.5, underlay: [], pull_comp: 0.0, mode: spiral, moss_len: 2.5, chain_len: 2.0, outline_inset: 0.8, loop_height_mm: 4.0, outline: true, outline_dir: ccw}
+  chain:       {spacing: 0.0, stitch_len: 2.0, underlay: [], pull_comp: 0.0, chain_len: 2.0}
+  faux_chain:  {spacing: 0.0, stitch_len: 2.5, underlay: [], pull_comp: 0.0, link: 2.5, half_w: 0.45, overlap: 0.3, max_stitch: 3.0}
 
 kinds:
   sky_band:
@@ -216,3 +222,19 @@ kinds:
     underlay: []               # flat studs on the fill: the dot's 0.45 mm cross underlay reads back as a sub-1 mm satin
                                # column (qa.satin_runs too-narrow) on a 1-1.5 mm bead
     note: stud / ornament bead, sewn last
+
+  # --- M6 --- specialty kinds (puff / chenille / chain). Numbers are house proposals from published practice, cited in
+  # projects/castle-falls-jacket/bench/BENCH_m6.md, [proposed - confirm] at the factory's strike-off.
+  puff_column:
+    techniques: [puff]         # satin columns over foam ONLY: no tatami fallback (fill flattens foam)
+    dir: geometry              # across the column, by construction
+    note: 3D foam satin column, 3-7 mm wide (LESSONS B7 7.5 mm stitch cap), perforated + capped ends, own stop (lay foam)
+  chenille_fill:
+    techniques: [chenille]     # sewn on a chenille head; no lock-stitch fallback for moss loops
+    dir: 0                     # zigzag moss rows run at this angle; spiral moss follows the outline
+    note: chenille moss (loop) fill + chain outline - a plan until the factory gives the chenille file format (F1)
+  chain_line:
+    techniques: [chain, faux_chain]   # true chain on a chenille head when enabled, else the Brother lock-stitch chain
+    dir: contour
+    follows: [chain, faux_chain]
+    note: chain-stitch line

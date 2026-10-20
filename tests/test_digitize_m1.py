@@ -150,6 +150,9 @@ SYNTH_META = {"guided_fill": dict(field=dict(x0=-2.0, y0=-2.0, step=1.0, nx=35, 
               "blend": dict(blend_from=[[-1.0, 0.0], [31.0, 0.0]])}
 SYNTH.update({"column_satin": (box(0, 0, 2, 20), 0.0), "dot": (Point(5, 5).buffer(0.8), 30.0),       # M5 patch plugins
               "radial": (Point(5, 5).buffer(3.0), 0.0), "turning_satin": (box(0, 0, 3, 12), 0.0)})
+# --- M6 --- specialty plugins (puff column, chenille moss + chain outline, chain / faux_chain lines)
+SYNTH.update({"puff": (box(0, 0, 5, 25), 0.0), "chenille": (box(0, 0, 20, 14), 0.0), "chain": (box(0, 0, 0.6, 20), 0.0),
+              "faux_chain": (box(0, 0, 0.6, 20), 0.0)})
 
 
 def test_registry_contract():

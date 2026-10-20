@@ -25,6 +25,10 @@ DEFAULTS = {
     "gates": {},
 }
 
+# --- M6 --- specialty toggles. chain (true chain stitch) needs a chenille head whose file format the factory has not
+# given (F1), so it is OFF by default: chain_line kinds then sew faux_chain (lock-stitch) on the Brother heads.
+DEFAULTS["techniques"].update({"puff": True, "chenille": True, "chain": False, "faux_chain": True})
+
 
 def _read(path):
     txt = open(path).read()
