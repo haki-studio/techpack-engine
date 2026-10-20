@@ -50,7 +50,7 @@ TECHPACK_MAX_WORKERS (default 2) at once and respects the company session/RAM ca
 by themselves as workers finish. Heavy commands still share CPU through `scripts/heavy.sh`.
 
 **Then end this session.** Nothing waits on it: each builder pushes, opens its PR and launches its own reviewer
-(`dispatch.sh review`); the reviewer approves, sends one fix round back (`dispatch.sh fix`), or marks the product
+(`dispatch.sh review`); the reviewer approves, sends a fix round back (`dispatch.sh fix`) while each round clearly improves, or marks the product
 blocked for the founder. Closing a coordinator is always safe; never keep one open to babysit workers.
 
 Tell Devin how to watch: `claude agents` (attach / logs / stop any worker), `python3 scripts/status.py --watch`, or
@@ -64,8 +64,9 @@ A later, fresh session reads the board + `gh pr list` and does only what needs a
 - **Independent review (every product, no exceptions)** is launched by the builder itself (`dispatch.sh review`).
   Reviewer: **fidelity first** — stitch preview vs mockup side by side, zoomed, every mockup detail that is missing or
   simplified (cost findings are informational, never a reason to simplify); then every page rendered and looked at,
-  every number vs the generated files, factory clarity, LESSONS gates, cost (trims / stitches). At most one automatic
-  fix round; after that the product is `blocked` for the founder. Only a `reviewed` pack goes to the factory.
+  every number vs the generated files, factory clarity, LESSONS gates, cost (trims / stitches). `scripts/review_next.py` decides the
+  next step: fix rounds continue while each review finds fewer fixable items than the last (max 3, a cost safety net);
+  no improvement, or only founder decisions left → `blocked` for the founder. Only a `reviewed` pack goes to the factory.
 - A worker that died mid-way (laptop restart: background sessions do not survive a daemon restart) leaves its work on
   its branch/worktree; re-run `scripts/dispatch.sh build <slug> "resume from the branch"`.
 - **Factory loop:** every pack carries the F1 page (`engine/factory.py`): strike-off files (size M), frame + needle

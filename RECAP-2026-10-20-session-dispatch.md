@@ -23,3 +23,10 @@ hook, step 3) says "wait for running subagents". Keeping the coordinator open al
 - Company-wide: `~/.claude/company/PROTOCOL.md` line ~92 ("prefer in-process subagents for builders") and the
   session-size hook step 3 ("wait for running subagents") still push the old pattern — founder decision (asked).
 - Konpeito RevE external sample reviewed (see the session's answer): 07a/07b not sew-out ready.
+
+## Later the same session
+- Founder changed the fix-round rule: rounds continue while each review finds fewer fixable items than the last (max 3,
+  `TECHPACK_MAX_FIX_ROUNDS`); stalled/worse, ceiling, or only founder decisions → blocked for the founder.
+  `scripts/review_next.py` (the reviewer calls it last); history per PR on the board. Test proven red without the check.
+- Engine G1 started as a background session `tp-build-engine-g1` (worktree .claude/worktrees/tp-engine-g1, branch
+  engine-g1); it opens its own PR and launches its own reviewer.

@@ -55,3 +55,28 @@ def test_board_mirror_reaches_status(tmp_path):
         os.environ.pop("TECHPACK_STATE", None)
         if before is None: os.path.exists(proj) and os.remove(proj)
         else: open(proj, "w").write(before)
+
+
+def review_next(state, *args):
+    e = dict(os.environ, TECHPACK_STATE=str(state))
+    return subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "review_next.py"), SLUG, "7", *args],
+                          capture_output=True, text=True, env=e)
+
+def seed(state, *fixables, pr="7"):
+    os.makedirs(state / "board", exist_ok=True)
+    json.dump({"slug": SLUG, "log": [], "reviews": [{"pr": pr, "fixable": f, "founder": 0} for f in fixables]},
+              open(state / "board" / f"{SLUG}.json", "w"))
+
+def test_review_next_keeps_fixing_only_while_it_improves(tmp_path):
+    def act(*a): return review_next(tmp_path, *a, "--dry-run").stdout.split(":")[0]
+    assert act("--fixable", "0") == "reviewed"
+    assert act("--fixable", "0", "--founder", "2") == "blocked"
+    assert act("--fixable", "5") == "fix"                      # first review always gets a round
+    seed(tmp_path, 5); assert act("--fixable", "3") == "fix"   # 5 -> 3: improving
+    seed(tmp_path, 5); assert act("--fixable", "5") == "blocked"   # stalled
+    seed(tmp_path, 3); assert act("--fixable", "4") == "blocked"   # worse
+    seed(tmp_path, 9, 6, 4); assert act("--fixable", "2") == "blocked"   # ceiling: 3 rounds used
+    r = review_next(tmp_path, "--fixable", "2", "--dry-run")
+    assert "ceiling" in r.stdout
+    # another PR's history does not count
+    seed(tmp_path, 1, 1, 1, pr="8"); assert act("--fixable", "2") == "fix"
