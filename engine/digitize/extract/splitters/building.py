@@ -22,6 +22,8 @@ One zone WINDOW = one building (zones_BK.json: hand-authored windows, the silhou
   7. rule 3 separation among the building's own walls / roofs (recorded turns <= 25 deg, audited).
 z inside the zone: walls z, roofs z+0.10 (+0.01 per tier up), eaves z+0.30, tile lines z+0.40, windows / members z+0.50,
 studs z+0.60: sequence.py's z-DAG then sews walls -> roofs bottom-up -> eaves -> tile lines -> windows -> studs last.
+M4g sequencing hints (optional meta, ignored by the M1 sequencer): `group` = the building, `seq_after` = the plane(s) a
+tile line / eave lies on.
 Every direction is a RULE on the fitted geometry (building_fit), never the reference grain (LESSONS A24); digitize.audit
 re-derives it from the fitted points stored in the part. Small deliberate parts carry meta keep_small (no speck merge)
 and min_fragment_mm2 (a 1.5 mm stud is not a fragment): the two sequence.py hooks M3a added."""
@@ -69,6 +71,7 @@ def _poly(ev, m):
 def _part(ctx, zone, kind, geom, thread, z, angle, note, **meta):
     meta.setdefault("splitter", "building")
     if kind in ("eave", "window", "member"): meta.setdefault("caps", ["flat", "flat"])   # square member ends
+    if "building" in meta: meta.setdefault("group", f"{zone['id']}.b{meta['building']}")   # M4g hint: finish one building per stop
     return Part(id=ctx.new_id(zone["id"]), kind=kind, geom=geom, thread=thread, z=round(z, 3),
                 dir=DirSpec(angle, source="rule", note=note), zone=zone["id"], meta=meta)
 
@@ -251,7 +254,7 @@ def split(ctx, zone, z, claim):
                 line = BF.tile_lines(body, p.dir.angle, sc["tile_mm"], sc["tile_inset_mm"]) if alt else None
                 if not line or len(line) < 2: report["tiles_skipped"] += 1; continue
                 parts.append(_part(ctx, zone, "roof_tile_line", LineString(line).buffer(0.3), alt[0], z + Z["roof_tile_line"], p.dir.angle,
-                                   "tile rows down the slope (bean)", line=[list(c) for c in line], eave_pts=p.meta["eave_pts"],
+                                   "tile rows down the slope (bean)", line=[list(c) for c in line], seq_after=[p.id], eave_pts=p.meta["eave_pts"],
                                    top_pts=p.meta["top_pts"], hip_pts=p.meta["hip_pts"], side=p.meta["side"], plane=p.id, building=wi,
                                    keep_small=True, min_fragment_mm2=sc["small_fragment_mm2"]))
             if ri["eave_cl"] is None: report["eaves_skipped"] += 1; continue
@@ -263,6 +266,7 @@ def split(ctx, zone, z, claim):
             cl = ri["eave_cl"]
             parts.append(_part(ctx, zone, "eave", ri["eave_g"], order[0], z + Z["eave"], BF.across_angle(cl), "eave, satin across",
                                cl=[list(c) for c in cl], w=sc["eave_w_mm"], eave_pts=fit["eave_pts"], building=wi, tier=ri["rank"],
+                               seq_after=[pid_of[k].id for k, _, _ in ri["planes"] if k in pid_of],
                                keep_small=True, min_fragment_mm2=sc["small_fragment_mm2"]))
     # rule 3 among the building's own planes (walls, roofs): recorded turns, audited
     from digitize import direction as DR

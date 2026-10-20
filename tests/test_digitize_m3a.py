@@ -119,6 +119,12 @@ def test_building_z_order_walls_roofs_eaves_tiles_windows_studs():
     wall = [pos[i] for i in pos if kind[i] == "wall"]; roof = [pos[i] for i in pos if kind[i] == "roof"]
     win = [pos[i] for i in pos if kind[i] == "window"]
     assert max(wall) < min(roof) and max(roof) < min(win), (wall, roof, win)
+    # M4g hint contract (optional meta): one group per building; tile lines / eaves sew after the plane(s) they lie on
+    ids = {p.id for p in parts}
+    assert {p.meta.get("group") for p in parts} == {"bld.b0"}
+    for p in parts:
+        if p.kind in ("roof_tile_line", "eave"):
+            assert p.meta["seq_after"] and set(p.meta["seq_after"]) <= ids and all(kind[i] == "roof" for i in p.meta["seq_after"])
 
 
 def test_studs_never_touch_each_other():
