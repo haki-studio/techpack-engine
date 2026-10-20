@@ -74,7 +74,8 @@ def recognise(ctx, lp, z, claim):
             for q, t, sm in lit_geoms:                     # one deliberate angle per lobe: its lit pieces take the LOBE's
                 dq, eq = _layer_dir(ctx, lp, g, q, d, 0.0)
                 parts.append(part(ctx, lp, "lobe" if kind == "lobe_grain" and dq.mode == "fixed" else kind, q, t, zl - 0.005, dq, ev.mask(q),
-                                  lobe=int(rank), mass=int(mi), lit_of=lobe_part.id, knockout_of=lobe_part.id, group=f"{lp['pid']}.m{mi}", **eq))
+                                  lobe=int(rank), mass=int(mi), lit_of=lobe_part.id, knockout_of=lobe_part.id, group=f"{lp['pid']}.m{mi}",
+                                  seam_mm=0.3, keep_small=True, **eq))
             if lit_geoms:
                 lobe_part.geom = g.difference(union([q for q, _, _ in lit_geoms])).buffer(0)
             parts.append(lobe_part)

@@ -111,7 +111,7 @@ class SvgRun:
         import factory
         t0 = time.time(); plan = ObjectPlan.from_json(self.f("plan.json"))
         b = self.bounds(plan); origin = ((b[0] + b[2]) / 2, (b[1] + b[3]) / 2)
-        res = CP.write(plan, self.base, origin, **self.cfg.get("compile", {}))
+        res = CP.write(plan, self.base, origin, **dict(dict(join_guard=False), **self.cfg.get("compile", {})))   # B39 guard opt-in here (G1)
         if len(res["seg_parts"]) != len(res["segs"]): raise RuntimeError("compile: labels out of step with stitches")
         import dst2
         rb = res["readback"]; ex = sorted(dst2.exposed_travel(res["regions"], res["runs"]))

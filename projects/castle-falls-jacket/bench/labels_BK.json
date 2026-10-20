@@ -1,0 +1,163 @@
+{
+  "schema": "techpack.labels/1",
+  "source": {
+    "view": "B", "crop": [-180, 365, 20, 565],
+    "by": "session c2fa35ef (Claude Code, vision step by eye; no API call)", "date": "2026-10-20",
+    "image": "the bench reference crop (bench.json registration: mockup + back_left close-up), read off digitize.labels.sheet at 5 and 9 px/mm with a 5 mm garment grid"
+  },
+  "review_below": 0.6,
+  "_doc": "Castle Falls BK size M benchmark crop, labelled for ENGINE_PLAN G1 by looking at the sheet. Windows are loose hints in garment mm; every outline is traced from the pixels inside them (tones). z = sew depth (lower first); claims run from the highest z down, the rest part last.",
+  "motifs": [
+    {"id": "sky", "what": "pale haze behind the right-hand blossom and a sliver at the top edge", "confidence": 0.7,
+     "parts": [
+       {"id": "haze", "primitive": "band", "z": 0, "confidence": 0.6,
+        "direction": {"intent": "angle", "angle": 0},
+        "hint": {"polygons": [[[-2, 412], [20, 412], [20, 440], [-2, 440]], [[-40, 365], [-14, 365], [-14, 372], [-40, 372]]]},
+        "tones": ["cf_skylt", "cf_lav", "cf_mist", "cf_sky"],
+        "question": "the haze reads as sky; is it sky (horizontal band) or a far rock face?", "alternatives": ["plane"]}
+     ]},
+    {"id": "rock", "what": "the rock faces behind everything (navy / slate facets, tan highlights)", "confidence": 0.8,
+     "parts": [
+       {"id": "faces", "primitive": "band", "z": 1.5, "confidence": 0.75,
+        "direction": {"intent": "grain"},
+        "hint": {"polygons": [[[-180, 365], [20, 365], [20, 565], [-180, 565]]], "except": ["sky.haze"]},
+        "tones": ["cf_navy", "cf_slate", "cf_sky", "cf_skylt", "cf_mist", "cf_lav", "cf_bark"],
+        "params": {"min_mass_mm2": 40, "min_band_mm": 4, "max_band_mm": 16, "min_part_mm2": 30}}
+     ]},
+    {"id": "foliage", "what": "pine and shrub crowns: leaf clumps, dark under lit", "confidence": 0.75,
+     "parts": [
+       {"id": "clumps", "primitive": "lobe", "z": 2, "confidence": 0.7,
+        "direction": {"intent": "outline"},
+        "hint": {"polygons": [[[-180, 365], [20, 365], [20, 565], [-180, 565]]], "except": ["sky.haze"]},
+        "tones": ["cf_grndk", "cf_grn", "cf_grnlt"],
+        "params": {"claim_close_mm": 1.5, "layers": "lit", "lobe_sep_mm": 6, "min_lobe_mm2": 20, "min_layer_mm2": 6, "min_mass_mm2": 20},
+        "alternatives": ["band"]}
+     ]},
+    {"id": "fall_left", "what": "the big left waterfall and its lower cascade", "confidence": 0.9,
+     "parts": [
+       {"id": "water", "primitive": "cord", "z": 3, "confidence": 0.9,
+        "direction": {"intent": "along"},
+        "hint": {"polygons": [[[-172, 365], [-137, 365], [-136, 400], [-137, 440], [-138, 463], [-163, 463], [-168, 440], [-171, 400]]]},
+        "tones": ["cf_white", "cf_cream", "cf_skylt", "cf_sky", "cf_mist"],
+        "params": {"cord_mm": 5, "cords_min": 4, "cords_max": 10, "min_mass_mm2": 50}},
+       {"id": "cascade", "primitive": "cord", "z": 3, "confidence": 0.75,
+        "direction": {"intent": "along"},
+        "hint": {"polygons": [[[-152, 460], [-124, 460], [-124, 492], [-152, 492]]]},
+        "tones": ["cf_white", "cf_cream", "cf_skylt", "cf_sky", "cf_mist"],
+        "params": {"cord_mm": 5, "cords_min": 2, "cords_max": 6, "min_mass_mm2": 30}}
+     ]},
+    {"id": "fall_centre", "what": "the centre waterfall behind the castle", "confidence": 0.9,
+     "parts": [
+       {"id": "water", "primitive": "cord", "z": 3, "confidence": 0.9,
+        "direction": {"intent": "along"},
+        "hint": {"polygons": [[[-65, 404], [-48, 403], [-40, 414], [-37, 484], [-65, 484]]]},
+        "tones": ["cf_white", "cf_cream", "cf_skylt", "cf_sky", "cf_mist"],
+        "params": {"cord_mm": 5, "cords_min": 3, "cords_max": 8, "min_mass_mm2": 50}}
+     ]},
+    {"id": "foam", "what": "white foam where the centre fall lands, over the pagoda roof", "confidence": 0.7,
+     "parts": [
+       {"id": "pool", "primitive": "band", "z": 3.5, "confidence": 0.7,
+        "direction": {"intent": "angle", "angle": 0},
+        "hint": {"polygons": [[[-66, 478], [-24, 478], [-24, 500], [-66, 500]]]},
+        "tones": ["cf_white", "cf_cream", "cf_mist"],
+        "params": {"min_part_mm2": 20}}
+     ]},
+    {"id": "cloud", "what": "the cloud bank between the falls", "confidence": 0.85,
+     "parts": [
+       {"id": "bank", "primitive": "lobe", "z": 4, "confidence": 0.85,
+        "direction": {"intent": "grain"},
+        "hint": {"polygons": [[[-128, 443], [-66, 443], [-66, 472], [-128, 472]]]},
+        "tones": ["cf_white", "cf_cream", "cf_mist"],
+        "params": {"tone": "lit", "layers": "shade", "lobe_sep_mm": 4, "min_lobe_mm2": 25, "min_mass_mm2": 12}}
+     ]},
+    {"id": "temple", "what": "the temple bottom-left: big blue roof, white gable wall, red timber, gold finials", "confidence": 0.8,
+     "parts": [
+       {"id": "wall", "primitive": "plane", "z": 5.0, "confidence": 0.7,
+        "direction": {"intent": "angle", "angle": 90},
+        "hint": {"polygons": [[[-170, 536], [-104, 536], [-104, 565], [-170, 565]]]},
+        "tones": ["cf_white", "cf_cream", "cf_mist", "cf_bark", "cf_brown"],
+        "params": {"min_part_mm2": 12}},
+       {"id": "roof", "primitive": "plane", "z": 5.1, "confidence": 0.85,
+        "direction": {"intent": "angle", "angle": 100},
+        "hint": {"polygons": [[[-168, 524], [-98, 524], [-98, 556], [-168, 556]]]},
+        "tones": ["cf_navy", "cf_sky", "cf_skylt", "cf_slate", "cf_lav"],
+        "params": {"min_part_mm2": 20}},
+       {"id": "timber", "primitive": "stroke", "z": 5.3, "confidence": 0.7,
+        "hint": {"polygons": [[[-170, 536], [-104, 536], [-104, 565], [-170, 565]]]},
+        "tones": ["cf_red"],
+        "params": {"min_mm2": 2, "min_w_mm": 1.0}},
+       {"id": "finials", "primitive": "dot", "z": 5.6, "confidence": 0.6,
+        "hint": {"polygons": [[[-170, 522], [-98, 522], [-98, 565], [-170, 565]]]},
+        "tones": ["cf_gold"],
+        "params": {"max_mm2": 10, "min_d": 1.0, "max_d": 2.5}}
+     ]},
+    {"id": "pagoda", "what": "the pagoda in the middle: blue curved roof, gold ornaments, small windows", "confidence": 0.7,
+     "parts": [
+       {"id": "wall", "primitive": "plane", "z": 5.0, "confidence": 0.6,
+        "direction": {"intent": "angle", "angle": 0},
+        "hint": {"polygons": [[[-114, 492], [-66, 492], [-66, 522], [-114, 522]]]},
+        "tones": ["cf_white", "cf_cream", "cf_mist", "cf_bark", "cf_brown", "cf_red"],
+        "params": {"min_part_mm2": 8}},
+       {"id": "roof", "primitive": "band", "z": 5.1, "confidence": 0.7,
+        "direction": {"intent": "along"},
+        "hint": {"polygons": [[[-114, 478], [-58, 478], [-58, 522], [-114, 522]]]},
+        "tones": ["cf_navy", "cf_sky", "cf_skylt", "cf_slate", "cf_lav"],
+        "params": {"min_band_mm": 4, "max_band_mm": 10, "min_mass_mm2": 20}},
+       {"id": "ornaments", "primitive": "stroke", "z": 5.5, "confidence": 0.6,
+        "hint": {"polygons": [[[-114, 476], [-56, 476], [-56, 522], [-114, 522]]]},
+        "tones": ["cf_gold"],
+        "params": {"min_mm2": 2, "min_w_mm": 1.0}},
+       {"id": "studs", "primitive": "dot", "z": 5.6, "confidence": 0.6,
+        "hint": {"polygons": [[[-114, 476], [-56, 476], [-56, 522], [-114, 522]]]},
+        "tones": ["cf_gold"],
+        "params": {"max_mm2": 10, "min_d": 1.0, "max_d": 2.5}}
+     ]},
+    {"id": "castle", "what": "the castle centre-right: stacked blue roof tiers, red walls with window rows, gold ornaments", "confidence": 0.75,
+     "parts": [
+       {"id": "walls", "primitive": "plane", "z": 5.0, "confidence": 0.65,
+        "direction": {"intent": "angle", "angle": 0},
+        "hint": {"polygons": [[[-68, 492], [20, 492], [20, 565], [-80, 565], [-80, 524], [-68, 524]]]},
+        "tones": ["cf_red", "cf_white", "cf_cream", "cf_mist", "cf_bark", "cf_brown"],
+        "params": {"min_part_mm2": 8}},
+       {"id": "roofs", "primitive": "band", "z": 5.1, "confidence": 0.75,
+        "direction": {"intent": "along"},
+        "hint": {"polygons": [[[-68, 492], [20, 492], [20, 565], [-80, 565], [-80, 524], [-68, 524]]]},
+        "tones": ["cf_navy", "cf_sky", "cf_skylt", "cf_slate", "cf_lav"],
+        "params": {"min_band_mm": 3, "max_band_mm": 8, "min_mass_mm2": 20}},
+       {"id": "ornaments", "primitive": "stroke", "z": 5.5, "confidence": 0.6,
+        "hint": {"polygons": [[[-68, 484], [20, 484], [20, 565], [-80, 565], [-80, 524], [-68, 524]]]},
+        "tones": ["cf_gold"],
+        "params": {"min_mm2": 2, "min_w_mm": 1.0}},
+       {"id": "studs", "primitive": "dot", "z": 5.6, "confidence": 0.6,
+        "hint": {"polygons": [[[-68, 484], [20, 484], [20, 565], [-80, 565], [-80, 524], [-68, 524]]]},
+        "tones": ["cf_gold"],
+        "params": {"max_mm2": 10, "min_d": 1.0, "max_d": 2.5}}
+     ]},
+    {"id": "trees", "what": "cherry trunks and branches carrying the blossoms", "confidence": 0.7,
+     "parts": [
+       {"id": "limbs", "primitive": "stroke", "z": 6.5, "confidence": 0.65,
+        "hint": {"polygons": [[[-12, 378], [20, 378], [20, 436], [-12, 436]], [[-180, 466], [-112, 466], [-112, 548], [-180, 548]],
+                              [[-118, 518], [-78, 518], [-78, 552], [-118, 552]], [[-16, 520], [20, 520], [20, 565], [-16, 565]]]},
+        "tones": ["cf_brown", "cf_bark"],
+        "params": {"min_mm2": 4, "min_w_mm": 1.0, "wide": "cord"}}
+     ]},
+    {"id": "blossom", "what": "cherry blossom masses: face-on florets over a deep pink shadow", "confidence": 0.8,
+     "parts": [
+       {"id": "florets", "primitive": "radial", "z": 7, "confidence": 0.75,
+        "direction": {"intent": "radial"},
+        "hint": {"polygons": [[[-180, 365], [20, 365], [20, 565], [-180, 565]]]},
+        "tones": ["cf_pinklt", "cf_pink", "cf_rose"],
+        "params": {"min_mass_mm2": 15, "sep_mm": 3.0, "r_max": 3.2, "r_min": 1.5, "fit": 1.35, "petals": 5, "knot": true, "knot_d": 1.5,
+                   "ground": "grain", "ground_share": 0.15},
+        "alternatives": ["lobe"]}
+     ]},
+    {"id": "ground", "what": "everything nobody claimed (small rock and leaf specks, leftovers)", "confidence": 0.5,
+     "parts": [
+       {"id": "rest", "primitive": "band", "z": 1, "rest": true, "confidence": 0.5,
+        "direction": {"intent": "grain"},
+        "tones": "all",
+        "params": {"min_mass_mm2": 4, "min_part_mm2": 20},
+        "question": "leftover pixels sewn as grain-following fill: keep, or leave them out?", "alternatives": ["plane"]}
+     ]}
+  ]
+}

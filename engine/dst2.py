@@ -564,6 +564,19 @@ def _unsewn_done(uo, o, sewn_same):
     sewn_same[:] = uo["base"] | (uo["cnt"] > 0)        # full refresh: also drops the tatami stamp made just before
 
 
+def _over_rows(a, b, blocks, half=0.25, ends=0.5, ex=0.5):
+    """B39 (G1): True when the straight hop a -> b lies on the rows of `blocks` (already sewn top blocks of the same
+    part, each row buffered by half a row spacing) for more than ex mm, ignoring `ends` mm at either end (the hop starts
+    on the last row it left)"""
+    ln = LineString([a, b])
+    if ln.length <= 2 * ends: return False
+    ln = substring(ln, ends, ln.length - ends)
+    for bl in blocks:
+        if len(bl) < 2: continue
+        if ln.intersection(LineString(bl).buffer(half, 4)).length > ex: return True
+    return False
+
+
 def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=False, threads=None, exact_travel=None):
     """Regions -> pyembroidery pattern, with hidden travel and trims (see the module doc).
     Hooks for engine/digitize/compile.py (ENGINE_PLAN M1); the defaults reproduce the old behaviour exactly:
@@ -575,7 +588,10 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
       exact_travel dict(halo=0.3, max_ex=0.5, unsewn_only=True) (ENGINE_PLAN M5): every travel run / short move is
                    checked on the exact geometry (ExactCover) and trimmed when it would lie > max_ex mm on bare fabric;
                    unsewn_only: travel hides under this stop's objects only until they are sewn. None = old behaviour.
-    stats["labels"] holds one entry per STITCH added: the region's r.get("part") (None = travel / registration)."""
+    stats["labels"] holds one entry per STITCH added: the region's r.get("part") (None = travel / registration).
+    B39 (G1): a prebuilt region may carry r["block_roles"] (one "underlay" / "top" per block, compile.regions); then a hop
+    between two blocks of that region that would lie on its own already-sewn TOP rows is a trim (stats join_trims), never a
+    sewn hop. Regions without block_roles route exactly as before."""
     ex = ExactCover(stops, **exact_travel) if exact_travel else None
     cov = Cover(bounds_of([r["geom"] for r in vis]))
     for i, s in enumerate(stops):
@@ -619,8 +635,11 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
         regs = list(s["regions"]) if keep_order else sorted(s["regions"], key=lambda r: {"tatami": 0, "padded": 1, "satin": 2, "run": 3, "bean": 4}[r["st"]])
         for r in regs:
             if builder is not None:             # prebuilt / plugin blocks: one object per region, blocks as given
-                bl = [b for b in builder(r, earlier) if len(b) > 1]
-                if bl: objs.append(dict(blocks=bl, r=r, own=r["geom"].buffer(OWN_HALO)))
+                raw = builder(r, earlier); rl = r.get("block_roles")
+                keep = [i for i, b in enumerate(raw) if len(b) > 1]
+                bl = [raw[i] for i in keep]
+                if bl: objs.append(dict(blocks=bl, r=r, own=r["geom"].buffer(OWN_HALO),
+                                        roles=[rl[i] for i in keep] if rl and len(rl) == len(raw) else None))
                 continue
             for p in polys(r["geom"]):          # one object per connected piece, so ordering can chain them
                 rp_ = dict(r, geom=p)
@@ -658,14 +677,18 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
             rest.remove(j); order.append(j); pos = objs[j]["blocks"][-1][-1]; pc = objs[j]["c1"] or objs[j]["c0"]
         prev_o = None
         for j in order:
-            o = objs[j]
-            for b in o["blocks"]:
+            o = objs[j]; own_top = []                          # B39 (G1): this object's TOP blocks sewn so far (visible rows)
+            for bi, b in enumerate(o["blocks"]):
                 x0, y0 = b[0]
                 if cur is not None:
                     d = math.hypot(x0 - cur[0], y0 - cur[1])
                     route = None
+                    over_rows = d > 1.0 and own_top and _over_rows(cur, (x0, y0), own_top)
                     if d < 0.3: route = []
                     elif d <= 1.0: route = [(x0, y0)]
+                    elif over_rows:                    # B39 (G1): a hop between two blocks of ONE part that would lie on the
+                        d = max(d, TRIM_MIN); stats["join_trims"] = stats.get("join_trims", 0) + 1   # rows it already sewed
+                                                       # (a zig-zag that reads as satin): a trim, never a sewn hop over them
                     elif LineString([cur, (x0, y0)]).within(o["own"]) or cov.hidden(cur, (x0, y0), si, sewn_same):
                         route = path_resample([cur, (x0, y0)], TRAVEL_L)
                     else:
@@ -700,6 +723,7 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
                                 pat.add_stitch_absolute(pe.STITCH, (q[0]-ox)*U, (q[1]-oy)*U); stats["stitches"] += 1; stitch_labels.append(o["r"].get("part"))
                     pat.add_stitch_absolute(pe.STITCH, (x-ox)*U, (y-oy)*U); stats["stitches"] += 1; last = (x, y); stitch_labels.append(o["r"].get("part"))
                 cur = b[-1]; o["started"] = True
+                if o.get("roles") and o["roles"][bi] == "top": own_top.append(b)
             if o["r"]["st"] in ("tatami", "padded"): cov.stamp(sewn_same, o["r"]["geom"])
             if _uo is not None: _unsewn_done(_uo, o, sewn_same)
             prev_o = o
