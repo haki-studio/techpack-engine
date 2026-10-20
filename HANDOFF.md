@@ -65,7 +65,44 @@ PAUSED (work committed; restart with a FRESH builder per product, short brief + 
 - koi: Rev C started (refmask, floratrace).
 Factory answered (factory.json): Brother, 750 mm field, frames 300×300 + 400×450, front single hooping, back 2, chenille/puff/sherpa yes.
 
-## ENGINE WORK — state 2026-10-20 (coordinator d3fafdf9 handing off; start a fresh session)
+## ENGINE WORK — state 2026-10-20 evening (coordinator 19b9021e)
+Merged today (each: builder in own worktree → independent reviewer → founder merge): #5 M5 Konpeito SVG parity, #6 M2 organic
+parts (+ M1 follow-ups), #7 M6 puff/chenille/chain, #8 M4g thread planner + sequencing + review step, #9 M3a buildings,
+#10 M3b trees/crowns/florets. Per-milestone detail: RECAP-2026-10-20-engine-*.md, projects/castle-falls-jacket/bench/BENCH_*.md.
+Coordinator log: RECAP-2026-10-20-engine-coordinator.md.
+
+Castle crop on main (0e6093d, crop DST 1963d24fc2d3d862): **2/9 gates** (satin + cords, colours). Stub area 6.9 %;
+independent direction 49.5 % of 194 tiles (coverage < 50 %: FAIL); chaos 24.8 %; trims 36.8 /100 cm²; density flags 167;
+max stack 5; ~115k stitches on the crop → ~890k extrapolated for a full back (house budget 250–350k).
+The reviewer showed the M3a + M3b gate drops ADD (no merge regression): honest cost of replacing stubs with real parts.
+
+Contracts now in the engine: `+foam` stop key (never merged by colour); sequencing hints in Part.meta (z, seq_after/
+seq_before selectors, knockout_of, group, entry, confidence); one constructed-angle audit basis (construct.basis /
+bucket_of; depth-rule angles bucketed "outline", not independent); `scripts/identity_check.sh` (dst2 probe 84ff50ea74938675 /
+1ecd8f657db3f53a and M5 wb 449c14f6e8f693b6 must stay unchanged); LESSONS numbered by the coordinator at merge.
+
+**Next (M4 remainder → founder live-view sign-off), in priority order:**
+1. Stitch budget (biggest): ~890k vs 250–350k. Budget step in sequence/threads: density per kind, drop/merge low-value
+   layers, report the cut list for the founder.
+2. Chaos: (a) radial-floret exemption PR with guards (tile ≥ 70 % radial visible length AND per-tile radial adherence ≥ 85 %,
+   floret-sized radial parts only, raw + exempted counts reported, own "radial" bucket, red tests on a non-floret radial blob);
+   (b) crown work: 27 hidden lit pieces, dark clump angle spread.
+3. Part-based stack gate (3+ distinct parts at 0.5 mm cells), proven RED on the M2 file and on limit_stack-off before it
+   replaces the strict run-based gate; tell the founder when it does.
+4. Gate for same-colour travel stitched on top of sewn fill (ungated today, lower than M2).
+5. Blossom: floret recall 216/339 (64 %) → gate at ≥ 80 % (M3c); colour reads darker rose than the pale-pink reference
+   (pale merged into pink by the 12-thread plan).
+6. Village: gold ridge/eave edges, windows (14 of ~45), upturned eaves; 0.6 px/mm source detail may be the limit — ask for
+   close-ups / vector art.
+7. Note in BENCH_m3a.md that independent tiles dropped 62.1 → 49.5 % when far tiers moved to "outline".
+
+**Founder decisions still open:** thread trade-off (mist grey → sky light by default; review question with options);
+far roof tiers as rows along the eave + near_tier_rel 0.75 (knife edge on the houses-right roof, a fitter issue); pale blossoms?
+**Factory (Mandy):** chenille machine / file format / loop height / yarns (F1 section 5); long stitches over puff (> 7.5 mm)?;
+3 mm foam; plus the earlier frame questions. Mandy hat quote (Easy Come Easy Go ladder) sent 2026-10-20 — compare vs Emmie
+only after she quotes.
+
+### Previous state (coordinator d3fafdf9, morning 2026-10-20)
 Founder: hold all product work until the shared parts-based digitizing engine is done (docs/ENGINE_PLAN.md,
 docs/DIGITIZING_PRINCIPLES.md = founder-approved house rules). Techniques are plugins, toggled per run; the end goal is a PLM
 self-serve flow (memory: techpack-end-goal-plm).
