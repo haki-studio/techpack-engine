@@ -162,3 +162,95 @@ def uncovered(ref, out, ppm, min_mm2=25.0, open_mm=1.0):
             rows.append(dict(x_mm=round((sl[1].start + sl[1].stop) / 2 / ppm, 1), y_mm=round((sl[0].start + sl[0].stop) / 2 / ppm, 1),
                              w_mm=round((sl[1].stop - sl[1].start) / ppm, 1), h_mm=round((sl[0].stop - sl[0].start) / ppm, 1), area_mm2=round(float(a), 1)))
     return sorted(rows, key=lambda r: -r["area_mm2"])
+
+
+
+def angle_coherence(regions, groups=("WALL", "ROOF", "TMB", "STONE"), max_spread_deg=10.0, satin_min_aspect=2.5):
+    """Stitch-direction discipline for constructed motifs (LESSONS A16), read from the art regions (a digitising
+    decision, not a fidelity trace). regions: dicts with geom, stype ('satin'/'tatami'/...), angle (deg or 'auto'),
+    grp, unit. Per (unit, grp) of a constructed group: the area-weighted spread of fill angles must stay within
+    max_spread_deg (one wall = one direction), and satin is only allowed on stroke-like shapes (aspect >= satin_min_aspect;
+    satin on a blob = a fan). Returns rows of failures (empty = pass)."""
+    import math as _m
+    from collections import defaultdict
+    by = defaultdict(list); bad = []
+    for r in regions:
+        if r.get("grp") not in groups or r["geom"].is_empty: continue
+        g = r["geom"]; A = g.area
+        mr = g.minimum_rotated_rectangle; c = list(mr.exterior.coords)
+        e = sorted(_m.hypot(c[i+1][0]-c[i][0], c[i+1][1]-c[i][1]) for i in range(4))
+        aspect = e[-1] / max(e[0], 1e-6)
+        if r.get("stype") == "satin" and aspect < satin_min_aspect and A > 2.0:
+            bad.append(dict(kind="satin-on-blob", unit=r.get("unit"), grp=r["grp"], area_mm2=round(A, 1), aspect=round(aspect, 2)))
+        ang = r.get("angle")
+        if r.get("stype") != "satin" and isinstance(ang, (int, float)):
+            by[(r.get("unit"), r["grp"])].append((float(ang) % 180, A))
+    for (unit, grp), v in by.items():
+        if len(v) < 2: continue
+        # spread on the doubled circle (axial angles)
+        C = sum(a*_m.cos(_m.radians(2*t)) for t, a in v); S = sum(a*_m.sin(_m.radians(2*t)) for t, a in v); W = sum(a for _, a in v)
+        R = _m.hypot(C, S) / max(W, 1e-9)
+        spread = _m.degrees(_m.sqrt(max(0.0, -2*_m.log(max(R, 1e-9))))) / 2
+        if spread > max_spread_deg:
+            bad.append(dict(kind="angle-spread", unit=unit, grp=grp, n=len(v), spread_deg=round(spread, 1)))
+    return bad
+
+
+
+def dst_segments(dst, origin=(0.0, 0.0)):
+    """stitch segments (x0, y0, x1, y1) in mm from a written DST, origin added (to put them on a garment / ref grid)."""
+    import pyembroidery as pe
+    p = pe.read(dst); out = []; prev = None; ox, oy = origin
+    for x, y, c in p.stitches:
+        k = c & pe.COMMAND_MASK
+        if k == pe.STITCH:
+            q = (x / 10.0 + ox, y / 10.0 + oy)
+            if prev is not None and prev != q: out.append((prev[0], prev[1], q[0], q[1]))
+            prev = q
+        else: prev = None
+    return out
+
+
+def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_dev_deg=25.0, chaos_R=0.55, min_stitches=12):
+    """Stitch DIRECTION vs the reference, everywhere (LESSONS A16): every motif, not only buildings.
+    ref: grey image (2-D array) of the mockup / close-up mapped to garment mm (ppm px per mm), INPUT PIXELS ONLY.
+    segs: DST stitch segments in the same mm frame (qa.dst_segments). Per tile:
+      - DST direction = axial mean of stitch angles (length-weighted), with coherence R (1 = all parallel, 0 = random)
+      - reference direction = thread direction from the structure tensor of the image (the visible thread grain)
+    A tile FAILS when (a) the reference shows a clear thread direction and the DST deviates > max_dev_deg, or
+    (b) the DST stitches in the tile point every which way (R < chaos_R): fans, blob satins, random fills.
+    Returns dict(tiles=n, fail_dev=[...], fail_chaos=[...], pct_ok=...) with tile centres in mm."""
+    import math as _m
+    from scipy import ndimage as _ndi
+    g = np.asarray(ref, float)
+    if g.ndim == 3: g = g[..., :3] @ np.array([0.299, 0.587, 0.114])
+    gy, gx = np.gradient(_ndi.gaussian_filter(g, 0.6))
+    sig = tile_mm * ppm / 3.0
+    Jxx = _ndi.gaussian_filter(gx * gx, sig); Jyy = _ndi.gaussian_filter(gy * gy, sig); Jxy = _ndi.gaussian_filter(gx * gy, sig)
+    T = int(round(tile_mm * ppm)); H, W = g.shape; acc = {}
+    for x0, y0, x1, y1 in segs:
+        L = _m.hypot(x1 - x0, y1 - y0)
+        if L < min_len: continue
+        cx, cy = (x0 + x1) / 2 * ppm, (y0 + y1) / 2 * ppm
+        if not (0 <= cx < W and 0 <= cy < H): continue
+        a = _m.atan2(y1 - y0, x1 - x0); key = (int(cy // T), int(cx // T))
+        c, s_, n, w = acc.get(key, (0.0, 0.0, 0, 0.0))
+        acc[key] = (c + L * _m.cos(2 * a), s_ + L * _m.sin(2 * a), n + 1, w + L)
+    dev, chaos, ok = [], [], 0
+    for (ty, tx), (c, s_, n, w) in acc.items():
+        if n < min_stitches: continue
+        R = _m.hypot(c, s_) / max(w, 1e-9); a_dst = 0.5 * _m.atan2(s_, c)
+        py, px = min(H - 1, int((ty + 0.5) * T)), min(W - 1, int((tx + 0.5) * T))
+        jxx, jyy, jxy = Jxx[py, px], Jyy[py, px], Jxy[py, px]
+        tr = jxx + jyy; coh = _m.sqrt((jxx - jyy) ** 2 + 4 * jxy ** 2) / max(tr, 1e-9)
+        a_grad = 0.5 * _m.atan2(2 * jxy, jxx - jyy); a_thr = a_grad + _m.pi / 2        # threads run across the gradient
+        centre = (round((tx + 0.5) * tile_mm, 1), round((ty + 0.5) * tile_mm, 1))
+        if R < chaos_R:
+            chaos.append(dict(at_mm=centre, R=round(R, 2), stitches=n)); continue
+        if coh >= ref_coh:
+            d = abs(_m.degrees(a_dst - a_thr)) % 180; d = min(d, 180 - d)
+            if d > max_dev_deg:
+                dev.append(dict(at_mm=centre, dev_deg=round(d, 1), ref_coh=round(coh, 2))); continue
+        ok += 1
+    n = ok + len(dev) + len(chaos)
+    return dict(tiles=n, ok=ok, fail_dev=dev, fail_chaos=chaos, pct_ok=round(100 * ok / max(n, 1), 1))
