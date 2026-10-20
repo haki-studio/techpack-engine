@@ -134,7 +134,8 @@ def verdict(row, T):
         "angle_coherence": bool(row["angle_coherence"].get("ok")),
         "density": row["density"]["flags"] <= T["density_flags_max"],
         "trims": row["trims"]["per_100cm2"] <= T["trims_per_100cm2_max"],
-        "satin_shape": row["satin"]["blob"] <= T["satin_blobs_max"] and row["satin"]["too_wide"] == 0 and row["satin"]["too_narrow"] == 0,
+        "satin_shape": row["satin"]["blob"] <= T["satin_blobs_max"] and row["satin"]["too_wide"] == 0 and row["satin"]["too_narrow"] == 0
+                       and row["satin"].get("cord_flags", 0) == 0,            # split-satin cords read from the DST (M2)
         "stack": s["max"] <= T["stack_max_layers"],
         "colours": row["colours"]["threads_in_file"] <= T["colours_max"] and row["colours"]["red"] and row["colours"]["gold"],
     }
@@ -184,19 +185,40 @@ def md_row(row):
             f"{npass}/{len(v)} |\n")
 
 
+def git_sha(root=ROOT):
+    """the engine commit a row was scored with (short sha, '+dirty' when tracked files have uncommitted changes)"""
+    try:
+        sha = subprocess.run(["git", "-C", root, "rev-parse", "--short=12", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+        dirty = subprocess.run(["git", "-C", root, "status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True).stdout.strip()
+        return sha + ("+dirty" if dirty else "")
+    except Exception:
+        return "unknown"
+
+
 def append(row, project, aux=None, cfg_b=None, dst=None, origin=None, extra=None, panel_path=None):
-    """append a scored row to bench/SCOREBOARD.json + BENCH.md (rows are never edited), with its panel"""
+    """add a scored row to bench/SCOREBOARD.json + BENCH.md, with its panel. IDEMPOTENT (M1 review): a row with the same
+    label AND git sha replaces the earlier one (its json row and its BENCH.md table line), so re-running a stage does
+    not stack duplicates; a new label or a new commit appends. Rows of other labels / commits are never edited."""
     bdir = os.path.join(project, "bench"); os.makedirs(bdir, exist_ok=True)
+    row.setdefault("git_sha", git_sha())
     if aux is not None:
         slug = "".join(ch if ch.isalnum() else "-" for ch in row["label"].lower()).strip("-")[:40]
         png = panel_path or os.path.join(bdir, f"panel_{row['date']}_{slug}.png"); panel(row, aux, cfg_b, dst, origin, png, extra)
         row["panel"] = os.path.basename(png)
     sb = os.path.join(bdir, "SCOREBOARD.json")
     rows = json.load(open(sb)) if os.path.exists(sb) else []
-    rows.append(row); json.dump(rows, open(sb, "w"), indent=1, default=float)
+    same = [i for i, r in enumerate(rows) if r.get("label") == row["label"] and r.get("git_sha") == row["git_sha"]]
     md = os.path.join(bdir, "BENCH.md")
     if not os.path.exists(md): open(md, "w").write(MD_HEAD)
-    with open(md, "a") as f: f.write(md_row(row))
+    text = open(md).read(); new_line = md_row(row)
+    if same:
+        old_line = md_row(rows[same[-1]]); rows[same[-1]] = row
+        for i in reversed(same[:-1]): del rows[i]
+        text = text.replace(old_line, new_line, 1) if old_line in text else text + new_line
+    else:
+        rows.append(row); text = text + new_line
+    json.dump(rows, open(sb, "w"), indent=1, default=float)
+    open(md, "w").write(text)
     return row
 
 
