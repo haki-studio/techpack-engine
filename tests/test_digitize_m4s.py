@@ -121,6 +121,15 @@ def test_travel_sewn_before_the_fill_is_hidden():
     assert r["n_exposed"] == 0 and r["exposed_mm"] == 0.0 and r["ok"], r["exposed"][:3]
 
 
+def test_on_fill_means_layer_density_sewn_before_the_travel():
+    """'on sewn fill' = the fill sewn BEFORE the travel reaches layer density there. A light open layer (rows 1 mm apart,
+    1.0 mm/mm2) before the travel and another after: neither side is a layer on its own (together they are), so the
+    travel is not on sewn fill and not buried. Mutation: the 'sewn before' test dropped (any fill, any time) -> RED."""
+    segs, lab = sew(("A", rows(0, 0, 20, 20, sp=1.0)), (None, travel(-2, 10.5, 25, 10.5)), ("A2", rows(0, 0.5, 20, 20.5, sp=1.0)))
+    r = GS.travel_on_fill(segs, lab, B)
+    assert r["n_exposed"] == 0, r["exposed"][:3]
+
+
 def test_travel_on_fill_buried_by_a_later_fill_is_hidden():
     """travel on top of A, then part C sewn over the travel path: buried, 0 exposed (a later top layer hides it).
     Mutation: burial test dropped -> RED."""
