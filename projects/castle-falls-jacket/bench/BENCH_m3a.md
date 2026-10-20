@@ -56,6 +56,11 @@ the chaos gate (a 1-2 mm satin across a band of horizontal far-tier rows makes t
 reviewer's trial merge of the first PR measured stack 4 with 0 flags and density 113 -> 59. **This row has to be
 re-scored on the M4g-merged tree.**
 
+**Trial merge with M4g (PR #8 head 3b9ad49, local, not pushed or benched):** pytest 186 passed, no HintError. The crop
+scored independent 62.1 % of 203, chaos 11.2 %, trims 26.3, density flags 118, max stack 4 with 8.15 cm2 > 2 (39
+flags), separation 22, 2/9 gates. M4g lowers stack, density and trims; it does not lower chaos (the satin details across
+far-tier rows).
+
 ## Direction gate and independent coverage
 
 Rule-angled building tiles moved the independent count from 73 to 203 of 625 (+130). The coverage gate needs 313:
