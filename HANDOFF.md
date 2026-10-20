@@ -77,13 +77,13 @@ coordinator numbers LESSONS rows (`A?? / B?? (<tag>)`) at merge; main currently 
 | Tee family | PR #15 `family-tee` | built (220 tests), reviewer running | fix review items; founder adds 2 reference photos (families/tee/variants/art/alabasta_reference.jpg, from_the_shadows_reference.jpg — storage download needs the service key, not available to agents); Mandy's full new-shape chart replaces `pom_chart.base`+`deltas` |
 | M4c chaos | PR #14 `engine-m4c-chaos` | reviewer running. Radial exemption built to the review's conditions but exempts 0 tiles (florets ≤ 56 % of a tile's thread); crowns fixed (27 hidden lit → 0, coherence 110 → 78); crop 2/9 → 1/9 because of ONE satin "blob" from a dst2/compile 3.8 mm join between two tatami blocks of one part (shared code, unfixed) | fix the join (trim instead), maybe crown_clump_lit SEAM_MM 0.3; re-review |
 | M4s stack + travel gates | `engine-m4s-gates` (no PR yet) | builder still running (long render) | review: part-based stack gate must be red on M2 file + limit_stack-off before trusted; strict gate stays |
-| Koi trial | PR #13 `engine-trial-koi` | done, NOT reviewed. Engine better on lilies/leaves/satin, worse on fish/vine; not shippable. Desktop copy: C:\Users\devin\Desktop\koi-trial\ | founder answered (a): MOCKUP governs, close-up not used; open: (b) review+merge the lily/fish splitters or keep as trial? |
+| Koi trial | PR #13 `engine-trial-koi` | done, NOT reviewed. Engine better on lilies/leaves/satin, worse on fish/vine; not shippable. Desktop copy: C:\Users\devin\Desktop\koi-trial\ | founder answered (a): MOCKUP governs, close-up informs detail only; open: (b) review+merge the lily/fish splitters or keep as trial? |
 
-**FOUNDER RULING 2026-10-20 (late): the GARMENT MOCKUP is the source, never an AI close-up.** "The close up is just an ai image, it's not
-actually showing the garment. What's on the actual garment mockup should be used." → Koi: `inputs/closeup_mockup_koi.png` must not drive
-positions, motif shapes or gates (the KOI trial PR #13 placed and graded from it; Rev B traced motif structure from it — both need redoing from
-the mockup). Before using ANY close-up in any project (Castle's 19 Oct close-ups, the Castle bench's back_left close-up registration), ask the founder
-whether it is meant as garment truth.
+**FOUNDER RULING 2026-10-20 (late): the GARMENT MOCKUP governs; AI close-ups only INFORM.** The mockup decides which motifs exist, where,
+how big, how many, pose and colour, and is the gate reference. A close-up (also just an AI image) may inform how a motif is built inside that
+(petal structure, shading, texture, detail the low-res mockup can't show), registered motif by motif onto the mockup; where they disagree the
+mockup wins. Never "mockup OR close-up". → Koi: the KOI trial (PR #13) placed and graded from the close-up → redo from the mockup with the
+close-up as detail only; Rev B's close-up-traced structure must be re-anchored to the mockup. Castle: check its close-ups/bench registration follow this.
 **Founder open questions:** Castle thread trade-off (mist grey); far roof tiers as eave rows + near_tier_rel 0.75; paler blossoms?;
 Koi (a)/(b) above; KCOS 7 questions (STATUS.json); 3 mm puff foam / long stitches > 7.5 mm over puff / chenille machine+format (Mandy F1).
 **Dated follow-ups (Obsidian note `Claude/Sessions/2026-10-20/... (19b9021e).md`):** 2026-10-23 Mandy's full new-tee-shape chart; 2026-10-23
