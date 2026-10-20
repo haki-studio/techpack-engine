@@ -180,16 +180,28 @@ def test_verdict_reads_chaos_after_exemption_at_the_same_threshold():
     assert not bench.verdict(_row(3.0, dict(pct_chaos_after=5.1, pct_chaos_raw=5.1, n_exempt=0)), T)["direction_chaos"]
 
 
-def test_exempt_tiles_go_to_their_own_bucket_never_independent_ok():
+def test_exemption_cannot_raise_the_direction_ok_inputs():
+    """PR #14 review must-fix 1: the exemption acts on the CHAOS gate only. Exempt tiles get their own "radial" view, never
+    OK anywhere, and the independent bucket's pct_ok and coverage that bench.verdict reads for direction_ok are exactly
+    what they are without the exemption (the first version took exempt tiles out of the denominator: 99/194 -> 99/184).
+    Mutation (rebucket shrinks the source bucket again) -> red."""
     parts, groups = floret_tile(0, 0)
     dm, ex = judge(groups, parts)
-    by = {"independent": dict(tiles=10, ok=5, dev=2, chaos=3, pct_ok=50.0, pct_chaos=30.0)}
     GR.tag_buckets(ex, lambda c: parts[0])                                     # the floret's own bucket is "independent"
     assert ex["exempt"][0]["bucket"] == "independent"
-    out = GR.rebucket(by, ex)
-    assert out["radial"]["tiles"] == 1 and out["radial"]["ok"] == 0
-    assert out["independent"]["ok"] == 5 and out["independent"]["tiles"] == 9 and out["independent"]["chaos"] == 2
-    assert sum(v["tiles"] for v in out.values()) == 10                         # a partition: no tile counted twice
+    ex10 = dict(ex, exempt=[dict(ex["exempt"][0], at_mm=(4.0 + 8 * i, 4.0)) for i in range(10)])
+    by = {"independent": dict(tiles=194, ok=99, dev=29, chaos=66, pct_ok=51.0, pct_chaos=34.0),
+          "self-derived": dict(tiles=237, ok=200, dev=10, chaos=27, pct_ok=84.4, pct_chaos=11.4)}
+    out = GR.rebucket(by, ex10)
+    assert out["radial"]["tiles"] == 10 and out["radial"]["ok"] == 0 and out["radial"]["view_only"]
+    for k in ("tiles", "ok", "dev", "chaos", "pct_ok"):
+        assert out["independent"][k] == by["independent"][k], k
+    assert out["independent"]["radial_exempt"] == 10
+    T = dict(direction_pct_ok_min=51.5, direction_pct_chaos_max=5.0, stack_max_layers=2, trims_per_100cm2_max=25, satin_blobs_max=0,
+             colours_max=12, density_flags_max=0, direction_independent_min_coverage=0.5)
+    def ok_gate(bys):
+        r = _row(30.0); r["direction"]["tiles"] = 360; r["direction_by_source"] = bys; return bench.verdict(r, T)["direction_ok"]
+    assert ok_gate(by) is False and ok_gate(out) is False                       # 51.0 % < 51.5 % with or without exemption
     with pytest.raises(ValueError):
         GR.rebucket(by, dict(exempt=[dict(at_mm=(4, 4))]))                     # an untagged tile is an error, not a guess
 
@@ -359,3 +371,30 @@ def test_rule3_wins_over_smoothing(monkeypatch):
     assert st["unsmoothed_rule3"] >= 1 and len(lone) == 1, st
     assert abs(lone[0].dir.angle - round(crown.smooth_angle(lone[0].meta["construct"]["axes"]), 2)) < 0.01
     assert audit.angle_audit(ObjectPlan(name="t", parts=parts), Rulebook())["random_angles"] == 0
+
+
+def test_lit_growth_is_reported_per_part():
+    """PR #14 review: growing a highlight (up to 1.5 mm past its trace) is a fidelity change, so every lit part carries
+    lit_growth (traced mm2, grow mm, added mm2) for the part report (parts_summary.json). Mutation (growth not recorded,
+    grow_mm stays 0) -> red."""
+    parts, st = _crown(_specks)
+    lit = [p for p in parts if p.kind == "crown_clump_lit"]
+    assert all("lit_growth" in p.meta for p in lit)
+    g = next(p for p in lit if p.geom.distance(Point(42, 27)) < 0.5).meta["lit_growth"]
+    assert 0 < g["grow_mm"] <= 1.5 and g["traced_mm2"] < 15.0 and g["added_mm2"] > 5.0, g
+    assert abs(g["area_mm2"] - g["traced_mm2"] - g["added_mm2"]) < 0.05
+    big = next(p for p in lit if p.geom.distance(Point(22, 18)) < 0.5).meta["lit_growth"]
+    assert big["grow_mm"] == 0.0
+
+
+def test_lit_piece_seams_its_dark_clump_like_a_floret():
+    """PR #14 review: a lit piece is knocked out of its dark clump, so a 1 mm underlap is a second layer ring (density
+    flags 167 -> 181); it overlaps the dark by the 0.3 mm floret seam. Mutation (seam back to 1 mm) -> red."""
+    from digitize import sequence as SQ
+    lit = Part(id="l", kind="crown_clump_lit", geom=box(4, 4, 8, 8), thread="g", z=1.7, dir=DirSpec(0.0, source="splitter"))
+    dark = Part(id="d", kind="crown_clump_dark", geom=box(0, 0, 12, 12).difference(box(4, 4, 8, 8)), thread="k", z=2.0,
+                dir=DirSpec(0.0, source="splitter"))
+    SQ.underlap([lit, dark], 1.0)
+    grow = (lit.geom.bounds[2] - lit.geom.bounds[0] - 4.0) / 2
+    assert 0.25 <= grow <= 0.35, grow
+    assert SQ.SEAM_MM["floret"] == 0.3

@@ -101,20 +101,21 @@ def exempt(dm, segs, labels, parts, cfg=None, ppm=12.0, origin=(0.0, 0.0)):
 
 
 def rebucket(by_source, ex):
-    """move the exempted chaos tiles out of whatever bucket their top part put them in (they were counted there as chaos)
-    into their own "radial" bucket: never independent OK, and the other buckets' figures no longer carry them.
-    by_source: audit.direction_by_source result; the exempt tiles' original buckets are given by ex["exempt"][i]["bucket"]
-    (set by tag_buckets)."""
+    """add the exempted chaos tiles as their own "radial" bucket, WITHOUT touching any source bucket. The exemption acts
+    on the chaos gate only: the direction_ok gate reads the source buckets' pct_ok and tile counts (bench.verdict), so an
+    exempt tile stays counted there as the chaos failure it is (PR #14 review: removing it from the source bucket's
+    denominator raised the independent pct_ok, 99/194 -> 99/184 with 10 exempt tiles). Each source bucket only gains a
+    `radial_exempt` count. The "radial" bucket is a VIEW of tiles already counted, not part of the partition.
+    by_source: audit.direction_by_source result; the exempt tiles' source buckets come from tag_buckets."""
     out = {k: dict(v) for k, v in by_source.items()}
     for t in ex["exempt"]:
         b = t.get("bucket")
         if b is None or b not in out: raise ValueError(f"exempt tile {t['at_mm']} has no source bucket: call tag_buckets first")
-        o = out[b]; o["tiles"] -= 1; o["chaos"] -= 1
-        o["pct_ok"] = round(100 * o["ok"] / max(1, o["tiles"]), 1); o["pct_chaos"] = round(100 * o["chaos"] / max(1, o["tiles"]), 1)
-        o["radial_exempt_moved_out"] = o.get("radial_exempt_moved_out", 0) + 1
+        out[b]["radial_exempt"] = out[b].get("radial_exempt", 0) + 1
     if ex["exempt"]:
         out["radial"] = dict(tiles=len(ex["exempt"]), ok=0, dev=0, chaos=0, exempt=len(ex["exempt"]), pct_ok=0.0, pct_chaos=0.0,
-                             note="chaos tiles over floret-size radial parts, judged by per-tile radial adherence (gates_radial)")
+                             view_only=True, note="chaos tiles over floret-size radial parts, judged by per-tile radial adherence "
+                                                  "(gates_radial); they stay counted as chaos in their source bucket")
     return out
 
 

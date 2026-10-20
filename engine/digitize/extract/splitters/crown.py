@@ -112,22 +112,29 @@ def visible_lit(pieces, clump, sc, stats):
     """M4c: lit highlights sized to stay visible (>= lit_vis_mm2 and lit_vis_w_mm wide after the knockout and the seam;
     27 of 77 lit pieces showed < 12 visible stitches on the M3b crop). Fidelity first (A11): a small highlight is never
     dropped, it is GROWN inside its clump (buffer steps of 0.25 mm, at most lit_grow_max_mm) until it holds a visible
-    tatami; pieces that touch after growing become one piece. stats counts grown / still small / added area."""
+    tatami; pieces that touch after growing become one piece. stats counts grown / still small / added area.
+    Returns [(geom, info)], info = dict(traced_mm2 (the traced highlight(s) inside it), grow_mm (largest buffer used, 0 =
+    as traced), pieces (traced pieces joined)) for the per-part report (PR #14 review)."""
     out = []
     for lg in pieces:
-        a0 = lg.area; g2 = lg
+        a0 = lg.area; g2 = lg; kk = 0.0
         if a0 < sc["lit_vis_mm2"] or not _width_ok(lg, sc["lit_vis_w_mm"]):
             k = 0.25
             while k <= sc["lit_grow_max_mm"] + 1e-9:
-                g2 = lg.buffer(k).intersection(clump).buffer(0)
+                g2 = lg.buffer(k).intersection(clump).buffer(0); kk = k
                 if g2.area >= sc["lit_vis_mm2"] and _width_ok(g2, sc["lit_vis_w_mm"]): break
                 k += 0.25
             stats["lit_grown"] += 1; stats["lit_grown_mm2"] += g2.area - a0
             if g2.area < sc["lit_vis_mm2"] or not _width_ok(g2, sc["lit_vis_w_mm"]): stats["lit_still_small"] += 1
-        out.append(g2)
-    if len(out) < 2: return [q for q in out if not q.is_empty]
-    u = unary_union(out)
-    return [u] if u.geom_type == "Polygon" else [q for q in getattr(u, "geoms", []) if q.geom_type == "Polygon" and q.area > 0.05]
+        out.append((g2, lg, kk))
+    out = [o for o in out if not o[0].is_empty]
+    if len(out) < 2: return [(g2, dict(traced_mm2=round(lg.area, 2), grow_mm=kk, pieces=1)) for g2, lg, kk in out]
+    u = unary_union([o[0] for o in out])
+    res = []
+    for q in ([u] if u.geom_type == "Polygon" else [q for q in getattr(u, "geoms", []) if q.geom_type == "Polygon" and q.area > 0.05]):
+        src = [o for o in out if o[0].intersects(q)]
+        res.append((q, dict(traced_mm2=round(sum(o[1].area for o in src), 2), grow_mm=max([o[2] for o in src] or [0.0]), pieces=len(src))))
+    return res
 
 
 def split(ctx, zone, z, claim):
@@ -177,7 +184,7 @@ def split(ctx, zone, z, claim):
             for t in tones:
                 if lum_of(ctx, t) <= lum_of(ctx, dark): continue
                 lm = ndi.binary_closing(cm & (ctx.thread_lab == ctx.threads.index(t)), ctx.disk(sc["lit_close_mm"])) & cm
-                lits += [(t, lg) for lg in visible_lit(ev.polys(lm, min_mm2=sc["min_lit_mm2"]), g, sc, stats)]
+                lits += [(t, lg, inf) for lg, inf in visible_lit(ev.polys(lm, min_mm2=sc["min_lit_mm2"]), g, sc, stats)]
             clumps_.append(dict(cid=ctx.new_id(zone["id"]), g=g, cm=cm, dark=dark, att=att, attach=attach, frm=frm, to=to, ang=ang,
                                 zc=z + 0.001 * rank, mi=int(mi), rank=rank, lits=lits))
     # pass 2: a SMOOTH fan across the crown (rule 2). Each clump's angle is the axial mean of its own fan axis and the axes
@@ -212,7 +219,7 @@ def split(ctx, zone, z, claim):
     stats["smoothed"] = sum(1 for c in clumps_ if len(c["axes"]) > 1)
     for c in clumps_:                                                # pass 3: parts (lit first, knocked out of the dark)
         g, cid = c["g"], c["cid"]; zc = c["zc"]; lits = []
-        lgeoms = [lg for _, lg in c["lits"]]
+        lgeoms = [lg for _, lg, _ in c["lits"]]
         gd = g.difference(unary_union(lgeoms)).buffer(0) if lgeoms else g     # the shadow around the lit pieces
         if lgeoms and not gd.is_empty and sc["sliver_mm"] > 0:
             # dark slivers between lit pieces and the clump edge (< sliver_mm wide) sew as short edge stitches at every
@@ -225,14 +232,15 @@ def split(ctx, zone, z, claim):
                 if lgeoms[k].buffer(0.05).intersects(q):
                     lgeoms[k] = lgeoms[k].union(q).buffer(0); stats["slivers_to_lit_mm2"] += q.area
             gd = g.difference(unary_union(lgeoms)).buffer(0)
-        for (t, _), lg in zip(c["lits"], lgeoms):
+        for (t, _, inf), lg in zip(c["lits"], lgeoms):
             stats["lit"] += 1; lits.append(len(parts))
             at = lg.representative_point()
             parts.append(Part(id=ctx.new_id(zone["id"]), kind="crown_clump_lit", geom=lg, thread=t, z=zc + sc["lit_z"],
                               dir=DirSpec(c["ang_s"], source="splitter", note=f"lit side of clump {cid}: the clump's own smoothed fan angle"),
                               zone=zone["id"], rgb=None,
                               meta=dict(splitter="crown", mass=c["mi"], clump=c["rank"], lit_of=cid, attach=c["att"], group=f"{zone['id']}.mass{c['mi']}",
-                                        construct=dict(rule="fan_smooth", axes=c["axes"], at=[float(at.x), float(at.y)]))))
+                                        construct=dict(rule="fan_smooth", axes=c["axes"], at=[float(at.x), float(at.y)]),
+                                        lit_growth=dict(inf, area_mm2=round(lg.area, 2), added_mm2=round(lg.area - inf["traced_mm2"], 2)))))
         if gd.is_empty: continue
         for k in lits: parts[k].meta["knockout_of"] = cid                  # M4g hint: lit knocked out of its dark clump
         parts.append(Part(id=cid, kind="crown_clump_dark", geom=gd, thread=c["dark"], z=zc,
