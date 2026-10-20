@@ -1,6 +1,6 @@
-M SL {'stitches': 136607, 'trims': 563, 'jumps': 1649, 'stops': 17, 'size_mm': (499.3, 357.1), 'max_stitch': 7.43} 73s
-M SL S1_top-left {'stitches': 17259, 'trims': 92, 'stops': 13, 'size_mm': (219.6, 330.0), 'fits': True} split_clip
-M SL S2_top-right {'stitches': 114761, 'trims': 453, 'stops': 17, 'size_mm': (322.4, 330.0), 'fits': True} split_clip
-M SL S3_bottom-right {'stitches': 4878, 'trims': 26, 'stops': 7, 'size_mm': (315.4, 58.8), 'fits': True} split_clip
+M SL {'stitches': 134255, 'trims': 561, 'jumps': 1494, 'stops': 17, 'size_mm': (499.5, 357.1), 'max_stitch': 7.43} 112s
+M SL S1_top-left {'stitches': 16526, 'trims': 93, 'stops': 13, 'size_mm': (215.8, 330.0), 'fits': True} split_clip
+M SL S2_top-right {'stitches': 113344, 'trims': 462, 'stops': 17, 'size_mm': (320.5, 330.0), 'fits': True} split_clip
+M SL S3_bottom-right {'stitches': 4672, 'trims': 25, 'stops': 7, 'size_mm': (315.6, 58.8), 'fits': True} split_clip
 DONE M ['SL']
 EXIT 0

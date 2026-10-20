@@ -32,8 +32,8 @@ tech.COLOUR_ORDER = WV_ORDER + [c for c in tech.COLOUR_ORDER if c not in WV_ORDE
 # code -> (name, stitch, angle rule, density, stitch length, underlay, pull comp, notes)
 WV_RULES = {
  "RP":      ("Rope line (cream cord)",       "Satin, turning",      "across the line",          "0.42", "—",   "centre run",                  "0.20", "continuous 2.4 mm cords between the stripes (fragments joined, uniform width)"),
- "WV":      ("Wave stripe (twisted cord)",   "Tatami cord / turning satin", "stripe direction ± 28° (cord twist, alternating per tone)", "0.45 / 0.42", "3.5", "edge run + 90° lattice (tatami > 60 mm²) · centre run (satin)", "0.25", "rows slant 28° to the stripe = twisted cord (close-up); turning satin only on stripes < 3 wide with no holes"),
- "FM":      ("Foam crest / curl (raised)",   "Padded tatami",       "auto (long axis)",         "0.45", "5.0", "1 padding layer @ 90° + edge run", "0.30", "raised; chenille look from FM-loop on top [proposed — ask chenille]"),
+ "WV":      ("Wave stripe (twisted cord)",   "Tatami cord / turning satin", "along the stripe ± 15° (cord twist, alternating per tone)", "0.45 / 0.42", "3.5", "edge run + 90° lattice (tatami > 60 mm²) · centre run (satin)", "0.25", "rows along the stripe, 15° twist = twisted cord (close-up, A16); turning satin only on stripes < 3 wide with no holes"),
+ "FM":      ("Foam crest / curl (raised)",   "Padded tatami",       "along the curl (sectors, A16)",         "0.45", "5.0", "1 padding layer @ 90° + edge run", "0.30", "raised; chenille look from FM-loop on top [proposed — ask chenille]"),
  "FM-sh":   ("Foam shade",                   "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
  "FM-gr":   ("Curl hollow (grey)",           "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
  "FM-in":   ("Blue inside the curl",         "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
@@ -91,7 +91,7 @@ def stitch_cover(blocks, geom, ppm=10, thread=0.6):
 # The close-up's stripes are twisted cords: the stitch rows of each stripe run at a slant to the stripe, not along it.
 # Tatami rows of a WV stripe are laid at the local stripe direction + CORD_TWIST (alternating sign from tone to tone, so
 # neighbouring cords twist opposite ways, as in the close-up). Everything else is the engine's along-the-stripe sections.
-CORD_TWIST = 28.0
+CORD_TWIST = 15.0          # LESSONS A16: rows ALONG the stripe; a 15 deg twist keeps the cord look inside the 25 deg grain tolerance
 _CUR = {"r": None}
 def cord_sections(p, line, step=6.0, across=False):
     import dst2

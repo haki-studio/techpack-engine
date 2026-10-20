@@ -336,6 +336,48 @@ def add_loops(vis):
                     if q.area > 0.5: out.append(dict(R("w3", q, "run", None, "FM-loop"), z=Z["foam"] + 0.5, unit=r.get("unit")))
     return out
 
+def aspect(p):
+    mrr = p.minimum_rotated_rectangle
+    if mrr.geom_type != "Polygon": return 1.0
+    cs = list(mrr.exterior.coords); a = math.dist(cs[0], cs[1]); b = math.dist(cs[1], cs[2])
+    return max(a, b) / max(min(a, b), 1e-6)
+
+def curl_direction(vis):
+    """LESSONS A16: stitch direction is a design decision for every motif. Foam rows run ALONG THE CURL: each padded curl
+    is cut into sectors around its eye (its grey hollow, else its centre) and every sector is tatami along the tangent of
+    the curl there (concentric rows = the curl cord / loop look, coherent with the loop spiral and the curl cord sewn on top).
+    Blob-shaped shades / hollows / inner blues (aspect < 2.5) get the same tangential tatami instead of 'auto' satin."""
+    by = {}
+    for r in vis:
+        if r.get("unit"): by.setdefault(r["unit"], []).append(r)
+    eye = {}
+    for u, rs in by.items():
+        gr = [r["geom"] for r in rs if r["grp"] == "FM-gr"]
+        fm = [r["geom"] for r in rs if r["grp"] == "FM"]
+        if gr: eye[u] = max(gr, key=lambda g: g.area).centroid
+        elif fm: eye[u] = unary_union(fm).centroid
+    out = []
+    for r in vis:
+        u = r.get("unit"); e = eye.get(u)
+        tang = lambda c: (math.degrees(math.atan2(c.y - e.y, c.x - e.x)) + 90.0) % 180.0
+        if e is not None and r["grp"] == "FM" and r["st"] == "padded":
+            g = r["geom"]; R_ = max(math.dist((e.x, e.y), xy) for p in polys(g) for xy in p.exterior.coords) + 2
+            n = int(np.clip(round(g.length / 14.0), 4, 12))
+            for k in range(n):
+                a0, a1 = 2 * math.pi * k / n, 2 * math.pi * (k + 1) / n
+                wedge = Polygon([(e.x, e.y)] + [(e.x + R_ * math.cos(t), e.y + R_ * math.sin(t)) for t in np.linspace(a0, a1, 6)])
+                q = g.intersection(wedge)
+                for pq in polys(q):
+                    if pq.area < 0.3: continue
+                    out.append(dict(r, geom=pq, ang=tang(pq.centroid)))
+            continue
+        if e is not None and r["grp"] in ("FM-sh", "FM-gr", "FM-in") and r["st"] == "satin":
+            g = r["geom"]
+            if aspect(g) < 2.5 and g.area > 1.0:
+                out.append(dict(r, st="tatami", ang=tang(g.centroid))); continue
+        out.append(r)
+    return out
+
 def layer_of(r):
     return {"RP": WC.L_ROPE, "WV": WC.L_BAND, "FM-sh": WC.L_FDET, "FM-gr": WC.L_FDET, "FM-in": WC.L_FDET, "FM": WC.L_FOAM,
             "FM-loop": WC.L_LOOP, "FM-curl": WC.L_LOOP, "DR-b": WC.L_DROPB, "DR": WC.L_DROP}[r["grp"]]
@@ -616,7 +658,8 @@ def build(size):
     t0 = time.time(); res = {"info": dict(size=size, grade=MM.GRADE[size][0], scale=MM.GRADE[size][1])}
     art = {P: items_for(size, P) for P in PC.PIECES}
     for P in SLEEVE_SIDE: art[P] = drop_fold_highlight(art[P])
-    res["info"]["silhouette_seams"] = WR.silhouettes(art, size)          # stretch + DTW along side/shoulder/underarm/centre
+    res["info"]["silhouette_seams"] = WR.silhouettes(art, size)          # smooth seam warp (seamwarp.py)
+    res["warp_grid"] = res["info"]["silhouette_seams"].pop("grid")
     res["info"]["transfer"] = WR.transfer(art, size)                       # overflow across every seam
     res["info"]["under_collar"] = under_collar(art, size)
     res["info"]["maps"] = {f"{v}/{s}": dict(fold_frac=round(WR.sleeve_map(v, s, size).fold_frac, 4)) for v in ("back", "front") for s in "LR"}
@@ -633,6 +676,7 @@ def build(size):
         vis = [dict(r, geom=r["geom"].intersection(clip).buffer(0)) for r in vis]
         vis = [r for r in vis if not r["geom"].is_empty and r["geom"].area > 0.3]
         vis = add_loops(vis)
+        vis = curl_direction(vis)
         for r in vis: r["layer"] = layer_of(r)
         res[P] = vis
         u = unary_union([r["geom"] for r in vis]) if vis else Polygon()

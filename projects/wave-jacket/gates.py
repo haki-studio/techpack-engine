@@ -41,9 +41,28 @@ def grid(P):
     XX, YY = np.meshgrid(bb[0] + (np.arange(W) + 0.5) / PPM, bb[1] + (np.arange(H) + 0.5) / PPM)
     return bb, XX, YY
 
+def unwarp(P, XX, YY):
+    """piece-grid points (final art positions) -> where they were before the seam warp (inverse of the composed field
+    saved by seamwarp.warp_grid, by fixed-point iteration) - so the mockup reference goes through the same placement"""
+    from scipy.ndimage import map_coordinates
+    G = D.get("warp_grid", {}); XS, YS = XX.copy(), YY.copy()
+    for key, g in G.items():
+        p_, sg = key.split("|"); sg = int(sg)
+        if p_ != P: continue
+        m = np.ones(XX.shape, bool) if sg == 0 else ((XX > 0) if sg > 0 else (XX <= 0))
+        def u(X, Y):
+            c = [(Y - g["y0"]) / g["h"], (X - g["x0"]) / g["h"]]
+            return map_coordinates(g["ux"], c, order=1, mode="nearest"), map_coordinates(g["uy"], c, order=1, mode="nearest")
+        xs, ys = XX[m], YY[m]; x0, y0 = xs.copy(), ys.copy()
+        for _ in range(4):
+            ux, uy = u(x0, y0); x0, y0 = xs - ux, ys - uy
+        XS[m], YS[m] = x0, y0
+    return XS, YS
+
 def ref_classes(P):
-    """mockup tone label (index into WT.NAMES, -1 = none) on the piece grid"""
-    bb, XX, YY = grid(P); out = np.full(XX.shape, -1, np.int32)
+    """mockup tone label (index into WT.NAMES, -1 = none) on the piece grid, through the art's map AND its seam warp"""
+    bb, XX0, YY0 = grid(P); out = np.full(XX0.shape, -1, np.int32)
+    XX, YY = unwarp(P, XX0, YY0)
     maps = WA.piece_maps(SIZE)
     for view in ("back", "front"):
         if P not in WA.VIEW_PIECES[view]: continue
@@ -54,7 +73,7 @@ def ref_classes(P):
         else:
             q = m.inv(np.c_[XX.ravel(), YY.ravel()]); px, py = q[:, 0].reshape(XX.shape), q[:, 1].reshape(XX.shape)
             fin = np.isfinite(px); px = np.where(fin, px, 0); py = np.where(fin, py, 0)
-            ok = fin & ((XX * m.sgn) >= 0) & shapely.contains_xy(m.target.buffer(0.3), XX, YY) & shapely.contains_xy(reg, px, py)
+            ok = fin & ((XX0 * m.sgn) >= 0) & shapely.contains_xy(m.target.buffer(0.3), XX, YY) & shapely.contains_xy(reg, px, py)
         sil = MM.silhouette(view); inner = ndi.binary_erosion(sil, iterations=4)      # A15: the render's outline band (fold / edge highlights)
         ix = np.clip(px.astype(int), 0, sil.shape[1] - 1); iy = np.clip(py.astype(int), 0, sil.shape[0] - 1)
         ok &= inner[iy, ix]
@@ -62,8 +81,12 @@ def ref_classes(P):
         ok &= (r_ >= 0) & (r_ < lab.shape[0]) & (c_ >= 0) & (c_ < lab.shape[1])
         v = lab[np.clip(r_, 0, lab.shape[0] - 1), np.clip(c_, 0, lab.shape[1] - 1)]
         out = np.where(ok, v, out)
+        from scipy.ndimage import map_coordinates as _mc
+        img = np.asarray(MM.image(view)).astype(np.float32).mean(-1)
+        GREY.setdefault(P, np.full(XX.shape, np.nan, np.float32))
+        GREY[P] = np.where(ok, _mc(img, [py, px], order=1, mode="nearest"), GREY[P])
     clip = PC.clip_for(SIZE, P)
-    out = np.where(shapely.contains_xy(clip, XX, YY), out, -1)                      # A15: keep-outs are bare by spec
+    out = np.where(shapely.contains_xy(clip, XX0, YY0), out, -1)                      # A15: keep-outs are bare by spec
     return out, bb
 
 def ref_family(cls, fam):
@@ -84,6 +107,7 @@ def rigid_ref(P, fam, bb, shape):
     from PIL import Image, ImageDraw
     import trace as TR
     im = Image.new("L", shape[::-1], 0); d = ImageDraw.Draw(im); maps = WA.piece_maps(SIZE)
+    mvim = Image.new("L", shape[::-1], 0); dm = ImageDraw.Draw(mvim)
     ids = [WT.NAMES.index(n) for n in FAM_TONES["curls"]]
     for view in ("back", "front"):
         if P not in WA.VIEW_PIECES[view]: continue
@@ -106,13 +130,23 @@ def rigid_ref(P, fam, bb, shape):
             a_mm = m(np.array([a[0]]), np.array([a[1]])); a_mm = (float(np.ravel(a_mm[0])[0]), float(np.ravel(a_mm[1])[0]))
             if A is None or not all(map(np.isfinite, a_mm)): continue
             g = WA.rigid(g, a, A, a_mm)
+            mv = MOVES.get((P, f"{view}{i}"))
+            if mv is None: continue                                  # the motif is not on this piece any more (cleaned / clipped away)
+            g = affinity.translate(g, *mv)
             for q in WR.polys_of(g):
                 d.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in q.exterior.coords], fill=255)
+                dm.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in q.exterior.coords], fill=int(min(250, round(float(np.hypot(*mv))))) + 1)
                 for h in q.interiors: d.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in h.coords], fill=0)
     r = np.asarray(im) > 0
+    MOVE_RASTER[0] = np.asarray(mvim).astype(np.int32) - 1
     clipm = shapely.contains_xy(PC.clip_for(SIZE, P).buffer(-0.4), *grid(P)[1:])
     return r & clipm
 
+from shapely import affinity
+MOVES = {}; MOVE_RASTER = [None]; GREY = {}
+for _P in WC.PIECES:
+    for _r in D[_P]:
+        if _r.get("unit") and (_P, _r["unit"]) not in MOVES: MOVES[(_P, _r["unit"])] = tuple(_r.get("mv", (0.0, 0.0)))
 _PAT = {}
 def dst_family(P, bb, fam):
     """sewn stitches of the family's threads (DST read back), 0.6 mm thread"""
@@ -179,19 +213,43 @@ def gate_piece(P):
             ref = rigid_ref(P, fam, bb, cls.shape); out = dst_family(P, bb, fam)
             if fam == "curls":                                     # crests: the art's lobes merge into crests, compare crest by crest
                 ref = ndi.binary_closing(ref, iterations=2)
-            al, Aid, sh = align(ref, out)
+            al, Aid, sh = align(ref, out, max_mm=4.0)               # residual registration only: the wrap's own moves are applied above
             rows = qa.motif_match(al, out, PPM, min_mm2=4.0)
         for r_ in rows:
             if Aid is not None:
                 cy, cx = int(r_["y_mm"] * PPM), int(r_["x_mm"] * PPM); w = int(2 * PPM)
                 ids = Aid[max(0, cy - w):cy + w, max(0, cx - w):cx + w]; ids = ids[ids > 0]
-                r_["moved_mm"] = sh.get(int(np.bincount(ids).argmax()), 0.0) if len(ids) else 0.0
+                r_["residual_mm"] = sh.get(int(np.bincount(ids).argmax()), 0.0) if len(ids) else 0.0
+                mvw = MOVE_RASTER[0][max(0, cy - w):cy + w, max(0, cx - w):cx + w]; mvw = mvw[mvw >= 0]
+                r_["moved_mm"] = float(np.median(mvw)) if len(mvw) else 0.0
             r_["x_mm"] = round(r_["x_mm"] + bb[0], 1); r_["y_mm"] = round(r_["y_mm"] + bb[1], 1)
+        clipb = PC.clip_for(SIZE, P).boundary
+        foam = [r["geom"] for r in D[P] if r["grp"] in ("FM", "FM-sh", "FM-gr")]
+        from shapely.geometry import Point as _Pt
+        import shapely as _sh
+        ftree = _sh.STRtree(foam) if foam else None
+        for r_ in rows:
+            if r_["ok"]: continue
+            c = _Pt(r_["x_mm"], r_["y_mm"]); rad = np.sqrt(r_["area_mm2"] / np.pi)
+            if c.distance(clipb) < rad + 3.0: r_["why"] = "keep-out edge (cut by the spec'd art limit)"
+            elif P in ("SR", "SL") and abs(r_["x_mm"]) < 8.0 and r_["area_mm2"] < 30: r_["why"] = "render's sleeve-fold highlight (not art)"
+            elif fam == "drops" and ftree is not None and len(ftree.query(c.buffer(rad + 1.0), predicate="intersects")): r_["why"] = "drop merged into a crest"
+            else: r_["why"] = "MISSING / misshapen"
         ok = sum(r_["ok"] for r_ in rows)
         lab_o, n_o = ndi.label(out); ar = ndi.sum(out, lab_o, range(1, n_o + 1)) / PPM**2 if n_o else []
         lo, hi = {"curls": (DROP_MAX, 1e9), "drops": (4.0, DROP_MAX), "stripes": (400.0, 1e9)}[fam]
         dst_count = int(sum(1 for a in ar if lo <= a < hi))
         res[fam] = dict(n=len(rows), passed=ok, rows=rows, shifts=sh, dst_count=dst_count)
+    # stitch direction (A16): DST stitch angles vs the render's grain (input pixels, same map + seam warp), 8 mm tiles
+    g = GREY.get(P)
+    if g is not None and not ART:
+        g = np.where(np.isfinite(g), g, np.nanmean(g))
+        r = json.load(open(f"out/01_wave/{SIZE}/result_{P}.json"))["full"]
+        segs = qa.dst_segments(r["file"] + ".dst", origin=(r["origin"][0] - bb[0], r["origin"][1] - bb[1]))
+        dm = qa.direction_match(g, PPM, segs, tile_mm=8.0)
+        for k in ("fail_dev", "fail_chaos"):
+            for t_ in dm[k]: t_["at_mm"] = [round(t_["at_mm"][0] + bb[0], 1), round(t_["at_mm"][1] + bb[1], 1)]
+        dm["tile_mm"] = 8.0; res["direction"] = dm
     # coverage (A15): any-art reference vs any stitch
     ref_any = np.isin(cls, [WT.NAMES.index(n) for n in WT.CREAM + WT.GREY + WT.BLUES]); ref_any = ndi.binary_opening(ref_any, iterations=1)
     out_any = dst_family(P, bb, "curls") | dst_family(P, bb, "stripes") | dst_family(P, bb, "drops")
@@ -214,7 +272,7 @@ def summary(res):
     rows = []
     for P, r in res.items():
         for fam in ("curls", "drops", "stripes"):
-            f = r[fam]; mv = [v for v in f["shifts"].values() if v > 3.0]
+            f = r[fam]; mv = [x.get("moved_mm", 0.0) for x in f["rows"] if x.get("moved_mm", 0.0) > 3.0]
             rows.append(dict(piece=P, family=fam, motifs=f["n"], passed=f["passed"], failed=f["n"] - f["passed"],
                              moved=len(mv), max_move=max(mv) if mv else 0.0,
                              iou_median=round(float(np.median([x["iou"] for x in f["rows"]])), 2) if f["rows"] else None))
@@ -225,6 +283,12 @@ if __name__ == "__main__":
     S = summary(res)
     for r in S: print(r)
     for P in WC.PIECES:
+        d_ = res[P].get("direction")
+        if d_: print(P, "direction", d_["pct_ok"], "% OK of", d_["tiles"], "tiles; off-grain", len(d_["fail_dev"]), "chaotic", len(d_["fail_chaos"]))
+    for P in WC.PIECES:
         un = [g for g in res[P]["uncovered"] if g["why"] == "UNEXPLAINED"]
         print(P, "uncovered", len(res[P]["uncovered"]), "unexplained", len(un), [(g["x_mm"], g["y_mm"], g["area_mm2"]) for g in un[:6]])
+        for fam in ("curls", "drops", "stripes"):
+            bad = [(r_["x_mm"], r_["y_mm"], r_["area_mm2"], r_["iou"]) for r_ in res[P][fam]["rows"] if not r_["ok"] and r_.get("why", "").startswith("MISSING")]
+            if bad: print("   ", P, fam, "MISSING", bad)
     json.dump(dict(summary=S, pieces=res, mode="art" if ART else "dst"), open(f"gates_{SIZE}{'_art' if ART else ''}.json", "w"), indent=1, default=float)

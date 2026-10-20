@@ -403,7 +403,9 @@ def push_units(items, side, gap, cap=25.0):
         if np.max(s_) < 0 or np.min(s_) > 1: continue
         need = gap + 0.6 - float(np.min(d_))
         if need <= 0 or need > cap: continue
-        for r in rs: r["geom"] = affinity.translate(r["geom"], nrm[0] * need, nrm[1] * need)
+        for r in rs:
+            r["geom"] = affinity.translate(r["geom"], nrm[0] * need, nrm[1] * need)
+            m0 = r.get("mv", (0.0, 0.0)); r["mv"] = (m0[0] + nrm[0] * need, m0[1] + nrm[1] * need)     # gates.py follows the move
         n += 1
     return n
 

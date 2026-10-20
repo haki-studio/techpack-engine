@@ -68,7 +68,7 @@ def p1():
     y += 2
     o.append(t(rx, y, "Min: every seam the wave crosses 3 (armhole/cap, side, shoulder, underarm) ·", 1.45, 400, MUTED)); y += 2.9
     o.append(t(rx, y, "CF zip 15 · hem 10 · cuff 10 · welt 6 · collar flat 6 · neck 6 (emb_place.py).", 1.45, 400, MUTED)); y += 6
-    for l_ in ["!Art traced from the low-res AI render (~1.4 mm/px) + the founder's", "!close-up on the FL crest. Seam continuations are generated (G7).",
+    for l_ in ["!Art traced from the low-res AI render (~1.4 mm/px) + the founder's", "!close-up on the FL crest. Generated: seam warps + tapers (G7/G9)", "!and the art under the collar fall (mirrored to the neck keep-out).",
                "Rev B SEAMLESS wave: armhole mapped cap <-> body by seam length,", "stripes continue across every seam, 3 mm short, match notches", "on both pieces; each sleeve one continuous trace (no fold seam)."]:
         col = ORANGE if l_.startswith("!") else MUTED
         o.append(t(rx, y, l_.lstrip("!"), 1.6, 600 if col == ORANGE else 400, col)); y += 2.9
@@ -121,7 +121,7 @@ def p3():
     yb = 36 + len(order) * rh + 3
     notes = ["Globals: 40wt polyester, 75/11 sharp needle, 3.0 oz cutaway + 1.5 oz tearaway under the foam [proposed], no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; exposed moves > 2.0 trimmed.",
              "FOAM: padded tatami per curl + ONE continuous spiral curl cord + scalloped loop spiral (Foam shade); grey hollows = thin 1.1 mm grey ridges (rest of the hollow in shade). The F1 swatch",
-             "      also sews a moss / chenille look and the ecru candidate. If the factory has chenille / moss heads, FM outlines = chenille regions [proposed — confirm, F1]. Stripes = twisted cords (rows at 28°).",
+             "      also sews a moss / chenille look and the ecru candidate. If the factory has chenille / moss heads, FM outlines = chenille regions [proposed — confirm, F1]. Stripes = twisted cords (rows along the stripe, 15° twist); foam rows along the curl (A16).",
              "Width = qa.check_geom share below the minimum (fill/satin 0.8, line 0.6). Amber/red codes are tapered ends + traced flecks: kept for fidelity, check on the sew-out.",
              "Stitch counts are never estimated per region: per-file and per-stop counts (p1, p4, p5, G4, G5) are read back from the DST files."]
     for i, n_ in enumerate(notes): o.append(t(12, yb + i * 3.3, n_, 1.55, 400, ORANGE if "FOAM" in n_ else MUTED))
@@ -177,12 +177,13 @@ def p6():
           "Rev B SEAMLESS wrap: sleeves mapped by a harmonic map, render armhole",
           "  → cap by SEAM LENGTH; both sleeve halves (back + front view) form",
           "  one continuous trace; art reaches 3 mm from every seam it crosses;",
-          "  each stripe crossing a seam continues into the next piece (join /",
-          "  taper / abut, generated), curls moved whole out of keep-outs (G7).",
-          "Stripes: twisted cords (rows at 28°), sub-2 mm flecks dropped, dark",
+          "  one smooth warp per piece side lines the stripes up across each",
+          "  seam (generated, G7/G9); curls moved whole out of keep-outs.",
+          "!Generated — under the collar fall (FL/FR): art mirrored to the neck.",
+          "Stripes: twisted cords (rows along, 15° twist), flecks dropped, dark",
           "  slits closed; rope lines = continuous 2.4 mm cream cords.",
           "Foam: grey blobs → thin ridges; one continuous spiral cord per curl.",
-          "Keep-outs: seams 3, CF zip 15, hem/cuff 10, welt/collar 6.",
+          "Keep-outs: seams 3, CF zip 15, hem/cuff 10, welt 6, neck 6.",
           "Threads: 9 (12 allowed): 2 creams + grey for the foam, 6 blues.",
           "!Re-check threads + hem/cuff keep-outs on the new shell + rib."]
     for i, c in enumerate(ch): o.append(t(cx, my + 4.5 + i * 3.3, c.lstrip("!"), 1.7, 700 if c.startswith("!") else 400, ORANGE if c.startswith("!") else INK))

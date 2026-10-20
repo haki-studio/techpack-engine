@@ -1,7 +1,7 @@
-M SR {'stitches': 203992, 'trims': 707, 'jumps': 1894, 'stops': 13, 'size_mm': (499.1, 395.8), 'max_stitch': 7.45} 97s
-M SR S1_top-left {'stitches': 5920, 'trims': 36, 'stops': 11, 'size_mm': (265.4, 156.0), 'fits': True} split_clip
-M SR S2_top-right {'stitches': 19071, 'trims': 66, 'stops': 11, 'size_mm': (265.4, 167.6), 'fits': True} split_clip
-M SR S3_bottom-left {'stitches': 90841, 'trims': 331, 'stops': 11, 'size_mm': (265.4, 282.1), 'fits': True} split_clip
-M SR S4_bottom-right {'stitches': 88492, 'trims': 305, 'stops': 13, 'size_mm': (265.4, 287.5), 'fits': True} split_clip
+M SR {'stitches': 204154, 'trims': 695, 'jumps': 1866, 'stops': 11, 'size_mm': (498.9, 388.5), 'max_stitch': 7.41} 150s
+M SR S1_top-left {'stitches': 6086, 'trims': 30, 'stops': 11, 'size_mm': (265.4, 146.0), 'fits': True} split_clip
+M SR S2_top-right {'stitches': 13069, 'trims': 44, 'stops': 11, 'size_mm': (265.4, 135.3), 'fits': True} split_clip
+M SR S3_bottom-left {'stitches': 90676, 'trims': 323, 'stops': 11, 'size_mm': (265.4, 287.8), 'fits': True} split_clip
+M SR S4_bottom-right {'stitches': 94748, 'trims': 325, 'stops': 11, 'size_mm': (265.4, 292.8), 'fits': True} split_clip
 DONE M ['SR']
 EXIT 0

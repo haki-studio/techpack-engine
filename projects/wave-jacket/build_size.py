@@ -48,8 +48,30 @@ def reg_in_first_colour(pat):
         if (c & pe.COMMAND_MASK) == pe.COLOR_CHANGE: del pat.stitches[i]; break
     return pat
 
+TINY_MM2 = 120.0
+def merge_tiny(stops, clear=0.4):
+    """review item 10: a colour stop with very little in it (< TINY_MM2 of art) costs a colour change for a few dozen
+    stitches. Its regions move to another stop of the same colour - an earlier one if nothing of another colour sewn in
+    between touches them (clear mm), else a later one if nothing sewn in between touches them (then the move cannot put
+    them under or over anything). Same stitches, same order where they overlap anything; only the stop changes."""
+    import shapely
+    def area(s): return sum(r["geom"].area for r in s["regions"])
+    changed = True
+    while changed:
+        changed = False
+        for j, s in enumerate(stops):
+            if area(s) >= TINY_MM2: continue
+            U = unary_union([r["geom"] for r in s["regions"]]).buffer(clear)
+            def free(a, b):    # nothing of another colour in stops a..b-1 touches U
+                return all(not (stops[i]["col"] != s["col"] and any(r["geom"].intersects(U) for r in stops[i]["regions"])) for i in range(a, b))
+            cand = [i for i in range(j) if stops[i]["col"] == s["col"] and free(i + 1, j)]
+            cand += [k for k in range(j + 1, len(stops)) if stops[k]["col"] == s["col"] and free(j + 1, k)]
+            if not cand: continue
+            k = cand[0]; stops[k] = dict(stops[k], regions=stops[k]["regions"] + s["regions"]); del stops[j]; changed = True; break
+    return stops
+
 def stops_for(vis):
-    st = tech.stops(vis); n0 = len(st); return dst2.merge_stops(st), n0
+    st = tech.stops(vis); n0 = len(st); return merge_tiny(dst2.merge_stops(st)), n0
 
 def sews(stops, basting=False):
     """what each colour stop sews: region codes + stitch types (underlay/edge runs are part of every fill object)"""

@@ -121,7 +121,9 @@ def apply(items, field):
         c = unary_union(gs).centroid; X, Y = field(np.array([c.x]), np.array([c.y])); mv[u] = (float(X[0] - c.x), float(Y[0] - c.y))
     out = []
     for r in items:
-        if r.get("unit"): out.append(dict(r, geom=affinity.translate(r["geom"], *mv[r["unit"]]))); continue
+        if r.get("unit"):
+            m0 = r.get("mv", (0.0, 0.0)); d_ = mv[r["unit"]]
+            out.append(dict(r, geom=affinity.translate(r["geom"], *d_), mv=(m0[0] + d_[0], m0[1] + d_[1]))); continue
         g = WR.map_pts(r["geom"], lambda x, y: field(x, y), densify=1.0)
         if g is not None and not g.is_empty: out.append(dict(r, geom=g))
     return out
@@ -196,7 +198,7 @@ def pass1(D, size, gap_body, gap_int):
         z = zero_anchors(size, key, warped[key])
         pts = ctrl[key][0] + z; disp = ctrl[key][1] + [(0.0, 0.0)] * len(z)
         F = Field(pts, np.array(disp), key); dm = F.check_folds(domain_region(size, key))
-        D[key] = apply(D[key], F); fields[key] = dict(ctrl=len(ctrl[key][0]), scale=round(F.scale, 2), det_min=round(dm, 2))
+        D[key] = apply(D[key], F); fields[key] = dict(ctrl=len(ctrl[key][0]), scale=round(F.scale, 2), det_min=round(dm, 2)); FIELDS.setdefault(key, []).append(F)
     return log, fields, warped
 
 # ---------------------------------------------------------------- pass 2: align tones along the seam
@@ -340,7 +342,7 @@ def pass2(D, size, gap_body, gap_int, warped):
             for u in np.linspace(0, 1, max(3, int(side.L / 15))): z.append(side.point(float(u), 4.9))
         pts = ctrl[key][0] + z; disp = ctrl[key][1] + [(0.0, 0.0)] * len(z)
         F = Field(pts, np.array(disp), key); dm = F.check_folds(domain_region(size, key))
-        D[key] = apply(D[key], F); fields[key] = dict(ctrl=len(ctrl[key][0]), scale=round(F.scale, 2), det_min=round(dm, 2))
+        D[key] = apply(D[key], F); fields[key] = dict(ctrl=len(ctrl[key][0]), scale=round(F.scale, 2), det_min=round(dm, 2)); FIELDS.setdefault(key, []).append(F)
     for sm, A, B in warped_sides(size):                                      # tone agreement after the warp
         gap = gap_int if sm["kind"] == "internal" else gap_body; d0 = gap + 1.5
         la = WR.labels(band(D[domain_of(size, A)]), A, d0, 1.0); lb = WR.labels(band(D[domain_of(size, B)]), B, d0, B.L / A.L)
@@ -357,8 +359,22 @@ def pass3(art, size, gap_body, gap_int):
         log[sm["name"]] = SF.fill_seam(art, size, sm, gap, modes=("taper",))
     return log
 
+FIELDS = {}
+def warp_grid(size, h=3.0):
+    """the composed displacement (pass 1 then pass 2) of every domain sampled on an h-mm grid - gates.py maps the mockup
+    reference through it, so the A14 / A15 checks compare like with like"""
+    out = {}
+    for key, Fs in FIELDS.items():
+        reg = domain_region(size, key); b = reg.bounds
+        xs = np.arange(b[0] - 6, b[2] + 6, h); ys = np.arange(b[1] - 6, b[3] + 6, h); XX, YY = np.meshgrid(xs, ys)
+        X, Y = XX.copy(), YY.copy()
+        for F in Fs: X, Y = F(X, Y)
+        out[f"{key[0]}|{key[1]}"] = dict(x0=float(xs[0]), y0=float(ys[0]), h=h, ux=(X - XX).astype(np.float32), uy=(Y - YY).astype(np.float32))
+    return out
+
 def run(art, size, gap_body=WR.GAP + 0.4, gap_int=0.5):
     """edits art {P: items} in place; returns the log"""
+    FIELDS.clear()
     D = split_items(art, size)
     l1, f1, warped = pass1(D, size, gap_body + 0.6, gap_int)
     l2, f2 = pass2(D, size, gap_body, gap_int, warped)
@@ -369,6 +385,7 @@ def run(art, size, gap_body=WR.GAP + 0.4, gap_int=0.5):
         if sm["kind"] == "internal": continue
         pushed[sm["name"]] = [WR.push_units(art[s.P], s, gap_body + 0.6) for s in (A, B)]
     l3 = pass3(art, size, gap_body, gap_int)
-    return dict(reach=l1, reach_fields={f"{k[0]}{'' if not k[1] else ('+' if k[1] > 0 else '-')}": v for k, v in f1.items()},
+    grid = warp_grid(size)
+    return dict(grid=grid, reach=l1, reach_fields={f"{k[0]}{'' if not k[1] else ('+' if k[1] > 0 else '-')}": v for k, v in f1.items()},
                 align=l2, align_fields={f"{k[0]}{'' if not k[1] else ('+' if k[1] > 0 else '-')}": v for k, v in f2.items()},
                 pushed=pushed, tapers=l3)

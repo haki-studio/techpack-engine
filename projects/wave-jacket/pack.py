@@ -109,7 +109,7 @@ def overview():
     o.append(t(tx, ky, "KEEP-OUTS (mm from the sew line)", 2.0, 700))
     for i, k in enumerate(["Rev B seam-true wrap: the art stops", "3 mm short of every seam it crosses:", "armhole / cap, side, shoulder, sleeve",
                            "underarm (no armhole topstitch)", "CF zip 15 each side (teeth + tape +", "  topstitch) · hem-rib seam 10 · cuff 10",
-                           "welt box 6 · collar flat 6 · neck 6", "rib + collar never embroidered", "!Rib may change: re-check hem / cuff",
+                           "welt box 6 · neck 6 (art runs under", "  the collar fall) · rib never embroidered", "!Rib may change: re-check hem / cuff",
                            "!keep-outs on the new rib [proposed].", "", "Match marks: G7 + the 1:1 placement", "plot (art placement only)."]):
         o.append(t(tx, ky + 4.2 + i * 3.2, k.lstrip("!"), 1.55, 600 if k.startswith("!") else 400, ORANGE if k.startswith("!") else INK))
     return o
@@ -242,10 +242,10 @@ def files_page():
     o.append(t(12, y + 9, "with any density / pull changes it asks for. The frame is read from factory.json: a bigger frame re-splits every file in one rebuild.", 1.6, 400, MUTED))
     bx = 212; y2 = 31
     o.append(t(bx, y2, "WHAT IS DIGITIZED", 2.0, 700)); y2 += 4.2
-    notes = [("Stripes", ["6 blues as twisted cords: tatami rows at", "28° to the stripe (alternating per tone);", "turning satin only < 3 wide w/o holes;", "sub-2 mm render flecks dropped."]),
+    notes = [("Stripes", ["6 blues as twisted cords: tatami rows", "along the stripe, 15° twist per tone;", "turning satin only < 3 wide w/o holes;", "sub-2 mm render flecks dropped."]),
              ("Rope lines", ["continuous 2.4 mm cream cords (traced", "fragments joined), turning satin."]),
-             ("Foam", ["grey hollows -> thin 1.1 mm grey ridges", "(rest of the hollow in shade), then the", "padded foam per curl, then ONE continuous", "spiral curl cord + loop spiral (shade)."]),
-             ("Seams", ["stripes continue across every seam", "(join / taper / abut, G7); 3 mm short."]),
+             ("Foam", ["grey hollows -> thin 1.1 mm grey ridges", "(rest of the hollow in shade), then the", "padded foam per curl, rows ALONG the curl", "(A16), then ONE spiral curl cord + loops."]),
+             ("Seams", ["one smooth warp per piece side lines", "the stripes up across every seam; 3 mm", "short; art under the collar fall (G7)."]),
              ("Ties", ["3-stitch tie-on/off at every trim + colour", "change; max sewn stitch ≤ 7.5 mm;", f"≤ {FA.max_threads(PROF)} colours per file incl. registration."])]
     for a, ls in notes:
         o.append(t(bx, y2, a, 1.7, 700)); y2 += 3.0
@@ -330,13 +330,13 @@ def seams_page():
         o.append(t(cx[6], y, f"{len(m['marks'])}" if m else "—", 1.45)); o.append(t(cx[7], y, f"{m['agree']}/{len(m['marks'])}" if m else "—", 1.45))
         y += 3.0
     y += 2
-    for l_ in ["How the wave crosses a seam (wrap.py + seamfill.py, from each size's own pattern seams):",
-               "• both sides are unrolled along the seam by SEAM LENGTH (the eased cap is matched fraction to fraction), art stops 3 mm short of the sew line on both pieces;",
-               "• every stripe / rope line that crosses the seam on the side with more art continues straight on into the other piece at its own angle and tone: it JOINS a",
-               "  stripe of the same tone there, or TAPERS to a point over 2.5 x its width (bare fabric ahead), or ABUTS the other piece's own art; then the other way round;",
-               "• curls + drops are discrete raised motifs: moved whole out of a keep-out, never sliced; a curl that really crosses the armhole continues on the sleeve;",
+    for l_ in ["How the wave crosses a seam (wrap.py + seamwarp.py, from each size's own pattern seams):",
+               "• both sides are compared along the seam by SEAM LENGTH (the eased cap fraction to fraction); art stops 3 mm short of the sew line on both pieces;",
+               "• each piece side is moved by ONE smooth displacement field (thin-plate spline, fading to zero ~100 mm in, fixed on armhole / CF / hem / neck / cuff):",
+               "  first so its art reaches the seam, then along the seam so its stripes line up with the other piece's (matched tone runs) - no band is pasted, nothing is cut;",
+               "• a stripe that meets bare fabric on the other piece continues and tapers to a point there; curls + drops move whole (never sliced);",
                "• the sleeve centre line is not a seam: the back-view half and the front-view half are joined into one continuous trace (no fold line).",
-               "!Seam continuations are GENERATED (the render shows each piece in a different view), not traced - listed here so the factory knows what was redrawn."]:
+               "!Seam alignment + tapers + the art under the collar fall are GENERATED (no reference shows them), not traced - G9 shows the check + before/after."]:
         o.append(t(12, y, l_.lstrip("!"), 1.5, 600 if l_.startswith("!") else 400, ORANGE if l_.startswith("!") else INK)); y += 2.9
     # match mark table (right)
     mx = 176; my = 31
@@ -389,6 +389,28 @@ def gates_page():
         o.append(t(12, y, l_, 1.5)); y += 2.9
     return o
 
+def treatment_page():
+    o = hdr("SEAM TREATMENT CHECK — internal discontinuities + before / after (founder review 19 Oct)",
+            "discont.py on the shipped DSTs: probe lines 8-120 mm from every seam; a stripe edge must continue across each probe (jump ≤ 1 mm) and no straight cut line may run along a seam.", "G9")
+    import json as _j
+    A = _j.load(open("discont_M.json")); B = _j.load(open("discont_M_before.json"))
+    def summ(d):
+        n = sum(r["edges"] for v in d.values() for k, r in v.items() if k != "straight_cuts"); j = sum(r["jump_gt1"] for v in d.values() for k, r in v.items() if k != "straight_cuts")
+        par = sum(1 for v in d.values() for c in v["straight_cuts"]["lines"] if c[0] == "parallel")
+        return n, j, par
+    nb, jb, pb = summ(B); na, ja, pa = summ(A)
+    o.append(t(12, 31, "Stripe edges followed across probe lines (all seams, DST)", 1.8, 700)); o.append(t(110, 31, "Before (seamfill band)", 1.6, 700, MUTED)); o.append(t(150, 31, "After (smooth warp)", 1.6, 700, MUTED))
+    rows = [("edges probed", nb, na), ("edges jumping > 1 mm", f"{jb} ({100*jb/max(nb,1):.1f} %)", f"{ja} ({100*ja/max(na,1):.1f} %)"),
+            ("straight cut lines along a seam (≥ 12 mm, constant depth)", pb, pa)]
+    for i, (a, b, c) in enumerate(rows):
+        y = 35 + i * 3.4; o.append(t(12, y, a, 1.6)); o.append(t(110, y, f"{b}", 1.6, 600)); o.append(t(150, y, f"{c}", 1.6, 700, GREEN if i == 2 and pa < pb else INK))
+    o.append(t(12, 46, "Noise floor: the trace's own tone boundaries wobble (flecks, tone steps), so ~5-10 % of edges 'jump' > 1 mm everywhere, also 100 mm+ from any seam; a cut line shows as a straight", 1.4, 400, MUTED))
+    o.append(t(12, 49, "edge at constant depth (the old band ends) - see the crops: magenta = straight cut lines, red rings = edge jumps > 1 mm, per seam in out/discont_<seam>_<side>.png.", 1.4, 400, MUTED))
+    from PIL import Image
+    im = Image.open("out/crops_before_after.png")
+    tag, hh = img_tag(im, 12, 53, min(270, 140 * im.width / max(im.height, 1))); o.append(tag)
+    return o
+
 def f1_pages():
     import sheet as _SH; _SH.FOOT = SB.FOOT
     so = []
@@ -416,17 +438,17 @@ def f1_pages():
     return [pg.replace("</svg>", extra + "</svg>") for pg in pages]
 
 def build():
-    pages = {"G1": None, "G2": overview(), "G3": threads(), "G4": summary(), "G5": files_page(), "G6": hooping_page(), "G7": seams_page(), "G8": gates_page()}
+    pages = {"G1": None, "G2": overview(), "G3": threads(), "G4": summary(), "G5": files_page(), "G6": hooping_page(), "G7": seams_page(), "G8": gates_page(), "G9": treatment_page()}
     el = [("01 Wave (element spec)", SPEC[0])]
     index = [("G1 Cover + contents", 1), ("G2 Placement overview", 2), ("G3 Thread + trim summary", 3), ("G4 Stitch summary + open questions", 4),
-             ("G5 Production stitch files + hoop splits", 5), ("G6 Hooping table, order, backing", 6), ("G7 Seam continuity + match marks", 7), ("G8 Fidelity gates (A14 / A15)", 8)]
-    pg = 9
+             ("G5 Production stitch files + hoop splits", 5), ("G6 Hooping table, order, backing", 6), ("G7 Seam continuity + match marks", 7), ("G8 Fidelity gates (A14 / A15)", 8), ("G9 Seam treatment check + before / after", 9)]
+    pg = 10
     for name, path in el:
         n = len(PdfReader(path).pages); index.append((name + f" ({n} pp)", pg)); pg += n
     index.append(("F1 Factory requests", pg))
     pages["G1"] = cover(index)
     w = PdfWriter()
-    for k in ("G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8"):
+    for k in ("G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9"):
         svg = doc(pages[k]); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"{k}.pdf")
         cairosvg.svg2png(bytestring=svg.encode(), write_to=f"prev_{k}.png", output_width=2400)
         w.append(PdfReader(f"{k}.pdf"))
