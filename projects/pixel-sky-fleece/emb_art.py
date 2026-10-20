@@ -13,7 +13,7 @@ from shapely.ops import unary_union
 from shapely import affinity
 import mockmap as MM, pixels as PX, fleece as FL
 
-SPARK_CELL = 1.8                    # mm, sparkle staircase step (3 render px at 0.601 mm/px)
+SPARK_CELL = 2.5                    # mm, sparkle pixel = the bird / jacquard cell (render: big sparkle = 3-7-12 units of ~4.3 px)
 OUT = "out/art"; os.makedirs(OUT, exist_ok=True)
 HEX = {"yellow": "#F6E23A", "gold": "#D9A521", "black": "#231F1E"}
 NAMES = {"yellow": "Sparkle yellow", "gold": "Sparkle gold", "black": "Bird black"}
