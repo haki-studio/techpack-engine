@@ -46,7 +46,7 @@ images and watch.
 For every product run `scripts/dispatch.sh build <slug>` (one line each). Each builder is its OWN background Claude
 session (`claude --bg`) in its own worktree `.claude/worktrees/tp-<slug>` on branch `tp-<slug>` — never an in-process
 `Agent` subagent, because those die with this session and force it to stay open. dispatch.sh runs at most
-TECHPACK_MAX_WORKERS (default 2) at once and respects the company session/RAM cap; the rest are queued and start
+TECHPACK_MAX_WORKERS (default 3) at once and respects the company session/RAM cap; the rest are queued and start
 by themselves as workers finish. Heavy commands still share CPU through `scripts/heavy.sh`.
 
 **Then end this session.** Nothing waits on it: each builder pushes, opens its PR and launches its own reviewer

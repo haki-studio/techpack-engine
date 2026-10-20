@@ -80,3 +80,17 @@ def test_review_next_keeps_fixing_only_while_it_improves(tmp_path):
     assert "ceiling" in r.stdout
     # another PR's history does not count
     seed(tmp_path, 1, 1, 1, pr="8"); assert act("--fixable", "2") == "fix"
+
+
+def test_a_worker_handing_off_does_not_count_itself(tmp_path):
+    src = open(os.path.join(ROOT, "scripts", "dispatch.sh")).read()
+    i = src.index("live_bg() {"); fn = src[i:src.index("\n}\n", i) + 3]
+    fake = tmp_path / "bin"; fake.mkdir()
+    agents = [{"kind": "background", "pid": os.getpid(), "name": "tp-build-me", "id": "a"},
+              {"kind": "background", "pid": os.getppid(), "name": "tp-build-other", "id": "b"}]
+    (fake / "claude").write_text("#!/bin/sh\necho '" + json.dumps(agents) + "'\n"); (fake / "claude").chmod(0o755)
+    env = dict(os.environ, PATH=f"{fake}:{os.environ['PATH']}")
+    out = lambda pid: subprocess.run(["bash", "-c", fn + "\nlive_bg tp-"], capture_output=True, text=True,
+                                     env=dict(env, CLAUDE_PID=str(pid))).stdout.split()
+    assert sorted(out(1)) == ["tp-build-me", "tp-build-other"]
+    assert out(os.getpid()) == ["tp-build-other"]
