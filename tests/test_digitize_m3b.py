@@ -123,7 +123,7 @@ def test_blossom_splitter_florets_match_the_reference_count():
 
 def test_knot_never_takes_the_florets_own_thread():
     """when the needle limit merged the pale tone into the floret's (Castle crop: blossom pale -> blossom pink), the bead
-    takes the deep canopy thread, never the floret's own (a pink bead in a pink floret is invisible; M3b run final4 sewed
+    takes the deep canopy thread inside a floret and the floret thread when alone in the canopy: never the thread around it (a pink bead in a pink floret is invisible; M3b run final4 sewed
     283 such). Mutation (fallback = the floret's thread) -> red."""
     from digitize.extract.splitters import blossom
     rgb, cs = _blossom_scene()
@@ -133,6 +133,9 @@ def test_knot_never_takes_the_florets_own_thread():
     fl = {p.id: p.thread for p in parts if p.kind == "floret"}
     kn = [p for p in parts if p.kind == "knot" and p.meta["floret"] in fl]
     assert kn and all(k.thread != fl[k.meta["floret"]] for k in kn), {k.thread for k in kn}
+    can = [p for p in parts if p.kind == "canopy"][0]
+    alone = [p for p in parts if p.kind == "knot" and p.meta["floret"] not in fl]
+    assert all(k.thread != can.thread for k in alone)
 
 
 def DR_union(ps):
