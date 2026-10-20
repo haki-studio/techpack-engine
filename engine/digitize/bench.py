@@ -143,8 +143,8 @@ def verdict(row, T):
         "satin_shape": row["satin"]["blob"] <= T["satin_blobs_max"] and row["satin"]["too_wide"] == 0 and row["satin"]["too_narrow"] == 0
                        and row["satin"].get("cord_flags", 0) == 0,            # split-satin cords read from the DST (M2)
         "stack": s["max"] <= T["stack_max_layers"],
-        "colours": row["colours"]["threads_in_file"] <= T["colours_max"] and row["colours"]["red"] and row["colours"]["gold"],
-    }
+        "colours": row["colours"]["threads_in_file"] <= T["colours_max"] and all(row["colours"][a] for a in T.get("accents", ("red", "gold"))),
+    }                                         # --- KOI --- targets.accents: the accents THIS design has (Koi: red only; default red + gold)
     if "separation" in row:                   # rule 3 (M2): touching same-thread parts closer than 15 deg, stubs included
         checks["separation"] = row["separation"]["close"] <= T.get("separation_close_max", 0)
     return checks

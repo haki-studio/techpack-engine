@@ -34,6 +34,17 @@ M3B_SPLITTERS = {"trunk": trunk.split, "crown": crown.split, "blossom": blossom.
 NO_FILL_DIRECTION = ("dot",)                                          # beads: judged by size (rule 9), not by angle
 
 
+def zero_bare(w, keys, bare):
+    """--- KOI --- run.yaml threads.bare: palette tones that are the BARE shell (Koi's navy duck between motifs). They
+    stay in the evidence (so a duck pixel is not classified as the nearest thread) but get zero weight, so the thread
+    planner maps them to no thread (splitters see thread_lab -1 and never sew them). Default (none) = unchanged."""
+    w = np.array(w, float)
+    for k in bare or []:
+        if k not in keys: raise SystemExit(f"threads.bare names {k!r}, which is not in the palette")
+        w[list(keys).index(k)] = 0.0
+    return w
+
+
 def florets_by_part_map(row, segs, labels, plan, crop):
     """M3b: qa.satin_shape reads satin runs from the DST alone and cannot tell a floret from a fan in a window (its own
     docstring: "needs the part map"). A flagged run whose stitches are mostly labelled with a RADIAL part (a face-on
@@ -96,6 +107,7 @@ class Run:
         ev = evidence.build(self.ref(), T["palette"], **cfg["evidence"])
         ev.tone_png(self.f("evidence_tones.png"))
         w = np.bincount(ev.tone.ravel(), minlength=len(ev.keys)) / ev.ppm ** 2
+        w = zero_bare(w, ev.keys, T.get("bare"))           # --- KOI --- bare-shell tones: evidence only, never a thread
         # M4g: thread planner with the trade-off as options (threads.choice / answers.json), salience per tone
         zs0 = ZN.load(config.path(cfg, cfg["zones"]))
         zm = {z["id"]: (np.ones((ev.H, ev.W), bool) if z.get("rest") else ev.mask(ZN.window(z))) &
@@ -118,6 +130,9 @@ class Run:
             if k in M3B_SPLITTERS: return M3B_SPLITTERS[k](ctx, z, zz, m)          # M3b: trunk, crown, blossom
             if k == "building":                                    # M3a: building template fitter
                 from digitize.extract.splitters import building; return building.split(ctx, z, zz, m)
+            if k in ("fish", "lily"):                               # --- KOI --- motif splitters (engine trial on Koi Blossom)
+                from digitize.extract.splitters import fish, lily
+                return {"fish": fish.split, "lily": lily.split}[k](ctx, z, zz, m)
             raise ValueError(f"zone {z['id']}: unknown splitter {k!r}")
         parts, log = ZN.claim_and_split(zs, ev, z_of, split)
         parts, left_out = RV.apply_extract(self.cfg, parts)                                    # M4g: answers

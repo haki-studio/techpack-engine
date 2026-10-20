@@ -135,4 +135,21 @@ def _m3b_basis(p):
         if not cen: return None, "radial part without meta centre (the field the plugin sews from and the file check reads)"
         if p.geom.distance(Point(cen)) > 1.5: return None, "radial centre is not on the floret"
         return 0.0, None
+    if r == "ray":                                                  # --- KOI --- a piece of a fanned motif (lily petal tones)
+        f, t = c["from"], c["to"]; L = math.dist(f, t)
+        if L < 1.0: return None, "ray origin and tip coincide"
+        if p.geom.distance(LineString([f, t])) > RAY_OFF_MM: return None, f"part is more than {RAY_OFF_MM} mm off its ray (not on that petal)"
+        if Point(f).distance(p.geom) > L: return None, "part lies beyond its ray's tip"
+        return line_angle(f, t), None
     return None, f"unknown construction rule {r!r} (have {RULES})"
+
+
+# --- KOI --- rule "ray" (engine trial on Koi Blossom): every tone piece of one lily petal is sewn ALONG that petal, from the
+# flower's heart (`from`, read from the heart's stamen pixels) to the petal's tip (`to`, the farthest traced point of the
+# petal): one direction per petal across all its tones, long rows, never radial streaks. Checks: the piece lies within
+# RAY_OFF_MM of the heart -> tip segment (it is on that petal) and not beyond the tip. The tip is read off the traced
+# outline, so "ray" angles are reported in the "outline" bucket (A24 / A28), never as independent evidence.
+RAY_OFF_MM = 3.0
+RULES = RULES + ("ray",)
+OUTLINE_RULES = OUTLINE_RULES + ("ray",)
+
