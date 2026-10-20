@@ -16,6 +16,8 @@
 
 1. **Project config instead of code.** One `project.yaml` per style: POM chart, fabric + trims, palette, element
    list (name, piece, process, keep-outs, grade rules), house spec. Page builders read it; `drum.py` → `block.py`.
+   **Started 20 Oct 2026 as product families** (`docs/FAMILIES.md`): the tee family is done (`families/tee/family.yaml`
+   + one yaml per tee → full pack, `scripts/family_build.py`); the Drum Island jacket family is next.
 2. **Motif authoring stage (agentic).** For each element in a new mockup:
    - crop + name the recurring motifs; match against the library (CLIP-style embedding + a human-readable index);
    - for a new motif, an agent writes a generator (shapely regions with stitch type + angle + layer), renders it

@@ -1,0 +1,27 @@
+# TEST FIXTURE — not a real product. Proves the template: back print by DTF + a small front-left embroidery,
+# no new Python. (Real variants live in families/tee/variants/.)
+slug: example-back-dtf-embroidery
+name: Example Tee (template test)
+style: {proposed: "HAKI-TEE-EXAMPLE"}
+rev: Rev A
+body:
+  colour: Charcoal
+  pantone: {proposed: "19-3906 TCX Dark Shadow"}
+  wash: "garment washed"
+overrides:
+  labels:
+    neck: {enabled: true}
+decorations:
+  - name: Back print
+    method: dtf
+    view: back
+    top_below_neck_cm: 8
+    width_cm: {S: 26, M: 28, L: 28, XL: 30, 2XL: 30, XS: 26}
+    height_cm: 32
+  - name: Left chest logo
+    method: embroidery
+    view: front
+    centre_from_cf_cm: 10
+    top_below_hps_cm: 18
+    width_cm: 7
+    height_cm: 5

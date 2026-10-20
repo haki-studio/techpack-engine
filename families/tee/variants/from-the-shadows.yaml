@@ -1,0 +1,28 @@
+# FROM THE SHADOWS TEE — the black washed tee whose fit is the tee family block (founder 2026-10-20).
+# PLM product "Hidden in the Leaves Tee" (4c18bb1c), aka "From the Shadows". Only what differs from the family.
+slug: from-the-shadows
+name: From the Shadows Tee
+style: {proposed: "HAKI-TEE-SHADOWS"}
+rev: Rev A
+body:
+  colour: Black
+  hex: "#1C1C1C"
+  pantone: {proposed: "19-4005 TCX Stretch Limo (black)", note: "garment-dyed black; no Pantone / TCX recorded"}
+  wash: "garment-dyed + garment-washed (3rd washing sample, 9eb5b4f5); fabric washed before sewing so no white shows on seams (ef6e7da4)"
+decorations:
+  - name: Wide chest print
+    method: {proposed: dtg, note: "printed DTG on a Brother GTX (c981d20d, 2025-11-04); final-run method not restated"}
+    view: front
+    centre_from_cf_cm: 0
+    top_below_neck_cm: {proposed: 5}
+    width_cm: {proposed: 34, note: "'wide print covering chest' — size not recorded"}
+    height_cm: {proposed: 14}
+    artwork:
+      file: art/from_the_shadows_reference.jpg
+      label: "reference — final art: the From the Shadows tee art file (not in PLM)"
+    colours:
+      - {name: "Full colour (DTG) on white underbase", pantone: {proposed: "printed from the RGB art file"}}
+    notes:
+      - "S sample approved: 'perfect, wash effect perfect' (2026-03-26, 5ceed7b5)."
+revisions:
+  - {rev: Rev A, date: 20 Oct 2026, change: "Tech pack on the tee family block; this tee is the fit reference for the block."}
