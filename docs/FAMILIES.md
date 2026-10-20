@@ -37,6 +37,13 @@ engine/family/                        <- the code (loader, tee block, pages, pri
 5. If a print does not fit (too wide, too close to the collar or a seam), page D1 says so in red with the size that fails.
    Make it smaller or move it and run again.
 
+A variant kept anywhere else (e.g. a test file) needs its family named:
+`python3 scripts/family_build.py --family families/tee tests/fixtures/tee_example_back_dtf_embroidery.yaml`
+(`--out <folder>` changes where the pack is written).
+
+Numbers inside a factory question are written as `{pom:F:M:cm}` (POM F, size M, in cm; `in` for inches; `:x2` doubles a
+half measure) so they always match the chart.
+
 Mistakes are caught with a plain message, e.g. `unknown method 'foil'. Known methods: screen, dtg, dtf, puff_print,
 embroidery` or `missing 'width_cm:'`.
 

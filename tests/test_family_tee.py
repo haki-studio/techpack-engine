@@ -37,10 +37,44 @@ def test_half_measures_are_converted_explicitly():
     assert fl.chest_flat == pytest.approx(22.75 * 25.4)            # half (flat) chest = full width of the flat
     assert fl.chest2 == pytest.approx(22.75 * 25.4 / 2)            # CF -> side seam = half of that, never doubled
     assert fl.bottom2 == pytest.approx(ch.mm("D", "M") / 2)
-    # the drawn bicep (perpendicular from underarm to the sleeve top line) equals the half bicep on the chart
-    import numpy as np
-    r = np.array(fl.ua) - np.array(fl.sp); d = fl.u[0] * r[1] - fl.u[1] * r[0]
-    assert abs(d) == pytest.approx(ch.mm("G", "M"), abs=0.5)
+
+
+def test_flat_reads_as_a_drop_shoulder_no_set_in_kink():
+    """PR #15 review: the sleeve top ran at ~40° against a ~10° shoulder line (a set-in silhouette). On the drop-shoulder
+    block the sleeve top continues the shoulder line with only the small block angle change."""
+    import math
+    sp = spec()
+    for sz in sp.sizes:
+        fl = sp.flat(sz)
+        shoulder = math.degrees(math.atan2(fl.sp[1] - fl.hps[1], fl.sp[0] - fl.hps[0]))
+        sleeve = math.degrees(math.atan2(fl.cuff_out[1] - fl.sp[1], fl.cuff_out[0] - fl.sp[0]))
+        assert sleeve - shoulder == pytest.approx(12, abs=0.5), sz        # block.sleeve_angle_change_deg
+        arm = fl.armhole_curve(); mid = arm[len(arm) // 2]
+        assert abs(mid[0] - (fl.sp[0] + fl.ua[0]) / 2) < 0.5               # dropped sleeve seam is straight
+    sv = svgs(sp)["T2"]
+    assert "SKETCH INDICATIVE — MEASUREMENTS GOVERN" in sv
+
+
+def test_bicep_change_keeps_the_exact_value_for_cm():
+    ch = spec().chart                                                       # base M 8 3/8 in, -1.5 cm on the half bicep
+    assert ch.mm("G", "M") == pytest.approx((8 + 3 / 8) * 25.4 - 15, abs=1e-6)
+    assert ch["G"].show("M") == "7 3/4"                                     # inches rounded for display only
+
+
+def test_factory_questions_read_their_numbers_from_the_chart():
+    sp = spec(); f1 = svgs(sp)["F1"]
+    g2 = f"{2 * sp.chart.mm('G', 'M') / 10:.1f}"; fM = f"{sp.chart.mm('F', 'M') / 10:.1f}"
+    txt = " ".join(s for _, s in TEXT.findall(f1))
+    assert g2 in txt and fM in txt and "{pom:" not in txt
+    assert "shoulder seam is VISIBLE" in txt
+
+
+def test_cli_builds_a_variant_kept_outside_the_family_with_family_flag():
+    from family.build import main
+    out = tempfile.mkdtemp()
+    assert main(["--family", FAM, "--out", out, EXA]) == 0
+    assert os.path.exists(os.path.join(out, "example-back-dtf-embroidery", "example-back-dtf-embroidery_techpack_RevA.pdf"))
+    assert main(["--out", out, EXA]) == 1                                   # without --family: clear error, no crash
 
 
 def test_block_refuses_a_full_chest_marked_as_not_half():

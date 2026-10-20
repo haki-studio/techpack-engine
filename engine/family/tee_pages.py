@@ -3,7 +3,7 @@ it (the tee block, the placement clearances) — nothing is typed here. Proposed
 
 pages(spec) -> [(code, title, [svg strings])]   (one A4 landscape page per svg)
 """
-import base64, io, math
+import base64, io, math, re
 from PIL import Image
 import sheet as SHT
 from sheet import t, doc, SW, SH, INK, MUTED, RED, GREEN
@@ -158,11 +158,12 @@ def label_place_text(pv):
     p = val(pv) or {}
     side = {"wearer_left": "wearer's left", "wearer_right": "wearer's right"}.get(p.get("side"), "")
     at = p.get("at")
-    if at == "hem": s = f"{p.get('view', 'front')} hem, {side}, {p.get('from_side_cm', 0):g} cm from the side seam, sewn into the hem"
+    if at == "hem": s = f"{p.get('view', 'front')} hem, {side}, {p.get('from_side_cm', 0):g} cm from the side seam, folded into the hem seam"
     elif at == "side_seam": s = f"{side} side seam, {p.get('above_hem_cm', 0):g} cm above the hem edge"
     elif at == "cb_neck": s = "centre back neck, under the rib seam"
     else: s = str(p)
-    if p.get("inside"): s += " (inside)"
+    if p.get("inside"): s += " (inside; dashed on the sketch)"
+    elif p.get("inside") is False: s += " (shows on the outside; solid on the sketch)"
     return V(s, is_prop(pv), path=getattr(pv, "path", ""))
 
 
@@ -243,8 +244,11 @@ def p_flats(spec):
     o.append(dim(P(fl.sp), P(fl.cuff_out), 4, "E"))
     o.append(dim(P(fl.ua), P(fl.sp), 4, "F"))
     o.append(dim(P(fl.cuff_out), P(fl.cuff_in), 4, "H"))
-    foot_pt = (fl.ua[0] - fl.n[0] * fl.bicep_flat, fl.ua[1] - fl.n[1] * fl.bicep_flat)
-    o.append(dim(P(L_(fl.ua)), P(L_(foot_pt)), 0, "G"))
+    # G across the sleeve, 1 in from the underarm along the underside, square to the sleeve top line (position only)
+    import numpy as np
+    ua, ci = np.array(fl.ua), np.array(fl.cuff_in); q = ua + 25.4 * (ci - ua) / np.linalg.norm(ci - ua)
+    foot_pt = np.array(fl.sp) + np.dot(q - np.array(fl.sp), fl.u) * fl.u
+    o.append(dim(P(L_(tuple(q))), P(L_(tuple(foot_pt))), 0, "G"))
     if "P" in ch.poms: o.append(dim(P(L_(fl.cuff_in)), P(L_(fl.ua)), 4, "P"))
     o.append(dim(P((-fl.neck2, 0)), P((fl.neck2, 0)), -6, "J"))
     o.append(dim(P((0, fl.fnd)), P((0, 0)), -4, "K"))
@@ -262,9 +266,14 @@ def p_flats(spec):
         o.append(t(cx + 86, y, f"{p.show(sz)} {p.unit}" + (f"  ({p.cm(sz):.1f} cm)" if p.unit != "cm" else ""), 1.65, 700, col, "end"))
     y = y0 + 4.6 + per * 3.5 + 1
     blk = spec.tree["block"]
-    o.append(t(12, y, "Sleeve angle on the sketch is set so the drawn bicep (G) equals the chart; P = inner sleeve (underarm to hem).", 1.5, 400, MUTED))
-    o.append(vt(150, y, V(f"Shoulder slope {val(blk['shoulder_slope_cm'])} cm, body / sleeve hem {val(blk['body_hem_cm'])} / {val(blk['sleeve_hem_cm'])} cm",
-                          any(is_prop(blk[k]) for k in ("shoulder_slope_cm", "body_hem_cm", "sleeve_hem_cm"))), 1.5))
+    fl_ = spec.flat(sz)
+    o.append(t(12, y, ("SKETCH INDICATIVE — MEASUREMENTS GOVERN. Drop shoulder: the shoulder seam sits at the body edge and the sleeve top "
+                       f"continues the shoulder line (+{math.degrees(fl_.sleeve_change):.0f}°). " if fl_.drop_shoulder else
+                       "SKETCH INDICATIVE — MEASUREMENTS GOVERN. ") + "P = inner sleeve (underarm to hem).", 1.5, 700, INK))
+    y += 3.2
+    ks = ("shoulder_slope_cm", "body_hem_cm", "sleeve_hem_cm", "sleeve_angle_change_deg")
+    o.append(vt(12, y, V(f"Shoulder slope {val(blk['shoulder_slope_cm'])} cm, body / sleeve hem {val(blk['body_hem_cm'])} / {val(blk['sleeve_hem_cm'])} cm, "
+                         f"sleeve angle on the sketch +{val(blk.get('sleeve_angle_change_deg'), 12)}°", any(is_prop(blk.get(k)) for k in ks)), 1.5))
     return o
 
 
@@ -300,6 +309,10 @@ def p_pom(spec):
         for code, txt, src in ch.deltas:
             o.append(t(14, y, code, 1.6, 700)); o.append(t(20, y, txt, 1.6, 600, PROP)); o.append(t(150, y, src, 1.45, 400, MUTED)); y += 3.2
     y += 1.5
+    mw = spec.tree["blank"].get("measured_after_wash")
+    if mw is not None: y = vpara(o, 12, y, mw, 270, 1.5, 2.6, prefix="Measured: ") + 0.8
+    sk = spec.tree["blank"].get("shrinkage")
+    if sk is not None: y = vpara(o, 12, y, sk, 270, 1.5, 2.6, prefix="Shrinkage tolerance after wash: ") + 0.8
     para(o, 12, y, "Tolerances follow Mandy's own chart format (hoodie spec 57cf6d91: ½ chest ±1, bottom ±1, front neck drop ±0.5); "
                    "the tee tolerances were never recorded — confirm.", 270, 1.5, 2.6, 600, PROP)
     return o
@@ -405,7 +418,9 @@ def p_decoration(spec, d):
     cxm = (x0 + x1) / 2
     if abs(cxm) > 0.5: o.append(dim(M.P((0, y1 + 8)), M.P((cxm, y1 + 8)), 0, f"{cxm / 10:.1f} from {'CB' if back else 'CF'}", 1.4, GUIDE))
     fb = spec.flat(ch.sizes[-1]); yl = max(M.P((0, fb.L))[1], M.P(fb.cuff_in)[1]) + 6
-    o.append(t(62, yl, f"cm · scale 1:{1 / s:.0f} · centre {'CB' if back else 'CF'}, top from the HPS line" + ("" if d.top_ref == "hps" else " (set from the neck seam)"), 1.45, 400, MUTED, "middle"))
+    o.append(t(62, yl, f"cm · scale 1:{1 / s:.0f} · centre {'CB' if back else 'CF'}, top from the HPS line" + ("" if d.top_ref == "hps" else ""), 1.45, 400, MUTED, "middle"))
+    o.append(t(62, yl + 3, f"Top↓neck = from the bottom (outer) edge of the rib at {'CB' if back else 'CF'}, i.e. the rib seam"
+               + (" — this print is SET from there" if d.top_ref == "neck" else ""), 1.45, 400, MUTED, "middle"))
     # per-size table + clearances
     rules = spec.tree.get("placement_rules") or {}
     keys = list(rules)
@@ -552,6 +567,18 @@ def open_items(spec):
     return items
 
 
+POM_REF = re.compile(r"\{pom:(\w+):(\w+):(in|cm)(:x2)?\}")
+
+
+def fill_pom(spec, s):
+    """'{pom:F:M:cm}' in a factory question -> the chart value (cm or in); ':x2' doubles a half measure. Numbers in
+    questions are read from the chart, never typed (LESSONS B9)."""
+    def sub(m):
+        code, size, unit, x2 = m.groups(); mm = spec.chart.mm(code, size) * (2 if x2 else 1)
+        return fmt_in(mm / 25.4) if unit == "in" else f"{mm / 10:.1f}"
+    return POM_REF.sub(sub, str(s))
+
+
 def p_factory(spec):
     """F1 — open questions for the factory: the top questions + every [proposed — confirm] value. May run to several pages."""
     pages, o, y = [], None, 0
@@ -566,7 +593,7 @@ def p_factory(spec):
     if qs:
         o.append(t(12, y, "FIRST, PLEASE", 2.4, 700)); y += 4.6
         for i, q in enumerate(qs, 1):
-            y = para(o, 16, y, f"{i}. {val(q)}", 268, 1.85, 3.0, 700, PROP) + 0.8
+            y = para(o, 16, y, f"{i}. {fill_pom(spec, val(q))}", 250, 1.85, 3.0, 700, PROP) + 0.8
         y += 2
     o.append(t(12, y, "PLEASE CONFIRM OR CORRECT EACH VALUE (we proposed it; it is not recorded)", 2.2, 700)); y += 4.6
     cur = None; k = 0

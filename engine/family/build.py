@@ -13,7 +13,7 @@ def family_dir_of(variant_path):
     d = os.path.dirname(os.path.abspath(variant_path))
     if os.path.basename(d) == "variants": d = os.path.dirname(d)
     if not os.path.exists(os.path.join(d, "family.yaml")):
-        raise SpecError(f"{variant_path}: no family.yaml found (variants live in families/<family>/variants/)")
+        raise SpecError(f"{variant_path}: no family.yaml found (keep variants in families/<family>/variants/, or pass --family families/<family>)")
     return d
 
 
@@ -61,12 +61,18 @@ def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=N
 
 
 def main(argv=None):
-    argv = argv or sys.argv[1:]
-    if not argv:
-        print("usage: python3 scripts/family_build.py families/tee/variants/<slug>.yaml [more.yaml ...]"); return 2
-    for v in argv:
+    """family_build.py [--family families/<family>] <variant.yaml> [...]
+    Without --family a variant must live in families/<family>/variants/ (its family.yaml is found from there)."""
+    import argparse
+    ap = argparse.ArgumentParser(prog="family_build.py", description="variant yaml -> full tech pack PDF + page PNGs")
+    ap.add_argument("--family", help="family folder (holds family.yaml), e.g. families/tee — needed for a variant kept elsewhere")
+    ap.add_argument("--out", help="output root (default families/<family>/out)")
+    ap.add_argument("variants", nargs="+")
+    a = ap.parse_args(sys.argv[1:] if argv is None else argv)
+    fdir = os.path.abspath(a.family) if a.family else None
+    for v in a.variants:
         try:
-            r = build(v)
+            r = build(v, out_root=a.out, family_dir=fdir)
         except SpecError as e:
             print(f"ERROR in {v}:\n  {e}"); return 1
         n = len(r["spec"].proposed())

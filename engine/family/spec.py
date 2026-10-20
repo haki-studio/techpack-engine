@@ -196,7 +196,7 @@ class Chart:
             elif "by" in ch:
                 u = val(ch.get("unit"), p.unit)
                 by = parse_num(ch["by"]) * Fraction(str(MM_PER[u])) / Fraction(str(MM_PER[p.unit]))
-                if p.unit == "in": by = Fraction(round(by * 8), 8)
+                # exact (no 1/8 rounding here): the cm column uses the exact value, inches are rounded for display only
                 for s in self.sizes:
                     p.cells[s] = V(p.raw(s) + by, True, None, note, f"{cp}.{s}")
                 self.deltas.append((code, f"{p.name}: {float(parse_num(ch['by'])):+g} {u} on every size"

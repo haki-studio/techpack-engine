@@ -20,4 +20,6 @@ sys.path.insert(0, os.path.join(ROOT, "engine"))
 from family.build import main  # noqa: E402
 
 if __name__ == "__main__":
-    sys.exit(main([os.path.abspath(a) for a in sys.argv[1:]]))
+    args = [a if a.startswith("--") or (i and sys.argv[i].startswith("--")) else os.path.abspath(a)
+            for i, a in enumerate(sys.argv[1:])]
+    sys.exit(main(args))

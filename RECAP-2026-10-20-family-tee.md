@@ -50,3 +50,16 @@ unknown method accepted, F1 drops a group, deltas ignored, placement not read fr
 ## Next
 - Jacket family (docs/FAMILIES.md "Next"): jacket block adaptor over drum/pattern with the same flat interface, family
   yaml from drum.POM_CM, embroidery decorations wired to engine/digitize so D pages show DST read-back numbers.
+
+## Follow-up (branch `family-tee-fixes`, after PR #15 review APPROVE)
+| Review item | Done |
+|---|---|
+| 1 sketch read as set-in | Drop-shoulder flat: sleeve top = shoulder line + `block.sleeve_angle_change_deg` (proposed 12°), straight dropped sleeve seam; T2 caption "SKETCH INDICATIVE — MEASUREMENTS GOVERN"; G drawn across the sleeve 1 in below the underarm (position only). Test `test_flat_reads_as_a_drop_shoulder_no_set_in_kink` (red on the old set-in solver). |
+| 2 T4 sleeve wording | "sleeve attached at the dropped shoulder seam (visible seam)…" + new "Sewing order" row; F1 first question on how the visible shoulder seam is finished. |
+| 3 E / F vs bicep | F1 first question with numbers read from the chart via `{pom:CODE:SIZE:cm[:x2]}` templating (`fill_pom`); test red when not filled. |
+| 4 shrinkage | blank.shrinkage ≤ 3 % L/W after 3 home washes + `measured_after_wash`, both proposed, shown on T3 + T4. |
+| 5 D1 footnote | "Top↓neck = from the bottom (outer) edge of the rib at CF, i.e. the rib seam". |
+| 6 main label | placement `inside: false` → text "(shows on the outside; solid on the sketch)", care "(inside; dashed…)". |
+| 7 bicep exact | `by` deltas no longer rounded to 1/8; cm column exact (M 19.8 cm), inches rounded for display; test red with the rounding back. |
+| 8 CLI | `scripts/family_build.py --family <dir> [--out <dir>]`; test builds the fixture with it and gets a clean error without. |
+PDFs copied to C:\Users\devin\Desktop\tee-template\. pytest 224 passed.
