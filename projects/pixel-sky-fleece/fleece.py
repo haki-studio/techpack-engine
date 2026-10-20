@@ -26,7 +26,7 @@ ZIPF_W = 35.0              # CF zip facing strip (taslan), finished
 PKT_L, PKT_ANGLE = 165.0, 7.4     # vertical pocket zip: opening length, lean from vertical (top toward the side seam)
 PKT_C = (198.0, 432.0)     # pocket opening centre, size M, wearer's-left front coords (mm) — read off the mockup (mockmap)
 PBAG_W, PBAG_D = 170.0, 215.0
-SHERPA = "Sherpa — jacquard pile, blue / cream (+ black, bird option)"
+SHERPA = "Sherpa — jacquard, blue / cream (+ black, opt. A)"
 PROPOSED = {"Pile ease": "+4 cm chest round, +2 cm sleeve length, +1 cm shoulder / armhole / bicep, +1 cm neck",
             "Stand collar": "9 cm, outer blue taslan, inner cream sherpa, navy piping in the neck seam",
             "Hem / cuffs": "navy binding 1.2 cm finished; cuffs gathered on 1 cm elastic in the binding",
