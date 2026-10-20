@@ -141,3 +141,4 @@ Reading it:
 | 2026-10-20 | M4g sequencing + thread planner + review step | 98.6 indep. (73 of 625 tiles); all 91.5 | 4.3 | 72.0 | FAIL (54) | 4.46 / 8.14 / 84 | 20.0 (80) | 0 / 0 / 0 / 0 / 0 | 4 / 4.41 | 12 (y, y) | 4/9; sep. close 45 |
 | 2026-10-20 | M3a buildings (rule-angled roofs, walls, members; depth by tier) | 62.1 indep. (203 of 625 tiles); all 80.2 | 11.2 | 59.5 | FAIL (49) | 4.76 / 9.05 / 118 | 26.3 (105) | 45 / 0 / 0 / 0 / 3 | 4 / 8.15 | 12 (y, y) | 2/9; sep. close 22 |
 | 2026-10-20 | M3b trees, crowns, florets | 49.5 indep. (194 of 625 tiles); all 65.3 | 24.8 | 45.9 | FAIL (110) | 5.36 / 9.92 / 167 | 36.8 (147) | 694 / 0 / 0 / 0 / 4 | 5 / 19.78 | 12 (y, y) | 2/9; sep. close 23 |
+| 2026-10-20 | M4c chaos: radial exemption + crown clumps | 51.0 indep. (194 of 625 tiles); all 64.6 | 23.8 raw; 23.8 after radial exemption (0 tiles) | 44.5 | FAIL (81) | 5.26 / 9.65 / 174 | 38.0 (152) | 695 / 1 / 0 / 0 / 3 | 5 / 12.97 | 12 (y, y) | 1/9; sep. close 25 |

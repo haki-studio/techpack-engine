@@ -1,0 +1,29 @@
+# ALABASTA TEE — one variant of the tee family (families/tee/family.yaml). Only what is different for this tee.
+slug: alabasta
+name: Alabasta Tee
+style: {proposed: "HAKI-TEE-ALABASTA"}
+rev: Rev A
+body:
+  colour: White
+  hex: "#FCFCFA"
+  pantone: {proposed: "11-0601 TCX Bright White", note: "dyed white, garment washed; no Pantone / TCX recorded"}
+  wash: "garment washed (as every tee)"
+decorations:
+  - name: Alabasta desert scene
+    method: {proposed: screen, note: "chat says 'LOGO: print' (c577dbd7); screen is likely, not confirmed"}
+    view: front
+    centre_from_cf_cm: 0
+    top_below_neck_cm: {proposed: 4, note: "from the CF neck seam; moved higher after sample 1 (d834d63f); exact distance not recorded"}
+    width_cm: {proposed: 27, note: "a white tee print was cut from 30 to 27 cm wide (3cbccec3); Alabasta size not recorded"}
+    height_cm: {proposed: 24}
+    artwork:
+      file: art/alabasta_reference.jpg
+      label: "reference photo — final art file: CMYK Print Final.psd / desert print (sent by email 2026-01-26)"
+    colours:
+      - {name: "Process CMYK (painted desert, sky, palms)", pantone: {proposed: "4-colour process from the CMYK file"}}
+      - {name: "'Alabasta' script, deep magenta", pantone: {proposed: "match to art (deep magenta / burgundy)"}}
+    notes:
+      - "Soft faded edge: the painted scene fades out — it must NOT run to a hard edge (Nick, aca795d1 / 11e238bd / fdf65123)."
+      - "Print looks soft / faded in tone, not high contrast (finished tee, 2026-03-13)."
+revisions:
+  - {rev: Rev A, date: 20 Oct 2026, change: "First tech pack on the tee family block (data from PLM + the Mandy chat)."}

@@ -34,6 +34,17 @@ M3B_SPLITTERS = {"trunk": trunk.split, "crown": crown.split, "blossom": blossom.
 NO_FILL_DIRECTION = ("dot",)                                          # beads: judged by size (rule 9), not by angle
 
 
+def zero_bare(w, keys, bare):
+    """--- mockup-governs --- run.yaml threads.bare: palette tones that are the BARE shell (fabric left unsewn between motifs). They
+    stay in the evidence (so a duck pixel is not classified as the nearest thread) but get zero weight, so the thread
+    planner maps them to no thread (splitters see thread_lab -1 and never sew them). Default (none) = unchanged."""
+    w = np.array(w, float)
+    for k in bare or []:
+        if k not in keys: raise SystemExit(f"threads.bare names {k!r}, which is not in the palette")
+        w[list(keys).index(k)] = 0.0
+    return w
+
+
 def florets_by_part_map(row, segs, labels, plan, crop):
     """M3b: qa.satin_shape reads satin runs from the DST alone and cannot tell a floret from a fan in a window (its own
     docstring: "needs the part map"). A flagged run whose stitches are mostly labelled with a RADIAL part (a face-on
@@ -86,7 +97,8 @@ class Run:
 
     def ref(self):
         if self._ref is None:
-            reg = register.load(config.path(self.cfg, self.cfg_b["registration"]))
+            reg = register.load(config.path(self.cfg, self.cfg.get("registration") or self.cfg_b["registration"]))   # --- mockup-governs --- run.yaml
+            # `registration:` = the EXTRACTION source (mockup + informing close-ups); bench.json's stays the gate reference
             self._ref = register.reference(reg, self.view, self.crop, ppm=float(self.cfg_b["ppm"]))
         return self._ref
 
@@ -96,6 +108,7 @@ class Run:
         ev = evidence.build(self.ref(), T["palette"], **cfg["evidence"])
         ev.tone_png(self.f("evidence_tones.png"))
         w = np.bincount(ev.tone.ravel(), minlength=len(ev.keys)) / ev.ppm ** 2
+        w = zero_bare(w, ev.keys, T.get("bare"))           # --- mockup-governs --- bare-shell tones: evidence only, never a thread
         # M4g: thread planner with the trade-off as options (threads.choice / answers.json), salience per tone
         zs0 = ZN.load(config.path(cfg, cfg["zones"]))
         zm = {z["id"]: (np.ones((ev.H, ev.W), bool) if z.get("rest") else ev.mask(ZN.window(z))) &
@@ -203,6 +216,15 @@ class Run:
         json.dump(qs, open(self.f("questions.json"), "w"), indent=1)
         parts_json = dict(name=plan.name, n=len(plan.parts), parts=[dict(id=p.id, kind=p.kind, zone=p.zone, thread=p.thread, z=p.z,
                           technique=p.technique, angle=p.dir.angle, dir_source=p.dir.source, area_mm2=round(p.area, 1)) for p in plan.parts])
+        # --- M4c --- lit highlights grown to a visible size (crown.py): per part, traced vs drawn area and the growth used
+        for d_, p in zip(parts_json["parts"], plan.parts):
+            if p.meta.get("lit_growth"): d_["lit_growth"] = p.meta["lit_growth"]
+        lg_ = [p.meta["lit_growth"] for p in plan.parts if p.meta.get("lit_growth")]
+        if lg_:
+            parts_json["lit_growth"] = dict(pieces=len(lg_), grown=sum(1 for g in lg_ if g["grow_mm"] > 0),
+                                            traced_mm2=round(sum(g["traced_mm2"] for g in lg_), 1), added_mm2=round(sum(g["added_mm2"] for g in lg_), 1),
+                                            max_grow_mm=max(g["grow_mm"] for g in lg_), note="added = growth to a visible size + dark slivers joined")
+            print(f"review: lit highlights {parts_json['lit_growth']}")
         json.dump(parts_json, open(self.f("parts_summary.json"), "w"), indent=1)
         print(f"review: part_map.png, {len(qs)} questions")
 
@@ -279,6 +301,12 @@ class Run:
         row["direction_by_kind"] = {k: dict(tiles=sum(v), ok=v[0], dev=v[1], chaos=v[2], pct_ok=round(100 * v[0] / max(1, sum(v)), 1),
                                             pct_chaos=round(100 * v[2] / max(1, sum(v)), 1)) for k, v in sorted(per.items())}
         row["direction_by_source"] = audit.direction_by_source(dm, part_at, self.rb, plan.parts)   # M3b: one constructed basis
+        # --- M4c --- radial-floret exemption (gates_radial): raw chaos stays in row["direction"]; exempt tiles -> "radial"
+        from digitize import gates_radial as GR
+        ex = GR.tag_buckets(GR.exempt(dm, vis, [sp[i] for i in idx], plan.parts, GR.config(self.rb), ppm, origin=self.crop[:2]),
+                            part_at, self.rb, plan.parts)
+        row["direction_by_source_raw"] = row["direction_by_source"]; row["direction_by_source"] = GR.rebucket(row["direction_by_source"], ex)
+        row["radial_exemption"] = ex; aux["radial_exempt"] = [t["at_mm"] for t in ex["exempt"]]
         aa = audit.angle_audit(plan, self.rb); sw = audit.sewn_angles(plan, segs, sp, self.crop, ppm=ppm)
         areas = np.array([p.area for p in plan.parts])
         ev_mm2 = plan.meta.get("evidence_tone_mm2", {})

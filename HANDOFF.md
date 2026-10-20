@@ -65,6 +65,46 @@ PAUSED (work committed; restart with a FRESH builder per product, short brief + 
 - koi: Rev C started (refmask, floratrace).
 Factory answered (factory.json): Brother, 750 mm field, frames 300×300 + 400×450, front single hooping, back 2, chenille/puff/sherpa yes.
 
+## NEWEST — 2026-10-20 night: ENGINE RE-PLAN (founder-approved). Read docs/ENGINE_PLAN.md "RE-PLAN" first.
+No more subject splitters (fish, lily, castle…): generic primitives + a vision step that labels any mockup; the vision step is done by
+the Claude Code session itself for now (no API). Next engine work = G1 → G2 (Koi with zero new subject code) → G3. PR #13 (Koi trial)
+stays unmerged as a record; its generic parts (inform.py, mockup-only gating, tone_group seam, the "mockup governs" LESSONS row) are
+being salvaged into PR "engine: mockup governs, close-ups inform". Trims-per-area target does not apply to separate-motif designs.
+Pending when this was written: KCOS Rev C builder, M4s gates builder, PR #14 re-review — check their branches/PRs.
+Also proposed to the founder (awaiting yes): a PLM "Tech packs" page (pick product + family, upload art per decoration, Generate → a
+Railway worker runs scripts/family_build.py → PDF on the product) — build it from the PLM repo in its own worktree.
+
+## LATEST — 2026-10-20 late evening (coordinator 19b9021e handing off; start a FRESH session from here)
+Founder priorities now: **Keep Clean Our Space jacket (top)**, tee family (Alabasta / From the Shadows), engine M4.
+Builders were run as: builder in its own worktree → independent reviewer (own scratch worktree) → founder merges. The
+coordinator numbers LESSONS rows (`A?? / B?? (<tag>)`) at merge; main currently ends at A29 / B37 (check before numbering).
+
+**In flight (subagents of the old session; their work is on branches/PRs, nothing is lost if the session stops):**
+| item | branch / PR | state | next |
+|---|---|---|---|
+| Keep Clean Our Space Rev C | `kcos-revc` (PR when done) | builder running: apply WIP patch (Rev B page-check edits), re-split for the REAL frames (factory.json: 300×300 + 400×450), puff on its own stop + knockout, all pages, RevC PDF+zip | review → founder; 7 founder questions stay amber (STATUS.json) |
+| Tee family | PR #15 `family-tee` | built (220 tests), reviewer running | fix review items; founder adds 2 reference photos (families/tee/variants/art/alabasta_reference.jpg, from_the_shadows_reference.jpg — storage download needs the service key, not available to agents); Mandy's full new-shape chart replaces `pom_chart.base`+`deltas` |
+| M4c chaos | PR #14 `engine-m4c-chaos` | reviewer running. Radial exemption built to the review's conditions but exempts 0 tiles (florets ≤ 56 % of a tile's thread); crowns fixed (27 hidden lit → 0, coherence 110 → 78); crop 2/9 → 1/9 because of ONE satin "blob" from a dst2/compile 3.8 mm join between two tatami blocks of one part (shared code, unfixed) | fix the join (trim instead), maybe crown_clump_lit SEAM_MM 0.3; re-review |
+| M4s stack + travel gates | `engine-m4s-gates` (no PR yet) | builder still running (long render) | review: part-based stack gate must be red on M2 file + limit_stack-off before trusted; strict gate stays |
+| Koi trial | PR #13 `engine-trial-koi` | done, NOT reviewed. Engine better on lilies/leaves/satin, worse on fish/vine; not shippable. Desktop copy: C:\Users\devin\Desktop\koi-trial\ | founder answered (a): MOCKUP governs, close-up informs detail only; open: (b) review+merge the lily/fish splitters or keep as trial? |
+
+**FOUNDER RULING 2026-10-20 (late): the GARMENT MOCKUP governs; AI close-ups only INFORM.** The mockup decides which motifs exist, where,
+how big, how many, pose and colour, and is the gate reference. A close-up (also just an AI image) may inform how a motif is built inside that
+(petal structure, shading, texture, detail the low-res mockup can't show), registered motif by motif onto the mockup; where they disagree the
+mockup wins. Never "mockup OR close-up". → Koi: the KOI trial (PR #13) placed and graded from the close-up → redo from the mockup with the
+close-up as detail only; Rev B's close-up-traced structure must be re-anchored to the mockup. Castle: check its close-ups/bench registration follow this.
+**Founder open questions:** Castle thread trade-off (mist grey); far roof tiers as eave rows + near_tier_rel 0.75; paler blossoms?;
+Koi (a)/(b) above; KCOS 7 questions (STATUS.json); 3 mm puff foam / long stitches > 7.5 mm over puff / chenille machine+format (Mandy F1).
+**Dated follow-ups (Obsidian note `Claude/Sessions/2026-10-20/... (19b9021e).md`):** 2026-10-23 Mandy's full new-tee-shape chart; 2026-10-23
+Mandy's hat quote (compare vs Emmie only after she quotes: Emmie 100 ~$5.40, 750 $4.45, 1,200 $3.70, 2,000 $3.50 ex-factory).
+**Decisions recorded today:** stitch count is a reference, not a limit (~890k full back accepted); fidelity first (keep detail, report cost);
+1 mm seam underlap kept; puff base knocked out; gates never loosened to pass.
+
+**Next 3 steps for the fresh session:** (1) collect the reviewer verdicts for #14/#15 and the KCOS + M4s builder results (check the
+branches/PRs above; if a builder died mid-way, its worktree under .claude/worktrees/ holds the work), get KCOS Rev C reviewed and to the founder
+FIRST; (2) jacket family (docs/FAMILIES.md plan: Drum Island block → families/jacket) once #15 merges; (3) M4 to founder live-view sign-off
+on the Castle crop, then M7 (full Castle).
+
 ## ENGINE WORK — state 2026-10-20 evening (coordinator 19b9021e)
 Merged today (each: builder in own worktree → independent reviewer → founder merge): #5 M5 Konpeito SVG parity, #6 M2 organic
 parts (+ M1 follow-ups), #7 M6 puff/chenille/chain, #8 M4g thread planner + sequencing + review step, #9 M3a buildings,
