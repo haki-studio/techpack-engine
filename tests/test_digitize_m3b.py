@@ -15,14 +15,15 @@ RGB = {k: tuple(int(v.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)) for k, v in 
 BLOSSOM = ["cf_pinklt", "cf_pink", "cf_rose"]
 
 
-def _ctx(rgb, bounds, ppm=12.0, cfg=None):
+def _ctx(rgb, bounds, ppm=12.0, cfg=None, merge=None):
     from digitize.extract import evidence
     from digitize.extract.splitters import Ctx
     from digitize import config
     grey = (rgb @ np.array([0.299, 0.587, 0.114]))
     ref = dict(bounds=bounds, ppm=ppm, rgb=rgb, grey=grey, closeup_weight=np.ones(grey.shape))
     ev = evidence.build(ref, PAL, ppm=4.0)
-    return Ctx(ev, Rulebook(), config.merge(config.DEFAULTS, cfg or {}), {k: k for k in PAL}, []), ev
+    tmap = {k: (merge or {}).get(k, k) for k in PAL}                        # tone -> thread (threads.py merges)
+    return Ctx(ev, Rulebook(), config.merge(config.DEFAULTS, cfg or {}), tmap, []), ev
 
 
 def _canvas(W, H, ppm=12.0, fill="cf_navy"):
@@ -118,6 +119,20 @@ def test_blossom_splitter_florets_match_the_reference_count():
     assert can[0].geom.intersection(DR_union(fl + kn)).area < 0.5
     assert ctx.stats["blossom"]["florets"] == 18
     assert all(p.meta["knockout_of"] == can[0].id for p in fl + kn)            # M4g hint contract
+
+
+def test_knot_never_takes_the_florets_own_thread():
+    """when the needle limit merged the pale tone into the floret's (Castle crop: blossom pale -> blossom pink), the bead
+    takes the deep canopy thread, never the floret's own (a pink bead in a pink floret is invisible; M3b run final4 sewed
+    283 such). Mutation (fallback = the floret's thread) -> red."""
+    from digitize.extract.splitters import blossom
+    rgb, cs = _blossom_scene()
+    ctx, ev = _ctx(rgb, (0, 0, 64, 40), merge={"cf_pinklt": "cf_pink"})
+    claim = np.isin(ev.tone, [ev.keys.index(k) for k in BLOSSOM])
+    parts, _ = blossom.split(ctx, {"id": "blossom", "tones": BLOSSOM}, 7.0, claim)
+    fl = {p.id: p.thread for p in parts if p.kind == "floret"}
+    kn = [p for p in parts if p.kind == "knot" and p.meta["floret"] in fl]
+    assert kn and all(k.thread != fl[k.meta["floret"]] for k in kn), {k.thread for k in kn}
 
 
 def DR_union(ps):

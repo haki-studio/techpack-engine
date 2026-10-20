@@ -18,7 +18,7 @@ knot) -> branches; direction: radial florets; match motif counts, LESSONS A2 / A
      petal away from the mass centre (florets open outward). Thread = the most common blossom thread LIGHTER than the
      canopy inside the cell. A floret under floret_r_min / floret_min_mm2 is too small for petals (rule 9): only its knot.
   5. knot: one `knot` bead (dot technique) at the centre, sewn BEFORE the canopy and knocked out of it (B2) in the palest blossom thread that is neither the floret's nor
-     the canopy's (else the deepest), its bead rows between two petal axes (construct rule between_petals).
+     the canopy's, else the canopy's deep thread, never the floret's own (an invisible bead), its bead rows between two petal axes (construct rule between_petals).
 Branches are not drawn here: the trunk splitter (trunk.py) takes the bark pixels between the blossoms (kind branch,
 sewn after the florets).
 
@@ -126,7 +126,7 @@ def split(ctx, zone, z, claim):
             cc = {t: int((vv == ctx.threads.index(t)).sum()) for t in lighter}
             fl_t = max(cc, key=lambda t: (cc[t], lum_of(ctx, t))) if cc else lighter[-1]
             knot_c = [t for t in tones if t not in (fl_t, canopy_t)]
-            knot_t = (knot_c[-1] if knot_c and lum_of(ctx, knot_c[-1]) > lum_of(ctx, fl_t) else (knot_c[0] if knot_c else fl_t))
+            knot_t = (knot_c[-1] if knot_c and lum_of(ctx, knot_c[-1]) > lum_of(ctx, fl_t) else (knot_c[0] if knot_c else canopy_t))   # never the floret's own thread (an invisible bead)
             fid = f"{zone['id']}.f{stats['florets']:03d}"
             ph = math.degrees(math.atan2(c[1] - gc.y, c[0] - gc.x)) % 72.0     # first petal points away from the mass centre
             fg = five_petals(c, r, ph, sc["notch_mm"], sc["notch_deg"], sc["petal_waist"]).intersection(reg).difference(Point(c).buffer(kd / 2)).buffer(0)
