@@ -195,7 +195,18 @@ def test_exempt_tiles_go_to_their_own_bucket_never_independent_ok():
 
 
 def test_panel_and_scoreboard_show_raw_and_after():
+    """the real title / scoreboard builders (a first version crashed in panel.fields with the bench.json labels)"""
     from digitize import panel
-    row = _row(24.8, dict(pct_chaos_after=21.0, pct_chaos_raw=24.8, n_exempt=23))
-    f = panel._m4c(row)["dir_chaos"]
-    assert "24.8% raw" in f and "21.0" in f and "23 tiles" in f
+    b = json.load(open(os.path.join(os.path.dirname(__file__), "..", "projects", "castle-falls-jacket", "bench", "bench.json")))
+    ex = dict(pct_chaos_after=21.0, pct_chaos_raw=24.8, n_exempt=23)
+    row = _row(24.8, ex)
+    row["direction"].update(n_dev=3, pct_ok_all_stitches=40.0); row.update(crop_min_closeup_weight=0.65, stitches_in_crop=1000, date="d", label="l")
+    row["trims"].update(trims=5, area_cm2=1.0); row["density"].update(mean=4.0, p95=8.0, threshold=7.0, covered_cm2=1.0, over_cm2=0.0)
+    row["satin"].update(satins=1, fans=0); row["stack"].update(over_cm2=0.0); row["angle_coherence"].update(fails=1)
+    row["verdict"] = {"direction_chaos": False}
+    for L in (panel.labels(row, b), panel.labels(row, dict(b, panel_labels={}))):
+        assert "24.8% raw" in L["heat"] and "after it 21.0" in L["heat"] and "23 tiles" in L["heat"], L["heat"]
+    md = bench.md_row(row)
+    assert "24.8 raw; 21.0 after radial exemption (23 tiles)" in md
+    plain = _row(24.8); plain.update({k: row[k] for k in row if k not in ("direction", "radial_exemption")}); plain["direction"] = dict(row["direction"])
+    assert "| 24.8 |" in bench.md_row(plain) and "raw" not in panel.labels(plain, b)["heat"]   # no exemption: unchanged

@@ -24,12 +24,12 @@ DEFAULT_LABELS = {
 
 def fields(row, cfg_b):
     d, de, tr = row["direction"], row["density"], row["trims"]; c = cfg_b["crop"]
-    return dict(closeup=cfg_b.get("closeup", ""), min_weight=row["crop_min_closeup_weight"], source_ppm=row.get("source_ppm_median", "?"),
+    out = dict(closeup=cfg_b.get("closeup", ""), min_weight=row["crop_min_closeup_weight"], source_ppm=row.get("source_ppm_median", "?"),
                 stitches=row["stitches_in_crop"], trims=tr["trims"], trims_per_100cm2=tr["per_100cm2"], dir_ok=d["pct_ok"],
                 dir_chaos=d["pct_chaos"], n_dev=d["n_dev"], dir_all=d["pct_ok_all_stitches"], dens_mean=de["mean"], dens_p95=de["p95"],
                 dens_flags=de["flags"], dens_thr=de["threshold"], x0=c[0], y0=c[1], x1=c[2], y1=c[3], piece=cfg_b.get("piece", ""),
-                size=cfg_b.get("size", ""), label=row.get("label", ""), date=row.get("date", ""), parts=row.get("parts", {}).get("n", "?"),
-                **_m4c(row))
+                size=cfg_b.get("size", ""), label=row.get("label", ""), date=row.get("date", ""), parts=row.get("parts", {}).get("n", "?"))
+    out.update(_m4c(row)); return out
 
 
 def _m4c(row):
