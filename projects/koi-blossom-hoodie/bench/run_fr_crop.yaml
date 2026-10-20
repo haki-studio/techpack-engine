@@ -1,0 +1,72 @@
+# Digitizing run: Koi Blossom FR size M, upper-panel crop (engine trial, tag koi, 2026-10-20).
+#   PYTHONPATH=engine python3 -m digitize.run projects/koi-blossom-hoodie/bench/run_fr_crop.yaml --stages all --no-api
+# Paths are relative to the project folder (the folder above bench/). No Anthropic API calls anywhere in this run.
+# The bench stage is NOT run for this trial (its SCOREBOARD row would be a Castle-style row); bench/TRIAL.md has the table.
+name: KOI_FR_M_crop
+label: "KOI trial: engine on the Koi FR upper panel"
+bench: bench/bench.json            # crop, view, registration, close-up, targets
+zones: bench/zones_FR.json         # hand-authored windows (what each region IS); silhouettes traced from the input pixels
+out_dir: out/digitize/KOI_FR_M_crop
+
+techniques:
+  tatami: true
+  satin: true
+  split_satin: true
+  run: true
+  bean: true
+  guided_fill: true
+  contour_fill: true
+  blend: true
+
+threads:
+  needles: factory                 # factory.json: 12 colours per stitch file
+  protected: [kb_red, kb_cyan]      # the tetra's neon red + neon cyan stripes (founder fish reference): accents, never merged;
+                                   # cyan has no pixels in the koi close-up, so only protection keeps a needle for it
+  # candidate palette = the delivered Rev B thread card (out/pkg/.../FR_M_thread-chart.txt), so both files choose from the
+  # same threads; plus the bare navy duck (two tones: the twill's shadow and its lit threads), which is NEVER sewn
+  # (threads.bare, below): the Koi design leaves the shell bare between motifs.
+  palette:
+    kb_duck: "#121B2A"
+    kb_duck_lt: "#26354F"
+    kb_navy: "#23396F"
+    kb_cobalt: "#30569A"
+    kb_royal: "#4A73B0"
+    kb_corn: "#6F93C8"
+    kb_sky: "#97B2D8"
+    kb_ice: "#C7D6EA"
+    kb_white: "#F1EEF2"
+    kb_lav: "#B9B5CC"
+    kb_cyan: "#3FB6E0"
+    kb_red: "#D8262E"
+    kb_black: "#15181F"
+  names:
+    kb_duck: Duck (bare shell)
+    kb_duck_lt: Duck twill light (bare shell)
+    kb_navy: Deep navy
+    kb_cobalt: Cobalt
+    kb_royal: Royal blue
+    kb_corn: Cornflower
+    kb_sky: Sky blue
+    kb_ice: Ice blue
+    kb_white: Silver white
+    kb_lav: Lavender grey
+    kb_cyan: Neon cyan
+    kb_red: Neon red
+    kb_black: Eye black
+  bare: [kb_duck, kb_duck_lt]      # --- KOI --- tones that are the bare shell: evidence only, never a thread (run.py)
+
+evidence: {ppm: 4.0, smooth_mm: 0.35, mode_mm: 0.6}
+sequence: {keep_mm: 1.0, min_fragment_mm2: 2.0}
+stub: {min_part_mm2: 8.0, min_protected_mm2: 2.0, close_mm: 0.6}
+budget: {stitches_max: null}
+direction: {sigma_mm: 4.0, fill_sigma_mm: 10.0, min_coh: 0.25}
+specks: {min_mm2: 4.0}             # small motifs (petals 10-40 mm2): only true specks merge
+separate_kinds: [lily_petal, crown_clump_dark, crown_clump_lit, fish_body]
+
+# --- KOI --- motif splitters (extract/splitters/fish.py, lily.py) + reused M3b ones (crown for leaves / petals, trunk for vines)
+fish:
+  reference: inputs/reference_fish.png       # the founder's tetra (19 Oct 2026: the fish are tetras, not koi)
+  length_factor: 0.82                        # founder decision 19 Oct 2026: "82 % is fine" (x the mockup fish length)
+lily: {min_prom: 0.05, min_sep_deg: 14.0, smooth_deg: 4.0}
+crown: {support_tones: [kb_navy, kb_cobalt], support_mm: 3.0, min_mass_mm2: 6.0, min_clump_mm2: 8.0, min_lit_mm2: 3.0, clump_sep_mm: 4.0, min_seed_mm2: 2.0}
+trunk: {support_tones: [kb_royal, kb_corn, kb_sky, kb_cobalt], min_mm2: 4.0, min_w_mm: 0.8, strip_split_mm: 4.0}

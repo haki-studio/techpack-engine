@@ -1,0 +1,30 @@
+{
+  "_doc": "Zones for the Koi Blossom FR size-M trial crop (x -220..-50, y 30..300 garment mm; x from CF, + = wearer's left; y from the CF neck seam). Hand-authored on 20 Oct 2026 (engine trial, tag koi) from the 12 ppm reference (mockup + fr_upper close-up) and its tone trace. A zone is a WINDOW plus the tones that belong to it: what a region IS, never its shape; silhouettes are traced from the input pixels (LESSONS A14). Lily zones also carry a `heart` window (where the flower's heart is; its centre is read from the stamen pixels inside it). Zones claim pixels from the highest z down; there is NO rest zone: the navy duck between motifs is bare (run.yaml threads.bare).",
+  "piece": "FR",
+  "size": "M",
+  "crop": [-220, 30, -50, 300],
+  "zones": [
+    {"id": "fish_a", "splitter": "fish", "z": 9, "tones": ["kb_white", "kb_lav", "kb_ice", "kb_sky", "kb_red", "kb_black"],
+     "windows": [[[-196, 31], [-118, 31], [-118, 75], [-196, 75]]], "note": "close-up fish 0 (top), swims down-right"},
+    {"id": "fish_b", "splitter": "fish", "z": 9, "tones": ["kb_white", "kb_lav", "kb_ice", "kb_sky", "kb_red", "kb_black"],
+     "windows": [[[-146, 78], [-84, 78], [-84, 130], [-146, 130]]], "note": "close-up fish 1"},
+    {"id": "fish_c", "splitter": "fish", "z": 9, "tones": ["kb_white", "kb_lav", "kb_ice", "kb_sky", "kb_red", "kb_black"],
+     "windows": [[[-176, 150], [-89, 150], [-89, 208], [-176, 208]]], "note": "close-up fish 2 (the long one under the lily)"},
+    {"id": "fish_d", "splitter": "fish", "z": 9, "tones": ["kb_white", "kb_lav", "kb_ice", "kb_sky", "kb_red", "kb_black"],
+     "windows": [[[-112, 212], [-50, 212], [-50, 300], [-112, 300]]], "note": "close-up fish 3 (bottom right), its snout at the crop edge"},
+    {"id": "lily_a", "splitter": "lily", "z": 6, "tones": ["kb_navy", "kb_cobalt", "kb_royal", "kb_corn", "kb_sky", "kb_ice", "kb_white", "kb_lav"],
+     "windows": [[[-220, 96], [-178, 86], [-158, 98], [-143, 116], [-146, 133], [-168, 150], [-184, 178], [-204, 182], [-220, 172]]],
+     "heart": [[-209, 131], [-194, 131], [-194, 151], [-209, 151]],
+     "note": "the big upper lily (close-up lily 0); its left petals run out of the close-up and the crop"},
+    {"id": "lily_b", "splitter": "lily", "z": 6, "tones": ["kb_navy", "kb_cobalt", "kb_royal", "kb_corn", "kb_sky", "kb_ice", "kb_white", "kb_lav"],
+     "windows": [[[-208, 182], [-182, 176], [-152, 184], [-131, 200], [-131, 236], [-160, 246], [-200, 241], [-212, 216]]],
+     "heart": [[-181, 192], [-163, 192], [-163, 209], [-181, 209]],
+     "note": "the lower lily (close-up lily 1)"},
+    {"id": "vines", "splitter": "trunk", "z": 5, "tones": ["kb_navy", "kb_cobalt"],
+     "windows": [[[-220, 244], [-140, 244], [-140, 280], [-220, 280]], [[-220, 140], [-205, 140], [-205, 244], [-220, 244]]],
+     "note": "the deep-navy stems under the lilies (branch columns where they read as strokes)"},
+    {"id": "foliage", "splitter": "crown", "z": 4, "tones": ["kb_navy", "kb_cobalt", "kb_royal", "kb_corn", "kb_sky", "kb_ice", "kb_white", "kb_lav"],
+     "windows": [[[-220, 30], [-50, 30], [-50, 300], [-220, 300]]],
+     "note": "leaves around the lilies and the floating petals: clumps fanning along their long axis from their stem (or their base)"}
+  ]
+}

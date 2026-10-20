@@ -1,0 +1,134 @@
+{
+ "_doc": "Koi Blossom registration as DATA (engine/digitize/extract/register.py), engine trial 2026-10-20 (tag koi). flat = the front-view mockup inputs/front.png (770 x 1088 px). View F (fronts, size M): x mm = (px - 368) * 1.12, y mm = (py - 308) * 510/475 -- the same constants as projects/koi-blossom-hoodie/mockmap.py (CF zip x = 368 px, CF neck seam y = 308 px, hem-band seam y = 783 px = 510 mm). Garment mm: x from CF (+ = wearer's left), y from the CF neck seam; FR (wearer's right front) has x < 0. Close-up fr_upper = inputs/closeup_mockup_koi.png (FR upper panel); its tie points are the 10 features read off both images in trace/closeup_reg.json (lily centres + fish head / tail points; input pixels only, LESSONS A14). Under one global affine they drift 13 mm on average, so the thin-plate spline bends the close-up onto the mockup positions (smoothed, anchored by the affine outside the close-up). region = the close-up's affine footprint in mockup px.",
+ "flat": "inputs/front.png",
+ "views": {
+  "F": {
+   "ox": 368.0,
+   "oy": 308.0,
+   "sx": 1.12,
+   "sy": 1.0736842105263158
+  }
+ },
+ "tps": {
+  "smoothing": 40.0,
+  "border_pad": 200,
+  "border_nx": 7,
+  "border_ny": 6
+ },
+ "closeups": [
+  {
+   "name": "fr_upper",
+   "view": "F",
+   "file": "inputs/closeup_mockup_koi.png",
+   "region": [
+    143,
+    300,
+    352,
+    635
+   ],
+   "feather": 14,
+   "pts": [
+    [
+     [
+      95,
+      415
+     ],
+     [
+      195,
+      438
+     ]
+    ],
+    [
+     [
+      250,
+      680
+     ],
+     [
+      222,
+      500
+     ]
+    ],
+    [
+     [
+      305,
+      232
+     ],
+     [
+      255,
+      371
+     ]
+    ],
+    [
+     [
+      170,
+      105
+     ],
+     [
+      201,
+      344
+     ]
+    ],
+    [
+     [
+      445,
+      425
+     ],
+     [
+      286,
+      424
+     ]
+    ],
+    [
+     [
+      265,
+      330
+     ],
+     [
+      245,
+      395
+     ]
+    ],
+    [
+     [
+      455,
+      665
+     ],
+     [
+      283,
+      499
+     ]
+    ],
+    [
+     [
+      310,
+      480
+     ],
+     [
+      215,
+      465
+     ]
+    ],
+    [
+     [
+      645,
+      850
+     ],
+     [
+      322,
+      565
+     ]
+    ],
+    [
+     [
+      485,
+      735
+     ],
+     [
+      277,
+      515
+     ]
+    ]
+   ]
+  }
+ ]
+}
