@@ -35,7 +35,7 @@ from digitize.extract import building_fit as BF
 
 DEFAULTS = dict(roof_open_mm=1.2, min_roof_mm2=30.0, min_roof_w_mm=6.0, min_roof_h_mm=2.0, min_wall_mm2=25.0,
                 eave_w_mm=1.8, eave_tol_mm=1.0, tile_mm=3.0, tile_inset_mm=1.3, tile_min_share=0.08,
-                feat_min_mm2=1.5, window_max_mm=8.0, member_aspect=2.5, window_gap_mm=2.5, window_min_len_mm=3.0,
+                feat_min_mm2=1.5, window_max_mm=8.0, member_aspect=2.5, window_gap_mm=3.0, window_min_len_mm=3.0,
                 stud_max_mm=2.6, stud_pitch_mm=2.0, max_studs=4, reach_mm=1.5, ridge_tol_mm=1.0, ridge_tol_frac=0.25,
                 min_plane_mm=4.0, min_hip_slope_deg=10.0, small_fragment_mm2=0.5, tier_gap_frac=0.25, tier_full_frac=0.5,
                 min_free_eave=0.5, max_hip_frac=0.45, band_aspect=3.0, seam_keep_mm=1.0, wall_min_share=0.25)
