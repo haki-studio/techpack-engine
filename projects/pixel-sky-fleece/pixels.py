@@ -19,6 +19,7 @@ def labels():
     br = a.min(2) > 232; L_, _ = ndi.label(br)                    # background = bright region connected to the border
     edge = np.unique(np.r_[L_[0], L_[-1], L_[:, 0], L_[:, -1]]); edge = edge[edge > 0]
     bg = np.isin(L_, edge); lab[bg] = OUT
+    fringe = ndi.binary_dilation(bg, iterations=6) & ~bg          # silhouette fringe: lit pile tips read as cream
     det = detail_mask(); lab[det & ~bg] = DETAIL
     # black counts only inside the bird's box; elsewhere it is a seam / fold shadow (DETAIL)
     yy, xx = np.mgrid[0:H, 0:W]
@@ -31,7 +32,7 @@ def labels():
     lab[fix] = sc[fix]
     keep = (lab == SKY) | (lab == CREAM)
     lab[keep] = sc[keep]
-    lab[bg] = OUT; lab[det & ~bg] = DETAIL
+    lab[bg] = OUT; lab[det & ~bg] = DETAIL; lab[fringe] = DETAIL
     return lab
 
 @lru_cache(None)
@@ -47,6 +48,7 @@ def detail_mask():
         x_, y_, X_, Y_ = [int(v) for v in L.bounds]
         sub = np.array([[L.contains(Point(x, y)) for x in range(x_, X_ + 1)] for y in range(y_, Y_ + 1)])
         m[y_:Y_ + 1, x_:X_ + 1] |= sub
+    for x0, y0, x1, y1 in PULLS_PX: m[y0:y1, x0:x1] = True                          # blue zip pulls (read as sky otherwise)
     # neck: collar-seam piping curve continues to the shoulders (y < 372 + small band near the collar)
     r = np.hypot((xx - MM.CFX) / 230.0, (yy - 230) / 150.0); m |= (r < 1.0)
     # sleeve cuff bindings
@@ -54,6 +56,7 @@ def detail_mask():
     return m
 
 # pocket zips (top, bottom) in front.png px, read off the render (navy tape, blue pull at the top)
+PULLS_PX = [(376, 940, 418, 1102), (1070, 944, 1114, 1102)]
 POCKETS_PX = [((395, 948), (430, 1222)), ((1088, 952), (1050, 1222))]
 
 def frac(px0, py0, px1, py1, lab=None):

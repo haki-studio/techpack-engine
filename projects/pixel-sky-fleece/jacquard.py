@@ -272,3 +272,19 @@ if __name__ == "__main__":
     print(json.dumps({k: v for k, v in st.items() if k != "panels"}, indent=1))
     for k, v in st["panels"].items():
         if v["size"] == "M": print(k, v)
+
+def design():
+    """cached design functions: (front fn, sleeve R fn, sleeve L fn, bird cells) from out/jacquard/design_cloudgrid.json"""
+    p = f"{OUT}/design_cloudgrid.json"
+    if not os.path.exists(p):
+        build(["M"], verbose=False)
+    d = json.load(open(p))
+    conv = lambda m: {tuple(int(v) for v in k.split(",")): tuple(val) for k, val in m.items()}
+    return grid_fn(conv(d["front_M"])), grid_fn(conv(d["sleeve_R"])), grid_fn(conv(d["sleeve_L"])), {tuple(c) for c in d["bird"]}
+
+def panel(code, size, opt="A"):
+    ff, fR, fL, bird = design()
+    if code in ("F01", "F02"): fn = ff
+    elif code == "B01": fn = lambda x, yh: (ff(-x, yh)[0], GENERATED)
+    else: fn = fR if code == "S01" else fL
+    return raster_panel(code, size, fn, bird=(bird if (code == "F02" and opt == "A") else None), bird_anchor=lambda s: 0.0)
