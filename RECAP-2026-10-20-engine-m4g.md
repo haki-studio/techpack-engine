@@ -57,3 +57,13 @@ dst2.py untouched: 28-region probe dst 84ff50ea74938675 / pes 1ecd8f657db3f53a. 
   the same). split_satin cords jump inside their own cell walk (fall_left.216: 73 mm moves).
 - Optical mixes are reported, not sewn (a per-motif open layer would need a rulebook kind + stack budget).
 - Re-run the crop after M3a / M3b merge (hints contract above); then the founder's live-view sign-off.
+
+## Merge of origin/main (M6, PR #7) into the branch
+- Merge, not rebase. Only conflict: LESSONS (main's B30-B34 kept, then `B?? (M4g)`; `A?? (M4g)` after A24).
+- Foam contract now against M6's real code: `sequence.FOAM` imported from `digitize.techniques.specialty`; the m4g test
+  runs `isolate_foam` + `order_v1` and is judged by M6's own `plan_gates` (foam_stop, foam_isolated); mutation "foam
+  edges dropped" RED. run.py does NOT call isolate_foam (M6 keys the foam at extract; `test_run_path_refuses_puff_without_foam_stop`
+  proves compile's guard on an unkeyed plan, and an automatic isolate in make_plan made that guard unreachable).
+- After the merge: pytest 167 passed; identity_check: probe 84ff50ea74938675 / 1ecd8f657db3f53a, wb 449c14f6e8f693b6
+  (M5 gates: centreline 6/6, motifs 76/76, exposed 0, uncovered 0), crop f4a6545a46672615 (= the M4g bench row; changed
+  from main's 0d86f00be8e9f8fa ON PURPOSE by the new sequencing). Bench row stays keyed to 8b60c67 (values identical).

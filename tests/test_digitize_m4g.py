@@ -246,17 +246,23 @@ def test_answers_file_formats(tmp_path):
 
 
 def test_foam_stop_never_merges_with_its_flat_colour_and_sews_after_touching_flat_work():
-    """M6 puff contract: a '+foam' thread key is its own stop (the operator lays foam there): stop batching never merges
-    it with the flat stop of the same colour, and every flat part TOUCHING a puff part sews before it, whatever the z
-    (here the flat part is higher, so plain z order would sew it on top of the foam). Mutation: foam edges dropped ->
-    the flat part sews after the foam."""
-    foam = SQ.FOAM
-    puff = P("puff", box(0, 0, 10, 10), "a" + foam, z=1)
-    flat_on = P("flat_on", box(9, 0, 20, 10), "a", z=2)            # touches the puff, higher z
-    flat_off = P("flat_off", box(50, 0, 60, 10), "a", z=0)         # elsewhere, same colour
+    """M6 puff contract (specialty.FOAM / isolate_foam / plan_gates, merged in PR #7): the '+foam' stop is where the
+    operator lays foam. order_v1 batches by the exact thread key, so the foam stop never merges with the flat stop of
+    the same colour, and every flat part TOUCHING the puff sews before it, whatever its z (here the flat part is
+    HIGHER, so plain z order would sew it through the foam). Judged by M6's own plan_gates. Mutation: foam edges
+    dropped -> flat_after_puff -> red."""
+    from digitize.techniques import specialty as SPC
+    assert SQ.FOAM == SPC.FOAM
+    def part(id_, g, z, tech):
+        p = P(id_, g, "cream", z); p.technique = tech; return p
     for la in (False, True):
-        st = SQ.order_v1([puff, flat_on, flat_off], lookahead=la)
-        assert all(not (SQ.is_foam(s["thread"]) and any(p != "puff" for p in s["parts"])) for s in st), st
-        assert [s["thread"] for s in st].count("a" + foam) == 1
-        order = [p for s in st for p in s["parts"]]
-        assert order.index("flat_on") < order.index("puff"), st
+        puff = part("puff", box(0, 0, 10, 10), 1, "puff")
+        flat_on = part("flat_on", box(9, 0, 20, 10), 2, "tatami")       # touches the puff, higher z
+        flat_off = part("flat_off", box(50, 0, 60, 10), 0, "tatami")    # elsewhere, same colour
+        plan = ObjectPlan(name="t", parts=[puff, flat_on, flat_off], threads={"cream": dict(hex="#D4CABA", name="cream")})
+        SPC.isolate_foam(plan)
+        assert puff.thread == "cream" + SPC.FOAM
+        plan.stops = SQ.order_v1(plan.parts, lookahead=la)
+        G = SPC.plan_gates(plan)
+        assert G["foam_stop"]["ok"] and G["foam_isolated"]["ok"], (plan.stops, G["foam_stop"], G["foam_isolated"])
+        assert [s["thread"] for s in plan.stops].count("cream" + SPC.FOAM) == 1

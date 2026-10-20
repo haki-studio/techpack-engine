@@ -180,10 +180,7 @@ class HintError(ValueError):
     pass
 
 
-try:                                     # M6 (PR #7): puff threads / stops carry this suffix
-    from digitize.specialty import FOAM
-except Exception:
-    FOAM = "+foam"
+from digitize.techniques.specialty import FOAM      # M6 (PR #7): a puff thread / stop key ends in "+foam"
 
 
 def is_foam(thread):
