@@ -39,7 +39,22 @@ apply. Stitch count is reported, never a limit.
 - **G2** vision step by the session on an UNSEEN mockup with zero new subject code (proof: Koi FR — the fish must come out of
   lobe + band + radial + dot), side-by-side vs Rev B, judged by the founder.
 - **G3** design-type-aware targets + the review/question loop surfaced for the founder (then the PLM page uses it).
-- then M7 (full Castle via labels), M8 (Wave), PLM self-serve (vision via API).
+- **P1 image → DST in PLM (founder 2026-10-20: next after G2):** a small PLM window, image in → DST/PES + stitch preview +
+  gate table + questions out. The vision step becomes one API call writing the same labels file (`--no-api` mocks; cost per
+  image measured before launch). Not a tech pack, one element. Ships only once G2 shows the image route is good enough.
+- then M7 (full Castle via labels), M8 (Wave), the full PLM tech pack self-serve.
+
+**SVG → DST track (founder 2026-10-20: build now, independent of G1/G2; image → DST stays out of PLM until P1):**
+- **S1 SVG drop-in.** Today `digitize.svgrun` is excellent on the founder's Konpeito SVGs but only with a hand-written run.yaml
+  (thread palette + a role per layer); an SVG with no config crashes in extract/svg.py (empty palette, 20 Oct probe). S1 derives
+  the config: palette from the file's fills (nearest house/Isacord thread, ΔE reported), a role per shape from its geometry
+  (wide areas → fill at a declared angle, strokes ≤ 7 mm → column, small round shapes → dots, star/floret shapes → radial,
+  lobes → petals; never "auto" directions), finished size → scale, fabric → underlay/density. Low-confidence roles become
+  review questions, not guesses. Proof: the 5 Konpeito SVGs with NO run.yaml reach the same gates as the hand-configured
+  M5 runs, plus 3 unseen SVGs (a logo, lettering, a flat illustration) pass the hard limits and are judged by the founder.
+- **S2 PLM "SVG → DST" window.** Drop an SVG, enter finished width + fabric + hoop → DST + PES + preview PNG + gate table +
+  thread list (+ the S1 questions, answered on the page and re-run). The engine runs in a Python worker service on Railway
+  (CPU only, no API calls); PLM page + upload in the plm repo (own worktree, access policies per the data-security rules).
 
 ## Layout (as built M0–M6)
 - `schema.py`: Part, Layer, DirSpec (never "auto"), StitchSpec, Block, ObjectPlan
