@@ -3,8 +3,12 @@
   machine_of(part)                 "lockstitch" | "chenille" (technique sequencing["machine"])
   isolate_foam(plan)               puff parts get their own thread key (<thread>+foam): sequence.order then gives them
                                    their own stop = the machine stop where the operator lays the foam
-  plan_gates(plan, rb=None)        no tatami / fill on a puff part; every puff stop holds only puff parts; flat parts
-                                   that touch a puff part sew in an EARLIER stop (foam goes on top of the flat work)
+  knockout_under_puff(parts)       house rule 6 for puff: lower lock-stitch parts lose what the puff covers, keeping
+                                   cut_keep_mm under its edge (no flat stitches inside the foam)
+  plan_gates(plan)                 no tatami / fill on a puff part; every puff stop holds only puff parts; flat parts
+                                   that touch a puff part sew in an EARLIER stop (foam goes on top of the flat work);
+                                   puff thread + stop key end in "+foam"; 0 lower stitches inside puff minus keep band
+  guard_puff(plan)                 compile.write raises PuffNotIsolated when any plan gate fails
   puff_gates(part, segs)           on the WRITTEN file's segments of the part (compile.labelled_dst): width in range,
                                    satin only (no penetrations inside the foam body), row spacing <= max, ends closed
                                    (perforated + capped), rows <= the DST limit, foam spec in range
@@ -57,10 +61,20 @@ def g(ok, value=None, limit=None, **kw):
 
 
 # ---------------------------------------------------------------- plan-level
+FOAM = "+foam"            # FOAM-ISOLATION CONTRACT: a puff part's thread / stop key ends in "+foam". The stop with that key
+                          # is the machine stop where the operator lays the foam, so it must NEVER be merged with a flat
+                          # stop of the same colour (sequence batching / any merge by hex colour must keep the key apart).
+                          # compile.write refuses a plan that breaks it (guard_puff).
+
+
+class PuffNotIsolated(ValueError):
+    """a puff plan reached a lock-stitch file without its foam stop, or with flat stitches inside the foam"""
+
+
 def isolate_foam(plan):
     for p in plan.parts:
-        if p.technique == "puff" and not p.thread.endswith("+foam"):
-            base = p.thread; k = base + "+foam"
+        if p.technique == "puff" and not p.thread.endswith(FOAM):
+            base = p.thread; k = base + FOAM
             if k not in plan.threads:
                 th = dict(plan.threads.get(base, {})); th["name"] = f"{th.get('name', base)} (puff stop: lay foam)"
                 th["foam_of"] = base; plan.threads[k] = th
@@ -68,7 +82,48 @@ def isolate_foam(plan):
     return plan
 
 
-def plan_gates(plan):
+def house_keep():
+    from digitize.rulebook import Rulebook
+    return float(Rulebook().principles.get("cut_keep_mm", 1.0))
+
+
+def _under(q, p):
+    return (q.technique != "puff" and machine_of(q) == "lockstitch" and q.z < p.z and q.geom.intersects(p.geom))
+
+
+def knockout_under_puff(parts, keep=None):
+    """house rule 6 (cut what is covered) for puff: every lower lock-stitch part loses what the puff covers, keeping a
+    `keep` mm underlap band under the puff edge (cut_keep_mm, house.yaml). sequence.cut_under does the same for a whole
+    run; this is the puff-only step for callers that plan without it. Returns [(part, puff, mm2 removed)]."""
+    from digitize.sequence import clean
+    keep = house_keep() if keep is None else keep; out = []
+    for p in [p for p in parts if p.technique == "puff"]:
+        core = p.geom.buffer(-keep)
+        if core.is_empty: continue
+        for q in parts:
+            if not q.technique or not _under(q, p): continue
+            a0 = q.geom.area; q.geom = clean(q.geom.difference(core)); out.append((q.id, p.id, round(a0 - q.geom.area, 2)))
+    return out
+
+
+def base_under_puff(plan, keep=None, pts_by_part=None, tol=0.25):
+    """needle points of LOWER lock-stitch parts inside a puff footprint minus the keep band (target 0). pts_by_part:
+    {part id: [(x, y)]} from the written file; default = the planned blocks"""
+    from shapely.prepared import prep
+    keep = house_keep() if keep is None else keep; hits = {}
+    for p in [p for p in plan.parts if p.technique == "puff"]:
+        core = p.geom.buffer(-(keep + tol))
+        if core.is_empty: continue
+        C = prep(core)
+        for q in plan.parts:
+            if not _under(q, p): continue
+            pts = pts_by_part.get(q.id, []) if pts_by_part is not None else [pt for b in plan.blocks.get(q.id, []) for pt in b.pts]
+            n = sum(1 for pt in pts if C.contains(Point(pt)))
+            if n: hits[f"{q.id}>{p.id}"] = n
+    return hits
+
+
+def plan_gates(plan, keep=None, pts_by_part=None):
     out = {}
     bad = [p.id for p in plan.parts if is_puff(p) and p.technique != "puff"]
     out["puff_no_fill"] = g(not bad, value=bad, limit="every puff part sewn by the puff plugin (satin columns, never tatami)")
@@ -83,7 +138,25 @@ def plan_gates(plan):
             if q.geom.distance(p.geom) <= 0.5 and stop_of[q.id] >= stop_of[p.id]: late.append((q.id, p.id))
     out["foam_stop"] = g(not mixed and not late, value=dict(mixed_stops=mixed, flat_after_puff=late),
                          limit="puff parts alone in their stop; touching flat parts sewn earlier")
+    unkeyed = [p.id for p in plan.parts if p.technique == "puff" and not p.thread.endswith(FOAM)]
+    unkeyed += [f"stop {i}" for i, s in enumerate(plan.stops)
+                if any(plan.part(q).technique == "puff" for q in s["parts"]) and not str(s["thread"]).endswith(FOAM)]
+    out["foam_isolated"] = g(not unkeyed, value=unkeyed, limit=f"puff thread + stop key end in {FOAM!r} (isolate_foam)")
+    hits = base_under_puff(plan, keep, pts_by_part)
+    out["base_under_puff"] = g(not hits, value=hits,
+                               limit=f"0 lower stitches inside the puff minus the {house_keep() if keep is None else keep} mm keep band")
     return out
+
+
+def guard_puff(plan, keep=None):
+    """compile.write: a plan with puff parts must pass every plan gate, else nothing is written"""
+    if not any(p.technique == "puff" or is_puff(p) for p in plan.parts): return None   # a puff KIND sewn as tatami too
+    G = plan_gates(plan, keep); bad = {k: v["value"] for k, v in G.items() if not v["ok"]}
+    if bad:
+        raise PuffNotIsolated(f"puff plan refused: {bad}. Call specialty.isolate_foam(plan) before sequence.order (the "
+                              f"'{FOAM}' stop is where the foam is laid), knock out flat parts under the puff "
+                              f"(sequence.cut_under / specialty.knockout_under_puff) and never fill a puff part.")
+    return G
 
 
 # ---------------------------------------------------------------- geometry helpers
@@ -111,7 +184,9 @@ def puff_gates(part, segs):
     ws = [round(q["w"], 2) for q in cols]
     out["width_in_range"] = g(cols and all(lo <= w <= hi for w in ws), value=ws, limit=[lo, hi])
     f = foam_of(part); fl, fh = P.get("foam_min_mm", 2.0), P.get("foam_max_mm", 4.0)
-    out["foam_spec"] = g(fl <= float(f["thickness_mm"]) <= fh and bool(f.get("colour")), value=f, limit=[fl, fh])
+    out["foam_spec"] = g(fl <= float(f["thickness_mm"]) <= fh and bool(f.get("colour")), value=f, limit=[fl, fh],
+                         machine=dict(needle=P.get("needle", "[proposed - confirm]"), spm=P.get("spm", "[proposed - confirm]"),
+                                      pull_comp=part.stitch.pull_comp, note="PROPOSED for the strike-off, not measured"))
     if not segs or not cols:
         out["sewn"] = g(False, value=len(segs)); return out
     lss = [LineString(q["cl"]) for q in cols]

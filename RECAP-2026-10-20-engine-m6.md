@@ -77,3 +77,29 @@
   a layer-name convention. Splitting wide puff art into columns is not built.
 - The chenille plan json is neutral. Once the format is known, write the exporter and replace the raise.
 - Previews are schematic, not photoreal.
+
+## Part B: PR #7 review fixes (CHANGES, 20 Oct 2026)
+1. **Puff safeguards on the real run path.** `compile.write` now calls `specialty.guard_puff(plan)` (next to the
+   OtherMachine guard): it raises `PuffNotIsolated` when any puff plan gate fails: puff_no_fill (a puff KIND sewn as
+   anything else - the first version only triggered on technique == "puff", so a tatami puff slipped through; a test
+   caught it), foam_stop, **foam_isolated** (new: thread and stop key end in `+foam`), **base_under_puff** (new).
+   Tested through the real `digitize.run.Run.make_plan` + `Run.compile` on a tmp project (tests/test_digitize_m6.py
+   `test_run_path_*`). `sequence.py` NOT edited.
+   **Foam-isolation contract (for M4g):** a puff part's thread / stop key ends in `+foam` (`specialty.FOAM`); that stop
+   is the machine stop where the foam is laid and must NEVER be merged with a flat stop of the same colour (merging by hex
+   colour would collapse it). Whoever plans puff parts calls `specialty.isolate_foam(plan)` before `sequence.order`;
+   `compile.write` refuses the plan otherwise. LESSONS row `B?? (M6)`.
+2. **Base under puff: knocked out** (coordinator decision, house rule 6). `specialty.knockout_under_puff(parts, keep)`
+   removes the puff footprint minus `cut_keep_mm` (1 mm, house.yaml) from every LOWER lock-stitch part it overlaps (the
+   run path already does this through `sequence.cut_under`; the swatch now calls the puff step). Gate
+   `base_under_puff` = lower-part needle points inside the puff minus the keep band, on the planned blocks (and in the
+   swatch on the DST's planned points too): target 0, swatch 0. Info: 2 base TRAVEL stitches (dst2's hidden travel,
+   sewn before the foam) cross the hole; reported as `travel_under_puff`, not gated (changing dst2's router is out of
+   scope). Preview `swatch_m6_puff_knockout.png` looked at: hole + 1 mm band visible.
+3. **Hashes from the head run** (`scripts/identity_check.sh`, probe now in the repo as `scripts/byteid_probe.py`):
+   probe dst 84ff50ea74938675 / pes 1ecd8f657db3f53a, M5 wb 449c14f6e8f693b6, crop 0d86f00be8e9f8fa - all unchanged.
+- Nice-to-haves done: puff needle / spm declared PROPOSED (house.yaml, `foam_spec.machine`); factory.json asks about
+  > 7.5 mm puff stitches; BENCH marks reads_as_chain as a geometric proxy and the chenille coverage / loop-height
+  assumptions.
+- pytest **155 passed**; mutations **29 / 29 red** (5 new: guard not called, guard on technique only, foam_isolated
+  ignored, base_under_puff never counts, knockout no-op), restored green.

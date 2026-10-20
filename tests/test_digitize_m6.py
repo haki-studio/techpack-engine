@@ -19,8 +19,9 @@ def _puff(pid="puff.s", cl=((12.0, 18.0), (48.0, 18.0)), w=5.0, closed=False, th
     return Part(id=pid, kind="puff_column", geom=SW.column_geom(list(cl), w, closed), thread=thread, z=2, dir=DirSpec(90.0), meta=m)
 
 
-def _compile(parts, rb=None, technique=None, isolate=True, spec=None):
-    """plan + compile + read the file back: (plan, {part id: file segments})"""
+def _compile(parts, rb=None, technique=None, isolate=True, spec=None, knockout=True, write=True, guarded=True):
+    """plan + compile + read the file back: (plan, {part id: file segments}). guarded=False writes a plan that
+    compile.write's puff guard would refuse, so a FILE gate can be shown red on it (tests only)"""
     rb = rb or Rulebook(toggles=TOG)
     for p in parts:
         p.technique = (technique or {}).get(p.id) or rb.technique_for(p.kind)
@@ -28,9 +29,14 @@ def _compile(parts, rb=None, technique=None, isolate=True, spec=None):
         for k, v in (spec or {}).get(p.id, {}).items(): setattr(p.stitch, k, v) if hasattr(p.stitch, k) and k != "params" else p.stitch.params.update(v)
     plan = ObjectPlan(name="t", parts=parts, threads={k: dict(v) for k, v in SW.THREADS.items()})
     if isolate: SP.isolate_foam(plan)
+    if knockout: SP.knockout_under_puff(plan.parts)
     plan.stops = SQ.order(plan.parts); CP.plan_blocks(plan)
+    if not write: return plan, None, None
     base = os.path.join(tempfile.mkdtemp(), "m6")
-    w = CP.write(plan, base, SW.ORIGIN)
+    if guarded: w = CP.write(plan, base, SW.ORIGIN)
+    else:
+        from unittest import mock
+        with mock.patch.object(SP, "guard_puff", lambda plan, keep=None: None): w = CP.write(plan, base, SW.ORIGIN)
     D, lab, _ = CP.labelled_dst(base + ".dst", SW.ORIGIN, w["segs"], w["seg_parts"])
     by = {}
     for s, l in zip(D, lab):
@@ -69,7 +75,8 @@ def test_puff_swatch_passes_every_gate_on_the_file():
 
 def test_puff_gate_red_on_tatami():
     """the same column sewn as tatami: penetrations inside the foam body + the plan gate names the part"""
-    plan, by, _ = _compile([_puff()], technique={"puff.s": "tatami"}, isolate=False)
+    with pytest.raises(SP.PuffNotIsolated, match="puff_no_fill"): _compile([_puff()], technique={"puff.s": "tatami"}, isolate=False)
+    plan, by, _ = _compile([_puff()], technique={"puff.s": "tatami"}, isolate=False, guarded=False)
     G = SP.puff_gates(plan.part("puff.s"), by["puff.s"])
     assert "satin_only" in _bad(G) and G["satin_only"]["value"] > 0.3
     assert "puff_no_fill" in _bad(SP.plan_gates(plan))
@@ -137,12 +144,13 @@ def test_foam_stop_gate():
     """puff in the same thread as the flat base: without isolate_foam they share a stop (no machine stop to lay the
     foam) -> red; isolate_foam gives the puff its own stop after the base -> green"""
     base = lambda: Part(id="base", kind="pool", geom=box(5, 5, 55, 32), thread="cream", z=0, dir=DirSpec(0.0))
-    plan, _, _ = _compile([base(), _puff()], isolate=False)
-    assert "foam_stop" in _bad(SP.plan_gates(plan))
+    plan, _, _ = _compile([base(), _puff()], isolate=False, write=False)
+    assert {"foam_stop", "foam_isolated"} <= set(_bad(SP.plan_gates(plan)))
+    with pytest.raises(SP.PuffNotIsolated): _compile([base(), _puff()], isolate=False)
     plan, _, w = _compile([base(), _puff()], isolate=True)
     assert _bad(SP.plan_gates(plan)) == [] and w["readback"]["stops"] == 2
     far = Part(id="far", kind="pool", geom=box(70, 60, 90, 75), thread="cream", z=0, dir=DirSpec(0.0))   # does not touch the puff
-    plan, _, _ = _compile([far, _puff()], isolate=False)
+    plan, _, _ = _compile([far, _puff()], isolate=False, write=False)
     G = SP.plan_gates(plan)["foam_stop"]
     assert not G["ok"] and G["value"]["mixed_stops"] and not G["value"]["flat_after_puff"]          # mixed stop alone is red
 
@@ -258,3 +266,66 @@ def test_swatch_run_all_gates_and_previews(tmp_path):
     assert r["chain_line_technique"] == "faux_chain" and all(r["verdict"].values()), [k for k, v in r["verdict"].items() if not v]
     assert r["chenille_export"].startswith("FactoryFormatNeeded")
     for k, f in r["png"].items(): assert os.path.getsize(f) > 3000, k
+
+
+# ------------------------------------------------------------------ PR #7 review: the real run path (digitize.run)
+def _run_project(tmp_path, isolate, keep_mm=1.0):
+    """a minimal digitize.run project: run.yaml + bench.json + parts.json (what an extractor writes), then the real
+    Run.make_plan (rulebook, underlap, cut_under, sequence.order) and Run.compile (compile.write)"""
+    from digitize.run import Run
+    bench = tmp_path / "bench"; out = tmp_path / "out" / "m6run"; bench.mkdir(); out.mkdir(parents=True)
+    json.dump(dict(crop=[0, 0, 100, 60], view="BK"), open(bench / "bench.json", "w"))
+    json.dump(dict(name="M6RUN", bench="bench/bench.json", out_dir="out/m6run", techniques=dict(TOG),
+                   sequence=dict(keep_mm=keep_mm, min_fragment_mm2=2.0)), open(bench / "run.yaml", "w"))
+    parts = [Part(id="base", kind="pool", geom=box(5, 5, 55, 32), thread="cream", z=0, dir=DirSpec(0.0)), _puff()]
+    plan = ObjectPlan(name="M6RUN", parts=parts, threads={"cream": dict(SW.THREADS["cream"])})
+    if isolate:
+        parts[1].technique = "puff"; SP.isolate_foam(plan); parts[1].technique = None      # the extractor keys the foam stop
+    plan.to_json(str(out / "parts.json"), with_blocks=False)
+    r = Run(str(bench / "run.yaml")); r.make_plan()
+    return r
+
+
+def test_run_path_refuses_puff_without_foam_stop(tmp_path):
+    """a puff part through the real run path with a plain thread key: sequence.order batches it with the same-colour
+    base (no machine stop to lay the foam) and compile.write refuses to write the file"""
+    r = _run_project(tmp_path, isolate=False)
+    with pytest.raises(SP.PuffNotIsolated, match="foam_isolated"): r.compile()
+    assert not os.path.exists(r.base + ".dst")
+
+
+def test_run_path_puff_isolated_and_knocked_out(tmp_path):
+    """the same run with the '+foam' key: own stop after the base, the base cut under the puff (cut_under keeps 1 mm),
+    0 base stitches inside the puff minus the keep band, the file is written"""
+    r = _run_project(tmp_path, isolate=True)
+    res = r.compile()
+    plan = r.plan
+    G = SP.plan_gates(plan)
+    assert _bad(G) == [] and G["base_under_puff"]["value"] == {}
+    assert res["readback"]["stops"] == 2 and plan.stops[-1]["thread"].endswith(SP.FOAM)
+    core = plan.part("puff.s").geom.buffer(-1.0)
+    assert plan.part("base").geom.intersection(core).area < 0.5                  # knocked out ...
+    assert plan.part("base").geom.intersection(plan.part("puff.s").geom).area > 50  # ... with the 1 mm band kept
+
+
+def test_run_path_refuses_flat_fill_under_puff(tmp_path):
+    """keep 10 mm instead of the house 1 mm: cut_under leaves the base under the whole 5 mm puff -> base_under_puff
+    red and compile.write refuses"""
+    r = _run_project(tmp_path, isolate=True, keep_mm=10.0)
+    with pytest.raises(SP.PuffNotIsolated, match="base_under_puff"): r.compile()
+
+
+def test_knockout_under_puff_red_green():
+    """the swatch path (no cut_under): without the knockout the base fills the foam (red, compile refuses), with it 0"""
+    for ko in (False, True):
+        rb = Rulebook(toggles=TOG)
+        parts = [Part(id="base", kind="pool", geom=box(5, 5, 55, 32), thread="navy", z=0, dir=DirSpec(0.0)), _puff()]
+        for p in parts: p.technique = rb.technique_for(p.kind); p.stitch = rb.stitch_spec(p.kind, p.technique)
+        plan = ObjectPlan(name="t", parts=parts, threads={k: dict(v) for k, v in SW.THREADS.items()}); SP.isolate_foam(plan)
+        if ko: assert SP.knockout_under_puff(plan.parts)[0][2] > 90
+        plan.stops = SQ.order(plan.parts); CP.plan_blocks(plan)
+        G = SP.plan_gates(plan)["base_under_puff"]
+        if ko: assert G["ok"] and G["value"] == {}
+        else:
+            assert not G["ok"] and G["value"]["base>puff.s"] > 50
+            with pytest.raises(SP.PuffNotIsolated, match="base_under_puff"): CP.write(plan, os.path.join(tempfile.mkdtemp(), "x"), SW.ORIGIN)

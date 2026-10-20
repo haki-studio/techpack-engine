@@ -71,6 +71,8 @@ def build(cfg, out):
     res["chain_line_technique"] = next(p.technique for p in parts if p.kind == "chain_line")
     plan = ObjectPlan(name="m6_swatch", parts=parts, threads={k: dict(v) for k, v in THREADS.items() if k in {p.thread for p in parts}})
     if cfg.get("swatch", {}).get("isolate_foam", True): SP.isolate_foam(plan)
+    if cfg.get("swatch", {}).get("knockout", True):                                # house rule 6 under the puff
+        res["knockout"] = SP.knockout_under_puff(plan.parts, rb.principles.get("cut_keep_mm", 1.0))
     plan.stops = SQ.order(plan.parts)
     res["issues"] = [i for p in plan.parts for i in techniques.get(p.technique).check(p, rb.principles)]
     CP.plan_blocks(plan)
@@ -88,6 +90,14 @@ def build(cfg, out):
     by = {}
     for s, l in zip(D, lab):
         if l is not None: by.setdefault(l, []).append(s)
+    # the same gate on the DST: file needle points that are PLANNED stitches (0.1 mm grid) vs points dst2 added as travel
+    fpts = {pid: [q for s in S for q in (s[:2], s[2:])] for pid, S in by.items()}
+    grid = {pid: {(round(x, 1), round(y, 1)) for b in plan.blocks.get(pid, []) for x, y in b.pts} for pid in fpts}
+    on = lambda pid, q: any((round(q[0] + dx, 1), round(q[1] + dy, 1)) in grid[pid] for dx in (-0.05, 0, 0.05) for dy in (-0.05, 0, 0.05))
+    planned = {pid: [q for q in P if on(pid, q)] for pid, P in fpts.items()}
+    travel = {pid: [q for q in P if not on(pid, q)] for pid, P in fpts.items()}
+    gates["file"] = {"base_under_puff": SP.plan_gates(plan, pts_by_part=planned)["base_under_puff"]}
+    res["travel_under_puff"] = SP.base_under_puff(plan, pts_by_part=travel)          # info: hidden travel, sewn before the foam
     for p in lock:
         if p.technique == "puff": gates[p.id] = SP.puff_gates(p, by.get(p.id, []))
         elif p.technique == "faux_chain": gates[p.id] = SP.faux_chain_gates(p, by.get(p.id, []))
@@ -116,6 +126,8 @@ def build(cfg, out):
     res["png"] = dict(
         puff=SP.swatch_png(lay[:1] + pre + [("stitch", by.get(p.id, []), col(p)) for p in lock if p.technique == "puff"],
                            (0, 0, 100, 52), os.path.join(out, "swatch_puff.png"), ppm=16, title="puff (written DST): base tatami, foam, 3 puff columns"),
+        knockout=SP.swatch_png(pre + lay[:1], (0, 0, 60, 36), os.path.join(out, "swatch_puff_knockout.png"), ppm=16,
+                               title="base only, over the puff footprint (light): knocked out, 1 mm kept under the puff edge"),
         puff_zoom=SP.swatch_png(lay[:1] + pre + [("stitch", by.get(p.id, []), col(p)) for p in lock if p.technique == "puff"],
                                 (8, 12, 22, 24), os.path.join(out, "swatch_puff_end.png"), ppm=60, title="puff end: perforation + cap"),
         chain=SP.swatch_png([("stitch", by.get(p.id, []), col(p)) for p in lock if p.kind == "chain_line"]

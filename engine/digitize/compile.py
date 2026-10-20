@@ -92,6 +92,8 @@ def write(plan, base, origin, **mp_kw):
     other = [p.id for p in plan.parts if p.technique and machine_of(p) != "lockstitch"]
     if other: raise OtherMachine(f"{base}: parts {other[:6]} are planned for the chenille head, not this lock-stitch file: "
                                  f"split them out (specialty.export_chenille) or switch the run to faux_chain")
+    from digitize.techniques.specialty import guard_puff
+    guard_puff(plan)                                       # puff: own "+foam" stop, nothing flat inside the foam, never fill
     stops = regions(plan)
     vis = [r for s in stops for r in s["regions"]]
     pat, stats = dst2.make_pattern(vis, stops, origin, builder=prebuilt, keep_order=True, threads=thread_table(plan), **mp_kw)
