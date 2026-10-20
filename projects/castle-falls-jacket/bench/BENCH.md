@@ -138,3 +138,4 @@ Reading it:
 | 2026-10-19 | baseline: shipped Rev B DST | 11.7 | 77.9 | 2.4 | FAIL: no part ids | 5.67 / 10.45 / 194 | 113.1 (452) | 1925 / 1159 / 0 / 31 / 319 | 6 / 19.97 | 12 (n, n) | 0/8 |
 | 2026-10-20 | M1 skeleton (sky + falls splitters, zone stubs) | 89.0 | 7.0 | 63.5 | FAIL (109) | 4.43 / 8.09 / 78 | 33.0 (132) | 0 / 0 / 0 / 0 / 0 | 5 / 8.7 | 12 (y, y) | 3/8 |
 | 2026-10-20 | M2 organic parts (strata + clouds, guided fill) | 98.6 indep. (73 of 625 tiles); all 91.7 | 4.2 | 72.8 | FAIL (61) | 4.57 / 8.41 / 113 | 26.5 (106) | 0 / 0 / 0 / 0 / 0 | 4 / 9.07 | 12 (y, y) | 3/9; sep. close 46 |
+| 2026-10-20 | M3a buildings (rule-angled roofs, walls, members; depth by tier) | 79.9 indep. (204 of 625 tiles); all 86.7 | 4.3 | 65.9 | FAIL (42) | 4.75 / 8.97 / 163 | 23.3 (93) | 10 / 0 / 0 / 0 / 1 | 5 / 12.08 | 12 (y, y) | 4/9; sep. close 24 |
