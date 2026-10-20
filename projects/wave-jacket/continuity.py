@@ -16,6 +16,16 @@ size = next((a for a in sys.argv[1:] if not a.startswith("-")), "M")
 ART = "--art" in sys.argv
 PPM = 4.0; DEPTH = 45.0          # mm of each piece shown away from the seam
 
+_LIVE = {}
+def live_img(P):
+    """live view (dstlive, LESSONS A16) of the shipped DST on the piece's pattern coords - what the sheet SHOWS; the
+    metrics use the flat thread-colour render below (sheen would move the tone classes)"""
+    if P not in _LIVE:
+        import live
+        b = PC.panel(size, P).bounds; bb = (b[0] - 5, b[1] - 5, b[2] + 5, b[3] + 5)
+        _LIVE[P] = (np.asarray(live.live_piece(P, bb, PPM)).astype(float), bb)
+    return _LIVE[P]
+
 _IMG = {}
 def piece_img(P, art=None):
     """(array HxWx3, bbox) of one piece in its own pattern coords"""
@@ -37,10 +47,10 @@ def piece_img(P, art=None):
 
 def d0_of(sm): return {"internal": 0.0, "zip": 15.0}.get(sm["kind"], WR.GAP)
 
-def strip(side, flip, d0):
+def strip(side, flip, d0, show=False):
     """unrolled band of one side: rows = distance from the seam line (d0 .. d0+DEPTH), cols = arc length along the seam"""
     import seamfill as SF
-    a, bb = piece_img(side.P); L = side.L
+    a, bb = live_img(side.P) if (show and not ART) else piece_img(side.P); L = side.L
     un = SF.Unroll(side, int(round(L * PPM))); ds = np.arange(d0, d0 + DEPTH, 1.0 / PPM)
     X = un.base[None, :, 0] + ds[:, None] * un.nrm[None, :, 0]; Y = un.base[None, :, 1] + ds[:, None] * un.nrm[None, :, 1]
     cx = (X - bb[0]) * PPM; cy = (Y - bb[1]) * PPM
@@ -85,19 +95,21 @@ def stats(la, lb):
 def sheet(sm, marks):
     A, B = WR.SeamSide(size, sm, "A"), WR.SeamSide(size, sm, "B"); d0 = d0_of(sm)
     sa, sb = strip(A, True, d0), strip(B, False, d0)
+    va, vb = strip(A, True, d0, show=True), strip(B, False, d0, show=True)
     # B is resampled to A's length (the seam is eased: same fraction s = same point when sewn)
     sbr = np.asarray(Image.fromarray(sb).resize((sa.shape[1], sb.shape[0]), Image.NEAREST))
     k0, k1 = int(1.0 * PPM), int(3.0 * PPM)
     st = stats(classify(sa[::-1][k0:k1]), classify(sbr[k0:k1]))
     im = Image.new("RGB", (sa.shape[1] + 20, sa.shape[0] + sbr.shape[0] + 60), "white")
-    im.paste(Image.fromarray(sa), (10, 30)); im.paste(Image.fromarray(sbr), (10, 30 + sa.shape[0] + 2))
+    vbr = np.asarray(Image.fromarray(vb).resize((va.shape[1], vb.shape[0]), Image.BILINEAR))
+    im.paste(Image.fromarray(va), (10, 30)); im.paste(Image.fromarray(vbr), (10, 30 + sa.shape[0] + 2))
     d = ImageDraw.Draw(im); y0 = 30 + sa.shape[0]
     d.line([(10, y0 + 1), (10 + sa.shape[1], y0 + 1)], fill=(255, 255, 255), width=1)
     for m in (marks or {}).get("s_mm", []):
         x = 10 + m * PPM; d.line([(x, y0 - 14), (x, y0 + 16)], fill=(230, 40, 40), width=2)
     for k in range(0, int(A.L) + 1, 50):
         x = 10 + k * PPM; d.line([(x, y0 + sbr.shape[0] + 2), (x, y0 + sbr.shape[0] + 8)], fill=(0, 0, 0)); d.text((x + 2, y0 + sbr.shape[0] + 8), f"{k}", fill=(0, 0, 0))
-    src = "art" if ART else "shipped DSTs"
+    src = "art" if ART else "shipped DSTs, live view"
     gap = {"internal": "no seam (one piece)", "zip": "zip closed (15 + 15 mm keep-outs)"}.get(sm["kind"], "seam closed up (3 + 3 mm)")
     ms = f"art on the seam {st['art_mm']} mm, both sides meet {st['meet']} %, same tone {st['tone']} %" if st["meet"] is not None else "no art on this seam"
     d.text((10, 8), f"{sm['name']} (size {size}, {src}) - above: {A.P} {A.L:.0f} mm, below: {B.P} {B.L:.0f} mm (eased to the same length), {gap}; red = match marks; {ms}", fill=(0, 0, 0))
@@ -113,6 +125,12 @@ def run(art=None):
     W = max(i.width for i in ims); H = sum(i.height for i in ims) + 10 * len(ims)
     allim = Image.new("RGB", (W, H), "white"); y = 0
     for i in ims: allim.paste(i, (0, y)); y += i.height + 10
+    import os as _o
+    if not ART and _o.path.exists("out/crops_before_after.png"):        # the founder-flagged areas, before / after (crops.py)
+        cr = Image.open("out/crops_before_after.png"); sc = min(1.0, W / cr.width); cr = cr.resize((int(cr.width * sc), int(cr.height * sc)))
+        big = Image.new("RGB", (W, allim.height + cr.height + 30), "white"); big.paste(allim, (0, 0)); big.paste(cr, (0, allim.height + 30))
+        ImageDraw.Draw(big).text((10, allim.height + 8), "BEFORE / AFTER - the areas the founder flagged (DST renders): under the collar fall; the old seam-band cut lines (internal-discontinuity check: discont.py, G9)", fill=(0, 0, 0))
+        allim = big
     allim.save(f"out/continuity_{size}{'_art' if ART else ''}.png"); print("sheet", allim.size)
     json.dump(table, open(f"continuity_{size}{'_art' if ART else ''}.json", "w"), indent=1)
     return table

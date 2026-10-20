@@ -11,6 +11,15 @@ def fresh(r):
             if k in old: ps[k] = old[k]
     r.update(rb); r["colours"] = [ps.get("col") for ps in rb["per_stop"]]
     for k in ("trims_cmd", "trims_dst", "size"): r.pop(k, None)
+    ch = r.get("chenille")
+    if ch:                                                  # primary foam on the chenille head: its own file, same hooping
+        cb = readback.dst(ch["file"] + ".dst")
+        for ps, old in zip(cb["per_stop"], ch.get("per_stop", [])):
+            for k in ("col", "codes"): 
+                if k in old: ps[k] = old[k]
+        ch.update(cb)
+    r["total_stitches"] = r["stitches"] + (ch["stitches"] if ch else 0); r["total_trims"] = r["trims"] + (ch["trims"] if ch else 0)
+    r["total_stops"] = r["stops"] + (ch["stops"] if ch else 0)
     return r
 
 allr = {}

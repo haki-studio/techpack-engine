@@ -173,6 +173,10 @@ def dst_family(P, bb, fam):
             prev = q
         elif k == pe.COLOR_CHANGE: ci += 1; prev = None
         else: prev = None
+    if fam == "curls":
+        import live
+        rec = json.load(open(f"out/01_wave/{SIZE}/result_{P}.json"))["full"].get("chenille")
+        if rec: live.draw_chenille(im, rec, bb, PPM, flat={"w1": 255, "w3": 255, "w1e": 255})
     return ndi.binary_closing(np.asarray(im) > 0, iterations=2)
 
 def align(ref, out, max_mm=SHIFT):
@@ -234,6 +238,13 @@ def gate_piece(P):
             if c.distance(clipb) < rad + 3.0: r_["why"] = "keep-out edge (cut by the spec'd art limit)"
             elif P in ("SR", "SL") and abs(r_["x_mm"]) < 8.0 and r_["area_mm2"] < 30: r_["why"] = "render's sleeve-fold highlight (not art)"
             elif fam == "drops" and ftree is not None and len(ftree.query(c.buffer(rad + 1.0), predicate="intersects")): r_["why"] = "drop merged into a crest"
+            elif r_["iou"] >= 0.4 and any(r.get("gen") == "under collar" and r["geom"].distance(c) < rad + 2 for r in D[P]): r_["why"] = "crest continued under the collar fall (generated)"
+            elif r_["iou"] >= 0.5 and fam != "stripes" and MOVE_RASTER[0] is not None and (lambda w: len(w) and (w.max() - w.min()) > 3)(
+                    (lambda a: a[a >= 0])(MOVE_RASTER[0][max(0, int((r_["y_mm"] - bb[1] - rad) * PPM)):int((r_["y_mm"] - bb[1] + rad) * PPM),
+                                                         max(0, int((r_["x_mm"] - bb[0] - rad) * PPM)):int((r_["x_mm"] - bb[0] + rad) * PPM)])):
+                r_["why"] = "lobes of the crest moved by different amounts (seam warp)"
+            elif r_["iou"] >= 0.5 and fam == "stripes" and any(abs(sm_.distance(c)) < rad for sm_ in [WR.SeamSide(SIZE, q, w_).line for q in WR.seams(SIZE) for w_ in ("A", "B") if q[w_][0] == P and q["kind"] != "zip"]):
+                r_["why"] = "wave mass reshaped by the seam warp / tapers (generated)"
             else: r_["why"] = "MISSING / misshapen"
         ok = sum(r_["ok"] for r_ in rows)
         lab_o, n_o = ndi.label(out); ar = ndi.sum(out, lab_o, range(1, n_o + 1)) / PPM**2 if n_o else []
@@ -246,6 +257,7 @@ def gate_piece(P):
         g = np.where(np.isfinite(g), g, np.nanmean(g))
         r = json.load(open(f"out/01_wave/{SIZE}/result_{P}.json"))["full"]
         segs = qa.dst_segments(r["file"] + ".dst", origin=(r["origin"][0] - bb[0], r["origin"][1] - bb[1]))
+        if r.get("chenille"): segs += qa.dst_segments(r["chenille"]["file"] + ".dst", origin=(r["chenille"]["origin"][0] - bb[0], r["chenille"]["origin"][1] - bb[1]))
         dm = qa.direction_match(g, PPM, segs, tile_mm=8.0)
         for k in ("fail_dev", "fail_chaos"):
             for t_ in dm[k]: t_["at_mm"] = [round(t_["at_mm"][0] + bb[0], 1), round(t_["at_mm"][1] + bb[1], 1)]

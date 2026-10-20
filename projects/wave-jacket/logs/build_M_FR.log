@@ -1,5 +1,4 @@
-M FR {'stitches': 113437, 'trims': 459, 'jumps': 1267, 'stops': 11, 'size_mm': (281.2, 369.1), 'max_stitch': 7.41} 87s
-M FR S1_top {'stitches': 60356, 'trims': 250, 'stops': 11, 'size_mm': (300.8, 245.7), 'fits': True} split_clip
-M FR S2_bottom {'stitches': 53260, 'trims': 208, 'stops': 11, 'size_mm': (300.8, 135.3), 'fits': True} split_clip
+M FR primary {'stitches': 77361, 'trims': 290, 'stops': 10, 'size_mm': (281.2, 369.1), 'max_stitch': 7.41} chenille {'stitches': 4369, 'trims': 186, 'stops': 2}
+M FR alt_padded {'stitches': 119248, 'trims': 465, 'stops': 11, 'size_mm': (281.2, 369.1), 'max_stitch': 7.41} 
 DONE M ['FR']
 EXIT 0

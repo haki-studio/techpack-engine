@@ -86,3 +86,34 @@ Problem → proposed fix → check. Worked around in project code only.
   graded rebuild (after the strike-off).
 - **Proposed engine fix / check:** any per-size map keeps piece membership fixed (decided once on the base size);
   test: art box w and h non-decreasing XS..3XL for every piece, motif count per piece within ±3 of M.
+
+## 11. Seam-true wrap from two render views: smooth displacement fields, never a pasted band (Rev B, 19 Oct 2026) — proposed LESSON A17
+- **Problem:** the front and back views of an AI render disagree at every silhouette seam (sides, shoulders, sleeve underarm,
+  sleeve fold). Rev B's first try (seamfill: a continuation band pasted into the follower piece, joined to its own art at a
+  min-mismatch cut, plus a row-by-row stretch) moved the mismatch INTO the panel: the founder saw a near-vertical cut line
+  0-60 mm in from the FL armhole/side and a horizontal step in the stripes.
+- **Fix (project, `seamwarp.py`):** per piece side (sleeve halves separately) one thin-plate-spline field (scipy
+  RBFInterpolator): pass 1 brings the art to the seam (normal displacement from the innermost art, smoothed, faded to 0 at
+  fixed edges + 100 mm in), pass 2 slides the follower along the seam onto the leader's stripes (local cross-correlation of
+  the tone sequence, then run-edge pins; monotone, slope-limited 0.8, fold-checked det J > 0.25). Tapers only into bare
+  fabric. Curls move rigidly with the field at their centre (`mv` recorded per unit so the gates follow the move).
+- **Proposed engine fix:** `engine/wrap.py` with SeamSide / Unroll / the two-pass warp; seams from `pattern.draft`.
+- **Check:** `discont.py` — straight cut lines (constant-depth tone edges >= 12 mm) per seam side + stripe-edge jumps across
+  probe lines 8-120 mm from each seam; before (seamfill) vs after on the same DSTs (G9). Test idea: two synthetic striped
+  panels offset 20 mm along a seam -> after the warp, edge jump at the seam < 2 mm and no constant-depth edge inside.
+
+## 12. Fidelity gates must see the same placement as the art (A14 references)
+- **Problem:** with the reference mapped by the render map only, every motif the wrap moved (up to 40 mm) failed IoU, so
+  the gate measured the wrap, not the trace / digitizing.
+- **Fix (project, `gates.py`):** curls + drops: each motif's own render pixels placed rigidly like the art + the unit's
+  recorded move; coverage + wave masses: the reference sampled through the inverse of the composed seam warp
+  (`seamwarp.warp_grid`). Moves are reported per row. Input pixels only (A14), the transforms are the art's own.
+- **Proposed engine fix:** `qa.motif_match(..., move=)` taking a displacement grid; a test with a shifted motif.
+
+## 13. Thread names from a reviewer are not data
+- The review asked for "Polyneon 1801" as an ecru: in `engine/pal/threads.json` 1801 is "Barely Blue" #E4E8FF. Ecru
+  #D3CAC1 matches Isacord 0184 Pearl (ΔE 3.2) / Polyneon 1682 Taupe (ΔE 5.0). Always match codes with `tech.match()`.
+
+## 14. emb_place.py over all sizes in a sampling package
+- The keep-out check loops over every size's art pickle, so a stale Rev A size can print FAIL (or pass) for art that is not
+  shipped. Project fix: sizes from argv, default `DOC_SIZES`. Proposed: the engine template does the same.

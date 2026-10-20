@@ -19,7 +19,9 @@ def render(root, P, bb, ppm):
             prev = q
         elif k == pe.COLOR_CHANGE: ci += 1; prev = None
         else: prev = None
-    pan = PC.panel("M", "FL" if P == "FL" else P)
+    if r.get("chenille"):
+        import live
+        rec = dict(r["chenille"]); rec["file"] = os.path.join(root, os.path.basename(rec["file"])); live.draw_chenille(im, rec, bb, ppm)
     d.line([((x - bb[0]) * ppm, (y - bb[1]) * ppm) for x, y in PC.clip_for("M", P).exterior.coords], fill=(255, 80, 80), width=1)
     return im
 
@@ -31,7 +33,7 @@ if __name__ == "__main__":
         for name, bb in ar:
             a = render("out/before_seamfill/M", P, bb, ppm); b = render("out/01_wave/M", P, bb, ppm)
             o = Image.new("RGB", (a.width * 2 + 30, a.height + 26), "white"); o.paste(a, (0, 26)); o.paste(b, (a.width + 30, 26))
-            dd = ImageDraw.Draw(o); dd.text((4, 6), f"{P} {name}: BEFORE (seamfill band, collar V keep-out)", fill=(0, 0, 0)); dd.text((a.width + 34, 6), "AFTER (smooth seam warp, art under the collar)", fill=(0, 0, 0))
+            dd = ImageDraw.Draw(o); dd.text((4, 6), f"{P} {name}: BEFORE (seamfill band, collar V keep-out)", fill=(0, 0, 0)); dd.text((a.width + 34, 6), "AFTER (smooth seam warp, art under the collar, chenille foam)", fill=(0, 0, 0))
             rows.append(o)
     W = max(r.width for r in rows); H = sum(r.height + 10 for r in rows)
     out = Image.new("RGB", (W, H), "white"); y = 0

@@ -58,6 +58,9 @@ def dst_render(P, bb, ppm):
             prev = q
         elif k == pe.COLOR_CHANGE: ci += 1; prev = None
         elif k in (pe.TRIM, pe.JUMP): prev = None
+    import live
+    rec = json.load(open(f"out/01_wave/{size}/result_{P}.json"))["full"].get("chenille")
+    if rec: live.draw_chenille(im, rec, bb, ppm, live=False)          # primary foam = the chenille file, same origin
     return im
 def stitch(P, bb, ppm):
     import live

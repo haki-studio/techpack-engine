@@ -1,6 +1,8 @@
-M SL {'stitches': 134255, 'trims': 561, 'jumps': 1494, 'stops': 17, 'size_mm': (499.5, 357.1), 'max_stitch': 7.43} 112s
-M SL S1_top-left {'stitches': 16526, 'trims': 93, 'stops': 13, 'size_mm': (215.8, 330.0), 'fits': True} split_clip
-M SL S2_top-right {'stitches': 113344, 'trims': 462, 'stops': 17, 'size_mm': (320.5, 330.0), 'fits': True} split_clip
-M SL S3_bottom-right {'stitches': 4672, 'trims': 25, 'stops': 7, 'size_mm': (315.6, 58.8), 'fits': True} split_clip
+M SL primary {'stitches': 86172, 'trims': 370, 'stops': 15, 'size_mm': (499.4, 357.1), 'max_stitch': 7.16} chenille {'stitches': 5984, 'trims': 240, 'stops': 2}
+M SL primary S1_left {'stitches': 12483, 'trims': 63, 'stops': 11, 'size_mm': (205.8, 377.0), 'fits': True}
+M SL primary S2_right {'stitches': 73726, 'trims': 317, 'stops': 15, 'size_mm': (310.6, 377.0), 'fits': True}
+M SL alt_padded {'stitches': 144879, 'trims': 566, 'stops': 17, 'size_mm': (499.4, 357.1), 'max_stitch': 7.16} 
+M SL alt_padded S1_left {'stitches': 17644, 'trims': 92, 'stops': 13, 'size_mm': (205.8, 377.0), 'fits': True}
+M SL alt_padded S2_right {'stitches': 127386, 'trims': 476, 'stops': 17, 'size_mm': (310.6, 377.0), 'fits': True}
 DONE M ['SL']
 EXIT 0

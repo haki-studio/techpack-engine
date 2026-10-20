@@ -13,7 +13,10 @@ import specbase as SB
 from specbase import img_tag
 import pieces as PC, views as VW, emb_place as EP, factory as FA
 PROF = FA.load(); FRAME = FA.largest_frame(PROF); FR_S = f"{FRAME[0]:.0f} × {FRAME[1]:.0f}"
-def mh(r): return FA.machine_hours(r["stitches"], PROF, trims=r["trims"], colour_changes=r["stops"] - 1)
+def mh(r):                       # lockstitch + chenille file of the same hooping (one head each, run back to back)
+    return FA.machine_hours(r.get("total_stitches", r["stitches"]), PROF, trims=r.get("total_trims", r["trims"]), colour_changes=r.get("total_stops", r["stops"]) - 1)
+def TS(r): return r.get("total_stitches", r["stitches"])
+def TT(r): return r.get("total_trims", r["trims"])
 dst2 = WC.patch_dst2()
 
 REV, DATE = WC.REV_EMB, WC.DATE
@@ -34,7 +37,7 @@ SWT = json.load(open("out/01_wave/M/swatch/result_swatch.json"))
 CONT = json.load(open("continuity_M.json")); CONT_OK = {k: v for k, v in CONT.items() if v.get("meet") is not None and v["art_mm"] >= 10}
 MMK = json.load(open("out/placement/match_marks_M.json"))
 GATES = json.load(open("gates_M.json"))
-TOT = sum(CUR[p]["stitches"] for p in PS); TRIMS = sum(CUR[p]["trims"] for p in PS)
+TOT = sum(TS(CUR[p]) for p in PS); TRIMS = sum(TT(CUR[p]) for p in PS)
 MH = sum(mh(CUR[p]) for p in PS)
 MH_HOOP = sum(mh(s) for p in PS for s in hoop_files(CUR[p]))
 HOOPS = sum(CUR[p]["hoopings"] for p in PS)
@@ -193,8 +196,8 @@ def summary():
         r = CUR[p]; b = (0, 0) + tuple(r["size_mm"]); y = 36 + i * 4.6
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-3)}" width="{SW-22}" height="4.6" fill="#F5F2EC"/>')
         o.append(t(cx[0], y, "01 Wave", 1.85, 600)); o.append(t(cx[1], y, f"{p} {PC.NAME[p]}", 1.75))
-        o.append(t(cx[2], y, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.8)); o.append(t(cx[3], y, f"{r['stitches']:,}", 1.8, 600))
-        o.append(t(cx[4], y, f"{r['trims']:,}", 1.8)); o.append(t(cx[5], y, f"{r['trims']/r['stitches']*1e4:.0f}", 1.8)); o.append(t(cx[6], y, f"{r['stops']}", 1.8))
+        o.append(t(cx[2], y, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.8)); o.append(t(cx[3], y, f"{TS(r):,}", 1.8, 600))
+        o.append(t(cx[4], y, f"{TT(r):,}", 1.8)); o.append(t(cx[5], y, f"{TT(r)/TS(r)*1e4:.0f}", 1.8)); o.append(t(cx[6], y, f"{r.get('total_stops', r['stops'])}", 1.8))
         o.append(t(cx[7], y, f"{len(set(r['colours']))}", 1.8)); o.append(t(cx[8], y, f"{r['max_stitch']:.2f} mm", 1.8))
         o.append(t(cx[9], y, f"{r['hoopings']}", 1.8)); o.append(t(cx[10], y, f"{sum(mh(s) for s in hoop_files(r))*60:.0f} min", 1.8))
     y = 36 + len(PS) * 4.6 + 1
@@ -203,9 +206,9 @@ def summary():
     o.append(t(12, y + 7.8, "Fidelity first (LESSONS A11): every crest, curl and drop of the render is sewn — trims (most are spray drops + curl lines on bare fabric) and run time are reported, cleaned up after the strike-off.", 1.65, 400, MUTED))
     qy = y + 15
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
-    qs = [f"1. Frame: pieces > {FRAME[0]-16:.0f} mm are split for {FR_S} (G6). The seam-true wrap carries art to every seam, so sleeves need 2 x 2 hoopings - a jacket-back frame removes the joins.",
-          "2. Foam: production files = padded tatami + loop spiral + continuous curl cords + grey ridges. The F1 foam swatch also sews a moss / chenille look - chenille heads available?",
-          "3. Thread board: 9 targets from a low-res render + an ecru foam candidate (G3). The SHELL colour + hardware change: re-check every thread on the new shell before bulk.",
+    qs = [f"1. Hoopings per the factory (19 Oct): fronts ONE hooping each (340 x 505), back TWO, sleeves split for {FR_S} - can a sleeve (500 x 390) go in one hooping on the 750 mm field?",
+          "2. Foam: CHENILLE is the primary foam (factory: chenille available) - one _CHENILLE file per hooping; padded tatami files = the alternative (alt_padded/). Chenille file format OK?",
+          "3. Threads: the factory uses its supplier's colour book (brand?) - please send it; G3 gives Isacord + Polyneon + hex. SHELL + hardware colour change: re-check every thread on the new shell.",
           "4. Seamless wave (Rev B): stripes continue across every seam, art 3 mm short of each seam, match notches on both pieces (G7, 1:1 placement plot). No armhole topstitch.",
           "5. Body: Drum Island block, unchanged (founder). Cuff / hem rib probably change - re-check the hem (10) + cuff (10) keep-outs on the new rib [proposed].",
           "6. Grading (after the sample): A 92 % (XS-S) · B 100 % (M-XL) · C 108 % (XXL-3XL), one file per size per piece, re-clipped to each size's keep-outs. OK?",
@@ -228,9 +231,9 @@ def files_page():
             o.append(t(cx[0], y, sz if p == "BK" else "", 1.4, 700)); o.append(t(cx[1], y, WC.GRADE[sz][0] if p == "BK" else "", 1.4, 700, RED)); o.append(t(cx[2], y, p, 1.4, 600))
             if r and "full" in r:
                 fu = r["full"]
-                o.append(t(cx[3], y, f"{fu['size_mm'][0]:.0f} × {fu['size_mm'][1]:.0f}", 1.35)); o.append(t(cx[4], y, f"{fu['stitches']:,}", 1.35)); o.append(t(cx[5], y, f"{fu['trims']}", 1.35)); o.append(t(cx[6], y, f"{fu['stops']}", 1.35))
+                o.append(t(cx[3], y, f"{fu['size_mm'][0]:.0f} × {fu['size_mm'][1]:.0f}", 1.35)); o.append(t(cx[4], y, f"{TS(fu):,}", 1.35)); o.append(t(cx[5], y, f"{TT(fu)}", 1.35)); o.append(t(cx[6], y, f"{fu['stops']}", 1.35))
                 ss = secs(r)
-                txt = "  ".join(f"{nm.split('_')[0]} {s_['stitches']//1000}k/{s_['trims']}" for nm, s_ in ss.items()) if ss else "1 hooping (full file)"
+                txt = "  ".join(f"{nm.split('_')[0]} {TS(s_)//1000}k/{TT(s_)}" for nm, s_ in ss.items()) if ss else "1 hooping (full file)"
                 o.append(t(cx[7], y, txt, 1.3))
                 fits = all(v["fits"] for v in ss.values()) if ss else (fu["size_mm"][0] <= FRAME[0] - 16 and fu["size_mm"][1] <= FRAME[1] - 16)
                 allfit &= fits; o.append(t(cx[8], y, "yes" if fits else "CHECK", 1.35, 700, GREEN if fits else RED))
@@ -244,7 +247,7 @@ def files_page():
     o.append(t(bx, y2, "WHAT IS DIGITIZED", 2.0, 700)); y2 += 4.2
     notes = [("Stripes", ["6 blues as twisted cords: tatami rows", "along the stripe, 15° twist per tone;", "turning satin only < 3 wide w/o holes;", "sub-2 mm render flecks dropped."]),
              ("Rope lines", ["continuous 2.4 mm cream cords (traced", "fragments joined), turning satin."]),
-             ("Foam", ["grey hollows -> thin 1.1 mm grey ridges", "(rest of the hollow in shade), then the", "padded foam per curl, rows ALONG the curl", "(A16), then ONE spiral curl cord + loops."]),
+             ("Foam", ["CHENILLE (primary): _CHENILLE file per", "hooping after the lockstitch, same origin:", "loop rows 2 mm + chain curl cords. Padded", "tatami along the curl = alt_padded/ files."]),
              ("Seams", ["one smooth warp per piece side lines", "the stripes up across every seam; 3 mm", "short; art under the collar fall (G7)."]),
              ("Ties", ["3-stitch tie-on/off at every trim + colour", "change; max sewn stitch ≤ 7.5 mm;", f"≤ {FA.max_threads(PROF)} colours per file incl. registration."])]
     for a, ls in notes:
@@ -371,15 +374,28 @@ def gates_page():
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y-2.2)}" width="{SW-22}" height="3.0" fill="#F5F2EC"/>')
         o.append(t(cx[0], y, P if fam == "curls" else "", 1.45, 700)); o.append(t(cx[1], y, fam, 1.45))
         o.append(t(cx[2], y, f"{r['motifs']}", 1.45)); o.append(t(cx[3], y, f"{g[fam].get('dst_count', '-')}", 1.45))
-        o.append(t(cx[4], y, f"{r['passed']}", 1.45, 600, GREEN)); o.append(t(cx[5], y, f"{r['failed']}", 1.45, 700, RED if r["failed"] else MUTED))
+        miss = sum(1 for x in g[fam]["rows"] if not x["ok"] and x.get("why", "").startswith("MISSING"))
+        o.append(t(cx[4], y, f"{r['passed']}", 1.45, 600, GREEN)); o.append(t(cx[5], y, f"{r['failed']}" + (f" ({miss} unexplained)" if r["failed"] else ""), 1.45, 700, RED if miss else (ORANGE if r["failed"] else MUTED)))
         o.append(t(cx[6], y, f"{r['moved']} ({r['max_move']:.0f} mm)", 1.45)); o.append(t(cx[7], y, f"{r['iou_median']}", 1.45))
-        tot_fail += r["failed"]
+        tot_fail += miss
         if fam == "curls":
             un = g["uncovered"]; ue = [u for u in un if u["why"] == "UNEXPLAINED"]; tot_un += len(ue)
             o.append(t(cx[8], y, f"{len(un)} ({sum(u['area_mm2'] for u in un):.0f} mm²)", 1.45)); o.append(t(cx[9], y, f"{len(ue)}", 1.45, 700, RED if ue else GREEN))
         y += 3.0
     y += 2
-    o.append(t(12, y, f"Result: {tot_fail} failing motif rows, {tot_un} unexplained bare areas — " + ("PASS" if not tot_fail and not tot_un else "see the rows above (each listed with position on the compare sheet)"), 2.0, 700, GREEN if not tot_fail and not tot_un else RED)); y += 5
+    o.append(t(12, y, "STITCH DIRECTION (LESSONS A16: qa.direction_match, DST stitch angles vs the render's grain, 8 mm tiles; deliver at ≥ 85 % OK)", 1.7, 700)); y += 3.6
+    for P in PS:
+        dr = GATES["pieces"][P].get("direction")
+        if not dr: continue
+        o.append(t(14, y, f"{P}: {dr['pct_ok']} % of {dr['tiles']} tiles OK · {len(dr['fail_dev'])} off the grain > 25° · {len(dr['fail_chaos'])} chaotic (heat-map boxes on out/compare_{P}.png)", 1.5, 600, GREEN if dr["pct_ok"] >= 85 else RED)); y += 3.0
+    y += 2
+    o.append(t(12, y, f"Result: {tot_fail} unexplained failing motif rows, {tot_un} unexplained bare areas — " + ("PASS" if not tot_fail and not tot_un else "see the rows (positions on the compare sheets)"), 2.0, 700, GREEN if not tot_fail and not tot_un else RED)); y += 4
+    why = {}
+    for P in PS:
+        for fam in ("curls", "drops", "stripes"):
+            for x in GATES["pieces"][P][fam]["rows"]:
+                if not x["ok"]: why[x.get("why", "?")] = why.get(x.get("why", "?"), 0) + 1
+    o.append(t(12, y, "Failing rows by reason: " + " · ".join(f"{k} {v}" for k, v in sorted(why.items(), key=lambda kv: -kv[1])), 1.5, 400, MUTED)); y += 5
     for l_ in ["Pass = qa.motif_match: IoU ≥ 0.70 and width + height each ≥ 80 % of the reference motif (a stand-in of the right size but the wrong silhouette fails).",
                "CURLS = cream + grey crests ≥ 100 mm² (one row per crest), DROPS = cream motifs 4-100 mm², STRIPES = the blue band regions (with their crests over them).",
                "Moved: the Rev B wrap moves art near seams on purpose (stretched to the seam, curls moved whole out of a keep-out); each reference motif is matched at its best",
@@ -417,23 +433,25 @@ def f1_pages():
     for p in PS:
         r = CUR[p]
         for s in hoop_files(r):
-            nm = os.path.basename(s["file"]); so.append(dict(file=nm + ".dst", piece=f"{p}" + ("" if s is r else " · " + nm.split("_M_")[-1]), stitches=s["stitches"], trims=s["trims"]))
+            nm = os.path.basename(s["file"]); tag = f"{p}" + ("" if s is r else " · " + nm.split("_M_")[-1])
+            so.append(dict(file=nm + ".dst", piece=tag + " · lockstitch", stitches=s["stitches"], trims=s["trims"]))
+            if s.get("chenille"): so.append(dict(file=os.path.basename(s["chenille"]["file"]) + ".dst", piece=tag + " · CHENILLE foam (same hooping)", stitches=s["chenille"]["stitches"], trims=s["chenille"]["trims"]))
     so.insert(0, dict(file=os.path.basename(SWT["file"]) + ".dst", piece="FOAM SWATCH (sew first)", stitches=SWT["stitches"], trims=SWT["trims"]))
     th = [dict(name=PAL[k][1], code=f"Isacord {SB.TH[k]['isacord'][0]} / Polyneon {SB.TH[k]['polyneon'][0]}", de=min(SB.TH[k]["isacord"][3], SB.TH[k]["polyneon"][3])) for k in WC.WV_KEYS]
     pcs = [dict(piece=f"01 {p} {PC.NAME[p]}", w=CUR[p]["size_mm"][0], h=CUR[p]["size_mm"][1], hoopings=CUR[p]["hoopings"]) for p in PS]
     pages = FA.requests_page(WC.NAME, so, th, pcs, page="F1", prof=PROF)
     # Rev B additions appended to F1 (right column)
-    lines = [("5  Foam swatch - sew FIRST", 1), (f"{os.path.basename(SWT['file'])}.dst ({SWT['stitches']:,} st, {SWT['trims']} trims, 1 hooping)", 0),
-             ("sews one crest 4 times: A padded + loops (production), B moss /", 0), ("chenille look, C = A and D = B in the ecru candidate (#D3CAC1).", 0),
-             ("Real chenille heads? Then the FM outlines (ART.svg) are the", 0), ("chenille regions - please quote both ways.", 0), ("", 0),
-             ("6  Full files are reference only", 1), ("Sew and price the HOOPING files listed in 1 (split sections).", 0),
-             ("The 5 full files (one per piece) are for checking only.", 0), ("", 0),
-             ("7  Backing + hooping (G6)", 1), ("Dense padded foam on 12 oz duck: we propose 3.0 oz cutaway +", 0),
-             ("1.5 oz tearaway under the foam. Float the cut panel on hooped", 0), ("backing; never clamp a hoop over sewn foam. Tell us your way.", 0), ("", 0),
-             ("8  New shell colour", 1), ("Shell + hardware colour (and probably the rib) change from the", 0),
-             ("render: dip / card every thread on the NEW shell; re-check the", 0), ("hem + cuff keep-outs on the new rib.", 0), ("", 0),
-             ("9  Seam match marks", 1), ("Notch the match marks (1:1 placement plot) on both pieces; the", 0),
-             ("stripes must meet across armhole, side, shoulder + underarm.", 0), ("No armhole topstitch.", 0)]
+    lines = [("5  Foam = CHENILLE (primary)", 1), ("Each hooping = lockstitch file, then its _CHENILLE file (same", 0),
+             ("origin, no re-hooping): loop/moss rows + chain curl cords. Set", 0), ("loop height + type on your chenille head; tell us the file", 0),
+             ("format it reads. ALTERNATIVE: alt_padded/ files (padded tatami).", 0), ("", 0),
+             ("6  Foam swatch - sew first", 1), (f"{os.path.basename(SWT['file'])}.dst ({SWT['stitches']:,} st, 1 hooping): padded", 0),
+             ("vs moss look, Foam white vs ecru - helps choose the cream.", 0), ("", 0),
+             ("7  Hoopings (your answer 19 Oct)", 1), ("Fronts: ONE hooping each (340 x 505 confirmed). Back: 2.", 0),
+             ("Sleeves: 2 each for 400 x 450 - can a sleeve (500 x 390) go in", 0), ("ONE hooping on your 750 mm field? Which frame holds 340 x 505?", 0), ("", 0),
+             ("8  Thread colour book", 1), ("Please send your supplier's book (brand?): we give Isacord +", 0),
+             ("Polyneon refs + hex (G3); pick the nearest per colour. Re-check", 0), ("on the NEW shell colour (shell / hardware / rib change).", 0), ("", 0),
+             ("9  Backing + seams", 1), ("3.0 oz cutaway + 1.5 oz tearaway under the foam; float cut", 0),
+             ("panels, never hoop over sewn foam. Notch the match marks;", 0), ("stripes meet across the seams; no armhole topstitch.", 0)]
     extra = "".join(f'<text x="168" y="{40 + i*4.0:.1f}" font-family="{_SH.FONT}" font-size="{2.6 if h else 2.2}" font-weight="{700 if h else 400}" fill="{ORANGE}">{l}</text>' for i, (l, h) in enumerate(lines))
     return [pg.replace("</svg>", extra + "</svg>") for pg in pages]
 

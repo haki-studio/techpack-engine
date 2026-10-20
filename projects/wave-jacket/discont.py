@@ -49,6 +49,10 @@ def piece_lab(P):
                 prev = q
             elif k == pe.COLOR_CHANGE: ci += 1; prev = None
             else: prev = None
+        if r.get("chenille"):
+            import live
+            rec = dict(r["chenille"]); rec["file"] = os.path.join(root, os.path.basename(rec["file"]))
+            live.draw_chenille(im, rec, bb, PPM, flat={"w1": 7, "w3": 7, "w1e": 7})
     a = np.asarray(im).astype(np.int32)
     # majority over 1 mm (stitch-line texture -> regions); fabric only where nothing is sewn within 0.5 mm
     oh = np.stack([ndi.uniform_filter((a == k).astype(np.float32), 5) for k in range(8)], -1)

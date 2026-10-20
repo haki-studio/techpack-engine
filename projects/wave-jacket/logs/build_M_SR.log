@@ -1,7 +1,8 @@
-M SR {'stitches': 204154, 'trims': 695, 'jumps': 1866, 'stops': 11, 'size_mm': (498.9, 388.5), 'max_stitch': 7.41} 150s
-M SR S1_top-left {'stitches': 6086, 'trims': 30, 'stops': 11, 'size_mm': (265.4, 146.0), 'fits': True} split_clip
-M SR S2_top-right {'stitches': 13069, 'trims': 44, 'stops': 11, 'size_mm': (265.4, 135.3), 'fits': True} split_clip
-M SR S3_bottom-left {'stitches': 90676, 'trims': 323, 'stops': 11, 'size_mm': (265.4, 287.8), 'fits': True} split_clip
-M SR S4_bottom-right {'stitches': 94748, 'trims': 325, 'stops': 11, 'size_mm': (265.4, 292.8), 'fits': True} split_clip
+M SR primary {'stitches': 144405, 'trims': 424, 'stops': 10, 'size_mm': (498.9, 388.5), 'max_stitch': 7.41} chenille {'stitches': 7111, 'trims': 265, 'stops': 2}
+M SR primary S1_left {'stitches': 67989, 'trims': 190, 'stops': 10, 'size_mm': (255.6, 408.2), 'fits': True}
+M SR primary S2_right {'stitches': 76545, 'trims': 240, 'stops': 10, 'size_mm': (255.3, 408.2), 'fits': True}
+M SR alt_padded {'stitches': 215705, 'trims': 696, 'stops': 11, 'size_mm': (498.9, 388.5), 'max_stitch': 7.41} 
+M SR alt_padded S1_left {'stitches': 102747, 'trims': 347, 'stops': 11, 'size_mm': (255.6, 408.2), 'fits': True}
+M SR alt_padded S2_right {'stitches': 112911, 'trims': 355, 'stops': 11, 'size_mm': (255.3, 408.2), 'fits': True}
 DONE M ['SR']
 EXIT 0

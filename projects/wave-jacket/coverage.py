@@ -28,6 +28,9 @@ def piece(size, P, D):
             if prev: ds.line([prev, q], fill=255, width=3)
             prev = q
         else: prev = None
+    if r.get("chenille"):                                  # primary foam = the chenille file (loop rows ~2 mm wide)
+        import live
+        live.draw_chenille(S, r["chenille"], (x0, y0, 0, 0), PPM, flat={"w1": 255, "w3": 255, "w1e": 255})
     s = np.asarray(S) > 0; out = {}
     vis = dst2.merge_colours(D[P])
     for key in sorted({(g["grp"], g["st"]) for g in vis}):

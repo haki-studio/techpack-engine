@@ -1,7 +1,8 @@
-M BK {'stitches': 288496, 'trims': 1073, 'jumps': 3121, 'stops': 13, 'size_mm': (592.8, 572.9), 'max_stitch': 7.42} 247s
-M BK S1_top-left {'stitches': 82939, 'trims': 286, 'stops': 13, 'size_mm': (318.0, 290.8), 'fits': True} split_clip
-M BK S2_top-right {'stitches': 7025, 'trims': 54, 'stops': 6, 'size_mm': (306.2, 290.8), 'fits': True} split_clip
-M BK S3_bottom-left {'stitches': 74085, 'trims': 265, 'stops': 11, 'size_mm': (319.4, 325.4), 'fits': True} split_clip
-M BK S4_bottom-right {'stitches': 127537, 'trims': 479, 'stops': 11, 'size_mm': (316.4, 313.6), 'fits': True} split_clip
+M BK primary {'stitches': 194072, 'trims': 682, 'stops': 11, 'size_mm': (592.8, 572.9), 'max_stitch': 7.41} chenille {'stitches': 11894, 'trims': 495, 'stops': 2}
+M BK primary S1_left {'stitches': 107449, 'trims': 376, 'stops': 11, 'size_mm': (309.6, 592.4), 'fits': True}
+M BK primary S2_right {'stitches': 88079, 'trims': 310, 'stops': 10, 'size_mm': (306.7, 592.4), 'fits': True}
+M BK alt_padded {'stitches': 306317, 'trims': 1070, 'stops': 13, 'size_mm': (592.8, 572.9), 'max_stitch': 7.41} 
+M BK alt_padded S1_left {'stitches': 164627, 'trims': 549, 'stops': 13, 'size_mm': (309.6, 592.4), 'fits': True}
+M BK alt_padded S2_right {'stitches': 143308, 'trims': 523, 'stops': 11, 'size_mm': (306.7, 592.4), 'fits': True}
 DONE M ['BK']
 EXIT 0

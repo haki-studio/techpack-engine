@@ -25,4 +25,42 @@ def live_piece(P, bb, ppm, size="M", root=None):
     W, H = int(round((bb[2] - bb[0]) * ppm)), int(round((bb[3] - bb[1]) * ppm))
     out = Image.new("RGB", (W, H), tuple(int(WC.FABRIC[i:i + 2], 16) for i in (1, 3, 5)))
     out.paste(im, (int(round((x0 - bb[0]) * ppm)), int(round((y0 - bb[1]) * ppm))))
+    rec = chen_rec(P, size, root) if os.path.exists(f"{root or f'out/01_wave/{size}'}/result_{P}.json") else None
+    if rec: draw_chenille(out, rec, bb, ppm)                         # primary foam: the chenille file on top
     return out
+
+# ---------------------------------------------------------------- chenille overlay (primary foam, factory 19 Oct)
+CHEN_W = 2.0           # a chenille loop row is ~2 mm wide (moss / loop fill rows 2.0 mm apart cover the foam)
+def chenille_paths(rec):
+    """[(colour key, [(x, y) ...])] in piece coords from a chenille readback record (rec = result['chenille'])"""
+    if not rec: return []
+    p = pe.read(rec["file"] + ".dst"); ox, oy = rec["origin"]; cols = rec.get("colours", ["w1", "w3"])
+    out = []; ci = 0; cur = []
+    for x, y, c in p.stitches:
+        k = c & pe.COMMAND_MASK
+        if k == pe.STITCH: cur.append((x / 10 + ox, y / 10 + oy)); continue
+        if len(cur) > 1: out.append((cols[min(ci, len(cols) - 1)], cur))
+        cur = []
+        if k == pe.COLOR_CHANGE: ci += 1
+    if len(cur) > 1: out.append((cols[min(ci, len(cols) - 1)], cur))
+    return out
+
+def draw_chenille(im, rec, bb, ppm, flat=None, live=True):
+    """draw the chenille file on a piece image: loop rows CHEN_W wide (cream, small shadow dots = loops in the live view),
+    chain cords 1.0 mm in shade. flat = {colour key: fill value} draws plain class values instead (for metrics)"""
+    from PIL import ImageDraw
+    d = ImageDraw.Draw(im)
+    for col, pts in chenille_paths(rec):
+        q = [((x - bb[0]) * ppm, (y - bb[1]) * ppm) for x, y in pts]
+        w = max(1, int(round((CHEN_W if col == "w1" or col == "w1e" else 1.0) * ppm)))
+        if flat is not None: d.line(q, fill=flat.get(col, 7), width=w); continue
+        base = tuple(int(motifs2.HEX[col][i:i + 2], 16) for i in (1, 3, 5))
+        d.line(q, fill=base, width=w, joint="curve")
+        if live and col in ("w1", "w1e"):
+            sh = tuple(int(v * 0.78) for v in base)
+            for (x0, y0), (x1, y1) in zip(q[::2], q[1::2]): d.ellipse([x1 - w * 0.22, y1 - w * 0.22, x1 + w * 0.22, y1 + w * 0.22], fill=sh)
+    return im
+
+def chen_rec(P, size="M", root=None):
+    root = root or f"out/01_wave/{size}"
+    return json.load(open(f"{root}/result_{P}.json"))["full"].get("chenille")
