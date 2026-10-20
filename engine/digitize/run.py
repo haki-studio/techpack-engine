@@ -278,7 +278,7 @@ class Run:
         for r in dm["fail_chaos"]: per.setdefault(kind_at(r["at_mm"]), [0, 0, 0])[2] += 1
         row["direction_by_kind"] = {k: dict(tiles=sum(v), ok=v[0], dev=v[1], chaos=v[2], pct_ok=round(100 * v[0] / max(1, sum(v)), 1),
                                             pct_chaos=round(100 * v[2] / max(1, sum(v)), 1)) for k, v in sorted(per.items())}
-        row["direction_by_source"] = audit.direction_by_source(dm, part_at)
+        row["direction_by_source"] = audit.direction_by_source(dm, part_at, self.rb, plan.parts)   # M3b: one constructed basis
         aa = audit.angle_audit(plan, self.rb); sw = audit.sewn_angles(plan, segs, sp, self.crop, ppm=ppm)
         areas = np.array([p.area for p in plan.parts])
         ev_mm2 = plan.meta.get("evidence_tone_mm2", {})

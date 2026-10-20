@@ -1,7 +1,13 @@
-"""Constructed directions (ENGINE_PLAN M3b): angles BUILT from a part's geometry by a playbook rule, never read from the
-reference grain. Each part stores its construction in part.meta["construct"] with DirSpec(source="splitter"), and
-digitize.audit RECOMPUTES the angle from it (basis()), so a typed-in angle without a matching construction is counted as
-random (LESSONS A23 / A24).
+"""Constructed directions (ENGINE_PLAN M3b; the ONE basis for every constructed angle since the M3a / M3b merge, PR #10
+review): angles BUILT from a part's geometry by a playbook rule, never read from the reference grain. digitize.audit
+RECOMPUTES every one through basis() here, so a typed-in angle without a matching construction is counted as random
+(LESSONS A23 / A24), and bucket_of() here decides which constructed angles may count as independent evidence.
+
+Two ways a part names its rule:
+  M3b  DirSpec(source="splitter") + part.meta["construct"] = {rule, ...}: the rules below.
+  M3a  DirSpec(source="rule") on a kind whose house.yaml dir is "construct": the kind's `construct:` names the rule
+       (course / down_slope / across, M3A_RULES), re-derived from the fitted points the part stores by
+       extract/building_fit.rule_basis (the depth rule reads the zone's other roofs: `peers`).
 
   rule "axis"          trunk strips / branches: stitches ALONG the traced axis. construct = {rule, line: [[x, y], [x, y]]}
                        (the strip's medial-axis chord). Checks: the chord's midpoint lies on the part (within 1.5 mm) and
@@ -28,7 +34,10 @@ elongation: reported as "outline", never as independent."""
 import math
 
 RULES = ("axis", "fan", "between_petals", "radial", "column")
+M3A_RULES = ("course", "down_slope", "across")   # building fitter (extract/building_fit.py), registered behind basis()
 OUTLINE_RULES = ("fan",)          # angles read off the traced outline's shape: not independent of the reference (A24)
+DEPTH_RULES = ("course", "down_slope")   # M3a rule 3 depth: a FAR tier's angle (rows along the eave) was chosen where the
+                                         # render's grain agreed (BENCH_m3a.md "partly grain-informed"): reported as outline
 
 
 def line_angle(a, b):
@@ -49,9 +58,52 @@ def _width(g):
     return 2.0 * g.area / max(g.length, 1e-9)
 
 
-def basis(p):
-    """(angle, why) for a part whose DirSpec.source is "splitter": the angle re-built from meta["construct"]; why is the
-    reason it cannot be (None when it can)."""
+def rule_of(p, rb=None):
+    """the construction rule a part's angle comes from (M3b meta construct, else the M3a kind's construct), or None"""
+    c = (p.meta or {}).get("construct")
+    if p.dir.source == "splitter": return c.get("rule") if c else None
+    if p.dir.source == "rule" and rb is not None:
+        k = rb.rule(p.kind)
+        if k.get("dir") == "construct": return k.get("construct")
+    return None
+
+
+def is_constructed(p, rb=None):
+    return p.dir.source == "splitter" or rule_of(p, rb) in M3A_RULES
+
+
+def basis(p, rb=None, peers=None):
+    """(angle, why): the constructed angle RE-BUILT (M3b: from meta["construct"]; M3a: building_fit.rule_basis from the
+    fitted points, peers = the plan's parts for the depth rule); why is the reason it cannot be (None when it can)."""
+    if (p.meta or {}).get("construct"): return _m3b_basis(p)      # M3b (and the splitters' own probes)
+    if p.dir.source == "rule":
+        r = rule_of(p, rb)
+        if r not in M3A_RULES: return None, f"source rule without a construct rule (kind {p.kind!r})"
+        from digitize.extract.building_fit import rule_basis
+        a = rule_basis(p, rb, peers)
+        return (a, None) if a is not None else (None, f"M3a rule {r!r}: the part does not store the fitted points it needs")
+    return _m3b_basis(p)
+
+
+def bucket_of(p, rb=None, peers=None):
+    """"independent" / "outline" for a constructed part (None when it is not constructed): fans read off the outline
+    (OUTLINE_RULES) and M3a's FAR tiers (DEPTH_RULES with the depth rule on and the tier far) are "outline"."""
+    r = rule_of(p, rb)
+    if r is None: return None
+    if r in OUTLINE_RULES: return "outline"
+    if r in DEPTH_RULES and rb is not None and _far(p, rb, peers): return "outline"
+    return "independent"
+
+
+def _far(p, rb, peers):
+    from digitize.extract import building_fit as BF
+    k = rb.rule(p.kind); prm = rb.rule(k.get("params_from", p.kind)).get("params", {}); rel = prm.get("near_tier_rel")
+    if rel is None or peers is None or not p.meta.get("eave_pts") or not p.meta.get("top_pts"): return False
+    try: return bool(BF.is_far(p.meta["eave_pts"], p.meta["top_pts"], rel, BF.zone_tier_ref(peers, p.zone)))
+    except (KeyError, TypeError, IndexError): return False
+
+
+def _m3b_basis(p):
     from shapely.geometry import Point, LineString
     c = (p.meta or {}).get("construct")
     if not c: return None, "splitter angle without a stored construction (meta construct)"

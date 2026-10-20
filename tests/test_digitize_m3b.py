@@ -349,3 +349,25 @@ def test_limbs_cut_forks_not_square_ends():
     seg = lambda a, b, w: LineString([a, b]).buffer(w / 2)
     yy = seg((30, 45), (30, 32), 3).union(seg((30, 32), (20, 22), 2.5)).union(seg((30, 32), (40, 22), 2.5))
     assert len(trunk.limbs(ctx, ev.mask(yy), 2.0)) == 3
+
+
+def test_one_constructed_basis_for_m3a_and_m3b():
+    """PR #10 review: M3a (source "rule", dir construct + building_fit.rule_basis) and M3b (source "splitter" +
+    meta.construct) rebuilt angles in two places and decided A24 independence in two places. construct.basis / bucket_of
+    are now the one entry: M3a's rules rebuild through it, its FAR tiers (the depth rule, partly grain-informed per
+    BENCH_m3a.md) are "outline", near tiers and members "independent", M3b fans "outline". Mutations: (a) DEPTH_RULES
+    emptied (far tiers counted independent) -> red; (b) the M3a branch trusts the declared angle -> red in
+    test_digitize_m3a::test_construct_angles_are_rederived_from_the_fitted_points."""
+    from test_digitize_m3a import _two_buildings
+    from digitize.extract.splitters import construct as CN
+    rb = Rulebook(); parts = _two_buildings(1.0)
+    roofs = [p for p in parts if p.kind == "roof"]
+    far = [p for p in roofs if p.meta["far"]]; near = [p for p in roofs if not p.meta["far"]]
+    assert far and near
+    assert all(audit.bucket_of(p, rb, parts) == "outline" for p in far)
+    assert all(audit.bucket_of(p, rb, parts) == "independent" for p in near)
+    for p in roofs:                                                    # the one basis rebuilds M3a's angles exactly
+        a, why = CN.basis(p, rb, parts)
+        assert a is not None and DR.axial_diff(a, p.dir.angle - p.meta.get("sep_deg", 0.0) - p.meta.get("band_offset_deg", 0.0)) < 0.05, (p.id, a, why)
+    stub = Part(id="z", kind="zone_stub", geom=box(0, 0, 5, 5), thread="t", z=1, dir=DirSpec(30.0, source="field-mean"))
+    assert audit.bucket_of(stub, rb, parts) == "self-derived"
