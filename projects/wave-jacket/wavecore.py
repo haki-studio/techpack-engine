@@ -31,9 +31,9 @@ tech.COLOUR_ORDER = WV_ORDER + [c for c in tech.COLOUR_ORDER if c not in WV_ORDE
 # ---------------------------------------------------------------- region codes
 # code -> (name, stitch, angle rule, density, stitch length, underlay, pull comp, notes)
 WV_RULES = {
- "RP":      ("Rope line (cream cord)",       "Satin, turning",      "across the line",          "0.42", "—",   "centre run",                  "0.20", "continuous 2.4 mm cords between the stripes (fragments joined, uniform width)"),
+ "RP":      ("Rope line (cream cord)",       "Tatami along",        "along the cord (A16)",     "0.45", "3.5", "edge run",                    "0.20", "continuous 2.4 mm cords between the stripes (fragments joined, uniform width)"),
  "WV":      ("Wave stripe (twisted cord)",   "Tatami cord / turning satin", "along the stripe ± 15° (cord twist, alternating per tone)", "0.45 / 0.42", "3.5", "edge run + 90° lattice (tatami > 60 mm²) · centre run (satin)", "0.25", "rows along the stripe, 15° twist = twisted cord (close-up, A16); turning satin only on stripes < 3 wide with no holes"),
- "FM":      ("Foam crest / curl (raised)",   "Padded tatami",       "along the curl (sectors, A16)",         "0.45", "5.0", "1 padding layer @ 90° + edge run", "0.30", "raised; chenille look from FM-loop on top [proposed — ask chenille]"),
+ "FM":      ("Foam crest / curl (raised)",   "Tatami base + CHENILLE", "along the curl (sectors, A16)", "0.45", "5.0", "base: edge run · alt: 1 padding layer", "0.30", "PRIMARY: flat base + _CHENILLE loop rows 1.8 mm + chain cords; ALT (alt_padded/): padded tatami + loop runs"),
  "FM-sh":   ("Foam shade",                   "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
  "FM-gr":   ("Curl hollow (grey)",           "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
  "FM-in":   ("Blue inside the curl",         "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
@@ -54,7 +54,7 @@ def patch_dst2():
     import dst2
     for k, v in WV_RULES.items():
         dst2.PULL[k] = float(v[6]) if v[6] not in ("—", "") else 0.0
-    dst2.ALONG.add("WV")
+    dst2.ALONG.add("WV"); dst2.ALONG.add("RP")      # A16: stripes + rope cords sew rows along their length
     dst2.COL_MERGE.clear()
     dst2.TRIM_MIN = 2.0             # an exposed move > 2 mm is trimmed, never left as a float
     if not getattr(dst2, "_wave_cov_guard", False):

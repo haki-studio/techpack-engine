@@ -602,7 +602,7 @@ def rope_lines(its, half=1.2, join=16.0, max_turn=32.0):
         g = LineString(l).simplify(0.2)
         if g.length < 2.0: continue
         p = g.buffer(half, cap_style="round", join_style="round")
-        for q in polys(p): out.append(dict(R("w1", q, "satin", "auto", "RP"), z=z, unit=None))
+        for q in polys(p): out.append(dict(R("w1", q, "tatami", "auto", "RP"), z=z, unit=None))     # A16: rows ALONG the cord
     return out, joined
 
 def grey_ridges(its, w=1.1):

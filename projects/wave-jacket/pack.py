@@ -387,7 +387,9 @@ def gates_page():
     for P in PS:
         dr = GATES["pieces"][P].get("direction")
         if not dr: continue
-        o.append(t(14, y, f"{P}: {dr['pct_ok']} % of {dr['tiles']} tiles OK · {len(dr['fail_dev'])} off the grain > 25° · {len(dr['fail_chaos'])} chaotic (heat-map boxes on out/compare_{P}.png)", 1.5, 600, GREEN if dr["pct_ok"] >= 85 else RED)); y += 3.0
+        bf = dr.get("by_family", {})
+        o.append(t(14, y, f"{P}: all visible stitches {dr['pct_ok']} % of {dr['tiles']} tiles OK · " + " · ".join(f"{k} {v['pct_ok']} %" for k, v in bf.items()) + f"  (heat-map: out/compare_{P}.png)", 1.5, 600,
+                   GREEN if all(v["pct_ok"] >= 85 for v in bf.values() if v["tiles"]) else RED)); y += 3.0
     y += 2
     o.append(t(12, y, f"Result: {tot_fail} unexplained failing motif rows, {tot_un} unexplained bare areas — " + ("PASS" if not tot_fail and not tot_un else "see the rows (positions on the compare sheets)"), 2.0, 700, GREEN if not tot_fail and not tot_un else RED)); y += 4
     why = {}

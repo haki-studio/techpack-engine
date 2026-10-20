@@ -106,7 +106,9 @@ def hoop_plan(P, ub):
 def write_set(sv, origin, base, reg=None, primary=True):
     """primary = lockstitch file without the foam + the CHENILLE file of the foam (same origin, same hooping);
     alternative (primary=False) = everything lockstitch, foam as padded tatami + loop runs (Rev A/B padded)"""
-    lock = [r for r in sv if r["grp"] not in FOAM_GRPS] if primary else sv
+    # primary: the foam keeps a FLAT tatami base in Foam white (rows along the curl, no padding) so no fabric shows between
+    # the chenille loop rows; loops + chain curl cords are the _CHENILLE file on top
+    lock = ([dict(r, st="tatami") if (r["grp"] == "FM") else r for r in sv if r["grp"] not in ("FM-loop", "FM-curl")] if primary else sv)
     stops, n0 = stops_for(lock); pat, st = dst2.make_pattern(lock, stops, origin, reg_marks=reg)
     pat = cap_stitches(reg_in_first_colour(pat) if reg else pat)
     dst2.write(pat, base); dst2.render(base, base + "_preview.png", bg=(39, 47, 67), s=0.5)

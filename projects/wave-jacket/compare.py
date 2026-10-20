@@ -145,6 +145,8 @@ def gate_table(im, P, x, y):
     dr = g.get("direction")
     if dr: d.text((x, y), f"STITCH DIRECTION (A16, qa.direction_match, 8 mm tiles): {dr['pct_ok']} % OK of {dr['tiles']} tiles - {len(dr['fail_dev'])} off the reference grain > 25 deg (orange boxes), {len(dr['fail_chaos'])} chaotic (red boxes); deliver at >= 85 %",
                   fill=(0, 120, 50) if dr["pct_ok"] >= 85 else (200, 0, 0)); y += 14
+    if dr and dr.get("by_family"):
+        d.text((x + 10, y), "   by family (visible stitches): " + " · ".join(f"{k} {v['pct_ok']} % of {v['tiles']} ({v['tile_mm']:.0f} mm tiles)" for k, v in dr["by_family"].items()), fill=(60, 60, 60)); y += 14
     un = g["uncovered"]; ue = [u for u in un if u["why"] == "UNEXPLAINED"]
     d.text((x, y), f"uncovered >= 25 mm2: {len(un)} areas ({sum(u['area_mm2'] for u in un):.0f} mm2) - keep-out edge {sum(1 for u in un if u['why']=='keep-out edge')}, moved by the wrap {sum(1 for u in un if u['why']=='moved by the wrap')}, UNEXPLAINED {len(ue)}",
            fill=(200, 0, 0) if ue else (0, 120, 50)); y += 14

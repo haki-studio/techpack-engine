@@ -178,7 +178,7 @@ def p6():
     import pickle as _pk
     _fg = [v for d in _pk.load(open("art_M.pkl", "rb")).get("fold_gap", {}).values() for v in d.values() if v >= 1.0]
     _fgs = f"{min(_fg):.0f}-{max(_fg):.0f}" if _fg else "0"
-    ch = ["Layout: render mapped onto the Drum Island pattern (body unchanged),
+    ch = ["Layout: render mapped onto the Drum Island pattern (body unchanged),",
           "  x 1.45 mm/px, y neck → hem seam (back 1.14, front 1.24 mm/px).",
           "Curls + drops keep their render shape (mean scale) — no oval curls.",
           "Rev B SEAMLESS wrap: sleeves mapped by a harmonic map, render armhole",

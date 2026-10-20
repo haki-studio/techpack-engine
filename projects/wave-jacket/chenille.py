@@ -14,13 +14,18 @@ from shapely.geometry import LineString, Point
 import waveart as WA, readback
 from motifs2 import HEX
 
-SPACING = 2.0; STEP = 2.5; TRIM_GAP = 2.0
+SPACING = 1.8; STEP = 2.5; TRIM_GAP = 2.0; INSET = 0.6
 
 def moss_paths(p):
-    out = []
-    for q in WA.polys(p.buffer(-0.8)):
-        if q.area < 2.0: continue
-        for ln in WA.ring_chain(q, SPACING): out.append(list(ln.simplify(0.2).coords))
+    """inward contour spirals 1.8 mm apart (loop rows); a foam part too thin for a ring gets one row on its centre line"""
+    out = []; got = 0.0
+    for q in WA.polys(p.buffer(-INSET)):
+        if q.area < 1.0: continue
+        for ln in WA.ring_chain(q, SPACING): out.append(list(ln.simplify(0.2).coords)); got += q.area
+    if got < 0.5 * p.area and p.area > 1.0:
+        import dst2
+        ln = dst2.centreline(p)
+        if ln is not None and ln.length > 1.5: out.append(list(ln.coords))
     return out
 
 def cord_path(p):
