@@ -176,8 +176,9 @@ kinds:
 
   # --- M3b --- trees, crowns, blossoms (extract/splitters/trunk.py, crown.py, blossom.py). dir "construct" = the angle is
   # BUILT by the splitter from the part's geometry (DirSpec source "splitter", meta construct) and rebuilt by
-  # digitize.audit (extract/splitters/construct.py): trunk / branch along the traced axis, clumps fanning from their
-  # attachment point, petals across their axis. florets reuse the M5 kinds petal (turning satin) + knot (bead dot).
+  # digitize.audit (extract/splitters/construct.py): trunk strips along the traced axis, branches as a column across the
+  # stroke, clumps fanning along their long axis from the attachment end. Florets reuse the M5 kinds floret (radial,
+  # DirSpec mode "radial") + knot (bead dot).
   canopy:                      # playbook: blossoms = canopy random tatami -> florets -> branches
     techniques: [tatami]
     dir: field-mean            # the measured grain over the mass (fixed rows; self-derived, like the stubs); rule 3 turns it
