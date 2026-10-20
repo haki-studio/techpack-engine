@@ -180,7 +180,7 @@ def _axial_spread(angles_rad, weights):
 
 
 def angle_coherence(regions, groups=CONSTRUCTED, max_spread_deg=10.0, satin_min_aspect=2.5, key="part", segs=None,
-                    min_segs=12, min_len=0.6):
+                    min_segs=12, min_len=0.6, seg_parts=None):
     """Stitch-direction discipline for constructed parts (LESSONS A16, DIGITIZING_PRINCIPLES rule 2).
     regions: dicts with geom, stype ('satin'/'tatami'/...), angle (deg), grp, and a PART id under `key` (default "part").
     Constructed = grp in `groups`. Returns rows of failures (empty = pass):
@@ -191,7 +191,12 @@ def angle_coherence(regions, groups=CONSTRUCTED, max_spread_deg=10.0, satin_min_
       - satin only on stroke-like shapes (aspect >= satin_min_aspect): `satin-on-blob`.
       - per (part, grp) the fill angles stay within max_spread_deg: `angle-spread`. When `segs` (VISIBLE DST segments,
         qa.visible_segments, same mm frame as the geoms) are given, the spread is measured on the stitches actually seen
-        inside the part (source "dst", needs >= min_segs); otherwise on the declared angles (source "declared")."""
+        inside the part (source "dst", needs >= min_segs); otherwise on the declared angles (source "declared").
+        With `seg_parts` (one part id per seg, e.g. the plan's ids carried through compile; None = travel) a part's
+        stitches are the ones ATTRIBUTED to it, not whatever lies inside its outline (a neighbour's 1 mm cut-under
+        overlap or a blend no longer counts against it; source "dst-part").
+      - with segs given, a constructed fill part that shows fewer than min_segs visible stitches: `no-visible-stitches`
+        (it is buried, cut away or never sewn: the direction cannot be checked, so it cannot pass silently)."""
     import math as _m
     from collections import defaultdict
     by = defaultdict(list); geoms = defaultdict(list); bad = []
@@ -214,22 +219,28 @@ def angle_coherence(regions, groups=CONSTRUCTED, max_spread_deg=10.0, satin_min_
         if r.get("stype") != "satin":
             geoms[(part, r["grp"])].append(g)
             if isinstance(ang, (int, float)): by[(part, r["grp"])].append((float(ang) % 180, A))
-    measured = {}
-    if segs is not None and len(segs):
+    measured = {}; src_dst = "dst"
+    if segs is not None:
         from shapely import contains_xy
-        S = np.asarray(segs, float).reshape(-1, 4); L = np.hypot(S[:, 2] - S[:, 0], S[:, 3] - S[:, 1])
-        S, L = S[L >= min_len], L[L >= min_len]
+        S = np.asarray(segs, float).reshape(-1, 4); L = np.hypot(S[:, 2] - S[:, 0], S[:, 3] - S[:, 1]); keep = L >= min_len
+        if seg_parts is not None:
+            if len(seg_parts) != len(S): raise ValueError(f"angle_coherence: {len(seg_parts)} seg_parts for {len(S)} segs")
+            P = np.asarray([("" if q is None else str(q)) for q in seg_parts], object)[keep]; src_dst = "dst-part"
+        S, L = S[keep], L[keep]
         mx, my = (S[:, 0] + S[:, 2]) / 2, (S[:, 1] + S[:, 3]) / 2; ang = np.arctan2(S[:, 3] - S[:, 1], S[:, 2] - S[:, 0])
         for k, gs in geoms.items():
-            u = unary_union(gs); b = u.bounds
-            idx = np.nonzero((mx >= b[0]) & (mx <= b[2]) & (my >= b[1]) & (my <= b[3]))[0]
-            if len(idx) == 0: continue
-            inside = idx[contains_xy(u, mx[idx], my[idx])]
+            if seg_parts is not None:
+                inside = np.nonzero(P == str(k[0]))[0]
+            else:
+                u = unary_union(gs); b = u.bounds
+                idx = np.nonzero((mx >= b[0]) & (mx <= b[2]) & (my >= b[1]) & (my <= b[3]))[0]
+                inside = idx[contains_xy(u, mx[idx], my[idx])] if len(idx) else idx
             if len(inside) >= min_segs: measured[k] = _axial_spread(ang[inside], L[inside]) + (len(inside),)
+            else: bad.append(dict(kind="no-visible-stitches", part=k[0], grp=k[1], n=int(len(inside)), min_segs=min_segs))
     for k in sorted(set(by) | set(measured), key=str):
         part, grp = k
         if k in measured:
-            spread, R, mean, n = measured[k]; src = "dst"
+            spread, R, mean, n = measured[k]; src = src_dst
         else:
             v = by[k]
             if len(v) < 2: continue
@@ -292,14 +303,15 @@ def clip_segments(segs, bounds):
     return out
 
 
-def visible_segments(segs, bounds, ppm=12.0, width_mm=0.42, min_vis_mm=0.3):
+def visible_segments(segs, bounds, ppm=12.0, width_mm=0.42, min_vis_mm=0.3, return_index=False):
     """The TOP layer of the sew-out (what the eye and Hatch's live view see), read from the DST alone.
     segs: stitch segments (x0, y0, x1, y1) in mm, in SEW ORDER; bounds: (x0, y0, x1, y1) mm of the area to look at.
     Segments are drawn in sew order at thread width on an index raster (a z-buffer: last writer wins). Each keeps its
     own angle and its VISIBLE length, re-centred on its visible pixels. Underlay (90-degree lattice, edge runs) and
     hidden travel that a later fill covers drop out; a fan or a blob satin on top stays a fan. Promoted from
     projects/castle-falls-jacket/gates_dir.py (ENGINE_NOTES 17). Below 12 ppm a 0.42 mm thread is under 5 px and rows
-    merge, which is why direction_match refuses lower resolutions."""
+    merge, which is why direction_match refuses lower resolutions. return_index=True also returns, per visible segment,
+    the index of the input segment it came from (to carry part ids through)."""
     import math as _m
     bx0, by0, bx1, by1 = bounds
     W, H = int(_m.ceil((bx1 - bx0) * ppm)) + 2, int(_m.ceil((by1 - by0) * ppm)) + 2
@@ -313,7 +325,7 @@ def visible_segments(segs, bounds, ppm=12.0, width_mm=0.42, min_vis_mm=0.3):
         n += np.bincount(flat_, minlength=N)
         sx += np.bincount(flat_, np.tile(xs, h), minlength=N)
         sy += np.bincount(flat_, np.repeat(np.arange(r0, r0 + h, dtype=float), W), minlength=N)
-    out = []
+    out = []; src = []
     for i in np.nonzero(n[1:])[0] + 1:
         x0, y0, x1, y1 = segs[i - 1]; L = _m.hypot(x1 - x0, y1 - y0)
         if L <= 0: continue
@@ -321,12 +333,12 @@ def visible_segments(segs, bounds, ppm=12.0, width_mm=0.42, min_vis_mm=0.3):
         if vis < min_vis_mm: continue
         cx, cy = sx[i] / n[i] / ppm + bx0, sy[i] / n[i] / ppm + by0
         ux, uy = (x1 - x0) / L / 2 * vis, (y1 - y0) / L / 2 * vis
-        out.append((cx - ux, cy - uy, cx + ux, cy + uy))
-    return out
+        out.append((cx - ux, cy - uy, cx + ux, cy + uy)); src.append(int(i - 1))
+    return (out, src) if return_index else out
 
 
 def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_dev_deg=25.0, chaos_R=0.55, min_stitches=12,
-                    visible=True, min_ppm=12.0, width_mm=0.42):
+                    visible=True, min_ppm=12.0, width_mm=0.42, weight=None, min_weight=0.6):
     """Stitch DIRECTION vs the reference, everywhere (LESSONS A16): every motif, not only buildings.
     ref: grey image (2-D array) of the mockup / close-up mapped to garment mm (ppm px per mm), INPUT PIXELS ONLY, at
     ppm >= min_ppm (12). Below that a thread is under 5 px, the structure tensor reads blur and the visible-layer
@@ -338,8 +350,11 @@ def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_
       - reference direction = thread direction from the structure tensor of the image (the visible thread grain)
     A tile FAILS when (a) the reference shows a clear thread direction and the DST deviates > max_dev_deg, or
     (b) the DST stitches in the tile point every which way (R < chaos_R): fans, blob satins, random fills.
-    Returns dict(tiles, ok, ok_tiles=[centres], fail_dev=[...], fail_chaos=[...], pct_ok, pct_chaos) with tile centres
-    in mm."""
+    weight: optional (H, W) array of how much each reference pixel comes from a real close-up (register.reference's
+    closeup_weight). 12 ppm is a sampling grid, not a detail guarantee: where the pixels are only the upscaled mockup the
+    grain is blur, so tiles whose mean weight is < min_weight are MASKED (not judged, counted in `masked`).
+    Returns dict(tiles, ok, ok_tiles=[centres], fail_dev=[...], fail_chaos=[...], pct_ok, pct_chaos, masked) with tile
+    centres in mm."""
     import math as _m
     from scipy import ndimage as _ndi
     if ppm < min_ppm:
@@ -354,7 +369,10 @@ def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_
     gy, gx = np.gradient(_ndi.gaussian_filter(g, 0.6))
     sig = tile_mm * ppm / 3.0
     Jxx = _ndi.gaussian_filter(gx * gx, sig); Jyy = _ndi.gaussian_filter(gy * gy, sig); Jxy = _ndi.gaussian_filter(gx * gy, sig)
-    T = int(round(tile_mm * ppm)); acc = {}
+    T = int(round(tile_mm * ppm)); acc = {}; masked = 0
+    if weight is not None:
+        wt = np.asarray(weight, float)
+        if wt.shape != g.shape: raise ValueError(f"direction_match: weight {wt.shape} != reference {g.shape}")
     for x0, y0, x1, y1 in segs:
         L = _m.hypot(x1 - x0, y1 - y0)
         if L < min_len: continue
@@ -366,6 +384,8 @@ def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_
     dev, chaos, ok_t = [], [], []
     for (ty, tx), (c, s_, n, w) in acc.items():
         if n < min_stitches: continue
+        if weight is not None and float(wt[ty * T:(ty + 1) * T, tx * T:(tx + 1) * T].mean()) < min_weight:
+            masked += 1; continue
         R = _m.hypot(c, s_) / max(w, 1e-9); a_dst = 0.5 * _m.atan2(s_, c)
         py, px = min(H - 1, int((ty + 0.5) * T)), min(W - 1, int((tx + 0.5) * T))
         jxx, jyy, jxy = Jxx[py, px], Jyy[py, px], Jxy[py, px]
@@ -381,7 +401,7 @@ def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_
         ok_t.append(centre)
     ok = len(ok_t); n = ok + len(dev) + len(chaos)
     return dict(tiles=n, ok=ok, ok_tiles=ok_t, fail_dev=dev, fail_chaos=chaos, pct_ok=round(100 * ok / max(n, 1), 1),
-                pct_chaos=round(100 * len(chaos) / max(n, 1), 1), visible=bool(visible), tile_mm=tile_mm)
+                pct_chaos=round(100 * len(chaos) / max(n, 1), 1), visible=bool(visible), tile_mm=tile_mm, masked=masked)
 
 
 # ---------------------------------------------------------------- file gates (DIGITIZING_PRINCIPLES rules 4, 6, 10; ENGINE_PLAN M0)

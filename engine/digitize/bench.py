@@ -15,8 +15,7 @@ ENGINE = os.path.dirname(HERE)
 if ENGINE not in sys.path: sys.path.insert(0, ENGINE)
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
-import qa, dstlive
+import qa
 from digitize.extract import register
 
 ROOT = os.path.dirname(ENGINE)
@@ -53,7 +52,9 @@ def is_red(rgb): h, s, v = _hue(rgb); return (h < 15 or h > 345) and s > 0.45 an
 def is_gold(rgb): h, s, v = _hue(rgb); return 30 <= h <= 55 and s > 0.40 and v > 0.45
 
 
-def run_gates(cfg_b, project, dst, origin, regions_pkl=None):
+def run_gates(cfg_b, project, dst, origin, regions_pkl=None, coherence=None):
+    """every gate on the DST clipped to the crop. coherence: a precomputed angle_coherence result (the digitize run
+    attributes stitches to its plan's part ids); else read from regions_pkl when given."""
     t0 = time.time(); crop = tuple(cfg_b["crop"]); view = cfg_b["view"]; ppm = float(cfg_b["ppm"])
     reg = register.load(os.path.join(project, cfg_b["registration"]))
     min_w = register.crop_inside(reg, view, crop, cfg_b["closeup"])
@@ -68,17 +69,21 @@ def run_gates(cfg_b, project, dst, origin, regions_pkl=None):
     order = [s for s in allsegs if near(s)]                          # sew order kept
     local = [(a - x0, b - y0, c - x0, d - y0) for a, b, c, d in order]
     clipped = qa.clip_segments(order, crop)
-    out = dict(crop=list(crop), crop_min_closeup_weight=round(min_w, 3), stitches_in_crop=len(clipped))
+    out = dict(crop=list(crop), crop_min_closeup_weight=round(min_w, 3), source_ppm_median=ref.get("source_ppm_median"),
+               stitches_in_crop=len(clipped))
 
     # direction: the visible top layer (gate) and every stitch (info, the old behaviour)
-    dm = qa.direction_match(ref["grey"], ppm, local)
-    dm_all = qa.direction_match(ref["grey"], ppm, local, visible=False)
-    out["direction"] = dict(tiles=dm["tiles"], pct_ok=dm["pct_ok"], pct_chaos=dm["pct_chaos"], n_dev=len(dm["fail_dev"]),
+    wmask = ref.get("closeup_weight"); mw = cfg_b.get("min_weight", 0.6)
+    dm = qa.direction_match(ref["grey"], ppm, local, weight=wmask, min_weight=mw)
+    dm_all = qa.direction_match(ref["grey"], ppm, local, visible=False, weight=wmask, min_weight=mw)
+    out["direction"] = dict(tiles=dm["tiles"], pct_ok=dm["pct_ok"], pct_chaos=dm["pct_chaos"], n_dev=len(dm["fail_dev"]), masked=dm["masked"],
                             n_chaos=len(dm["fail_chaos"]), pct_ok_all_stitches=dm_all["pct_ok"], pct_chaos_all_stitches=dm_all["pct_chaos"])
 
     # angle coherence: needs constructed regions with part ids (a DST alone has none)
     ac = dict(ok=False, note="no regions file: a DST carries no part ids, so angle_coherence cannot pass")
-    if regions_pkl:
+    if coherence is not None:
+        ac = coherence
+    elif regions_pkl:
         from shapely.geometry import box
         D = pickle.load(open(regions_pkl, "rb")); B = box(*crop)
         regs = [dict(geom=r["geom"], stype=r.get("st"), angle=r.get("ang"), grp=r.get("grp"), unit=r.get("unit"), part=r.get("part"))
@@ -137,54 +142,18 @@ def verdict(row, T):
 
 
 # ------------------------------------------------------------------ panel
-def _font(n):
-    try: return ImageFont.load_default(size=n)
-    except TypeError: return ImageFont.load_default()
-
-
-RAMP = [(0.0, (22, 24, 34)), (1.0, (40, 60, 110)), (2.5, (40, 120, 170)), (5.0, (70, 190, 120)), (7.0, (240, 220, 60)), (9.0, (230, 40, 40))]
-def ramp(v):
-    v = np.asarray(v, float); out = np.zeros(v.shape + (3,))
-    xs = [a for a, _ in RAMP]
-    for c in range(3): out[..., c] = np.interp(v, xs, [col[c] for _, col in RAMP])
-    return out.astype(np.uint8)
-
-
-def panel(row, aux, cfg_b, dst, origin, path):
-    P = float(cfg_b["panel_ppm"]); crop = tuple(cfg_b["crop"]); x0, y0, x1, y1 = crop
-    W, H = int(round((x1 - x0) * P)), int(round((y1 - y0) * P))
-    ref = Image.fromarray(aux["ref"]["rgb"].astype(np.uint8)).resize((W, H), Image.LANCZOS)
-    live = dstlive.render(dst, aux["cols"], ppm=P * 2, shell=cfg_b["shell"], bounds=crop, origin=origin).resize((W, H), Image.LANCZOS)
-    heat = live.convert("RGBA"); ov = Image.new("RGBA", heat.size, (0, 0, 0, 0)); d = ImageDraw.Draw(ov); T = aux["dm"]["tile_mm"]
-    def tile(c, col):
-        cx, cy = c; d.rectangle([(cx - T / 2) * P, (cy - T / 2) * P, (cx + T / 2) * P - 1, (cy + T / 2) * P - 1], fill=col, outline=col[:3] + (200,))
-    for c in aux["dm"]["ok_tiles"]: tile(c, (40, 200, 60, 70))
-    for r in aux["dm"]["fail_dev"]: tile(r["at_mm"], (230, 30, 30, 130))
-    for r in aux["dm"]["fail_chaos"]: tile(r["at_mm"], (230, 0, 230, 130))
-    heat = Image.alpha_composite(heat, ov).convert("RGB")
-    den = Image.fromarray(ramp(aux["dens"]["grid"])).resize((W, H), Image.NEAREST); dd = ImageDraw.Draw(den)
-    for f in aux["dens"]["flags"]:
-        cx, cy = f["at_mm"][0] - x0, f["at_mm"][1] - y0
-        dd.rectangle([(cx - f["w_mm"] / 2) * P, (cy - f["h_mm"] / 2) * P, (cx + f["w_mm"] / 2) * P, (cy + f["h_mm"] / 2) * P], outline=(255, 255, 255), width=2)
-    dr, de, tr = row["direction"], row["density"], row["trims"]
-    titles = [f"12 ppm reference (mockup + back_left close-up, min weight {row['crop_min_closeup_weight']})",
-              f"live view (dstlive) - {row['stitches_in_crop']:,} stitches, {tr['trims']} trims ({tr['per_100cm2']}/100 cm2)",
-              f"direction (visible layer): {dr['pct_ok']}% OK, {dr['pct_chaos']}% chaotic, {dr['n_dev']} off-grain  [all stitches: {dr['pct_ok_all_stitches']}%]",
-              f"density mm/mm2: mean {de['mean']}, p95 {de['p95']}, {de['flags']} areas > {de['threshold']} (white boxes)"]
-    pad, top, foot = 12, 34, 40
-    im = Image.new("RGB", (4 * W + 5 * pad, H + top + foot), (245, 245, 242)); D = ImageDraw.Draw(im); f = _font(15)
-    for i, (p, t) in enumerate(zip((ref, live, heat, den), titles)):
-        X = pad + i * (W + pad); im.paste(p, (X, top)); D.text((X, 9), t, fill=(20, 20, 20), font=f)
-    legend = ("heat-map: green OK, red off the reference grain > 25 deg, magenta chaotic (R < 0.55); 8 mm tiles.   density ramp: "
-              "navy 1, blue 2.5 (one tatami layer), green 5, yellow 7, red 9+ mm/mm2.   "
-              f"crop x {x0}..{x1}, y {y0}..{y1} mm (BK, size M, garment mm).   {row['label']}  {row['date']}")
-    D.text((pad, H + top + 12), legend, fill=(60, 60, 60), font=_font(13))
-    im.quantize(256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).save(path, optimize=True)   # ~1 MB, committed
-    return path
+def panel(row, aux, cfg_b, dst, origin, path, extra=None):
+    """reference | [extra columns, e.g. the part map] | live view | direction heat-map | density; titles from bench.json
+    panel_labels (digitize.panel.DEFAULT_LABELS when absent). extra: [(PIL image, label key)] inserted after the reference."""
+    from digitize import panel as PN
+    t = PN.tiles(row, aux, cfg_b, dst, origin); L = PN.labels(row, cfg_b)
+    cols = [(t["ref"], L["ref"])] + [(im, L.get(k, k)) for im, k in (extra or [])]
+    cols += [(t["live"], L["live"]), (t["heat"], L["heat"]), (t["density"], L["density"])]
+    return PN.compose(cols, L["legend"], path)
 
 
 # ------------------------------------------------------------------ scoreboard
-MD_HEAD = """# Benchmark - Castle Falls BK size M crop (ENGINE_PLAN M0)
+MD_HEAD = """# Benchmark (ENGINE_PLAN M0)
 
 Every engine milestone is scored on the same crop with the same gates (`engine/digitize/bench.py`). Rows are appended,
 never edited. Config: `bench.json` (crop, targets), registration: `registration.json` (config as data).
@@ -200,7 +169,7 @@ area), satin_shape (0 blobs, nothing > 7 mm), stack_map (<= 2 layers), colours (
 
 ## Scoreboard
 
-| date | label | dir OK % (visible) | chaotic % | dir all % | angle coh. | density mean / p95 / flags | trims / 100 cm2 | satins / blobs / >7 mm / <1 mm / fans | max stack / cm2 > 2 | threads (red, gold) | gates passed |
+| date | label | dir OK % (visible) | chaotic % | dir all % | angle coh. | density mean / p95 / flags | trims per 100 cm2 of covered area | satins / blobs / >7 mm / <1 mm / fans | max stack / cm2 > 2 | threads (red, gold) | gates passed |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 """
 
@@ -213,6 +182,22 @@ def md_row(row):
             f"{de['mean']} / {de['p95']} / {de['flags']} | {tr['per_100cm2']} ({tr['trims']}) | {sa['satins']} / {sa['blob']} / {sa['too_wide']} / {sa['too_narrow']} / {sa['fans']} | "
             f"{st['max']} / {st['over_cm2']} | {co['threads_in_file']} ({'y' if co['red'] else 'n'}, {'y' if co['gold'] else 'n'}) | "
             f"{npass}/{len(v)} |\n")
+
+
+def append(row, project, aux=None, cfg_b=None, dst=None, origin=None, extra=None, panel_path=None):
+    """append a scored row to bench/SCOREBOARD.json + BENCH.md (rows are never edited), with its panel"""
+    bdir = os.path.join(project, "bench"); os.makedirs(bdir, exist_ok=True)
+    if aux is not None:
+        slug = "".join(ch if ch.isalnum() else "-" for ch in row["label"].lower()).strip("-")[:40]
+        png = panel_path or os.path.join(bdir, f"panel_{row['date']}_{slug}.png"); panel(row, aux, cfg_b, dst, origin, png, extra)
+        row["panel"] = os.path.basename(png)
+    sb = os.path.join(bdir, "SCOREBOARD.json")
+    rows = json.load(open(sb)) if os.path.exists(sb) else []
+    rows.append(row); json.dump(rows, open(sb, "w"), indent=1, default=float)
+    md = os.path.join(bdir, "BENCH.md")
+    if not os.path.exists(md): open(md, "w").write(MD_HEAD)
+    with open(md, "a") as f: f.write(md_row(row))
+    return row
 
 
 def main(argv=None):
@@ -246,16 +231,8 @@ def main(argv=None):
     row["verdict"] = verdict(row, cfg_b["targets"])
     print(json.dumps(row, indent=1, default=float))
     if a.dry_run: return row
-    bdir = os.path.join(project, "bench"); os.makedirs(bdir, exist_ok=True)
-    slug = "".join(ch if ch.isalnum() else "-" for ch in label.lower()).strip("-")[:40]
-    png = os.path.join(bdir, f"panel_{row['date']}_{slug}.png"); panel(row, aux, cfg_b, dst, origin, png); row["panel"] = os.path.basename(png)
-    sb = os.path.join(bdir, "SCOREBOARD.json")
-    rows = json.load(open(sb)) if os.path.exists(sb) else []
-    rows.append(row); json.dump(rows, open(sb, "w"), indent=1, default=float)
-    md = os.path.join(bdir, "BENCH.md")
-    if not os.path.exists(md): open(md, "w").write(MD_HEAD)
-    with open(md, "a") as f: f.write(md_row(row))
-    print(f"appended to {sb}, {md}; panel {png}")
+    append(row, project, aux, cfg_b, dst, origin)
+    print(f"appended to {project}/bench/SCOREBOARD.json + BENCH.md; panel {row['panel']}")
     return row
 
 
