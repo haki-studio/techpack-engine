@@ -14,6 +14,7 @@ Bench write-up: `projects/castle-falls-jacket/bench/BENCH_m3a.md` (crop table, v
 | `sequence.py` (2 hooks, flagged for M4g) | `merge_specks` skips parts with `meta.keep_small`; `absorb_fragments` reads `meta.min_fragment_mm2` (default unchanged) |
 | `run.py` (2 lines) | splitter dispatch `building` |
 | `zones_BK.json` | village zone: splitter `building`, five windows (temple, pagoda, castle centre, houses right, bottom roof line) |
+| M4g hints (meta only) | `group` = building, `seq_after` = plane ids for tile lines / eaves (coordinator contract; M1 sequencer ignores them) |
 | `run_bk_crop.yaml` | label, `building:` roles block, `separate_kinds` + wall / roof |
 | `tests/test_digitize_m3a.py` | 12 tests on synthetic buildings / pure functions |
 
@@ -33,7 +34,7 @@ Bench write-up: `projects/castle-falls-jacket/bench/BENCH_m3a.md` (crop table, v
 - **Wall ground = lightest thread with >= 25 % share** (the dark outline tone is the commonest pixel but is detail).
 - Did NOT change sequence ordering, gates or dst2. Studs flag `no-visible-stitches` (6): kept (A22), gate scope for M4.
 
-## Crop: M2 -> M3a (gates.json at fdc02d8, DST acf15572ac4d0e32)
+## Crop: M2 -> M3a (gates.json at 49aebb8, DST acf15572ac4d0e32; same DST at the merge fdc02d8)
 independent tiles 73 (98.6 %) -> **204 (79.9 %)**, coverage 11.7 -> 32.6 % (gate needs 50 %: FAIL); chaos 4.2 -> 4.3 (OK);
 trims 26.5 -> **23.3 (OK, new)**; parts 367 -> 324; coherence fails 61 -> 42; separation close 46 -> 24; density flags
 113 -> 163; max stack 4 -> 5; satin 0 blobs; colours 12 + red + gold; gates 3/9 -> **4/9**. Village stub area 11,389 -> 0.

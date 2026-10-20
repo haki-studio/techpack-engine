@@ -1680,7 +1680,7 @@
    "red": true,
    "gold": true
   },
-  "secs": 12.7,
+  "secs": 12.3,
   "readback_match": {
    "file_segs": 87083,
    "planned_segs": 86661,
@@ -1893,10 +1893,10 @@
     "pct_within": 93.5
    },
    "dir_sources": {
+    "rule": 67,
     "field-mean": 141,
-    "field": 97,
     "outline": 19,
-    "rule": 67
+    "field": 97
    }
   },
   "stub_area": {
@@ -2004,7 +2004,7 @@
    "colours": true,
    "separation": false
   },
-  "git_sha": "fdc02d896706",
+  "git_sha": "49aebb86d5fd",
   "panel": "panel_2026-10-20_m3a-buildings--rule-angled-roofs--walls-.png"
  }
 ]

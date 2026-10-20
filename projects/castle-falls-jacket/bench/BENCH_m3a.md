@@ -1,7 +1,8 @@
 # Bench write-up: M3a buildings (20 Oct 2026)
 
-Row "M3a buildings (rule-angled roofs, walls, members; depth by tier)" in BENCH.md / SCOREBOARD.json, scored at merge
-commit fdc02d8 (branch `engine-m3a-buildings` with origin/main 182a82b, M6, merged in). Command:
+Row "M3a buildings (rule-angled roofs, walls, members; depth by tier)" in BENCH.md / SCOREBOARD.json, scored at engine
+commit 49aebb8 (branch `engine-m3a-buildings`, origin/main 182a82b with M6 merged in at fdc02d8; 49aebb8 only adds M4g
+sequencing hints to part meta, the DST is identical). Command:
 `PYTHONPATH=engine python3 -m digitize.run projects/castle-falls-jacket/bench/run_bk_crop.yaml --stages all --no-api`.
 Every number below is from `out/digitize/BK_M_crop/gates.json` (DST sha256 acf15572ac4d0e32), or from a scratch
 variant run named as such (never benched).
@@ -29,7 +30,7 @@ ground stubs 3,015 -> 4,079 mm2 (M3b replaces those). Village stub area: 11,389 
 
 ## Crop table (M2 row vs M3a)
 
-| check | M2 (71f0097) | M3a (fdc02d8) | target | |
+| check | M2 (71f0097) | M3a (49aebb8) | target | |
 |---|---|---|---|---|
 | direction, INDEPENDENT tiles (gate) | 98.6 % of 73 = 11.7 % coverage | **79.9 % of 204 = 32.6 % coverage** | >= 85 % on >= 50 % | FAIL (both) |
 | ... building tiles (top part roof / wall / window / stud / tile line) | 0 (village was self-derived stubs) | 134: roof 49 / 74 OK, wall 42 / 56 OK | | |
