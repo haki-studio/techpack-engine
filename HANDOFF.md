@@ -51,3 +51,16 @@ See the coordinator's 28-question list (in the RECAP). Key ones:
 ## Housekeeping
 - Untracked file literally named `*` at the repo root. Ask before deleting.
 - Two autostash stashes are still there.
+
+## PAUSED 2026-10-19 ~21:00 (founder: token cost)
+Only Konpeito (patches rebuilt from inputs/svg) and Wave (Rev B: wrap, under-collar, smooth warp, new factory frames, chenille) keep running.
+PAUSED (work committed; restart with a FRESH builder per product, short brief + the product's REVIEW_OPEN.md + LESSONS A14–A16):
+- castle-falls: A16 rework not started. Handoff in inputs/brief.md.
+- grand-line: Rev E3, scene good. Next: M gate build, then all sizes.
+- forestball: Rev C, rays traced. Next: gates, then pack.
+- moon: Rev C nearly done. Next: spec texts.
+- comet-city: QA passed. Next: fronts rebuild + pattern/docs.
+- red-beast: Rev B3. Next: scene build, gates, T pages.
+- keep-clean: Rev B. Next: final build + page check.
+- koi: Rev C started (refmask, floratrace).
+Factory answered (factory.json): Brother, 750 mm field, frames 300×300 + 400×450, front single hooping, back 2, chenille/puff/sherpa yes.
