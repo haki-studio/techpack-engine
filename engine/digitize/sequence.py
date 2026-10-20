@@ -37,6 +37,8 @@ NO_UNDERLAP = KEEP_TINY                         # M3b: beads sew their declared 
 SEAM_MM = {"floret": 0.3}                       # M3b: a floret is knocked out of the canopy, so the full 1 mm underlap is a
                                                 # SECOND layer ring under it (PR #10 review: florets 9.4 mm/mm2); 0.3 mm
                                                 # closes the seam (no-underlap left 9 gaps >= 0.1 mm2 at floret edges)
+SEAM_MM["crown_clump_lit"] = 0.3                # --- M4c --- lit pieces are knocked out of their dark clump the same way
+                                                # (PR #14 review: grown lit pieces' 1 mm underlap, density flags 167 -> 181)
 
 
 TONE_SEAM_MM = 0.3                              # --- mockup-governs --- = SEAM_MM["floret"]: tone pieces of one motif (meta tone_group)

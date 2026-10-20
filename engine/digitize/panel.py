@@ -24,11 +24,19 @@ DEFAULT_LABELS = {
 
 def fields(row, cfg_b):
     d, de, tr = row["direction"], row["density"], row["trims"]; c = cfg_b["crop"]
-    return dict(closeup=cfg_b.get("closeup", ""), min_weight=row["crop_min_closeup_weight"], source_ppm=row.get("source_ppm_median", "?"),
+    out = dict(closeup=cfg_b.get("closeup", ""), min_weight=row["crop_min_closeup_weight"], source_ppm=row.get("source_ppm_median", "?"),
                 stitches=row["stitches_in_crop"], trims=tr["trims"], trims_per_100cm2=tr["per_100cm2"], dir_ok=d["pct_ok"],
                 dir_chaos=d["pct_chaos"], n_dev=d["n_dev"], dir_all=d["pct_ok_all_stitches"], dens_mean=de["mean"], dens_p95=de["p95"],
                 dens_flags=de["flags"], dens_thr=de["threshold"], x0=c[0], y0=c[1], x1=c[2], y1=c[3], piece=cfg_b.get("piece", ""),
                 size=cfg_b.get("size", ""), label=row.get("label", ""), date=row.get("date", ""), parts=row.get("parts", {}).get("n", "?"))
+    out.update(_m4c(row)); return out
+
+
+def _m4c(row):
+    """M4c: the chaos figure reads raw AND after the radial-floret exemption (the raw number stays visible)"""
+    ex = row.get("radial_exemption")
+    if not ex: return {}
+    return dict(dir_chaos=f"{ex['pct_chaos_raw']}% raw chaos; radial exemption {ex['n_exempt']} tiles (orange); after it {ex['pct_chaos_after']}")
 
 
 def labels(row, cfg_b):
@@ -61,7 +69,8 @@ def tiles(row, aux, cfg_b, dst, origin):
         cx, cy = c; d.rectangle([(cx - T / 2) * P, (cy - T / 2) * P, (cx + T / 2) * P - 1, (cy + T / 2) * P - 1], fill=col, outline=col[:3] + (200,))
     for c in aux["dm"]["ok_tiles"]: tile(c, (40, 200, 60, 70))
     for r in aux["dm"]["fail_dev"]: tile(r["at_mm"], (230, 30, 30, 130))
-    for r in aux["dm"]["fail_chaos"]: tile(r["at_mm"], (230, 0, 230, 130))
+    rx = {tuple(c) for c in aux.get("radial_exempt", [])}                     # M4c: exempt radial tiles in orange
+    for r in aux["dm"]["fail_chaos"]: tile(r["at_mm"], (255, 150, 0, 130) if tuple(r["at_mm"]) in rx else (230, 0, 230, 130))
     heat = Image.alpha_composite(heat, ov).convert("RGB")
     den = Image.fromarray(ramp(aux["dens"]["grid"])).resize((W, H), Image.NEAREST); dd = ImageDraw.Draw(den)
     for f in aux["dens"]["flags"]:

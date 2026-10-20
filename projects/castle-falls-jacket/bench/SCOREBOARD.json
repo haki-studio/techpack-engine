@@ -3635,5 +3635,1548 @@
   },
   "git_sha": "563f4bd9ab0d",
   "panel": "panel_2026-10-20_m3b-trees--crowns--florets.png"
+ },
+ {
+  "crop": [
+   -180,
+   365,
+   20,
+   565
+  ],
+  "crop_min_closeup_weight": 0.647,
+  "source_ppm_median": 2.58,
+  "stitches_in_crop": 114437,
+  "direction": {
+   "tiles": 625,
+   "pct_ok": 64.6,
+   "pct_chaos": 23.8,
+   "n_dev": 72,
+   "masked": 0,
+   "n_chaos": 149,
+   "pct_ok_all_stitches": 44.5,
+   "pct_chaos_all_stitches": 52.6
+  },
+  "angle_coherence": {
+   "source": "plan part ids carried onto the written DST (compile.labelled_dst)",
+   "parts": 293,
+   "ok": false,
+   "fails": 81,
+   "kinds": {
+    "no-visible-stitches": 25,
+    "angle-spread": 56
+   },
+   "by_kind": {
+    "no-visible-stitches / trunk_strip": 1,
+    "no-visible-stitches / window": 2,
+    "no-visible-stitches / wall": 1,
+    "no-visible-stitches / zone_stub": 11,
+    "angle-spread / canopy": 7,
+    "angle-spread / cloud_wisp": 1,
+    "angle-spread / crown_clump_dark": 24,
+    "angle-spread / crown_clump_lit": 7,
+    "angle-spread / zone_stub": 5,
+    "angle-spread / pool": 1,
+    "angle-spread / trunk_strip": 1,
+    "angle-spread / window": 2,
+    "angle-spread / member": 1,
+    "angle-spread / roof": 4,
+    "angle-spread / wall": 3,
+    "no-visible-stitches / floret": 10
+   },
+   "failing": [
+    {
+     "kind": "no-visible-stitches",
+     "part": "trunks.052",
+     "grp": "trunk_strip",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.088",
+     "grp": "window",
+     "n": 11,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.097",
+     "grp": "wall",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.106",
+     "grp": "window",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.587",
+     "grp": "zone_stub",
+     "n": 0,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.594",
+     "grp": "zone_stub",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.636",
+     "grp": "zone_stub",
+     "n": 4,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.666",
+     "grp": "zone_stub",
+     "n": 5,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.670",
+     "grp": "zone_stub",
+     "n": 4,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.679",
+     "grp": "zone_stub",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.694",
+     "grp": "zone_stub",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.697",
+     "grp": "zone_stub",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.700",
+     "grp": "zone_stub",
+     "n": 0,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.705",
+     "grp": "zone_stub",
+     "n": 5,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.715",
+     "grp": "zone_stub",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.001",
+     "grp": "canopy",
+     "n": 866,
+     "spread_deg": 10.9,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.002",
+     "grp": "canopy",
+     "n": 87,
+     "spread_deg": 12.0,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.003",
+     "grp": "canopy",
+     "n": 72,
+     "spread_deg": 11.6,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.006",
+     "grp": "canopy",
+     "n": 27,
+     "spread_deg": 11.4,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.007",
+     "grp": "canopy",
+     "n": 3218,
+     "spread_deg": 16.5,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.010",
+     "grp": "canopy",
+     "n": 44,
+     "spread_deg": 10.5,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.011",
+     "grp": "canopy",
+     "n": 500,
+     "spread_deg": 13.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "cloud_centre.152",
+     "grp": "cloud_wisp",
+     "n": 21,
+     "spread_deg": 36.0,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.177",
+     "grp": "crown_clump_dark",
+     "n": 26,
+     "spread_deg": 12.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.178",
+     "grp": "crown_clump_dark",
+     "n": 117,
+     "spread_deg": 12.7,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.180",
+     "grp": "crown_clump_dark",
+     "n": 119,
+     "spread_deg": 12.2,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.182",
+     "grp": "crown_clump_dark",
+     "n": 336,
+     "spread_deg": 11.6,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.183",
+     "grp": "crown_clump_dark",
+     "n": 99,
+     "spread_deg": 10.5,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.185",
+     "grp": "crown_clump_dark",
+     "n": 265,
+     "spread_deg": 14.2,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.186",
+     "grp": "crown_clump_dark",
+     "n": 174,
+     "spread_deg": 11.5,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.188",
+     "grp": "crown_clump_dark",
+     "n": 65,
+     "spread_deg": 10.7,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.190",
+     "grp": "crown_clump_dark",
+     "n": 81,
+     "spread_deg": 12.7,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.194",
+     "grp": "crown_clump_dark",
+     "n": 47,
+     "spread_deg": 13.1,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.198",
+     "grp": "crown_clump_dark",
+     "n": 58,
+     "spread_deg": 11.8,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.203",
+     "grp": "crown_clump_dark",
+     "n": 98,
+     "spread_deg": 20.1,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.209",
+     "grp": "crown_clump_dark",
+     "n": 64,
+     "spread_deg": 11.8,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.213",
+     "grp": "crown_clump_dark",
+     "n": 33,
+     "spread_deg": 13.4,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.214",
+     "grp": "crown_clump_dark",
+     "n": 37,
+     "spread_deg": 10.6,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.216",
+     "grp": "crown_clump_dark",
+     "n": 58,
+     "spread_deg": 16.4,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.219",
+     "grp": "crown_clump_dark",
+     "n": 76,
+     "spread_deg": 13.4,
+     "source": "dst-part"
+    }
+   ],
+   "field_adherence": {
+    "parts": 95,
+    "stitches": 8664,
+    "within": 8112,
+    "pct_within": 93.6
+   },
+   "radial_adherence": {
+    "parts": 206,
+    "stitches": 2134,
+    "within": 2053,
+    "pct_within": 96.2,
+    "no_centre": [],
+    "unseen": [
+     "blossom.f083",
+     "blossom.f086",
+     "blossom.f130",
+     "blossom.f132",
+     "blossom.f167",
+     "blossom.f189",
+     "blossom.f200",
+     "blossom.f281",
+     "blossom.f283",
+     "blossom.f299"
+    ],
+    "ok": true,
+    "n_no_centre": 0,
+    "n_unseen": 10
+   },
+   "column_adherence": {
+    "parts": 46,
+    "stitches": 597,
+    "within": 512,
+    "pct_within": 85.8
+   }
+  },
+  "density": {
+   "covered_cm2": 399.9,
+   "mean": 5.26,
+   "p95": 9.65,
+   "max_smoothed": 12.53,
+   "over_cm2": 56.8,
+   "flags": 174,
+   "threshold": 7.0,
+   "flags_by_zones_meeting": {
+    "1": 30,
+    "2": 80,
+    "3": 40,
+    "4+": 24
+   },
+   "flags_touching_kind": {
+    "branch": 31,
+    "canopy": 67,
+    "cloud_lobe": 5,
+    "cloud_shade": 5,
+    "crown_clump_dark": 82,
+    "crown_clump_lit": 73,
+    "eave": 10,
+    "fall_cord": 13,
+    "floret": 55,
+    "knot": 59,
+    "member": 4,
+    "pool": 6,
+    "roof": 40,
+    "roof_tile_line": 15,
+    "sky_band": 9,
+    "stratum_band": 83,
+    "stratum_crack": 12,
+    "stud": 1,
+    "trunk_strip": 4,
+    "wall": 34,
+    "window": 14,
+    "zone_stub": 61
+   }
+  },
+  "trims": {
+   "trims": 152,
+   "per_100cm2": 38.0,
+   "area_cm2": 399.9
+  },
+  "satin": {
+   "satins": 695,
+   "fans": 3,
+   "blob": 1,
+   "too_wide": 0,
+   "too_narrow": 0,
+   "cord_flags": 0,
+   "floret_runs_by_part_map": {
+    "blob": 147,
+    "too-narrow": 7,
+    "too-wide": 0
+   },
+   "bead_runs_by_part_map": {
+    "blob": 0,
+    "too-narrow": 2,
+    "too-wide": 0
+   }
+  },
+  "stack": {
+   "max": 5,
+   "over_cm2": 12.97,
+   "flags": 65,
+   "pct_cells_over": 3.2
+  },
+  "runs_in_crop": 187,
+  "colours": {
+   "stops_in_crop": 32,
+   "threads_in_crop": 12,
+   "threads_in_file": 12,
+   "hex": [
+    "#22355c",
+    "#2f402d",
+    "#4e3f31",
+    "#566577",
+    "#5a7240",
+    "#79a4d0",
+    "#958262",
+    "#b23f2e",
+    "#b4506f",
+    "#d3a63f",
+    "#d4caba",
+    "#de8ea6"
+   ],
+   "red": true,
+   "gold": true
+  },
+  "secs": 17.2,
+  "readback_match": {
+   "file_segs": 114887,
+   "planned_segs": 114198,
+   "matched": 114149,
+   "writer_added": 738,
+   "skipped_subgrid": 49,
+   "labelled": 109131
+  },
+  "cords": {
+   "n": 67,
+   "flags": 0,
+   "failing": [],
+   "max_piece": 7.01,
+   "aligned_max": 0.5,
+   "column_w": [
+    2.45,
+    2.63,
+    2.83,
+    3.18,
+    3.22,
+    3.31,
+    3.36,
+    3.55,
+    3.81,
+    3.87,
+    4.05,
+    4.1,
+    4.16,
+    4.49,
+    4.57,
+    4.9,
+    4.92,
+    4.93,
+    5.11,
+    5.17,
+    5.19,
+    5.22,
+    5.25,
+    5.26,
+    5.3,
+    5.49,
+    5.66,
+    5.67,
+    5.8,
+    5.82,
+    5.92,
+    5.99,
+    6.43,
+    6.47,
+    6.51,
+    6.56,
+    6.56,
+    6.76,
+    7.04,
+    7.05,
+    7.06,
+    7.09,
+    7.25,
+    7.3,
+    7.62,
+    7.66,
+    7.68,
+    7.75,
+    8.46,
+    8.66,
+    8.99,
+    9.21,
+    10.0,
+    12.92,
+    14.4,
+    14.92,
+    18.88,
+    19.13,
+    20.09,
+    22.58,
+    22.72,
+    26.47,
+    26.7,
+    28.27,
+    29.26,
+    30.46,
+    36.91
+   ]
+  },
+  "direction_by_kind": {
+   "bare": {
+    "tiles": 3,
+    "ok": 2,
+    "dev": 0,
+    "chaos": 1,
+    "pct_ok": 66.7,
+    "pct_chaos": 33.3
+   },
+   "branch": {
+    "tiles": 6,
+    "ok": 0,
+    "dev": 0,
+    "chaos": 6,
+    "pct_ok": 0.0,
+    "pct_chaos": 100.0
+   },
+   "canopy": {
+    "tiles": 62,
+    "ok": 32,
+    "dev": 5,
+    "chaos": 25,
+    "pct_ok": 51.6,
+    "pct_chaos": 40.3
+   },
+   "cloud_lobe": {
+    "tiles": 6,
+    "ok": 6,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "cloud_shade": {
+    "tiles": 3,
+    "ok": 3,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "crown_clump_dark": {
+    "tiles": 72,
+    "ok": 42,
+    "dev": 18,
+    "chaos": 12,
+    "pct_ok": 58.3,
+    "pct_chaos": 16.7
+   },
+   "crown_clump_lit": {
+    "tiles": 37,
+    "ok": 22,
+    "dev": 9,
+    "chaos": 6,
+    "pct_ok": 59.5,
+    "pct_chaos": 16.2
+   },
+   "eave": {
+    "tiles": 7,
+    "ok": 0,
+    "dev": 0,
+    "chaos": 7,
+    "pct_ok": 0.0,
+    "pct_chaos": 100.0
+   },
+   "fall_cord": {
+    "tiles": 63,
+    "ok": 62,
+    "dev": 0,
+    "chaos": 1,
+    "pct_ok": 98.4,
+    "pct_chaos": 1.6
+   },
+   "floret": {
+    "tiles": 39,
+    "ok": 13,
+    "dev": 3,
+    "chaos": 23,
+    "pct_ok": 33.3,
+    "pct_chaos": 59.0
+   },
+   "knot": {
+    "tiles": 5,
+    "ok": 3,
+    "dev": 1,
+    "chaos": 1,
+    "pct_ok": 60.0,
+    "pct_chaos": 20.0
+   },
+   "member": {
+    "tiles": 9,
+    "ok": 1,
+    "dev": 1,
+    "chaos": 7,
+    "pct_ok": 11.1,
+    "pct_chaos": 77.8
+   },
+   "pool": {
+    "tiles": 6,
+    "ok": 5,
+    "dev": 0,
+    "chaos": 1,
+    "pct_ok": 83.3,
+    "pct_chaos": 16.7
+   },
+   "roof": {
+    "tiles": 62,
+    "ok": 20,
+    "dev": 22,
+    "chaos": 20,
+    "pct_ok": 32.3,
+    "pct_chaos": 32.3
+   },
+   "roof_tile_line": {
+    "tiles": 5,
+    "ok": 1,
+    "dev": 4,
+    "chaos": 0,
+    "pct_ok": 20.0,
+    "pct_chaos": 0.0
+   },
+   "sky_band": {
+    "tiles": 2,
+    "ok": 2,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "stratum_band": {
+    "tiles": 157,
+    "ok": 148,
+    "dev": 2,
+    "chaos": 7,
+    "pct_ok": 94.3,
+    "pct_chaos": 4.5
+   },
+   "stratum_crack": {
+    "tiles": 4,
+    "ok": 4,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "stud": {
+    "tiles": 1,
+    "ok": 0,
+    "dev": 1,
+    "chaos": 0,
+    "pct_ok": 0.0,
+    "pct_chaos": 0.0
+   },
+   "trunk_strip": {
+    "tiles": 2,
+    "ok": 0,
+    "dev": 0,
+    "chaos": 2,
+    "pct_ok": 0.0,
+    "pct_chaos": 100.0
+   },
+   "wall": {
+    "tiles": 41,
+    "ok": 16,
+    "dev": 5,
+    "chaos": 20,
+    "pct_ok": 39.0,
+    "pct_chaos": 48.8
+   },
+   "window": {
+    "tiles": 2,
+    "ok": 0,
+    "dev": 0,
+    "chaos": 2,
+    "pct_ok": 0.0,
+    "pct_chaos": 100.0
+   },
+   "zone_stub": {
+    "tiles": 31,
+    "ok": 22,
+    "dev": 1,
+    "chaos": 8,
+    "pct_ok": 71.0,
+    "pct_chaos": 25.8
+   }
+  },
+  "direction_by_source": {
+   "bare": {
+    "tiles": 3,
+    "ok": 2,
+    "dev": 0,
+    "chaos": 1,
+    "pct_ok": 66.7,
+    "pct_chaos": 33.3
+   },
+   "independent": {
+    "tiles": 194,
+    "ok": 99,
+    "dev": 30,
+    "chaos": 65,
+    "pct_ok": 51.0,
+    "pct_chaos": 33.5
+   },
+   "outline": {
+    "tiles": 169,
+    "ok": 92,
+    "dev": 34,
+    "chaos": 43,
+    "pct_ok": 54.4,
+    "pct_chaos": 25.4
+   },
+   "self-derived": {
+    "tiles": 259,
+    "ok": 211,
+    "dev": 8,
+    "chaos": 40,
+    "pct_ok": 81.5,
+    "pct_chaos": 15.4
+   }
+  },
+  "direction_by_source_raw": {
+   "bare": {
+    "tiles": 3,
+    "ok": 2,
+    "dev": 0,
+    "chaos": 1,
+    "pct_ok": 66.7,
+    "pct_chaos": 33.3
+   },
+   "independent": {
+    "tiles": 194,
+    "ok": 99,
+    "dev": 30,
+    "chaos": 65,
+    "pct_ok": 51.0,
+    "pct_chaos": 33.5
+   },
+   "outline": {
+    "tiles": 169,
+    "ok": 92,
+    "dev": 34,
+    "chaos": 43,
+    "pct_ok": 54.4,
+    "pct_chaos": 25.4
+   },
+   "self-derived": {
+    "tiles": 259,
+    "ok": 211,
+    "dev": 8,
+    "chaos": 40,
+    "pct_ok": 81.5,
+    "pct_chaos": 15.4
+   }
+  },
+  "radial_exemption": {
+   "tiles": 625,
+   "chaos_raw": 149,
+   "pct_chaos_raw": 23.8,
+   "exempt": [],
+   "n_exempt": 0,
+   "chaos_after": 149,
+   "pct_chaos_after": 23.8,
+   "candidates_refused": [
+    {
+     "at_mm": [
+      100.0,
+      156.0
+     ],
+     "share": 0.05,
+     "adherence": 100.0,
+     "why": "radial share 0.05 < 0.7"
+    },
+    {
+     "at_mm": [
+      100.0,
+      172.0
+     ],
+     "share": 0.38,
+     "adherence": 94.7,
+     "why": "radial share 0.38 < 0.7"
+    },
+    {
+     "at_mm": [
+      52.0,
+      140.0
+     ],
+     "share": 0.2,
+     "adherence": 100.0,
+     "why": "radial share 0.20 < 0.7"
+    },
+    {
+     "at_mm": [
+      52.0,
+      124.0
+     ],
+     "share": 0.09,
+     "adherence": 100.0,
+     "why": "radial share 0.09 < 0.7"
+    },
+    {
+     "at_mm": [
+      196.0,
+      164.0
+     ],
+     "share": 0.29,
+     "adherence": 100.0,
+     "why": "radial share 0.29 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      52.0
+     ],
+     "share": 0.01,
+     "adherence": 100.0,
+     "why": "radial share 0.01 < 0.7"
+    },
+    {
+     "at_mm": [
+      196.0,
+      36.0
+     ],
+     "share": 0.04,
+     "adherence": 100.0,
+     "why": "radial share 0.04 < 0.7"
+    },
+    {
+     "at_mm": [
+      84.0,
+      148.0
+     ],
+     "share": 0.04,
+     "adherence": 100.0,
+     "why": "radial share 0.04 < 0.7"
+    },
+    {
+     "at_mm": [
+      132.0,
+      180.0
+     ],
+     "share": 0.05,
+     "adherence": 100.0,
+     "why": "radial share 0.05 < 0.7"
+    },
+    {
+     "at_mm": [
+      116.0,
+      172.0
+     ],
+     "share": 0.03,
+     "adherence": 100.0,
+     "why": "radial share 0.03 < 0.7"
+    },
+    {
+     "at_mm": [
+      188.0,
+      156.0
+     ],
+     "share": 0.01,
+     "adherence": 100.0,
+     "why": "radial share 0.01 < 0.7"
+    },
+    {
+     "at_mm": [
+      12.0,
+      164.0
+     ],
+     "share": 0.37,
+     "adherence": 97.4,
+     "why": "radial share 0.37 < 0.7"
+    },
+    {
+     "at_mm": [
+      4.0,
+      164.0
+     ],
+     "share": 0.46,
+     "adherence": 100.0,
+     "why": "radial share 0.46 < 0.7"
+    },
+    {
+     "at_mm": [
+      4.0,
+      172.0
+     ],
+     "share": 0.07,
+     "adherence": 100.0,
+     "why": "radial share 0.07 < 0.7"
+    },
+    {
+     "at_mm": [
+      108.0,
+      180.0
+     ],
+     "share": 0.38,
+     "adherence": 92.7,
+     "why": "radial share 0.38 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      188.0
+     ],
+     "share": 0.0,
+     "adherence": 100.0,
+     "why": "radial share 0.00 < 0.7"
+    },
+    {
+     "at_mm": [
+      196.0,
+      180.0
+     ],
+     "share": 0.2,
+     "adherence": 95.7,
+     "why": "radial share 0.20 < 0.7"
+    },
+    {
+     "at_mm": [
+      92.0,
+      164.0
+     ],
+     "share": 0.18,
+     "adherence": 100.0,
+     "why": "radial share 0.18 < 0.7"
+    },
+    {
+     "at_mm": [
+      92.0,
+      172.0
+     ],
+     "share": 0.29,
+     "adherence": 100.0,
+     "why": "radial share 0.29 < 0.7"
+    },
+    {
+     "at_mm": [
+      84.0,
+      164.0
+     ],
+     "share": 0.06,
+     "adherence": 100.0,
+     "why": "radial share 0.06 < 0.7"
+    },
+    {
+     "at_mm": [
+      28.0,
+      148.0
+     ],
+     "share": 0.29,
+     "adherence": 96.9,
+     "why": "radial share 0.29 < 0.7"
+    },
+    {
+     "at_mm": [
+      52.0,
+      148.0
+     ],
+     "share": 0.33,
+     "adherence": 96.6,
+     "why": "radial share 0.33 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      20.0
+     ],
+     "share": 0.25,
+     "adherence": 92.3,
+     "why": "radial share 0.25 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      36.0
+     ],
+     "share": 0.01,
+     "adherence": 100.0,
+     "why": "radial share 0.01 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      44.0
+     ],
+     "share": 0.02,
+     "adherence": 100.0,
+     "why": "radial share 0.02 < 0.7"
+    },
+    {
+     "at_mm": [
+      188.0,
+      44.0
+     ],
+     "share": 0.06,
+     "adherence": 85.7,
+     "why": "radial share 0.06 < 0.7"
+    },
+    {
+     "at_mm": [
+      60.0,
+      148.0
+     ],
+     "share": 0.07,
+     "adherence": 100.0,
+     "why": "radial share 0.07 < 0.7"
+    },
+    {
+     "at_mm": [
+      68.0,
+      148.0
+     ],
+     "share": 0.21,
+     "adherence": 96.3,
+     "why": "radial share 0.21 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      156.0
+     ],
+     "share": 0.01,
+     "adherence": 100.0,
+     "why": "radial share 0.01 < 0.7"
+    },
+    {
+     "at_mm": [
+      172.0,
+      180.0
+     ],
+     "share": 0.07,
+     "adherence": 100.0,
+     "why": "radial share 0.07 < 0.7"
+    },
+    {
+     "at_mm": [
+      76.0,
+      172.0
+     ],
+     "share": 0.03,
+     "adherence": 100.0,
+     "why": "radial share 0.03 < 0.7"
+    },
+    {
+     "at_mm": [
+      28.0,
+      164.0
+     ],
+     "share": 0.05,
+     "adherence": 100.0,
+     "why": "radial share 0.05 < 0.7"
+    },
+    {
+     "at_mm": [
+      36.0,
+      156.0
+     ],
+     "share": 0.07,
+     "adherence": 100.0,
+     "why": "radial share 0.07 < 0.7"
+    },
+    {
+     "at_mm": [
+      36.0,
+      132.0
+     ],
+     "share": 0.1,
+     "adherence": 66.7,
+     "why": "radial share 0.10 < 0.7; adherence 67 % < 85.0"
+    },
+    {
+     "at_mm": [
+      36.0,
+      140.0
+     ],
+     "share": 0.61,
+     "adherence": 93.8,
+     "why": "radial share 0.61 < 0.7"
+    },
+    {
+     "at_mm": [
+      52.0,
+      156.0
+     ],
+     "share": 0.11,
+     "adherence": 91.7,
+     "why": "radial share 0.11 < 0.7"
+    },
+    {
+     "at_mm": [
+      44.0,
+      156.0
+     ],
+     "share": 0.03,
+     "adherence": 100.0,
+     "why": "radial share 0.03 < 0.7"
+    },
+    {
+     "at_mm": [
+      68.0,
+      156.0
+     ],
+     "share": 0.39,
+     "adherence": 93.1,
+     "why": "radial share 0.39 < 0.7"
+    },
+    {
+     "at_mm": [
+      84.0,
+      156.0
+     ],
+     "share": 0.19,
+     "adherence": 100.0,
+     "why": "radial share 0.19 < 0.7"
+    },
+    {
+     "at_mm": [
+      76.0,
+      156.0
+     ],
+     "share": 0.22,
+     "adherence": 95.7,
+     "why": "radial share 0.22 < 0.7"
+    },
+    {
+     "at_mm": [
+      76.0,
+      164.0
+     ],
+     "share": 0.24,
+     "adherence": 84.2,
+     "why": "radial share 0.24 < 0.7; adherence 84 % < 85.0"
+    },
+    {
+     "at_mm": [
+      28.0,
+      140.0
+     ],
+     "share": 0.43,
+     "adherence": 100.0,
+     "why": "radial share 0.43 < 0.7"
+    },
+    {
+     "at_mm": [
+      12.0,
+      148.0
+     ],
+     "share": 0.08,
+     "adherence": 77.8,
+     "why": "radial share 0.08 < 0.7; adherence 78 % < 85.0"
+    },
+    {
+     "at_mm": [
+      4.0,
+      148.0
+     ],
+     "share": 0.32,
+     "adherence": 93.8,
+     "why": "radial share 0.32 < 0.7"
+    },
+    {
+     "at_mm": [
+      20.0,
+      148.0
+     ],
+     "share": 0.37,
+     "adherence": 94.3,
+     "why": "radial share 0.37 < 0.7"
+    },
+    {
+     "at_mm": [
+      20.0,
+      172.0
+     ],
+     "share": 0.45,
+     "adherence": 97.6,
+     "why": "radial share 0.45 < 0.7"
+    },
+    {
+     "at_mm": [
+      4.0,
+      156.0
+     ],
+     "share": 0.39,
+     "adherence": 95.2,
+     "why": "radial share 0.39 < 0.7"
+    },
+    {
+     "at_mm": [
+      4.0,
+      124.0
+     ],
+     "share": 0.44,
+     "adherence": 93.5,
+     "why": "radial share 0.44 < 0.7"
+    },
+    {
+     "at_mm": [
+      116.0,
+      180.0
+     ],
+     "share": 0.3,
+     "adherence": 89.3,
+     "why": "radial share 0.30 < 0.7"
+    },
+    {
+     "at_mm": [
+      92.0,
+      180.0
+     ],
+     "share": 0.23,
+     "adherence": 100.0,
+     "why": "radial share 0.23 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      164.0
+     ],
+     "share": 0.07,
+     "adherence": 100.0,
+     "why": "radial share 0.07 < 0.7"
+    },
+    {
+     "at_mm": [
+      196.0,
+      44.0
+     ],
+     "share": 0.18,
+     "adherence": 90.5,
+     "why": "radial share 0.18 < 0.7"
+    },
+    {
+     "at_mm": [
+      196.0,
+      28.0
+     ],
+     "share": 0.31,
+     "adherence": 93.3,
+     "why": "radial share 0.31 < 0.7"
+    },
+    {
+     "at_mm": [
+      196.0,
+      20.0
+     ],
+     "share": 0.4,
+     "adherence": 98.1,
+     "why": "radial share 0.40 < 0.7"
+    },
+    {
+     "at_mm": [
+      188.0,
+      20.0
+     ],
+     "share": 0.38,
+     "adherence": 100.0,
+     "why": "radial share 0.38 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      4.0
+     ],
+     "share": 0.38,
+     "adherence": 97.4,
+     "why": "radial share 0.38 < 0.7"
+    },
+    {
+     "at_mm": [
+      188.0,
+      4.0
+     ],
+     "share": 0.12,
+     "adherence": 100.0,
+     "why": "radial share 0.12 < 0.7"
+    },
+    {
+     "at_mm": [
+      196.0,
+      12.0
+     ],
+     "share": 0.38,
+     "adherence": 97.7,
+     "why": "radial share 0.38 < 0.7"
+    },
+    {
+     "at_mm": [
+      196.0,
+      188.0
+     ],
+     "share": 0.14,
+     "adherence": 86.7,
+     "why": "radial share 0.14 < 0.7"
+    },
+    {
+     "at_mm": [
+      36.0,
+      124.0
+     ],
+     "share": 0.25,
+     "adherence": 100.0,
+     "why": "radial share 0.25 < 0.7"
+    }
+   ],
+   "n_refused": 65,
+   "eligible_parts": 216,
+   "radial_parts_not_eligible": [],
+   "n_radial_not_eligible": 0,
+   "conditions": {
+    "min_radial_share": 0.7,
+    "min_adherence_pct": 85.0,
+    "floret_r_max_mm": 4.0,
+    "max_dev_deg": 15.0,
+    "min_len": 0.6,
+    "centre_mm": 0.9
+   }
+  },
+  "parts": {
+   "n": 980,
+   "pct_under_20mm2": 58.9,
+   "by_kind": {
+    "branch": 46,
+    "canopy": 12,
+    "cloud_lobe": 3,
+    "cloud_shade": 2,
+    "cloud_wisp": 1,
+    "crown_clump_dark": 58,
+    "crown_clump_lit": 73,
+    "eave": 11,
+    "fall_cord": 14,
+    "floret": 216,
+    "knot": 299,
+    "member": 14,
+    "pool": 3,
+    "roof": 13,
+    "roof_tile_line": 3,
+    "sky_band": 2,
+    "stratum_band": 92,
+    "stratum_crack": 19,
+    "stud": 7,
+    "trunk_strip": 7,
+    "wall": 18,
+    "window": 15,
+    "zone_stub": 52
+   },
+   "undeclared_angles": 0,
+   "random_angles": 0,
+   "unexplained_angles": [],
+   "sewn_off_angle": 1,
+   "sewn_off": [
+    {
+     "part": "village.123",
+     "kind": "roof_tile_line",
+     "declared": 78.69,
+     "sewn": 53.4,
+     "dev": 25.3,
+     "n": 42
+    }
+   ],
+   "field_adherence": {
+    "parts": 95,
+    "stitches": 8664,
+    "within": 8112,
+    "pct_within": 93.6
+   },
+   "dir_sources": {
+    "splitter": 699,
+    "rule": 101,
+    "outline": 19,
+    "field-mean": 66,
+    "field": 95
+   }
+  },
+  "stub_area": {
+   "mm2": 3554.7,
+   "pct_of_parts": 7.3,
+   "by_zone": {
+    "ground": 3554.7
+   },
+   "note": "zone stubs left for M3 (buildings, trunks, crowns, florets)"
+  },
+  "separation": {
+   "pairs": 233,
+   "close": 25,
+   "examples": [
+    [
+     "blossom.007",
+     "blossom.f213.k",
+     7.4
+    ],
+    [
+     "village.084",
+     "ground.635",
+     0.8
+    ],
+    [
+     "village.085",
+     "ground.635",
+     0.8
+    ],
+    [
+     "village.125",
+     "village.138",
+     1.0
+    ],
+    [
+     "cloud_centre.147",
+     "cloud_centre.149",
+     13.4
+    ],
+    [
+     "fall_left.158",
+     "fall_left.160",
+     0.0
+    ],
+    [
+     "fall_left.159",
+     "fall_left.161",
+     0.0
+    ],
+    [
+     "fall_left.160",
+     "fall_left_low.164",
+     0.0
+    ],
+    [
+     "fall_left.160",
+     "fall_left.162",
+     0.0
+    ],
+    [
+     "fall_left.161",
+     "fall_left.163",
+     0.0
+    ]
+   ]
+  },
+  "accents": {
+   "cf_red": {
+    "evidence_mm2": 593.4,
+    "parts": 14,
+    "sewn_in_crop": true
+   },
+   "cf_gold": {
+    "evidence_mm2": 167.2,
+    "parts": 11,
+    "sewn_in_crop": true
+   }
+  },
+  "file": {
+   "stitches": 123820,
+   "trims": 156,
+   "stops": 32,
+   "colours": 12,
+   "max_stitch": 7.03
+  },
+  "date": "2026-10-20",
+  "label": "M4c chaos: radial exemption + crown clumps",
+  "bench": "castle-bk-m",
+  "dst": "/tmp/claude-1000/m4c/r3/BK_M_crop.dst",
+  "dst_sha256": "b0fcbbf67618a2d3",
+  "origin": [
+   -80.0,
+   465.0
+  ],
+  "verdict": {
+   "direction_ok": false,
+   "direction_chaos": false,
+   "angle_coherence": false,
+   "density": false,
+   "trims": false,
+   "satin_shape": false,
+   "stack": false,
+   "colours": true,
+   "separation": false
+  },
+  "git_sha": "c835adfcc2c1",
+  "panel": "panel_2026-10-20_m4c-chaos--radial-exemption---crown-clum.png"
  }
 ]
