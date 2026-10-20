@@ -59,7 +59,7 @@ dst2.py untouched: 28-region probe dst 84ff50ea74938675 / pes 1ecd8f657db3f53a. 
 - Re-run the crop after M3a / M3b merge (hints contract above); then the founder's live-view sign-off.
 
 ## Merge of origin/main (M6, PR #7) into the branch
-- Merge, not rebase. Only conflict: LESSONS (main's B30-B34 kept, then `B?? (M4g)`; `A?? (M4g)` after A24).
+- Merge, not rebase. Only conflict: LESSONS (main's B30-B34 kept, then the M4g rows, numbered A25 / B35 after review).
 - Foam contract now against M6's real code: `sequence.FOAM` imported from `digitize.techniques.specialty`; the m4g test
   runs `isolate_foam` + `order_v1` and is judged by M6's own `plan_gates` (foam_stop, foam_isolated); mutation "foam
   edges dropped" RED. run.py does NOT call isolate_foam (M6 keys the foam at extract; `test_run_path_refuses_puff_without_foam_stop`
@@ -67,3 +67,28 @@ dst2.py untouched: 28-region probe dst 84ff50ea74938675 / pes 1ecd8f657db3f53a. 
 - After the merge: pytest 167 passed; identity_check: probe 84ff50ea74938675 / 1ecd8f657db3f53a, wb 449c14f6e8f693b6
   (M5 gates: centreline 6/6, motifs 76/76, exposed 0, uncovered 0), crop f4a6545a46672615 (= the M4g bench row; changed
   from main's 0d86f00be8e9f8fa ON PURPOSE by the new sequencing). Bench row stays keyed to 8b60c67 (values identical).
+
+## PR #8 review fixes (coordinator decision: keep the seam underlap band; stack gate stays strict and failing)
+| # | review finding | fix | guard (red -> green, scratchpad m4g/mutate_m4g.py, now 34/34 RED) |
+|---|---|---|---|
+| 1 | LESSONS rows unnumbered | A25 (thread trade-off is a question), B35 (travel / stack / seams) | - |
+| 2 | the reach cut stripped seam underlap: visible seams without >= 0.5 mm underlap 4.5 % (M2) -> 33.5 % | `limit_stack(keep_band=)`: the reach cut never takes the band within keep_band of the lower part's visible edge; default `stack_keep_band_mm` = keep_mm 1.0; `sequence.seam_report` (own / any lower part, visible seams only) in plan.meta["sequence"]["seams"] | `test_reach_cut_keeps_the_seam_underlap_band` (mutation: band ignored) |
+| 3 | default reach 1.0 -> 0.0 stayed green | default wiring pinned with a spy on plan_sequence | `test_default_planner_runs_the_reach_cut_with_the_house_band` (mutations: reach 0.0; band not wired) |
+| + | `<colour>+foam` counted as a 13th needle | `threads.needles_used` (foam_of, else the suffix) in run.py and svgrun.py | `test_foam_key_is_the_same_needle` |
+| + | `kind:rooff` silently ignored | empty kind / zone / group selectors raise HintError | `test_review_options_follow_the_run_and_stale_ids_are_reported` |
+| + | answers about vanished part ids skipped silently | `apply_plan` / `apply_extract` report them as `stale` (answers_report.json rewritten in make_plan) | same test |
+| + | technique options offered disabled techniques | `questions(rb=)` offers only enabled ones | same test |
+| + | options merging at dE ~19-20 offered plainly | `recommended` (worst dE <= 18), text says NOT RECOMMENDED | same test |
+| + | m4g tests write into out/digitize/BK_M_crop | checked: no m4g test touches it (no test references it); scripts/identity_check.sh writes it by design | - |
+
+Result (DST 239edce864f8fdd3): trims 20.0 /100 cm2 (PASS), density flags 84, stack 4 / 4.41 cm2 (441 cells > 2: 351
+junction, 78 travel, 12 three-deep), seams without underlap 13.1 % own / 5.0 % any (= the exact cut alone), coherence 54,
+separation 45, chaos 4.3, 4/9. The band gave back most of the stack / density gain of the first PR: stated, not traded.
+
+### What's left (added by the review)
+- Stack gate recommendation (reviewer, coordinator: NOT in this PR): a second, PART-based gate on the labelled file
+  (compile.labelled_dst): area where 3+ distinct PARTS each reach the layer density, at 0.5 mm cells, with a stated area
+  cap. Prove it first (prove-the-guard): it must FAIL on the M2 file (9 cm2 over 2) and on a limit_stack-off mutation and
+  PASS the M4g file; only then retire the strict run-based gate, with the founder told. Never raise 2 -> 4 or exempt
+  flag regions.
+- A gate for stitched travel on already-sewn fill (reviewer: M2 4.9 m, M4g 3.3 m on the first PR; ungated).
