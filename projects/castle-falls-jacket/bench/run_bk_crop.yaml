@@ -2,7 +2,7 @@
 #   python3 -m digitize.run projects/castle-falls-jacket/bench/run_bk_crop.yaml --stages all --no-api
 # Paths are relative to the project folder (the folder above bench/). No Anthropic API calls anywhere in this run.
 name: BK_M_crop
-label: "M3b trees, crowns, florets"
+label: "M4c chaos: radial exemption + crown clumps"
 bench: bench/bench.json            # crop, view, registration, close-up, targets
 zones: bench/zones_BK.json         # hand-authored zones for the crop (from the images)
 out_dir: out/digitize/BK_M_crop

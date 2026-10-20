@@ -216,6 +216,15 @@ class Run:
         json.dump(qs, open(self.f("questions.json"), "w"), indent=1)
         parts_json = dict(name=plan.name, n=len(plan.parts), parts=[dict(id=p.id, kind=p.kind, zone=p.zone, thread=p.thread, z=p.z,
                           technique=p.technique, angle=p.dir.angle, dir_source=p.dir.source, area_mm2=round(p.area, 1)) for p in plan.parts])
+        # --- M4c --- lit highlights grown to a visible size (crown.py): per part, traced vs drawn area and the growth used
+        for d_, p in zip(parts_json["parts"], plan.parts):
+            if p.meta.get("lit_growth"): d_["lit_growth"] = p.meta["lit_growth"]
+        lg_ = [p.meta["lit_growth"] for p in plan.parts if p.meta.get("lit_growth")]
+        if lg_:
+            parts_json["lit_growth"] = dict(pieces=len(lg_), grown=sum(1 for g in lg_ if g["grow_mm"] > 0),
+                                            traced_mm2=round(sum(g["traced_mm2"] for g in lg_), 1), added_mm2=round(sum(g["added_mm2"] for g in lg_), 1),
+                                            max_grow_mm=max(g["grow_mm"] for g in lg_), note="added = growth to a visible size + dark slivers joined")
+            print(f"review: lit highlights {parts_json['lit_growth']}")
         json.dump(parts_json, open(self.f("parts_summary.json"), "w"), indent=1)
         print(f"review: part_map.png, {len(qs)} questions")
 
@@ -292,6 +301,12 @@ class Run:
         row["direction_by_kind"] = {k: dict(tiles=sum(v), ok=v[0], dev=v[1], chaos=v[2], pct_ok=round(100 * v[0] / max(1, sum(v)), 1),
                                             pct_chaos=round(100 * v[2] / max(1, sum(v)), 1)) for k, v in sorted(per.items())}
         row["direction_by_source"] = audit.direction_by_source(dm, part_at, self.rb, plan.parts)   # M3b: one constructed basis
+        # --- M4c --- radial-floret exemption (gates_radial): raw chaos stays in row["direction"]; exempt tiles -> "radial"
+        from digitize import gates_radial as GR
+        ex = GR.tag_buckets(GR.exempt(dm, vis, [sp[i] for i in idx], plan.parts, GR.config(self.rb), ppm, origin=self.crop[:2]),
+                            part_at, self.rb, plan.parts)
+        row["direction_by_source_raw"] = row["direction_by_source"]; row["direction_by_source"] = GR.rebucket(row["direction_by_source"], ex)
+        row["radial_exemption"] = ex; aux["radial_exempt"] = [t["at_mm"] for t in ex["exempt"]]
         aa = audit.angle_audit(plan, self.rb); sw = audit.sewn_angles(plan, segs, sp, self.crop, ppm=ppm)
         areas = np.array([p.area for p in plan.parts])
         ev_mm2 = plan.meta.get("evidence_tone_mm2", {})
