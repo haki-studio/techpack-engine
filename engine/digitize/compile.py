@@ -56,13 +56,15 @@ def pattern_segments(pat, labels, origin):
     return segs, lab
 
 
-def write(plan, base, origin):
+def write(plan, base, origin, **mp_kw):
+    """mp_kw: extra dst2.make_pattern options (M5: exact_travel=dict(...) for patches); none = the M1 behaviour"""
     stops = regions(plan)
     vis = [r for s in stops for r in s["regions"]]
-    pat, stats = dst2.make_pattern(vis, stops, origin, builder=prebuilt, keep_order=True, threads=thread_table(plan))
+    pat, stats = dst2.make_pattern(vis, stops, origin, builder=prebuilt, keep_order=True, threads=thread_table(plan), **mp_kw)
     segs, lab = pattern_segments(pat, stats["labels"], origin)
     dst2.write(pat, base)
     rb = readback.dst(base + ".dst")
     return dict(base=base, origin=list(origin), build=dict(stitches=stats["stitches"], travel=stats["travel"], trims=stats["trims"],
                                                           jumps=stats["jumps"], why=stats.get("why", {})),
-                readback=rb, segs=segs, seg_parts=lab, stops=len(stops))
+                readback=rb, segs=segs, seg_parts=lab, stops=len(stops),
+                runs=stats["runs"], regions=stops, exact_trims=stats.get("exact_trims"))

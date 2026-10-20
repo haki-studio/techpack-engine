@@ -25,6 +25,12 @@ techniques:                    # defaults; a kind may override any of these numb
   split_satin: {spacing: 0.42, stitch_len: 5.5, underlay: [centre_run], pull_comp: 0.2, stagger: 0.25}
   run:         {spacing: 0.0, stitch_len: 2.5, underlay: [], pull_comp: 0.0}
   bean:        {spacing: 0.0, stitch_len: 2.0, underlay: [], pull_comp: 0.0}
+  # M5 (SVG parity on Konpeito, patches). column_satin density is SAME-SIDE (konpeito ENGINE_NOTES 7): the row
+  # spacing is half of it; `spacing` is not read. dot: needle = art - allow, never below min_d (house-min reported).
+  column_satin:  {spacing: 0.20, stitch_len: 5.5, underlay: [centre_run], pull_comp: 0.10, same_side: {40wt: 0.40, 60wt: 0.28}, centre_run_min_w: 1.4, centre_run_min_len: 2.5, max_piece: 5.5, stagger: 0.25}
+  dot:           {spacing: 0.18, stitch_len: 1.5, underlay: [cross], pull_comp: 0.0, min_d: 1.1, allow: 0.2}
+  radial:        {spacing: 0.36, stitch_len: 7.0, underlay: [edge_run], pull_comp: 0.10, allowed_kinds: [floret, star, ring]}
+  turning_satin: {spacing: 0.30, stitch_len: 7.0, underlay: [centre_run], pull_comp: 0.15, short: false}
 
 kinds:
   sky_band:
@@ -54,3 +60,68 @@ kinds:
     techniques: [tatami]
     dir: field-mean            # the reference grain's mean over the part (structure tensor): declared, never random
     note: stand-in for zones whose splitter is not built yet (M2/M3 replace it)
+
+  # ---- M5: patches from founder vector art (extract/svg.py). dir "geometry" = declared by the extractor from the
+  # part's own geometry rule (across the band / stroke / petal axis, radial), with source "rule"; never auto.
+  # Numbers = what the delivered Konpeito Rev A files sew (kjcore + dst2: tatami 0.45, patch satins 0.36).
+  patch_band:
+    techniques: [tatami]
+    dir: geometry              # across the band: 90 deg on top / bottom, 0 deg on the sides
+    underlay: [edge_run, lattice_90]
+    note: house patch band under the border motifs, runs 0.3 mm under the field and 1.4 mm under the edge
+  patch_field:
+    techniques: [tatami]
+    dir: 0
+    underlay: [edge_run, lattice_90]
+    note: patch field, motifs sew ON it (house patch spec - no cut-under on patches)
+  patch_edge:
+    techniques: [column_satin]
+    dir: geometry
+    same_side: 0.36
+    pull_comp: 0.15
+    underlay: []
+    note: heat-cut edge, a closed 2 mm column on the outline, sewn LAST
+  floret:
+    techniques: [radial]
+    dir: geometry
+    underlay: []
+    note: 5-petal border flower (the SVG's ellipses), radial, red centre left open
+  star:
+    techniques: [radial]
+    dir: geometry
+    pull_comp: 0.15
+    note: puffy star body, radial from its centre
+  ring:
+    techniques: [radial]
+    dir: geometry
+    underlay: []
+    note: small ring (handakuten) - a column's inner ends would collapse
+  lettering:
+    techniques: [column_satin]
+    dir: geometry              # across the stroke
+    note: satin columns on the SVG outline's centrelines, ONE needle width per string (art - 0.15 mm)
+  line_art:
+    techniques: [column_satin]
+    dir: geometry
+    pull_comp: 0.0
+    underlay: []
+    note: face line art (60wt), one width
+  petal:
+    techniques: [turning_satin]
+    dir: geometry              # across the petal axis (centre -> tip)
+    note: one satin per petal / candy lobe
+  petal_tint:
+    techniques: [turning_satin]
+    dir: geometry
+    pull_comp: 0.10
+    underlay: []
+    note: tint centre shape on top of its candy / flower
+  dot:
+    techniques: [dot]
+    dir: geometry
+    note: bead dot (accent dots, cheeks, border dots, eyes), needle = art - 0.2, house minimum 1.1
+  knot:
+    techniques: [dot]
+    dir: geometry
+    min_d: 0.9
+    note: white specks / flower-centre beads (knot size, minimum 0.9)
