@@ -23,7 +23,9 @@ rng.uniform, is counted, listed, and fails the angle check."""
 import math
 import numpy as np
 
-INDEPENDENT = ("rule", "answer", "depth", "splitter")   # M3b: "splitter" = constructed from geometry (extract/splitters/construct.py)
+INDEPENDENT = ("rule", "answer", "depth", "splitter", "label")   # M3b: "splitter" = constructed from geometry (extract/splitters/construct.py)
+# --- G1 --- "label": a deliberate angle written by the vision step (like an answer, it is not read from the reference
+# grain by the engine); bench rows report the label tiles on their own line (direction_label) so they can be judged apart
 SELF_DERIVED = ("field-mean", "field")
 OUTLINE = ("outline",)
 SEP_MAX, BAND_MAX = 25.0, 12.5
@@ -63,7 +65,7 @@ def basis(p, rb, peers=None):
         d = rb.rule(p.kind).get("dir")
         return float(d) if isinstance(d, (int, float)) else None
     return {"field-mean": m.get("field_angle"), "field": m.get("field_mean"), "answer": m.get("answer_angle"),
-            "outline": m.get("outline_angle"), "depth": _depth(m["depth"]) if "depth" in m else None}.get(s)
+            "outline": m.get("outline_angle"), "depth": _depth(m["depth"]) if "depth" in m else None, "label": m.get("label_angle")}.get(s)
 
 
 def _construct_why(p, rb=None, peers=None):

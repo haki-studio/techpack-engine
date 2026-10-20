@@ -95,6 +95,15 @@ class Run:
               f"({', '.join(q for q, _ in rep['defaulted'][:6])}{' ...' if len(rep['defaulted']) > 6 else ''}), "
               f"{len(rep['unknown'])} unknown {rep['unknown'][:6]}, {len(rep['pending'])} pending a person")
 
+    # ------------------------------------------------------------ G1: labels or zones
+    def _claims(self):
+        """the claims the thread planner weighs motifs by: the zones file, or the labelled parts as zone-like dicts"""
+        if not self.cfg.get("labels"): return ZN.load(config.path(self.cfg, self.cfg["zones"]))
+        from digitize.labels import schema as LS, compile as LC
+        self.labels = LS.load(config.path(self.cfg, self.cfg["labels"]), palette=self.cfg["threads"]["palette"])
+        R = LC.resolve(self.labels, (self.cfg.get("review") or {}).get("labels"))
+        return dict(zones=[dict(id=r["pid"], tones=r["tones"], geoms=r["geoms"], **({"rest": True} if r["rest"] else {})) for r in R])
+
     def ref(self):
         if self._ref is None:
             reg = register.load(config.path(self.cfg, self.cfg.get("registration") or self.cfg_b["registration"]))   # --- mockup-governs --- run.yaml
@@ -110,13 +119,19 @@ class Run:
         w = np.bincount(ev.tone.ravel(), minlength=len(ev.keys)) / ev.ppm ** 2
         w = zero_bare(w, ev.keys, T.get("bare"))           # --- mockup-governs --- bare-shell tones: evidence only, never a thread
         # M4g: thread planner with the trade-off as options (threads.choice / answers.json), salience per tone
-        zs0 = ZN.load(config.path(cfg, cfg["zones"]))
+        zs0 = self._claims()                                # --- G1 --- zones, or the labelled parts (parts.labels.json)
         zm = {z["id"]: (np.ones((ev.H, ev.W), bool) if z.get("rest") else ev.mask(ZN.window(z))) &
                        (np.isin(ev.tone, [ev.keys.index(k) for k in z["tones"] if k in ev.keys]) if z.get("tones", "all") != "all" else True)
               for z in zs0["zones"]}                       # a motif = a zone whose OWN tones include the tone
         tp = TH.plan_from_config(dict(zip(ev.keys, w.tolist())), T, config.needles(cfg), sal=TH.salience(ev.tone, ev.keys, T["palette"], ev.ppm, zm))
         ctx = Ctx(ev, self.rb, cfg, tp["map"], T["protected"])
-        zs = ZN.load(config.path(cfg, cfg["zones"]))
+        label_q = None
+        if cfg.get("labels"):                               # --- G1 --- labels -> generic primitives (no subject splitters)
+            from digitize.labels import compile as LC
+            parts, log, label_q = LC.extract(ctx, ev, self.labels, answers=(cfg.get("review") or {}).get("labels"))
+            zs = zs0
+        else:
+            zs = ZN.load(config.path(cfg, cfg["zones"]))
         def z_of(z):
             if "z" in z: return float(z["z"])
             return self.rb.z(SPLIT_KIND[z["splitter"]])
@@ -132,7 +147,7 @@ class Run:
             if k == "building":                                    # M3a: building template fitter
                 from digitize.extract.splitters import building; return building.split(ctx, z, zz, m)
             raise ValueError(f"zone {z['id']}: unknown splitter {k!r}")
-        parts, log = ZN.claim_and_split(zs, ev, z_of, split)
+        if not cfg.get("labels"): parts, log = ZN.claim_and_split(zs, ev, z_of, split)
         parts, left_out = RV.apply_extract(self.cfg, parts)                                    # M4g: answers
         if left_out: print(f"    answers: {len(left_out)} parts of zones answered 'leave out' are not sewn")
         n_traced = len(parts); sk = cfg.get("specks", {}) or {}
@@ -150,6 +165,12 @@ class Run:
                                                            specks_merged=[list(m) for m in merged], thread_tradeoff=tp.get("tradeoff"),
                                                            review_answers=self.cfg.get("_answers_report"),
                                                            splitter_stats=getattr(ctx, "stats", {}), hint_repairs=[list(h) for h in hint_fix]))   # M3b: florets / clumps / trunks
+        if cfg.get("labels"):                               # --- G1 ---
+            import hashlib
+            lpth = config.path(cfg, cfg["labels"])
+            plan.meta.update(labels=dict(file=os.path.relpath(lpth, cfg["project"]), sha256=hashlib.sha256(open(lpth, "rb").read()).hexdigest()[:16],
+                                         by=self.labels.get("source", {}).get("by"), parts=sum(1 for _ in __import__("digitize.labels.schema", fromlist=["x"]).iter_parts(self.labels))),
+                             label_questions=label_q)
         if getattr(ctx, "building_report", None):                  # M3a: details under a rule 9 minimum, as SUGGESTIONS
             plan.meta["building_suggest"] = ctx.building_report.get("suggest", [])
         plan.to_json(self.f("parts.json"), with_blocks=False)

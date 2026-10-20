@@ -32,7 +32,7 @@ techniques:                    # defaults; a kind may override any of these numb
   # spacing is half of it; `spacing` is not read. dot: needle = art - allow, never below min_d (house-min reported).
   column_satin:  {spacing: 0.20, stitch_len: 5.5, underlay: [centre_run], pull_comp: 0.10, same_side: {40wt: 0.40, 60wt: 0.28}, centre_run_min_w: 1.4, centre_run_min_len: 2.5, max_piece: 5.5, stagger: 0.25}
   dot:           {spacing: 0.18, stitch_len: 1.5, underlay: [cross], pull_comp: 0.0, min_d: 1.1, allow: 0.2}
-  radial:        {spacing: 0.36, stitch_len: 7.0, underlay: [edge_run], pull_comp: 0.10, allowed_kinds: [floret, star, star_tint, ring]}
+  radial:        {spacing: 0.36, stitch_len: 7.0, underlay: [edge_run], pull_comp: 0.10, allowed_kinds: [floret, star, star_tint, ring, radial]}
   turning_satin: {spacing: 0.30, stitch_len: 7.0, underlay: [centre_run], pull_comp: 0.15, short: false}
   # M6: puff = dense satin over foam, no underlay (allowed: [tack]), rows never split; chenille / chain on a chenille
   # head (spacing = moss path spacing); faux_chain = lock-stitch chain loops for the Brother heads.
@@ -272,6 +272,70 @@ kinds:
     dir: contour
     follows: [chain, faux_chain]
     note: chain-stitch line
+
+  # --- G1 --- generic primitive kinds (engine/digitize/primitives, fed by parts.labels.json). dir "label" = the labels
+  # compiler declares every angle itself (construct axis / column / long_axis / radial, the label angle, or the grain);
+  # the rulebook only picks the technique and its numbers. Same numbers as the subject kinds they replace.
+  stroke:                      # 1-7 mm strokes: a satin column across the stroke (= branch)
+    techniques: [split_satin]
+    dir: label
+    follows: [split_satin]
+    params: {mode: column}
+    note: a stroke, satin column across it along the traced centreline
+  cord:                        # falls, trunks, vines: split satin along the cord (= fall_cord / trunk_strip)
+    techniques: [split_satin, tatami]
+    dir: label
+    note: one cord along the mass's medial axis; alternating tones
+  band:                        # sky, far roof rows, stripes: tatami along the band (= sky_band)
+    techniques: [tatami]
+    dir: label
+    note: one strip of a band, tatami along its run (or at the labelled angle)
+  band_grain:                  # strata: guided tatami along the reference grain (= stratum_band)
+    techniques: [guided_fill, tatami]
+    dir: label
+    alt_dir: 90
+    note: one band x thread following the grain, alternating +-10 deg
+  lobe:                        # clouds, leaves, crowns, petals: one part per lobe at its own axis / the labelled angle
+    techniques: [tatami]
+    dir: label
+    note: one lobe, tatami along its own long axis (outline) or the labelled angle
+  lobe_grain:
+    techniques: [guided_fill, tatami]
+    dir: label
+    alt_dir: 80
+    note: one lobe, guided fill along the reference grain
+  lobe_shade:                  # = cloud_shade: an open layer, no underlay (rules 7, 8)
+    techniques: [blend]
+    dir: label
+    spacing: 1.2
+    underlay: []
+    pull_comp: 0.0
+    params: {mode: open}
+    note: a lobe's darker tone as an open layer on top
+  plane:                       # walls, roofs, flat areas: tatami at one deliberate angle
+    techniques: [tatami]
+    dir: label
+    note: one plane x thread, tatami at the labelled angle
+  plane_grain:                 # a radial cluster's ground at the grain's mean (= canopy)
+    techniques: [tatami]
+    dir: label
+    note: the ground of a radial cluster, tatami at the measured grain mean (self-derived)
+  radial:                      # florets, fins, tails: radial satin from each centre (= floret)
+    techniques: [radial]
+    dir: label
+    underlay: []
+    spacing: 0.45
+    note: one radial cluster member, rays from its centre
+  bead:                        # eyes, studs, knots: a bead (= knot / stud)
+    techniques: [dot]
+    dir: label
+    params: {min_d: 0.9}
+    note: a bead dot
+  line:                        # outlines, cracks, tile lines: run / bean along the traced line (= stratum_crack)
+    techniques: [bean, run]
+    dir: contour
+    follows: [run, bean]
+    note: a run / bean along a traced line
 
 # --- M4c --- radial-floret exemption for the 8 mm chaos gate (engine/digitize/gates_radial.py; PR #10 review). A chaotic
 # tile is exempt only when >= min_radial_share of its visible stitch length belongs to FLORET-SIZE radial parts (farthest
