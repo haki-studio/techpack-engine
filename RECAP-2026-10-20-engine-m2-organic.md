@@ -59,25 +59,40 @@ bucketed as independent; importance ignored; bench always appends; satin via col
   unexplained; turns are now capped at sep[1] = 25 deg (unresolved clashes recorded).
 - **Cracks** at top-hat depth 35: 19 found on the crop (depth 25 gives 27). A founder-eye threshold.
 
-### Crop table (BENCH.md "M2 organic parts")
-| | M1 | M2 |
-|---|---|---|
-| direction OK / chaos | 89.0 / 7.0 | 90.1 / 6.2 |
-| organic tiles (same 164) OK / chaos | 90.9 / 8.5 | 92.7 / 6.7 |
-| independent vs self-derived tiles | 95.8 % of 71 / 88.0 % of 552 | 97.3 % of 73 / 89.0 % of 545 |
-| parts / under 20 mm2 | 381 / 18.4 % | 367 / 11.2 % |
-| random angles | (constant 0) | 0 derived |
-| coherence fails | 109 | 53 (stubs) + field adherence 94.4 % |
-| density flags / stack | 78 / 5 | 112 / 5 |
-| trims per 100 cm2 | 33.0 | 27.5 |
-| colours | 12, red + gold, no water blue | 12, red + gold, sky light |
-| gates | 3/8 | 3/8 (direction OK, satin+cords, colours) |
-| stub area | - | 60.4 % of part area (M3) |
+### Crop table (BENCH.md "M2 organic parts"; first PR at 4dae159, after the review fixes at 9d0c4cf)
+| | M1 | M2 first PR (4dae159) | M2 after review (9d0c4cf) |
+|---|---|---|---|
+| direction gate: INDEPENDENT tiles | 95.8 % of 71 | 97.3 % of 73 | 98.6 % of 73 = 11.7 % coverage -> FAIL (needs >= 50 %) |
+| (combined, info) | 89.0 | 90.1 | 91.7 |
+| chaos, all tiles | 7.0 | 6.2 | 4.2 -> OK |
+| organic tiles (same 164) OK / chaos | 90.9 / 8.5 | 92.7 / 6.7 | 93.3 / 6.1 |
+| parts / under 20 mm2 | 381 / 18.4 % | 367 / 11.2 % | 367 / 11.2 % |
+| random angles | (constant 0) | 0 (basis read from meta) | 0 (basis recomputed from the stored grids) |
+| coherence fails | 109 | 53 | 61 + field adherence 94.4 % |
+| separation (rule 3) close pairs | - | 29 of 118 (not a gate) | 46 of 118 -> FAIL |
+| density flags / max stack | 78 / 5 | 112 / 5 | 113 / 4 (102 flags where >= 2 zones meet) |
+| trims per 100 cm2 | 33.0 | 27.5 | 26.5 |
+| colours | 12, red + gold, no water blue | 12, red + gold, sky light | same |
+| gates | 3/8 | 3/8 (combined direction counted) | 3/9: chaos, satin + cords, colours |
+| stub area | - | 60.4 % | 60.4 % |
+
+## Part C: PR #6 review fixes (commits 04c6c3f, 9d0c4cf)
+| # | review finding | fix | guard (red -> green) |
+|---|---|---|---|
+| 1 | re-run on the same commit added a `+dirty` row: the first bench run dirtied the tracked BENCH.md / SCOREBOARD.json | `bench.git_sha`: sha = last commit outside `bench/` folders (a bench-only commit is not a new engine), and changes under `bench/` do not count as dirty | `test_bench_rerun_on_same_commit_through_real_git` (real git repo in tmp): mutations "dirty check counts bench/" and "sha includes bench-only commits" -> red. On the branch: two `bench` runs at 9d0c4cf -> one M2 row |
+| 2 | headline direction counted 545 self-derived tiles | `verdict.direction_ok` = independent tiles >= 85 % AND >= 50 % coverage; chaos stays on all tiles (DST only); BENCH row shows "indep. (n of N); all" | `test_direction_verdict_gates_on_independent_tiles`: mutation "gate on the combined rate" -> red |
+| 3 | random_angles could be forged via meta field_mean / field_angle | `audit.field_basis` recomputes `direction.grid_mean(meta["field"], geom)` (0.5 deg tol for the 1 micron WKT rounding); stubs + cloud shades store their grid; `direction.refresh_field_basis` re-measures on the final geometry in the plan stage, then separation runs again | `test_field_basis_is_recomputed_not_trusted`: mutation "basis read from meta" -> red |
+| 4 | rule 3 unmet on 29/118 pairs, unflagged | verdict line `separation` (close <= 0, stubs included), BENCH section documents it | same verdict test: mutation "separation line dropped" -> red |
+| + | density 78 -> 112 explanation | `density.flags_by_zones_meeting`: 1 zone 11, 2 zones 69, 3 zones 27, 4+ 6 (so mostly 2-zone boundaries; my "3-zone" wording was wrong) | info |
+
+Side effect, measured: stub angles now come from the filled 4 mm field grid (not the raw tensor sum): stub tiles
+87.5 -> 89.6 % OK, chaos 6.8 -> 3.9 %, which is what moved overall chaos under 5 %. Those tiles are self-derived.
+PR #5 (M5) was still OPEN when these fixes were pushed, so main was not merged in.
 
 Default-preserving: `dst2.py` untouched; `make_pattern` default output on a 28-region motif is byte-identical to
 origin/main (dst 84ff50ea74938675, pes 1ecd8f657db3f53a, both checkouts; scratchpad byteid.py).
 
-### Red -> green, M2 (scratchpad mutate_m2.py, full run 22/22 red, all restored green)
+### Red -> green, M2 (scratchpad mutate_m2.py; with the review fixes 27/27 red, all restored green)
 field drops +90; guided rows straight (field ignored); guided offset ignored; guided hop (chain limit AND the stitcher's
 1.6 mm split, doubly guarded: either alone stays green); contour rings at double spacing; open layer cuts under;
 feather not turned to source (first version of the test missed it: source on the hatch's start side; fixed with both
