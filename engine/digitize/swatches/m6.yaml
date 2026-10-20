@@ -1,0 +1,10 @@
+# M6 swatch run (python3 -m digitize.swatch_m6 engine/digitize/swatches/m6.yaml --no-api). Technique toggles as in a
+# run.yaml: chain off (no chenille file format yet, F1) -> chain_line sews faux_chain on the Brother heads.
+project: .
+techniques:
+  puff: true
+  chenille: true
+  chain: false
+  faux_chain: true
+swatch:
+  isolate_foam: true      # puff parts in their own stop (the machine stop where the foam is laid)
