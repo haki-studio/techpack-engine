@@ -21,7 +21,8 @@ every clump touches a branch).
      pieces sew FIRST and are knocked out of the dark (LESSONS B2 / B14: the darkest connected tone last hides the travel
      between the lit pieces; M3b run r8: lit on top cost 34 trims in its stop). Visually the same "dark, then lit" layers
      (the playbook order) without the trims. Higher clumps sew first, so lower, front clumps overlap them.
-meta: splitter "crown", mass, clump, attach ("bark" | "base"), construct."""
+meta: splitter "crown", mass, clump, attach ("bark" | "base"), construct; M4g sequencing hints: lit pieces carry
+knockout_of = their dark clump, every part group = its mass (ignored by the M1 sequencer)."""
 import math
 import numpy as np
 from scipy import ndimage as ndi
@@ -136,17 +137,18 @@ def split(ctx, zone, z, claim):
                 for lg in ev.polys(lm, min_mm2=sc["min_lit_mm2"]):
                     lf = fan(lg, attach)
                     if lf is None: stats["no_construct"] += 1; continue
-                    stats["lit"] += 1; lits.append(lg)
+                    stats["lit"] += 1; lits.append(len(parts))
                     parts.append(Part(id=ctx.new_id(zone["id"]), kind="crown_clump_lit", geom=lg, thread=t, z=zc + sc["lit_z"],
                                       dir=DirSpec(lf[2], source="splitter", note=f"lit side of clump {cid}, fans from the same attachment"),
                                       zone=zone["id"], rgb=None,
-                                      meta=dict(splitter="crown", mass=int(mi), clump=int(rank), lit_of=cid, attach=att,
+                                      meta=dict(splitter="crown", mass=int(mi), clump=int(rank), lit_of=cid, attach=att, group=f"{zone['id']}.mass{mi}",
                                                 construct=dict(rule="fan", **{"from": lf[0], "to": lf[1]}))))
-            gd = g.difference(unary_union(lits)).buffer(0) if lits else g          # the shadow around the lit pieces
+            gd = g.difference(unary_union([parts[k].geom for k in lits])).buffer(0) if lits else g   # the shadow around the lit pieces
             if gd.is_empty: continue
+            for k in lits: parts[k].meta["knockout_of"] = cid                  # M4g hint: lit knocked out of its dark clump
             parts.append(Part(id=cid, kind="crown_clump_dark", geom=gd, thread=dark, z=zc,
                               dir=DirSpec(ang, source="splitter", note=f"fans along the clump from its {att} attachment"), zone=zone["id"],
-                              rgb=ev.mean_rgb(cm), meta=dict(splitter="crown", mass=int(mi), clump=int(rank), attach=att,
+                              rgb=ev.mean_rgb(cm), meta=dict(splitter="crown", mass=int(mi), clump=int(rank), attach=att, group=f"{zone['id']}.mass{mi}",
                                                              attach_pt=[float(attach[0]), float(attach[1])],
                                                              construct=dict(rule="fan", **{"from": frm, "to": to}))))
     ctx.stats = getattr(ctx, "stats", {}); ctx.stats[zone["id"]] = stats

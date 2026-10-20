@@ -24,7 +24,8 @@ sewn after the florets).
 
 radial_adherence(plan, segs, labels, crop) judges the WRITTEN file: the share of each floret's visible stitches that lie
 within 15 deg of the ray from its centre (the radial counterpart of the guided parts' field adherence).
-The extract log (plan meta splitter_stats) gets: masses, florets (centres found), florets_petalled, knots_only."""
+M4g sequencing hints (optional meta, ignored by the M1 sequencer): florets and knots carry knockout_of = their canopy,
+every floret / knot group = its mass. The extract log (plan meta splitter_stats) gets: masses, florets (centres found), florets_petalled, knots_only."""
 import math
 import numpy as np
 from scipy import ndimage as ndi
@@ -134,7 +135,7 @@ def split(ctx, zone, z, claim):
                 parts.append(Part(id=f"{fid}", kind="floret", geom=fg, thread=fl_t, z=z + zf,
                                   dir=DirSpec(0.0, mode="radial", source="splitter", note="radial from the floret centre"),
                                   zone=zone["id"], meta=dict(splitter="blossom", mass=int(mi), phase=round(ph, 2), centre=[float(c[0]), float(c[1])],
-                                                             construct=con)))
+                                                             construct=con, knockout_of=canopy.id, group=f"{zone['id']}.mass{mi}")))
                 stats["florets_petalled"] += 1
             else:
                 stats["knots_only"] += 1
@@ -145,7 +146,7 @@ def split(ctx, zone, z, claim):
             parts.append(Part(id=f"{fid}.k", kind="knot", geom=Point(c).buffer(kd / 2, 16), thread=knot_t, z=z + zk,
                               dir=DirSpec(ang, source="splitter", note="bead rows between two petal axes"), zone=zone["id"],
                               meta=dict(splitter="blossom", mass=int(mi), floret=fid, knots=[(c[0], c[1], kd, ang)],
-                                        art_d=kd, house_min=False, construct=con)))
+                                        art_d=kd, house_min=False, construct=con, knockout_of=canopy.id, group=f"{zone['id']}.mass{mi}")))
         if beads: canopy.geom = G.difference(unary_union(beads)).buffer(0)           # knock florets + beads out of the canopy
     ctx.stats = getattr(ctx, "stats", {}); ctx.stats[zone["id"]] = stats
     return parts, used

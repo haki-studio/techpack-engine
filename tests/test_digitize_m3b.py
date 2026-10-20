@@ -117,6 +117,7 @@ def test_blossom_splitter_florets_match_the_reference_count():
     assert all(p.z < can[0].z for p in fl + kn)
     assert can[0].geom.intersection(DR_union(fl + kn)).area < 0.5
     assert ctx.stats["blossom"]["florets"] == 18
+    assert all(p.meta["knockout_of"] == can[0].id for p in fl + kn)            # M4g hint contract
 
 
 def DR_union(ps):
@@ -203,7 +204,7 @@ def test_crown_splitter_clumps_from_lit_tops_dark_after_lit():
     assert len(dark) == 3 and len(lit) == 3, (len(dark), len(lit))
     for l in lit:
         d = next(p for p in dark if p.id == l.meta["lit_of"])
-        assert l.z < d.z and d.geom.intersection(l.geom).area < 0.5
+        assert l.z < d.z and d.geom.intersection(l.geom).area < 0.5 and l.meta["knockout_of"] == d.id
     assert audit.angle_audit(ObjectPlan(name="t", parts=parts), Rulebook())["random_angles"] == 0
 
 

@@ -15,7 +15,7 @@ sewn after the florets).
      segment is cut into n = ceil(width / strip_mm) strips along the axis (fall.cords) -> `trunk_strip` parts, split
      satin with the stitches ALONG the axis (construct rule "axis": the segment's chord). Two touching strips in the
      same thread alternate +-band_offset deg (rule 3, audited like strata bands).
-meta: splitter "trunk", tree (component), segment, strip, construct."""
+meta: splitter "trunk", tree (component), limb, segment, strip, construct; M4g sequencing hint group = the tree."""
 import math
 import numpy as np
 from scipy import ndimage as ndi
@@ -161,7 +161,7 @@ def split(ctx, zone, z, claim):
                 parts.append(Part(id=ctx.new_id(zone["id"]), kind="branch", geom=P, thread=t, z=z + zb,
                                   dir=DirSpec(ang, mode="contour", source="splitter", note="satin column across the branch, along its centreline"),
                                   zone=zone["id"], rgb=ev.mean_rgb(Lm),
-                                  meta=dict(splitter="trunk", tree=int(ci), limb=li, cl=cl, w=round(w, 2), construct=con)))
+                                  meta=dict(splitter="trunk", tree=int(ci), limb=li, cl=cl, w=round(w, 2), construct=con, group=f"{zone['id']}.tree{ci}")))
                 stats["branches"] += 1
                 continue
             for si, (g, (s0, s1)) in enumerate(segments(P, line, sc["max_turn_deg"], max(sc["min_seg_mm"], 1.5 * w))):
@@ -180,7 +180,7 @@ def split(ctx, zone, z, claim):
                 alt = kind == "trunk_strip" and any(a[4] == b[4] for a, b in zip(got, got[1:]))
                 for j, sg, c, sm, t in got:
                     con = dict(rule="axis", line=[list(map(float, c[0])), list(map(float, c[1]))])
-                    meta = dict(splitter="trunk", tree=int(ci), limb=li, segment=si, strip=j, construct=con)
+                    meta = dict(splitter="trunk", tree=int(ci), limb=li, segment=si, strip=j, construct=con, group=f"{zone['id']}.tree{ci}")
                     ang = line_angle(*c)
                     if alt:                                             # same-thread strips side by side: alternate +-10 (rule 3)
                         meta["band_offset_deg"] = sc["band_offset"] * (1 if j % 2 == 0 else -1); ang += meta["band_offset_deg"]
