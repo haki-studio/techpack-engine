@@ -204,6 +204,58 @@ kinds:
     techniques: [tatami]
     dir: construct
     note: the lit tone of a clump, sewn before its dark part (knocked out of it), fanning from the same attachment point
+  # --- M3a --- constructed parts: buildings (extract/splitters/building.py, extract/building_fit.py). dir "construct" =
+  # a RULE applied to the fitted geometry (source "rule", independent of the reference grain, LESSONS A24); `construct`
+  # names the rule and digitize.audit re-derives the angle from the fitted points the part stores (building_fit.rule_basis).
+  # Playbook: wall tatami; eave satin; roof down-slope with bean tile lines; windows as satin bands; one angle per plane;
+  # walls -> roofs bottom-up -> eaves -> tile lines -> windows -> studs last (z offsets in the splitter).
+  wall:
+    techniques: [tatami]
+    dir: construct
+    construct: course          # one angle per plane, square to the eave of the roof above; rule 3 depth: under a far roof
+                               # along the courses (near-horizontal), under a near roof across them (near-vertical); 0 without a roof
+    params_from: roof          # near_tier_rel
+    note: one wall plane, tatami along (far) / across (near) the courses
+  roof:
+    techniques: [tatami]
+    dir: construct
+    construct: down_slope      # NEAR tier: front plane perpendicular to its eave line, hip planes fan halfway to their hip line
+                               # FAR tier (rule 3 depth: far = near-horizontal): rows along the eave, hips along their hip line
+    params: {hip_min_sep: 20.0, hip_max_sep: 45.0, near_tier_rel: 0.75}   # hips 20-45 deg off the front (rule 3)
+                               # near_tier_rel: rule 3 depth RELATIVE to scale. Tiers of one style shrink with distance, so
+                               # the largest tiers on the piece are the nearest: a tier under 0.75 x the zone's largest tier
+                               # (a quarter smaller = clearly further back) is FAR. The default is a perspective argument, not
+                               # fitted to the crop; the choice it makes moves the grain gate (BENCH_m3a.md), so a far / near
+                               # result there is partly grain-informed. null = every tier down the slope (playbook only).
+    note: one roof plane, tatami down the slope (near) / along the eave (far)
+  eave:
+    techniques: [column_satin, satin]      # same-side density (LESSONS B26); M1 satin spacing is per row
+    dir: construct
+    construct: across          # members across their width (rule 2)
+    note: eave band along the fitted eave line, satin across
+  roof_tile_line:
+    techniques: [bean, run]
+    dir: construct
+    construct: down_slope
+    params_from: roof
+    note: tile rows down the slope of their plane, bean (rule 9 - tiles as run lines)
+  window:
+    techniques: [column_satin, satin]
+    dir: construct
+    construct: across
+    note: a row of windows as one satin band (rule 9 - windows as bands), across the band
+  member:
+    techniques: [column_satin, satin]
+    dir: construct
+    construct: across
+    note: timber / trim member, satin across its width (rule 2)
+  stud:
+    techniques: [dot]
+    dir: 0                     # a bead: one row angle by rule
+    params: {min_d: 1.0, max_d: 1.5}   # rule 9: studs 1-1.5 mm (principles stud_mm)
+    underlay: []               # flat studs on the fill: the dot's 0.45 mm cross underlay reads back as a sub-1 mm satin
+                               # column (qa.satin_runs too-narrow) on a 1-1.5 mm bead
+    note: stud / ornament bead, sewn last
 
   # --- M6 --- specialty kinds (puff / chenille / chain). Numbers are house proposals from published practice, cited in
   # projects/castle-falls-jacket/bench/BENCH_m6.md, [proposed - confirm] at the factory's strike-off.

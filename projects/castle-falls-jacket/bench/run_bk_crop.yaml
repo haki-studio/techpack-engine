@@ -76,9 +76,20 @@ direction: {sigma_mm: 4.0, fill_sigma_mm: 10.0, min_coh: 0.25}   # M2 field: gra
 stratum: {min_mass_mm2: 40.0, min_band_mm: 4.0, max_band_mm: 16.0, min_part_mm2: 30.0, crack_depth: 35.0, max_cracks: 4}
 cloud: {wisp_mm: 3.0, lobe_sep_mm: 4.0, min_lobe_mm2: 25.0, min_shade_mm2: 8.0, min_wisp_mm2: 10.0}
 specks: {min_mm2: 20.0}            # M2: traced parts under 20 mm2 merge into the neighbour they share most border with
+# --- M3a --- building template fitter (extract/splitters/building.py). roles = which palette tones are roof / wall /
+# member / ornament (a design decision for this artwork: blue roofs, cream / white / tan walls, red timber, gold trims);
+# every other tone inside a building window goes back to the zones below. Fit numbers default in the splitter (DEFAULTS).
+building:
+  roles:
+    roof: [cf_navy, cf_sky, cf_skylt, cf_slate, cf_lav]
+    wall: [cf_white, cf_cream, cf_mist, cf_bark, cf_brown]
+    member: [cf_red]
+    ornament: [cf_gold]
+  eave_w_mm: 1.8
+  tile_mm: 3.0
 
 # --- M3b --- trees, crowns, blossoms (extract/splitters/trunk.py, crown.py, blossom.py); numbers = the splitters' defaults
-separate_kinds: [stratum_band, cloud_shade, cloud_wisp, canopy, crown_clump_dark, crown_clump_lit, trunk_strip, branch]   # rule 3 turns (<= 25 deg, audited)
+separate_kinds: [stratum_band, cloud_shade, cloud_wisp, wall, roof, canopy, crown_clump_dark, crown_clump_lit, trunk_strip, branch]   # M3a walls / roofs + M3b (rule 3 turns <= 25 deg, audited)
 blossom: {min_mass_mm2: 15.0, canopy_share: 0.15, floret_sep_mm: 3.0, floret_min_mm2: 5.0, floret_r_max: 3.2, floret_r_min: 1.5, fit: 1.35, knot_d: 1.5, notch_mm: 0.6}
 crown: {min_mass_mm2: 20.0, clump_sep_mm: 6.0, min_clump_mm2: 20.0, min_lit_mm2: 6.0, support_mm: 4.0}
 trunk: {min_mm2: 6.0, support_frac: 0.35, min_w_mm: 1.0, strip_split_mm: 3.0, strip_mm: 2.5, max_turn_deg: 25.0}

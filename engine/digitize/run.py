@@ -116,6 +116,8 @@ class Run:
             if k == "stratum": return stratum.split(ctx, z, zz, m)
             if k == "cloud": return cloud.split(ctx, z, zz, m)
             if k in M3B_SPLITTERS: return M3B_SPLITTERS[k](ctx, z, zz, m)          # M3b: trunk, crown, blossom
+            if k == "building":                                    # M3a: building template fitter
+                from digitize.extract.splitters import building; return building.split(ctx, z, zz, m)
             raise ValueError(f"zone {z['id']}: unknown splitter {k!r}")
         parts, log = ZN.claim_and_split(zs, ev, z_of, split)
         parts, left_out = RV.apply_extract(self.cfg, parts)                                    # M4g: answers
@@ -135,6 +137,8 @@ class Run:
                                                            specks_merged=[list(m) for m in merged], thread_tradeoff=tp.get("tradeoff"),
                                                            review_answers=self.cfg.get("_answers_report"),
                                                            splitter_stats=getattr(ctx, "stats", {}), hint_repairs=[list(h) for h in hint_fix]))   # M3b: florets / clumps / trunks
+        if getattr(ctx, "building_report", None):                  # M3a: details under a rule 9 minimum, as SUGGESTIONS
+            plan.meta["building_suggest"] = ctx.building_report.get("suggest", [])
         plan.to_json(self.f("parts.json"), with_blocks=False)
         self.plan = plan
         print(f"extract: {len(parts)} parts from {len(zs['zones'])} zones ({n_traced} traced, {len(merged)} specks merged, "
