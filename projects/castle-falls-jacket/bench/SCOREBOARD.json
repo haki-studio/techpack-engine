@@ -551,5 +551,687 @@
    "colours": true
   },
   "panel": "panel_2026-10-20_m1-skeleton--sky---falls-splitters--zone.png"
+ },
+ {
+  "crop": [
+   -180,
+   365,
+   20,
+   565
+  ],
+  "crop_min_closeup_weight": 0.647,
+  "source_ppm_median": 2.58,
+  "stitches_in_crop": 85386,
+  "direction": {
+   "tiles": 625,
+   "pct_ok": 90.1,
+   "pct_chaos": 6.2,
+   "n_dev": 23,
+   "masked": 0,
+   "n_chaos": 39,
+   "pct_ok_all_stitches": 67.8,
+   "pct_chaos_all_stitches": 32.2
+  },
+  "angle_coherence": {
+   "source": "plan part ids carried onto the written DST (compile.labelled_dst)",
+   "parts": 259,
+   "ok": false,
+   "fails": 53,
+   "kinds": {
+    "no-visible-stitches": 12,
+    "angle-spread": 41
+   },
+   "by_kind": {
+    "no-visible-stitches / zone_stub": 12,
+    "angle-spread / zone_stub": 39,
+    "angle-spread / cloud_wisp": 1,
+    "angle-spread / pool": 1
+   },
+   "failing": [
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.089",
+     "grp": "zone_stub",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.091",
+     "grp": "zone_stub",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.092",
+     "grp": "zone_stub",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.093",
+     "grp": "zone_stub",
+     "n": 11,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.096",
+     "grp": "zone_stub",
+     "n": 2,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.141",
+     "grp": "zone_stub",
+     "n": 11,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.143",
+     "grp": "zone_stub",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.145",
+     "grp": "zone_stub",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.152",
+     "grp": "zone_stub",
+     "n": 11,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.160",
+     "grp": "zone_stub",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.162",
+     "grp": "zone_stub",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.680",
+     "grp": "zone_stub",
+     "n": 4,
+     "min_segs": 12
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.003",
+     "grp": "zone_stub",
+     "n": 43,
+     "spread_deg": 10.2,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.004",
+     "grp": "zone_stub",
+     "n": 91,
+     "spread_deg": 11.6,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.005",
+     "grp": "zone_stub",
+     "n": 78,
+     "spread_deg": 12.6,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.021",
+     "grp": "zone_stub",
+     "n": 48,
+     "spread_deg": 10.6,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.024",
+     "grp": "zone_stub",
+     "n": 107,
+     "spread_deg": 10.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.029",
+     "grp": "zone_stub",
+     "n": 55,
+     "spread_deg": 10.8,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.045",
+     "grp": "zone_stub",
+     "n": 56,
+     "spread_deg": 11.4,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.053",
+     "grp": "zone_stub",
+     "n": 124,
+     "spread_deg": 12.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "cloud_centre.204",
+     "grp": "cloud_wisp",
+     "n": 20,
+     "spread_deg": 36.9,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.226",
+     "grp": "zone_stub",
+     "n": 371,
+     "spread_deg": 13.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.232",
+     "grp": "zone_stub",
+     "n": 94,
+     "spread_deg": 11.2,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.236",
+     "grp": "zone_stub",
+     "n": 105,
+     "spread_deg": 14.9,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.237",
+     "grp": "zone_stub",
+     "n": 32,
+     "spread_deg": 13.0,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.242",
+     "grp": "zone_stub",
+     "n": 88,
+     "spread_deg": 10.5,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "ground.489",
+     "grp": "zone_stub",
+     "n": 121,
+     "spread_deg": 11.0,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "ground.490",
+     "grp": "zone_stub",
+     "n": 238,
+     "spread_deg": 13.9,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "pool_centre.210",
+     "grp": "pool",
+     "n": 93,
+     "spread_deg": 10.4,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "village.061",
+     "grp": "zone_stub",
+     "n": 53,
+     "spread_deg": 10.8,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "village.062",
+     "grp": "zone_stub",
+     "n": 44,
+     "spread_deg": 12.8,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "village.066",
+     "grp": "zone_stub",
+     "n": 98,
+     "spread_deg": 11.2,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "village.071",
+     "grp": "zone_stub",
+     "n": 25,
+     "spread_deg": 11.9,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "village.083",
+     "grp": "zone_stub",
+     "n": 117,
+     "spread_deg": 10.8,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "village.097",
+     "grp": "zone_stub",
+     "n": 17,
+     "spread_deg": 13.8,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "village.110",
+     "grp": "zone_stub",
+     "n": 78,
+     "spread_deg": 15.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "village.113",
+     "grp": "zone_stub",
+     "n": 71,
+     "spread_deg": 11.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "village.115",
+     "grp": "zone_stub",
+     "n": 122,
+     "spread_deg": 11.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "village.117",
+     "grp": "zone_stub",
+     "n": 123,
+     "spread_deg": 12.9,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "village.122",
+     "grp": "zone_stub",
+     "n": 22,
+     "spread_deg": 12.7,
+     "source": "dst-part"
+    }
+   ],
+   "field_adherence": {
+    "parts": 87,
+    "stitches": 8049,
+    "within": 7602,
+    "pct_within": 94.4
+   }
+  },
+  "density": {
+   "covered_cm2": 400.0,
+   "mean": 4.56,
+   "p95": 8.44,
+   "max_smoothed": 12.93,
+   "over_cm2": 16.36,
+   "flags": 112,
+   "threshold": 7.0
+  },
+  "trims": {
+   "trims": 110,
+   "per_100cm2": 27.5,
+   "area_cm2": 400.0
+  },
+  "satin": {
+   "satins": 0,
+   "fans": 0,
+   "blob": 0,
+   "too_wide": 0,
+   "too_narrow": 0,
+   "cord_flags": 0
+  },
+  "stack": {
+   "max": 5,
+   "over_cm2": 11.53,
+   "flags": 75,
+   "pct_cells_over": 2.9
+  },
+  "runs_in_crop": 132,
+  "colours": {
+   "stops_in_crop": 22,
+   "threads_in_crop": 12,
+   "threads_in_file": 12,
+   "hex": [
+    "#22355c",
+    "#2f402d",
+    "#4e3f31",
+    "#566577",
+    "#5a7240",
+    "#79a4d0",
+    "#958262",
+    "#b23f2e",
+    "#b4506f",
+    "#d3a63f",
+    "#d4caba",
+    "#de8ea6"
+   ],
+   "red": true,
+   "gold": true
+  },
+  "secs": 8.3,
+  "readback_match": {
+   "file_segs": 85789,
+   "planned_segs": 85329,
+   "matched": 85269,
+   "writer_added": 520,
+   "skipped_subgrid": 60,
+   "labelled": 80374
+  },
+  "cords": {
+   "n": 14,
+   "flags": 0,
+   "failing": [],
+   "max_piece": 7.01,
+   "aligned_max": 0.181,
+   "column_w": [
+    10.74,
+    14.96,
+    15.43,
+    18.39,
+    20.12,
+    21.09,
+    22.94,
+    23.91,
+    27.08,
+    27.77,
+    27.97,
+    29.34,
+    29.89,
+    30.87
+   ]
+  },
+  "direction_by_kind": {
+   "bare": {
+    "tiles": 3,
+    "ok": 3,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "cloud_lobe": {
+    "tiles": 6,
+    "ok": 5,
+    "dev": 0,
+    "chaos": 1,
+    "pct_ok": 83.3,
+    "pct_chaos": 16.7
+   },
+   "cloud_shade": {
+    "tiles": 3,
+    "ok": 3,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "fall_cord": {
+    "tiles": 62,
+    "ok": 62,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "pool": {
+    "tiles": 9,
+    "ok": 7,
+    "dev": 0,
+    "chaos": 2,
+    "pct_ok": 77.8,
+    "pct_chaos": 22.2
+   },
+   "sky_band": {
+    "tiles": 2,
+    "ok": 2,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "stratum_band": {
+    "tiles": 151,
+    "ok": 140,
+    "dev": 1,
+    "chaos": 10,
+    "pct_ok": 92.7,
+    "pct_chaos": 6.6
+   },
+   "stratum_crack": {
+    "tiles": 4,
+    "ok": 4,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "zone_stub": {
+    "tiles": 385,
+    "ok": 337,
+    "dev": 22,
+    "chaos": 26,
+    "pct_ok": 87.5,
+    "pct_chaos": 6.8
+   }
+  },
+  "direction_by_source": {
+   "bare": {
+    "tiles": 3,
+    "ok": 3,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "independent": {
+    "tiles": 73,
+    "ok": 71,
+    "dev": 0,
+    "chaos": 2,
+    "pct_ok": 97.3,
+    "pct_chaos": 2.7
+   },
+   "outline": {
+    "tiles": 4,
+    "ok": 4,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "self-derived": {
+    "tiles": 545,
+    "ok": 485,
+    "dev": 23,
+    "chaos": 37,
+    "pct_ok": 89.0,
+    "pct_chaos": 6.8
+   }
+  },
+  "parts": {
+   "n": 367,
+   "pct_under_20mm2": 11.2,
+   "by_kind": {
+    "cloud_lobe": 3,
+    "cloud_shade": 2,
+    "cloud_wisp": 1,
+    "fall_cord": 14,
+    "pool": 3,
+    "sky_band": 2,
+    "stratum_band": 84,
+    "stratum_crack": 19,
+    "zone_stub": 239
+   },
+   "undeclared_angles": 0,
+   "random_angles": 0,
+   "unexplained_angles": [],
+   "sewn_off_angle": 0,
+   "sewn_off": [],
+   "field_adherence": {
+    "parts": 87,
+    "stitches": 8049,
+    "within": 7602,
+    "pct_within": 94.4
+   },
+   "dir_sources": {
+    "outline": 19,
+    "field": 87,
+    "rule": 20,
+    "field-mean": 241
+   }
+  },
+  "stub_area": {
+   "mm2": 27180.1,
+   "pct_of_parts": 60.4,
+   "by_zone": {
+    "blossom": 6469.7,
+    "foliage": 6306.3,
+    "ground": 3015.3,
+    "village": 11388.9
+   },
+   "note": "zone stubs left for M3 (buildings, trunks, crowns, florets)"
+  },
+  "separation": {
+   "pairs": 118,
+   "close": 29,
+   "examples": [
+    [
+     "blossom.033",
+     "blossom.035",
+     7.6
+    ],
+    [
+     "village.062",
+     "village.063",
+     0.7
+    ],
+    [
+     "village.067",
+     "village.068",
+     1.2
+    ],
+    [
+     "village.072",
+     "ground.609",
+     0.2
+    ],
+    [
+     "village.111",
+     "village.112",
+     4.0
+    ],
+    [
+     "village.118",
+     "foliage.321",
+     4.4
+    ],
+    [
+     "village.121",
+     "village.125",
+     3.9
+    ],
+    [
+     "village.124",
+     "village.127",
+     8.6
+    ],
+    [
+     "village.129",
+     "village.131",
+     0.9
+    ],
+    [
+     "village.130",
+     "village.132",
+     13.1
+    ]
+   ]
+  },
+  "accents": {
+   "cf_red": {
+    "evidence_mm2": 593.4,
+    "parts": 22,
+    "sewn_in_crop": true
+   },
+   "cf_gold": {
+    "evidence_mm2": 167.2,
+    "parts": 13,
+    "sewn_in_crop": true
+   }
+  },
+  "file": {
+   "stitches": 92866,
+   "trims": 111,
+   "stops": 22,
+   "colours": 12,
+   "max_stitch": 7.06
+  },
+  "date": "2026-10-20",
+  "label": "M2 organic parts (strata + clouds, guided fill)",
+  "bench": "castle-bk-m",
+  "dst": ".claude/worktrees/agent-abcb28234e1f2d903/projects/castle-falls-jacket/out/digitize/BK_M_crop/BK_M_crop.dst",
+  "dst_sha256": "b3b43b653b4706be",
+  "origin": [
+   -80.0,
+   465.0
+  ],
+  "verdict": {
+   "direction_ok": true,
+   "direction_chaos": false,
+   "angle_coherence": false,
+   "density": false,
+   "trims": false,
+   "satin_shape": true,
+   "stack": false,
+   "colours": true
+  },
+  "git_sha": "4dae159f4129",
+  "panel": "panel_2026-10-20_m2-organic-parts--strata---clouds--guide.png"
  }
 ]

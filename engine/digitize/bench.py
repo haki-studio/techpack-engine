@@ -156,8 +156,8 @@ def panel(row, aux, cfg_b, dst, origin, path, extra=None):
 # ------------------------------------------------------------------ scoreboard
 MD_HEAD = """# Benchmark (ENGINE_PLAN M0)
 
-Every engine milestone is scored on the same crop with the same gates (`engine/digitize/bench.py`). Rows are appended,
-never edited. Config: `bench.json` (crop, targets), registration: `registration.json` (config as data).
+Every engine milestone is scored on the same crop with the same gates (`engine/digitize/bench.py`). Rows are appended;
+a re-run of the same label at the same engine commit replaces its own row (M2). Config: `bench.json` (crop, targets), registration: `registration.json` (config as data).
 
 **Crop.** ENGINE_PLAN asked for x -180...+20, y 370...570 mm. Its bottom 5 mm fell outside the back_left close-up's
 registered region (feather weight down to 0.25 against the 0.6 threshold), so the crop is **x -180...+20, y 365...565 mm**

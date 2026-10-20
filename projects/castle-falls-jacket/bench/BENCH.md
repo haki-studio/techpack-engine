@@ -1,7 +1,7 @@
 # Benchmark - Castle Falls BK size M crop (ENGINE_PLAN M0)
 
-Every engine milestone is scored on the same crop with the same gates (`engine/digitize/bench.py`). Rows are appended,
-never edited. Config: `bench.json` (crop, targets), registration: `registration.json` (config as data).
+Every engine milestone is scored on the same crop with the same gates (`engine/digitize/bench.py`). Rows are appended;
+a re-run of the same label at the same engine commit replaces its own row (M2). Config: `bench.json` (crop, targets), registration: `registration.json` (config as data).
 
 **Crop.** ENGINE_PLAN asked for x -180...+20, y 370...570 mm. Its bottom 5 mm fell outside the back_left close-up's
 registered region (feather weight down to 0.25 against the 0.6 threshold), so the crop is **x -180...+20, y 365...565 mm**
@@ -71,9 +71,58 @@ fails is the zone STUBS (one field-mean angle per tone component): chaos and off
 mixed foliage, and small buried stub parts trip angle_coherence. Those are M2/M3 (direction fields, strata, crowns,
 buildings). Thread v0 merged the two water blues away (area-weighted), so the falls are cream + mist only (M4).
 
+## M2 organic parts (20 Oct 2026): strata + clouds along the reference grain
+
+Same command, run config `run_bk_crop.yaml` (now with `direction`, `stratum`, `cloud`, `specks` and thread `importance`),
+zones `zones_BK.json` (new: `cliffs` = stratum splitter, `cloud_centre` = cloud splitter, `foliage` stub claimed before the
+cliffs). Scored at engine commit 4dae159 (row `git_sha`). Gates now read the WRITTEN DST (`compile.labelled_dst`: 85,269
+planned segments matched in sew order, 520 writer ties, 60 sub-grid). Every number below is from `out/digitize/BK_M_crop/gates.json`.
+
+![M2 panel](panel_2026-10-20_m2-organic-parts--strata---clouds--guide.png)
+
+| check | M1 | M2 | target | |
+|---|---|---|---|---|
+| direction, visible layer (625 tiles, 0 masked) | 89.0 % OK, 7.0 % chaotic | 90.1 % OK, 6.2 % chaotic (23 off-grain, 39 chaotic) | >= 85 %, <= 5 % | OK / FAIL |
+| ... ORGANIC tiles, SAME 164 tiles (top part = stratum / cloud in M2), M1 DST vs M2 DST | 90.9 % OK, 8.5 % chaotic | 92.7 % OK, 6.7 % chaotic | (improve on M1) | better, still > 5 % chaos |
+| ... stratum_band tiles (151) | 90.7 % / 8.6 % (M1 stubs there) | 92.7 % / 6.6 % | | |
+| ... cloud tiles (6 lobe + 3 shade) | 83.3 % of 6 | 83.3 % of 6, 100 % of 3 | | too few tiles to judge |
+| ... zone_stub tiles (385, left for M3) | 86.8 % / 7.3 % | 87.5 % / 6.8 % | | info |
+| ... by direction SOURCE: independent (rule) / self-derived (field, field-mean) / outline | 95.8 % of 71 / 88.0 % of 552 / - | 97.3 % of 73 / 89.0 % of 545 / 100 % of 4 | | see note |
+| parts | 381; 18.4 % under 20 mm2 | 367 (84 stratum bands, 19 cracks, 3 lobes, 2 shades, 1 wisp, 14 cords, 3 pools, 2 sky, 239 stubs); 11.2 % under 20 mm2; 326 traced specks merged | <= 400, < 25 % | OK |
+| angles | 0 undeclared, random_angles hard-coded 0 | 0 undeclared; random_angles DERIVED = 0 (audit re-derives all 367); 0 sewn off their declared angle | 0 | OK |
+| angle_coherence (fixed-angle fills) + field adherence (guided parts) | 109 fails | 53 fails (12 buried + 39 spread, all stubs; 1 pool, 1 wisp); guided parts: 94.4 % of 8,049 visible stitches within 15 deg of their planned field | 0 | FAIL |
+| satin shape + split-satin cords (new DST cord gate) | 0 / 0 (cords not checked) | 0 satins, 0 blobs; 14 cords: 0 flags, max piece 7.01 mm, aligned splits <= 0.18 | 0 blobs | OK |
+| density | 78 areas (13.8 cm2), mean 4.43 | 112 areas (16.4 cm2), mean 4.56, p95 8.44 | 0 | FAIL |
+| stack | max 5, 8.7 cm2 > 2 | max 5, 11.5 cm2 > 2 | <= 2 | FAIL |
+| trims per 100 cm2 of covered area | 33.0 (132) | 27.5 (110) | <= 25 | FAIL (closer) |
+| colours | 12; red + gold; NO water blue | 12; red (22 parts) + gold (13 parts); sky light kept (falls cords cream / sky light) | <= 12, red + gold | OK |
+| stub area left for M3 | (all but falls / sky / pool) | 27,180 mm2 = 60.4 % of part area: village 11,389, blossom 6,470, foliage 6,306, ground 3,015 | | info |
+| stitches in crop / file / stops | 84,090 / 91,317 / 17 | 85,386 / 92,866 / 22 | | info |
+
+Reading it:
+- **Organic tiles improved, modestly.** On the same 164 tiles the M2 DST scores 92.7 % OK / 6.7 % chaotic against M1's
+  90.9 % / 8.5 %. Chaos that remains sits where a stratum band meets a stub (foliage crowns at one field-mean angle) or
+  where the reference grain itself is weak (reference coherence 0.06-0.39 in the chaotic stratum tiles): two textures
+  meeting inside one 8 mm tile. Crowns (M3) and sequencing / cut-under at junctions (M4) are the next levers.
+- **Gate circularity (M1 review).** Strata, cloud lobes and stubs take their direction FROM the reference grain the gate
+  grades them against, so 545 of 625 tiles are SELF-DERIVED: an OK there says "the file follows the plan's field", not
+  "a digitizer would choose this". The field is smoothed at 4 mm (the gate measures at ~2.7 mm), which keeps them from
+  being identical, but it is still the same pixels. Only the 73 independent tiles (rule angles: falls, sky, pools) are
+  evidence in the strict sense (97.3 %). The founder's live-view look (M4) is the independent check for organic parts.
+- **Threads.** `importance {cf_skylt: 3, cf_rose: 3}` keeps one water blue and blossom deep; mist grey merges into sky
+  light (dE 14.9), so rock highlights and the cloud shade read light blue. Keeping both blues costs blossom deep or
+  cloud cream (RECAP-2026-10-20-engine-m2-organic.md); founder's call.
+- **Density / stack got slightly worse** (more zones meeting: foliage over cliffs over ground, each with its 1 mm
+  underlap and edge run): guided-fill interiors are 3.07 mm/mm2 like tatami (3.15); the flags are at part edges (M4).
+- **Trims fell** to 27.5 / 100 cm2 (specks merged into their neighbours, fewer tiny islands).
+- Looked at the live view: falls cream / sky-light cords; cliffs read as navy / slate / tan strips along the grain; the
+  cloud is one cream mass with horizontal rows and a sky-light open shade; village, blossoms and crowns are still flat
+  stubs.
+
 ## Scoreboard
 
 | date | label | dir OK % (visible) | chaotic % | dir all % | angle coh. | density mean / p95 / flags | trims per 100 cm2 of covered area | satins / blobs / >7 mm / <1 mm / fans | max stack / cm2 > 2 | threads (red, gold) | gates passed |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-10-19 | baseline: shipped Rev B DST | 11.7 | 77.9 | 2.4 | FAIL: no part ids | 5.67 / 10.45 / 194 | 113.1 (452) | 1925 / 1159 / 0 / 31 / 319 | 6 / 19.97 | 12 (n, n) | 0/8 |
 | 2026-10-20 | M1 skeleton (sky + falls splitters, zone stubs) | 89.0 | 7.0 | 63.5 | FAIL (109) | 4.43 / 8.09 / 78 | 33.0 (132) | 0 / 0 / 0 / 0 / 0 | 5 / 8.7 | 12 (y, y) | 3/8 |
+| 2026-10-20 | M2 organic parts (strata + clouds, guided fill) | 90.1 | 6.2 | 67.8 | FAIL (53) | 4.56 / 8.44 / 112 | 27.5 (110) | 0 / 0 / 0 / 0 / 0 | 5 / 11.53 | 12 (y, y) | 3/8 |
