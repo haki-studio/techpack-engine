@@ -408,29 +408,11 @@ def push_units(items, side, gap, cap=25.0):
     return n
 
 def silhouettes(art, size):
-    """every silhouette / internal seam (sides, shoulders, sleeve underarm, sleeve centre line):
-    1. stretch both sides so the art reaches the seam where the render had it at the outline;
-    2. curls / drops the keep-out would slice are moved inward whole (push_units);
-    3. then on EVERY seam (armholes and shoulders too, not the zip): seamfill.fill_seam - every stripe / rope line that
-       crosses the seam continues straight on into the other piece (join / taper / abut), so both sides carry the same
-       tone at every seam position with art.
-    Edits art {P: items}; returns a log per seam."""
-    log = {}
-    for sm in seams(size):
-        if sm["kind"] not in ("silhouette", "internal"): continue
-        A, B = SeamSide(size, sm, "A"), SeamSide(size, sm, "B")
-        gap = 0.5 if sm["kind"] == "internal" else GAP + 1.0
-        gs = []
-        for sd in (A, B):
-            its = art[sd.P]; art[sd.P], g = stretch(its, sd, unit_centres(its), gap=gap); gs.append(round(g, 1))
-        pushed = [push_units(art[sd.P], sd, gap) for sd in (A, B)] if sm["kind"] != "internal" else [0, 0]
-        log[sm["name"]] = dict(gap=gs, pushed=pushed)
-    import seamfill as SF
-    for sm in seams(size):                                   # every sewn seam + the sleeve centre line, not the zip
-        if sm["kind"] == "zip": continue
-        gap = 0.5 if sm["kind"] == "internal" else GAP + 0.4
-        log.setdefault(sm["name"], {})["fill"] = SF.fill_seam(art, size, sm, gap)
-    return log
+    """Rev B (coordinator 19 Oct): the seam-true wave by ONE smooth displacement field per piece side (seamwarp.py) -
+    reach the seam, align the tones along it, tapers only into bare fabric. Replaces the row stretch + seamfill
+    continuation band (its paste-and-cut joins read as cut lines inside the panels). Edits art {P: items}."""
+    import seamwarp as SW
+    return SW.run(art, size)
 
 # ------------------------------------------------------------------ 4. overflow transfer
 def transfer(art, size):

@@ -92,7 +92,7 @@ def slope_of(LS, c0, c1, k, r0, rows=int(20 * PPM)):
     b, a = np.polyfit(np.array(rs, float), np.array(cs, float), 1)
     return float(b)
 
-def continue_runs(LS, LT, gap_s, allowed):
+def continue_runs(LS, LT, gap_s, allowed, modes=("join", "taper", "abut")):
     """continuation label image on the follower grid + per-run log"""
     nd, n = LT.shape; C = np.zeros_like(LT); r0 = seam_row(gap_s)
     genuine = LS[r0] * (LS[r0] == LS[min(nd - 1, r0 + int(3 * PPM))])
@@ -115,6 +115,7 @@ def continue_runs(LS, LT, gap_s, allowed):
             if all(v <= 0 for v in ahead): mode, end = "taper", int(Eq)
             else:
                 first = next(i for i, v in enumerate(ahead) if v > 0); mode, end = "abut", int(QDMIN * PPM) + first
+        if mode not in modes: log["skipped"] += 1; continue
         log[mode] += 1
         for rr in range(0, min(nd, end + 1)):
             hw = 0.5 * w0 * ((1 - rr / Eq) if mode == "taper" else 1.0)
@@ -138,7 +139,7 @@ def add_continuation(art, un, C, keys, tag):
             art[un.side.P].append(dict(col=col, geom=p, st=st, ang="auto", grp=grp, z=Z_CONT[grp], unit=None, cont=tag, layer=0)); n += 1
     return n
 
-def fill_seam(art, size, sm, gap):
+def fill_seam(art, size, sm, gap, modes=("join", "taper", "abut")):
     """continuation both ways across one seam; returns a log"""
     A, B = WR.SeamSide(size, sm, "A"), WR.SeamSide(size, sm, "B")
     keys = sorted({r["col"] for P_ in art for r in art[P_] if r["grp"] in WR.BAND_GRPS})
@@ -149,8 +150,8 @@ def fill_seam(art, size, sm, gap):
     lead_A = (LA[r0] > 0).sum() >= (LB[r0] > 0).sum()
     S, T, LS, LT, uS, uT = (A, B, LA, LB, uA, uB) if lead_A else (B, A, LB, LA, uB, uA)
     allow = np.ones(n, bool)
-    C1, log1 = continue_runs(LS, LT, gap, allow)
-    C2, log2 = continue_runs(LT, LS, gap, LS[r0] == 0)              # follower -> leader only where the leader is bare
+    C1, log1 = continue_runs(LS, LT, gap, allow, modes)
+    C2, log2 = continue_runs(LT, LS, gap, LS[r0] == 0, modes)              # follower -> leader only where the leader is bare
     n1 = add_continuation(art, uT, C1, keys, f"{sm['name']}:{S.P}>{T.P}")
     n2 = add_continuation(art, uS, C2, keys, f"{sm['name']}:{T.P}>{S.P}")
     return dict(leader=S.P if S.P != T.P else ("A" if lead_A else "B"), lead_runs=log1, follow_runs=log2, added=[n1, n2])

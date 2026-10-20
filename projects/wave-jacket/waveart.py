@@ -582,6 +582,35 @@ def grey_ridges(its, w=1.1):
             n += 1
     return out, n
 
+# ---------------------------------------------------------------- under the collar fall (founder 19 Oct)
+def under_collar(art, size):
+    """The render hides the front under the collar points, so the art stopped at the collar-point V. Founder: embroider under
+    the collar fall up to the neckline keep-out (6 mm). GENERATED (A12: nothing in any reference shows it): the art beside
+    the V is mirrored across the V's outer edge (collar point -> shoulder end of the collar), so every stripe and crest that
+    meets that edge continues into the V without a break; the copy is clipped to the V minus the neck keep-out. Also keeps
+    the front continuous when the collar is worn up. Items carry gen='under collar'. Returns {P: items added}."""
+    import front as FRT
+    out = {}
+    for P, C in (("FL", FRT.COLLAR_L), ("FR", FRT.COLLAR_R)):
+        sg = 1 if P == "FL" else -1
+        a, b = np.array([sg * 72.0, 66.0]), np.array([sg * 176.0, -76.0])          # V point -> shoulder end of the collar
+        H = C.intersection(PC.panel(size, P)).difference(PC.refs(size, P)["neck"].buffer(6.0)).buffer(0)
+        t = (b - a) / np.hypot(*(b - a)); ang = np.degrees(np.arctan2(t[1], t[0]))
+        def refl(g):
+            g = affinity.rotate(affinity.translate(g, -a[0], -a[1]), -ang, origin=(0, 0))
+            g = affinity.scale(g, 1, -1, origin=(0, 0))
+            return affinity.translate(affinity.rotate(g, ang, origin=(0, 0)), a[0], a[1])
+        Hm = refl(H); add = []
+        for r in art[P]:
+            if r.get("gen") or not r["geom"].intersects(Hm): continue
+            g = r["geom"].intersection(Hm)
+            if g.is_empty or g.area < 0.3: continue
+            g = refl(g).intersection(H).buffer(0)
+            if g.is_empty or g.area < 0.3: continue
+            add.append(dict(r, geom=g, gen="under collar", unit=(r["unit"] + "~uc") if r.get("unit") else None))
+        art[P] += add; out[P] = len(add)
+    return out
+
 # ---------------------------------------------------------------- build
 def build(size):
     t0 = time.time(); res = {"info": dict(size=size, grade=MM.GRADE[size][0], scale=MM.GRADE[size][1])}
@@ -589,6 +618,7 @@ def build(size):
     for P in SLEEVE_SIDE: art[P] = drop_fold_highlight(art[P])
     res["info"]["silhouette_seams"] = WR.silhouettes(art, size)          # stretch + DTW along side/shoulder/underarm/centre
     res["info"]["transfer"] = WR.transfer(art, size)                       # overflow across every seam
+    res["info"]["under_collar"] = under_collar(art, size)
     res["info"]["maps"] = {f"{v}/{s}": dict(fold_frac=round(WR.sleeve_map(v, s, size).fold_frac, 4)) for v in ("back", "front") for s in "LR"}
     st_log = {}
     for P in PC.PIECES:

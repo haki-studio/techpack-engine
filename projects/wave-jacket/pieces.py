@@ -5,7 +5,7 @@ drafted pattern — LESSONS A3, C8: keep-out lines come from the pattern piece, 
   SR  S01 right sleeve         SL  S02 left sleeve
 Keep-outs (mm from the sew line), Rev B seam-true wrap: every seam the wave crosses 3 (armhole/cap, side, shoulder,
 sleeve underarm; no armhole topstitch); CF / zip 15 (teeth + tape + 10 mm topstitch), hem-rib seam 10, cuff seam 10,
-welt box 6, collar lying flat 6, neck 6."""
+welt box 6, neck 6 (the art runs under the collar fall, founder 19 Oct)."""
 import functools
 from shapely.geometry import LineString, Polygon
 from shapely.ops import unary_union
@@ -20,8 +20,9 @@ WRAP = 3.0      # Rev B seam-true wrap (founder 19 Oct): art stops 3 mm short of
 SEAM = 3.0
 KEEP = {
     "BK": {"side L": SEAM, "side R": SEAM, "shoulder L": SEAM, "shoulder R": SEAM, "hem": 10, "neck": 6, "armhole L": WRAP, "armhole R": WRAP},
-    "FR": {"CF / zip": 15, "side": SEAM, "shoulder": SEAM, "hem": 10, "neck": 6, "armhole": WRAP, "welt": 6, "collar": 6},
-    "FL": {"CF / zip": 15, "side": SEAM, "shoulder": SEAM, "hem": 10, "neck": 6, "armhole": WRAP, "welt": 6, "collar": 6},
+    # no collar-point keep-out (founder 19 Oct): the art runs under the collar fall to the neckline keep-out (6 mm)
+    "FR": {"CF / zip": 15, "side": SEAM, "shoulder": SEAM, "hem": 10, "neck": 6, "armhole": WRAP, "welt": 6},
+    "FL": {"CF / zip": 15, "side": SEAM, "shoulder": SEAM, "hem": 10, "neck": 6, "armhole": WRAP, "welt": 6},
     "SR": {"cap": WRAP, "underarm front": SEAM, "underarm back": SEAM, "cuff": 10},
     "SL": {"cap": WRAP, "underarm front": SEAM, "underarm back": SEAM, "cuff": 10},
 }
