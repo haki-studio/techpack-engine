@@ -12,11 +12,15 @@ every clump touches a branch).
      facing the crown's base (the bottom of the mass, where the crown grows from). The extract log counts both.
   4. direction: a clump FANS out from its attachment along its own elongation: rows run along the clump's long axis
      (the mid-line of its minimum rotated rectangle), from the axis end nearer the attachment to the axis middle
-     (construct rule "fan", rebuilt by digitize.audit). Lit pieces fan the same way along their own long axis, from the
-     end nearer the clump's attachment. The angle is built from the traced OUTLINE, so its direction tiles are
-     reported in the "outline" bucket, not as independent evidence (A24; BENCH_m3b.md: this rule was picked over a
-     base-to-centre fan after comparing both against the reference grain).
+     (construct rule "fan"). M4c: the clump's angle is then a SMOOTH fan across the crown (rule 2): the axial mean of its
+     own axis and the axes of the clumps it touches (half weight), construct rule "fan_smooth" (rebuilt by digitize.audit
+     from the stored axes); a clump that rule 3 could not then separate from its neighbours keeps its own axis. Its lit
+     pieces take the SAME angle (one deliberate angle per clump). Built from the traced OUTLINE, so its direction tiles
+     are reported in the "outline" bucket, not as independent evidence (A24; BENCH_m3b.md: the long axis was picked
+     over a base-to-centre fan after comparing both against the reference grain; BENCH_m4c.md for the smoothing).
   5. dark and lit: `crown_clump_lit` = each lighter thread's pixels in the clump (closed lit_close_mm, >= min_lit_mm2);
+     M4c: a lit piece too small to show a judgeable tatami (< lit_vis_mm2 or < lit_vis_w_mm wide) is GROWN inside its
+     clump (never dropped, A11); dark slivers < sliver_mm between a lit piece and the clump edge join the lit piece.
      `crown_clump_dark` = the rest of the clump in the darkest foliage thread covering >= dark_share of it. The lit
      pieces sew FIRST and are knocked out of the dark (LESSONS B2 / B14: the darkest connected tone last hides the travel
      between the lit pieces; M3b run r8: lit on top cost 34 trims in its stop). Visually the same "dark, then lit" layers
