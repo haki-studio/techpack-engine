@@ -65,6 +65,22 @@ PAUSED (work committed; restart with a FRESH builder per product, short brief + 
 - koi: Rev C started (refmask, floratrace).
 Factory answered (factory.json): Brother, 750 mm field, frames 300×300 + 400×450, front single hooping, back 2, chenille/puff/sherpa yes.
 
+## FINAL STATE of coordinator session 19b9021e (2026-10-21) — START HERE
+- **Keep Clean Our Space Rev C: APPROVED, ready for the factory** (PR #20 kcos-revc; deliverables copied to C:\Users\devin\Desktop\keep-clean-RevC\).
+  Founder still to answer the 7 G4 questions (back/hood plain; puff JP+EN; FR 12 colours; CN ring dots puff; 汚/污; 소중한/소중함;
+  "WE WANT NO DIRTY COSMOS"). If any answer differs from the proposal → rebuild (kcos-revc branch; build_all.py).
+- Merged today: #5 #6 #7 #8 #9 #10 (engine M5, M2, M6, M4g, M3a, M3b), #11 #12 #16 #18 (docs, re-plan), #13 (Koi trial) then #19
+  (Koi-specific code removed, mockup-governs generic parts kept), #14 (M4c chaos/crowns), #15 #17 (tee family), #21 (M4s stack_parts +
+  travel_on_fill gates; verdict x/11). Castle crop on main: 2/11 (old 9: 1/9); BENCH_m4s.md quotes pre-#14 numbers — stale, fix in G1.
+- **Next engine work = docs/ENGINE_PLAN.md RE-PLAN (G1 → G2 → G3)**: generic primitives + vision step done by the SESSION (no API).
+  Open engine follow-ups: dst2/compile block-join defect (LESSONS B39) with a unit test; turn on `unsewn_only` hidden travel for the
+  crop (travel_on_fill fails 5.8 m); retire-or-keep decision on the strict run-based stack gate (founder; recommend keep both).
+- **Tee family** (families/tee, docs/FAMILIES.md): founder to add 2 print reference images (Desktop\tee-template) and Mandy's full
+  new-shape chart (asked 2026-10-20) → replaces pom_chart.base+deltas. Next: jacket family. Proposed: PLM "Tech packs" page (founder
+  hasn't said yes yet) — build from the PLM repo in its own worktree.
+- Founder open items: Castle thread trade-off; far-roof tiers / near_tier_rel 0.75; paler blossoms?; Mandy F1 (chenille format, puff
+  > 7.5 mm, 3 mm foam, frames for whole front/sleeve). Follow-ups 2026-10-23: Mandy tee chart + hat quote (Obsidian note).
+
 ## NEWEST — 2026-10-20 night: ENGINE RE-PLAN (founder-approved). Read docs/ENGINE_PLAN.md "RE-PLAN" first.
 No more subject splitters (fish, lily, castle…): generic primitives + a vision step that labels any mockup; the vision step is done by
 the Claude Code session itself for now (no API). Next engine work = G1 → G2 (Koi with zero new subject code) → G3. PR #13 (Koi trial)
