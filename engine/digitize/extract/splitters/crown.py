@@ -138,7 +138,7 @@ def split(ctx, zone, z, claim):
     tones = sorted({t for t in (zone.get("tones") or []) if t in ctx.threads}, key=lambda t: lum_of(ctx, t))
     lsc = dict(lobe_sep_mm=sc["clump_sep_mm"], lobe_min_r_mm=sc["clump_min_r_mm"], min_lobe_mm2=sc["min_clump_mm2"])
     stats = dict(masses=0, clumps=0, attach_bark=0, attach_base=0, lit=0, no_construct=0, lit_grown=0, lit_grown_mm2=0.0,
-                 lit_still_small=0, slivers_to_lit_mm2=0.0, smoothed=0)
+                 lit_still_small=0, slivers_to_lit_mm2=0.0, smoothed=0, unsmoothed_rule3=0)
     clumps_ = []                                                     # pass 1: clumps, their own fan axis, their lit pieces
     for mi in range(1, n + 1):
         if sizes[mi] < sc["min_mass_mm2"]: continue
@@ -190,7 +190,22 @@ def split(ctx, zone, z, claim):
                 j = int(j)
                 if j == i: continue
                 o = clumps_[j]; axes.append({"from": o["frm"], "to": o["to"], "w": round(float(sc["smooth_nb_w"] * o["g"].area), 3)})
-        c["axes"] = axes; c["ang_s"] = smooth_angle(axes); stats["smoothed"] += len(axes) > 1
+        c["axes"] = axes; c["ang_s"] = smooth_angle(axes)
+    if sc["smooth"] and clumps_:
+        # rule 3 first: smoothing pulls touching clumps together, and a clump with several same-thread neighbours can then
+        # be left with no angle >= 15 deg from all of them within 25 deg of its own (direction.separate leaves it
+        # unresolved; M4c crop r1: crown close pairs 4 -> 10). Such a clump keeps its OWN fan axis (no smoothing).
+        from digitize import direction as DR
+        sep = tuple(float(v) for v in ctx.rb.principles.get("neighbour_sep_deg", [15, 25]))
+        for _ in range(3):
+            probes = [Part(id=c["cid"], kind="crown_clump_dark", geom=c["g"], thread=c["dark"], z=0, meta={},
+                           dir=DirSpec(c["ang_s"], source="splitter")) for c in clumps_]
+            DR.separate(probes, sep, touch=sc["touch_mm"])
+            bad = [i for i, q in enumerate(probes) if q.meta.get("sep_unresolved") and len(clumps_[i]["axes"]) > 1]
+            if not bad: break
+            for i in bad:
+                c = clumps_[i]; c["axes"] = c["axes"][:1]; c["ang_s"] = smooth_angle(c["axes"]); stats["unsmoothed_rule3"] += 1
+    stats["smoothed"] = sum(1 for c in clumps_ if len(c["axes"]) > 1)
     for c in clumps_:                                                # pass 3: parts (lit first, knocked out of the dark)
         g, cid = c["g"], c["cid"]; zc = c["zc"]; lits = []
         lgeoms = [lg for _, lg in c["lits"]]

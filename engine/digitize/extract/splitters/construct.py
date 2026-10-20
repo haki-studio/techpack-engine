@@ -75,7 +75,7 @@ def is_constructed(p, rb=None):
 def basis(p, rb=None, peers=None):
     """(angle, why): the constructed angle RE-BUILT (M3b: from meta["construct"]; M3a: building_fit.rule_basis from the
     fitted points, peers = the plan's parts for the depth rule); why is the reason it cannot be (None when it can)."""
-    if (p.meta or {}).get("construct"): return _m3b_basis(p)      # M3b (and the splitters' own probes)
+    if (p.meta or {}).get("construct"): return _m3b_basis(p, peers)      # M3b (and the splitters' own probes)
     if p.dir.source == "rule":
         r = rule_of(p, rb)
         if r not in M3A_RULES: return None, f"source rule without a construct rule (kind {p.kind!r})"
@@ -103,7 +103,7 @@ def _far(p, rb, peers):
     except (KeyError, TypeError, IndexError): return False
 
 
-def _m3b_basis(p):
+def _m3b_basis(p, peers=None):
     from shapely.geometry import Point, LineString
     c = (p.meta or {}).get("construct")
     if not c: return None, "splitter angle without a stored construction (meta construct)"
@@ -136,7 +136,7 @@ def _m3b_basis(p):
         if p.geom.distance(Point(cen)) > 1.5: return None, "radial centre is not on the floret"
         return 0.0, None
     if r == "fan_smooth":                                             # --- M4c --- crown clumps, a smooth fan
-        return _fan_smooth(p, c)
+        return _fan_smooth(p, c, peers)
     return None, f"unknown construction rule {r!r} (have {RULES})"
 
 
@@ -144,11 +144,12 @@ SMOOTH_NB_MM = 25.0      # a neighbour's axis middle lies within this of the par
 LIT_AXIS_MM = 12.0       # a lit piece lies inside its clump: the clump's axis middle within this of the piece
 
 
-def _fan_smooth(p, c):
+def _fan_smooth(p, c, peers=None):
     """M4c rule "fan_smooth" (crown clumps): construct = {rule, axes: [{from, to, w}, ...], at (lit pieces)}. The first axis
     is the clump's own fan (its long axis from the attachment end, as rule "fan"), the others the touching clumps' fans;
     angle = their weighted AXIAL mean (crown.smooth_angle). Checks: a dark clump's own axis passes the "fan" checks (`to`
-    on the clump within 2 mm, `from` within 6 mm: the clump touches its support); a lit piece holds its `at` point (1.5 mm)
+    on the clump within 2 mm, `from` within 6 mm: the clump touches its support; the clump = the dark part plus the lit
+    pieces in `peers` that name it in lit_of, since the axis middle may lie in a knocked-out lit piece); a lit piece holds its `at` point (1.5 mm)
     and its clump's axis middle is within LIT_AXIS_MM; every neighbour's axis middle within SMOOTH_NB_MM; weights > 0.
     Built from traced outlines: reported as "outline" (OUTLINE_RULES), never independent (A24)."""
     from shapely.geometry import Point
@@ -162,8 +163,12 @@ def _fan_smooth(p, c):
         if not c.get("at") or p.geom.distance(Point(c["at"])) > 1.5: return None, "fan_smooth lit piece does not hold its `at` point"
         if p.geom.distance(Point(own["to"])) > LIT_AXIS_MM: return None, f"fan_smooth: the clump's axis is more than {LIT_AXIS_MM} mm from its lit piece"
     else:
-        if p.geom.distance(Point(own["to"])) > 2.0: return None, "fan target is not on the clump"
-        if p.geom.distance(Point(own["from"])) > 6.0: return None, "fan origin is more than 6 mm from the clump (clump does not touch its support)"
+        clump = p.geom                    # the clump = this dark part + its own lit pieces (peers naming it in lit_of):
+        if peers:                         # the axis middle may sit in a lit piece knocked out of the dark
+            from shapely.ops import unary_union
+            clump = unary_union([p.geom] + [q.geom for q in peers if q is not p and (q.meta or {}).get("lit_of") == p.id])
+        if clump.distance(Point(own["to"])) > 2.0: return None, "fan target is not on the clump"
+        if clump.distance(Point(own["from"])) > 6.0: return None, "fan origin is more than 6 mm from the clump (clump does not touch its support)"
     for a in ax[1:]:
         if p.geom.distance(Point(a["to"])) > SMOOTH_NB_MM: return None, f"fan_smooth neighbour axis more than {SMOOTH_NB_MM} mm away (not a neighbour)"
     C = S = 0.0

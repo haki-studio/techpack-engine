@@ -321,3 +321,41 @@ def test_fan_smooth_is_rebuilt_by_the_audit_and_reported_as_outline():
     r = audit.angle_audit(ObjectPlan(name="t", parts=[good, forged, far_nb, unsupported, lit_ok, lit_noat]), Rulebook())
     assert {b["part"] for b in r["unexplained"]} == {"forged", "far", "unsup", "lit_noat"}, r["unexplained"]
     assert audit.bucket_of(good) == "outline" and audit.bucket_of(lit_ok) == "outline"
+
+
+def test_dark_clump_axis_middle_may_sit_in_its_own_lit_piece():
+    """the clump's axis middle can fall in a lit piece knocked out of the dark (M4c crop r1: foliage.216 counted as a
+    random angle). The audit checks the dark's own axis against the dark part PLUS the lit pieces that name it in lit_of
+    (plan peers), never a stranger's. Mutation (peers ignored) -> red."""
+    from digitize.extract.splitters import crown
+    clump = Polygon([(0, 0), (16, 0), (16, 6), (0, 6)]); hole = Polygon([(5, 0), (11, 0), (11, 6), (5, 6)])
+    own = {"from": [0.5, 3.0], "to": [8.0, 3.0], "w": 96.0}
+    a = crown.smooth_angle([own])
+    dark = Part(id="d", kind="crown_clump_dark", geom=clump.difference(hole), thread="t", z=2, dir=DirSpec(a, source="splitter"),
+                meta=dict(construct=dict(rule="fan_smooth", axes=[own])))
+    lit = Part(id="l", kind="crown_clump_lit", geom=hole, thread="u", z=1.7, dir=DirSpec(a, source="splitter"),
+               meta=dict(lit_of="d", construct=dict(rule="fan_smooth", axes=[own], at=[8.0, 3.0])))
+    stranger = Part(id="s", kind="crown_clump_lit", geom=hole, thread="u", z=1.7, dir=DirSpec(a, source="splitter"),
+                    meta=dict(lit_of="other", construct=dict(rule="fan_smooth", axes=[own], at=[8.0, 3.0])))
+    assert audit.angle_audit(ObjectPlan(name="t", parts=[dark, lit]), Rulebook())["random_angles"] == 0
+    r = audit.angle_audit(ObjectPlan(name="t", parts=[dark, stranger]), Rulebook())
+    assert r["random_angles"] == 1 and r["unexplained"][0]["part"] == "d", r
+
+
+def test_rule3_wins_over_smoothing(monkeypatch):
+    """a clump that rule 3 cannot separate from its smoothed neighbours keeps its OWN fan axis (crop r1: smoothing alone
+    took the crown's close pairs 4 -> 10). Mutation (fallback off) -> red."""
+    from digitize import direction as DR
+    from digitize.extract.splitters import crown
+    real = DR.separate
+    def fake(parts, sep=(15.0, 25.0), **k):
+        out = real(parts, sep, **k)
+        for p in parts[:1]: p.meta["sep_unresolved"] = "x"                 # the first clump cannot be separated
+        return out
+    monkeypatch.setattr(DR, "separate", fake)
+    parts, st = _crown(_two_clumps)
+    dark = [p for p in parts if p.kind == "crown_clump_dark"]
+    lone = [p for p in dark if len(p.meta["construct"]["axes"]) == 1]
+    assert st["unsmoothed_rule3"] >= 1 and len(lone) == 1, st
+    assert abs(lone[0].dir.angle - round(crown.smooth_angle(lone[0].meta["construct"]["axes"]), 2)) < 0.01
+    assert audit.angle_audit(ObjectPlan(name="t", parts=parts), Rulebook())["random_angles"] == 0
