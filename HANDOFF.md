@@ -82,8 +82,8 @@ bucket_of; depth-rule angles bucketed "outline", not independent); `scripts/iden
 1ecd8f657db3f53a and M5 wb 449c14f6e8f693b6 must stay unchanged); LESSONS numbered by the coordinator at merge.
 
 **Next (M4 remainder → founder live-view sign-off), in priority order:**
-1. Stitch budget (biggest): ~890k vs 250–350k. Budget step in sequence/threads: density per kind, drop/merge low-value
-   layers, report the cut list for the founder.
+1. Stitch count: ~890k on a full back is ACCEPTED (founder 2026-10-20: 250–350k is a reference, not a limit; big embroidery
+   = many stitches). Keep reporting it; do not thin detail to hit it (fidelity first, LESSONS A11).
 2. Chaos: (a) radial-floret exemption PR with guards (tile ≥ 70 % radial visible length AND per-tile radial adherence ≥ 85 %,
    floret-sized radial parts only, raw + exempted counts reported, own "radial" bucket, red tests on a non-floret radial blob);
    (b) crown work: 27 hidden lit pieces, dark clump angle spread.
