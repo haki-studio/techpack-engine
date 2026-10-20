@@ -1259,95 +1259,148 @@
   ],
   "crop_min_closeup_weight": 0.647,
   "source_ppm_median": 2.58,
-  "stitches_in_crop": 86662,
+  "stitches_in_crop": 91123,
   "direction": {
    "tiles": 625,
-   "pct_ok": 86.7,
-   "pct_chaos": 4.3,
-   "n_dev": 56,
+   "pct_ok": 80.5,
+   "pct_chaos": 10.7,
+   "n_dev": 55,
    "masked": 0,
-   "n_chaos": 27,
-   "pct_ok_all_stitches": 65.9,
-   "pct_chaos_all_stitches": 31.4
+   "n_chaos": 67,
+   "pct_ok_all_stitches": 59.5,
+   "pct_chaos_all_stitches": 38.7
   },
   "angle_coherence": {
    "source": "plan part ids carried onto the written DST (compile.labelled_dst)",
-   "parts": 204,
+   "parts": 243,
    "ok": false,
-   "fails": 42,
+   "fails": 48,
    "kinds": {
-    "no-visible-stitches": 9,
-    "angle-spread": 33
+    "no-visible-stitches": 16,
+    "angle-spread": 32
    },
    "by_kind": {
+    "no-visible-stitches / zone_stub": 7,
     "no-visible-stitches / stud": 6,
-    "no-visible-stitches / zone_stub": 3,
-    "angle-spread / zone_stub": 23,
+    "no-visible-stitches / window": 2,
+    "no-visible-stitches / wall": 1,
+    "angle-spread / zone_stub": 24,
     "angle-spread / cloud_wisp": 1,
-    "angle-spread / roof": 2,
-    "angle-spread / wall": 6,
-    "angle-spread / window": 1
+    "angle-spread / window": 1,
+    "angle-spread / member": 2,
+    "angle-spread / roof": 1,
+    "angle-spread / wall": 2,
+    "angle-spread / eave": 1
    },
    "failing": [
     {
      "kind": "no-visible-stitches",
-     "part": "village.068",
-     "grp": "stud",
-     "n": 1,
+     "part": "blossom.038",
+     "grp": "zone_stub",
+     "n": 10,
      "min_segs": 12
     },
     {
      "kind": "no-visible-stitches",
-     "part": "village.069",
+     "part": "village.079",
      "grp": "stud",
-     "n": 3,
+     "n": 1,
      "min_segs": 12
     },
     {
      "kind": "no-visible-stitches",
      "part": "village.080",
      "grp": "stud",
-     "n": 1,
+     "n": 3,
      "min_segs": 12
     },
     {
      "kind": "no-visible-stitches",
-     "part": "village.081",
+     "part": "village.083",
+     "grp": "window",
+     "n": 11,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.092",
+     "grp": "wall",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.098",
      "grp": "stud",
      "n": 5,
      "min_segs": 12
     },
     {
      "kind": "no-visible-stitches",
-     "part": "village.093",
+     "part": "village.099",
      "grp": "stud",
      "n": 5,
      "min_segs": 12
     },
     {
      "kind": "no-visible-stitches",
-     "part": "village.094",
+     "part": "village.101",
+     "grp": "window",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.122",
+     "grp": "stud",
+     "n": 5,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.123",
      "grp": "stud",
      "n": 4,
      "min_segs": 12
     },
     {
      "kind": "no-visible-stitches",
-     "part": "ground.624",
+     "part": "foliage.288",
      "grp": "zone_stub",
      "n": 6,
      "min_segs": 12
     },
     {
      "kind": "no-visible-stitches",
-     "part": "ground.650",
+     "part": "ground.600",
+     "grp": "zone_stub",
+     "n": 0,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.660",
+     "grp": "zone_stub",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.661",
+     "grp": "zone_stub",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.686",
      "grp": "zone_stub",
      "n": 3,
      "min_segs": 12
     },
     {
      "kind": "no-visible-stitches",
-     "part": "ground.654",
+     "part": "ground.690",
      "grp": "zone_stub",
      "n": 3,
      "min_segs": 12
@@ -1410,7 +1463,7 @@
     },
     {
      "kind": "angle-spread",
-     "part": "cloud_centre.112",
+     "part": "cloud_centre.148",
      "grp": "cloud_wisp",
      "n": 20,
      "spread_deg": 36.9,
@@ -1418,7 +1471,7 @@
     },
     {
      "kind": "angle-spread",
-     "part": "foliage.133",
+     "part": "foliage.169",
      "grp": "zone_stub",
      "n": 373,
      "spread_deg": 13.2,
@@ -1426,23 +1479,23 @@
     },
     {
      "kind": "angle-spread",
-     "part": "foliage.139",
+     "part": "foliage.175",
      "grp": "zone_stub",
-     "n": 92,
-     "spread_deg": 11.3,
+     "n": 93,
+     "spread_deg": 11.6,
      "source": "dst-part"
     },
     {
      "kind": "angle-spread",
-     "part": "foliage.152",
+     "part": "foliage.188",
      "grp": "zone_stub",
-     "n": 33,
-     "spread_deg": 12.4,
+     "n": 34,
+     "spread_deg": 11.7,
      "source": "dst-part"
     },
     {
      "kind": "angle-spread",
-     "part": "foliage.166",
+     "part": "foliage.202",
      "grp": "zone_stub",
      "n": 26,
      "spread_deg": 10.1,
@@ -1450,31 +1503,39 @@
     },
     {
      "kind": "angle-spread",
-     "part": "foliage.177",
+     "part": "foliage.212",
      "grp": "zone_stub",
-     "n": 71,
-     "spread_deg": 12.3,
+     "n": 23,
+     "spread_deg": 10.1,
      "source": "dst-part"
     },
     {
      "kind": "angle-spread",
-     "part": "foliage.178",
+     "part": "foliage.213",
      "grp": "zone_stub",
-     "n": 105,
+     "n": 70,
+     "spread_deg": 12.4,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.214",
+     "grp": "zone_stub",
+     "n": 107,
      "spread_deg": 11.7,
      "source": "dst-part"
     },
     {
      "kind": "angle-spread",
-     "part": "foliage.185",
+     "part": "foliage.221",
      "grp": "zone_stub",
-     "n": 2094,
-     "spread_deg": 11.9,
+     "n": 2135,
+     "spread_deg": 11.8,
      "source": "dst-part"
     },
     {
      "kind": "angle-spread",
-     "part": "foliage.217",
+     "part": "foliage.253",
      "grp": "zone_stub",
      "n": 36,
      "spread_deg": 14.3,
@@ -1482,23 +1543,23 @@
     },
     {
      "kind": "angle-spread",
-     "part": "foliage.258",
+     "part": "foliage.294",
      "grp": "zone_stub",
-     "n": 90,
+     "n": 87,
      "spread_deg": 10.9,
      "source": "dst-part"
     },
     {
      "kind": "angle-spread",
-     "part": "foliage.264",
+     "part": "foliage.300",
      "grp": "zone_stub",
-     "n": 113,
-     "spread_deg": 10.8,
+     "n": 112,
+     "spread_deg": 10.3,
      "source": "dst-part"
     },
     {
      "kind": "angle-spread",
-     "part": "foliage.268",
+     "part": "foliage.304",
      "grp": "zone_stub",
      "n": 51,
      "spread_deg": 10.6,
@@ -1506,147 +1567,84 @@
     },
     {
      "kind": "angle-spread",
-     "part": "ground.441",
+     "part": "ground.477",
      "grp": "zone_stub",
-     "n": 122,
+     "n": 126,
      "spread_deg": 11.4,
      "source": "dst-part"
     },
     {
      "kind": "angle-spread",
-     "part": "ground.449",
+     "part": "ground.485",
      "grp": "zone_stub",
-     "n": 77,
+     "n": 78,
      "spread_deg": 13.0,
      "source": "dst-part"
     },
     {
      "kind": "angle-spread",
-     "part": "ground.575",
+     "part": "ground.611",
      "grp": "zone_stub",
-     "n": 78,
-     "spread_deg": 10.1,
+     "n": 76,
+     "spread_deg": 10.2,
      "source": "dst-part"
     },
     {
      "kind": "angle-spread",
-     "part": "ground.627",
+     "part": "ground.663",
      "grp": "zone_stub",
      "n": 150,
      "spread_deg": 12.6,
-     "source": "dst-part"
-    },
-    {
-     "kind": "angle-spread",
-     "part": "ground.672",
-     "grp": "zone_stub",
-     "n": 41,
-     "spread_deg": 15.5,
-     "source": "dst-part"
-    },
-    {
-     "kind": "angle-spread",
-     "part": "village.072",
-     "grp": "roof",
-     "n": 377,
-     "spread_deg": 11.1,
-     "source": "dst-part"
-    },
-    {
-     "kind": "angle-spread",
-     "part": "village.074",
-     "grp": "wall",
-     "n": 120,
-     "spread_deg": 10.7,
-     "source": "dst-part"
-    },
-    {
-     "kind": "angle-spread",
-     "part": "village.089",
-     "grp": "wall",
-     "n": 142,
-     "spread_deg": 10.7,
-     "source": "dst-part"
-    },
-    {
-     "kind": "angle-spread",
-     "part": "village.090",
-     "grp": "wall",
-     "n": 176,
-     "spread_deg": 10.3,
-     "source": "dst-part"
-    },
-    {
-     "kind": "angle-spread",
-     "part": "village.095",
-     "grp": "roof",
-     "n": 632,
-     "spread_deg": 13.0,
-     "source": "dst-part"
-    },
-    {
-     "kind": "angle-spread",
-     "part": "village.097",
-     "grp": "wall",
-     "n": 44,
-     "spread_deg": 13.1,
-     "source": "dst-part"
-    },
-    {
-     "kind": "angle-spread",
-     "part": "village.098",
-     "grp": "wall",
-     "n": 86,
-     "spread_deg": 12.2,
      "source": "dst-part"
     }
    ],
    "field_adherence": {
     "parts": 97,
-    "stitches": 8726,
-    "within": 8155,
-    "pct_within": 93.5
+    "stitches": 8743,
+    "within": 8168,
+    "pct_within": 93.4
    }
   },
   "density": {
    "covered_cm2": 400.0,
-   "mean": 4.75,
-   "p95": 8.97,
-   "max_smoothed": 12.43,
-   "over_cm2": 25.39,
-   "flags": 163,
+   "mean": 4.95,
+   "p95": 9.56,
+   "max_smoothed": 20.63,
+   "over_cm2": 39.17,
+   "flags": 160,
    "threshold": 7.0,
    "flags_by_zones_meeting": {
-    "1": 20,
-    "2": 90,
-    "3": 43,
-    "4+": 10
+    "1": 21,
+    "2": 86,
+    "3": 38,
+    "4+": 15
    },
    "flags_touching_kind": {
-    "cloud_lobe": 2,
-    "cloud_shade": 2,
-    "eave": 1,
-    "fall_cord": 11,
-    "member": 1,
-    "pool": 9,
-    "roof": 49,
-    "roof_tile_line": 9,
+    "cloud_lobe": 3,
+    "cloud_shade": 3,
+    "eave": 9,
+    "fall_cord": 10,
+    "member": 4,
+    "pool": 7,
+    "roof": 48,
+    "roof_tile_line": 15,
     "sky_band": 5,
-    "stratum_band": 87,
-    "stratum_crack": 11,
-    "wall": 50,
-    "window": 2,
-    "zone_stub": 131
+    "stratum_band": 88,
+    "stratum_crack": 12,
+    "stud": 2,
+    "wall": 53,
+    "window": 13,
+    "zone_stub": 130
    }
   },
   "trims": {
-   "trims": 93,
-   "per_100cm2": 23.3,
+   "trims": 115,
+   "per_100cm2": 28.8,
    "area_cm2": 400.0
   },
   "satin": {
-   "satins": 10,
-   "fans": 1,
+   "satins": 45,
+   "fans": 3,
    "blob": 0,
    "too_wide": 0,
    "too_narrow": 0,
@@ -1654,13 +1652,13 @@
   },
   "stack": {
    "max": 5,
-   "over_cm2": 12.08,
-   "flags": 80,
-   "pct_cells_over": 3.0
+   "over_cm2": 17.44,
+   "flags": 102,
+   "pct_cells_over": 4.4
   },
-  "runs_in_crop": 122,
+  "runs_in_crop": 146,
   "colours": {
-   "stops_in_crop": 28,
+   "stops_in_crop": 29,
    "threads_in_crop": 12,
    "threads_in_file": 12,
    "hex": [
@@ -1680,14 +1678,14 @@
    "red": true,
    "gold": true
   },
-  "secs": 12.3,
+  "secs": 10.8,
   "readback_match": {
-   "file_segs": 87083,
-   "planned_segs": 86661,
-   "matched": 86603,
-   "writer_added": 480,
-   "skipped_subgrid": 58,
-   "labelled": 81411
+   "file_segs": 91531,
+   "planned_segs": 91015,
+   "matched": 90955,
+   "writer_added": 576,
+   "skipped_subgrid": 60,
+   "labelled": 85674
   },
   "cords": {
    "n": 14,
@@ -1697,12 +1695,12 @@
    "aligned_max": 0.181,
    "column_w": [
     10.06,
-    14.64,
-    14.96,
-    18.46,
-    20.01,
+    13.91,
+    14.65,
+    18.56,
+    20.13,
     21.09,
-    22.96,
+    22.94,
     23.85,
     27.33,
     27.77,
@@ -1715,11 +1713,11 @@
   "direction_by_kind": {
    "bare": {
     "tiles": 3,
-    "ok": 2,
+    "ok": 3,
     "dev": 0,
-    "chaos": 1,
-    "pct_ok": 66.7,
-    "pct_chaos": 33.3
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
    },
    "cloud_lobe": {
     "tiles": 6,
@@ -1737,6 +1735,14 @@
     "pct_ok": 100.0,
     "pct_chaos": 0.0
    },
+   "eave": {
+    "tiles": 3,
+    "ok": 0,
+    "dev": 0,
+    "chaos": 3,
+    "pct_ok": 0.0,
+    "pct_chaos": 100.0
+   },
    "fall_cord": {
     "tiles": 62,
     "ok": 62,
@@ -1744,6 +1750,14 @@
     "chaos": 0,
     "pct_ok": 100.0,
     "pct_chaos": 0.0
+   },
+   "member": {
+    "tiles": 9,
+    "ok": 2,
+    "dev": 2,
+    "chaos": 5,
+    "pct_ok": 22.2,
+    "pct_chaos": 55.6
    },
    "pool": {
     "tiles": 6,
@@ -1754,19 +1768,19 @@
     "pct_chaos": 16.7
    },
    "roof": {
-    "tiles": 74,
-    "ok": 49,
-    "dev": 22,
-    "chaos": 3,
-    "pct_ok": 66.2,
-    "pct_chaos": 4.1
+    "tiles": 66,
+    "ok": 27,
+    "dev": 19,
+    "chaos": 20,
+    "pct_ok": 40.9,
+    "pct_chaos": 30.3
    },
    "roof_tile_line": {
-    "tiles": 2,
+    "tiles": 5,
     "ok": 1,
-    "dev": 1,
+    "dev": 4,
     "chaos": 0,
-    "pct_ok": 50.0,
+    "pct_ok": 20.0,
     "pct_chaos": 0.0
    },
    "sky_band": {
@@ -1802,46 +1816,46 @@
     "pct_chaos": 0.0
    },
    "wall": {
-    "tiles": 56,
-    "ok": 42,
-    "dev": 11,
-    "chaos": 3,
-    "pct_ok": 75.0,
-    "pct_chaos": 5.4
+    "tiles": 46,
+    "ok": 26,
+    "dev": 6,
+    "chaos": 14,
+    "pct_ok": 56.5,
+    "pct_chaos": 30.4
    },
    "window": {
-    "tiles": 1,
+    "tiles": 3,
     "ok": 1,
     "dev": 0,
-    "chaos": 0,
-    "pct_ok": 100.0,
-    "pct_chaos": 0.0
+    "chaos": 2,
+    "pct_ok": 33.3,
+    "pct_chaos": 66.7
    },
    "zone_stub": {
-    "tiles": 245,
-    "ok": 212,
-    "dev": 22,
-    "chaos": 11,
-    "pct_ok": 86.5,
-    "pct_chaos": 4.5
+    "tiles": 246,
+    "ok": 208,
+    "dev": 24,
+    "chaos": 14,
+    "pct_ok": 84.6,
+    "pct_chaos": 5.7
    }
   },
   "direction_by_source": {
    "bare": {
     "tiles": 3,
-    "ok": 2,
+    "ok": 3,
     "dev": 0,
-    "chaos": 1,
-    "pct_ok": 66.7,
-    "pct_chaos": 33.3
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
    },
    "independent": {
-    "tiles": 204,
-    "ok": 163,
-    "dev": 34,
-    "chaos": 7,
-    "pct_ok": 79.9,
-    "pct_chaos": 3.4
+    "tiles": 203,
+    "ok": 127,
+    "dev": 31,
+    "chaos": 45,
+    "pct_ok": 62.6,
+    "pct_chaos": 22.2
    },
    "outline": {
     "tiles": 4,
@@ -1852,34 +1866,34 @@
     "pct_chaos": 0.0
    },
    "self-derived": {
-    "tiles": 414,
-    "ok": 373,
-    "dev": 22,
-    "chaos": 19,
-    "pct_ok": 90.1,
-    "pct_chaos": 4.6
+    "tiles": 415,
+    "ok": 369,
+    "dev": 24,
+    "chaos": 22,
+    "pct_ok": 88.9,
+    "pct_chaos": 5.3
    }
   },
   "parts": {
-   "n": 324,
-   "pct_under_20mm2": 10.8,
+   "n": 364,
+   "pct_under_20mm2": 14.6,
    "by_kind": {
     "cloud_lobe": 3,
     "cloud_shade": 2,
     "cloud_wisp": 1,
-    "eave": 1,
+    "eave": 11,
     "fall_cord": 14,
-    "member": 1,
+    "member": 15,
     "pool": 3,
     "roof": 13,
-    "roof_tile_line": 2,
+    "roof_tile_line": 3,
     "sky_band": 2,
     "stratum_band": 94,
     "stratum_crack": 19,
     "stud": 6,
     "wall": 21,
-    "window": 3,
-    "zone_stub": 139
+    "window": 14,
+    "zone_stub": 143
    },
    "undeclared_angles": 0,
    "random_angles": 0,
@@ -1888,30 +1902,30 @@
    "sewn_off": [],
    "field_adherence": {
     "parts": 97,
-    "stitches": 8726,
-    "within": 8155,
-    "pct_within": 93.5
+    "stitches": 8743,
+    "within": 8168,
+    "pct_within": 93.4
    },
    "dir_sources": {
-    "rule": 67,
-    "field-mean": 141,
+    "field-mean": 145,
+    "rule": 103,
     "outline": 19,
     "field": 97
    }
   },
   "stub_area": {
-   "mm2": 18484.7,
-   "pct_of_parts": 39.2,
+   "mm2": 18547.3,
+   "pct_of_parts": 38.3,
    "by_zone": {
-    "blossom": 6503.8,
-    "foliage": 7901.8,
-    "ground": 4079.0
+    "blossom": 6492.5,
+    "foliage": 7914.3,
+    "ground": 4140.5
    },
    "note": "zone stubs left for M3 (buildings, trunks, crowns, florets)"
   },
   "separation": {
-   "pairs": 110,
-   "close": 24,
+   "pairs": 139,
+   "close": 25,
    "examples": [
     [
      "blossom.033",
@@ -1919,48 +1933,48 @@
      4.4
     ],
     [
-     "village.068",
-     "ground.623",
+     "village.079",
+     "ground.659",
      0.1
     ],
     [
-     "village.069",
-     "ground.623",
+     "village.080",
+     "ground.659",
      0.1
     ],
     [
-     "cloud_centre.107",
-     "cloud_centre.109",
+     "village.120",
+     "village.133",
+     0.9
+    ],
+    [
+     "cloud_centre.143",
+     "cloud_centre.145",
      13.4
     ],
     [
-     "fall_left.118",
-     "fall_left.120",
+     "fall_left.154",
+     "fall_left.156",
      0.0
     ],
     [
-     "fall_left.119",
-     "fall_left.121",
+     "fall_left.155",
+     "fall_left.157",
      0.0
     ],
     [
-     "fall_left.120",
-     "fall_left.122",
+     "fall_left.156",
+     "fall_left.158",
      0.0
     ],
     [
-     "fall_left.120",
-     "fall_left_low.124",
+     "fall_left.156",
+     "fall_left_low.160",
      0.0
     ],
     [
-     "fall_left.121",
-     "fall_left.123",
-     0.0
-    ],
-    [
-     "fall_left_low.124",
-     "fall_left_low.126",
+     "fall_left.157",
+     "fall_left.159",
      0.0
     ]
    ]
@@ -1968,19 +1982,19 @@
   "accents": {
    "cf_red": {
     "evidence_mm2": 593.4,
-    "parts": 6,
+    "parts": 15,
     "sewn_in_crop": true
    },
    "cf_gold": {
     "evidence_mm2": 167.2,
-    "parts": 9,
+    "parts": 11,
     "sewn_in_crop": true
    }
   },
   "file": {
-   "stitches": 93961,
-   "trims": 95,
-   "stops": 28,
+   "stitches": 98561,
+   "trims": 118,
+   "stops": 29,
    "colours": 12,
    "max_stitch": 7.07
   },
@@ -1988,23 +2002,23 @@
   "label": "M3a buildings (rule-angled roofs, walls, members; depth by tier)",
   "bench": "castle-bk-m",
   "dst": ".claude/worktrees/agent-a0eb55ddcbcbe36b8/projects/castle-falls-jacket/out/digitize/BK_M_crop/BK_M_crop.dst",
-  "dst_sha256": "acf15572ac4d0e32",
+  "dst_sha256": "b759f3d3b9a4611e",
   "origin": [
    -80.0,
    465.0
   ],
   "verdict": {
    "direction_ok": false,
-   "direction_chaos": true,
+   "direction_chaos": false,
    "angle_coherence": false,
    "density": false,
-   "trims": true,
+   "trims": false,
    "satin_shape": true,
    "stack": false,
    "colours": true,
    "separation": false
   },
-  "git_sha": "49aebb86d5fd",
+  "git_sha": "cef3c8da5873",
   "panel": "panel_2026-10-20_m3a-buildings--rule-angled-roofs--walls-.png"
  }
 ]

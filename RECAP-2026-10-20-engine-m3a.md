@@ -55,3 +55,19 @@ hook removed; min_fragment hook removed. pytest after merging main: 167 passed.
 - Plaster walls read tan (evidence classification), not cream.
 - Independent coverage cannot reach 50 % from buildings alone on this crop (cliff 160 and stub 245 tiles take field-derived angles).
 - Conflict points: sequence.py hooks (M4g), house.yaml / run.py / zones_BK.json / run_bk_crop.yaml appends.
+
+## Part B: PR #9 review fixes (commit cef3c8d, bench row re-scored there; supersedes the numbers above)
+| # | review item | fix | guard (red -> green) |
+|---|---|---|---|
+| 1 | seq_after plane ids could be merged away by merge_specks (M4g raises HintError) | `protect_referenced`: planes named in any seq_after get keep_small | `test_referenced_plane_survives_merge_specks` (a referenced hip shrunk to a 9 mm2 speck touching the wall) |
+| 2 | fidelity first: 17 window bands + 7 members dropped at underlaps, far eaves skipped | `seam_keep_mm` off by default (opt-in); every visible eave sewn (trim colour when the edge has no second roof tone); rule-9 minimums listed in plan meta `building_suggest` (run.py, 2 lines) | `test_details_are_kept_at_underlaps_and_small_ones_are_suggested` (2 mutations) |
+| 3 | near_tier_mm 22 circular / absolute | `near_tier_rel` 0.75 x the zone's largest tier; audit recomputes h_ref from the zone's roof parts (audit.basis gets the plan's parts) | `test_far_tier_is_relative_to_the_largest_tier_and_runs_along_its_eave` (scene at 1x and 0.5x; mutations: depth ignored, absolute 22 mm) |
+| 4 | walls tan, temple wall a red slab | ground = brightest 15 % of the face -> nearest thread; details = role pixels or 60 darker; frames split into rails / posts; dark non-compact outline stays wall | `test_wall_ground_is_the_plaster_not_the_frame` (2 mutations) |
+
+Mutations now 20/20 red -> green (scratchpad m3a/mutate_m3a.py). pytest 170 passed.
+
+Crop at cef3c8d (DST b759f3d3b9a4611e): independent 62.6 % of 203 (32.5 % coverage); chaos 10.7 % (FAIL, was 4.3);
+trims 28.8 (FAIL, was 23.3); stack 5 / 17.44 cm2; density 160; separation 25; coherence 48; satin 45 / 0 blobs; 2/9.
+The detail (14 window bands, 15 members, 11 eaves) costs chaos and trims; the decision is fidelity first, cost reported.
+Stack / density to be re-scored once M4g (PR #8) merges. Variants (scratch): depth off 43.3 %; rel 0.6 = 0.75; rel 0.9
+65.5 %; clearance on 67.0 % with 2 windows. 15 of 21 walls cream (2 before), 17 suggestions (7 windows, 10 members).
