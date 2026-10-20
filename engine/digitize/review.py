@@ -21,7 +21,8 @@ def _col(p, threads):
     if p.kind == "zone_stub":                             # stubs: their thread colour, washed 45 % toward grey
         h = threads.get(p.thread, {}).get("hex", "#969696").lstrip("#"); c = [int(h[i:i + 2], 16) for i in (0, 2, 4)]
         return tuple(int(v * 0.55 + 150 * 0.45) for v in c)
-    if p.kind in ("stratum_band", "stratum_crack", "cloud_shade", "cloud_wisp"):   # M2 organic parts: their own thread colour
+    if p.kind in ("stratum_band", "stratum_crack", "cloud_shade", "cloud_wisp",
+                  "canopy", "petal", "knot", "trunk_strip", "branch", "crown_clump_dark", "crown_clump_lit"):   # + M3b   # M2 organic parts: their own thread colour
         h = threads.get(p.thread, {}).get("hex", "#969696").lstrip("#"); return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
     if p.kind == "cloud_lobe": return (250, 250, 245) if p.meta.get("lobe", 0) % 2 == 0 else (225, 228, 240)
     if p.kind == "fall_cord": return (235, 240, 250) if p.meta.get("cord", 0) % 2 == 0 else (190, 210, 240)

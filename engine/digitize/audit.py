@@ -23,7 +23,7 @@ rng.uniform, is counted, listed, and fails the angle check."""
 import math
 import numpy as np
 
-INDEPENDENT = ("rule", "answer", "depth")
+INDEPENDENT = ("rule", "answer", "depth", "splitter")   # M3b: "splitter" = constructed from geometry (extract/splitters/construct.py)
 SELF_DERIVED = ("field-mean", "field")
 OUTLINE = ("outline",)
 SEP_MAX, BAND_MAX = 25.0, 12.5
@@ -56,14 +56,21 @@ def field_basis(p, tol=0.5):
 def basis(p, rb, peers=None):
     s, m = p.dir.source, p.meta
     if s in ("field", "field-mean"): return field_basis(p)[0]
+    if s == "splitter" or (s == "rule" and rb.rule(p.kind).get("dir") == "construct"):
+        from digitize.extract.splitters.construct import basis as cbasis   # ONE constructed basis: M3b construct + M3a rules
+        return cbasis(p, rb, peers)[0]
     if s == "rule":
         d = rb.rule(p.kind).get("dir")
-        if d == "construct":                    # M3a: a rule on fitted geometry, re-derived from the points the part stores
-            from digitize.extract.building_fit import rule_basis
-            return rule_basis(p, rb, peers)
         return float(d) if isinstance(d, (int, float)) else None
     return {"field-mean": m.get("field_angle"), "field": m.get("field_mean"), "answer": m.get("answer_angle"),
             "outline": m.get("outline_angle"), "depth": _depth(m["depth"]) if "depth" in m else None}.get(s)
+
+
+def _construct_why(p, rb=None, peers=None):
+    """why a constructed angle (M3b splitter / M3a construct rule) does not rebuild"""
+    from digitize.extract.splitters.construct import basis as cbasis, is_constructed
+    if not is_constructed(p, rb): return None
+    return cbasis(p, rb, peers)[1]
 
 
 def angle_audit(plan, rb, tol=0.05):
@@ -71,7 +78,7 @@ def angle_audit(plan, rb, tol=0.05):
     for p in plan.parts:
         b = basis(p, rb, plan.parts); sep = float(p.meta.get("sep_deg", 0.0)); band = float(p.meta.get("band_offset_deg", 0.0))
         why = None
-        if b is None: why = (field_basis(p)[1] if p.dir.source in ("field", "field-mean") else None) or f"no basis for source {p.dir.source!r}"
+        if b is None: why = (field_basis(p)[1] if p.dir.source in ("field", "field-mean") else None) or _construct_why(p, rb, plan.parts) or f"no basis for source {p.dir.source!r}"
         elif abs(sep) > SEP_MAX + tol: why = f"separation turn {sep} > {SEP_MAX}"
         elif abs(band) > BAND_MAX + tol: why = f"band offset {band} > {BAND_MAX}"
         elif axial_diff(float(b) + sep + band, p.dir.angle) > (0.5 if p.dir.source in SELF_DERIVED else tol):
@@ -117,11 +124,19 @@ def bucket(source):
     return "other"
 
 
-def direction_by_source(dm, top_part_at):
+def bucket_of(p, rb=None, peers=None):
+    """bucket(p.dir.source), except constructed angles (one place: construct.bucket_of): read off a traced outline (M3b
+    crown fans) or depth-chosen where the render's grain agreed (M3a far tiers) -> "outline" """
+    from digitize.extract.splitters.construct import bucket_of as cb
+    b = cb(p, rb, peers)
+    return b if b is not None else bucket(p.dir.source)
+
+
+def direction_by_source(dm, top_part_at, rb=None, peers=None):
     """dm: qa.direction_match result; top_part_at(centre) -> Part or None (the top-most part under the tile centre)"""
     per = {}
     def add(c, k):
-        p = top_part_at(c); b = bucket(p.dir.source) if p is not None else "bare"
+        p = top_part_at(c); b = bucket_of(p, rb, peers) if p is not None else "bare"
         per.setdefault(b, [0, 0, 0])[k] += 1
     for c in dm["ok_tiles"]: add(c, 0)
     for r in dm["fail_dev"]: add(r["at_mm"], 1)

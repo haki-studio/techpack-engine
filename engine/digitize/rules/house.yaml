@@ -174,6 +174,36 @@ kinds:
     min_d: 0.9
     note: white specks / flower-centre beads (knot size, minimum 0.9)
 
+  # --- M3b --- trees, crowns, blossoms (extract/splitters/trunk.py, crown.py, blossom.py). dir "construct" = the angle is
+  # BUILT by the splitter from the part's geometry (DirSpec source "splitter", meta construct) and rebuilt by
+  # digitize.audit (extract/splitters/construct.py): trunk strips along the traced axis, branches as a column across the
+  # stroke, clumps fanning along their long axis from the attachment end. Florets reuse the M5 kinds floret (radial,
+  # DirSpec mode "radial") + knot (bead dot).
+  canopy:                      # playbook: blossoms = canopy random tatami -> florets -> branches
+    techniques: [tatami]
+    dir: field-mean            # the measured grain over the mass (fixed rows; self-derived, like the stubs); rule 3 turns it
+    note: the shadow tone of a blossom mass under its florets, tatami
+  trunk_strip:                 # playbook: trees = trunk as split-satin strips along the axis
+    techniques: [split_satin, tatami]
+    dir: construct             # along the traced axis (construct rule "axis")
+    note: one strip of a trunk segment, split satin along the axis; same-thread strips alternate +-10 deg
+  branch:                      # playbook: blossoms -> branches last
+    techniques: [split_satin]
+    dir: construct             # a satin column across the stroke along the traced centreline (construct rule "column")
+    follows: [split_satin]     # column mode follows the centreline (DirSpec mode contour)
+    params: {mode: column}
+    z_offset: 0.0              # with the trunk zone (6.5): BEFORE the canopy. Branches sit in the gaps between blossoms (exclusive
+                               # pixels), so the order only decides the 1 mm seam; sewn first, their travel hides under the
+                               # canopy (B2). The playbook order "-> branches" last cost ~1 trim per branch island (M3b run r5).
+    note: a branch segment (narrower than a trunk strip), split satin along the axis
+  crown_clump_dark:            # playbook: crowns as clumps (dark, then lit); clumps fan from the branch
+    techniques: [tatami]
+    dir: construct             # fan: from the attachment point to the clump centre (construct rule "fan")
+    note: one foliage clump in its shadow tone, its lit pieces knocked out (they sew first, B2 / B14)
+  crown_clump_lit:
+    techniques: [tatami]
+    dir: construct
+    note: the lit tone of a clump, sewn before its dark part (knocked out of it), fanning from the same attachment point
   # --- M3a --- constructed parts: buildings (extract/splitters/building.py, extract/building_fit.py). dir "construct" =
   # a RULE applied to the fitted geometry (source "rule", independent of the reference grain, LESSONS A24); `construct`
   # names the rule and digitize.audit re-derives the angle from the fitted points the part stores (building_fit.rule_basis).

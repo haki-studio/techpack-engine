@@ -32,15 +32,24 @@ def _higher(parts, i, tree, pad=0.0):
     return [j for j in tree.query(p.geom.buffer(pad) if pad else p.geom, predicate="intersects") if parts[j].z > p.z]
 
 
+KEEP_TINY = ("knot",)                           # M3b: a bead is a designed 1 mm2 object, not a cut-under sliver
+NO_UNDERLAP = KEEP_TINY                         # M3b: beads sew their declared knots: their outline never grows
+SEAM_MM = {"floret": 0.3}                       # M3b: a floret is knocked out of the canopy, so the full 1 mm underlap is a
+                                                # SECOND layer ring under it (PR #10 review: florets 9.4 mm/mm2); 0.3 mm
+                                                # closes the seam (no-underlap left 9 gaps >= 0.1 mm2 at floret edges)
+
+
 def underlap(parts, keep=1.0):
     """each part grows `keep` mm into any HIGHER part it borders (traced partitions have no overlap; a seam needs one)"""
     if not parts: return parts
     for p in parts: p.geom = clean(p.geom)
     tree = STRtree([p.geom for p in parts]); grow = {}
     for i, p in enumerate(parts):
-        hi = _higher(parts, i, tree, pad=keep)
+        if p.kind in NO_UNDERLAP: continue                  # M3b: beads sew their knots
+        k = SEAM_MM.get(p.kind, keep)                       # M3b: florets only overlap their knocked-out canopy by a seam
+        hi = _higher(parts, i, tree, pad=k)
         if hi:
-            band = clean(p.geom.buffer(keep).intersection(unary_union([parts[j].geom for j in hi])))
+            band = clean(p.geom.buffer(k).intersection(unary_union([parts[j].geom for j in hi])))
             if not band.is_empty: grow[i] = clean(p.geom.union(band))
     for i, g in grow.items(): parts[i].geom = g
     return parts
@@ -70,6 +79,7 @@ def cut_under(parts, keep=1.0):
 
 LINE_KINDS = ("stratum_crack",)
 KEEP_SMALL = ("cloud_wisp", "cloud_shade")      # deliberately small parts: a wisp, a shade layer (never a speck, never a target)
+KEEP_SMALL += ("floret", "knot", "branch", "trunk_strip", "crown_clump_lit")   # M3b: floret parts, branches, lit clump sides are motifs
 
 
 def merge_specks(parts, min_mm2=20.0, protected=(), min_protected_mm2=4.0, touch=0.3, line_kinds=LINE_KINDS, keep_small=KEEP_SMALL):
@@ -101,13 +111,13 @@ def merge_specks(parts, min_mm2=20.0, protected=(), min_protected_mm2=4.0, touch
     return out, moves
 
 
-def absorb_fragments(parts, min_mm2=2.0):
+def absorb_fragments(parts, min_mm2=2.0, tiny_kinds=KEEP_TINY, tiny_mm2=0.5):
     """drop the pieces of a part smaller than min_mm2 (slivers left by cut_under: they sit under a neighbour's edge, or
     are too small to sew); a part left with nothing is removed. Returns (parts, dropped ids)."""
     from digitize.techniques import polys
     keep, dropped = [], []
     for p in parts:
-        lim = float(p.meta.get("min_fragment_mm2", min_mm2))      # M3a: a deliberate small part (a 1-1.5 mm stud) states its own
+        lim = float(p.meta.get("min_fragment_mm2", tiny_mm2 if p.kind in tiny_kinds else min_mm2))   # M3a per-part limit, else M3b bead floor
         ps = [q for q in polys(p.geom) if q.area >= lim]
         if not ps: dropped.append(p.id); continue
         p.geom = unary_union(ps) if len(ps) > 1 else ps[0]; keep.append(p)

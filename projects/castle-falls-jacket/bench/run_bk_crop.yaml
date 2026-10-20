@@ -2,7 +2,7 @@
 #   python3 -m digitize.run projects/castle-falls-jacket/bench/run_bk_crop.yaml --stages all --no-api
 # Paths are relative to the project folder (the folder above bench/). No Anthropic API calls anywhere in this run.
 name: BK_M_crop
-label: "M3a buildings (rule-angled roofs, walls, members; depth by tier)"
+label: "M3b trees, crowns, florets"
 bench: bench/bench.json            # crop, view, registration, close-up, targets
 zones: bench/zones_BK.json         # hand-authored zones for the crop (from the images)
 out_dir: out/digitize/BK_M_crop
@@ -87,4 +87,11 @@ building:
     ornament: [cf_gold]
   eave_w_mm: 1.8
   tile_mm: 3.0
-separate_kinds: [stratum_band, cloud_shade, cloud_wisp, wall, roof]   # M3a: walls / roofs re-separated after the plan's cut-under
+
+# --- M3b --- trees, crowns, blossoms (extract/splitters/trunk.py, crown.py, blossom.py); numbers = the splitters' defaults
+separate_kinds: [stratum_band, cloud_shade, cloud_wisp, wall, roof, canopy, crown_clump_dark, crown_clump_lit, trunk_strip, branch]   # M3a walls / roofs + M3b (rule 3 turns <= 25 deg, audited)
+blossom: {min_mass_mm2: 15.0, canopy_share: 0.15, floret_sep_mm: 3.0, floret_min_mm2: 5.0, floret_r_max: 3.2, floret_r_min: 1.5, fit: 1.35, knot_d: 1.5, notch_mm: 0.6}
+crown: {min_mass_mm2: 20.0, clump_sep_mm: 6.0, min_clump_mm2: 20.0, min_lit_mm2: 6.0, support_mm: 4.0}
+trunk: {min_mm2: 6.0, support_frac: 0.35, min_w_mm: 1.0, strip_split_mm: 3.0, strip_mm: 2.5, max_turn_deg: 25.0}
+rule_overrides:                    # M3b: jacket florets (duck, 40wt) at the house satin spacing, not the Konpeito patch 0.36
+  kinds: {floret: {spacing: 0.45}} # (radial converges to the centre: 0.36 put the florets at 7.9 mm/mm2 on the file)
