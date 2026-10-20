@@ -71,17 +71,32 @@ def glyph(key, ch, height_mm):
     hh = f["hhea"]; asc = hh.ascent; desc = -hh.descent
     k = height_mm / upm
     pen = _Flat(gs); gs[gn].draw(pen)
-    outer, holes = [], []
-    for c in pen.contours:
-        pts = [(x*k, (asc - y)*k * upm/(asc + desc) * (asc + desc)/upm) for x, y in c]
-        if len(pts) < 3: continue
-        pg = Polygon(pts).buffer(0)
-        if pg.is_empty: continue
-        (outer if _signed(c) < 0 else holes).append(pg)     # TrueType: outer contours clockwise (y up)
-    if not outer and holes: outer, holes = holes, []
-    g = unary_union(outer)
-    if holes: g = g.difference(unary_union(holes))
-    return g.buffer(0), gs[gn].width * k
+    return nonzero([[(x*k, (asc - y)*k) for x, y in c] for c in pen.contours]), gs[gn].width * k
+
+def nonzero(contours):
+    """the font rasteriser's NONZERO fill rule on overlapping contours. Rev C (review of PR #20): the old 'union of
+    outer contours minus union of holes' was wrong wherever a variable-font instance keeps OVERLAPPING contours: the
+    holes of 界's 田 box were subtracted from the cross strokes that lie inside them, so the centre vertical was never
+    stitched. Now: node every contour edge, polygonize into faces, keep each face whose winding number (sum of +-1 over
+    the contours that contain it, by orientation) is not 0."""
+    from shapely.ops import polygonize
+    from shapely.geometry import LineString
+    from shapely.prepared import prep
+    rings = []
+    for c in contours:
+        if len(c) < 3: continue
+        pg = Polygon(c)
+        if abs(pg.area) < 1e-9: continue
+        rings.append((c, 1 if _signed(c) > 0 else -1, prep(Polygon(c).buffer(0))))
+    if not rings: return Polygon()
+    edges = unary_union([LineString(c + c[:1]) for c, _, _ in rings])
+    keep = []
+    for f_ in polygonize(edges):
+        if f_.area < 1e-6: continue
+        p = f_.representative_point()
+        w = sum(s for _, s, P in rings if P.contains(p))
+        if w != 0: keep.append(f_)
+    return unary_union(keep).buffer(0) if keep else Polygon()
 
 def set_line(key, text, height_mm, tracking=0.0, kern_pairs=None):
     """horizontal line; returns list of (char, geom) with x from 0, y down (em top = 0)."""

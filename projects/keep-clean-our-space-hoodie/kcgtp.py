@@ -17,6 +17,7 @@ import front as F_                    # front.WELT = this design's welt (engine 
 import hoodie as HD, hflat as HF
 import emb_place as EP, factory as FA, dstview as DV
 import pattern_kc as PC
+import kcdoc as KD
 
 STYLE = kccore.STYLE; REV = kccore.REV_GAR; DATE = kccore.DATE; NAME = kccore.NAME
 FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · GARMENT · {REV} · {DATE}"
@@ -72,6 +73,9 @@ def flat_png(back=False, ppm=3.0, art=True):
             M = _sleeve_affine(Fl, P); base = f"out/stitch/M/HAKI_{kccore.SHORT}_{P}_M"
             g_, _ = F_.pieces("M"); sb = g_[kccore.PIECE_CODE[P]].sew_poly().bounds; sbb = (sb[0]-5, sb[1]-5, sb[2]+5, sb[3]+5); sp_ = ppm * 1.4
             src = DV.image([base], sbb, sp_, bg=None)
+            # the flat is a FRONT view: only the sleeve's front half (S01 x > 0, S02 x < 0) is visible
+            sa = np.array(src); xs_ = sbb[0] + (np.arange(sa.shape[1]) + 0.5) / sp_
+            back = (xs_ < 0) if P == "SR" else (xs_ > 0); sa[:, back, 3] = 0; src = Image.fromarray(sa)
             A = np.array([[M[0], M[1], M[4]], [M[2], M[3], M[5]], [0, 0, 1]]); Ai = np.linalg.inv(A)
             # output px (u, v) -> flat (x, y) -> sleeve (xs, ys) -> source px
             T1 = np.array([[1/ppm, 0, bbx[0]], [0, 1/ppm, bbx[1]], [0, 0, 1]]); T2 = np.array([[sp_, 0, -sbb[0]*sp_], [0, sp_, -sbb[1]*sp_], [0, 0, 1]])
@@ -96,7 +100,7 @@ def p_cover(index):
          f'<line x1="14" y1="45" x2="{SW-14}" y2="45" stroke="{INK}" stroke-width="0.4"/>']
     fr, _ = flat_png(False); bk, _ = flat_png(True, art=False)
     tag, h = img_tag(fr, 14, 50, 100); o.append(tag); o.append(t(14, 50 + h + 4, "FRONT — badges 01–04 + 05 star field (DST read back, size M)", 2.0, 700))
-    tag, h2 = img_tag(bk, 118, 50, 80); o.append(tag); o.append(t(118, 50 + h2 + 4, "BACK + HOOD — plain (sleeve backs carry stars)", 2.0, 700)); o.append(prop(118, 50 + h2 + 7.5, "no embroidery on back + hood", 1.7))
+    tag, h2 = img_tag(bk, 118, 50, 80); o.append(tag); o.append(t(118, 50 + h2 + 4, "BACK + HOOD — plain (sleeve backs carry stars: E05, not drawn here)", 2.0, 700)); o.append(prop(118, 50 + h2 + 7.5, "no embroidery on back + hood", 1.7))
     ix = 206; o.append(t(ix, 56, "CONTENTS", 2.8, 700)); y = 62
     for name, pg in index: o.append(t(ix, y, name, 1.85)); o.append(t(SW - 14, y, str(pg), 1.85, 600, MUTED, "end")); y += 3.7
     y += 3; o.append(t(ix, y, "KEY SPECS", 2.4, 700)); y += 4.6
@@ -195,7 +199,7 @@ def _draw(o, g, codes, x0, y0, wmax, s, lw=0.3, tm=1.2, gap=4, emb=None):
     return y + rowh
 
 def p_pieces():
-    o = H("PATTERN — pieces + cut list (size M)", "Seam allowance included; dashed = sew line; slits = notches; ⊕ = drill holes; outlined areas = embroidery placement (DXF layer 8).", "T4")
+    o = H("PATTERN — pieces + cut list (size M)", "Seam allowance included; dashed = sew line; slits = notches; crossed circles = drill holes; outlined areas = embroidery placement (DXF layer 8).", "T4")
     em = PC.emb_marks("M")
     y1 = _draw(o, gM, ["B01", "F01", "F02", "S01", "S02"], 12, 30, 190, 0.075, 0.32, 1.2, emb=em)
     y2 = _draw(o, gM, ["H01", "H02", "H03", "H04", "K01", "K02", "L01", "L02", "L03"], 12, y1 + 5, 190, 0.05, 0.26, 0.85, 8)
@@ -277,7 +281,7 @@ def p_bom():
             ("Embroidery thread", f"40wt polyester, {len(cols)} colours over the jacket, ≤ 12 per file (G3) — FR + FL + SR + SL", f"{sum(CUR[p]['stitches'] for p in CUR):,} stitches (M)", True),
             ("3D puff foam", "3 mm embroidery foam, black: FR one sheet (01 + 03 dot ring), FL one sheet (02)", "2 sheets", True),
             ("Embroidery backing", f"2.5 oz cutaway, black, 100 cm wide — {hoops} hoopings per jacket (G6), each split file + 30 per side", f"{BACKING:.2f} m", True),
-            ("Thread — seams", "Coats Epic 120 (Tex 27), black", "~ 450 m", False), ("Thread — topstitch", "Coats Gral 40 (Tex 60), tonal charcoal", "~ 140 m", False),
+            ("Thread — seams", "Coats Epic 120 (Tex 27), black — estimate from the block, factory to confirm", "~ 450 m", True), ("Thread — topstitch", "Coats Gral 40 (Tex 60), tonal charcoal — estimate from the block", "~ 140 m", True),
             ("Labels", "Main + size on back neck facing; care label left side seam lining", "1 set", False)]
     hd = ["Item", "Description", "Qty / consumption"]; cx = [12, 52, 200]
     for x_, h_ in zip(cx, hd): o.append(t(x_, 33, h_, 1.8, 700, MUTED))
@@ -344,17 +348,21 @@ def p_fit():
           "5. Shell: 12 oz washed black duck, pre-washed before embroidery; lining: plaid flannel (body), taffeta (sleeves), cream sherpa (hood).",
           f"6. Welts at the mockup's slash position ({F_.WELT['cx']/10:.1f} cm from CF, {F_.WELT['cy']/10:.1f} cm below the neck, {F_.WELT['angle']:.0f}°) via the block's welt override.",
           "7. Sample size M first (the blank fit of the hoodie block is still pending); then the size set.",
+          "8. Embroidery choices (puff, tint threads, CN 汚 vs 污, KR 소중한 vs 소중함, optional extra text): see G4, built as proposed.",
           "Closed 19 Oct: hood block = zip-hoodie block (engine/hoodie.py, elastic hem + cuff bands) — founder decision; welt override in the engine."]
-    for q in qs: o.append(t(12, y, q, 1.7, 400, PROP)); y += 4.2
+    for q in qs: o.append(KD.auto(12, y, q, 1.7, PROP)); y += 4.2          # CJK runs as font outlines
     return o
 
 def p_revisions():
     o = H("REVISION LOG + SAMPLE TRACKER", "Every change, newest last.", "T9")
     revs = [("Rev A", "16 Oct 2026", "Embroidery only: four neon text badges (JP, EN, CN, KR) + star field on the Drum Island body pieces; text set from fonts; "
                             "pattern waiting for the hood block."),
-            ("Rev B", DATE, "Independent review fixes: stroke-column satin text, stipple glow halo, domed puff rims in tint threads + faceted stars, curved JP baseline, "
+            ("Rev B", "19 Oct 2026", "Independent review fixes: stroke-column satin text, stipple glow halo, domed puff rims in tint threads + faceted stars, curved JP baseline, "
                             "solid red star, CN + KR text from the founder's source frame, motifs traced + A14/A15 gates, every mockup star placed (seam glints removed), heavier EN; compare sheets drawn from the DST files. "
-                            "Garment: zip-hoodie block (founder decision 19 Oct) with this mockup's slash welts (engine welt override); pattern XS–3XL, DXF + 1:1 plot, T pages.")]
+                            "Garment: zip-hoodie block (founder decision 19 Oct) with this mockup's slash welts (engine welt override); pattern XS–3XL, DXF + 1:1 plot, T pages."),
+            ("Rev C", DATE, f"Factory answers (19 Oct): hoop splits for the {KD.FR_S} frame (factory.json) instead of the assumed 360 × 360, F1 updated; 3D puff: foam on its own "
+                            f"machine stop, flat glow cut back under the puff to a {kccore.CUT_KEEP_MM:.0f} mm edge band (house rule 6, checked on every DST); every file rebuilt from the "
+                            "current art (the Rev B files predated the last sparkle fix); glow + haze stipple no longer bridge long hops with straight lines (up to 57 mm in Rev B; trims reported); page checks (sleeve flat front half, CJK text as outlines, thread estimates flagged).")]
     y = 36
     for rv, dt, ch in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(36, y, dt, 1.7))

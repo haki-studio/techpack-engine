@@ -51,10 +51,10 @@ KC_RULES = {
  "OVAL-hl":("Oval ring highlight",        "Satin column, closed", "across the ring",        "0.28 zz",  "—",    "none",                  "0.10", "1.1 wide, on top"),
  "FACE":   ("Star face (eyes/centre)",    "Satin dot",          "across dot",               "0.40",  "—",    "none",                  "0.10", "Ø 1.2"),
  # Rev B codes (review Rev A): columns = one satin per stroke along its centreline (kcsatin)
- "GLOW":   ("Neon glow, stipple run",     "Run, random short stitches", "random",          "0.30 + 0.16/mm out", "1.8", "none",     "—",    "fades 0–4.5 mm from the art"),
+ "GLOW":   ("Neon glow, stipple run",     "Run, random short stitches", "random",          "0.30+0.16/mm", "1.8", "none",     "—",    "fades 0–4.5 mm from the art"),
  "GLOW-D": ("Neon halo, dense band",      "Tatami, sheer",      "along the badge line",     "0.60",  "2.5",  "none",                  "—",    "0–1.9 mm round the art"),
  "GLOW-S": ("Neon halo, soft band",       "Tatami, open",       "along the badge line +8°", "1.30",  "2.5",  "none",                  "—",    "1.9–3.8 mm, ragged edge"),
- "HAZE":   ("Sparkle haze",               "Tatami, open",       "random per sparkle",       "1.10",  "2.5",  "none",                  "—",    "under sparkles ≥ 5 mm"),
+ "HAZE":   ("Sparkle haze, stipple run",  "Run, random short stitch", "random",          "0.55+0.35/mm", "1.5", "none",            "—",    "ring 0–r round sparkles ≥ 5 mm"),
  "SPK":    ("Sparkle (concave 4-point)",  "Satin, 2 tapered columns", "across each arm",    "0.24 zz",  "—",    "none",                  "0.00", "tips stop 0.3 short"),
  "TXC":    ("Text stroke column, flat",   "Satin column",       "across the stroke",        "0.25 zz",  "—",    "centre run",            "0.15", "1 column per stroke"),
  "PF-TXC": ("Text stroke column, puff",   "Satin column over foam", "across the stroke",    "0.20 zz",  "—",    "none (foam)",           "0.30", "core under the rim"),
@@ -216,11 +216,36 @@ def _patch_make_pattern(dst2):
     assert src.count(a) == 1 and src.count(b) == 1, "engine make_pattern changed: update kccore._patch_make_pattern"
     src = src.replace(a, a + '        _kc = _kc_init(objs, cov, si, sewn_same)\n')
     src = src.replace(b, '            _kc_sewn(_kc, o, sewn_same)\n')
+    # Rev C, house rule 6 under puff (LESSONS B34): flat stops (sewn BEFORE the foam is laid) may not hide their travel
+    # under the later puff stops: inside the puff footprint minus CUT_KEEP_MM the 'later cover' is removed for them, so
+    # no flat needle point lands inside the foam (gate: kcstitch.foam_gates base_under_puff)
+    c_ = '    for si, s in enumerate(stops):\n        k = s["col"]\n'
+    assert src.count(c_) == 1, "engine make_pattern changed: update kccore._patch_make_pattern (foam mask)"
+    src = src.replace(c_, '    _fm = _kc_foam_init(cov, stops)\n' + c_ + '        _kc_foam_stop(cov, _fm, s)\n')
     ns = dict(vars(dst2))
+    def _kc_foam_init(cov, stops):
+        from shapely.ops import unary_union
+        pg = [r["geom"] for s in stops if s.get("puff") for r in s["regions"]]
+        if not pg: return None
+        # mask from 0.5 mm inside the puff edge: the router's raster (0.2 mm px) and its 0.8 mm endpoint forgiveness let
+        # travel reach ~0.4 mm past its mask, and the gate counts points deeper than CUT_KEEP_MM + 0.25
+        core = unary_union(pg).buffer(-0.5)
+        if core.is_empty: return None
+        m = cov._draw(core, 0.0)
+        lf, rf = cov.later.copy(), cov.raw.copy(); lf[m] = -1; rf[m] = -1
+        return dict(full=(cov.later, cov.raw), flat=(lf, rf))
+    def _kc_foam_stop(cov, fm, s):
+        if fm is None or os.environ.get("KC_FOAM_MASK", "1") == "0": return          # KC_FOAM_MASK=0: diagnosis only
+        cov.later, cov.raw = fm["full"] if (s.get("puff") or s.get("top")) else fm["flat"]
+    ns["_kc_foam_init"] = _kc_foam_init; ns["_kc_foam_stop"] = _kc_foam_stop
     def _kc_init(objs, cov, si, sewn_same):
         base = (cov.later > si) | cov.merged(si + 1)
         cnt = np.zeros(base.shape, np.int16); loc = {}
         for o in objs:
+            # Rev C: a sheer stipple run (glow / haze) hides nothing: travel laid across its footprint shows as a straight
+            # line through the halo (Rev C first build: a 29.7 mm line across the JP glow once the foam mask stopped
+            # travel hiding under the puff letters). Travel hops along a run's own piece still use its own halo.
+            if o["r"].get("run_pts") and os.environ.get("KC_SHEER_HIDES", "0") != "1": continue
             g = o["r"]["geom"].buffer(0.1); bb = g.bounds
             c0 = max(0, int((bb[0] - cov.x0) * cov.ppm) - 1); r0 = max(0, int((bb[1] - cov.y0) * cov.ppm) - 1)
             c1 = min(cov.W, int((bb[2] - cov.x0) * cov.ppm) + 2); r1 = min(cov.H, int((bb[3] - cov.y0) * cov.ppm) + 2)
@@ -263,4 +288,5 @@ ELEMENTS = {   # id -> (slug, title, piece)
 # Japanese-form 汚 (Simplified would be 污 — PROPOSED alternative); KR is the reference read upright (it is drawn rotated
 # 180°), in the grammatical form 소중한 (the reference glyph reads 소중함 — confirm).
 TEXT = {"01": "宇宙をきれいに", "02": ("KEEP", "CLEAN", "OUR SPACE"), "03": "不要世界汚染", "04": "우리들 소중한 우주!"}
-REV_EMB = "Rev B"; REV_GAR = "Rev B"; DATE = "19 Oct 2026"
+REV_EMB = "Rev C"; REV_GAR = "Rev C"; DATE = "20 Oct 2026"
+CUT_KEEP_MM = 1.0      # house rule 6 (docs/DIGITIZING_PRINCIPLES.md, engine/digitize/rules/house.yaml cut_keep_mm): flat work under puff keeps 1 mm under the edge

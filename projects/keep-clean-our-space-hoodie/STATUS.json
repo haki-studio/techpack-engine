@@ -1,0 +1,119 @@
+{
+ "slug": "keep-clean-our-space-hoodie",
+ "log": [
+  [
+   "2026-10-16T21:02:54",
+   "intake",
+   "projects created from inbox"
+  ],
+  [
+   "2026-10-16T21:13:00",
+   "inventory",
+   "5 elements: 01 JP badge (FR upper), 02 EN badge (FL upper), 03 CN badge (FR lower), 04 KR oval (FL lower), 05 star field (fronts + sleeves); back + hood plain (proposed). Body = Drum Island, hood pattern waits for engine PR"
+  ],
+  [
+   "2026-10-16T21:40:35",
+   "art",
+   "4 badges + star field composed on Drum Island M; all 7 sizes fit keep-outs (EN badge nudged 6-9 mm)"
+  ],
+  [
+   "2026-10-16T22:14:27",
+   "stitch",
+   "M fronts built (FR 23k st/127 trims, FL 22k/87, foam pause marked); all sizes + splits building"
+  ],
+  [
+   "2026-10-16T23:56:40",
+   "qa",
+   "all 7 sizes x 4 pieces + splits built; every section fits 360 frame; keep-outs pass all sizes"
+  ],
+  [
+   "2026-10-17T00:12:46",
+   "pattern",
+   "WAITING: hoodie block is on origin (engine/hoodie.py, c026934) but not in the shared tree (builders no longer pull); it also hard-codes the Drum Island welt, which collides with badge 03 \u2014 needs a welt override (ENGINE_NOTES 10)"
+  ],
+  [
+   "2026-10-17T00:12:46",
+   "documents",
+   "embroidery pack 15 pp (G1-G6, E01-E05, S1-S2, R1, F1), merged + shrunk 4.0 MB, zip 29.9 MB"
+  ],
+  [
+   "2026-10-17T00:13:12",
+   "delivered",
+   "Rev A embroidery pack delivered (15 pp, 112 stitch files incl. splits). M: FR 23,604 st/172 trims, FL 21,459/114, SR 2,619/118, SL 2,274/104. Pattern + T pages waiting for hood block sync + welt override"
+  ],
+  [
+   "2026-10-19T13:57:01",
+   "art",
+   "Rev B art: stroke-column satin (kcsatin), soft halo glow, domed rims + faceted stars, curved JP baseline (-38.6 to -27.1 deg, measured), solid red star, KR ornaments restored, 190/190 front stars placed every size, keep-outs pass all sizes; stitch build queued on heavy.sh"
+  ],
+  [
+   "2026-10-19T14:24:46",
+   "stitch",
+   "Rev B stitch build queued: all 7 sizes x 4 pieces + splits (column satin, stipple glow halo, domed rims, faceted stars, KR ornaments, CN wght 600)"
+  ],
+  [
+   "2026-10-19T15:13:53",
+   "stitch",
+   "Rev B size M built (FR 59,513 st/393 trims, FL 46,375/266, SR 10,174/209, SL 8,063/172, max 6.99); other sizes + docs running"
+  ],
+  [
+   "2026-10-19T15:13:53",
+   "stitch",
+   "questions added"
+  ],
+  [
+   "2026-10-19T15:13:53",
+   "stitch",
+   "questions added"
+  ],
+  [
+   "2026-10-19T16:00:00",
+   "pattern",
+   "hood question CLOSED (founder 19 Oct: zip-hoodie block, engine welt override used for the 58 deg slash welts); pattern QA all sizes pass"
+  ],
+  [
+   "2026-10-19T18:00:00",
+   "art",
+   "text from the founder's source frame (inputs/reference.png): CN \u4e0d\u8981\u4e16\u754c\u6c5a\u67d3, KR \uc6b0\ub9ac\ub4e4 \uc18c\uc911\ud55c \uc6b0\uc8fc!; old proposal \u4e0d\u8981\u6c61\u67d3\u5730\u7403 / \uc6b0\uc8fc\ub97c \uae68\ub057\ud558\uac8c CLOSED; KR marks were the rotated '!'"
+  ],
+  [
+   "2026-10-19T17:46:50",
+   "stitch",
+   "text from source frame; every motif traced (A14) - pre-check gates 2 tiny field motifs left; full DST rebuild queued"
+  ],
+  [
+   "2026-10-20T11:18:58",
+   "art",
+   "Rev C started: Rev B DSTs (19 Oct 20:13) predate the last art change (20:55), full rebuild; frames 400x450 (factory.json); rule 6 knockout of flat glow under puff (Rev B FR M: 110 glow needle points inside the foam)"
+  ],
+  [
+   "2026-10-20T11:40:00",
+   "stitch",
+   "Rev C stitch build: 400x450 splits (fronts 2, sleeves 4 hoopings at M); foam gate caught 1 flat point in XS/S FR S1_top -> glow cut 0.3 mm inside puff edge, full rebuild running"
+  ],
+  [
+   "2026-10-20T14:21:12",
+   "delivered",
+   "Rev C delivered: 25-page merged PDF + zip; 112 files pass prod_gates (frame 400x450, <=12 colours, max stitch 7.07, foam stop + 0 flat points in foam, no straight sheer lines), A14 blocking 0, keep-outs + pattern QA pass. M: FR 58,696/500, FL 45,938/351, SR 6,700/199, SL 6,888/192"
+  ],
+  [
+   "2026-10-20T15:57:46",
+   "delivered",
+   "Rev C review fixes (PR #20): \u754c/\u8981 glyph fill (nonzero), per-glyph gate (all sizes green), one foam procedure from the stop lists, exact travel, JP mint dot, tests + LESSONS A32/B40/B41/D5. M: FR 58,974/524, FL 46,764/378, SR 6,735/204, SL 6,944/200"
+  ]
+ ],
+ "questions": [
+  "Back and hood: the mockup shows only the front. Proposed: back and hood plain, star field on fronts + both full sleeves. Confirm (or send a back view).",
+  "3D puff: badges look raised. Proposed: puff (3 mm foam) on JP/EN text, JP spark bars + hearts, EN stars; flat satin elsewhere. Can the factory sew puff? Fallback = same files sewn without foam (flat satin).",
+  "Domed puff look: Rev B adds 4 tint threads (mint, blue, red, lemon tints) for the lighter rims + a dim star-haze thread; FR uses 12 colours = the factory maximum. OK, or drop a tint (e.g. lemon tint -> white rim) to keep a spare needle?",
+  "CN ring dots are now 3D puff (mockup shows domed dots) - FR foam sheet covers badge 01 + the 03 dot ring. OK?",
+  "CN text \u4e0d\u8981\u4e16\u754c\u6c5a\u67d3: the source frame draws the Japanese-form \u6c5a; Simplified Chinese is \u6c61. Keep \u6c5a (as the source) or use \u6c61?",
+  "KR text: the source glyph reads \uc18c\uc911\ud568; set as the grammatical \uc6b0\ub9ac\ub4e4 \uc18c\uc911\ud55c \uc6b0\uc8fc!. OK, or keep \uc18c\uc911\ud568 exactly as drawn?",
+  "Optional: add the source frame's small 'WE WANT NO DIRTY COSMOS' text (near the ship)? It is not on the mockup, left out."
+ ],
+ "stage": "delivered",
+ "stage_index": 7,
+ "blocked": false,
+ "updated": "2026-10-20T15:57:46",
+ "preview": "out/compare_03_cn-badge.png"
+}

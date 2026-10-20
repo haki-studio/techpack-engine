@@ -121,6 +121,11 @@ def text_regs(glyphs, col, code, unit, cap, rim=False, layer=31):
     core, rims = KM.text_columns(glyphs, col, code, cap, unit, rim=rim)
     return core, rims
 
+def ref_glyphs(el, piece, glyphs, threads):
+    """Rev C glyph gate (glyph_gate.py): the FONT's own glyph outlines as placed here (never the stroke columns), with the
+    threads that stitch them; the gate compares each one with the stitched text read back from the DST."""
+    META.setdefault("glyphs", {}).setdefault(el, []).extend(dict(ch=ch, piece=piece, wkt=g.wkt, threads=threads) for ch, g in glyphs)
+
 def put(piece, pair, layer, el, unit, rim_layer=32):
     core, rim = pair[0], pair[1]
     add(piece, core, layer, el, unit=unit); add(piece, rim, rim_layer, el, unit=unit)
@@ -145,9 +150,20 @@ JANG = jp_tangent(float(np.mean(_cx)))
 META["badges"]["01"] = dict(anchor_px=J0, centre=JC, angle=JANG, angle_start=jp_tangent(_cx[0]), angle_end=jp_tangent(_cx[-1]),
                             em=em_jp, text=kccore.TEXT["01"], baseline="quadratic through the 7 measured glyph centres")
 jp = register(jp, ref_fn_for(J0, JC, "mint"), "01")          # each glyph fitted to the mockup glyph silhouette (A14)
-jcore, jrim = text_regs(jp, "kc_mint", "PF-TXC", "01-text", "round", rim=True)
+jcore, jrim = text_regs(jp, "kc_mint", "PF-TXC", "01-text", "round", rim=True); ref_glyphs("01", "FR", jp, ["kc_mint", "kc_mint_lt"])
 jshape = unary_union([r["geom"] for r in jcore + jrim])
 add("FR", KM.stipple_band(jshape, "01-glow", outer=4.5, seed=11), 20, "01", unit="01-glow")
+# Rev C (review of PR #20): the mockup has a small mint dot right of い (A14 row 'moved', 5.8 mm2, 93 mm from CF) that no
+# Rev B/C motif stitched. Traced from the mockup's own mint component (TR.comps), flat satin dot (code DOT, mint).
+_dp = (J0[0] + (-93.0 - JC[0]) / S, J0[1] + (111.2 - JC[1]) / S)
+_dc = [c for c in TR.comps("mint", (int(_dp[0]) - 10, int(_dp[1]) - 10, int(_dp[0]) + 10, int(_dp[1]) + 10)) if c["area"] > 1]
+if _dc:
+    _c = min(_dc, key=lambda c: math.hypot(c["cx"] - _dp[0], c["cy"] - _dp[1]))
+    _x, _y = J(_c["cx"], _c["cy"]); _d = max(1.45, 2 * math.sqrt(_c["area"] * S * S / math.pi))
+    _a = math.radians(35.0); _r = _d / 2
+    add("FR", [KS.column_region("kc_mint", "DOT", [(_x - math.cos(_a) * _r, _y - math.sin(_a) * _r), (_x + math.cos(_a) * _r, _y + math.sin(_a) * _r)], _d)],
+        22, "01", unit="01-dot2")
+    META["traced"].setdefault("01", {})["small mint dot"] = dict(x=round(_x, 1), y=round(_y, 1), d=round(_d, 2))
 BARS_JP = [  # mockup px centre, length px, angle deg (y down), colour  (17 bars, counted on the mockup)
     ((298.5, 537.2), 26.0, -8, "kc_mint"), ((347.6, 474.3), 23.0, 52, "kc_mint"), ((454.8, 495.9), 25.6, 52, "kc_mint"),
     ((465.6, 410.5), 25.7, 110, "kc_blue"), ((401.0, 439.6), 16.3, 73, "kc_blue"), ((314.0, 512.7), 11.9, 42, "kc_blue"),
@@ -234,6 +250,7 @@ META["badges"]["02"] = dict(anchor_px=E0, centre=EC, angle=EANG, em=em_en, pitch
                             text_shift=tuple(round(v, 1) for v in EN_SHIFT))
 ecore, erim = text_regs(keep + L2, "kc_mint", "PF-TXC", "02-text", "round", rim=True)
 ccore, crim = text_regs(clean, "kc_lemon", "PF-TXC", "02-text", "round", rim=True)
+ref_glyphs("02", "FL", keep + L2, ["kc_mint", "kc_mint_lt"]); ref_glyphs("02", "FL", clean, ["kc_lemon", "kc_lemon_lt"])
 eshape = unary_union([r["geom"] for r in ecore + erim + ccore + crim])
 add("FL", KM.stipple_band(eshape, "02-glow", outer=4.5, seed=12), 20, "02", unit="02-glow")
 STARS_EN = [(325, 105), (425, 130), (495, 215), (570, 300), (645, 400), (720, 495), (770, 600), (800, 840), (750, 935), (645, 985),
@@ -278,7 +295,7 @@ colm = KL.set_column("cn", kccore.TEXT["03"], em_cn, gap=(math.dist(t0, t1) - 5*
 mid = ((t0[0] + t1[0])/2, (t0[1] + t1[1])/2)
 cn = KL.place(colm, *mid, col_ang)
 META["badges"]["03"].update(em=em_cn, angle=col_ang)
-put("FR", text_regs(cn, "kc_red", "TXC", "03-text", "flat"), 26, "03", "03-text")
+put("FR", text_regs(cn, "kc_red", "TXC", "03-text", "flat"), 26, "03", "03-text"); ref_glyphs("03", "FR", cn, ["kc_red"])
 
 # ================================================================ 04 KR oval  (FL, wearer's left lower front)
 K0 = (723.3, 891.8); K = anchor(*K0); KC = K(*K0); KANG = 6.9
@@ -299,7 +316,7 @@ while True:
     if unary_union([g for _, g in kr]).distance(_ovg) >= 3.0 or em_kr <= 12: break
     em_kr -= 0.5
 META["badges"]["04"] = dict(anchor_px=K0, centre=KC, angle=KANG, em=em_kr, tracking=trk_kr, text=kccore.TEXT["04"], axes=(a_c + wr/2, b_c + wr/2, wr))
-put("FL", text_regs(kr, "kc_white", "TXC", "04-text", "flat"), 26, "04", "04-text")
+put("FL", text_regs(kr, "kc_white", "TXC", "04-text", "flat"), 26, "04", "04-text"); ref_glyphs("04", "FL", kr, ["kc_white"])
 # Review item 7 resolved by the source frame (inputs/reference.png): the render's "i-arrow mark" is the "!" of 우주! drawn
 # rotated 180°, and its accent marks are parts of rotated Hangul — they are now part of the text, no separate ornaments.
 META["badges"]["04"]["ornaments"] = []

@@ -26,6 +26,10 @@ _src = _src.replace("xs = np.linspace(b[0] + (b[2]-b[0])*0.40, b[0] + (b[2]-b[0]
 assert "0.85, 57" in _src and "0.75, 41" in _src, "engine split_clip changed: update the search patch"
 _ns = dict(vars(dst2)); exec(_src, _ns); split_clip_wide = _ns["split_clip"]
 
+# Rev C (glyph gate): every travel move is checked on the EXACT geometry (dst2.ExactCover, LESSONS B27): more than 0.5 mm
+# on bare fabric -> trim. The raster router forgave a 1.6 mm float between the KR "!" stem and its dot.
+EXACT = dict(halo=0.25, max_ex=0.5)
+
 def is_puff(r): return tech.rule_for(r["grp"]).startswith("PF-") and kccore.PUFF
 
 def is_top(r): return r["layer"] >= 30 and not is_puff(r)      # details sewn ON the puff (star centre), after the foam is torn
@@ -57,7 +61,13 @@ def sews(stops, basting=False):
     if basting and out: out[0]["codes"] = ["REG crosses"] + out[0]["codes"]
     return out
 
-def record(base, stops, extra, basting=False):
+def foam_gates(base, rb, regs, origin, tol=0.25):
+    """kcgates.foam_gates on this written file, puff footprint = the union of its puff regions (tested in tests/test_kcos_gates.py)"""
+    import kcgates
+    return kcgates.foam_gates(base + ".dst", rb["per_stop"], unary_union([r["geom"] for r in regs if is_puff(r)]), origin,
+                              keep=kccore.CUT_KEEP_MM, tol=tol)
+
+def record(base, stops, extra, basting=False, regs=None):
     rb = readback.dst(base + ".dst"); rb["threads"] = factory.check_threads(base + ".pes")
     info = sews(stops, basting)
     assert len(info) == rb["stops"], f"{base}: {len(info)} stops built vs {rb['stops']} in the DST"
@@ -66,6 +76,7 @@ def record(base, stops, extra, basting=False):
     rb["foam_pause_before_stop"] = fp[0] if fp else None
     tp = [ps["stop"] for ps in rb["per_stop"] if ps.get("top")]
     rb["foam_tear_before_stop"] = tp[0] if tp else None
+    if regs is not None: rb["foam"] = foam_gates(base, rb, regs, extra["origin"])
     rb.update(extra, file=base); return rb
 
 def runs_exposed(stops, st):
@@ -80,12 +91,12 @@ for P in which:
     if "splitsonly" not in sys.argv:
         t = time.time()
         ub = dst2.bounds_of([r["geom"] for r in vis]); c = ((ub[0]+ub[2])/2, (ub[1]+ub[3])/2)
-        stops, n0 = stops_for(vis); pat, st = dst2.make_pattern(vis, stops, c)
+        stops, n0 = stops_for(vis); pat, st = dst2.make_pattern(vis, stops, c, exact_travel=EXACT)
         base = f"{OUT}/{PREFIX}_{P}_{size}"
         dst2.write(pat, base); dst2.render(base, base + "_preview.png", bg=(25, 28, 36), s=0.5)
         res["full"] = record(base, stops, dict(origin=c, art_box=ub, stops_before_merge=n0, secs=round(time.time()-t),
                                                build_trims_by_code=sorted(st.get("by", {}).items(), key=lambda kv: -kv[1])[:10],
-                                               trims_why=st.get("why", {}), **runs_exposed(stops, st)))
+                                               trims_why=st.get("why", {}), **runs_exposed(stops, st)), regs=vis)
         f_ = res["full"]
         print(size, P, {k: f_[k] for k in ("stitches", "trims", "jumps", "stops", "size_mm", "max_stitch", "foam_pause_before_stop")}, f"{f_['secs']}s", flush=True)
         json.dump(res, open(rp, "w"), default=float, indent=1)
@@ -107,10 +118,10 @@ for P in which:
                 t = time.time(); stops, n0 = stops_for(sv)
                 bb = dst2.bounds_of([r["geom"] for r in sv] + [Point(m).buffer(6) for m in marks[key]])
                 cc = ((bb[0]+bb[2])/2, (bb[1]+bb[3])/2)
-                pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=marks[key])
+                pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=marks[key], exact_travel=EXACT)
                 base = f"{OUT}/splits/{PREFIX}_{P}_{size}_{names[key]}"; os.makedirs(os.path.dirname(base), exist_ok=True)
                 dst2.write(reg_in_first_colour(pat), base); dst2.render(base, base + "_preview.png", bg=(25, 28, 36), s=0.5)
-                r = record(base, stops, dict(bbox=bb, origin=cc, marks=marks[key], secs=round(time.time()-t)), basting=True)
+                r = record(base, stops, dict(bbox=bb, origin=cc, marks=marks[key], secs=round(time.time()-t)), basting=True, regs=sv)
                 r["fits"] = r["size_mm"][0] <= FRAME[0] - 16 and r["size_mm"][1] <= FRAME[1] - 16
                 spl["sections"][names[key]] = r
                 print(size, P, names[key], {k: r[k] for k in ("stitches", "trims", "stops", "size_mm", "fits")}, flush=True)

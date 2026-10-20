@@ -161,12 +161,36 @@ RIM_OVL = 0.3         # the core runs this far under the rim
 
 def _core_w(w, rw=RIM_W): return max(0.9, w - 2 * (rw - RIM_OVL))
 
+def gap_fillers(P, sts, min_mm2=2.0):
+    """Rev C (glyph gate): parts of the font glyph that no stroke column covers get their own short column across the
+    piece's long axis (the KR '!' dot had no skeleton at all; an A apex cut at the corner left its outer point bare).
+    One filler per uncovered piece >= min_mm2; width = the piece's narrow side, round caps."""
+    covered = KS.strokes_geom(sts).buffer(0.1) if sts else None
+    left = P.difference(covered) if covered is not None else P
+    out = []
+    for q in polys(left.buffer(-0.05).buffer(0.05)):
+        if q.area < min_mm2: continue
+        r = q.minimum_rotated_rectangle; cs = list(r.exterior.coords)
+        e0 = np.subtract(cs[1], cs[0]); e1 = np.subtract(cs[2], cs[1])
+        L, W, ax = (np.linalg.norm(e0), np.linalg.norm(e1), e0) if np.linalg.norm(e0) >= np.linalg.norm(e1) else (np.linalg.norm(e1), np.linalg.norm(e0), e1)
+        from shapely.ops import polylabel
+        pc = polylabel(q, 0.03); rr = q.exterior.distance(pc)          # widest inscribed disc: the filler stays inside
+        if rr < 0.3: continue                                             # a sliver under the neighbours' pull comp
+        w = max(0.9, 2 * rr)                            # the inscribed width (pull comp is added by the satin builder)
+        u = ax / max(np.linalg.norm(ax), 1e-9)
+        c = np.array(pc.coords[0])
+        # a round piece (a dot) is one disc column across its diameter (round caps shrink inside the ends, as disc_rc);
+        # a long sliver gets a short column centred on its widest point (spills less at the sliver tips)
+        h = L / 2 - 0.1 if L <= 3.2 * rr else max(0.1, (L - w) / 2)
+        out.append(dict(cl=[tuple(c - u * h), tuple(c + u * h)], w=w, caps=("round", "round"), closed=False, filler=True))
+    return out
+
 def text_columns(glyphs, col, code, cap, unit, rim=False, rim_code="PF-RIM", **kw):
     """font glyphs -> stroke columns (core) [+ lighter rim columns round the stroke outline, puff dome look]."""
     core, rims = [], []
     for ch, g in glyphs:
         for P in polys(g):
-            sts = KS.glyph_columns(P, cap)
+            sts = KS.glyph_columns(P, cap); sts = sts + gap_fillers(P, sts)
             if not sts: continue
             for s in sts:
                 w = _core_w(s["w"]) if rim else s["w"]
@@ -303,7 +327,7 @@ def oval_cols(cx, cy, a, b, w, col, ang=0.0, hl_col=None, hl_w=1.1, unit=None):
 
 # ---------------------------------------------------------------- Rev B soft glow: stipple run (review item 2)
 def stipple_band(shape, unit, inner=0.0, outer=3.6, col="kc_glow", code="GLOW", seed=7, s0=0.30, k=0.16, hole_inset=0.45,
-                 step=1.8, glow=True):
+                 step=1.8, glow=True, max_hop=3.0):
     """soft glow: a random short-stitch run inside the band round `shape` (0..outer mm from its silhouette, following
     it — no bridging), point spacing s0 + k * distance, so it is dense at the art and fades out. One run per connected
     band (greedy nearest-neighbour path, hops > step re-stitched). Returns regions with r['run_pts']."""
@@ -326,7 +350,7 @@ def stipple_band(shape, unit, inner=0.0, outer=3.6, col="kc_glow", code="GLOW", 
         if len(P) < 3: continue
         # greedy nearest-neighbour walk (KD-tree)
         from scipy.spatial import cKDTree
-        tree = cKDTree(P); used = np.zeros(len(P), bool); i = int(np.argmin(P[:, 0])); path = [tuple(P[i])]; used[i] = True
+        tree = cKDTree(P); used = np.zeros(len(P), bool); i = int(np.argmin(P[:, 0])); path = [tuple(P[i])]; used[i] = True; paths = []
         for _ in range(len(P) - 1):
             kq = 8
             while True:
@@ -340,8 +364,16 @@ def stipple_band(shape, unit, inner=0.0, outer=3.6, col="kc_glow", code="GLOW", 
                 j = rest[np.argmin(np.hypot(P[rest, 0] - P[i, 0], P[rest, 1] - P[i, 1]))]
             else: j = cand[0]
             a = path[-1]; bpt = tuple(P[j]); L = math.dist(a, bpt)
+            if L > max_hop:                      # Rev C: a long hop was sewn as a straight line across the halo (up to
+                paths.append(path); path = [bpt]  # 57 mm on Rev B FR M): start a new run instead (the router hides / trims)
+                used[j] = True; i = j; continue
             if L > step:
                 n = int(math.ceil(L / step)); path += [(a[0] + (bpt[0] - a[0]) * t / n, a[1] + (bpt[1] - a[1]) * t / n) for t in range(1, n)]
             path.append(bpt); used[j] = True; i = j
-        regs.append(dict(col=col, geom=part, st="run", ang=None, grp=code, unit=unit, kob=0.0, nok=True, ko=False, glow=True, run_pts=path))
+        paths.append(path)
+        for pth in paths:
+            if len(pth) < 3: continue
+            gg = LineString(pth).buffer(0.35)
+            if gg.geom_type != "Polygon": gg = max(getattr(gg, "geoms", [gg]), key=lambda q: q.area)
+            regs.append(dict(col=col, geom=gg, st="run", ang=None, grp=code, unit=unit, kob=0.0, nok=True, ko=False, glow=True, run_pts=pth))
     return regs
