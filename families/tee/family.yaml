@@ -1,0 +1,147 @@
+# TEE FAMILY — everything that is the same for every Haki tee made by Mandy. Built once; every variant reuses it.
+# Plain value = confirmed (source in a comment or `source:`).  {proposed: ...} = not recorded yet -> printed amber
+# "[proposed — confirm]" and asked on the F1 page. When Mandy answers, replace {proposed: x} with the answer.
+
+family: tee
+name: Haki heavyweight tee
+factory:
+  name: Jiangxi Shengnan Garment Co., Ltd
+  contact: Mandy Luo
+rev: Rev A
+date: 20 Oct 2026
+
+# printed first on the F1 page (most important open questions for the factory)
+factory_questions:
+  - "Please send the full graded measurement chart for the new tee shape (as produced for the black From the Shadows tee), XS-2XL, with tolerances."
+  - "Please confirm the print method for each design (screen / DTG / DTF / puff) and the ink type (we ask for water-based, no plastisol)."
+
+# ---------------------------------------------------------------------------------------------------- POM CHART
+# ONE entry. Swap this whole block (e.g. for the Shadows tee chart) and every page changes: table, flats, placement.
+pom_chart:
+  status: {proposed: "new tee shape (the black 'From the Shadows' tee) = Mandy's chart + the March 2026 changes recorded at size L; full graded chart not received",
+           note: "Founder 2026-10-20: base every tee on the Shadows tee fit. Ask Mandy for the full graded new-shape chart XS-2XL with tolerances."}
+  # BASE = Mandy's graded chart exactly as sent. When Mandy sends the new-shape chart, paste it here and delete `deltas`.
+  base:
+    source: "Mandy 'POM inch' chart, WhatsApp 2026-01-25 (msg 2f4a1b39), XS-2XL; straight hem; no tolerances"
+    unit: in
+    sizes: [XS, S, M, L, XL, 2XL]
+    base_size: M
+    # half: true = HALF measure, measured flat (LESSONS C2). Circumference = 2 x the chart value.
+    # tol: Mandy's own format (hoodie spec 57cf6d91: 1/2 chest +-1, bottom +-1, FND +-0.5); tee tolerances never recorded.
+    poms:
+      A: {name: Body length, how: "HPS to hem edge", half: false,
+          values: ["24 1/2", "25 1/2", "26 1/2", "27 1/2", "28 1/2", "29 1/2"], tol: {proposed: 1}, tol_unit: cm}
+      B: {name: Chest, how: "1/2, 1 in below armhole, flat", half: true,
+          values: ["20 3/4", "21 3/4", "22 3/4", "23 3/4", "24 3/4", "25 3/4"], tol: {proposed: 1}, tol_unit: cm}
+      C: {name: Shoulder, how: "seam to seam, across back", half: false,
+          values: ["19 1/2", "20 1/4", "21", "21 3/4", "22 1/2", "23 1/4"], tol: {proposed: 0.75}, tol_unit: cm}
+      D: {name: Bottom, how: "1/2, along hem edge, flat", half: true,
+          values: ["20 3/4", "21 3/4", "22 3/4", "23 3/4", "24 3/4", "25 3/4"], tol: {proposed: 1}, tol_unit: cm}
+      E: {name: Sleeve length, how: "shoulder seam to sleeve hem edge", half: false,
+          values: ["7 1/2", "7 7/8", "8 1/4", "8 5/8", "9", "9 3/8"], tol: {proposed: 0.5}, tol_unit: cm}
+      F: {name: Armhole straight, how: "shoulder point to underarm, straight", half: false,
+          values: ["8 5/8", "9", "9 3/8", "9 3/4", "10 1/8", "10 1/2"], tol: {proposed: 0.5}, tol_unit: cm}
+      G: {name: Bicep, how: "1/2, 1 in below underarm, flat", half: {proposed: true, note: "chart does not say; 8 in reads as half (flat)"},
+          values: ["7 5/8", "8", "8 3/8", "8 3/4", "9 1/8", "9 1/2"], tol: {proposed: 0.5}, tol_unit: cm}
+      H: {name: Sleeve opening, how: "1/2, at sleeve hem edge, flat", half: {proposed: true, note: "chart does not say; reads as half (flat)"},
+          values: ["7 5/8", "7 7/8", "8 1/8", "8 3/8", "8 5/8", "8 7/8"], tol: {proposed: 0.5}, tol_unit: cm}
+      J: {name: Neck opening, how: "HPS to HPS, inside edge of rib", half: false,
+          values: ["7 1/4", "7 1/2", "7 3/4", "8", "8 1/4", "8 1/2"], tol: {proposed: 0.5}, tol_unit: cm}
+      K: {name: Front neck drop, how: "HPS line to CF neck edge", half: false,
+          values: ["4 1/8", "4 1/4", "4 3/8", "4 1/2", "4 5/8", "4 3/4"], tol: {proposed: 0.5}, tol_unit: cm}
+      L: {name: Back neck drop, how: "HPS line to CB neck edge", half: false,
+          values: "7/8", tol: {proposed: 0.3}, tol_unit: cm}
+      N: {name: Neck band height, how: "finished rib, at CB", half: false, unit: cm,
+          values: 2.2, tol: {proposed: 0.2}, tol_unit: cm}
+  # DELTAS = the March 2026 new tee shape (drop shoulder, oversized boxy), recorded for size L only.
+  # Every other size moves by the same amount (the base chart's own grade steps) and prints amber until Mandy confirms.
+  deltas:
+    at_size: L
+    source: "Mandy chat: drop shoulder 2026-01-22 (8dba68f5); sleeve -3 cm 2026-02-23; L changes 2026-02-27 (ae01db8c); Shadows S sample approved 2026-03-26 (5ceed7b5)"
+    changes:
+      A: {to: "27", source: "2026-02-27, size L: 27 1/2 → 27"}
+      F: {to: "10 1/4", source: "2026-02-27, size L: 9 3/4 → 10 1/4"}
+      H: {to: "7 5/8", source: "2026-02-27, size L: 8 3/8 → 7 5/8"}
+      G: {by: -1.5, unit: cm, note: "sleeve circumference -3 cm (2026-02-23) = -1.5 cm on the half bicep; bicep after the change not recorded"}
+      C: {by: {proposed: 2}, unit: in, note: "drop shoulder (2026-01-22): the new shoulder width is NOT recorded; +2 in proposed (shoulder = half chest)"}
+      P: {to: "4", source: "2026-02-27, size L: inner sleeve 4 3/4 → 4",
+          new: {name: Inner sleeve length, how: "underarm to sleeve hem edge", half: false, grade_like: E,
+                tol: {proposed: 0.5}, tol_unit: cm}}
+
+# block constants the chart does not give (used to draw the flats; all proposed)
+block:
+  shoulder_slope_cm: {proposed: 3.5, note: "HPS to shoulder point drop; not on the chart"}
+  body_hem_cm: {proposed: 2.5}
+  sleeve_hem_cm: {proposed: 2.5}
+  fit: {value: "oversized boxy, drop shoulder (the 'From the Shadows' new tee shape, March 2026)", source: "8dba68f5 / 6c9cb56c, 2026-01-22"}
+
+# ---------------------------------------------------------------------------------------------------- BLANK
+blank:
+  fabric: {value: "100 % cotton", source: "Mandy quotes e26e0d45, c577dbd7, 907eb819, 46f34ef0, 619f699c"}
+  weight: {value: "250 gsm", source: "same quotes (heavier asked Jan 2026, never confirmed)"}
+  knit: {proposed: "single jersey, combed ring-spun", note: "knit / yarn count not recorded ('jersey')"}
+  wash: {value: "garment washed to pre-shrink (every tee)", source: "chat fbfa7179, 2026-03-26"}
+  shrinkage: {proposed: "residual ≤ 5 % length and width after 3 x 40 °C wash"}
+  rib: {proposed: "1x1 cotton rib (with ~5 % elastane), dyed to body colour"}
+  care: {value: "hang dry advised", source: "Mandy chat"}
+
+# ---------------------------------------------------------------------------------------------------- CONSTRUCTION
+construction:
+  - {area: Neck, spec: "rib neckband, 2.2 cm finished (chart N)", source: "confirmed Oct 2025"}
+  - {area: Neck seam, spec: {proposed: "rib joined with 4-thread overlock, coverstitch topstitch on the body side"}}
+  - {area: Shoulder, spec: "visible sewing line on the shoulder, matching the neck stitching", source: "chosen 2026-03-13 (6e30e2ea, 5d7a6b86)"}
+  - {area: Shoulder tape, spec: {proposed: "self-fabric tape at shoulder seams + back neck (stops the neck stretching)"}}
+  - {area: Side seams, spec: {proposed: "side-seamed (not tubular), 4-thread overlock"}}
+  - {area: Sleeve, spec: {proposed: "set-in flat, 4-thread overlock; sleeve hem twin-needle coverstitch 2.5 cm"}}
+  - {area: Body hem, spec: {proposed: "twin-needle coverstitch, 2.5 cm"}}
+  - {area: Stitch density, spec: {proposed: "12 stitches per inch (SPI) on all seams"}}
+  - {area: Thread, spec: {proposed: "polyester core-spun Tex 27, dyed to match body colour"}}
+
+# ---------------------------------------------------------------------------------------------------- LABELS + TRIMS
+labels:
+  main:
+    item: Main / size label
+    text: "hakistop  AS ALWAYS, MADE WITH LOVE  + size"
+    size_cm: [3.75, 3]
+    material: {proposed: "woven damask, black ground, white text"}
+    position: "hem label — sewn into the body hem, size shown on the label"
+    # placement: view front/back; side wearer_left/wearer_right; at hem / side_seam / cb_neck; distances in cm
+    placement: {proposed: {view: front, side: wearer_left, at: hem, from_side_cm: 3}}
+    source: "2025-10-17; 2026-01-26; From the Shadows tech-pack slide: 'Hem label'; 614babf4"
+  care:
+    item: Care label
+    text: "fibre content (100 % cotton) + care symbols + MADE IN CHINA"
+    material: "satin"
+    size_cm: {proposed: [3, 6]}
+    placement: {proposed: {view: front, side: wearer_left, at: side_seam, above_hem_cm: 10, inside: true}}
+    source: "satin, fibre content per style, MADE IN CHINA required"
+  neck:
+    item: Neck label
+    text: "HAKISTOP"
+    size_cm: {proposed: [5, 2]}
+    material: {proposed: "woven, black ground"}
+    enabled: false                     # some tees have a black HAKISTOP neck label — a variant can turn it on
+    placement: {proposed: {view: back, at: cb_neck, inside: true}}
+    source: "seen on some tees (black HAKISTOP neck label)"
+hang_tag:
+  item: Hang tag
+  supplied_by: "Haki supplies its own hang tags"
+  attach: {proposed: "through the main label loop with a black plastic pin (no hole in the fabric)"}
+
+# ---------------------------------------------------------------------------------------------------- PACKING
+packing:
+  bag: "clear poly bag, one tee per bag"
+  bag_note: {proposed: "self-seal, 30 x 40 cm, suffocation warning printed; custom frosted bag asked — not confirmed"}
+  fold: {proposed: "folded flat, print side out, 25 x 30 cm folded size, tissue between print and fold"}
+  size_sticker: {proposed: "size sticker on the bag, top right"}
+  carton: "mixed sizes per carton allowed"
+  pcs_per_carton: {proposed: "50 pcs per carton, sorted by size inside"}
+  carton_marks: {proposed: "style, colour, size breakdown, qty, carton n / N, gross weight"}
+
+# placement rules for any decoration (mm from the seam line to the art box)
+placement_rules:
+  neck rib: {proposed: 25}
+  armhole: {proposed: 30}
+  side seam: {proposed: 30}
+  hem: {proposed: 50}
+  shoulder: {proposed: 25}
