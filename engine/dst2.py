@@ -510,7 +510,15 @@ class Cover:
 # ------------------------------------------------------------------ pattern assembly
 FILL_ST = ("tatami", "padded", "satin")
 
-def make_pattern(vis, stops, origin, reg_marks=None):
+def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=False, threads=None):
+    """Regions -> pyembroidery pattern, with hidden travel and trims (see the module doc).
+    Hooks for engine/digitize/compile.py (ENGINE_PLAN M1); the defaults reproduce the old behaviour exactly:
+      builder(r, earlier_tones) -> [blocks]  replaces build_object; called once per REGION (not per polygon piece), so a
+                   prebuilt plan (r["blocks"]) is emitted exactly as planned
+      keep_order   sew each stop's regions in the given order (no stitch-type sort, no nearest-first reordering): the
+                   plan's rank is the sew order
+      threads      {col: dict(hex, description, catalog, brand)} for colours that are not motifs2.HEX keys
+    stats["labels"] holds one entry per STITCH added: the region's r.get("part") (None = travel / registration)."""
     cov = Cover(bounds_of([r["geom"] for r in vis]))
     for i, s in enumerate(stops):
         g = unary_union([r["geom"] for r in s["regions"] if r["st"] in FILL_ST])
@@ -520,9 +528,14 @@ def make_pattern(vis, stops, origin, reg_marks=None):
     # tones sewn so far (for blends): union of fill geometry per colour sewn earlier
     tones = Tones()
     pat = pe.EmbPattern(); ox, oy = origin
-    stats = dict(stitches=0, trims=0, travel=0, jumps=0, runs=[])     # runs: (stop, travel polyline) for exposed_travel()
+    stats = dict(stitches=0, trims=0, travel=0, jumps=0, runs=[], labels=[])     # runs: (stop, travel polyline) for exposed_travel()
+    stitch_labels = stats["labels"]
     def emit_thread(k, label=None):
-        th = pe.EmbThread(); th.set_hex_color(HEX[k] if k in HEX else k)
+        th = pe.EmbThread()
+        if threads and k in threads:
+            t = threads[k]; th.set_hex_color(t["hex"]); th.description = t.get("description", k)
+            th.catalog_number = t.get("catalog", ""); th.brand = t.get("brand", ""); pat.add_thread(th); return
+        th.set_hex_color(HEX[k] if k in HEX else k)
         if k in HEX:
             pn = SB.TH[k]["polyneon"]; iso = SB.TH[k]["isacord"]
             th.description = f"{PAL[k][1]} (Polyneon {pn[0]} / Isacord {iso[0]})"; th.catalog_number = pn[0]; th.brand = "Madeira Polyneon"
@@ -536,7 +549,7 @@ def make_pattern(vis, stops, origin, reg_marks=None):
             for seg in ([(mx - 6, my), (mx + 6, my)], [(mx, my - 6), (mx, my + 6)]):
                 pat.add_command(pe.TRIM) if cur else None
                 pat.add_stitch_absolute(pe.JUMP, (seg[0][0]-ox)*U, (seg[0][1]-oy)*U)
-                for x, y in path_resample(seg, 4.0): pat.add_stitch_absolute(pe.STITCH, (x-ox)*U, (y-oy)*U)
+                for x, y in path_resample(seg, 4.0): pat.add_stitch_absolute(pe.STITCH, (x-ox)*U, (y-oy)*U); stitch_labels.append(None)
                 cur = seg[-1]
         pat.add_command(pe.TRIM)
     for si, s in enumerate(stops):
@@ -545,8 +558,12 @@ def make_pattern(vis, stops, origin, reg_marks=None):
         emit_thread(k); first_stop = False
         earlier = tones
         objs = []
-        regs = sorted(s["regions"], key=lambda r: {"tatami": 0, "padded": 1, "satin": 2, "run": 3, "bean": 4}[r["st"]])
+        regs = list(s["regions"]) if keep_order else sorted(s["regions"], key=lambda r: {"tatami": 0, "padded": 1, "satin": 2, "run": 3, "bean": 4}[r["st"]])
         for r in regs:
+            if builder is not None:             # prebuilt / plugin blocks: one object per region, blocks as given
+                bl = [b for b in builder(r, earlier) if len(b) > 1]
+                if bl: objs.append(dict(blocks=bl, r=r, own=r["geom"].buffer(OWN_HALO)))
+                continue
             for p in polys(r["geom"]):          # one object per connected piece, so ordering can chain them
                 rp_ = dict(r, geom=p)
                 bl = build_object(rp_, earlier)
@@ -567,7 +584,7 @@ def make_pattern(vis, stops, origin, reg_marks=None):
             o["c0"] = comp(o["blocks"][0][0]); o["c1"] = comp(o["blocks"][-1][-1])
         sewn_same = base_hid.copy()
         # ordering: stay inside the current hidden component (nearest first); jump (trim) only when it is exhausted
-        rest = list(range(len(objs))); order = []
+        rest = [] if keep_order else list(range(len(objs))); order = list(range(len(objs))) if keep_order else []
         pos = cur; pc = comp(cur) if cur is not None else 0
         def d0(i): st0 = objs[i]["blocks"][0][0]; return math.hypot(st0[0]-pos[0], st0[1]-pos[1])
         while rest:
@@ -599,7 +616,7 @@ def make_pattern(vis, stops, origin, reg_marks=None):
                     if route is not None:
                         if len(route) > 1: stats["runs"].append((si, [tuple(cur)] + [tuple(q) for q in route]))
                         for x, y in route[:-1] if len(route) > 1 else route:
-                            pat.add_stitch_absolute(pe.STITCH, (x-ox)*U, (y-oy)*U); stats["travel"] += 1
+                            pat.add_stitch_absolute(pe.STITCH, (x-ox)*U, (y-oy)*U); stats["travel"] += 1; stitch_labels.append(None)
                     elif d < TRIM_MIN:
                         pat.add_stitch_absolute(pe.JUMP, (x0-ox)*U, (y0-oy)*U); stats["jumps"] += 1
                     else:
@@ -618,8 +635,8 @@ def make_pattern(vis, stops, origin, reg_marks=None):
                         if d < 0.25: continue
                         if d > 7.4:        # safety: never a sewn stitch > 7.5 mm after 0.1 mm grid rounding (LESSONS B17)
                             for q in sub(last, (x, y), 6.0)[:-1]:
-                                pat.add_stitch_absolute(pe.STITCH, (q[0]-ox)*U, (q[1]-oy)*U); stats["stitches"] += 1
-                    pat.add_stitch_absolute(pe.STITCH, (x-ox)*U, (y-oy)*U); stats["stitches"] += 1; last = (x, y)
+                                pat.add_stitch_absolute(pe.STITCH, (q[0]-ox)*U, (q[1]-oy)*U); stats["stitches"] += 1; stitch_labels.append(o["r"].get("part"))
+                    pat.add_stitch_absolute(pe.STITCH, (x-ox)*U, (y-oy)*U); stats["stitches"] += 1; last = (x, y); stitch_labels.append(o["r"].get("part"))
                 cur = b[-1]; o["started"] = True
             if o["r"]["st"] in ("tatami", "padded"): cov.stamp(sewn_same, o["r"]["geom"])
             prev_o = o

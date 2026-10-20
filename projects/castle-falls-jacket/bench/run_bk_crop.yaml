@@ -1,0 +1,66 @@
+# Digitizing run: Castle Falls BK size M, benchmark crop (ENGINE_PLAN M1).
+#   python3 -m digitize.run projects/castle-falls-jacket/bench/run_bk_crop.yaml --stages all --no-api
+# Paths are relative to the project folder (the folder above bench/). No Anthropic API calls anywhere in this run.
+name: BK_M_crop
+label: "M1 skeleton (sky + falls splitters, zone stubs)"
+bench: bench/bench.json            # crop, view, registration, close-up, targets
+zones: bench/zones_BK.json         # hand-authored zones for the crop (from the images)
+out_dir: out/digitize/BK_M_crop
+
+techniques:                        # toggles: the rulebook takes the first ENABLED technique per kind
+  tatami: true
+  satin: true
+  split_satin: true
+  run: true
+  bean: true
+
+threads:
+  needles: factory                 # factory.json: 12 colours per stitch file
+  protected: [cf_red, cf_gold]     # never merged (founder: red and gold present wherever the design has them)
+  # candidate palette = the Castle Falls tones read from the mockup (cfcore.CF_PAL, PROPOSED threads); the evidence
+  # classifies every reference pixel to the nearest one, then threads.py merges down to the needle limit
+  palette:
+    cf_white: "#EEEAE0"
+    cf_cream: "#D4CABA"
+    cf_mist: "#9EA3A6"
+    cf_skylt: "#79A4D0"
+    cf_sky: "#3F6FA9"
+    cf_navy: "#22355C"
+    cf_slate: "#566577"
+    cf_lav: "#9690B6"
+    cf_grndk: "#2F402D"
+    cf_grn: "#5A7240"
+    cf_grnlt: "#9DA65F"
+    cf_pinklt: "#F2C3CE"
+    cf_pink: "#DE8EA6"
+    cf_rose: "#B4506F"
+    cf_red: "#B23F2E"
+    cf_gold: "#D3A63F"
+    cf_bark: "#958262"
+    cf_brown: "#4E3F31"
+  names:
+    cf_white: Cloud white
+    cf_cream: Cloud cream
+    cf_mist: Mist grey
+    cf_skylt: Sky light
+    cf_sky: Sky blue
+    cf_navy: Deep navy
+    cf_slate: Rock slate
+    cf_lav: Far lavender
+    cf_grndk: Pine dark
+    cf_grn: Leaf green
+    cf_grnlt: Moss light
+    cf_pinklt: Blossom pale
+    cf_pink: Blossom pink
+    cf_rose: Blossom deep
+    cf_red: Vermilion
+    cf_gold: Gold
+    cf_bark: Bark tan
+    cf_brown: Bark dark
+
+evidence: {ppm: 4.0, smooth_mm: 0.35, mode_mm: 0.6}
+sequence: {keep_mm: 1.0, min_fragment_mm2: 2.0}
+stub: {min_part_mm2: 20.0, min_protected_mm2: 4.0, close_mm: 0.6}
+fall: {cords_min: 4, cords_max: 10, cord_mm: 5.0}
+sky: {min_band_mm: 3.0, blend_mm: 2.5}
+budget: {stitches_max: null}       # crop only; a full back is 250-350k (rule 6)

@@ -96,5 +96,460 @@
    "colours": false
   },
   "panel": "panel_2026-10-19_baseline--shipped-rev-b-dst.png"
+ },
+ {
+  "crop": [
+   -180,
+   365,
+   20,
+   565
+  ],
+  "crop_min_closeup_weight": 0.647,
+  "source_ppm_median": 2.58,
+  "stitches_in_crop": 84090,
+  "direction": {
+   "tiles": 625,
+   "pct_ok": 89.0,
+   "pct_chaos": 7.0,
+   "n_dev": 25,
+   "masked": 0,
+   "n_chaos": 44,
+   "pct_ok_all_stitches": 63.5,
+   "pct_chaos_all_stitches": 36.0
+  },
+  "angle_coherence": {
+   "source": "plan part ids (compile labels)",
+   "parts": 381,
+   "ok": false,
+   "fails": 109,
+   "kinds": {
+    "no-visible-stitches": 58,
+    "angle-spread": 51
+   },
+   "failing": [
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.008",
+     "grp": "zone_stub",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.010",
+     "grp": "zone_stub",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.016",
+     "grp": "zone_stub",
+     "n": 11,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.027",
+     "grp": "zone_stub",
+     "n": 5,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.036",
+     "grp": "zone_stub",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.037",
+     "grp": "zone_stub",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.038",
+     "grp": "zone_stub",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.041",
+     "grp": "zone_stub",
+     "n": 5,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.042",
+     "grp": "zone_stub",
+     "n": 3,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.047",
+     "grp": "zone_stub",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.054",
+     "grp": "zone_stub",
+     "n": 5,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.055",
+     "grp": "zone_stub",
+     "n": 9,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "blossom.057",
+     "grp": "zone_stub",
+     "n": 11,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.077",
+     "grp": "zone_stub",
+     "n": 0,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.081",
+     "grp": "zone_stub",
+     "n": 2,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.089",
+     "grp": "zone_stub",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.091",
+     "grp": "zone_stub",
+     "n": 9,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.092",
+     "grp": "zone_stub",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.096",
+     "grp": "zone_stub",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.140",
+     "grp": "zone_stub",
+     "n": 1,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.145",
+     "grp": "zone_stub",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.147",
+     "grp": "zone_stub",
+     "n": 7,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.148",
+     "grp": "zone_stub",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.149",
+     "grp": "zone_stub",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.156",
+     "grp": "zone_stub",
+     "n": 9,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.164",
+     "grp": "zone_stub",
+     "n": 10,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.165",
+     "grp": "zone_stub",
+     "n": 5,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "village.166",
+     "grp": "zone_stub",
+     "n": 9,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "cloud_centre.203",
+     "grp": "zone_stub",
+     "n": 9,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "cloud_centre.206",
+     "grp": "zone_stub",
+     "n": 9,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "pool_centre.209",
+     "grp": "pool",
+     "n": 6,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.244",
+     "grp": "zone_stub",
+     "n": 0,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.246",
+     "grp": "zone_stub",
+     "n": 0,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.247",
+     "grp": "zone_stub",
+     "n": 0,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.248",
+     "grp": "zone_stub",
+     "n": 1,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.250",
+     "grp": "zone_stub",
+     "n": 2,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.252",
+     "grp": "zone_stub",
+     "n": 1,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.253",
+     "grp": "zone_stub",
+     "n": 9,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.268",
+     "grp": "zone_stub",
+     "n": 2,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "ground.270",
+     "grp": "zone_stub",
+     "n": 3,
+     "min_segs": 12
+    }
+   ]
+  },
+  "density": {
+   "covered_cm2": 400.0,
+   "mean": 4.43,
+   "p95": 8.09,
+   "max_smoothed": 13.01,
+   "over_cm2": 13.83,
+   "flags": 78,
+   "threshold": 7.0
+  },
+  "trims": {
+   "trims": 132,
+   "per_100cm2": 33.0,
+   "area_cm2": 400.0
+  },
+  "satin": {
+   "satins": 0,
+   "fans": 0,
+   "blob": 0,
+   "too_wide": 0,
+   "too_narrow": 0
+  },
+  "stack": {
+   "max": 5,
+   "over_cm2": 8.7,
+   "flags": 50,
+   "pct_cells_over": 2.2
+  },
+  "runs_in_crop": 150,
+  "colours": {
+   "stops_in_crop": 17,
+   "threads_in_crop": 12,
+   "threads_in_file": 12,
+   "hex": [
+    "#22355c",
+    "#2f402d",
+    "#4e3f31",
+    "#566577",
+    "#5a7240",
+    "#958262",
+    "#9ea3a6",
+    "#b23f2e",
+    "#b4506f",
+    "#d3a63f",
+    "#d4caba",
+    "#de8ea6"
+   ],
+   "red": true,
+   "gold": true
+  },
+  "secs": 8.1,
+  "direction_by_kind": {
+   "bare": {
+    "tiles": 2,
+    "ok": 2,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0
+   },
+   "fall_cord": {
+    "tiles": 61,
+    "ok": 60,
+    "dev": 1,
+    "chaos": 0,
+    "pct_ok": 98.4
+   },
+   "pool": {
+    "tiles": 8,
+    "ok": 6,
+    "dev": 0,
+    "chaos": 2,
+    "pct_ok": 75.0
+   },
+   "sky_band": {
+    "tiles": 2,
+    "ok": 2,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0
+   },
+   "zone_stub": {
+    "tiles": 552,
+    "ok": 486,
+    "dev": 24,
+    "chaos": 42,
+    "pct_ok": 88.0
+   }
+  },
+  "parts": {
+   "n": 381,
+   "pct_under_20mm2": 18.4,
+   "by_kind": {
+    "fall_cord": 14,
+    "pool": 4,
+    "sky_band": 2,
+    "zone_stub": 361
+   },
+   "undeclared_angles": 0,
+   "random_angles": 0,
+   "dir_sources": {
+    "field-mean": 361,
+    "rule": 20
+   }
+  },
+  "accents": {
+   "cf_red": {
+    "evidence_mm2": 593.4,
+    "parts": 24,
+    "sewn_in_crop": true
+   },
+   "cf_gold": {
+    "evidence_mm2": 167.2,
+    "parts": 13,
+    "sewn_in_crop": true
+   }
+  },
+  "file": {
+   "stitches": 91317,
+   "trims": 134,
+   "stops": 17,
+   "colours": 12,
+   "max_stitch": 7.07
+  },
+  "date": "2026-10-20",
+  "label": "M1 skeleton (sky + falls splitters, zone stubs)",
+  "bench": "castle-bk-m",
+  "dst": ".claude/worktrees/agent-a33e2fba95a11150b/projects/castle-falls-jacket/out/digitize/BK_M_crop/BK_M_crop.dst",
+  "dst_sha256": "9eab33940e78d3ab",
+  "origin": [
+   -80.0,
+   465.0
+  ],
+  "verdict": {
+   "direction_ok": true,
+   "direction_chaos": false,
+   "angle_coherence": false,
+   "density": false,
+   "trims": false,
+   "satin_shape": true,
+   "stack": false,
+   "colours": true
+  },
+  "panel": "panel_2026-10-20_m1-skeleton--sky---falls-splitters--zone.png"
  }
 ]

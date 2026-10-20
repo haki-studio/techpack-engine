@@ -258,6 +258,11 @@ def gate_piece(P):
         r = json.load(open(f"out/01_wave/{SIZE}/result_{P}.json"))["full"]
         segs = qa.dst_segments(r["file"] + ".dst", origin=(r["origin"][0] - bb[0], r["origin"][1] - bb[1]))
         if r.get("chenille"): segs += qa.dst_segments(r["chenille"]["file"] + ".dst", origin=(r["chenille"]["origin"][0] - bb[0], r["chenille"]["origin"][1] - bb[1]))
+        if PPM < 12.0:      # qa.direction_match refuses < 12 ppm (LESSONS A17); fail here with the reason, not a traceback
+            raise SystemExit(f"wave-jacket gates: the stitch-direction gate needs a >= 12 px/mm reference, but this script "
+                             f"builds its piece references at PPM = {PPM}. At that resolution a thread is ~2 px, so the "
+                             f"score would be blur, not grain. Rebuild GREY at 12 ppm (engine/digitize/extract/register.py) "
+                             f"before delivering; --art skips the DST gates. (Wave is paused: ENGINE_PLAN M8.)")
         dm = qa.direction_match(g, PPM, segs, tile_mm=8.0)
         for k in ("fail_dev", "fail_chaos"):
             for t_ in dm[k]: t_["at_mm"] = [round(t_["at_mm"][0] + bb[0], 1), round(t_["at_mm"][1] + bb[1], 1)]

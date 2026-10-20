@@ -10,3 +10,4 @@ pypdf
 ezdxf
 fonttools
 pytest
+PyYAML

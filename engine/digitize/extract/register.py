@@ -145,12 +145,21 @@ def fit_crop(cfg, view, bounds, name, thresh=0.6, step_mm=5.0, max_shift_mm=100.
 def reference(cfg, view, bounds, ppm=12.0):
     """the reference image of a garment-mm crop at ppm: the mockup (background removed) composited with every
     registered close-up of that view, each sampled from its own pixels. Returns dict(rgb (H, W, 3) float 0-255,
-    grey (H, W), weights {name: (H, W)}, bounds, ppm, view)."""
+    grey (H, W), weights {name: (H, W)}, closeup_weight (H, W), source_ppm (H, W), source_ppm_median, bounds, ppm, view).
+
+    ppm is the SAMPLING GRID, not a detail guarantee: a 12 ppm crop of the mockup alone still only carries the mockup's
+    ~0.8 px/mm of real detail. What the pixels actually hold is reported per pixel:
+      closeup_weight = the strongest close-up feather weight at that pixel (0 = mockup only, 1 = close-up only);
+      source_ppm     = the effective SOURCE resolution there (px of the image the colour came from, per garment mm),
+                       blended by weight: mockup 1 / sqrt(sx * sy), close-up from the local scale of the TPS map.
+    Gates that read thread grain mask tiles where closeup_weight < 0.6 (qa.direction_match weight=...)."""
     from scipy.ndimage import map_coordinates
     XX, YY = _grid(bounds, ppm); px, py = mm_to_px(cfg, view, XX, YY)
     a = flat(cfg)
     rgb = np.stack([map_coordinates(a[..., c], [py, px], order=1, mode="nearest") for c in range(3)], -1)
     weights = {}; up = 2
+    v = cfg["views"][view]; mock_ppm = 1.0 / np.sqrt(abs(v["sx"] * v["sy"]))
+    cw = np.zeros(XX.shape, np.float32); sppm = np.full(XX.shape, mock_ppm, np.float32)
     for cu in cfg["closeups"]:
         if cu.get("view") != view: continue
         x0, y0, x1, y1 = cu["region"]
@@ -163,5 +172,9 @@ def reference(cfg, view, bounds, ppm=12.0):
         S = _img(_path(cfg, cu["file"]))
         p = np.stack([map_coordinates(S[..., c], [sy, sx], order=1, mode="nearest") for c in range(3)], -1)
         rgb = rgb * (1 - w[..., None]) + p * w[..., None]; weights[cu["name"]] = w
+        dxs, dys = np.gradient(sx), np.gradient(sy)                 # close-up px per output px (rows, cols)
+        cu_ppm = np.sqrt(np.abs(dxs[1] * dys[0] - dxs[0] * dys[1])) * ppm
+        sppm = sppm * (1 - w) + cu_ppm * w; cw = np.maximum(cw, w)
     rgb = rgb.clip(0, 255)
-    return dict(rgb=rgb, grey=rgb @ np.array([0.299, 0.587, 0.114]), weights=weights, bounds=tuple(bounds), ppm=ppm, view=view)
+    return dict(rgb=rgb, grey=rgb @ np.array([0.299, 0.587, 0.114]), weights=weights, closeup_weight=cw, source_ppm=sppm,
+                source_ppm_median=round(float(np.median(sppm)), 2), bounds=tuple(bounds), ppm=ppm, view=view)
