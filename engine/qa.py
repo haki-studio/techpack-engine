@@ -124,21 +124,31 @@ def stitch_report(vis):
 
 
 # ---------------------------------------------------------------- fidelity gates (LESSONS A14, A15)
-def motif_match(ref, out, ppm, min_mm2=4.0, iou_min=0.70, ratio_min=0.80, pad_mm=3.0):
+def motif_match(ref, out, ppm, min_mm2=4.0, iou_min=0.70, ratio_min=0.80, pad_mm=3.0, near_mm=None, out_stops=None):
     """Every motif in the reference vs what was stitched, one row per motif (LESSONS A14).
     ref, out: bool masks on the SAME garment-mm grid (ppm px per mm). ref = the motif family traced from the mockup /
     close-up (e.g. the cream islet pixels); out = the same family rendered from the shipped DST. A motif passes when the
     stitched shape overlapping it has IoU >= iou_min and keeps >= ratio_min of the reference width AND height (a
     generated stand-in of the right size but the wrong silhouette fails here, a flattened one fails on height).
     ref MUST be derived from input pixels only (mockup / close-up / reference image) - never from the art, scene
-    data or a template, or the gate only proves DST == art (circular; Koi Rev B review)."""
+    data or a template, or the gate only proves DST == art (circular; Koi Rev B review).
+    Touching motifs (letters, overlapping candies; konpeito ENGINE_NOTES 3): with out_stops, `out` is a dict
+    {stop: mask} (qa.dst_stop_masks) and only the stops in out_stops (the family's own stops) are compared; with
+    near_mm, each motif is compared only with the stitches within near_mm of IT, so a neighbour's stitched shape that
+    touches it no longer merges into one DST blob. Defaults (None, None) = the old behaviour."""
+    if out_stops is not None:
+        ms = [out[s] for s in out_stops if s in out]
+        out = np.any(ms, axis=0) if ms else np.zeros(ref.shape, bool)
     lab, n = ndi.label(ref); rows = []; pad = int(round(pad_mm * ppm))
+    it = max(1, int(round(near_mm * ppm))) if near_mm is not None else 0
     for k, sl in enumerate(ndi.find_objects(lab), 1):
         y0, y1 = max(0, sl[0].start - pad), min(ref.shape[0], sl[0].stop + pad)
         x0, x1 = max(0, sl[1].start - pad), min(ref.shape[1], sl[1].stop + pad)
         r = lab[y0:y1, x0:x1] == k; area = r.sum() / ppm**2
         if area < min_mm2: continue
-        ol, _ = ndi.label(out[y0:y1, x0:x1]); keep = np.unique(ol[r & (ol > 0)])
+        win = out[y0:y1, x0:x1]
+        if it: win = win & ndi.binary_dilation(r, iterations=it)
+        ol, _ = ndi.label(win); keep = np.unique(ol[r & (ol > 0)])
         o = np.isin(ol, keep) & (ol > 0)
         iou = (r & o).sum() / max((r | o).sum(), 1)
         def ext(m, ax):
@@ -148,6 +158,112 @@ def motif_match(ref, out, ppm, min_mm2=4.0, iou_min=0.70, ratio_min=0.80, pad_mm
         rows.append(dict(motif=k, x_mm=round((x0 + x1) / 2 / ppm, 1), y_mm=round((y0 + y1) / 2 / ppm, 1),
                          area_mm2=round(float(area), 1), iou=round(float(iou), 2), w_ratio=round(float(wr), 2), h_ratio=round(float(hr), 2), ok=bool(ok)))
     return rows
+
+
+# ---------------------------------------------------------------- thin strokes + file masks (ENGINE_PLAN M5, konpeito ENGINE_NOTES 4/8/9)
+def _prune(sk, n):
+    """remove skeleton spurs shorter than n px (endpoint erosion, then regrow from the surviving endpoints)"""
+    k = np.ones((3, 3)); cur = sk.copy()
+    for _ in range(n):
+        nb = ndi.convolve(cur.astype(int), k, mode="constant") - cur
+        cur = cur & ~(nb <= 1)
+    nb = ndi.convolve(cur.astype(int), k, mode="constant") - cur
+    grow = cur & (nb == 1)
+    for _ in range(n): grow = ndi.binary_dilation(grow, structure=np.ones((3, 3))) & sk
+    return cur | grow
+
+
+def skeleton(mask, ppm, spur_mm=0.6):
+    """(pruned skeleton, smoothed mask) of a stroke mask"""
+    from skimage.morphology import skeletonize
+    m = ndi.gaussian_filter(mask.astype(float), 1.0) > 0.5
+    return _prune(skeletonize(m), max(1, int(spur_mm * ppm))), m
+
+
+def centreline_match(ref, out, ppm, name="", pull=0.0, near_mm=1.0, d_max=0.5, w_tol=0.20, spur_mm=0.6):
+    """Thin strokes (< 1.2 mm: lettering, line art) gated on CENTRELINES, not area (konpeito ENGINE_NOTES 4 + 8,
+    LESSONS A19): a 0.2 mm registration error on a 0.7 mm line already costs ~30 % IoU, so area IoU fails good files.
+    Skeleton-to-skeleton mean distance (symmetric mean of both directions) <= d_max mm AND the visible width (2 x the
+    distance transform on the skeleton, median; minus 2 x pull) within +-w_tol of the reference's.
+    ref: input-pixel / founder-art mask; out: the DST's stitches of this family's stop(s) drawn at thread width
+    (qa.dst_stop_masks), limited here to near_mm of ref. Returns dict(family, mean_d, p90_d, w_ref, w_dst, ratio, ok)."""
+    from scipy.spatial import cKDTree
+    o = out & ndi.binary_dilation(ref, iterations=max(1, int(near_mm * ppm)))
+    sr, mr = skeleton(ref, ppm, spur_mm); so, mo = skeleton(o, ppm, spur_mm)
+    pts = lambda sk: np.c_[(np.nonzero(sk)[1] + 0.5) / ppm, (np.nonzero(sk)[0] + 0.5) / ppm]
+    R, O = pts(sr), pts(so)
+    if len(O) == 0 or len(R) == 0:
+        return dict(family=name, mean_d=None, p90_d=None, w_ref=None, w_dst=None, ratio=None, ok=False)
+    d1, _ = cKDTree(O).query(R); d2, _ = cKDTree(R).query(O)
+    md = float((d1.mean() + d2.mean()) / 2); p90 = float(np.percentile(np.r_[d1, d2], 90))
+    def width(m, sk):
+        v = 2 * ndi.distance_transform_edt(m)[sk] / ppm; return float(np.median(v)) if v.size else 0.0
+    wr = width(mr, sr); wo = width(mo, so) - 2 * pull; ratio = wo / wr if wr else 0.0
+    return dict(family=name, mean_d=round(md, 2), p90_d=round(p90, 2), w_ref=round(wr, 2), w_dst=round(wo, 2),
+                ratio=round(ratio, 2), ok=bool(md <= d_max and abs(ratio - 1) <= w_tol))
+
+
+def dst_stitches(dst, origin=(0.0, 0.0)):
+    """[(stop index 0-based, (x0, y0), (x1, y1))] of every SEWN stitch in the DST read-back, garment mm"""
+    import pyembroidery as pe
+    p = pe.read(dst); out = []; ci = 0; prev = None; ox, oy = origin
+    for x, y, cmd in p.stitches:
+        k = cmd & pe.COMMAND_MASK; P = (x / 10.0 + ox, y / 10.0 + oy)
+        if k == pe.STITCH:
+            if prev is not None and prev != P: out.append((ci, prev, P))
+            prev = P
+        elif k == pe.COLOR_CHANGE: ci += 1; prev = None
+        elif k == pe.TRIM: prev = None
+        elif k == pe.JUMP: prev = P
+        elif k == pe.END: break
+    return out
+
+
+def dst_stop_masks(dst, origin, shape, ppm, thread_d=0.40, to_mm=None, close=2):
+    """{stop index: bool mask} of the DST's sewn stitches per colour stop, drawn at the thread's visible diameter
+    (thread_d mm, or {stop: d}) on a (H, W) grid at ppm px/mm. to_mm(x, y) maps garment mm -> grid mm (a placement
+    frame); needle-gap pin holes (< 0.3 mm2) are closed, so they are not read as counters."""
+    from PIL import Image, ImageDraw
+    Hh, Ww = shape; ims = {}
+    for ci, a, b in dst_stitches(dst, origin):
+        if ci not in ims: ims[ci] = Image.new("L", (Ww, Hh), 0)
+        d = thread_d.get(ci, 0.40) if isinstance(thread_d, dict) else thread_d
+        A, B = (to_mm(*a), to_mm(*b)) if to_mm else (a, b)
+        ImageDraw.Draw(ims[ci]).line([(A[0] * ppm, A[1] * ppm), (B[0] * ppm, B[1] * ppm)], fill=255, width=max(1, int(round(d * ppm))))
+    out = {}
+    for ci, im in ims.items():
+        m = ndi.binary_closing(np.array(im) > 0, iterations=close)
+        lab, n = ndi.label(~m)
+        if n:
+            sz = ndi.sum(np.ones_like(lab), lab, range(1, n + 1)) / ppm ** 2
+            m |= np.r_[False, sz < 0.3][lab]
+        out[ci] = m
+    return out
+
+
+def exposed_stitches(dst, origin, stop_geoms, halo=0.35, min_mm=1.0, min_ex=None):
+    """Travel floats on the FILE (konpeito ENGINE_NOTES 9): every sewn stitch of stop i must lie on stop i's own art
+    (+ halo) or under art sewn by a LATER stop, measured on the exact geometry (shapely), never on a raster.
+    stop_geoms: [geometry per stop, in the file's stop order]. Returns [(stop 1-based, x, y, exposed mm)] for stitches
+    longer than min_mm with more than min_ex (default min_mm) outside that cover; [] = no floats. The konpeito Rev A
+    gate used (0.35, 1.0); M5 patches gate at halo 0.25 (pull comp 0.15 + the DST 0.1 mm grid),
+    min_mm 0.5, min_ex 0.3 (a thread across a 0.7 mm gap between two strokes shows)."""
+    import math
+    from shapely.geometry import LineString
+    from shapely.ops import unary_union
+    from shapely.prepared import prep
+    later = [None] * len(stop_geoms); acc = None
+    for i in range(len(stop_geoms) - 1, -1, -1):
+        later[i] = acc; acc = stop_geoms[i] if acc is None else unary_union([acc, stop_geoms[i]])
+    cover = [unary_union([g.buffer(halo)] + ([later[i]] if later[i] is not None else [])) for i, g in enumerate(stop_geoms)]
+    pc = [prep(c) for c in cover]; out = []
+    for ci, A, B in dst_stitches(dst, origin):
+        if ci >= len(cover) or math.dist(A, B) < min_mm: continue
+        ls = LineString([A, B])
+        if pc[ci].contains(ls): continue
+        ex = ls.difference(cover[ci]).length
+        if ex > (min_mm if min_ex is None else min_ex): out.append((ci + 1, round((A[0] + B[0]) / 2, 1), round((A[1] + B[1]) / 2, 1), round(ex, 2)))
+    return out
 
 
 def uncovered(ref, out, ppm, min_mm2=25.0, open_mm=1.0):
@@ -338,7 +454,7 @@ def visible_segments(segs, bounds, ppm=12.0, width_mm=0.42, min_vis_mm=0.3, retu
 
 
 def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_dev_deg=25.0, chaos_R=0.55, min_stitches=12,
-                    visible=True, min_ppm=12.0, width_mm=0.42, weight=None, min_weight=0.6):
+                    visible=True, min_ppm=12.0, width_mm=0.42, weight=None, min_weight=0.6, groups=None):
     """Stitch DIRECTION vs the reference, everywhere (LESSONS A16): every motif, not only buildings.
     ref: grey image (2-D array) of the mockup / close-up mapped to garment mm (ppm px per mm), INPUT PIXELS ONLY, at
     ppm >= min_ppm (12). Below that a thread is under 5 px, the structure tensor reads blur and the visible-layer
@@ -365,7 +481,10 @@ def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_
     g = np.asarray(ref, float)
     if g.ndim == 3: g = g[..., :3] @ np.array([0.299, 0.587, 0.114])
     H, W = g.shape
-    if visible: segs = visible_segments(segs, (0.0, 0.0, W / ppm, H / ppm), ppm=ppm, width_mm=width_mm)
+    if visible and groups is not None:
+        segs, _ix = visible_segments(segs, (0.0, 0.0, W / ppm, H / ppm), ppm=ppm, width_mm=width_mm, return_index=True)
+        groups = [groups[i] for i in _ix]
+    elif visible: segs = visible_segments(segs, (0.0, 0.0, W / ppm, H / ppm), ppm=ppm, width_mm=width_mm)
     gy, gx = np.gradient(_ndi.gaussian_filter(g, 0.6))
     sig = tile_mm * ppm / 3.0
     Jxx = _ndi.gaussian_filter(gx * gx, sig); Jyy = _ndi.gaussian_filter(gy * gy, sig); Jxy = _ndi.gaussian_filter(gx * gy, sig)
@@ -373,14 +492,23 @@ def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_
     if weight is not None:
         wt = np.asarray(weight, float)
         if wt.shape != g.shape: raise ValueError(f"direction_match: weight {wt.shape} != reference {g.shape}")
-    for x0, y0, x1, y1 in segs:
+    for si, (x0, y0, x1, y1) in enumerate(segs):
         L = _m.hypot(x1 - x0, y1 - y0)
         if L < min_len: continue
         cx, cy = (x0 + x1) / 2 * ppm, (y0 + y1) / 2 * ppm
         if not (0 <= cx < W and 0 <= cy < H): continue
         a = _m.atan2(y1 - y0, x1 - x0); key = (int(cy // T), int(cx // T))
+        if groups is not None: key = key + (groups[si],)
         c, s_, n, w = acc.get(key, (0.0, 0.0, 0, 0.0))
         acc[key] = (c + L * _m.cos(2 * a), s_ + L * _m.sin(2 * a), n + 1, w + L)
+    if groups is not None:
+        # per OBJECT layer (konpeito ENGINE_NOTES 14): on a small patch one 8 mm tile mixes the 0 deg field, the border
+        # and lettering, so it reads chaotic by construction. Each tile is judged on the stitches of the group (part /
+        # family id per segment) with the most visible thread length in it.
+        best = {}
+        for (ty, tx, gk), v in acc.items():
+            if (ty, tx) not in best or v[3] > best[(ty, tx)][3]: best[(ty, tx)] = v
+        acc = best
     dev, chaos, ok_t = [], [], []
     for (ty, tx), (c, s_, n, w) in acc.items():
         if n < min_stitches: continue

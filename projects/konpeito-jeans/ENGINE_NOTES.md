@@ -53,3 +53,14 @@
 14. **qa.direction_match on small patches:** 8 mm tiles on an 80 mm patch mix the 0° field tatami, border and
    lettering, so most tiles read "chaotic" by construction (03: 11 % OK, 01: 26 % OK on the trace build). Proposed:
    evaluate per OBJECT layer (mask the tile to one family) or allow tile_mm ~3 for patches.
+
+## Status after ENGINE_PLAN M5 (branch engine-m5-svg, 20 Oct 2026)
+Engine runs: `bench/run_{wb,coin,spill,starP,starY}_svg.yaml` -> `out/engine_m5/`; parity table `bench/PARITY_M5.md`.
+- 1 column satin: in the engine as `column_satin` (same_side density); the kccore/kjcore make_pattern patch is native as
+  `make_pattern(exact_travel=dict(unsewn_only=True))`. The delivered Rev A build is unchanged (byte-identical DSTs).
+- 2 done (dst2.turning_satin skips empty perpendiculars, LESSONS B25). 3 done (`qa.motif_match(near_mm, out_stops)`, A21).
+- 4 + 8 done (`qa.centreline_match`, A19). 7 done (`same_side`, B26). 9 done (`dst2.ExactCover` + `qa.exposed_stitches`, B27).
+- 11 + 13 done (`dot` technique, house-min reported, B28). 12 done (`engine/svgart.py`, `extract/svg.py`, A20).
+- 14: `qa.direction_match(groups=...)` (per object layer) + the existing `tile_mm`; not wired into svgrun yet (an SVG
+  source has no thread-grain reference).
+- 5, 6, 10 not in M5 (pages / fonts / stitchrender).

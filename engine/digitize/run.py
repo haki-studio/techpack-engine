@@ -211,6 +211,8 @@ def main(argv=None):
     ap.add_argument("--stages", default="all")
     ap.add_argument("--no-api", action="store_true", help="no Anthropic API calls (the only mode in M1; accepted for the M4 question step)")
     a = ap.parse_args(argv)
+    if config.load(a.run_yaml).get("source") == "svg":          # M5: founder vector art as the part source
+        from digitize import svgrun; return svgrun.main(argv)
     print("[info] digitize.run makes no Anthropic API calls (M1); --no-api accepted.")
     st = STAGES if a.stages == "all" else [s.strip() for s in a.stages.split(",")]
     for s in st:

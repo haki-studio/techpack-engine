@@ -1,0 +1,35 @@
+# ENGINE_PLAN M5: back-pocket star (yellow), 10 mm tip to tip, digitised by the parts engine from the founder's SVG.
+#   PYTHONPATH=engine python3 -m digitize.run projects/konpeito-jeans/bench/run_starY_svg.yaml --no-api
+# Output: projects/konpeito-jeans/out/engine_m5/starY/ (git-ignored); the delivered Rev A files in out/stitch/ are not touched.
+name: KJ_starY_engine_m5
+label: "M5 engine: back-pocket star (yellow), 10 mm tip to tip"
+source: svg
+out_dir: out/engine_m5/starY
+techniques: {tatami: true, satin: true, split_satin: true, run: true, bean: true, column_satin: true, dot: true, radial: true, turning_satin: true}
+svg:
+  file: inputs/svg/HAKI_back-pocket-stars_ART.svg
+  select: ["STAR_Y_"]
+  place: {width_mm: 10.0, centre: [0.0, 0.0]}      # every konpeito star is 10 mm tip to tip
+  layers:
+    "STAR_Y_1": {role: star, kind: star}
+    "STAR_Y_2": {role: star, kind: star_tint}
+threads:
+  needles: factory
+  max_dE: 3.0
+  palette: {kj_red: "#C8162B", kj_cream: "#F2E9D8", kj_white: "#FBF8F1", kj_black: "#1C1A1A", kj_pink: "#EF7FAC",
+            kj_pink_hi: "#F8B5CF", kj_yellow: "#F5C230", kj_yellow_hi: "#FCE27E", kj_blue: "#35A6D6", kj_blue_hi: "#8ED2EE",
+            kj_rose: "#E8457A"}
+  names: {kj_red: Red, kj_cream: Cream, kj_white: White, kj_black: "Black (60wt)", kj_pink: Pink, kj_pink_hi: "Pink tint",
+          kj_yellow: Yellow, kj_yellow_hi: "Yellow tint", kj_blue: Blue, kj_blue_hi: "Blue tint", kj_rose: Rose}
+  weight: {kj_black: 60wt}                   # every other thread 40wt
+  tints: [kj_pink_hi, kj_yellow_hi, kj_blue_hi]
+sequence: {cut_under: false, touch: -0.05}   # house patch spec: motifs sew ON the full field, nothing cut; paint order binds only shapes that OVERLAP
+compile:
+  exact_travel: {halo: 0.25, max_ex: 0.3, unsewn_only: true}    # = the exposed-stitch gate: a thread across a 0.7 mm gap shows
+gates:
+  ppm: 20
+  centreline: {d_max: 0.5, w_tol: 0.20, near_mm: 1.0}
+  motif: {min_mm2: 0.5, near_mm: 0.3, near_mm_knot: 0.15}
+  thread_d: {40wt: 0.40, 60wt: 0.28}
+parity:
+  delivered: out/stitch/HAKI_KJ_06_back-pocket-L-lower-star-yellow
