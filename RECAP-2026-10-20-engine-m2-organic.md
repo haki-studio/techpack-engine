@@ -106,3 +106,15 @@ house.yaml band offset 15; stratum sign never alternates; cloud lobes front firs
 - depth_angle is implemented and audited but no zone on this crop uses it (the cliffs have a clear grain).
 - Sky blend (feather) is in the plan but the crop has only 2 sky tiles; judge on a crop with sky.
 - Thread trade-off (sky blue vs blossom deep vs cloud cream) needs the founder's call.
+
+## Part D: merged origin/main (M5, PR #5) into the branch (merge 71f0097)
+- Merge, not rebase (the reviewer approved 2216912). Conflicts: LESSONS (M5 keeps A19-A21 / B25-B29; the M2 rows are now
+  **A22** no-visible-stitches, **A23** gates on the file, **A24** review findings; references in sequence.py, the M2 test and
+  this recap updated), house.yaml (both appends), compile.py (labelled_dst / ReadbackMismatch + M5 `write(**mp_kw)` and its
+  return keys), test_digitize_m1 (SYNTH + SYNTH_META + M5's SYNTH.update; all 12 plugins plan).
+- pytest 132 passed (M5 trial merge 129 + the 3 review-fix tests).
+- dst2 byte identity vs origin/main 6e229ac: dst 84ff50ea74938675 / pes 1ecd8f657db3f53a on both.
+- Castle crop re-run: every gates.json value equal to the 40357b5 row, DST sha256 0d86f00be8e9f8fa unchanged, 3/9; the
+  bench row is re-keyed to 71f0097 (the merge brought engine code), old row removed, two bench runs = one row.
+- M5 wb element (svgrun extract, plan, compile): DST sha256 449c14f6e8f693b6, 15,069 stitches, 161 trims, identical with
+  the main engine and with this branch (= PARITY_M5.md "engine M5" row).

@@ -75,7 +75,7 @@ buildings). Thread v0 merged the two water blues away (area-weighted), so the fa
 
 Same command, run config `run_bk_crop.yaml` (now with `direction`, `stratum`, `cloud`, `specks` and thread `importance`),
 zones `zones_BK.json` (new: `cliffs` = stratum splitter, `cloud_centre` = cloud splitter, `foliage` stub claimed before the
-cliffs). Scored at engine commit 40357b5 (row `git_sha`; after the PR #6 review fixes). Gates read the WRITTEN DST
+cliffs). Scored at engine commit 40357b5 (after the PR #6 review fixes) and re-scored after merging M5 (PR #5) at 71f0097 (row `git_sha`): every gates.json value identical, same DST (sha256 0d86f00be8e9f8fa). Gates read the WRITTEN DST
 (`compile.labelled_dst`). Every number below is from `out/digitize/BK_M_crop/gates.json`.
 
 **Gate changes from the PR #6 review (M2 rows are judged by 9 lines, older rows keep 8):**
