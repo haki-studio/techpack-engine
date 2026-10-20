@@ -45,3 +45,21 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - IP: follow the reference composition (reference.png + close-ups); the 'original castle / opened tree' edits are dropped.
 - Collar, not hood.
 - Armhole wrap seam accepted: art 3 mm short each side, no topstitch; press the SA toward the body and finish it inside (overlock or bind).
+
+## Rev B status — builder handoff 2026-10-19 (session too long; respawn a fresh builder)
+Done (committed): TPS registration of the 4 founder close-ups into `mockmap.flat()` (`CLOSEUPS_TPS`, native colours `CU_MATCH=False`),
+sleeve close-up map full-wrap (`sleeve_cu_px`, fold side chosen by `sleeve_orient.py`); `cf_motifs2.py` (castle2, karamon, pagoda,
+gate_tower, roof, wall_band, fall_in, lobes, strata, dir_field, floret); `scene.revb_structure` (stitched sky, Deep-navy-only-in-
+crevices, cloud/foliage lobes, traced fall silhouettes + cords, buildings = traced silhouette + overlays, village zone styling,
+FR crag); traced petals; `fidelity.py` (qa.motif_match / qa.uncovered); compare.py = final DST + coverage overlay + gate tables;
+grey-background previews; merge_plan Rev B (Bark tan kept, Bark dark -> Pine dark on BK/FR/SR/SL); all Rev B text, founder
+decisions (IP reference, collar, armhole wrap + inside finish) in docs + STATUS. REVIEW_OPEN items 12-14 done in text.
+NOT done: A16 rework (founder: stitch directions "all over the place"): zone_style random / auto angles, radial lobe fans.
+Next: (1) A16 — parts with one deliberate direction (walls 0 tatami, roofs down-slope + tile lines, windows/lintels satin rects,
+railings satin columns); organic = direction field from close-up grain (`M2.dir_field` exists): cliffs strata angle, falls 90,
+clouds lobe-contour rows (replace ("radial", ...) in `M2.lobe_regions` with contour-following / per-lobe fixed tangent angle),
+crowns clump fills; merge tone blobs into their part; NO rng angles; satin only aspect >= 2.5. Gates qa.direction_match (>= 85 %
+tiles, heat-map on compare), qa.angle_coherence on WALL/ROOF/TMB/STONE, dstlive panel on compare sheets.
+(2) rebuild M (scenes -> art_size M -> run_build.sh M -> check_dst -> fidelity.py -> compare.py), look, iterate; then all sizes
+(run_all.sh minus run_art.sh M), make_current, check_dst, run_docs.sh. Before crops (Rev B 18:13 DST) in out/before_after/*_before.png.
+(3) fidelity gates currently FAIL (out grows ~1.2x over ref on small motifs; lobes now clipped to traced C — re-measure).
