@@ -4,14 +4,18 @@ import random, qa
 from shapely.geometry import box, Polygon
 
 def test_chaotic_wall_fails_constructed_wall_passes():
+    # M0 (ENGINE_PLAN): regions now carry a PART id (key="part"; missing -> ValueError) instead of `unit`, and an "auto"
+    # angle on a constructed part fails as undeclared-angle. So the mullion declares its satin angle (90 = across the
+    # vertical stroke) and every region names its part; the red / green verdicts are unchanged.
     rng = random.Random(1)
-    blobs = [dict(geom=box(x, 0, x + 3, 3), stype="satin", angle="auto", grp="WALL", unit="house1") for x in range(0, 30, 4)]
-    frags = [dict(geom=box(x, 4, x + 6, 10), stype="tatami", angle=rng.uniform(0, 180), grp="WALL", unit="house1") for x in range(0, 30, 7)]
+    blobs = [dict(geom=box(x, 0, x + 3, 3), stype="satin", angle="auto", grp="WALL", part="house1.wall") for x in range(0, 30, 4)]
+    frags = [dict(geom=box(x, 4, x + 6, 10), stype="tatami", angle=rng.uniform(0, 180), grp="WALL", part="house1.wall") for x in range(0, 30, 7)]
     bad = qa.angle_coherence(blobs + frags)
     assert any(b["kind"] == "satin-on-blob" for b in bad) and any(b["kind"] == "angle-spread" for b in bad), bad   # RED
-    good = [dict(geom=box(0, 0, 30, 10), stype="tatami", angle=0.0, grp="WALL", unit="house1"),
-            dict(geom=Polygon([(0, 0), (15, -6), (30, 0)]), stype="tatami", angle=90.0, grp="ROOF", unit="house1"),
-            dict(geom=box(4, 2, 4.8, 8), stype="satin", angle="auto", grp="WALL", unit="house1")]                 # a mullion: stroke
+    assert any(b["kind"] == "undeclared-angle" for b in bad), bad                                                 # RED (M0)
+    good = [dict(geom=box(0, 0, 30, 10), stype="tatami", angle=0.0, grp="WALL", part="house1.wall"),
+            dict(geom=Polygon([(0, 0), (15, -6), (30, 0)]), stype="tatami", angle=90.0, grp="ROOF", part="house1.roof"),
+            dict(geom=box(4, 2, 4.8, 8), stype="satin", angle=90.0, grp="WALL", part="house1.mullion")]           # a mullion: stroke
     assert qa.angle_coherence(good) == []                                                                          # GREEN
 
 def test_dstlive_renders(tmp_path):
@@ -23,7 +27,7 @@ def test_dstlive_renders(tmp_path):
     assert im.size[0] > 50 and im.getextrema()[0][1] > 150
 
 
-def _stripes(ang_deg, W=200, H=200, ppm=4.0, period_mm=0.8):
+def _stripes(ang_deg, W=600, H=600, ppm=12.0, period_mm=0.8):
     import numpy as np, math
     y, x = np.mgrid[0:H, 0:W] / ppm; a = math.radians(ang_deg)
     # threads along ang -> intensity varies across them
@@ -38,11 +42,13 @@ def _rows(ang_deg, n=400, L=3.0, rng=None, W=50.0):
     return out
 
 def test_direction_match_red_then_green():
-    """any motif: stitches along the reference thread grain pass; wrong angle or chaotic (fan / random) fail."""
+    """any motif: stitches along the reference thread grain pass; wrong angle or chaotic (fan / random) fail.
+    M0: direction_match now refuses references below 12 ppm (was 4 ppm here) and judges the visible top layer; the
+    random stitches here are scattered, so visibility leaves the verdicts as they were."""
     ref = _stripes(30)
-    good = qa.direction_match(ref, 4.0, _rows(30))
+    good = qa.direction_match(ref, 12.0, _rows(30))
     assert good["pct_ok"] >= 90, good                                          # GREEN: along the grain
-    wrong = qa.direction_match(ref, 4.0, _rows(100))
+    wrong = qa.direction_match(ref, 12.0, _rows(100))
     assert wrong["pct_ok"] < 20 and wrong["fail_dev"], wrong                   # RED: 70 deg off the grain
-    chaos = qa.direction_match(ref, 4.0, _rows(None))
+    chaos = qa.direction_match(ref, 12.0, _rows(None))
     assert chaos["pct_ok"] < 20 and chaos["fail_chaos"], chaos                 # RED: every which way

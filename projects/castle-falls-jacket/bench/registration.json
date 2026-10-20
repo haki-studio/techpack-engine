@@ -1,0 +1,25 @@
+{
+  "_doc": "Castle Falls registration as DATA (engine/digitize/extract/register.py). Values copied from projects/castle-falls-jacket/mockmap.py (BODY, no_background, CLOSEUPS_TPS, tps_map) on 19 Oct 2026; paths are relative to this project folder. Coordinates: flat px = inputs/flat.png pixels; close-up px = the close-up's own pixels; garment mm per view: x from CB/CF, y from the neck seam (CLAUDE.md conventions).",
+  "flat": "inputs/flat.png",
+  "background": {"lum_min": 185, "sat_max": 0.10, "seed_rows": [0, 690], "seed_cols": [0, -1, 768], "dilate": 2, "dilate_lum_min": 150, "as_rgb": [45, 55, 68]},
+  "views": {
+    "F": {"ox": 413.0, "oy": 150.0, "sx": 1.28, "sy": 1.14, "_doc": "x mm = (px - ox) * sx, y mm = (py - oy) * sy"},
+    "B": {"ox": 1125.0, "oy": 75.0, "sx": 1.26, "sy": 1.12}
+  },
+  "tps": {"smoothing": 40.0, "border_pad": 200, "border_nx": 7, "border_ny": 6},
+  "closeups": [
+    {"name": "front", "view": "F", "file": "inputs/closeups/closeup_front.png", "region": [188, 192, 662, 600], "feather": 14,
+     "pts": [[[838, 225], [482, 283]], [[920, 230], [518, 283]], [[712, 560], [432, 420]], [[1055, 560], [565, 420]],
+             [[910, 830], [493, 518]], [[740, 880], [436, 532]], [[390, 405], [297, 331]], [[305, 665], [268, 451]],
+             [[575, 60], [343, 207]], [[1330, 680], [676, 436]], [[1050, 110], [545, 213]], [[1240, 400], [634, 326]],
+             [[150, 1000], [226, 580]], [[560, 820], [361, 515]], [[1290, 880], [626, 549]]]},
+    {"name": "back_left", "view": "B", "file": "inputs/closeups/closeup_back_left.png", "region": [900, 160, 1180, 590], "feather": 16,
+     "pts": [[[535, 380], [986, 375]], [[650, 790], [1013, 494]], [[840, 625], [1079, 441]], [[880, 815], [1088, 507]],
+             [[430, 110], [966, 275]], [[1160, 490], [1190, 377]], [[1010, 545], [1134, 410]], [[690, 960], [1013, 554]],
+             [[220, 720], [942, 503]]]},
+    {"name": "back_right", "view": "B", "file": "inputs/closeups/closeup_back_right.png", "region": [1150, 160, 1362, 590], "feather": 16,
+     "pts": [[[30, 500], [1000, 400]], [[260, 640], [1079, 441]], [[280, 850], [1088, 507]], [[600, 430], [1190, 377]],
+             [[740, 525], [1230, 401]], [[430, 540], [1134, 410]], [[1180, 200], [1320, 350]], [[1330, 700], [1310, 530]],
+             [[420, 920], [1128, 538]], [[700, 310], [1225, 339]]]}
+  ]
+}
