@@ -15,3 +15,8 @@ if a.preview: s["preview"] = os.path.relpath(os.path.abspath(a.preview), os.path
 if a.question: s["questions"] = list(dict.fromkeys(s.get("questions", []) + a.question))
 s["log"].append([s["updated"], a.stage, a.note]); s["log"] = s["log"][-40:]
 json.dump(s, open(p, "w"), indent=1)
+# mirror to the board outside git, so status.py sees workers running in their own worktrees (LESSONS E10)
+board = os.path.join(os.environ.get("TECHPACK_STATE", os.path.expanduser("~/.techpack")), "board"); os.makedirs(board, exist_ok=True)
+bp = os.path.join(board, a.slug + ".json")
+b = dict(s, worker=(json.load(open(bp)).get("worker", {}) if os.path.exists(bp) else {}), project_dir=os.path.join(ROOT, "projects", a.slug))
+json.dump(b, open(bp, "w"), indent=1)

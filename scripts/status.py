@@ -6,20 +6,37 @@ import os, sys, json, glob, time, html, datetime, shutil
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STAGES = ["intake", "inventory", "pattern", "art", "stitch", "qa", "documents", "delivered", "review", "reviewed"]
 
+BOARD = os.path.join(os.environ.get("TECHPACK_STATE", os.path.expanduser("~/.techpack")), "board")
+
 def load():
-    out = []
+    """Per product, the newest of projects/<slug>/STATUS.json and the board copy written by workers in their own
+    worktrees (scripts/dispatch.sh); the board also says which session is working on it."""
+    rows = {}
     for p in sorted(glob.glob(os.path.join(ROOT, "projects", "*", "STATUS.json"))):
-        try: out.append(json.load(open(p)))
+        try: s = json.load(open(p)); s["project_dir"] = os.path.dirname(p); rows[s["slug"]] = s
         except Exception: pass
-    return out
+    for p in sorted(glob.glob(os.path.join(BOARD, "*.json"))):
+        try: b = json.load(open(p))
+        except Exception: continue
+        slug = b.get("slug") or os.path.basename(p)[:-5]; s = rows.get(slug)
+        if s is None or b.get("updated", "") > s.get("updated", ""): rows[slug] = dict(b, slug=slug)
+        else: s["worker"] = b.get("worker", {})
+    return [rows[k] for k in sorted(rows)]
+
+def worker(s):
+    w = s.get("worker") or {}
+    if w.get("queued"): return "queued: " + w["queued"]
+    for k in ("review", "fix", "build"):
+        if w.get(k): return w[k].split()[0]
+    return ""
 
 def table(rows):
-    lines = [f"{'product':32s} {'stage':11s} {'progress':10s} {'updated':20s} note"]
+    lines = [f"{'product':32s} {'stage':11s} {'progress':10s} {'updated':20s} {'worker':36s} note"]
     for s in rows:
         i = s.get("stage_index", 0); bar = "█" * (i + 1) + "·" * (len(STAGES) - i - 1)
         flag = " BLOCKED" if s.get("blocked") else (f" ({len(s.get('questions', []))} q)" if s.get("questions") else "")
         note = (s["log"][-1][2] if s.get("log") else "")[:70]
-        lines.append(f"{s['slug'][:32]:32s} {s.get('stage', '?'):11s} {bar:10s} {s.get('updated', '')[:19]:20s} {note}{flag}")
+        lines.append(f"{s['slug'][:32]:32s} {s.get('stage', '?'):11s} {bar:10s} {s.get('updated', '')[:19]:20s} {worker(s)[:36]:36s} {note}{flag}")
     return "\n".join(lines)
 
 def page(rows):
@@ -27,10 +44,11 @@ def page(rows):
     for s in rows:
         i = s.get("stage_index", 0); slug = s["slug"]
         steps = "".join(f'<span class="st {"done" if k < i else ("cur" if k == i else "")}">{html.escape(n)}</span>' for k, n in enumerate(STAGES))
-        img = f'<img src="projects/{slug}/{html.escape(s["preview"])}?t={int(time.time())}">' if s.get("preview") else '<div class="noimg">no preview yet</div>'
+        pdir = os.path.relpath(s.get("project_dir") or os.path.join(ROOT, "projects", slug), ROOT)
+        img = f'<img src="{html.escape(pdir)}/{html.escape(s["preview"])}?t={int(time.time())}">' if s.get("preview") else '<div class="noimg">no preview yet</div>'
         qs = "".join(f"<li>{html.escape(q)}</li>" for q in s.get("questions", []))
         log = "".join(f"<li><b>{html.escape(t[11:16])}</b> {html.escape(st)} — {html.escape(n)}</li>" for t, st, n in reversed(s.get("log", [])[-6:]))
-        cards.append(f'''<section class="card{' blocked' if s.get('blocked') else ''}"><h2>{html.escape(slug)}</h2><div class="steps">{steps}</div>
+        cards.append(f'''<section class="card{' blocked' if s.get('blocked') else ''}"><h2>{html.escape(slug)}</h2>{('<div class="sub">' + html.escape(worker(s)) + '</div>') if worker(s) else ''}<div class="steps">{steps}</div>
 {img}<ul class="log">{log}</ul>{'<h3>Questions for you</h3><ul class="q">' + qs + '</ul>' if qs else ''}</section>''')
     return f'''<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="15"><title>Tech pack runs</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"><style>

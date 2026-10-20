@@ -2,7 +2,7 @@
 # commit one product's folder (+ lesson proposals) without colliding with other builders. usage: commit_project.sh <slug> "message"
 set -e
 R="$(cd "$(dirname "$0")/.." && pwd)"; S="$1"; M="${2:-update $1}"
-exec 9>"$R/.git/techpack-commit.lock"; flock 9
+exec 9>"$(git -C "$R" rev-parse --path-format=absolute --git-common-dir)/techpack-commit.lock"; flock 9   # .git is a file in a worktree
 cd "$R"
 git add "projects/$S" 2>/dev/null || true
 git diff --cached --quiet && { echo "nothing to commit for $S"; exit 0; }

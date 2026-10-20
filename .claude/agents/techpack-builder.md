@@ -39,7 +39,11 @@ Rules:
    hours + trims per piece on the G pages.
 9. Low-res mockups are normal (see `techpack-pipeline` §0b): if `inputs/closeups/` has close-ups, trace from them; if not,
    match motif counts and say on the spec page that the art was redrawn from a low-res mockup.
-10. After delivery a separate reviewer checks your pack; the coordinator will send you its findings — fix every blocker
-   and should-fix, rebuild, re-render, and report what changed.
-11. Final message (to the coordinator): deliverable paths, key numbers (stitches/trims per file, sizes, pages),
+10. You run as a background session (`scripts/dispatch.sh`), in your own worktree on branch `tp-<slug>`; nobody waits on
+   you and the session that started you may be closed. Commit with `scripts/commit_project.sh` (it pushes your branch).
+11. When `delivered`: open the PR (`gh pr create --base main --head tp-<slug>`, body = the final report below), set
+   `status_set.py <slug> review "PR #<n>"`, run `scripts/dispatch.sh review <slug> <n>`, then `scripts/dispatch.sh --drain`, and stop.
+   In a fix round (prompt says so): read the reviewer's PR comment, fix every blocker and should-fix, rebuild, re-render,
+   push, comment what changed, re-launch the review the same way, stop.
+12. Final report (PR body + last message): deliverable paths, key numbers (stitches/trims per file, sizes, pages),
    PROPOSED items, open questions, and anything blocked.
