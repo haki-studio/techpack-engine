@@ -65,6 +65,15 @@ PAUSED (work committed; restart with a FRESH builder per product, short brief + 
 - koi: Rev C started (refmask, floratrace).
 Factory answered (factory.json): Brother, 750 mm field, frames 300×300 + 400×450, front single hooping, back 2, chenille/puff/sherpa yes.
 
+## NEWEST — 2026-10-20 night: ENGINE RE-PLAN (founder-approved). Read docs/ENGINE_PLAN.md "RE-PLAN" first.
+No more subject splitters (fish, lily, castle…): generic primitives + a vision step that labels any mockup; the vision step is done by
+the Claude Code session itself for now (no API). Next engine work = G1 → G2 (Koi with zero new subject code) → G3. PR #13 (Koi trial)
+stays unmerged as a record; its generic parts (inform.py, mockup-only gating, tone_group seam, the "mockup governs" LESSONS row) are
+being salvaged into PR "engine: mockup governs, close-ups inform". Trims-per-area target does not apply to separate-motif designs.
+Pending when this was written: KCOS Rev C builder, M4s gates builder, PR #14 re-review — check their branches/PRs.
+Also proposed to the founder (awaiting yes): a PLM "Tech packs" page (pick product + family, upload art per decoration, Generate → a
+Railway worker runs scripts/family_build.py → PDF on the product) — build it from the PLM repo in its own worktree.
+
 ## LATEST — 2026-10-20 late evening (coordinator 19b9021e handing off; start a FRESH session from here)
 Founder priorities now: **Keep Clean Our Space jacket (top)**, tee family (Alabasta / From the Shadows), engine M4.
 Builders were run as: builder in its own worktree → independent reviewer (own scratch worktree) → founder merges. The
