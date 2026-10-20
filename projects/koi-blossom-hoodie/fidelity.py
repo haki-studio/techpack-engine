@@ -8,7 +8,7 @@ Reference (refmask.py, reads no art / scene / template):
           floratrace guides / close-up registration) — silhouette + tone + row-direction rows.
   fish    refmask.fish_ref(P): the founder's reference tetra pixels at each mockup fish pose (pose from the mockup
           pixels), 0.82 x the mockup length (founder decision).
-Out masks: every sewn stitch of the DST as a 0.4 mm thread line, closed 0.5 mm (row spacing), NO hole filling.
+Out masks: every sewn stitch of the DST as a 0.2 mm line (needle points), closed 0.6 mm (row spacing), NO hole filling.
 Fish vs flora stitches: stops that sew only FI-* codes are fish; a stop that also sews flora (shared thread colour after
 merge_stops) is split by the fish pose boxes (from the mockup pixels).
 Gates: qa.motif_match (IoU >= 0.70, width + height >= 80 %) per motif; qa.uncovered (gaps >= 25 mm2);
@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw
 from scipy import ndimage as ndi
 import pyembroidery as pe
 import qa, refmask as RM, front as F
-import floratrace as FT_guides                      # only the lily centres (input readings), never its masks
+import lilyguides as FT_guides                      # lily centres + guides = readings of the input images (no art)
 
 SIZE = "M"; PPM = RM.PPM
 _, mt = F.pieces(SIZE)
@@ -63,7 +63,7 @@ def masks(P, poses):
     from shapely.geometry import Point
     from shapely.ops import unary_union
     bu = unary_union(boxes) if boxes else None
-    w = max(1, int(round(0.4 * PPM)))
+    w = 1                                    # needle-point extent (0.2 mm line); rows joined by the 0.6 mm closing below
     T = lambda p: ((p[0] - bb[0]) * PPM, (p[1] - bb[1]) * PPM)
     for ci, a, b in segs:
         cs = codes[min(ci, len(codes) - 1)]
@@ -75,16 +75,22 @@ def masks(P, poses):
         if fam == "flora":
             i, j = int(T(mid)[1]), int(T(mid)[0])
             if 0 <= i < H and 0 <= j < W and math.hypot(b[0] - a[0], b[1] - a[1]) > 1.0: ang[i, j] = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0]))
-    st = RM.disk(0.5)
+    st = RM.disk(0.6)
     out = {k: ndi.binary_closing(np.array(v) > 0, structure=st) | (np.array(v) > 0) for k, v in ims.items()}
     return out, np.array(lum).astype(float), ang, f
 
-def tone_agree(ref_tone, ref_m, out_lum, out_m):
-    """reference luminance quartile (0-3) vs the DST thread-luminance quartile on the pixels both cover"""
-    m = ref_m & out_m & (ref_tone >= 0)
+def tone_agree(ref_val, ref_m, out_lum, out_m):
+    """A13 tone layout: the reference's luminance (source pixels, or the reference fish's quartiles) vs the DST's thread
+    luminance on the pixels both cover, both smoothed 0.6 mm: rank correlation r (1 = same light/dark layout) and the
+    quartile agreement (exact / within one step)."""
+    m = ref_m & out_m
+    if np.ndim(ref_val) and (ref_val.dtype.kind in "i"): m &= ref_val >= 0
     if m.sum() < 25: return None
-    q = np.quantile(out_lum[m], [0.25, 0.5, 0.75]); ot = np.digitize(out_lum[m], q); rt = ref_tone[m]
-    return dict(exact=round(float((ot == rt).mean()), 2), within1=round(float((np.abs(ot - rt) <= 1).mean()), 2))
+    ol = ndi.gaussian_filter(out_lum, 0.6 * PPM)[m]; rv = ref_val[m].astype(float)
+    rr = np.argsort(np.argsort(rv)); ro = np.argsort(np.argsort(ol))
+    r = float(np.corrcoef(rr, ro)[0, 1]) if rr.std() > 0 and ro.std() > 0 else 0.0
+    qo = np.digitize(ol, np.quantile(ol, [0.25, 0.5, 0.75])); qr = np.digitize(rv, np.quantile(rv, [0.25, 0.5, 0.75]))
+    return dict(r=round(r, 2), exact=round(float((qo == qr).mean()), 2), within1=round(float((np.abs(qo - qr) <= 1).mean()), 2))
 
 def lily_discs(P):
     """lily centre + radius from the input readings (close-up registration / the guides read on the mockup zooms)"""
@@ -98,7 +104,7 @@ def lily_discs(P):
 
 def run(P):
     bb = RM.BB[P]
-    ref = RM.flora(P); tone = RM.tone(P); fr = RM.fish_ref(P); poses = [p for p, _ in fr]
+    ref = RM.flora(P); tone = ndi.gaussian_filter(RM.source(P)[0].mean(-1), 0.6 * PPM); fr = RM.fish_ref(P); poses = [p for p, _ in fr]
     fish_all = np.any([m for _, m in fr], axis=0) if fr else np.zeros_like(ref)
     out, olum, oang, dfile = masks(P, poses); NSTP = dict(NST)
     fish_zone = ndi.binary_dilation(fish_all, structure=RM.disk(1.5))

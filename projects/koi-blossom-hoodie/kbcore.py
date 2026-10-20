@@ -51,11 +51,11 @@ KB_RULES = {
  "FL-eye":    ("Lily throat",               "Satin, radial",      "radial",                   "0.38", "—",   "none",                    "0.15", "deep-blue, traced"),
  "FL-line":   ("Stamen lines",              "Run (double)",       "throat -> anther",         "—",    "2.0", "none",                    "—",    "over the throat"),
  "FL-stamen": ("Anther knots",              "Satin",              "across knot",              "0.38", "—",   "none",                    "0.10", "traced, Ø ≥ 1.8"),
- "LF":        ("Leaf tone (traced)",        "Satin, turning",     "across the leaf",          "0.40", "—",   "centre run",              "0.20", "split satin if > 7"),
- "LF-dk":     ("Leaf dark tone (traced)",   "Satin, turning",     "across the leaf",          "0.40", "—",   "centre run",              "0.20", ""),
+ "LF":        ("Leaf tone (traced)",        "Satin turning (≤ 3.5 wide) / tatami rows along the leaf axis (wider)", "across / along the leaf", "0.40 / 0.45", "— / 3.5", "centre / edge run", "0.20", "traced axis"),
+ "LF-dk":     ("Leaf dark tone (traced)",   "as LF",              "as LF",                    "0.40 / 0.45", "— / 3.5", "centre / edge run", "0.20", ""),
  "ST":        ("Stem / vine (traced)",      "Satin, turning",     "across stem",              "0.40", "—",   "centre run",              "0.15", "≥ 1.2 wide"),
- "PT":        ("Floating petal (traced)",   "Satin, turning",     "across petal",             "0.40", "—",   "centre run",              "0.20", ""),
- "PT-tone":   ("Floating petal 2nd tone",   "Satin, turning",     "across petal",             "0.40", "—",   "none",                    "0.20", ""),
+ "PT":        ("Floating petal (traced)",   "Satin turning (≤ 3.5 wide) / tatami along the petal axis", "across / along", "0.40 / 0.45", "— / 3.5", "centre / edge run", "0.20", ""),
+ "PT-tone":   ("Floating petal 2nd tone",   "as PT",              "as PT",                    "0.40 / 0.45", "— / 3.5", "none / edge run", "0.20", ""),
 }
 tech.RULES.update(KB_RULES)
 tech.LAYER_NAMES.update({20: "Stems", 21: "Leaves", 22: "Flowers", 23: "Floating petals", 24: "Fish"})

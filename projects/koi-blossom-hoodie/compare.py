@@ -22,8 +22,6 @@ META = pickle.load(open("scene.pkl", "rb"))["meta"]
 import refmask as RM
 CU = np.array(Image.open("inputs/closeup_mockup_koi.png").convert("RGB")).astype(np.float32)
 RF = np.array(Image.open("inputs/reference_fish.png").convert("RGB")).astype(np.float32)
-RF_HEAD, RF_TAIL = np.array([740.0, 930.0]), np.array([967.0, 809.0])     # reference fish (lower middle): snout, tail-lobe tip mid
-RF_BELLY = -1                                                            # it swims leftward with the belly down (kb_fish: mirrored)
 
 def dst_file(P):
     r = json.load(open(f"{kbcore.outdir(P)}/{size}/result_{P}.json"))["full"]; return r["file"], r["origin"]
@@ -182,18 +180,18 @@ def gate_lines(FDJ, pcs):
         L.append(f"{P} ({os.path.basename(r['dst'])}): {summ}  |  bare gaps >= 25 mm2: {len(r['gaps'])}  |  mockup blue in the band keep-out strip: {r['band_zone_mm2']} mm2 (asked, item 6)")
         for x in fams.get("lilies", []):
             t = x.get("tone") or {}
-            L.append(f"   lily {x['motif']} ({x['ref']}): IoU {x['iou']}, w {x['w_ratio']}, h {x['h_ratio']}; tone agreement exact {t.get('exact')}, within one step {t.get('within1')}; "
+            L.append(f"   lily {x['motif']} ({x['ref']}): IoU {x['iou']}, w {x['w_ratio']}, h {x['h_ratio']}; tone r {t.get('r')}, quartiles exact {t.get('exact')} / within one {t.get('within1')}; "
                      f"stitch rows vs petal axis: median {x['row_dir_median_deg']} deg, {x['rows_along_pct']} % within 30 deg")
         ft = [x.get("tone") for x in fams.get("fish", []) if x.get("tone")]
-        if ft: L.append(f"   fish facets: tone agreement exact {np.mean([t['exact'] for t in ft]):.2f}, within one step {np.mean([t['within1'] for t in ft]):.2f} (mean of {len(ft)} fish)")
+        if ft: L.append(f"   fish facets: tone r {np.mean([t['r'] for t in ft]):.2f} (min {min(t['r'] for t in ft):.2f}), quartiles within one {np.mean([t['within1'] for t in ft]):.2f} (mean of {len(ft)} fish)")
         ct = [x.get("tone") for x in fams.get("clusters", []) if x.get("tone")]
-        if ct: L.append(f"   clusters: tone agreement exact {np.mean([t['exact'] for t in ct]):.2f}, within one step {np.mean([t['within1'] for t in ct]):.2f}")
+        if ct: L.append(f"   clusters: tone r {np.mean([t['r'] for t in ct]):.2f} (min {min(t['r'] for t in ct):.2f}), quartiles within one {np.mean([t['within1'] for t in ct]):.2f}")
         for fam, rs in fams.items():
             for x in rs:
                 if not x["ok"]: L.append(f"   FAIL {fam} at ({x['x_mm']}, {x['y_mm']}) {x['area_mm2']} mm2: IoU {x['iou']}, w {x['w_ratio']}, h {x['h_ratio']}")
         for g_ in r["gaps"]: L.append(f"   GAP at ({g_['x_mm']}, {g_['y_mm']}) {g_['w_mm']} x {g_['h_mm']} mm, {g_['area_mm2']} mm2")
     L.append("Reference masks: flora = mockup pixels (close-up pixels in the 2 FR lily discs), garment details + mockup fish masked first, stems included, no art; "
-             "fish = reference_fish.png pixels at the pose measured on the mockup fish pixels. DST masks: every stitch as a 0.4 mm line, closed 0.5 mm, no hole filling.")
+             "fish = reference_fish.png pixels at the pose measured on the mockup fish pixels. DST masks: every stitch as a 0.2 mm line (needle points), closed 0.6 mm, no hole filling. Tone r = rank correlation of reference vs stitched luminance.")
     return L
 
 if __name__ == "__main__":

@@ -108,3 +108,34 @@ Problems hit while building this product, worked around in project code only. Ea
 - **Close-up vs mockup reference conflict**: a motif traced from the close-up does not match the 1 px/mm mockup pixels.
   Composed reference used: mockup ∪ close-up-traced silhouettes; small mockup bits within 1 mm of a close-up motif are
   "close-up zone" (counted on the compare sheet, not gated). Proposed: `qa.motif_match(..., exclude=mask)`.
+
+## 13. Rev C (19 Oct 2026): non-circular A14 gates — `engine/refmask.py` candidate
+- **Problem:** Rev B's gate references were partly built from the art (art fish regions as the fish reference, rasterised lily art
+  ORed into the flora mask, stem footprints removed from both sides, DST mask hole-filled) — the gate proved DST == art.
+- **Fix used:** `refmask.py` imports nothing from the art side (no scene.pkl, art pkl, templates). Reference = input pixels only:
+  mockup warped to the piece grid, close-up pasted per registration disc, garment details from the PATTERN (keep-outs, welts),
+  fish found by colour (light blobs holding red), isolated thin lines dropped (topstitching), stems kept in. DST mask = 0.4 mm
+  stitch lines + 0.5 mm closing, never hole-filled. The art tracer has its own classifier (different thresholds) so the gate is
+  not fed by the tracing mask.
+- **Proposed engine fix:** `engine/refmask.py` (source(), art_area(), flora(), fish_px()) + a test that imports it with the art
+  modules blocked (`sys.modules["scene"] = None`), and a red-then-green test: a stand-in shape at the right position fails.
+
+## 14. Fish poses from pixels (heading bug found)
+- The typed Rev B fish list had the SL lower fish reversed (tail/head). `refmask.fish_poses`: blob centroid + PCA axis, head =
+  the end away from the peduncle (width minimum at 10-35 % of the length) — matched 17/18 typed headings within 4°, the 18th
+  was the typed error. Proposed: `qa.motif_pose(mask)` in the engine; check: synthetic fish silhouette, both orientations.
+
+## 15. Tones by nearest thread (Lab) + luminance bands
+- Rev B ranked k-means classes by luminance onto a fixed thread list, so a pale-ish lily became ice/white whatever its colour.
+  Rev C: per pixel the nearest palette thread in Lab; blurred rim (outer 1 mm at 1 px/mm) takes the interior tone; per motif
+  <= 2-3 dominant threads laid out as bands cut on the smoothed luminance (sigma 1.2 mm) at the midpoints of the threads' own
+  mean luminance -> long-and-short steps, no speckle. Thread-mix mean vs source mean matched within ~5 levels on every lily.
+  Proposed: `engine/tones.py` (nearest_thread, tone_bands) + test: a two-tone gradient disc gives 2 bands, no islands.
+
+## 16. Satin along an elongated petal
+- Same as note 10: there is no "satin rows along the axis" for elongated shapes; Rev C uses tatami at the petal-axis angle
+  (rows along the petal). Proposed: `st="satin_fixed"` honouring a numeric angle.
+
+## 17. Vectorised sleeve mapping
+- `mockmap.sleeve_P` calls griddata per point; tracing polygons needs thousands. `floratrace.to_mm` does one griddata call per
+  array. Proposed: make `sleeve_P` accept arrays.

@@ -3,7 +3,8 @@
 Nothing here reads the art, the scene, art_<size>.pkl, scene.pkl, the traced templates or any typed motif position.
 Inputs used: inputs/front.png (mockup), inputs/closeup_mockup_koi.png (close-up), inputs/reference_fish.png (fish
 reference), the pattern (keep-outs / welts = garment details, A15) and the close-up registration features
-(trace/closeup_reg.json: lily centres + koi head/tail points read off both images = input pixels).
+(trace/closeup_reg.json: lily centres + koi head/tail points read off both images = input pixels); the close-up is
+mapped by the global affine + a continuous correction (inverse-distance blend of the two lily-centre residuals).
 
   source(P)       the reference image on piece P's mm grid (PPM px/mm): the mockup mapped to the piece; on FR the two
                   close-up lilies are pasted in their registration discs (the close-up governs there, A12).
@@ -57,6 +58,33 @@ def raster(geoms, P, ppm=PPM):
 def _A():
     X = np.array(REG["affine"]["X"]); return X[:2].T          # close-up px -> mockup px (linear part)
 
+def _resid():
+    """residual of each lily centre after the global affine (mockup px): the close-up drifted differently per lily"""
+    X = np.array(REG["affine"]["X"]); out = []
+    for nm, (c_cu, _) in CU_LILY.items():
+        p = np.array([c_cu[0], c_cu[1], 1.0]) @ X; out.append((p, np.array(MK_LILY[nm], float) - p))
+    return out
+
+def cu_field(mx, my):
+    """continuous correction field (mockup px) at mockup points: inverse-distance blend of the lily residuals, so each
+    lily centre lands exactly on its mockup centre and the two lily discs meet without a seam"""
+    mx, my = np.asarray(mx, float), np.asarray(my, float); res = _resid()
+    w = [1.0 / (np.hypot(mx - p[0], my - p[1]) ** 2 + 1.0) for p, _ in res]; ws = sum(w)
+    return sum(wi * r[0] for wi, (_, r) in zip(w, res)) / ws, sum(wi * r[1] for wi, (_, r) in zip(w, res)) / ws
+
+def cu_to_mock(xs, ys):
+    X = np.array(REG["affine"]["X"]); xs, ys = np.asarray(xs, float), np.asarray(ys, float)
+    mx = xs * X[0, 0] + ys * X[1, 0] + X[2, 0]; my = xs * X[0, 1] + ys * X[1, 1] + X[2, 1]
+    for _ in range(3):                         # the field is evaluated at the corrected point (fixed point)
+        fx, fy = cu_field(mx, my)
+    fx, fy = cu_field(mx + fx, my + fy)
+    return mx + fx, my + fy
+
+def mock_to_cu(mx, my):
+    X = np.array(REG["affine"]["X"]); fx, fy = cu_field(mx, my)
+    q = np.stack([np.asarray(mx, float) - fx - X[2, 0], np.asarray(my, float) - fy - X[2, 1]], -1) @ np.linalg.inv(_A()).T
+    return q[..., 0], q[..., 1]
+
 _C = {}
 def source(P, ppm=PPM):
     """(rgb float HxWx3, close-up zone bool, zone id int) on the piece grid"""
@@ -67,15 +95,12 @@ def source(P, ppm=PPM):
     zone = np.zeros(rgb.shape[:2], int)
     if P == "FR":
         cu = np.array(Image.open("inputs/closeup_mockup_koi.png").convert("RGB")).astype(np.float32)
-        XX, YY = grid(P, ppm); px, py = MM.Pinv(XX, YY); Ai = np.linalg.inv(_A())
+        XX, YY = grid(P, ppm); px, py = MM.Pinv(XX, YY); cx, cy = mock_to_cu(px, py)
         # close-up brightness is matched to the mockup on the fabric (median of each image's dark pixels)
         mk_fab = np.median(rgb.reshape(-1, 3)[rgb.reshape(-1, 3).mean(1) < 90], axis=0)
         cu_fab = np.median(cu.reshape(-1, 3)[cu.reshape(-1, 3).mean(1) < 90], axis=0)
         for zi, (nm, (c_cu, R)) in enumerate(CU_LILY.items(), 1):
-            c_mk = np.array(MK_LILY[nm], float)
-            d = np.stack([px - c_mk[0], py - c_mk[1]], -1) @ Ai.T
-            cx, cy = d[..., 0] + c_cu[0], d[..., 1] + c_cu[1]
-            inz = (np.hypot(cx - c_cu[0], cy - c_cu[1]) < R) & (cx >= 0) & (cy >= 0) & (cx < cu.shape[1] - 1) & (cy < cu.shape[0] - 1)
+            inz = (np.hypot(cx - c_cu[0], cy - c_cu[1]) < R) & (cx >= 0) & (cy >= 0) & (cx < cu.shape[1] - 1) & (cy < cu.shape[0] - 1) & (zone == 0)
             for c in range(3):
                 v = map_coordinates(cu[..., c], [cy[inz], cx[inz]], order=1)
                 rgb[..., c][inz] = mk_fab[c] + (v - cu_fab[c])
@@ -132,12 +157,32 @@ def flora(P, ppm=PPM):
     if n:
         wmax = ndi.maximum(ndi.distance_transform_edt(emb), lab, range(1, n + 1)) * 2 / ppm
         emb &= ~np.isin(lab, 1 + np.nonzero(wmax < 1.6)[0])
+    lab, n = ndi.label(emb)
+    if n:   # long isolated lines (welt topstitching): length/width > 8 and narrower than 2.4 mm
+        wmax = ndi.maximum(ndi.distance_transform_edt(emb), lab, range(1, n + 1)) * 2 / ppm
+        sz = ndi.sum(emb, lab, range(1, n + 1)) / ppm ** 2
+        emb &= ~np.isin(lab, 1 + np.nonzero((wmax < 2.4) & (sz / np.maximum(wmax, 0.1) ** 2 > 8))[0])
+    emb = zip_band(P, emb, ppm)
     holes = ndi.binary_fill_holes(emb) & ~emb; hl, hn = ndi.label(holes)
     if hn:
         hs = ndi.sum(holes, hl, range(1, hn + 1)) / ppm ** 2
         emb |= np.isin(hl, 1 + np.nonzero(hs < 2.0)[0])
     _C[key] = emb
     return emb
+
+def zip_band(P, m, ppm=PPM):
+    """garment-edge shine (A15 garment details), not petals: fronts — specks < 15 mm2 within 24 mm of CF (zip tape /
+    placket) or within 10 mm of a welt box (welt lip shine); sleeves — specks < 15 mm2 within 6 mm of the outer fold (the front view's silhouette edge)"""
+    lim = 24.0 if P in ("FR", "FL") else 6.0
+    XX, _ = grid(P, ppm); lab, n = ndi.label(m)
+    if not n: return m
+    sz = ndi.sum(m, lab, range(1, n + 1)) / ppm ** 2
+    cx = ndi.mean(np.abs(XX), lab, range(1, n + 1))
+    drop = (sz < 15) & (cx < lim)
+    if P in ("FR", "FL"):                      # welt lip / topstitch shine: specks < 15 mm2 within 10 mm of the welt box
+        near = raster([F.keep_geoms("M", P)["welt"].buffer(10)], P, ppm)
+        drop |= (sz < 15) & (ndi.maximum(near.astype(int), lab, range(1, n + 1)) > 0)
+    return m & ~np.isin(lab, 1 + np.nonzero(drop)[0])
 
 def tone(P, ppm=PPM):
     """4 luminance classes over the flora pixels (0 darkest .. 3 lightest), -1 elsewhere; quartiles per source zone"""

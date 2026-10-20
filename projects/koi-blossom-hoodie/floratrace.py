@@ -33,19 +33,7 @@ PPM = R.PPM
 FLORA_THREADS = ["kb_navy", "kb_cobalt", "kb_royal", "kb_blue", "kb_sky", "kb_ice", "kb_white"]      # blue family only: the mockup flora reads blue (Rev B review item 3); slate stays a fish thread
 DARK_ORDER = {k: i for i, k in enumerate(["kb_navy", "kb_cobalt", "kb_royal", "kb_slate", "kb_blue", "kb_sky", "kb_ice", "kb_white"])}
 
-# ---------------------------------------------------------------- lily guides (source px): centre, [(tip, width px)] back -> front
-# close-up lilies: close-up px (cu_trace FLOWERS, read on 2x gridded zooms of the close-up)
-CU_GUIDES = {
- "lily0": dict(c=(95, 415), petals=[((118, 232), 46), ((-12, 330), 58), ((-25, 470), 62), ((282, 413), 58), ((182, 537), 72), ((176, 298), 74)]),
- "lily1": dict(c=(250, 680), petals=[((105, 598), 42), ((228, 558), 56), ((108, 712), 52), ((222, 803), 48), ((378, 790), 58), ((357, 640), 58)]),
-}
-# mockup lilies: mockup px, read on 8-10x gridded zooms of front.png (Rev C) — each flower's own fan
-MK_GUIDES = {
- "FR_hem":  dict(piece="FR", c=(346, 757), petals=[((358, 733), 8), ((356, 779), 8), ((312, 749), 9), ((330, 789), 14), ((347, 714), 15)]),
- "FL_big":  dict(piece="FL", c=(483, 754), petals=[((523, 724), 18), ((518, 782), 20), ((470, 798), 20), ((437, 743), 20), ((483, 705), 22)]),
- "FL_dark": dict(piece="FL", c=(567, 746), petals=[((598, 738), 9), ((560, 782), 10), ((583, 770), 13), ((538, 728), 13), ((573, 719), 12)]),
- "SR_cuff": dict(piece="SR", c=(46, 883), petals=[((17, 858), 12), ((60, 912), 16), ((16, 898), 18), ((82, 869), 18), ((46, 846), 16)]),
-}
+from lilyguides import CU_GUIDES, MK_GUIDES, to_mm, cu_to_mock, lanceolate, lily_specs
 
 def _lab(rgb):
     c = np.asarray(rgb, float) / 255.0
@@ -57,34 +45,6 @@ def _lab(rgb):
 
 def hexrgb(h): h = h.lstrip("#"); return [int(h[i:i + 2], 16) for i in (0, 2, 4)]
 def polys(g): return [p for p in (g.geoms if hasattr(g, "geoms") else [g]) if p.geom_type == "Polygon" and not p.is_empty]
-
-def to_mm(P, xs, ys):
-    """source px -> piece mm (vectorised): fronts linear, sleeves through the mockmap cylinder grid"""
-    xs, ys = np.asarray(xs, float), np.asarray(ys, float)
-    if P in ("FR", "FL"):
-        return (xs - MM.CFX) * MM.SX, (ys - MM.NECKY) * MM.SY
-    mt = F.pieces("M")[1]; pts, tu = MM._grid(P, mt)
-    t_u = griddata(pts, tu, np.c_[xs, ys], method="linear")
-    bad = np.isnan(t_u[:, 0])
-    if bad.any(): t_u[bad] = griddata(pts, tu, np.c_[xs, ys][bad], method="nearest")
-    t, u = t_u[:, 0], t_u[:, 1]
-    y = (-mt["cap_h"] + t * (mt["Lu"] + mt["cap_h"])) * (1 - u) + t * mt["Lu"] * u
-    hw = mt["W"] + (mt["Ww"] - mt["W"]) * np.clip(y, 0, None) / mt["Lu"]
-    x = u * hw
-    return (x if P == "SR" else -x), y
-
-def cu_to_mock(name, xs, ys):
-    A = R._A(); c_cu = np.array(R.CU_LILY[name][0], float); c_mk = np.array(R.MK_LILY[name], float)
-    d = np.stack([np.asarray(xs, float) - c_cu[0], np.asarray(ys, float) - c_cu[1]], -1) @ A.T
-    return d[..., 0] + c_mk[0], d[..., 1] + c_mk[1]
-
-def lanceolate(c, tip, w, n=30, wmax_at=0.42):
-    c = np.array(c, float); t = np.array(tip, float); d = t - c; L = np.hypot(*d); u = d / L; nv = np.array([-u[1], u[0]])
-    s = np.linspace(0, 1, n)
-    hw = w / 2 * np.where(s < wmax_at, np.clip(np.sin(np.pi / 2 * s / wmax_at), 0, 1) ** 0.7,
-                          np.clip(np.cos(np.pi / 2 * np.clip(s - wmax_at, 0, None) / (1 - wmax_at)), 0, 1) ** 0.9)
-    hw[0] = w * 0.12
-    return np.array([c + u * L * si + nv * h for si, h in zip(s, hw)] + [c + u * L * si - nv * h for si, h in zip(s, hw)][::-1])
 
 # ---------------------------------------------------------------- raster helpers
 def grid_xy(P):
@@ -116,21 +76,22 @@ def base(P):
     rgb, zone, _ = R.source(P); area = R.art_area(P)
     fab = np.median(rgb[area & ~zone], axis=0)
     dist = np.sqrt(((rgb - fab) ** 2).sum(-1)); L = rgb.mean(-1); blue = rgb[..., 2] - rgb[..., 0]
-    E = area & (dist > 22) & ((blue > fab[2] - fab[0] + 14) | (L > fab.mean() + 50))
+    E = area & (dist > 20) & ((blue > fab[2] - fab[0] + 15) | (L > fab.mean() + 55))      # same pixel test as the gate (separate code)
     E &= ~R.fish_px(P)[0] & ~R.fish_px(P, composed=True)[0]
-    E = ndi.binary_opening(E, structure=R.disk(1.2))
-    E = ndi.binary_closing(E, structure=R.disk(0.8)) & area
+    E = ndi.binary_opening(E, structure=R.disk(1.0))
+    E = ndi.binary_closing(E, structure=R.disk(0.6)) & area
     lab, n = ndi.label(E)                       # isolated thin lines (welt edges, zip shine): not flora
     if n:
         wmax = ndi.maximum(ndi.distance_transform_edt(E), lab, range(1, n + 1)) * 2 / PPM
-        E &= ~np.isin(lab, 1 + np.nonzero(wmax < 1.8)[0])
+        E &= ~np.isin(lab, 1 + np.nonzero(wmax < 1.6)[0])
         lab, n = ndi.label(E)
         if n:                                   # long isolated lines (welt topstitching): length / width > 8 and width < 2.4 mm
             wmax = ndi.maximum(ndi.distance_transform_edt(E), lab, range(1, n + 1)) * 2 / PPM
             sz = ndi.sum(E, lab, range(1, n + 1)) / PPM ** 2
             E &= ~np.isin(lab, 1 + np.nonzero((wmax < 2.4) & (sz / np.maximum(wmax, 0.1) ** 2 > 8))[0])
+    E = R.zip_band(P, E)
     holes = ndi.binary_fill_holes(E) & ~E; hl, hn = ndi.label(holes)
-    if hn: E |= np.isin(hl, 1 + np.nonzero(ndi.sum(holes, hl, range(1, hn + 1)) / PPM ** 2 < 4.0)[0])
+    if hn: E |= np.isin(hl, 1 + np.nonzero(ndi.sum(holes, hl, range(1, hn + 1)) / PPM ** 2 < 2.0)[0])
     # nearest flora thread per pixel (Lab); blurred rim (outer 0.6 mm mixes in the fabric) takes the interior tone
     T = np.array([hexrgb(__import__("kbcore").KB_PAL[k][0]) for k in FLORA_THREADS], float)
     sm = ndi.gaussian_filter(rgb, (0.25 * PPM, 0.25 * PPM, 0))
@@ -188,21 +149,6 @@ def sub_raster(P, geoms):
     return R.raster(geoms, P)
 
 # ---------------------------------------------------------------- lilies
-def lily_specs(P):
-    out = []
-    if P == "FR":
-        for nm, g in CU_GUIDES.items():
-            cx, cy = cu_to_mock(nm, [g["c"][0]], [g["c"][1]])
-            pet = []
-            for tip, w in g["petals"]:
-                ring = lanceolate(g["c"], tip, w); mx, my = cu_to_mock(nm, ring[:, 0], ring[:, 1])
-                pet.append((np.c_[mx, my], cu_to_mock(nm, [tip[0]], [tip[1]])))
-            out.append(dict(name=f"cu_{nm}", src="close-up", c=(float(cx[0]), float(cy[0])), petals=pet))
-    for nm, g in MK_GUIDES.items():
-        if g["piece"] != P: continue
-        out.append(dict(name=nm, src="mockup", c=g["c"], petals=[(lanceolate(g["c"], tip, w), ([tip[0]], [tip[1]])) for tip, w in g["petals"]]))
-    return out
-
 def trace_lilies(P, E, cls):
     res = []; taken = np.zeros_like(E)
     for spec in lily_specs(P):
@@ -233,7 +179,8 @@ def trace_lilies(P, E, cls):
         throat = poly_of_mask(ndi.binary_closing(dark, structure=R.disk(0.8)), P)
         throat = max(throat, key=lambda q: q.area) if throat else Point(c).buffer(0.1 * Rr)
         throat = throat.union(Point(c).buffer(max(1.2, 0.09 * Rr))).buffer(0)
-        light = uni & (cls >= 5) & (rr < 0.42 * Rr) & (rr > 0.05 * Rr) & (LUM[P] > 172)
+        thr = max(140.0, float(np.percentile(LUM[P][uni], 90))) if uni.any() else 172.0      # anthers = the flower's brightest pixels round the centre (dark flower: lower bar)
+        light = uni & (cls >= 4) & (rr < 0.42 * Rr) & (rr > 0.05 * Rr) & (LUM[P] > thr)
         knots = sorted([q for q in poly_of_mask(light, P) if q.area >= 0.5], key=lambda q: -q.area)[:6]
         knots = [q.buffer(0.35).buffer(0) if q.minimum_rotated_rectangle.length / 4 < 0.9 else q for q in knots]
         knots = [q if q.area >= 2.5 else q.union(Point(q.centroid.x, q.centroid.y).buffer(0.9)).buffer(0) for q in knots]
@@ -366,10 +313,12 @@ def trace(P):
         if not geoms: continue
         cl = cl_at(unary_union([g for _, g in geoms])); u = f"{cl}_leaf{nl}"; nl += 1
         dk = min(keep, key=lambda kk: kk)
+        wide = ndi.distance_transform_edt(m).max() * 2 / PPM > 3.5        # wide leaves: rows along the leaf axis (a turning satin fans open)
+        a_ax = float(math.degrees(math.atan2(ax[1], ax[0])))
         for col, g in geoms:
             g = C(g.buffer(-0.2 if g.area >= 8 else -0.1))
             if g.is_empty or g.area < 0.8: continue
-            regs.append(dict(col=col, geom=g, st="satin", ang="auto", grp="LF-dk" if (FLORA_THREADS.index(col) == dk and len(keep) > 1) else "LF",
+            regs.append(dict(col=col, geom=g, st="tatami" if wide else "satin", ang=a_ax if wide else "auto", grp="LF-dk" if (FLORA_THREADS.index(col) == dk and len(keep) > 1) else "LF",
                              sub=0, unit=u, cluster=cl, kind="leaf", axis=float(math.degrees(math.atan2(ax[1], ax[0]))), L=round(Lk, 1)))
     info["leaves"] = nl
     sl_, sn = ndi.label(stems); ns = 0
@@ -390,14 +339,17 @@ def trace(P):
         if w_ is None: continue
         w_ = (slice(max(0, w_[0].start - 4), w_[0].stop + 4), slice(max(0, w_[1].start - 4), w_[1].stop + 4))
         m = pl[w_] == k
-        if m.sum() < 4.0 * PPM ** 2: continue
+        if m.sum() < 2.5 * PPM ** 2: continue
         c2, keep = clean_tones(cls[w_], m, keep_max=2 if m.sum() >= 15 * PPM ** 2 else 1, min_mm2=2.5, min_share=0.2, lum=LUM[P][w_], sigma_mm=0.8)
         u = f"petal_{P}{npt}"; npt += 1
+        wide = ndi.distance_transform_edt(m).max() * 2 / PPM > 3.5
+        yy_, xx_ = np.nonzero(m); cc_ = np.cov(np.stack([xx_ - xx_.mean(), yy_ - yy_.mean()])); ev, evec = np.linalg.eigh(cc_)
+        a_ax = float(math.degrees(math.atan2(evec[1, 1], evec[0, 1])))
         for kk in keep:
             for q in poly_of_mask(c2 == kk, P, off=(w_[0].start, w_[1].start)):
-                q = C(q.buffer(-0.2 if q.area >= 8 else -0.3))
+                q = C(q.buffer(-0.2 if q.area >= 8 else -0.15))
                 if q.is_empty or q.area < 1.0: continue
-                regs.append(dict(col=FLORA_THREADS[kk], geom=q, st="satin", ang="auto", grp="PT" if kk == min(keep) else "PT-tone",
+                regs.append(dict(col=FLORA_THREADS[kk], geom=q, st="tatami" if wide else "satin", ang=a_ax if wide else "auto", grp="PT" if kk == min(keep) else "PT-tone",
                                  sub=0, unit=u, cluster=None, kind="petal"))
     info["petals"] = npt
     info["clusters"] = {v: int(k) for k, v in cname.items()}
