@@ -42,31 +42,37 @@ images and watch.
    Post ONE message: a table of products (slug, garment, block, process, elements, flags) + every question that
    blocks a product (usually: fit charts for non-Drum-Island garments, fabric). Then continue — don't wait.
 
-## 2. Build (parallel)
-For every product, launch one **`techpack-builder`** subagent in the background with the prompt
-`Build the tech pack for projects/<slug>. Brief: projects/<slug>/inputs/brief.md.` — all at once (they share CPU
-through `scripts/heavy.sh`, so it's safe to start them together).
+## 2. Build (parallel, detached — LESSONS E10)
+For every product run `scripts/dispatch.sh build <slug>` (one line each). Each builder is its OWN background Claude
+session (`claude --bg`) in its own worktree `.claude/worktrees/tp-<slug>` on branch `tp-<slug>` — never an in-process
+`Agent` subagent, because those die with this session and force it to stay open. dispatch.sh runs at most
+TECHPACK_MAX_WORKERS (default 2) at once and respects the company session/RAM cap; the rest are queued and start
+by themselves as workers finish. Heavy commands still share CPU through `scripts/heavy.sh`.
 
-Tell Devin how to watch: `python3 scripts/status.py --watch` in a second terminal, or open `status.html`
-(Windows: `\\wsl$\Ubuntu\home\<you>\techpack-engine\status.html`) — it refreshes itself and shows each
-product's latest preview.
+**Then end this session.** Nothing waits on it: each builder pushes, opens its PR and launches its own reviewer
+(`dispatch.sh review`); the reviewer approves, sends one fix round back (`dispatch.sh fix`), or marks the product
+blocked for the founder. Closing a coordinator is always safe; never keep one open to babysit workers.
 
-## 3. As builders finish
-- Relay each builder's result in one line (deliverable paths under `projects/<slug>/out/`, open questions).
-- Engine changes: builders don't edit `engine/`; they write proposals to `projects/<slug>/ENGINE_NOTES.md`. When
-  all builders are done, apply the proposals yourself (one at a time, tests passing), add LESSONS rows + tests,
-  commit and push to `main`.
-- **Independent review (every product, no exceptions):** when a builder reports `delivered`, launch one `reviewer`
-  subagent on that pack (it did not build it). **Fidelity is judged first**: stitch preview vs mockup side by side, zoomed,
-  listing every mockup detail that is missing or simplified (fidelity first — cost findings are informational, never
-  a reason to simplify); then every page rendered and looked at, every number vs the generated files, factory clarity, LESSONS gates, cost (trims / stitches). Send its
-  blocker + should-fix items back to the same builder (SendMessage) to fix, re-review once, then mark `reviewed`.
-  Only a `reviewed` pack goes to the factory.
+Tell Devin how to watch: `claude agents` (attach / logs / stop any worker), `python3 scripts/status.py --watch`, or
+`status.html` — the board (`~/.techpack/board/`) shows every product's stage and which worker has it.
+
+## 3. Next session: collect results (`/techpack-status`)
+A later, fresh session reads the board + `gh pr list` and does only what needs a person or a merge:
+- Relay each product in one line (stage, PR link, open questions). `reviewed` PRs go to Devin to merge.
+- Engine changes: builders don't edit `engine/`; they write proposals to `projects/<slug>/ENGINE_NOTES.md`. Apply them
+  in a separate engine PR (tests passing), with LESSONS rows + tests.
+- **Independent review (every product, no exceptions)** is launched by the builder itself (`dispatch.sh review`).
+  Reviewer: **fidelity first** — stitch preview vs mockup side by side, zoomed, every mockup detail that is missing or
+  simplified (cost findings are informational, never a reason to simplify); then every page rendered and looked at,
+  every number vs the generated files, factory clarity, LESSONS gates, cost (trims / stitches). At most one automatic
+  fix round; after that the product is `blocked` for the founder. Only a `reviewed` pack goes to the factory.
+- A worker that died mid-way (laptop restart: background sessions do not survive a daemon restart) leaves its work on
+  its branch/worktree; re-run `scripts/dispatch.sh build <slug> "resume from the branch"`.
 - **Factory loop:** every pack carries the F1 page (`engine/factory.py`): strike-off files (size M), frame + needle
   question, thread card / lab dip for weak matches, quote basis. Frames, needles, speed and thread brands come from
   `factory.json` — when the factory answers, update it and rebuild the splits. Strike-off photos/notes go into
   `projects/<slug>/inputs/strikeoff/`; feed them back per `techpack-pipeline` §6 and add LESSONS rows.
-- Sync with GitHub only when every builder is done (shared working tree): `git status` must show no uncommitted
-  project work, then `git pull --rebase` (never `--autostash`), `python3 -m pytest -q tests`, `git push`.
+- Sync: every worker has its own worktree + branch + PR, so there is no shared-tree sync step any more; `main` changes
+  only by merged PRs.
 - Finish with a summary table: product, stage (delivered / reviewed), stitches + trims (M), machine hours, files,
   what's blocked and why, and what the factory has been asked (F1).
