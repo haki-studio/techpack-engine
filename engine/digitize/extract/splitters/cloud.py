@@ -18,6 +18,7 @@ import numpy as np
 from scipy import ndimage as ndi
 from shapely.ops import unary_union
 from digitize.schema import Part
+from digitize import direction as DR
 
 
 def _cfg(ctx):
@@ -102,12 +103,14 @@ def split(ctx, zone, z, claim):
                 if sm.sum() / ev.ppm ** 2 < sc["min_shade_mm2"]: continue
                 sg = ev.polys(sm, min_mm2=sc["min_shade_mm2"] / 2)
                 if not sg: continue
-                fa, coh = ev.field_angle(mask=sm)
+                _, coh = ev.field_angle(mask=sm)
+                sgeom = sg[0] if len(sg) == 1 else unary_union(sg); sgrid = ctx.field().grid(sgeom, step=1.0)
+                fa = DR.grid_mean(sgrid, sgeom)
                 if fa is None: continue
                 ds = rb.direction("cloud_shade", field=fa)
                 parts.append(Part(id=ctx.new_id(zone["id"]), kind="cloud_shade", geom=sg[0] if len(sg) == 1 else unary_union(sg),
                                   thread=ctx.threads[k], z=zl + zs, dir=ds, zone=zone["id"], rgb=ev.mean_rgb(sm),
-                                  meta=dict(splitter="cloud", lobe=int(rank), mass=int(mi), field_angle=ds.angle, coherence=round(coh, 3),
+                                  meta=dict(splitter="cloud", lobe=int(rank), mass=int(mi), field_angle=ds.angle, field=sgrid, coherence=round(coh, 3),
                                             shade_of=lobe_id)))
         wl, wn = ndi.label(wisp)
         for wi in range(1, wn + 1):

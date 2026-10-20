@@ -235,6 +235,24 @@ def separation_report(parts, sep=15.0, touch=0.3):
     return dict(pairs=n, close=close, examples=ex)
 
 
+def refresh_field_basis(parts):
+    """after the plan's geometry is final (underlap, cut-under, specks): every field-derived part's basis is re-measured
+    from its stored field grid over the geometry actually sewn (field -> meta field_mean, field-mean -> meta field_angle),
+    and its angle re-set to basis + recorded band offset + separation turn. digitize.audit recomputes the same number,
+    so a basis written by hand into meta no longer passes (PR #6 review). Returns the number of parts refreshed."""
+    from digitize.schema import DirSpec
+    n = 0
+    for p in parts:
+        key = {"field": "field_mean", "field-mean": "field_angle"}.get(p.dir.source)
+        if key is None or not p.meta.get("field"): continue
+        b = grid_mean(p.meta["field"], p.geom)
+        if b is None: continue
+        p.meta[key] = round(b, 2)
+        p.dir = DirSpec(b + p.meta.get("band_offset_deg", 0.0) + p.meta.get("sep_deg", 0.0), mode=p.dir.mode, source=p.dir.source, note=p.dir.note)
+        n += 1
+    return n
+
+
 def depth_angle(t, far=0.0, near=90.0):
     """rule 3: depth goes from near-horizontal (far, t = 0) to near-vertical (near, t = 1)"""
     t = min(1.0, max(0.0, float(t)))

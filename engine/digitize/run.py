@@ -104,6 +104,9 @@ class Run:
         sq = self.cfg["sequence"]; n0 = len(plan.parts)
         SQ.underlap(plan.parts, sq["keep_mm"]); SQ.cut_under(plan.parts, sq["keep_mm"])
         plan.parts, dropped = SQ.absorb_fragments(plan.parts, sq["min_fragment_mm2"])
+        refreshed = DR.refresh_field_basis(plan.parts)                  # bases on the geometry actually sewn (audited)
+        sep = self.rb.principles["neighbour_sep_deg"]
+        moves = DR.separate(plan.parts, sep=tuple(sep), kinds=set(self.cfg.get("separate_kinds", ["stratum_band", "cloud_shade", "cloud_wisp"])))
         for p in plan.parts: issues += techniques.get(p.technique).check(p, P)
         plan.stops = SQ.order(plan.parts)
         used = {p.thread for p in plan.parts}
@@ -111,7 +114,8 @@ class Run:
         need = config.needles(self.cfg)
         if len(plan.threads) > need: raise SystemExit(f"plan uses {len(plan.threads)} threads > {need} needles")
         CP.plan_blocks(plan)
-        plan.meta.update(dropped_fragments=dropped, issues=issues, parts_before_sequence=n0)
+        plan.meta.update(dropped_fragments=dropped, issues=issues, parts_before_sequence=n0, field_basis_refreshed=refreshed,
+                         separation_moves_plan=[list(m) for m in moves])
         plan.to_json(self.f("plan.json")); self.plan = plan
         print(f"plan: {len(plan.parts)} parts ({len(dropped)} fragments dropped), {len(plan.stops)} stops, {len(plan.threads)} threads, "
               f"{len(issues)} check issues ({time.time() - t0:.1f} s)")
@@ -215,6 +219,15 @@ class Run:
         row["stub_area"] = dict(mm2=round(sum(by_zone.values()), 1), pct_of_parts=round(100 * sum(by_zone.values()) / tot, 1),
                                 by_zone={k: round(v, 1) for k, v in sorted(by_zone.items())},
                                 note="zone stubs left for M3 (buildings, trunks, crowns, florets)")
+        # density flags by what meets there: the number of distinct ZONES whose parts touch the flagged box, and its kinds
+        from shapely.geometry import box as _box
+        jz, jk = {}, {}
+        for fl in aux["dens"]["flags"]:
+            (cx, cy), w2, h2 = fl["at_mm"], fl["w_mm"] / 2, fl["h_mm"] / 2
+            hit = [plan.parts[i] for i in tree.query(_box(cx - w2, cy - h2, cx + w2, cy + h2), predicate="intersects")]
+            nz = len({p.zone for p in hit}); jz[str(min(nz, 4)) + ("+" if nz >= 4 else "")] = jz.get(str(min(nz, 4)) + ("+" if nz >= 4 else ""), 0) + 1
+            for k in {p.kind for p in hit}: jk[k] = jk.get(k, 0) + 1
+        row["density"]["flags_by_zones_meeting"] = dict(sorted(jz.items())); row["density"]["flags_touching_kind"] = dict(sorted(jk.items()))
         row["separation"] = DR.separation_report(plan.parts, sep=float(self.rb.principles["neighbour_sep_deg"][0]))
         row["accents"] = {k: dict(evidence_mm2=ev_mm2.get(k, 0.0), parts=sum(1 for p in plan.parts if p.thread == k),
                                   sewn_in_crop=k in plan.threads and plan.threads[k]["hex"].lower() in [h.lower() for h in row["colours"]["hex"]])

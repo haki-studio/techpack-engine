@@ -24,23 +24,49 @@ def _segs(blocks, role=None):
 
 
 # ================================================================== M1 review follow-ups
+def _cgrid(geom, deg, pad=2.0):
+    """a stored field grid of constant direction over geom's bounds (what a splitter writes into meta["field"])"""
+    x0, y0, x1, y1 = geom.bounds; nx, ny = int(x1 - x0 + 2 * pad) + 2, int(y1 - y0 + 2 * pad) + 2
+    return dict(x0=x0 - pad, y0=y0 - pad, step=1.0, nx=nx, ny=ny, deg=[float(deg)] * (nx * ny))
+
+
 def test_random_angles_are_derived_not_asserted():
     """follow-up 1: random_angles was the constant 0. Every declared angle is now re-derived from its source; an angle
     from rng.uniform has no basis and is counted. Mutation (angle_audit skips the comparison) -> red."""
     rb = Rulebook()
     ok_rule = Part(id="pool.1", kind="pool", geom=box(0, 0, 10, 10), thread="t", z=3.5, dir=rb.direction("pool"))
-    ok_field = Part(id="stub.1", kind="zone_stub", geom=box(20, 0, 30, 10), thread="t", z=1, dir=rb.direction("zone_stub", field=37.5),
-                    meta=dict(field_angle=37.5))
-    sep = Part(id="stub.2", kind="zone_stub", geom=box(40, 0, 50, 10), thread="t", z=1, dir=DirSpec(57.5, source="field-mean"),
-               meta=dict(field_angle=37.5, sep_deg=20.0))
-    rnd = Part(id="stub.3", kind="zone_stub", geom=box(60, 0, 70, 10), thread="t", z=1, dir=DirSpec(np.random.default_rng(7).uniform(0, 180), source="field-mean"),
-               meta=dict(field_angle=37.5))
+    G = lambda g: _cgrid(g, 37.5)
+    g1, g2, g3, g4 = box(20, 0, 30, 10), box(40, 0, 50, 10), box(60, 0, 70, 10), box(0, 20, 10, 30)
+    ok_field = Part(id="stub.1", kind="zone_stub", geom=g1, thread="t", z=1, dir=rb.direction("zone_stub", field=37.5),
+                    meta=dict(field_angle=37.5, field=G(g1)))
+    sep = Part(id="stub.2", kind="zone_stub", geom=g2, thread="t", z=1, dir=DirSpec(57.5, source="field-mean"),
+               meta=dict(field_angle=37.5, sep_deg=20.0, field=G(g2)))
+    rnd = Part(id="stub.3", kind="zone_stub", geom=g3, thread="t", z=1, dir=DirSpec(np.random.default_rng(7).uniform(0, 180), source="field-mean"),
+               meta=dict(field_angle=37.5, field=G(g3)))
     nob = Part(id="pool.2", kind="pool", geom=box(80, 0, 90, 10), thread="t", z=3.5, dir=DirSpec(33.0, source="rule"))
-    big = Part(id="stub.4", kind="zone_stub", geom=box(0, 20, 10, 30), thread="t", z=1, dir=DirSpec(77.5, source="field-mean"),
-               meta=dict(field_angle=37.5, sep_deg=40.0))                     # a "separation" beyond the house limit
+    big = Part(id="stub.4", kind="zone_stub", geom=g4, thread="t", z=1, dir=DirSpec(77.5, source="field-mean"),
+               meta=dict(field_angle=37.5, sep_deg=40.0, field=G(g4)))         # a "separation" beyond the house limit
     r = audit.angle_audit(ObjectPlan(name="t", parts=[ok_rule, ok_field, sep, rnd, nob, big]), rb)
     assert r["random_angles"] == 3, r
     assert {u["part"] for u in r["unexplained"]} == {"stub.3", "pool.2", "stub.4"}, r
+
+
+def test_field_basis_is_recomputed_not_trusted():
+    """PR #6 review: a field-sourced angle used to pass whenever meta["field_mean"] / ["field_angle"] agreed with it, and
+    the splitter writes both. The basis is now RECOMPUTED from the stored field grid over the part: a random angle with a
+    matching hand-written field_mean is caught, and so is a part with no grid. Mutation (basis read from meta) -> red."""
+    rb = Rulebook(); g = box(0, 0, 20, 10); forged = float(np.random.default_rng(3).uniform(60, 120))
+    honest = Part(id="s.1", kind="stratum_band", geom=g, thread="t", z=1, dir=DirSpec(40.0, mode="field", source="field"),
+                  meta=dict(field=_cgrid(g, 30.0), field_mean=30.0, band_offset_deg=10.0))
+    fake = Part(id="s.2", kind="stratum_band", geom=box(30, 0, 50, 10), thread="t", z=1, dir=DirSpec(forged, mode="field", source="field"),
+                meta=dict(field=_cgrid(box(30, 0, 50, 10), 30.0), field_mean=forged))
+    stub = Part(id="z.1", kind="zone_stub", geom=box(60, 0, 80, 10), thread="t", z=1, dir=DirSpec(forged, source="field-mean"),
+                meta=dict(field=_cgrid(box(60, 0, 80, 10), 30.0), field_angle=forged))
+    nogrid = Part(id="z.2", kind="zone_stub", geom=box(90, 0, 99, 10), thread="t", z=1, dir=DirSpec(30.0, source="field-mean"),
+                  meta=dict(field_angle=30.0))
+    r = audit.angle_audit(ObjectPlan(name="t", parts=[honest, fake, stub, nogrid]), rb)
+    assert {u["part"] for u in r["unexplained"]} == {"s.2", "z.1", "z.2"}, r
+    assert DR.refresh_field_basis([fake]) == 1 and DR.axial_diff(fake.dir.angle, 30.0) < 0.1     # refresh re-measures it
 
 
 def _rows_fixed(w, h, ang, phases=None, min_pieces=2, sp=0.42):
@@ -149,6 +175,56 @@ def test_bench_append_is_idempotent(tmp_path):
     assert md.count("| M2 |") == 1 and "| 85.0 |" in md and "| 80.0 |" not in md
     bench.append(row("M2", "def", 86.0), str(tmp_path))
     assert len(json.load(open(tmp_path / "bench" / "SCOREBOARD.json"))) == 2 and open(tmp_path / "bench" / "BENCH.md").read().count("| M2 |") == 2
+
+
+def _brow(label, ok=80.0, **kw):
+    r = dict(date="2026-10-20", label=label, direction=dict(tiles=625, pct_ok=ok, pct_chaos=1.0, pct_ok_all_stitches=50.0),
+             angle_coherence=dict(ok=True), density=dict(mean=1, p95=2, flags=0), trims=dict(per_100cm2=10.0, trims=3),
+             satin=dict(satins=0, blob=0, too_wide=0, too_narrow=0, fans=0), stack=dict(max=2, over_cm2=0.0),
+             colours=dict(threads_in_file=12, red=True, gold=True), verdict=dict(a=True))
+    r.update(kw); return r
+
+
+def test_bench_rerun_on_same_commit_through_real_git(tmp_path):
+    """PR #6 review: the key came from git_sha(), which appended '+dirty' as soon as the first bench run had rewritten the
+    tracked bench/SCOREBOARD.json + BENCH.md, so a re-run on the SAME commit got a new key and a duplicate row. Through
+    the real git_sha() on a real repo: re-run -> still one row; an engine change outside bench/ -> '+dirty', a new row.
+    Mutation (bench/ not excluded from the dirty check) -> red."""
+    import subprocess
+    from digitize import bench
+    repo = tmp_path / "repo"; proj = repo / "proj"; (proj / "bench").mkdir(parents=True)
+    (proj / "engine.py").write_text("x = 1\n")
+    git = lambda *a: subprocess.run(["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t", *a], check=True, capture_output=True)
+    git("init", "-q"); git("add", "."); git("commit", "-q", "-m", "engine")
+    bench.append(_brow("M2", 80.0), str(proj))
+    git("add", "."); git("commit", "-q", "-m", "first bench row")             # the bench outputs are tracked, as on the branch
+    sha = bench.git_sha(str(proj)); assert "+dirty" not in sha and sha != "unknown"
+    bench.append(_brow("M2", 81.0), str(proj))                               # rewrites the tracked bench files ...
+    bench.append(_brow("M2", 82.0), str(proj))                               # ... which are now modified: still the same key
+    rows = json.load(open(proj / "bench" / "SCOREBOARD.json"))
+    assert [r["git_sha"] for r in rows] == [sha] and rows[0]["direction"]["pct_ok"] == 82.0, rows
+    assert open(proj / "bench" / "BENCH.md").read().count("| M2 |") == 1
+    (proj / "engine.py").write_text("x = 2\n")                               # a real engine change, uncommitted
+    bench.append(_brow("M2", 83.0), str(proj))
+    rows = json.load(open(proj / "bench" / "SCOREBOARD.json"))
+    assert [r["git_sha"] for r in rows] == [sha, sha + "+dirty"], rows
+
+
+def test_direction_verdict_gates_on_independent_tiles():
+    """PR #6 review: the combined direction rate counts self-derived tiles (graded against the pixels their angle was
+    read from). The gate reads the INDEPENDENT tiles only and needs them to cover >= half the judged tiles; chaos stays
+    on all tiles (read from the DST alone). Rule 3 is a verdict line: touching same-thread pairs < 15 deg (stubs
+    included). Mutations (gate on the combined rate; separation line dropped) -> red."""
+    from digitize import bench
+    T = json.load(open(os.path.join(ROOT, "projects", "castle-falls-jacket", "bench", "bench.json")))["targets"]
+    src = lambda n, ok: {"independent": dict(tiles=n, pct_ok=ok), "self-derived": dict(tiles=625 - n, pct_ok=89.0)}
+    assert bench.verdict(_brow("x", 90.1, direction_by_source=src(73, 97.3)), T)["direction_ok"] is False     # the M2 crop
+    assert bench.verdict(_brow("x", 90.1, direction_by_source=src(400, 97.3)), T)["direction_ok"] is True
+    assert bench.verdict(_brow("x", 95.0, direction_by_source=src(400, 80.0)), T)["direction_ok"] is False
+    assert bench.verdict(_brow("x", 95.0), T)["direction_ok"] is False                                      # no sources: not evidenced
+    v = bench.verdict(_brow("x", separation=dict(close=29, pairs=118)), T)
+    assert v["separation"] is False and bench.verdict(_brow("x", separation=dict(close=0, pairs=118)), T)["separation"] is True
+    assert "separation" not in bench.verdict(_brow("x"), T)                    # older rows keep their 8 lines
 
 
 def test_digitize_satin_has_no_random_jitter():
@@ -293,9 +369,10 @@ def test_neighbour_separation_turns_within_limits():
     """rule 3: touching same-thread parts closer than 15 deg are turned to >= 15 deg apart, never more than 25 deg off
     their own evidence; other threads and contour parts are left alone; the audit accepts the turn. Mutation (clash
     threshold 0) -> red."""
-    a = Part(id="a", kind="stratum_band", geom=box(0, 0, 20, 20), thread="t", z=1, dir=DirSpec(80.0, mode="field", source="field"), meta=dict(field_mean=80.0))
-    b = Part(id="b", kind="stratum_band", geom=box(20, 0, 30, 20), thread="t", z=1, dir=DirSpec(86.0, mode="field", source="field"), meta=dict(field_mean=86.0))
-    c = Part(id="c", kind="stratum_band", geom=box(30, 0, 40, 20), thread="u", z=1, dir=DirSpec(88.0, mode="field", source="field"), meta=dict(field_mean=88.0))
+    A, B, C = box(0, 0, 20, 20), box(20, 0, 30, 20), box(30, 0, 40, 20)
+    a = Part(id="a", kind="stratum_band", geom=A, thread="t", z=1, dir=DirSpec(80.0, mode="field", source="field"), meta=dict(field_mean=80.0, field=_cgrid(A, 80.0)))
+    b = Part(id="b", kind="stratum_band", geom=B, thread="t", z=1, dir=DirSpec(86.0, mode="field", source="field"), meta=dict(field_mean=86.0, field=_cgrid(B, 86.0)))
+    c = Part(id="c", kind="stratum_band", geom=C, thread="u", z=1, dir=DirSpec(88.0, mode="field", source="field"), meta=dict(field_mean=88.0, field=_cgrid(C, 88.0)))
     e = Part(id="e", kind="cloud_lobe", geom=box(0, 20, 20, 30), thread="t", z=1, dir=DirSpec(80.0, mode="contour", source="outline"), meta=dict(outline_angle=80.0))
     moves = DR.separate([a, b, c, e], sep=(15, 25))
     assert [m[0] for m in moves] == ["b"], moves

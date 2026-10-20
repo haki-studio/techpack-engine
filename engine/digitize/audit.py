@@ -12,8 +12,8 @@ WRITTEN file (compile.labelled_dst), never the in-memory stitches.
 
 random_angles was hard-coded 0 in M1. A declared angle is "random" (unexplained) when it cannot be re-derived:
   rule        the rulebook's number for the kind
-  field-mean  part.meta["field_angle"] (the structure-tensor mean the splitter measured)
-  field       part.meta["field_mean"] (guided fill: rows follow the field; the angle is its mean)
+  field-mean  direction.grid_mean(part.meta["field"], part.geom), RECOMPUTED (the recorded meta["field_angle"] must agree)
+  field       the same for guided parts (meta["field_mean"] must agree): a basis typed into meta does not pass
   depth       direction.depth_angle(part.meta["depth"])
   answer      part.meta["answer_angle"] (the person's answer, M4)
   outline     part.meta["outline_angle"] (contour fill: the lobe's long axis, for the part map only)
@@ -38,8 +38,23 @@ def _depth(t):
     return depth_angle(t)
 
 
+def field_basis(p, tol=0.05):
+    """(basis, why): for field / field-mean parts the basis is RECOMPUTED from the stored field grid over the part's
+    geometry (direction.grid_mean), never read from meta alone; a recorded basis that disagrees is reported"""
+    from digitize.direction import grid_mean
+    key = {"field": "field_mean", "field-mean": "field_angle"}[p.dir.source]
+    if not p.meta.get("field"): return None, f"{p.dir.source} part without a stored field grid: its basis cannot be recomputed"
+    b = grid_mean(p.meta["field"], p.geom)
+    if b is None: return None, "the stored field grid does not cover the part"
+    rec = p.meta.get(key)
+    if rec is None or axial_diff(b, float(rec)) > tol:
+        return None, f"recorded {key} {rec} != {round(b, 2)} recomputed from the stored field grid"
+    return b, None
+
+
 def basis(p, rb):
     s, m = p.dir.source, p.meta
+    if s in ("field", "field-mean"): return field_basis(p)[0]
     if s == "rule":
         d = rb.rule(p.kind).get("dir")
         return float(d) if isinstance(d, (int, float)) else None
@@ -52,7 +67,7 @@ def angle_audit(plan, rb, tol=0.05):
     for p in plan.parts:
         b = basis(p, rb); sep = float(p.meta.get("sep_deg", 0.0)); band = float(p.meta.get("band_offset_deg", 0.0))
         why = None
-        if b is None: why = f"no basis for source {p.dir.source!r}"
+        if b is None: why = (field_basis(p)[1] if p.dir.source in ("field", "field-mean") else None) or f"no basis for source {p.dir.source!r}"
         elif abs(sep) > SEP_MAX + tol: why = f"separation turn {sep} > {SEP_MAX}"
         elif abs(band) > BAND_MAX + tol: why = f"band offset {band} > {BAND_MAX}"
         elif axial_diff(float(b) + sep + band, p.dir.angle) > tol:

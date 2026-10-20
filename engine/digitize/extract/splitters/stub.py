@@ -1,6 +1,7 @@
 """zone_stub + pool partition: one part per connected tone component of the zone (>= min_part_mm2; protected accents
->= min_protected_mm2), tatami. Direction: zone_stub = the reference grain's mean over the part (structure tensor,
-coherence-weighted, so it is a measured, declared number: source "field-mean"); pool = the rulebook's fixed angle.
+>= min_protected_mm2), tatami. Direction: zone_stub = the mean of the reference-grain field over the part (the field
+grid is stored in meta["field"], so digitize.audit recomputes the angle instead of trusting it: source "field-mean");
+pool = the rulebook's fixed angle.
 A stand-in, honestly labelled: M2/M3 replace stubs with real splitters (clouds, strata, crowns, buildings)."""
 from shapely.ops import unary_union
 from digitize.schema import Part
@@ -14,8 +15,11 @@ def split(ctx, zone, z, claim, kind="zone_stub"):
         geoms = ev.polys(m, min_mm2=0.5)
         if not geoms: continue
         g = geoms[0] if len(geoms) == 1 else unary_union(geoms)
+        grid = None
         if kind == "zone_stub":
-            ang, coh = ev.field_angle(mask=m)
+            _, coh = ev.field_angle(mask=m)
+            from digitize import direction as DR
+            grid = ctx.field().grid(g, step=1.0); ang = DR.grid_mean(grid, g)   # PR #6 review: recomputable from meta["field"]
             if ang is None:                                       # never a silent 0 deg (M1 review)
                 raise ValueError(f"zone {zone['id']}: stub part ({thread}) has no evidence pixels, so it has no field-mean "
                                  f"angle; a direction is never defaulted (DIGITIZING_PRINCIPLES rule 2)")
@@ -26,7 +30,7 @@ def split(ctx, zone, z, claim, kind="zone_stub"):
         pid = ctx.new_id(f"{zone['id']}")
         parts.append(Part(id=pid, kind=kind, geom=g, thread=thread, z=z, dir=d, zone=zone["id"], rgb=ev.mean_rgb(m),
                           meta=dict(coherence=round(coh, 3) if coh is not None else None, splitter="stub" if kind == "zone_stub" else kind,
-                                         **({"field_angle": d.angle} if kind == "zone_stub" else {}))))
+                                         **({"field_angle": d.angle, "field": grid} if kind == "zone_stub" else {}))))
     return parts, used
 
 
