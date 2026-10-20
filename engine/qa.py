@@ -165,34 +165,77 @@ def uncovered(ref, out, ppm, min_mm2=25.0, open_mm=1.0):
 
 
 
-def angle_coherence(regions, groups=("WALL", "ROOF", "TMB", "STONE"), max_spread_deg=10.0, satin_min_aspect=2.5):
-    """Stitch-direction discipline for constructed motifs (LESSONS A16), read from the art regions (a digitising
-    decision, not a fidelity trace). regions: dicts with geom, stype ('satin'/'tatami'/...), angle (deg or 'auto'),
-    grp, unit. Per (unit, grp) of a constructed group: the area-weighted spread of fill angles must stay within
-    max_spread_deg (one wall = one direction), and satin is only allowed on stroke-like shapes (aspect >= satin_min_aspect;
-    satin on a blob = a fan). Returns rows of failures (empty = pass)."""
+CONSTRUCTED = ("WALL", "ROOF", "TMB", "STONE")
+
+
+def _axial_spread(angles_rad, weights):
+    """weighted spread (deg) of axial angles (0 == 180): circular std on the doubled circle -> (spread, R, mean deg)."""
+    import math as _m
+    w = np.asarray(weights, float); a = np.asarray(angles_rad, float); W = w.sum()
+    if W <= 0: return 0.0, 1.0, 0.0
+    C = float((w * np.cos(2 * a)).sum()); S = float((w * np.sin(2 * a)).sum())
+    R = _m.hypot(C, S) / W
+    spread = _m.degrees(_m.sqrt(max(0.0, -2 * _m.log(max(R, 1e-9))))) / 2
+    return spread, R, _m.degrees(0.5 * _m.atan2(S, C)) % 180
+
+
+def angle_coherence(regions, groups=CONSTRUCTED, max_spread_deg=10.0, satin_min_aspect=2.5, key="part", segs=None,
+                    min_segs=12, min_len=0.6):
+    """Stitch-direction discipline for constructed parts (LESSONS A16, DIGITIZING_PRINCIPLES rule 2).
+    regions: dicts with geom, stype ('satin'/'tatami'/...), angle (deg), grp, and a PART id under `key` (default "part").
+    Constructed = grp in `groups`. Returns rows of failures (empty = pass):
+      - every constructed region MUST carry a part id; missing -> ValueError. (Grouping by a missing id pooled
+        unrelated walls into one group, or let fragments escape the check; ENGINE_PLAN M0.)
+      - a constructed part's angle must be declared: "auto" / None -> `undeclared-angle` (a direction is a design
+        decision, never a by-product of the traced blob).
+      - satin only on stroke-like shapes (aspect >= satin_min_aspect): `satin-on-blob`.
+      - per (part, grp) the fill angles stay within max_spread_deg: `angle-spread`. When `segs` (VISIBLE DST segments,
+        qa.visible_segments, same mm frame as the geoms) are given, the spread is measured on the stitches actually seen
+        inside the part (source "dst", needs >= min_segs); otherwise on the declared angles (source "declared")."""
     import math as _m
     from collections import defaultdict
-    by = defaultdict(list); bad = []
+    by = defaultdict(list); geoms = defaultdict(list); bad = []
+    missing = [r for r in regions if r.get("grp") in groups and not r["geom"].is_empty and r.get(key) is None]
+    if missing:
+        raise ValueError(f"angle_coherence: {len(missing)} constructed region(s) {sorted({r['grp'] for r in missing})} have no "
+                         f"part id under key {key!r}. Every wall / roof / member is its own part with one deliberate "
+                         f"direction (DIGITIZING_PRINCIPLES rule 2): give each region its part id.")
     for r in regions:
         if r.get("grp") not in groups or r["geom"].is_empty: continue
-        g = r["geom"]; A = g.area
-        mr = g.minimum_rotated_rectangle; c = list(mr.exterior.coords)
-        e = sorted(_m.hypot(c[i+1][0]-c[i][0], c[i+1][1]-c[i][1]) for i in range(4))
+        g = r["geom"]; A = g.area; part = r[key]
+        c = list(g.minimum_rotated_rectangle.exterior.coords) if g.minimum_rotated_rectangle.geom_type == "Polygon" else []
+        e = sorted(_m.hypot(c[i+1][0]-c[i][0], c[i+1][1]-c[i][1]) for i in range(4)) if len(c) >= 5 else [1.0, 1.0, 1.0, 1.0]
         aspect = e[-1] / max(e[0], 1e-6)
-        if r.get("stype") == "satin" and aspect < satin_min_aspect and A > 2.0:
-            bad.append(dict(kind="satin-on-blob", unit=r.get("unit"), grp=r["grp"], area_mm2=round(A, 1), aspect=round(aspect, 2)))
         ang = r.get("angle")
-        if r.get("stype") != "satin" and isinstance(ang, (int, float)):
-            by[(r.get("unit"), r["grp"])].append((float(ang) % 180, A))
-    for (unit, grp), v in by.items():
-        if len(v) < 2: continue
-        # spread on the doubled circle (axial angles)
-        C = sum(a*_m.cos(_m.radians(2*t)) for t, a in v); S = sum(a*_m.sin(_m.radians(2*t)) for t, a in v); W = sum(a for _, a in v)
-        R = _m.hypot(C, S) / max(W, 1e-9)
-        spread = _m.degrees(_m.sqrt(max(0.0, -2*_m.log(max(R, 1e-9))))) / 2
+        if ang is None or (isinstance(ang, str) and ang.lower() == "auto"):
+            bad.append(dict(kind="undeclared-angle", part=part, unit=r.get("unit"), grp=r["grp"], area_mm2=round(A, 1), stype=r.get("stype")))
+        if r.get("stype") == "satin" and aspect < satin_min_aspect and A > 2.0:
+            bad.append(dict(kind="satin-on-blob", part=part, unit=r.get("unit"), grp=r["grp"], area_mm2=round(A, 1), aspect=round(aspect, 2)))
+        if r.get("stype") != "satin":
+            geoms[(part, r["grp"])].append(g)
+            if isinstance(ang, (int, float)): by[(part, r["grp"])].append((float(ang) % 180, A))
+    measured = {}
+    if segs is not None and len(segs):
+        from shapely import contains_xy
+        S = np.asarray(segs, float).reshape(-1, 4); L = np.hypot(S[:, 2] - S[:, 0], S[:, 3] - S[:, 1])
+        S, L = S[L >= min_len], L[L >= min_len]
+        mx, my = (S[:, 0] + S[:, 2]) / 2, (S[:, 1] + S[:, 3]) / 2; ang = np.arctan2(S[:, 3] - S[:, 1], S[:, 2] - S[:, 0])
+        for k, gs in geoms.items():
+            u = unary_union(gs); b = u.bounds
+            idx = np.nonzero((mx >= b[0]) & (mx <= b[2]) & (my >= b[1]) & (my <= b[3]))[0]
+            if len(idx) == 0: continue
+            inside = idx[contains_xy(u, mx[idx], my[idx])]
+            if len(inside) >= min_segs: measured[k] = _axial_spread(ang[inside], L[inside]) + (len(inside),)
+    for k in sorted(set(by) | set(measured), key=str):
+        part, grp = k
+        if k in measured:
+            spread, R, mean, n = measured[k]; src = "dst"
+        else:
+            v = by[k]
+            if len(v) < 2: continue
+            spread, R, mean = _axial_spread([_m.radians(t) for t, _ in v], [a for _, a in v]); n = len(v); src = "declared"
         if spread > max_spread_deg:
-            bad.append(dict(kind="angle-spread", unit=unit, grp=grp, n=len(v), spread_deg=round(spread, 1)))
+            bad.append(dict(kind="angle-spread", part=part, grp=grp, n=n, spread_deg=round(spread, 1), source=src))
     return bad
 
 
@@ -211,23 +254,107 @@ def dst_segments(dst, origin=(0.0, 0.0)):
     return out
 
 
-def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_dev_deg=25.0, chaos_R=0.55, min_stitches=12):
+def dst_runs(dst, origin=(0.0, 0.0)):
+    """The DST as sewn RUNS: continuous needle-down stitching between trims / jumps / colour changes, in sew order.
+    Returns [dict(stop=colour stop index (0-based), segs=[(x0, y0, x1, y1), ...])] in mm, origin added. A run is the
+    finest object a DST alone can tell apart (underlay + its fill sew as one run; hidden travel joins objects).
+    Concatenating every run's segs gives exactly qa.dst_segments."""
+    import pyembroidery as pe
+    p = pe.read(dst); runs = []; cur = []; prev = None; stop = 0; ox, oy = origin
+    for x, y, c in p.stitches:
+        k = c & pe.COMMAND_MASK
+        if k == pe.STITCH:
+            q = (x / 10.0 + ox, y / 10.0 + oy)
+            if prev is not None and prev != q: cur.append((prev[0], prev[1], q[0], q[1]))
+            prev = q
+            continue
+        if cur: runs.append(dict(stop=stop, segs=cur))
+        cur = []; prev = None
+        if k == pe.COLOR_CHANGE: stop += 1
+    if cur: runs.append(dict(stop=stop, segs=cur))
+    return runs
+
+
+def clip_segments(segs, bounds):
+    """Segments clipped to the box bounds=(x0, y0, x1, y1) (Liang-Barsky), sew order kept, outside ones dropped."""
+    x0, y0, x1, y1 = bounds; out = []
+    for a, b, c, d in segs:
+        dx, dy = c - a, d - b; t0, t1 = 0.0, 1.0; ok = True
+        for p_, q_ in ((-dx, a - x0), (dx, x1 - a), (-dy, b - y0), (dy, y1 - b)):
+            if p_ == 0:
+                if q_ < 0: ok = False; break
+            else:
+                t = q_ / p_
+                if p_ < 0: t0 = max(t0, t)
+                else: t1 = min(t1, t)
+                if t0 > t1: ok = False; break
+        if ok and t1 > t0: out.append((a + t0 * dx, b + t0 * dy, a + t1 * dx, b + t1 * dy))
+    return out
+
+
+def visible_segments(segs, bounds, ppm=12.0, width_mm=0.42, min_vis_mm=0.3):
+    """The TOP layer of the sew-out (what the eye and Hatch's live view see), read from the DST alone.
+    segs: stitch segments (x0, y0, x1, y1) in mm, in SEW ORDER; bounds: (x0, y0, x1, y1) mm of the area to look at.
+    Segments are drawn in sew order at thread width on an index raster (a z-buffer: last writer wins). Each keeps its
+    own angle and its VISIBLE length, re-centred on its visible pixels. Underlay (90-degree lattice, edge runs) and
+    hidden travel that a later fill covers drop out; a fan or a blob satin on top stays a fan. Promoted from
+    projects/castle-falls-jacket/gates_dir.py (ENGINE_NOTES 17). Below 12 ppm a 0.42 mm thread is under 5 px and rows
+    merge, which is why direction_match refuses lower resolutions."""
+    import math as _m
+    bx0, by0, bx1, by1 = bounds
+    W, H = int(_m.ceil((bx1 - bx0) * ppm)) + 2, int(_m.ceil((by1 - by0) * ppm)) + 2
+    im = Image.new("I", (W, H), 0); d = ImageDraw.Draw(im); w = max(1, int(round(width_mm * ppm)))
+    for i, (x0, y0, x1, y1) in enumerate(segs, 1):
+        d.line([((x0 - bx0) * ppm, (y0 - by0) * ppm), ((x1 - bx0) * ppm, (y1 - by0) * ppm)], fill=i, width=w)
+    a = np.asarray(im); N = len(segs) + 1
+    n = np.zeros(N); sx = np.zeros(N); sy = np.zeros(N); xs = np.arange(W, dtype=float)
+    for r0 in range(0, H, 512):                                  # row blocks: bounded memory on a whole back at 12 ppm
+        blk = a[r0:r0 + 512]; h = blk.shape[0]; flat_ = blk.ravel()
+        n += np.bincount(flat_, minlength=N)
+        sx += np.bincount(flat_, np.tile(xs, h), minlength=N)
+        sy += np.bincount(flat_, np.repeat(np.arange(r0, r0 + h, dtype=float), W), minlength=N)
+    out = []
+    for i in np.nonzero(n[1:])[0] + 1:
+        x0, y0, x1, y1 = segs[i - 1]; L = _m.hypot(x1 - x0, y1 - y0)
+        if L <= 0: continue
+        vis = min(L, n[i] / (w * ppm))                            # visible length in mm
+        if vis < min_vis_mm: continue
+        cx, cy = sx[i] / n[i] / ppm + bx0, sy[i] / n[i] / ppm + by0
+        ux, uy = (x1 - x0) / L / 2 * vis, (y1 - y0) / L / 2 * vis
+        out.append((cx - ux, cy - uy, cx + ux, cy + uy))
+    return out
+
+
+def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_dev_deg=25.0, chaos_R=0.55, min_stitches=12,
+                    visible=True, min_ppm=12.0, width_mm=0.42):
     """Stitch DIRECTION vs the reference, everywhere (LESSONS A16): every motif, not only buildings.
-    ref: grey image (2-D array) of the mockup / close-up mapped to garment mm (ppm px per mm), INPUT PIXELS ONLY.
-    segs: DST stitch segments in the same mm frame (qa.dst_segments). Per tile:
+    ref: grey image (2-D array) of the mockup / close-up mapped to garment mm (ppm px per mm), INPUT PIXELS ONLY, at
+    ppm >= min_ppm (12). Below that a thread is under 5 px, the structure tensor reads blur and the visible-layer
+    z-buffer merges rows, so a lower ppm raises ValueError (build the reference with digitize.extract.register).
+    segs: DST stitch segments in the same mm frame, in SEW ORDER (qa.dst_segments). With visible=True (default) only the
+    VISIBLE top layer is judged (qa.visible_segments), so underlay and buried travel no longer drag the score down.
+    Per tile:
       - DST direction = axial mean of stitch angles (length-weighted), with coherence R (1 = all parallel, 0 = random)
       - reference direction = thread direction from the structure tensor of the image (the visible thread grain)
     A tile FAILS when (a) the reference shows a clear thread direction and the DST deviates > max_dev_deg, or
     (b) the DST stitches in the tile point every which way (R < chaos_R): fans, blob satins, random fills.
-    Returns dict(tiles=n, fail_dev=[...], fail_chaos=[...], pct_ok=...) with tile centres in mm."""
+    Returns dict(tiles, ok, ok_tiles=[centres], fail_dev=[...], fail_chaos=[...], pct_ok, pct_chaos) with tile centres
+    in mm."""
     import math as _m
     from scipy import ndimage as _ndi
+    if ppm < min_ppm:
+        raise ValueError(f"direction_match: the reference is {ppm} px/mm, below the {min_ppm} px/mm minimum. At that resolution "
+                         f"a 0.42 mm thread is under 5 px, so the thread grain is blur and underlay cannot be told from the top "
+                         f"layer (ENGINE_PLAN M0). Rebuild the reference at >= {min_ppm} ppm "
+                         f"(engine/digitize/extract/register.py) and pass the DST segments in sew order.")
     g = np.asarray(ref, float)
     if g.ndim == 3: g = g[..., :3] @ np.array([0.299, 0.587, 0.114])
+    H, W = g.shape
+    if visible: segs = visible_segments(segs, (0.0, 0.0, W / ppm, H / ppm), ppm=ppm, width_mm=width_mm)
     gy, gx = np.gradient(_ndi.gaussian_filter(g, 0.6))
     sig = tile_mm * ppm / 3.0
     Jxx = _ndi.gaussian_filter(gx * gx, sig); Jyy = _ndi.gaussian_filter(gy * gy, sig); Jxy = _ndi.gaussian_filter(gx * gy, sig)
-    T = int(round(tile_mm * ppm)); H, W = g.shape; acc = {}
+    T = int(round(tile_mm * ppm)); acc = {}
     for x0, y0, x1, y1 in segs:
         L = _m.hypot(x1 - x0, y1 - y0)
         if L < min_len: continue
@@ -236,7 +363,7 @@ def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_
         a = _m.atan2(y1 - y0, x1 - x0); key = (int(cy // T), int(cx // T))
         c, s_, n, w = acc.get(key, (0.0, 0.0, 0, 0.0))
         acc[key] = (c + L * _m.cos(2 * a), s_ + L * _m.sin(2 * a), n + 1, w + L)
-    dev, chaos, ok = [], [], 0
+    dev, chaos, ok_t = [], [], []
     for (ty, tx), (c, s_, n, w) in acc.items():
         if n < min_stitches: continue
         R = _m.hypot(c, s_) / max(w, 1e-9); a_dst = 0.5 * _m.atan2(s_, c)
@@ -251,6 +378,157 @@ def direction_match(ref, ppm, segs, tile_mm=8.0, min_len=0.6, ref_coh=0.25, max_
             d = abs(_m.degrees(a_dst - a_thr)) % 180; d = min(d, 180 - d)
             if d > max_dev_deg:
                 dev.append(dict(at_mm=centre, dev_deg=round(d, 1), ref_coh=round(coh, 2))); continue
-        ok += 1
-    n = ok + len(dev) + len(chaos)
-    return dict(tiles=n, ok=ok, fail_dev=dev, fail_chaos=chaos, pct_ok=round(100 * ok / max(n, 1), 1))
+        ok_t.append(centre)
+    ok = len(ok_t); n = ok + len(dev) + len(chaos)
+    return dict(tiles=n, ok=ok, ok_tiles=ok_t, fail_dev=dev, fail_chaos=chaos, pct_ok=round(100 * ok / max(n, 1), 1),
+                pct_chaos=round(100 * len(chaos) / max(n, 1), 1), visible=bool(visible), tile_mm=tile_mm)
+
+
+# ---------------------------------------------------------------- file gates (DIGITIZING_PRINCIPLES rules 4, 6, 10; ENGINE_PLAN M0)
+def _sample_segments(segs, bounds, cell_mm):
+    """Each segment's thread length spread over the cells it crosses: (iy, ix, length, segment index) per sample inside."""
+    S = np.asarray(segs, float).reshape(-1, 4)
+    if not len(S): return np.zeros(0, int), np.zeros(0, int), np.zeros(0), np.zeros(0, int)
+    L = np.hypot(S[:, 2] - S[:, 0], S[:, 3] - S[:, 1]); k = np.maximum(1, np.ceil(L / (cell_mm / 4))).astype(int)
+    idx = np.repeat(np.arange(len(S)), k); j = np.arange(len(idx)) - np.repeat(np.cumsum(k) - k, k)
+    t = (j + 0.5) / k[idx]
+    x = S[idx, 0] + t * (S[idx, 2] - S[idx, 0]); y = S[idx, 1] + t * (S[idx, 3] - S[idx, 1]); w = L[idx] / k[idx]
+    x0, y0, x1, y1 = bounds; inb = (x >= x0) & (x < x1) & (y >= y0) & (y < y1)
+    ix = ((x[inb] - x0) // cell_mm).astype(int); iy = ((y[inb] - y0) // cell_mm).astype(int)
+    return iy, ix, w[inb], idx[inb]
+
+
+def _grid_shape(bounds, cell_mm):
+    import math as _m
+    return int(_m.ceil((bounds[3] - bounds[1]) / cell_mm - 1e-9)), int(_m.ceil((bounds[2] - bounds[0]) / cell_mm - 1e-9))
+
+
+def _flag_regions(mask, bounds, cell_mm, min_mm2, value=None):
+    lab, _ = ndi.label(mask); rows = []
+    for k, sl in enumerate(ndi.find_objects(lab), 1):
+        m = lab[sl] == k; a = float(m.sum()) * cell_mm ** 2
+        if a < min_mm2: continue
+        r = dict(at_mm=(round(bounds[0] + (sl[1].start + sl[1].stop) / 2 * cell_mm, 1), round(bounds[1] + (sl[0].start + sl[0].stop) / 2 * cell_mm, 1)),
+                 w_mm=round((sl[1].stop - sl[1].start) * cell_mm, 1), h_mm=round((sl[0].stop - sl[0].start) * cell_mm, 1), area_mm2=round(a, 1))
+        if value is not None: r["peak"] = round(float(value[sl][m].max()), 2)
+        rows.append(r)
+    return sorted(rows, key=lambda r: -r["area_mm2"])
+
+
+def density_map(segs, bounds, cell_mm=1.0, max_mm_per_mm2=7.0, smooth_mm=3.0, covered_min=0.3, min_flag_mm2=4.0):
+    """Thread length per mm^2 on a cell_mm grid (DIGITIZING_PRINCIPLES rule 10, the density heat-map), from ALL DST
+    stitches: underlay and buried travel included, because that is what the needle and the fabric carry.
+    Reference values: one 0.4 mm tatami layer = 2.5 mm/mm^2, + 90-degree underlay ~3.2; two layers ~5-6.4; three 7.5+.
+    Flags = connected areas >= min_flag_mm2 where the smooth_mm box mean (removes row aliasing on a 1 mm grid) exceeds
+    max_mm_per_mm2 (default 7.0 = more than two stacked layers + underlay: needle breaks, puckering, board-stiff duck).
+    Returns dict(grid, smooth, cell_mm, bounds, covered_mm2, mean, p95, max, over_mm2, flags, ok)."""
+    H, W = _grid_shape(bounds, cell_mm); iy, ix, w, _ = _sample_segments(segs, bounds, cell_mm)
+    grid = np.zeros((H, W)); np.add.at(grid, (iy, ix), w); grid /= cell_mm ** 2
+    k = max(1, int(round(smooth_mm / cell_mm))); sm = ndi.uniform_filter(grid, size=k, mode="constant")
+    cov = grid > covered_min; over = sm > max_mm_per_mm2
+    flags = _flag_regions(over, bounds, cell_mm, min_flag_mm2, value=sm)
+    v = grid[cov] if cov.any() else np.zeros(1)
+    return dict(grid=grid, smooth=sm, cell_mm=cell_mm, bounds=tuple(bounds), covered_mm2=round(float(cov.sum()) * cell_mm ** 2, 1),
+                mean=round(float(v.mean()), 2), p95=round(float(np.percentile(v, 95)), 2), max=round(float(sm.max()) if sm.size else 0.0, 2),
+                over_mm2=round(float(over.sum()) * cell_mm ** 2, 1), max_mm_per_mm2=max_mm_per_mm2, flags=flags, ok=not flags)
+
+
+def trims_per_area(dst, bounds=None, origin=(0.0, 0.0), area_mm2=None, max_per_100cm2=25.0):
+    """Trims per 100 cm^2, counted from the DST read-back (readback.trim_points; LESSONS B8: the DST, not the PES). With
+    bounds, only trims whose needle position lies inside count. Area = area_mm2 (e.g. density_map covered_mm2), else
+    the bounds, else the DST extents."""
+    import readback
+    pts = [(x + origin[0], y + origin[1]) for x, y in readback.trim_points(dst)]
+    if bounds is not None:
+        x0, y0, x1, y1 = bounds; pts = [(x, y) for x, y in pts if x0 <= x < x1 and y0 <= y < y1]
+    if area_mm2 is None:
+        if bounds is None:
+            ex = __import__("pyembroidery").read(dst).extents(); area_mm2 = (ex[2] - ex[0]) * (ex[3] - ex[1]) / 100.0
+        else: area_mm2 = (bounds[2] - bounds[0]) * (bounds[3] - bounds[1])
+    per = len(pts) / max(area_mm2 / 1e4, 1e-9)
+    return dict(trims=len(pts), area_cm2=round(area_mm2 / 100.0, 1), per_100cm2=round(per, 1), max_per_100cm2=max_per_100cm2,
+                ok=per <= max_per_100cm2, points=pts)
+
+
+def satin_runs(segs, turn_deg=120.0, max_adv_mm=0.8, min_run=6, len_ratio=2.5, tol=1e-6, hub_mm=0.25, fan_ratio=0.4):
+    """Satin columns read back from stitch segments in sew order. A column is a chain of ACROSS stitches, each reversing
+    the previous one (angle > turn_deg) at a similar length (ratio <= len_ratio), connected either directly
+    (a0 -> b0 -> a1, the usual zigzag; the pair advances <= max_adv_mm) or through one short edge step
+    (a0 -> b0 -> b1 -> a1: how dst2 writes turning / fixed / radial satin; step < 0.6 x the stitch, column midpoints
+    advance <= max_adv_mm). Tatami rows (collinear
+    stitches), bean / triple runs (a reversal, then collinear) and zigzag underlay (spacing ~2 mm) break the chain.
+    fan=True when one side of the column stays near a hub (that side spans < fan_ratio of the other): radial satin, a
+    floret or a fan where a column belonged (a satin turning a very tight curve reads as a fan too).
+    Returns [dict(i0, i1, fan, width_mm, length_mm, aspect, at_mm, stitches)] (i0 / i1 = first / last segment index)."""
+    import math as _m
+    S = np.asarray(segs, float).reshape(-1, 4); n = len(S); out = []
+    if n < 2: return out
+    d = S[:, 2:] - S[:, :2]; L = np.hypot(d[:, 0], d[:, 1]); u = d / np.maximum(L, 1e-9)[:, None]
+    conn = np.r_[np.hypot(S[1:, 0] - S[:-1, 2], S[1:, 1] - S[:-1, 3]) <= tol, False]      # conn[i]: seg i+1 starts where i ends
+    cmax = _m.cos(_m.radians(turn_deg))
+    def pair(i, j):                                              # across stitches i, j: reversed, similar length
+        return (u[i] @ u[j]) < cmax and max(L[i], L[j]) / max(min(L[i], L[j]), 1e-9) <= len_ratio
+    def nxt(i):
+        if i + 1 < n and conn[i] and pair(i, i + 1) and _m.hypot(*(d[i] + d[i + 1])) <= max_adv_mm: return i + 1
+        if i + 2 < n and conn[i] and conn[i + 1] and L[i + 1] <= 0.6 * min(L[i], L[i + 2]) and pair(i, i + 2) and \
+                _m.hypot(*((S[i + 2, :2] + S[i + 2, 2:]) - (S[i, :2] + S[i, 2:])) / 2) <= max_adv_mm: return i + 2
+        return None
+    i = 0
+    while i < n - 1:
+        chain = [i]; j = nxt(i)
+        while j is not None: chain.append(j); j = nxt(j)
+        if len(chain) >= min_run:
+            c = np.asarray(chain); A = S[c]; mid = (A[:, :2] + A[:, 2:]) / 2
+            width = float(np.median(L[c])); length = float(np.hypot(*np.diff(mid, axis=0).T).sum())
+            ev, od = A[0::2], A[1::2]                            # alternate directions: side A = even starts + odd ends
+            sa = np.r_[ev[:, :2], od[:, 2:]]; sb = np.r_[ev[:, 2:], od[:, :2]]
+            span = lambda P: float(np.hypot(*np.ptp(P, axis=0)))
+            lo, hi = sorted((span(sa), span(sb)))
+            fan = hi > 2 * hub_mm and (lo <= hub_mm or lo < fan_ratio * hi)
+            out.append(dict(i0=int(c[0]), i1=int(c[-1]), fan=bool(fan), width_mm=round(width, 2), length_mm=round(length, 2),
+                            aspect=round(length / max(width, 1e-9), 2),
+                            at_mm=(round(float(mid[:, 0].mean()), 1), round(float(mid[:, 1].mean()), 1)), stitches=int(c[-1] - c[0] + 1)))
+            i = chain[-1] + 1
+        else:
+            i += 1
+    return out
+
+
+def satin_shape(segs, w_min=1.0, w_max=7.0, aspect_min=2.5, blob_min_mm2=2.5, **kw):
+    """Type follows shape (DIGITIZING_PRINCIPLES rule 4), read from the DST: every satin column must be 1-7 mm wide
+    (narrower = run / bean, wider = split satin) and stroke-like (length / width >= aspect_min; a short, wide satin is a
+    blob). Blobs under blob_min_mm2 (studs, the 1-1.5 mm dots of rule 9) are allowed. Radial fans are listed apart
+    (`fans`, counts["fan"]): rule 4 allows them on face-on florets only, and a DST alone cannot tell a floret from a fan
+    in a window, so whether a fan fails needs the part map (ENGINE_PLAN target "0 radials outside florets").
+    segs in SEW ORDER (qa.dst_segments or a run's segs), not the visible layer.
+    Returns dict(satins, fans, flags, counts, ok)."""
+    runs = satin_runs(segs, **kw); flags = []; fans = [r for r in runs if r["fan"]]
+    for r in runs:
+        if r["fan"]: continue
+        if r["width_mm"] > w_max: flags.append(dict(r, kind="too-wide"))
+        elif r["width_mm"] < w_min: flags.append(dict(r, kind="too-narrow"))
+        elif r["aspect"] < aspect_min and r["width_mm"] * max(r["length_mm"], 0.4) >= blob_min_mm2: flags.append(dict(r, kind="blob"))
+    counts = {k: sum(1 for f in flags if f["kind"] == k) for k in ("blob", "too-wide", "too-narrow")}
+    return dict(satins=len(runs) - len(fans), fans=fans, flags=flags, counts=dict(counts, fan=len(fans)), ok=not flags)
+
+
+def stack_map(runs, bounds, cell_mm=1.0, layer_min=1.5, max_layers=2, min_flag_mm2=4.0):
+    """How many sewn layers lie on top of each other (DIGITIZING_PRINCIPLES rule 6: never more than 2 stacked layers).
+    runs: qa.dst_runs (or plain lists of segments). A run counts as a LAYER in a cell when its own thread there reaches
+    layer_min mm/mm^2 (60 % of a 0.4 mm tatami layer): its own underlay, an edge run or a travel line passing through do
+    not count, a fill or a satin does. Limitation: a DST alone cannot split objects joined by hidden travel into separate
+    runs, so stacking inside one run is under-counted, never over-counted. Returns dict(grid, max, over_mm2, flags, ok)."""
+    H, W = _grid_shape(bounds, cell_mm); segs, rid = [], []
+    for k, r in enumerate(runs):
+        s = r["segs"] if isinstance(r, dict) else r
+        segs += list(s); rid += [k] * len(s)
+    rid = np.asarray(rid, int); iy, ix, w, si = _sample_segments(segs, bounds, cell_mm)
+    grid = np.zeros((H, W), int)
+    if len(w):
+        key = rid[si].astype(np.int64) * (H * W) + iy * W + ix
+        uk, inv = np.unique(key, return_inverse=True); tot = np.bincount(inv, w) / cell_mm ** 2
+        grid = np.bincount(uk[tot >= layer_min] % (H * W), minlength=H * W).reshape(H, W)
+    over = grid > max_layers
+    flags = _flag_regions(over, bounds, cell_mm, min_flag_mm2, value=grid.astype(float))
+    return dict(grid=grid, cell_mm=cell_mm, bounds=tuple(bounds), max=int(grid.max()) if grid.size else 0,
+                over_mm2=round(float(over.sum()) * cell_mm ** 2, 1), max_layers=max_layers, flags=flags, ok=not flags)

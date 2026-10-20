@@ -1,0 +1,27 @@
+{
+  "_doc": "ENGINE_PLAN benchmark crop (engine/digitize/bench.py). Garment mm on the BK piece, size M: x from CB (+ = wearer's right), y from the CB neck seam. The requested crop (docs/ENGINE_PLAN.md) dipped below feather weight 0.6 of the back_left close-up along its bottom 5 mm (min 0.25), so it was shifted 5 mm up (min weight 0.647). Paths: relative to this project folder; a git-ignored build output that is missing here is looked up in the main checkout.",
+  "name": "castle-bk-m",
+  "piece": "BK",
+  "size": "M",
+  "view": "B",
+  "registration": "bench/registration.json",
+  "closeup": "back_left",
+  "min_weight": 0.6,
+  "crop_requested": [-180, 370, 20, 570],
+  "crop": [-180, 365, 20, 565],
+  "ppm": 12,
+  "panel_ppm": 4,
+  "shell": "#2E3847",
+  "baseline_dst": "out/01_back-scene/M/HAKI_CSFL_01_back-scene_BK_M.dst",
+  "result_json": "out/01_back-scene/M/result_BK.json",
+  "regions_pkl": "scene_BK.pkl",
+  "targets": {
+    "direction_pct_ok_min": 85.0,
+    "direction_pct_chaos_max": 5.0,
+    "stack_max_layers": 2,
+    "trims_per_100cm2_max": 25.0,
+    "satin_blobs_max": 0,
+    "colours_max": 12,
+    "density_flags_max": 0
+  }
+}

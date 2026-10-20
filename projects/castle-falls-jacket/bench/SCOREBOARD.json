@@ -1,0 +1,100 @@
+[
+ {
+  "date": "2026-10-19",
+  "label": "baseline: shipped Rev B DST",
+  "bench": "castle-bk-m",
+  "dst": "projects/castle-falls-jacket/out/01_back-scene/M/HAKI_CSFL_01_back-scene_BK_M.dst",
+  "dst_sha256": "b8dd2fcf852983f3",
+  "origin": [
+   -0.00860729226485546,
+   330.3
+  ],
+  "crop": [
+   -180,
+   365,
+   20,
+   565
+  ],
+  "crop_min_closeup_weight": 0.647,
+  "stitches_in_crop": 150250,
+  "direction": {
+   "tiles": 625,
+   "pct_ok": 11.7,
+   "pct_chaos": 77.9,
+   "n_dev": 65,
+   "n_chaos": 487,
+   "pct_ok_all_stitches": 2.4,
+   "pct_chaos_all_stitches": 97.3
+  },
+  "angle_coherence": {
+   "regions_file": "scene_BK.pkl",
+   "constructed_in_crop": 535,
+   "no_part_id": 535,
+   "auto_or_none_angle": 479,
+   "satin": 479,
+   "ok": false,
+   "error": "angle_coherence: 535 constructed region(s) ['ROOF', 'TMB', 'WALL'] have no part id under key 'part'"
+  },
+  "density": {
+   "covered_cm2": 399.8,
+   "mean": 5.67,
+   "p95": 10.45,
+   "max_smoothed": 24.62,
+   "over_cm2": 66.23,
+   "flags": 194,
+   "threshold": 7.0
+  },
+  "trims": {
+   "trims": 452,
+   "per_100cm2": 113.1,
+   "area_cm2": 399.8
+  },
+  "satin": {
+   "satins": 1925,
+   "fans": 319,
+   "blob": 1159,
+   "too_wide": 0,
+   "too_narrow": 31
+  },
+  "stack": {
+   "max": 6,
+   "over_cm2": 19.97,
+   "flags": 114,
+   "pct_cells_over": 5.1
+  },
+  "runs_in_crop": 541,
+  "colours": {
+   "stops_in_crop": 24,
+   "threads_in_crop": 12,
+   "threads_in_file": 12,
+   "hex": [
+    "#22355c",
+    "#2f402d",
+    "#3f6fa9",
+    "#4e3f31",
+    "#566577",
+    "#5a7240",
+    "#9ea3a6",
+    "#b4506f",
+    "#d4caba",
+    "#de8ea6",
+    "#eeeae0",
+    "#f2c3ce"
+   ],
+   "red": false,
+   "gold": false
+  },
+  "secs": 46.2,
+  "verdict": {
+   "direction_ok": false,
+   "direction_chaos": false,
+   "angle_coherence": false,
+   "density": false,
+   "trims": false,
+   "satin_shape": false,
+   "stack": false,
+   "colours": false
+  },
+  "panel": "panel_2026-10-19_baseline--shipped-rev-b-dst.png"
+ }
+]

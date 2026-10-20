@@ -34,3 +34,15 @@ def dst(path):
                 jumps=sum(s["jumps"] for s in per), stops=len(per), per_stop=per,
                 max_stitch=round(max(L), 2) if L else 0.0,
                 size_mm=(round((ex[2] - ex[0]) / 10, 1), round((ex[3] - ex[1]) / 10, 1)))
+
+
+def trim_points(path):
+    """Needle position (mm, DST frame) of every TRIM in the written file, in sew order: the last stitch before the trim
+    (the command's own position when nothing was sewn yet). len(trim_points(f)) == dst(f)["trims"] (tests)."""
+    p = pe.read(path); out = []; prev = None
+    for x, y, cmd in p.stitches:
+        k = cmd & pe.COMMAND_MASK
+        if k == pe.STITCH: prev = (x / 10.0, y / 10.0)
+        elif k == pe.TRIM: out.append(prev if prev is not None else (x / 10.0, y / 10.0))
+        elif k == pe.END: break
+    return out
