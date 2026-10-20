@@ -63,6 +63,27 @@ def pair(P, bb, ppm, size="M"):
     dc = ImageDraw.Draw(st); dc.line(T(KO.clip(size, P).exterior.coords), fill=(255, 90, 90), width=1)
     return mk, st
 
+def coverage_image(P, bb, ppm, size="M"):
+    """coverage overlay (founder 19 Oct): bare fabric inside the design = RED, Deep-navy thread = BLUE, any other thread = light
+    grey, outside the design = white. Design = the traced art inside the size's keep-outs (fidelity.tone_on_grid)."""
+    from scipy import ndimage as ndi
+    import fidelity as FD
+    x0, y0, x1, y1 = bb; W, H = int(round((x1 - x0) * ppm)), int(round((y1 - y0) * ppm))
+    XX, YY = np.meshgrid(x0 + (np.arange(W) + .5) / ppm, y0 + (np.arange(H) + .5) / ppm)
+    t = FD.tone_on_grid(P, XX, YY)
+    from shapely import contains_xy
+    design = (t >= 0) & contains_xy(KO.clip(size, P).buffer(-1.0), XX, YY)
+    S, Ci, cols, _ = segments(P, size); allm = Image.new("L", (W, H), 0); nav = Image.new("L", (W, H), 0)
+    da, dn = ImageDraw.Draw(allm), ImageDraw.Draw(nav)
+    for s_, c in zip(S, Ci):
+        q = [((s_[0] - x0) * ppm, (s_[1] - y0) * ppm), ((s_[2] - x0) * ppm, (s_[3] - y0) * ppm)]
+        da.line(q, fill=255, width=1)
+        if cols[c].lower() == cfcore.CF_PAL["cf_navy"][0].lower(): dn.line(q, fill=255, width=1)
+    k = max(1, int(round(1.0 * ppm)))
+    st = ndi.binary_closing(np.asarray(allm) > 0, iterations=k); nv = ndi.binary_closing(np.asarray(nav) > 0, iterations=k) & st
+    im = np.full((H, W, 3), 255, np.uint8); im[st] = (205, 205, 205); im[nv] = (60, 110, 225); im[design & ~st] = (230, 20, 20)
+    return Image.fromarray(im), float((design & ~st).sum()) / ppm ** 2, float(design.sum()) / ppm ** 2
+
 def closeup_image(bb, ppm):
     """the raw falls panel of inputs/closeup_mockup_strip.png resampled into back mm (inverse of the A12 registration)"""
     from scipy.ndimage import map_coordinates
@@ -82,21 +103,23 @@ def sheet(e, size="M"):
     for P in pcs:
         b = KO.panel(size, P).bounds; b = (b[0] - 4, b[1] - 4, b[2] + 4, b[3] + 4)
         tiles.append((P, b) + pair(P, b, ppm, size))
-    W = sum(t[2].width for t in tiles) * 2 + 40 * len(tiles); H = max(t[2].height for t in tiles)
+    covs = [coverage_image(P, b, ppm, size) for P, b, mk, st in tiles]
+    W = sum(t[2].width for t in tiles) * 3 + 60 * len(tiles); H = max(t[2].height for t in tiles)
     zw = 330; zs = ZOOMS[e]
     extra = 0
     if e == "01":
         fb = FALLS_BOX[1]; fz = zw / (fb[2] - fb[0]) * 1.0; extra = int((fb[3] - fb[1]) * fz) + 60
     out = Image.new("RGB", (W + zw * 2 + 40, max(H + 60 + extra, len(zs) * (zw + 40) + 40)), (255, 255, 255)); d = ImageDraw.Draw(out)
     x = 10
-    for P, b, mk, st in tiles:
+    for (P, b, mk, st), (cv, bare, des) in zip(tiles, covs):
         out.paste(mk, (x, 34)); txt(d, (x, 10), f"MOCKUP {P} (mapped onto the size-{size} pattern)")
         out.paste(st, (x + mk.width + 10, 34)); txt(d, (x + mk.width + 10, 10), f"FINAL DST {P} size {size}, stitch by stitch, same scale")
+        out.paste(cv, (x + 2 * mk.width + 20, 34)); txt(d, (x + 2 * mk.width + 20, 10), f"COVERAGE {P}: red = bare in design ({bare:.0f} mm2 = {100*bare/max(des,1):.2f} %), blue = Deep navy thread")
         for (zp, zb, cap) in zs:
             if zp != P: continue
             for X0 in (x, x + mk.width + 10):
                 d.rectangle([X0 + (zb[0] - b[0]) * ppm, 34 + (zb[1] - b[1]) * ppm, X0 + (zb[2] - b[0]) * ppm, 34 + (zb[3] - b[1]) * ppm], outline=(255, 40, 40), width=2)
-        x += mk.width * 2 + 40
+        x += mk.width * 3 + 60
     x0 = W + 20; y = 34
     for (zp, zb, cap) in zs:
         zp_ = zw / (zb[2] - zb[0]); a, s_ = pair(zp, zb, zp_, size)

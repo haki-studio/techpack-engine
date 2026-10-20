@@ -113,7 +113,7 @@ if __name__ == "__main__":
             ub = dst2.bounds_of([r["geom"] for r in vis]); c = ((ub[0]+ub[2])/2, (ub[1]+ub[3])/2)
             stops, n0 = stops_for(vis); pat, st = dst2.make_pattern(vis, stops, c)
             base = f"{OUT}/{tag}"
-            dst2.write(cap_stitches(pat), base); dst2.render(base, base + "_preview.png", bg=(46, 56, 71), s=0.5)
+            dst2.write(cap_stitches(pat), base); dst2.render(base, base + "_preview.png", bg=(178, 178, 178), s=0.5)   # light grey = bare fabric (Deep navy reads as thread, founder 19 Oct)
             ex = dst2.exposed_travel(stops, st.get("runs", []))
             res["full"] = record(base, stops, dict(origin=c, art_box=ub, stops_before_merge=n0, secs=round(time.time()-t), merged_tones=PLAN[P],
                                  exposed_travel=dict(runs_over_1mm=sum(1 for x in ex if x > 1.0), runs_over_2mm=sum(1 for x in ex if x > 2.0), max_mm=round(max(ex), 1) if ex else 0.0),
@@ -142,7 +142,7 @@ if __name__ == "__main__":
                 cc = ((bb[0]+bb[2])/2, (bb[1]+bb[3])/2)
                 pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=mk)
                 base = f"{OUT}/splits/{tag}_{nm}"; os.makedirs(os.path.dirname(base), exist_ok=True)
-                dst2.write(cap_stitches(reg_in_first_colour(pat)), base); dst2.render(base, base + "_preview.png", bg=(46, 56, 71), s=0.5)
+                dst2.write(cap_stitches(reg_in_first_colour(pat)), base); dst2.render(base, base + "_preview.png", bg=(178, 178, 178), s=0.5)   # light grey = bare fabric (Deep navy reads as thread, founder 19 Oct)
                 r = record(base, stops, dict(bbox=bb, origin=cc, marks=mk, secs=round(time.time()-t)), basting=True)
                 r["fits"] = r["size_mm"][0] <= FRAME[0] - 16 and r["size_mm"][1] <= FRAME[1] - 16
                 spl["sections"][nm] = r

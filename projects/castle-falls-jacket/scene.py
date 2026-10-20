@@ -140,6 +140,39 @@ def revb_structure(P, res, t, f, rng, add, knock):
     env = ndi.binary_fill_holes(ndi.binary_closing(art, structure=TRC.disk(24.0), iterations=1)) & ndi.binary_erosion(np.ones_like(art), iterations=2)
     hole = env & ~art
     t = t.copy(); t[hole] = TI["cf_navy"]; info["sky_fill_mm2"] = round(float(hole.sum()) / ppm ** 2)
+    # 1a. Deep navy only in thin traced crevices / shadow lines (founder 19 Oct: thick navy patches read as bare shell).
+    #     Thick navy (survives a 2.4 mm opening) outside buildings / village takes the tone of its context: rock -> slate,
+    #     sky / cloud -> sky blue (the darkest 25 % of it, by close-up luminance, stays navy as darker sky passages),
+    #     foliage -> pine dark.
+    H_, W_ = t.shape; X_, Y_ = f(np.arange(W_)[None, :].repeat(H_, 0), np.arange(H_)[:, None].repeat(W_, 1))
+    from shapely import contains_xy
+    keep = np.zeros_like(art)
+    for fn, args, _ in BUILDINGS.get(P, {}).values(): keep |= contains_xy(fn(*args)[1].buffer(2.0), X_, Y_)
+    for z in VILLAGE.get(P, []): keep |= contains_xy(box(*z), X_, Y_)
+    for g_ in GENERATED.get(P, {}).values(): keep |= contains_xy(g_[0](*g_[1])[1].buffer(2.0), X_, Y_)
+    navy = (t == TI["cf_navy"]) & ~keep
+    thick = ndi.binary_dilation(ndi.binary_opening(navy, structure=TRC.disk(2.4)), structure=TRC.disk(0.6)) & navy
+    lab_t, nt = ndi.label(thick)
+    L_ = Wp[:H_, :W_] @ np.array([0.3, 0.59, 0.11])
+    CTX = {"rock": "cf_slate", "sky": "cf_sky", "cloud": "cf_sky", "fol": "cf_grndk", "trk": "cf_slate", "bl": "cf_sky", "bld": "cf_navy"}
+    moved = 0
+    for i, sl in enumerate(ndi.find_objects(lab_t), 1):
+        ys = slice(max(0, sl[0].start - 6), sl[0].stop + 6); xs = slice(max(0, sl[1].start - 6), sl[1].stop + 6)
+        m = lab_t[ys, xs] == i; ring = ndi.binary_dilation(m, iterations=6) & ~m
+        nb = t[ys, xs][ring]; nb = nb[(nb >= 0) & (nb != TI["cf_navy"])]
+        if not len(nb): ctx = "sky"
+        else:
+            cl = [CLASS[TONES[v]] for v in nb]; ctx = max(set(cl), key=cl.count)
+        new = CTX.get(ctx, "cf_sky")
+        if new == "cf_navy": continue
+        sub = t[ys, xs]
+        if new == "cf_sky":
+            lv = L_[ys, xs][m]; thr = np.percentile(lv, 25)
+            sub[m & (L_[ys, xs] > thr)] = TI["cf_sky"]
+        else:
+            sub[m] = TI[new]
+        moved += int(m.sum())
+    info["navy_reassigned_mm2"] = round(moved / ppm ** 2)
     # 1b. FR spire crag (item 11): cloud-white strata inside the crag are rock highlights, not clouds
     crag = Polygon(CRAG[P]) if P in CRAG else Polygon()
     if not crag.is_empty:
