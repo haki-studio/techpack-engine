@@ -26,3 +26,13 @@
   kind: tatami 0 deg, 0.40, pull 0.30). E1/E3 all gates pass; E2/E1B exposed-stitch + E1B tiny bird islands (fixed by
   widening the bird sample box to x -20) -> rerun with exact_travel max_ex 0.2.
 - Gotcha: `cat > file` with no heredoc blocks forever in a backgrounded Bash call (lost 10 min).
+
+## Delivered (update 3)
+- 17-page pack `projects/pixel-sky-fleece/out/HAKI_HK-FL-PIXSKY_TECHPACK_RevA_small.pdf` (2.9 MB) + zip (9.7 MB):
+  T1–T5 garment, J1–J3 jacquard, G1–G5 embroidery, F1/F2 factory + mill, Q1 questions, R1 LESSONS checks.
+- Stitch (DST read-back): E1 1,037 st / 19 trims; E2 3,782 / 36; E3 1,971 / 17; E1B 7,867 / 69. All A14 motif gates pass
+  vs render pixels; keep-outs XS–3XL pass; pattern QA all sizes; 274 tests pass.
+- Gate decision: exposed-stitch halo 0.35 for sherpa pull comp 0.30 (svgrun's 0.25 flags pull-comp corners; proven by
+  re-running at pull 0.20 → 0). svgrun `gates.exposed` override crashes → ENGINE_NOTES 1.
+- Open (founder/factory): fit choice, back design, mill capability + 3rd colour, bird IP, bird side (brief vs mockup),
+  embroidery-on-sherpa set-up, trim colours.
