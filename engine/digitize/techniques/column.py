@@ -79,12 +79,15 @@ def trim(pts, start=0.0, end=0.0):
     return out
 
 # ------------------------------------------------------------------ satin column stitches
-def _split_long(a, b, maxlen=7.0, step=6.0):
+def _split_long(a, b, maxlen=7.0, step=6.0, jitter=0.18):
+    """LEGACY (konpeito kjsatin): random split points (RNG jitter). FENCED: the digitize plugins never call this or
+    column_pts; they split with split_satin.split_row (deterministic stagger, no random numbers; rule 2 / LESSONS A16).
+    tests/test_digitize_m2.py::test_digitize_satin_has_no_random_jitter guards the fence."""
     d = math.dist(a, b)
     if d <= maxlen: return [b]
     m = int(math.ceil(d / step)); out = []
     for i in range(1, m):
-        f = (i + RNG.uniform(-0.18, 0.18)) / m
+        f = (i + (RNG.uniform(-jitter, jitter) if jitter else 0.0)) / m
         out.append((a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f))
     return out + [b]
 
@@ -136,7 +139,8 @@ def rows(cl, w, sp, pull=0.0, caps=("round", "round"), closed=False, prof=None):
     return out
 
 def column_pts(cl, w, sp, pull=0.0, caps=("round", "round"), closed=False, prof=None, reverse=False):
-    """zig-zag satin: B0, A0, B1, A1 ... alternating sides, so every stitch crosses the column once."""
+    """zig-zag satin: B0, A0, B1, A1 ... alternating sides, so every stitch crosses the column once. LEGACY splits
+    (_split_long, random jitter): the digitize plugins use split_satin.column_rows instead."""
     rr = rows(cl[::-1] if reverse else cl, w, sp, pull, caps[::-1] if reverse else caps, closed, prof)
     if not rr: return []
     seq = [rr[0][1]]
