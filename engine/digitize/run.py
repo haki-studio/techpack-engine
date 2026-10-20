@@ -32,10 +32,11 @@ SPLIT_KIND = {"sky": "sky_band", "fall": "fall_cord", "pool": "pool"}
 
 
 class Run:
-    def __init__(self, yaml_path, overrides=None):
+    def __init__(self, yaml_path, overrides=None, answers=None):
         self.cfg = config.load(yaml_path, overrides)
         self.cfg_b = json.load(open(config.path(self.cfg, self.cfg["bench"])))
         self.out = config.path(self.cfg, self.cfg["out_dir"]); os.makedirs(self.out, exist_ok=True)
+        self._answers(answers or self.cfg.get("answers"))                                        # M4g
         self.crop = tuple(self.cfg_b["crop"]); self.view = self.cfg_b["view"]
         self.rb = Rulebook(self.cfg.get("rules"), toggles=self.cfg["techniques"], overrides=self.cfg.get("rule_overrides"))
         self.name = self.cfg["name"]; self.base = os.path.join(self.out, self.name)
@@ -43,6 +44,20 @@ class Run:
         self._ref = None
 
     def f(self, name): return os.path.join(self.out, name)
+
+    # ------------------------------------------------------------ M4g: answers.json from the review step
+    def _answers(self, path):
+        """answers to the PREVIOUS run's questions (run.yaml `answers:` / --answers; questions from run.yaml
+        `questions:`, else <out>/questions.json) -> config overrides for this run + answers_report.json"""
+        if not path: return
+        path = config.path(self.cfg, path); qp = config.path(self.cfg, self.cfg["questions"]) if self.cfg.get("questions") else self.f("questions.json")
+        if not os.path.exists(qp): raise SystemExit(f"answers {path}: no questions file {qp} to answer against (run the review stage first)")
+        self.cfg, rep = RV.apply_answers(self.cfg, RV.load_answers(path), json.load(open(qp)))
+        rep["answers"] = os.path.relpath(path, self.cfg["project"]); self.cfg["_answers_report"] = rep
+        json.dump(rep, open(self.f("answers_report.json"), "w"), indent=1)
+        print(f"answers: {len(rep['answered'])} answered, {len(rep['defaulted'])} left at their default "
+              f"({', '.join(q for q, _ in rep['defaulted'][:6])}{' ...' if len(rep['defaulted']) > 6 else ''}), "
+              f"{len(rep['unknown'])} unknown {rep['unknown'][:6]}, {len(rep['pending'])} pending a person")
 
     def ref(self):
         if self._ref is None:
@@ -56,8 +71,12 @@ class Run:
         ev = evidence.build(self.ref(), T["palette"], **cfg["evidence"])
         ev.tone_png(self.f("evidence_tones.png"))
         w = np.bincount(ev.tone.ravel(), minlength=len(ev.keys)) / ev.ppm ** 2
-        tp = TH.plan(dict(zip(ev.keys, w.tolist())), T["palette"], needles=config.needles(cfg), protected=T["protected"], names=T.get("names"),
-                     importance=T.get("importance"))
+        # M4g: thread planner with the trade-off as options (threads.choice / answers.json), salience per tone
+        zs0 = ZN.load(config.path(cfg, cfg["zones"]))
+        zm = {z["id"]: (np.ones((ev.H, ev.W), bool) if z.get("rest") else ev.mask(ZN.window(z))) &
+                       (np.isin(ev.tone, [ev.keys.index(k) for k in z["tones"] if k in ev.keys]) if z.get("tones", "all") != "all" else True)
+              for z in zs0["zones"]}                       # a motif = a zone whose OWN tones include the tone
+        tp = TH.plan_from_config(dict(zip(ev.keys, w.tolist())), T, config.needles(cfg), sal=TH.salience(ev.tone, ev.keys, T["palette"], ev.ppm, zm))
         ctx = Ctx(ev, self.rb, cfg, tp["map"], T["protected"])
         zs = ZN.load(config.path(cfg, cfg["zones"]))
         def z_of(z):
@@ -75,6 +94,8 @@ class Run:
                 from digitize.extract.splitters import building; return building.split(ctx, z, zz, m)
             raise ValueError(f"zone {z['id']}: unknown splitter {k!r}")
         parts, log = ZN.claim_and_split(zs, ev, z_of, split)
+        parts, left_out = RV.apply_extract(self.cfg, parts)                                    # M4g: answers
+        if left_out: print(f"    answers: {len(left_out)} parts of zones answered 'leave out' are not sewn")
         n_traced = len(parts); sk = cfg.get("specks", {}) or {}
         parts, merged = SQ.merge_specks(parts, sk.get("min_mm2", cfg["stub"]["min_part_mm2"]), protected=T["protected"],
                                         min_protected_mm2=cfg["stub"]["min_protected_mm2"])
@@ -86,7 +107,8 @@ class Run:
                                                            tone_map=tp["map"], evidence_tone_mm2={k: round(float(v), 1) for k, v in zip(ev.keys, w)},
                                                            source_ppm_median=self.ref()["source_ppm_median"],
                                                            separation_moves=[list(m) for m in moves], traced_parts=n_traced,
-                                                           specks_merged=[list(m) for m in merged]))
+                                                           specks_merged=[list(m) for m in merged], thread_tradeoff=tp.get("tradeoff"),
+                                                           review_answers=self.cfg.get("_answers_report")))
         if getattr(ctx, "building_report", None):                  # M3a: details under a rule 9 minimum, as SUGGESTIONS
             plan.meta["building_suggest"] = ctx.building_report.get("suggest", [])
         plan.to_json(self.f("parts.json"), with_blocks=False)
@@ -105,20 +127,38 @@ class Run:
             if p.dir.mode in ("field", "contour") and p.technique not in k.get("follows", ("guided_fill", "contour_fill")):
                 p.meta["dir_was"] = dict(angle=p.dir.angle, mode=p.dir.mode, source=p.dir.source)   # toggled off: the kind's alt_dir
                 p.dir = self.rb.direction(p.kind, technique=p.technique); p.meta.pop("sep_deg", None); p.meta.pop("band_offset_deg", None)
-        sq = self.cfg["sequence"]; n0 = len(plan.parts)
-        SQ.underlap(plan.parts, sq["keep_mm"]); SQ.cut_under(plan.parts, sq["keep_mm"])
-        plan.parts, dropped = SQ.absorb_fragments(plan.parts, sq["min_fragment_mm2"])
+        answered = RV.apply_plan(self.cfg, plan, self.rb)                                      # M4g: answers
+        if self.cfg.get("_answers_report", {}).get("stale"):                                    # M4g: stale ids reported
+            json.dump(self.cfg["_answers_report"], open(self.f("answers_report.json"), "w"), indent=1)
+            print(f"answers: STALE (no such part / zone in this run): {self.cfg['_answers_report']['stale'][:8]}")
+        sq = dict(SQ.SEQ_DEFAULTS, **self.cfg["sequence"]); n0 = len(plan.parts); m4 = sq["planner"] != "m1"   # M4g
+        if m4: seqi = SQ.plan_sequence(plan, sq, P); dropped = seqi["dropped"]                             # M4g
+        else:
+            SQ.underlap(plan.parts, sq["keep_mm"]); SQ.cut_under(plan.parts, sq["keep_mm"])
+            plan.parts, dropped = SQ.absorb_fragments(plan.parts, sq["min_fragment_mm2"])
         refreshed = DR.refresh_field_basis(plan.parts)                  # bases on the geometry actually sewn (audited)
         sep = self.rb.principles["neighbour_sep_deg"]
         moves = DR.separate(plan.parts, sep=tuple(sep), kinds=set(self.cfg.get("separate_kinds", ["stratum_band", "cloud_shade", "cloud_wisp"])))
         for p in plan.parts: issues += techniques.get(p.technique).check(p, P)
-        plan.stops = SQ.order(plan.parts)
+        if m4: pred = SQ.dag_v1(plan.parts, sq["touch"]); plan.stops = SQ.order_v1(plan.parts, pred=pred, lookahead=sq["stop_lookahead"])   # M4g
+        else: plan.stops = SQ.order(plan.parts)
         used = {p.thread for p in plan.parts}
         plan.threads = {k: v for k, v in plan.threads.items() if k in used}
         need = config.needles(self.cfg)
-        if len(plan.threads) > need: raise SystemExit(f"plan uses {len(plan.threads)} threads > {need} needles")
+        if TH.needles_used(plan.threads) > need:                                                # M4g: <colour>+foam = the same needle
+            raise SystemExit(f"plan uses {TH.needles_used(plan.threads)} threads > {need} needles")
         CP.plan_blocks(plan)
-        plan.meta.update(dropped_fragments=dropped, issues=issues, parts_before_sequence=n0, field_basis_refreshed=refreshed,
+        if m4:                                                                                             # M4g
+            if sq["orient"]: seqi["travel"] = SQ.sequence_blocks(plan, sq["touch"], sq["group_bonus_mm"], pred=pred, inner_travel=sq["inner_travel"])
+            seqi["budget"] = SQ.budget(plan, (self.cfg.get("budget") or {}).get("stitches_max"))
+            seqi["report"] = SQ.report(plan, pred=pred); seqi["stack_max_plan"] = SQ.stack_count(plan.parts)
+            seqi["seams"] = dict(pair=SQ.seam_report(plan.parts), any_lower=SQ.seam_report(plan.parts, any_lower=True))   # rule 6 underlap
+            plan.meta["sequence"] = dict(planner="m4", stack_cut_parts=len(seqi["stack_cut"]),
+                                         stack_cut_mm2=round(sum(c for _, c in seqi["stack_cut"]), 1), **{k: seqi[k] for k in
+                                         ("hints", "budget", "report", "stack_max_plan", "seams") if k in seqi}, travel=seqi.get("travel"))
+            print(f"sequence (M4): {plan.meta['sequence']['report']['stops']} stops, stack <= {seqi['stack_max_plan']} "
+                  f"({len(seqi['stack_cut'])} parts cut), travel {seqi.get('travel')}, budget {seqi['budget']}")
+        plan.meta.update(dropped_fragments=dropped, issues=issues, parts_before_sequence=n0, field_basis_refreshed=refreshed, review_answers_plan=answered,
                          separation_moves_plan=[list(m) for m in moves])
         plan.to_json(self.f("plan.json")); self.plan = plan
         print(f"plan: {len(plan.parts)} parts ({len(dropped)} fragments dropped), {len(plan.stops)} stops, {len(plan.threads)} threads, "
@@ -129,7 +169,7 @@ class Run:
     def review(self):
         plan = ObjectPlan.from_json(self.f("plan.json") if os.path.exists(self.f("plan.json")) else self.f("parts.json"))
         RV.part_map(plan, self.crop, self.f("part_map.png"))
-        qs = RV.questions(plan, plan.meta.get("issues", []))
+        qs = RV.questions(plan, plan.meta.get("issues", []), rb=self.rb)                       # M4g: options = enabled techniques
         json.dump(qs, open(self.f("questions.json"), "w"), indent=1)
         parts_json = dict(name=plan.name, n=len(plan.parts), parts=[dict(id=p.id, kind=p.kind, zone=p.zone, thread=p.thread, z=p.z,
                           technique=p.technique, angle=p.dir.angle, dir_source=p.dir.source, area_mm2=round(p.area, 1)) for p in plan.parts])
@@ -285,6 +325,7 @@ def main(argv=None):
     ap.add_argument("run_yaml")
     ap.add_argument("--stages", default="all")
     ap.add_argument("--no-api", action="store_true", help="no Anthropic API calls (the only mode in M1; accepted for the M4 question step)")
+    ap.add_argument("--answers", help="answers.json to the previous run's questions.json (M4g review step)")
     a = ap.parse_args(argv)
     if config.load(a.run_yaml).get("source") == "svg":          # M5: founder vector art as the part source
         from digitize import svgrun; return svgrun.main(argv)
@@ -292,7 +333,7 @@ def main(argv=None):
     st = STAGES if a.stages == "all" else [s.strip() for s in a.stages.split(",")]
     for s in st:
         if s not in STAGES: raise SystemExit(f"unknown stage {s!r} (have {STAGES})")
-    r = Run(a.run_yaml); t0 = time.time()
+    r = Run(a.run_yaml, answers=a.answers); t0 = time.time()
     order = ["extract", "plan", "review", "compile", "gates", "panel", "bench"]
     for s in order:
         if s not in st: continue
