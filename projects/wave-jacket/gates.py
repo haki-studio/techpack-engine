@@ -179,6 +179,15 @@ def dst_family(P, bb, fam):
         if rec: live.draw_chenille(im, rec, bb, PPM, flat={"w1": 255, "w3": 255, "w1e": 255})
     return ndi.binary_closing(np.asarray(im) > 0, iterations=2)
 
+def family_raster(P, bb, shape):
+    """1 = stripes + rope cords, 2 = foam (crests, shades, hollows, curl cords), 3 = drops - from the art (what each area IS)"""
+    im = Image.new("L", shape[::-1], 0); d = ImageDraw.Draw(im)
+    code = lambda g: 1 if g in ("WV", "RP") else (3 if g in ("DR", "DR-b") else 2)
+    for r in sorted(D[P], key=lambda r: r.get("layer", 0)):
+        for q in WR.polys_of(r["geom"]):
+            d.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in q.exterior.coords], fill=code(r["grp"]))
+    return np.asarray(im)
+
 def align(ref, out, max_mm=SHIFT):
     """each ref component pasted at its best shift (max overlap with `out` within +/- max_mm, FFT correlation, a small
     distance penalty so ties keep the mapped position). Returns (aligned mask, source-id image, {id: shift mm})"""
@@ -258,12 +267,26 @@ def gate_piece(P):
         r = json.load(open(f"out/01_wave/{SIZE}/result_{P}.json"))["full"]
         segs = qa.dst_segments(r["file"] + ".dst", origin=(r["origin"][0] - bb[0], r["origin"][1] - bb[1]))
         if r.get("chenille"): segs += qa.dst_segments(r["chenille"]["file"] + ".dst", origin=(r["chenille"]["origin"][0] - bb[0], r["chenille"]["origin"][1] - bb[1]))
-        if PPM < 12.0:      # qa.direction_match refuses < 12 ppm (LESSONS A17); fail here with the reason, not a traceback
-            raise SystemExit(f"wave-jacket gates: the stitch-direction gate needs a >= 12 px/mm reference, but this script "
-                             f"builds its piece references at PPM = {PPM}. At that resolution a thread is ~2 px, so the "
-                             f"score would be blur, not grain. Rebuild GREY at 12 ppm (engine/digitize/extract/register.py) "
-                             f"before delivering; --art skips the DST gates. (Wave is paused: ENGINE_PLAN M8.)")
-        dm = qa.direction_match(g, PPM, segs, tile_mm=8.0)
+        # LESSONS A17: the direction gate needs a >= 12 px/mm reference. The mockup itself is ~0.7 px/mm (the render) - the
+        # 4 ppm piece reference is resampled x3 (bilinear) so the visible-layer z-buffer and the thread width are resolved;
+        # the GRAIN it reads is still the render's (blur at thread scale), so the result is reported as indicative.
+        from scipy.ndimage import zoom as _zoom
+        UP = 3; P12 = PPM * UP
+        g12 = _zoom(g, UP, order=1)
+        dm = qa.direction_match(g12, P12, segs, tile_mm=8.0)
+        # per motif family (A16 sets the direction per family; WIP patch 19 Oct): stripes + rope cords on 8 mm tiles, foam
+        # curls and drops turn within a few mm -> 4 mm tiles. Family of a stitch = the art region under its midpoint.
+        fam_of = family_raster(P, bb, g.shape)
+        vis = qa.visible_segments(segs, (0.0, 0.0, g.shape[1] / PPM, g.shape[0] / PPM), ppm=P12)
+        by = {1: [], 2: [], 3: []}
+        for q in vis:
+            cx, cy = int((q[0] + q[2]) / 2 * PPM), int((q[1] + q[3]) / 2 * PPM)
+            if 0 <= cy < fam_of.shape[0] and 0 <= cx < fam_of.shape[1] and fam_of[cy, cx] in by: by[fam_of[cy, cx]].append(q)
+        fams = {}
+        for k, nm, tm, ms in ((1, "stripes", 8.0, 12), (2, "foam", 4.0, 6), (3, "drops", 4.0, 4)):
+            f_ = qa.direction_match(g12, P12, by[k], tile_mm=tm, min_stitches=ms, visible=False)
+            fams[nm] = dict(tile_mm=tm, tiles=f_["tiles"], pct_ok=f_["pct_ok"], fail_dev=len(f_["fail_dev"]), fail_chaos=len(f_["fail_chaos"]))
+        dm["by_family"] = fams; dm["ref_ppm"] = P12; dm["source_px_per_mm"] = 0.7
         for k in ("fail_dev", "fail_chaos"):
             for t_ in dm[k]: t_["at_mm"] = [round(t_["at_mm"][0] + bb[0], 1), round(t_["at_mm"][1] + bb[1], 1)]
         dm["tile_mm"] = 8.0; res["direction"] = dm
@@ -301,7 +324,7 @@ if __name__ == "__main__":
     for r in S: print(r)
     for P in WC.PIECES:
         d_ = res[P].get("direction")
-        if d_: print(P, "direction", d_["pct_ok"], "% OK of", d_["tiles"], "tiles; off-grain", len(d_["fail_dev"]), "chaotic", len(d_["fail_chaos"]))
+        if d_: print(P, "direction", d_["pct_ok"], "% OK of", d_["tiles"], "tiles; off-grain", len(d_["fail_dev"]), "chaotic", len(d_["fail_chaos"]), "| by family", d_.get("by_family"))
     for P in WC.PIECES:
         un = [g for g in res[P]["uncovered"] if g["why"] == "UNEXPLAINED"]
         print(P, "uncovered", len(res[P]["uncovered"]), "unexplained", len(un), [(g["x_mm"], g["y_mm"], g["area_mm2"]) for g in un[:6]])

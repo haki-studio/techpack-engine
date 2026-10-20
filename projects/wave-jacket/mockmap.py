@@ -114,7 +114,7 @@ class SleeveMap:
     outer fold (shoulder point -> outer cuff corner) on the sleeve centre line (cap top -> cuff) and keeps the art's
     width at the body's x scale (widened up to 1.45 so the render's inner sleeve edge meets the underarm keep-out). The render's drop-shoulder sleeves are long and only ~1/2 as wide as the pattern
     sleeve, so a seam-true map (armhole -> cap) would fold the patch; the art is placed by its position on the hanging
-    sleeve instead (from the fold, down from the shoulder) and the armhole is a normal 15 mm keep-out. [PROPOSED]"""
+    sleeve instead (from the fold, down from the shoulder). Rev A only: Rev B wraps seam-true (wrap.py, seamwarp.py). [PROPOSED]"""
     def __init__(self, view, side, size="M"):
         self.view, self.side, self.size = view, side, size
         self.piece, sgn = HALF[(view, side)]; self.sgn = sgn

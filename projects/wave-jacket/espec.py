@@ -22,7 +22,11 @@ OUT = f"out/{N}_{SLUG}"; os.makedirs(OUT, exist_ok=True)
 D = pickle.load(open("art_M.pkl", "rb")); V = {P: D[P] for P in WC.PIECES}
 CUR = json.load(open("dst_current.json"))
 PROF = FA.load()
-def mh(r): return FA.machine_hours(r.get("total_stitches", r["stitches"]), PROF, trims=r.get("total_trims", r["trims"]), colour_changes=r.get("total_stops", r["stops"]) - 1)
+def _mh1(r): return FA.machine_hours(r.get("total_stitches", r["stitches"]), PROF, trims=r.get("total_trims", r["trims"]), colour_changes=r.get("total_stops", r["stops"]) - 1)
+def mh(r):
+    """run time as hooped: summed over the split sections (incl. registration) when the piece is split - same as G4"""
+    ss = (r.get("splits") or {}).get("sections", {}) or {}
+    return sum(_mh1(s) for s in ss.values()) if ss else _mh1(r.get("full", r))
 BB = {P: unary_union([r["geom"] for r in V[P]]).bounds for P in WC.PIECES}
 ALLV = [r for P in WC.PIECES for r in V[P]]
 
@@ -57,7 +61,8 @@ def p1():
         o.append(t(rx + 46, y, f"{r['stops']}", 1.7)); o.append(t(rx + 56, y, f"{r['hoopings']}", 1.7)); o.append(t(rx + 68, y, f"{mh(r)*60:.0f} min", 1.7)); y += 3.5
     tot = sum(CUR[P].get("total_stitches", CUR[P]["stitches"]) for P in WC.PIECES); tt = sum(CUR[P].get("total_trims", CUR[P]["trims"]) for P in WC.PIECES); th = sum(mh(CUR[P]) for P in WC.PIECES)
     o.append(t(rx, y, "All", 1.75, 700)); o.append(t(rx + 13, y, f"{tot:,}", 1.75, 700)); o.append(t(rx + 33, y, f"{tt:,}", 1.75, 700)); o.append(t(rx + 68, y, f"{th:.1f} h", 1.75, 700)); y += 4
-    o.append(t(rx, y, f"Lockstitch + chenille files (primary foam). Run time = {PROF['spm']} spm + 6 s/trim + 4 s/colour change, one head.", 1.45, 400, MUTED)); y += 6
+    o.append(t(rx, y, f"All lockstitch (foam padded; chenille = plan only). Run time = {PROF['spm']} spm + 6 s/trim + 4 s/colour change,", 1.45, 400, MUTED)); y += 3
+    o.append(t(rx, y, "one head, summed over the hoopings incl. registration (= G4).", 1.45, 400, MUTED)); y += 6
     o.append(t(rx, y, "KEEP-OUT CLEARANCES, SIZE M (mm, art outline → sew line)", 2.0, 700)); y += 4
     cl = EP.clearances("M")
     for P in WC.PIECES:
@@ -120,8 +125,8 @@ def p3():
         o.append(t(cx[10], y, "single run" if st.startswith("Run") else f"{q:.1f}%", 1.5, 600, MUTED if st.startswith("Run") else qc)); o.append(t(cx[11], y, f"{s_['n']}", 1.5, 400, MUTED))
     yb = 36 + len(order) * rh + 3
     notes = ["Globals: 40wt polyester, 75/11 sharp needle, 3.0 oz cutaway + 1.5 oz tearaway under the foam [proposed], no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; exposed moves > 2.0 trimmed.",
-             "FOAM (factory 19 Oct: chenille available): PRIMARY = the _CHENILLE file per hooping, sewn after the lockstitch file from the same origin: loop / moss rows 2 mm apart + chain curl cords;",
-             "      ALTERNATIVE = alt_padded/ files: padded tatami per curl, rows along the curl (A16) + spiral cord + loop spiral. Grey hollows = thin 1.1 mm ridges. Stripes = twisted cords (rows along, 15° twist).",
+             "FOAM: sewn LOCKSTITCH in every file: padded tatami per curl, rows along the curl (A16) + one continuous spiral curl cord + loop spiral. Grey hollows = thin 1.1 mm ridges. Stripes = twisted cords (rows along, 15° twist).",
+             "      CHENILLE (factory: available, format unknown - LESSONS B33): a path PLAN per piece in chenille_plan/ (moss spirals 1.8 mm apart, constant 2.5 mm stitch; chain curl cords 2.0 mm), no machine file yet.",
              "Width = qa.check_geom share below the minimum (fill/satin 0.8, line 0.6). Amber/red codes are tapered ends + traced flecks: kept for fidelity, check on the sew-out.",
              "Stitch counts are never estimated per region: per-file and per-stop counts (p1, p4, p5, G4, G5) are read back from the DST files."]
     for i, n_ in enumerate(notes): o.append(t(12, yb + i * 3.3, n_, 1.55, 400, ORANGE if "FOAM" in n_ else MUTED))
@@ -189,7 +194,11 @@ def p6():
           "!Generated — under the collar fall (FL/FR): art mirrored to the neck.",
           "Stripes: twisted cords (rows along, 15° twist), flecks dropped, dark",
           "  slits closed; rope lines = continuous 2.4 mm cream cords.",
-          "Foam: grey blobs → thin ridges; one continuous spiral cord per curl.",
+          "20 Oct: stripe patches < 150 mm² merged into their band (one",
+          "  continuous cord per stripe); bare pockets in the art filled;",
+          "  stripe THREAD handed over across every seam (tonematch, G7).",
+          "Foam: grey blobs → thin ridges; one continuous spiral cord per curl;",
+          "  sewn lockstitch (padded); chenille = path plan (format unknown).",
           "Keep-outs: seams 3, CF zip 15, hem/cuff 10, welt 6, neck 6.",
           "Threads: 9 (12 allowed): 2 creams + grey for the foam, 6 blues.",
           "!Re-check threads + hem/cuff keep-outs on the new shell + rib."]
@@ -199,7 +208,7 @@ def p6():
     pr = ["Embroider the 5 cut pieces flat, BEFORE any", "  seam, welt or zip. Pre-wash the shell first.",
           f"9 threads, 40wt polyester (G3); ≤ {FA.max_threads(PROF)} per file.", "12 oz duck: 75/11 sharp, 3.0 oz cutaway +", "  1.5 oz tearaway under foam [proposed].",
           "Notch the match marks (1:1 plot) on both", "  pieces; no armhole topstitch.",
-          "Foam: CHENILLE file after each lockstitch", "  file (same hooping); padded = alternative.",
+          "Foam: padded lockstitch in the files; chenille", "  = path plan until the factory names its format.",
           "Mark CF, welt box (drills), split lines +", "  needle starts (DXF layer 13) before hooping.",
           f"Frame {FA.largest_frame(PROF)[0]:.0f} × {FA.largest_frame(PROF)[1]:.0f} (factory.json): split files,", "  registration crosses open stop 1 (G6).",
           "Sew-out size M on production shell first (F1)."]

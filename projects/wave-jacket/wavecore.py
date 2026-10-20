@@ -33,7 +33,7 @@ tech.COLOUR_ORDER = WV_ORDER + [c for c in tech.COLOUR_ORDER if c not in WV_ORDE
 WV_RULES = {
  "RP":      ("Rope line (cream cord)",       "Tatami along",        "along the cord (A16)",     "0.45", "3.5", "edge run",                    "0.20", "continuous 2.4 mm cords between the stripes (fragments joined, uniform width)"),
  "WV":      ("Wave stripe (twisted cord)",   "Tatami cord / turning satin", "along the stripe ± 15° (cord twist, alternating per tone)", "0.45 / 0.42", "3.5", "edge run + 90° lattice (tatami > 60 mm²) · centre run (satin)", "0.25", "rows along the stripe, 15° twist = twisted cord (close-up, A16); turning satin only on stripes < 3 wide with no holes"),
- "FM":      ("Foam crest / curl (raised)",   "Tatami base + CHENILLE", "along the curl (sectors, A16)", "0.45", "5.0", "base: edge run · alt: 1 padding layer", "0.30", "PRIMARY: flat base + _CHENILLE loop rows 1.8 mm + chain cords; ALT (alt_padded/): padded tatami + loop runs"),
+ "FM":      ("Foam crest / curl (raised)",   "Padded tatami",         "along the curl (sectors, A16)", "0.45", "5.0", "1 padding layer + edge run", "0.30", "raised foam, lockstitch + loop runs + curl cord; chenille = path plan (chenille_plan/) until the factory names its format"),
  "FM-sh":   ("Foam shade",                   "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
  "FM-gr":   ("Curl hollow (grey)",           "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
  "FM-in":   ("Blue inside the curl",         "Satin / tatami",      "auto",                     "0.42", "3.5", "centre run",                  "0.20", "sewn before the foam (B2)"),
@@ -137,7 +137,7 @@ PIECE_NAME = {"BK": "back", "FR": "wearer's right front", "FL": "wearer's left f
 PIECE_CODE = {"BK": "B01", "FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
-REV_EMB = "Rev B"; REV_GAR = "Rev A"; DATE = "19 Oct 2026"
+REV_EMB = "Rev B"; REV_GAR = "Rev A"; DATE = "20 Oct 2026"
 # EMBROIDERY SAMPLING package (founder, 19 Oct): size-M strike-off only; other sizes are rebuilt after the sew-out and the
 # garment pages (T1-T16, pattern) follow once the jacket body revision is done.
 DOC_SIZES = ["M"]

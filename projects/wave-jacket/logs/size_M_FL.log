@@ -1,4 +1,2 @@
-M FL {'stitches': 134926, 'trims': 669, 'jumps': 1520, 'stops': 12, 'size_mm': (269.2, 410.3), 'max_stitch': 7.43} 104s
-M FL S1_top {'stitches': 49664, 'trims': 271, 'stops': 11, 'size_mm': (288.8, 182.6), 'fits': True} split_clip
-M FL S2_bottom {'stitches': 86029, 'trims': 404, 'stops': 12, 'size_mm': (288.8, 279.1), 'fits': True} split_clip
+M FL primary {'stitches': 186352, 'trims': 838, 'stops': 17, 'size_mm': (281.2, 439.7), 'max_stitch': 7.38} chenille plan {'paths': 676, 'needle_points': 7031, 'length_m': 14.6}
 DONE M ['FL']

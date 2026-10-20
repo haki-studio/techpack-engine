@@ -66,7 +66,13 @@ def view_png(view, size="M", ppm=2.0, pad=12):
     if view == "front":
         for w_ in (FRT.WELT_R, FRT.WELT_L): d.polygon(T(w_.exterior.coords), fill=(22, 26, 40), outline=(110, 115, 135))
         d.rectangle([T([(-6, 0)])[0], T([(6, hem + 55)])[0]], fill=(160, 125, 60))
-        for c in (FRT.COLLAR_R, FRT.COLLAR_L): d.polygon(T(c.exterior.coords), fill=(30, 35, 50), outline=(90, 95, 115))
+        # collar for the PREVIEW (review 13: the leaves rising above the shoulders read as a hood): a shirt collar lying flat -
+        # the back stand across the neck (inside of the collar, darker) + two leaves from the stand fold down to the points
+        nk = FRT._neck; hx, hy = nk[-1]                                   # CF neck (0, 0) -> HPS (-100, -95)
+        stand = nk + [(hx, hy - 24), (0, hy - 32), (-hx, hy - 24)] + [(-x, y) for x, y in nk[::-1]]
+        d.polygon(T(stand), fill=(22, 26, 38), outline=(90, 95, 115))
+        leaf = [(-8, 14), (-72, 66), (hx - 48, hy + 52), (hx - 14, hy - 22)] + nk[::-1]
+        for sg in (1, -1): d.polygon(T([(sg * x, y) for x, y in leaf]), fill=(30, 35, 50), outline=(90, 95, 115))
     else:
         nk = [p for p in pans][0]; nb = nk.bounds
         d.polygon(T([(-100, -30), (100, -30), (95, 28), (0, 34), (-95, 28)]), fill=(30, 35, 50), outline=(90, 95, 115))

@@ -117,3 +117,33 @@ Problem → proposed fix → check. Worked around in project code only.
 ## 14. emb_place.py over all sizes in a sampling package
 - The keep-out check loops over every size's art pickle, so a stale Rev A size can print FAIL (or pass) for art that is not
   shipped. Project fix: sizes from argv, default `DOC_SIZES`. Proposed: the engine template does the same.
+
+## 15. Seam TONE handover (Rev B fix round, 20 Oct 2026) — proposed LESSON A33
+- **Problem:** seamwarp lines the stripe EDGES up across a seam, but the two render views disagree on the TONE of the same
+  stripe: same thread on both sides of the seam only 0-77 % on CF zip / side R / underarm R / armhole front R (art, 1-4 mm in).
+  The review asks for "stripe tone and width identical on both sides of every seam".
+- **Fix (project, `tonematch.py`):** per seam (fixed priority order: CF zip, sides, shoulders, armholes, underarms, sleeve
+  centre), the leader side keeps its threads (body over sleeve; else the side with more stripe on the seam); every follower
+  stripe region whose seam samples meet the leader takes the leader's majority thread (>= 60 % of its samples), WHOLE region
+  (a tone step inside a stripe would be a new cut line). Regions lock once they led or followed. [M: CF zip 29 -> 97 %,
+  side R 59 -> 78 %, underarm R 43 -> 89 %, armhole front R 0 -> 100 %, armhole back L 77 -> 92 %; 52 regions re-threaded]
+- **Proposed engine fix:** `engine/wrap.py` tone handover after the seam warp, with the leader rule as a parameter.
+- **Check:** test: two striped panels with swapped tones along a seam -> after the pass every seam sample pair has one thread;
+  a region far from the seam (> 6,000 mm², < 40 % within 60 mm) is never re-threaded.
+
+## 16. Chenille shipped as a DST before the format was known (B33 hit on a live package)
+- **Problem:** the Rev B package (19 Oct) shipped `_CHENILLE.dst/.pes` files as the PRIMARY foam, written by an arc-length
+  resample (B32) in a format the factory never named. B33 (added 20 Oct) forbids exactly that.
+- **Fix (project):** primary files sew the foam lockstitch (padded tatami + spiral curl cord + loop spiral); chenille is a
+  plan per piece (`chenille.plan`: engine `spiral_paths` + `resample_const`, json + preview, constant chord deviation 0).
+- **Proposed check:** `tests/`: a project package containing a file named `*CHENILLE*.dst` while factory.json
+  `chenille_format` is null fails (scan of out/pkg_*).
+
+## 17. Direction gate on a 0.7 px/mm render
+- **Problem:** `qa.direction_match` refuses < 12 ppm (A17); the wave's only reference for most of the garment is the render at
+  ~0.7 px/mm (the FL close-up covers one crest). Resampling to 12 ppm satisfies the guard but the "grain" read is blur.
+- **Workaround (project, gates.py):** 4 ppm reference resampled x3 to 12 ppm, result reported as INDICATIVE on G8 with the
+  source resolution; per-family breakdown (stripes 8 mm tiles, foam + drops 4 mm).
+- **Proposed engine fix:** `direction_match(..., source_ppm=)` that marks tiles whose source resolution is below a thread
+  pitch as "no evidence" (neither OK nor fail), so a low-res mockup cannot fail or pass the gate; then the A24 rule
+  (independent tiles >= 50 %) decides whether the verdict can be given at all.

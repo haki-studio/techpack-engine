@@ -61,3 +61,11 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - The shell colour, hardware colour and (probably) the cuff / hem rib change: thread board and hem / cuff keep-outs must be
   re-checked on them before bulk.
 - Frame 360 x 360 still unconfirmed (factory.json).
+
+## Assumptions (builder, 20 Oct 2026 — Rev B fix round) — PROPOSED in the documents
+- Foam is sewn LOCKSTITCH in every shipped file (padded tatami along the curl + spiral curl cord + loop spiral). Chenille
+  is a path PLAN per piece (chenille_plan/) until the factory names its chenille machine + file format (LESSONS B33).
+- Stripe tone patches < 150 mm2 inside a band are render shading, not design: merged into their band (one cord per stripe).
+- Across every seam and the sleeve centre line the stripe keeps ONE thread: the body (or the side with more stripe) leads,
+  the follower stripe takes its thread, whole region (tonematch.py).
+- Shell colour still unknown (founder 20 Oct): the 9 threads stay PROPOSED and must be re-checked on the new shell.
