@@ -303,7 +303,7 @@ def oval_cols(cx, cy, a, b, w, col, ang=0.0, hl_col=None, hl_w=1.1, unit=None):
 
 # ---------------------------------------------------------------- Rev B soft glow: stipple run (review item 2)
 def stipple_band(shape, unit, inner=0.0, outer=3.6, col="kc_glow", code="GLOW", seed=7, s0=0.30, k=0.16, hole_inset=0.45,
-                 step=1.8, glow=True):
+                 step=1.8, glow=True, max_hop=3.0):
     """soft glow: a random short-stitch run inside the band round `shape` (0..outer mm from its silhouette, following
     it — no bridging), point spacing s0 + k * distance, so it is dense at the art and fades out. One run per connected
     band (greedy nearest-neighbour path, hops > step re-stitched). Returns regions with r['run_pts']."""
@@ -326,7 +326,7 @@ def stipple_band(shape, unit, inner=0.0, outer=3.6, col="kc_glow", code="GLOW", 
         if len(P) < 3: continue
         # greedy nearest-neighbour walk (KD-tree)
         from scipy.spatial import cKDTree
-        tree = cKDTree(P); used = np.zeros(len(P), bool); i = int(np.argmin(P[:, 0])); path = [tuple(P[i])]; used[i] = True
+        tree = cKDTree(P); used = np.zeros(len(P), bool); i = int(np.argmin(P[:, 0])); path = [tuple(P[i])]; used[i] = True; paths = []
         for _ in range(len(P) - 1):
             kq = 8
             while True:
@@ -340,8 +340,16 @@ def stipple_band(shape, unit, inner=0.0, outer=3.6, col="kc_glow", code="GLOW", 
                 j = rest[np.argmin(np.hypot(P[rest, 0] - P[i, 0], P[rest, 1] - P[i, 1]))]
             else: j = cand[0]
             a = path[-1]; bpt = tuple(P[j]); L = math.dist(a, bpt)
+            if L > max_hop:                      # Rev C: a long hop was sewn as a straight line across the halo (up to
+                paths.append(path); path = [bpt]  # 57 mm on Rev B FR M): start a new run instead (the router hides / trims)
+                used[j] = True; i = j; continue
             if L > step:
                 n = int(math.ceil(L / step)); path += [(a[0] + (bpt[0] - a[0]) * t / n, a[1] + (bpt[1] - a[1]) * t / n) for t in range(1, n)]
             path.append(bpt); used[j] = True; i = j
-        regs.append(dict(col=col, geom=part, st="run", ang=None, grp=code, unit=unit, kob=0.0, nok=True, ko=False, glow=True, run_pts=path))
+        paths.append(path)
+        for pth in paths:
+            if len(pth) < 3: continue
+            gg = LineString(pth).buffer(0.35)
+            if gg.geom_type != "Polygon": gg = max(getattr(gg, "geoms", [gg]), key=lambda q: q.area)
+            regs.append(dict(col=col, geom=gg, st="run", ang=None, grp=code, unit=unit, kob=0.0, nok=True, ko=False, glow=True, run_pts=pth))
     return regs

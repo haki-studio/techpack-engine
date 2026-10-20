@@ -1,4 +1,4 @@
-"""Package: thread charts for every stitch file, elements/ folder, README, zip (out/HAKI_KCOS_RevA_files.zip)."""
+"""Package: thread charts for every stitch file, elements/ folder, README, zip (out/HAKI_KCOS_<Rev>_files.zip)."""
 import kccore
 import os, shutil, glob, subprocess, json
 import pyembroidery as pe
@@ -13,15 +13,18 @@ for f_ in glob.glob("out/art/*_flat.png") + glob.glob("out/compare_*.png"): shut
 if os.path.isdir("out/pattern"): shutil.copytree("out/pattern", f"{PKG}/pattern", ignore=shutil.ignore_patterns("*.png"))
 full = f"out/HAKI_{kccore.SHORT}_FULL-TECHPACK_{kccore.REV_EMB.replace(' ', '')}.pdf"; shutil.copy(full, PKG)
 cur = json.load(open("dst_current.json"))
+import factory as FA
+FR = " x ".join(f"{v:.0f}" for v in FA.largest_frame(FA.load()))
 open(f"{PKG}/README.txt", "w").write(f"""HAKI STUDIOS - {kccore.NAME} (style {kccore.STYLE})
 Embroidery {kccore.REV_EMB} - {kccore.DATE}
 
 {os.path.basename(full)}
     Embroidery pack: G1-G6, element specs E01-E05, stop sequences S1-S2, region table R1, F1 factory requests.
-    Garment pages (T*) and the pattern follow when the hooded Drum Island block is merged into the engine.
+    Garment pages T1-T9 (zip-hoodie block) come first, then the embroidery pages.
+pattern/                        DXF per size + all sizes, 1:1 plot PDF (size M).
 
 elements/stitch-files/<size>/   per size: FR (wearer's right front), FL (wearer's left front), SR (right sleeve), SL (left sleeve)
-                                stitch files (DST + PES), previews, thread charts. splits/ = hoop sections for a 360 x 360 frame
+                                stitch files (DST + PES), previews, thread charts. splits/ = hoop sections for the """ + FR + """ frame
                                 (stop 1 opens with registration crosses in its own thread - pick out after the last hooping).
                                 Fronts FR + FL: PAUSE before the first puff stop (lay 3 mm black foam: FR over badge 01 + the 03 dot
                                 ring, FL over badge 02), tear the foam before the last stop on FR (white star centre) - see S1.
@@ -29,8 +32,10 @@ elements/art/                   per-size flat art previews + mockup comparison s
 
 Size M: """ + ", ".join(f"{P} {cur[P]['stitches']:,} stitches / {cur[P]['trims']} trims" for P in kccore.PIECES) + """ (read from the DST).
 Max 12 thread colours per file (factory limit); size M uses """ + ", ".join(f"{P} {cur[P]['threads']}" for P in kccore.PIECES) + f""" ({len(kccore.KC_KEYS)} threads on the jacket).
-Rev B (review fixes): stroke-column satin text, stipple glow halo, domed puff rims (lighter tint threads), faceted stars, curved JP
-baseline, KR ornaments, every mockup star placed. Compare sheets in elements/art are drawn from the DST files.
+Full files (no splits/) = one hooping on a frame that holds the whole piece (sizes on G5); else sew the split sections.
+Rev C: splits for the factory's frames (factory.json), foam on its own machine stop, no flat stitches inside the foam
+beyond a 1 mm edge band (checked on every file, S1), all files rebuilt from the current art. Compare sheets in
+elements/art are drawn from the DST files; the art is traced from the garment mockup (source of truth).
 Files are production-intent drafts: the factory digitizer checks
 density, pull and puff on the washed duck, edits if needed, and sews out size M before bulk. Every value marked
 [proposed - confirm] in the PDF is still open.

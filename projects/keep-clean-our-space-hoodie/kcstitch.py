@@ -57,7 +57,34 @@ def sews(stops, basting=False):
     if basting and out: out[0]["codes"] = ["REG crosses"] + out[0]["codes"]
     return out
 
-def record(base, stops, extra, basting=False):
+def foam_gates(base, rb, regs, origin, tol=0.25):
+    """FOAM-ISOLATION contract (LESSONS B31 / B34, house rule 6) read from the WRITTEN DST:
+    foam_stop      every puff stop holds only puff codes; no flat stop after the first puff stop except 'top' details sewn
+                   after the foam is torn; the stop before the first puff stop is a real colour change in the file
+                   (readback stop count == built stop count) and the first puff stop is not stop 1
+    base_under_puff  needle points of the flat stops sewn before the foam that lie inside the puff footprint shrunk by
+                   cut_keep_mm + tol (target 0)"""
+    import pyembroidery as pe
+    from shapely.prepared import prep
+    ps = rb["per_stop"]; first = next((p["stop"] for p in ps if p.get("puff")), None)
+    if first is None: return dict(puff=False)
+    mixed = [p["stop"] for p in ps if p.get("puff") and not all(c.startswith("PF-") for c in p["codes"] if c != "REG crosses")]
+    late = [p["stop"] for p in ps if p["stop"] > first and not p.get("puff") and not p.get("top")]
+    puffg = unary_union([r["geom"] for r in regs if is_puff(r)])
+    core = prep(puffg.buffer(-(kccore.CUT_KEEP_MM + tol)))
+    pat = pe.read(base + ".dst"); si = 1; hits = {}
+    for x, y, c in pat.stitches:
+        k = c & pe.COMMAND_MASK
+        if k == pe.COLOR_CHANGE: si += 1; continue
+        if k == pe.END: break
+        if k != pe.STITCH or si >= first: continue
+        if core.contains(Point(x / 10.0 + origin[0], y / 10.0 + origin[1])): hits[si] = hits.get(si, 0) + 1
+    return dict(puff=True, pause_before_stop=first, mixed_stops=mixed, flat_after_puff=late,
+                foam_stop_ok=not mixed and not late and first > 1,
+                base_under_puff={f"stop {k} {ps[k-1]['col']}": v for k, v in hits.items()}, base_under_puff_ok=not hits,
+                keep_mm=kccore.CUT_KEEP_MM, tol_mm=tol)
+
+def record(base, stops, extra, basting=False, regs=None):
     rb = readback.dst(base + ".dst"); rb["threads"] = factory.check_threads(base + ".pes")
     info = sews(stops, basting)
     assert len(info) == rb["stops"], f"{base}: {len(info)} stops built vs {rb['stops']} in the DST"
@@ -66,6 +93,7 @@ def record(base, stops, extra, basting=False):
     rb["foam_pause_before_stop"] = fp[0] if fp else None
     tp = [ps["stop"] for ps in rb["per_stop"] if ps.get("top")]
     rb["foam_tear_before_stop"] = tp[0] if tp else None
+    if regs is not None: rb["foam"] = foam_gates(base, rb, regs, extra["origin"])
     rb.update(extra, file=base); return rb
 
 def runs_exposed(stops, st):
@@ -85,7 +113,7 @@ for P in which:
         dst2.write(pat, base); dst2.render(base, base + "_preview.png", bg=(25, 28, 36), s=0.5)
         res["full"] = record(base, stops, dict(origin=c, art_box=ub, stops_before_merge=n0, secs=round(time.time()-t),
                                                build_trims_by_code=sorted(st.get("by", {}).items(), key=lambda kv: -kv[1])[:10],
-                                               trims_why=st.get("why", {}), **runs_exposed(stops, st)))
+                                               trims_why=st.get("why", {}), **runs_exposed(stops, st)), regs=vis)
         f_ = res["full"]
         print(size, P, {k: f_[k] for k in ("stitches", "trims", "jumps", "stops", "size_mm", "max_stitch", "foam_pause_before_stop")}, f"{f_['secs']}s", flush=True)
         json.dump(res, open(rp, "w"), default=float, indent=1)
@@ -110,7 +138,7 @@ for P in which:
                 pat, st = dst2.make_pattern(sv, stops, cc, reg_marks=marks[key])
                 base = f"{OUT}/splits/{PREFIX}_{P}_{size}_{names[key]}"; os.makedirs(os.path.dirname(base), exist_ok=True)
                 dst2.write(reg_in_first_colour(pat), base); dst2.render(base, base + "_preview.png", bg=(25, 28, 36), s=0.5)
-                r = record(base, stops, dict(bbox=bb, origin=cc, marks=marks[key], secs=round(time.time()-t)), basting=True)
+                r = record(base, stops, dict(bbox=bb, origin=cc, marks=marks[key], secs=round(time.time()-t)), basting=True, regs=sv)
                 r["fits"] = r["size_mm"][0] <= FRAME[0] - 16 and r["size_mm"][1] <= FRAME[1] - 16
                 spl["sections"][names[key]] = r
                 print(size, P, names[key], {k: r[k] for k in ("stitches", "trims", "stops", "size_mm", "fits")}, flush=True)

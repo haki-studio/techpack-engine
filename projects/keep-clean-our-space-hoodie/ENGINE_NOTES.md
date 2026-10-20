@@ -161,3 +161,36 @@ Chinese phrase, upside-down mirrored Hangul)." Check: the spec page prints the s
 - **A16** — Hand-typed motif sizes are stand-ins too (A14): sizes, widths, angles and star shapes come from a fit to the
   motif's own silhouette; check = qa.motif_match on the shipped DST (gates.json), tables on the compare sheets.
 - **A17** — Resample and trace in ONE pixel convention (centre = index); a half-pixel offset is 0.4 mm on a 1 px/mm mockup.
+
+# Rev C (20 Oct 2026)
+
+## 20. dst2.make_pattern hides flat travel under LATER puff stops (foam rule 6 broken on the file)
+- **Problem:** the hidden-travel mask counts every later stop's fill, puff included. Flat stops sewn BEFORE the foam
+  routed their travel under the puff footprint: after the glow was knocked out under the puff, the Rev C FR M file
+  still had 12 flat needle points deeper than 1.25 mm inside the foam (Rev B: 110, mostly the glow itself, which is
+  `nok` and was never knocked out).
+- **Workaround (project):** `kccore._patch_make_pattern` swaps `cov.later` / `cov.raw` for flat stops to a copy with the
+  puff footprint (shrunk 0.5 mm) removed; puff and 'top' stops see the full cover. Glow stipple runs are broken where a
+  point lies, or a stitch crosses, 0.6 mm inside the puff edge (`art_size.knock_under_puff`).
+- **Proposed fix:** `make_pattern(..., foam_keep=1.0)`: stops flagged `puff` (or keys ending `+foam`) do not count as
+  later cover for earlier non-puff stops beyond `foam_keep - 0.5` mm inside their edge (the router raster, 0.2 mm px, and
+  its 0.8 mm endpoint forgiveness let travel reach ~0.4 mm past its mask).
+- **Check:** `kcstitch.foam_gates` on the written DST (`base_under_puff` = flat-stop needle points inside the puff minus
+  keep + 0.25 mm, target 0): red on the Rev B FR M file (110), green on every Rev C file (prod_gates.json).
+
+## 22. Sheer stipple runs drew straight lines across the halo (Rev B: up to 57 mm on FR M)
+- **Problem:** two sources, both visible as straight glow-green lines on the stitch view (E01): (a) `kcmotifs.stipple_band`
+  bridged every hop of its greedy walk with straight stitches, however long (57.5 mm on the Rev B FR M file); (b) the
+  router treated an unsewn stipple run's footprint as hiding travel, so travel crossed the halo in a straight line
+  (29.7 mm once the foam mask stopped travel hiding under the puff letters). `dst2.exposed_travel` did not see (a)
+  (it is a block, not travel) nor (b) (runs are not cover, but the line was "hidden" under later puff satin in Rev B).
+- **Fix (project):** hops > 3 mm start a new run (`max_hop`); sheer run objects never hide travel (kccore `_kc_init`).
+  Cost: FR M trims 352 -> ~500 (reported, fidelity first).
+- **Proposed engine check:** a "straight chain" gate on the DST: no run of >= 4 near-collinear stitches longer than
+  15 mm in a stop whose codes are all sheer / stipple (scratch check found 13 chains on Rev B FR M, 0 after the fix).
+
+## 21. factory.requests_page drops the multi-hooping list once frames are confirmed
+- With `frames_confirmed: true` the page says "Frames on file ... Files are split for these" and no longer lists which
+  pieces need > 1 hooping (`test_confirmed_frames_are_not_asked_again` asserts that). Rule 8 wants the list on F1, so the
+  project adds a "5b Hoopings on your frames" block. **Proposed:** always list pieces with > 1 hooping (as information,
+  not a question), compare each piece with `single_hooping_confirmed_mm`, and update that test.

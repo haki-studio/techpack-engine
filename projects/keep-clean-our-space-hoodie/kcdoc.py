@@ -31,7 +31,7 @@ def mixed(x, y, parts, size=2.2, fill="#1A1A1A", w=400):
     o = []; cx = x
     for s, key in parts:
         if key is None:
-            o.append(t(cx, y, s, size, w, fill)); cx += _LF[w >= 600].getlength(s) / 100.0 * size
+            o.append(t(cx, y, s, size, w, fill)); cx += _LF[w >= 600].getlength(s) / 100.0 * size * 1.04 + size * 0.15   # sheet font runs ~4 % wider than Liberation metrics
         else:
             h = size * 1.05; gl = KL.set_line(key, s, h, tracking=h*0.04)
             if gl:

@@ -152,6 +152,47 @@ def clip_runs(vis, clip):
             out.append(dict(r, geom=g, run_pts=run))
     return out
 
+def is_puff_region(r):
+    import tech
+    return kccore.PUFF and tech.rule_for(r["grp"]).startswith("PF-")
+
+def knock_under_puff(vis, keep=None):
+    """house rule 6 (cut what is covered) for 3D puff: every flat region sewn BEFORE the foam (not puff, not a 'top' detail
+    sewn after the foam is torn, layer >= 30) loses what lies inside the puff footprint shrunk by `keep` mm (cut_keep_mm,
+    1 mm underlap band under the puff edge). Stipple runs (glow, haze: nok, never knocked out by the art) are cut point by
+    point like the keep-out clip. Returns (vis, report)."""
+    keep = kccore.CUT_KEEP_MM if keep is None else keep
+    puff = [r for r in vis if is_puff_region(r)]
+    if not puff: return vis, dict(keep_mm=keep, regions_cut=0, area_removed_mm2=0.0, run_points_removed=0)
+    core = unary_union([r["geom"] for r in puff]).buffer(-keep)
+    if core.is_empty: return vis, dict(keep_mm=keep, regions_cut=0, area_removed_mm2=0.0, run_points_removed=0)
+    out = []; ncut = 0; area = 0.0; pts = 0
+    for r in vis:
+        if is_puff_region(r) or r["layer"] >= 30 or not r["geom"].intersects(core): out.append(r); continue
+        ncut += 1
+        if r.get("run_pts"):
+            from shapely import contains_xy
+            from shapely.prepared import prep
+            P_ = np.array(r["run_pts"]); pts += int(contains_xy(core, P_[:, 0], P_[:, 1]).sum())
+            # runs stop 0.3 mm inside the puff edge (0.7 short of the keep band's inner edge): travel between a run's own
+            # pieces may lie 0.6 mm off the run line (own halo 0.35 + 0.25) and the router forgives 0.8 mm round a block
+            # start, and the gate counts anything deeper than keep + 0.25 (XS / S FR S1_top had one point at 1.31 mm)
+            C_ = prep(core.buffer(0.7)); runs = []; cur = []
+            for q in r["run_pts"]:           # break the run at a point inside the core AND at a stitch that crosses it
+                if C_.contains(Point(q)) or (cur and C_.intersects(LineString([cur[-1], q]))):
+                    if len(cur) >= 3: runs.append(cur)
+                    cur = [] if C_.contains(Point(q)) else [q]
+                else: cur.append(q)
+            if len(cur) >= 3: runs.append(cur)
+            for run in runs:
+                g = LineString(run).buffer(0.35)
+                if g.geom_type != "Polygon": g = max(getattr(g, "geoms", [g]), key=lambda q: q.area)
+                out.append(dict(r, geom=g, run_pts=run))
+            continue
+        g = r["geom"].difference(core).buffer(0); area += r["geom"].area - g.area
+        if not g.is_empty and g.area > 0.3: out.append(dict(r, geom=g))
+    return out, dict(keep_mm=keep, regions_cut=ncut, area_removed_mm2=round(area, 2), run_points_removed=pts)
+
 def build(size):
     t0 = time.time(); res = {"info": dict(size=size, grade=kccore.GRADE[size][0], scale=kccore.GRADE[size][1])}
     for P in kccore.PIECES:
@@ -161,12 +202,13 @@ def build(size):
         vis = clip_runs(vis, clip)
         vis = [dict(r, geom=r["geom"].intersection(clip).buffer(0)) for r in vis]
         vis = [r for r in vis if not r["geom"].is_empty and r["geom"].area > 0.3]
+        vis, ko = knock_under_puff(vis)
         vis.sort(key=lambda r: r["z"])
         res[P] = vis
         u = unary_union([r["geom"] for r in vis])
-        res["info"][P] = dict(info, objects=len(vis), area=u.area, bbox=u.bounds)
+        res["info"][P] = dict(info, objects=len(vis), area=u.area, bbox=u.bounds, under_puff=ko)
     pickle.dump(res, open(f"art_{size}.pkl", "wb"))
-    print(size, {P: {k: v for k, v in res["info"][P].items() if k in ("moves", "stars", "stars_dropped", "stars_nudged", "stars_relocated", "objects")} for P in kccore.PIECES},
+    print(size, {P: {k: v for k, v in res["info"][P].items() if k in ("moves", "stars", "stars_dropped", "stars_nudged", "stars_relocated", "objects", "under_puff")} for P in kccore.PIECES},
           f"{time.time()-t0:.0f}s", flush=True)
     return res
 
