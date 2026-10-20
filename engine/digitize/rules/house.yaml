@@ -1,8 +1,8 @@
-# House rulebook v0 (ENGINE_PLAN M1). kind -> techniques (FIRST ENABLED WINS; none enabled = hard error),
+# House rulebook v1 (ENGINE_PLAN M1, organic kinds M2). kind -> techniques (FIRST ENABLED WINS; none enabled = hard error),
 # direction, z, stitch numbers. The founder numbers under `principles` come from docs/DIGITIZING_PRINCIPLES.md
 # (approved 19 Oct 2026) and are pinned by tests/test_digitize_m1.py::test_rulebook_matches_principles: change them
 # only together with the principles document.
-version: 0
+version: 1
 
 principles:
   satin_min_w_mm: 1.0          # rule 4 / rule 9: satin >= 1 mm
@@ -25,6 +25,9 @@ techniques:                    # defaults; a kind may override any of these numb
   split_satin: {spacing: 0.42, stitch_len: 5.5, underlay: [centre_run], pull_comp: 0.2, stagger: 0.25}
   run:         {spacing: 0.0, stitch_len: 2.5, underlay: [], pull_comp: 0.0}
   bean:        {spacing: 0.0, stitch_len: 2.0, underlay: [], pull_comp: 0.0}
+  guided_fill: {spacing: 0.45, stitch_len: 3.5, underlay: [edge_run, lattice_90], pull_comp: 0.2, lattice_min_mm2: 60.0}
+  contour_fill: {spacing: 0.45, stitch_len: 3.0, underlay: [edge_run], pull_comp: 0.2, lattice_min_mm2: 60.0}
+  blend:       {spacing: 1.0, stitch_len: 3.0, underlay: [], pull_comp: 0.0, mode: feather}   # rule 7: no underlay on shading
   # M5 (SVG parity on Konpeito, patches). column_satin density is SAME-SIDE (konpeito ENGINE_NOTES 7): the row
   # spacing is half of it; `spacing` is not read. dot: needle = art - allow, never below min_d (house-min reported).
   column_satin:  {spacing: 0.20, stitch_len: 5.5, underlay: [centre_run], pull_comp: 0.10, same_side: {40wt: 0.40, 60wt: 0.28}, centre_run_min_w: 1.4, centre_run_min_len: 2.5, max_piece: 5.5, stagger: 0.25}
@@ -39,13 +42,14 @@ kinds:
     z: 0                       # sewn first, cut away under everything above (no bare duck)
     note: horizontal tatami band; sewn first and cut under
   sky_blend:
-    techniques: [tatami]
+    techniques: [blend, tatami]
     dir: 0
     z: 0.5
     spacing: 1.0               # rule 8: gradient from density (two-colour blend, open layer)
     underlay: []               # rule 7: no underlay on shading layers
     pull_comp: 0.0
-    note: two-colour blend into the band below (open layer, half density)
+    params: {mode: feather}    # rows from the upper band's edge, thinning into the band below (accordion)
+    note: two-colour blend into the band below (open layer, feathered)
   fall_cord:
     techniques: [split_satin, tatami]
     dir: 90                    # playbook: falls = 4-10 cords of split satin, vertical
@@ -56,10 +60,43 @@ kinds:
     dir: 0                     # playbook: pools horizontal
     z: 3.5
     note: horizontal tatami where the fall lands
+  stratum_band:                # playbook: cliffs/strata = one object per band, guided tatami along the bedding plane
+    techniques: [guided_fill, tatami]
+    dir: field                 # the reference grain (structure tensor), rows follow it (guided fill)
+    alt_dir: 90                # only if guided_fill is switched off: plain tatami, near-vertical (near cliffs, rule 3)
+    band_offset_deg: 10        # bands alternate +10 / -10 deg off the grain: neighbours differ 20 deg (playbook +-15-25)
+    note: one bedding band (x one thread) of a cliff; guided tatami along the plane
+  stratum_crack:
+    techniques: [run, bean]
+    dir: contour               # along the traced crack line
+    follows: [run, bean]       # line techniques follow their line by construction
+    z_offset: 0.6              # sewn on top of the bands (playbook: cracks as run on top)
+    note: a dark crack line across the strata, run on top
+  cloud_lobe:                  # playbook: clouds = one object per lobe, contour / turning fill or near-vertical split satin
+    techniques: [guided_fill, contour_fill, split_satin, tatami]
+    dir: field
+    dir_by_technique: {guided_fill: field, contour_fill: contour}   # turning fill along the lobe's grain, or the outline
+    alt_dir: 80                # split satin / tatami: near-vertical (playbook)
+    note: one cloud lobe; turning (guided) fill along the reference grain, or contour fill; back lobes first
+  cloud_shade:                 # playbook: shade as an open layer
+    techniques: [blend]
+    dir: field-mean            # measured grain over the shade (fixed rows)
+    spacing: 1.2               # open layer (rule 8)
+    underlay: []               # rule 7: no underlay on shading layers
+    pull_comp: 0.0
+    params: {mode: open}
+    z_offset: 0.3
+    note: the lobe's shaded tone as an open layer on top of the lobe
+  cloud_wisp:                  # playbook: wisps at the sky angle, half density
+    techniques: [tatami]
+    dir: 0                     # = sky_band (tests pin it)
+    spacing: 0.9               # half density (2 x the tatami 0.45)
+    underlay: []
+    note: thin wisp of cloud, at the sky angle, half density
   zone_stub:
     techniques: [tatami]
     dir: field-mean            # the reference grain's mean over the part (structure tensor): declared, never random
-    note: stand-in for zones whose splitter is not built yet (M2/M3 replace it)
+    note: stand-in for zones whose splitter is not built yet (M3 replaces it - buildings, trunks, crowns, florets)
 
   # ---- M5: patches from founder vector art (extract/svg.py). dir "geometry" = declared by the extractor from the
   # part's own geometry rule (across the band / stroke / petal axis, radial), with source "rule"; never auto.

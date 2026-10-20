@@ -32,15 +32,18 @@
     "trims_per_100cm2_max": 25.0,
     "satin_blobs_max": 0,
     "colours_max": 12,
-    "density_flags_max": 0
+    "density_flags_max": 0,
+    "direction_independent_min_coverage": 0.5,
+    "separation_close_max": 0
   },
   "panel_labels": {
     "ref": "12 ppm reference (mockup + {closeup} close-up, min weight {min_weight}; source detail ~{source_ppm} px/mm)",
-    "part_map": "part map: {parts} parts by kind (sky blue, falls white/blue, pool cyan, zone stubs in their thread colour, washed grey); red tick = declared angle",
+    "part_map": "part map: {parts} parts by kind (sky blue, falls white/blue, pool cyan, clouds white, strata in their thread colour, zone stubs in their thread colour washed grey); red tick = declared angle",
     "live": "live view (dstlive) - {stitches:,} stitches, {trims} trims ({trims_per_100cm2}/100 cm2 of covered area)",
     "heat": "direction (visible layer): {dir_ok}% OK, {dir_chaos}% chaotic, {n_dev} off-grain  [all stitches: {dir_all}%]",
     "density": "density mm/mm2: mean {dens_mean}, p95 {dens_p95}, {dens_flags} areas > {dens_thr} (white boxes)",
     "legend": "heat-map: green OK, red off the reference grain > 25 deg, magenta chaotic (R < 0.55); 8 mm tiles.   density ramp: navy 1, blue 2.5 (one tatami layer), green 5, yellow 7, red 9+ mm/mm2.   crop x {x0}..{x1}, y {y0}..{y1} mm ({piece}, size {size}, garment mm).   {label}  {date}"
   },
+  "_doc_targets": "direction_pct_ok_min is read on INDEPENDENT tiles only (rule / answer / depth angles) and passes only when they cover >= direction_independent_min_coverage of the judged tiles (PR #6 review: field-derived tiles are graded against the pixels they came from); chaos is read on all tiles (DST only). separation_close_max: touching same-thread parts closer than 15 deg (rule 3), stubs included.",
   "_doc_panel_labels": "Panel titles (str.format over the gate row: closeup, min_weight, source_ppm, stitches, trims, trims_per_100cm2, dir_ok, dir_chaos, n_dev, dir_all, dens_mean, dens_p95, dens_flags, dens_thr, parts, x0..y1, piece, size, label, date). Read by digitize.panel.labels."
 }

@@ -128,16 +128,25 @@ def run_gates(cfg_b, project, dst, origin, regions_pkl=None, coherence=None):
 
 def verdict(row, T):
     d, s = row["direction"], row["stack"]
+    ind = (row.get("direction_by_source") or {}).get("independent", {"tiles": 0, "pct_ok": 0.0})
+    cov = ind["tiles"] / max(1, d["tiles"])
     checks = {
-        "direction_ok": d["pct_ok"] >= T["direction_pct_ok_min"],
+        # PR #6 review: tiles whose direction was READ from the reference (field / field-mean) are graded against the
+        # pixels they came from, so they cannot pass this gate. It passes only on INDEPENDENT tiles (rule / answer /
+        # depth angles), and only when they cover at least direction_independent_min_coverage of the judged tiles.
+        "direction_ok": ind["pct_ok"] >= T["direction_pct_ok_min"] and cov >= T.get("direction_independent_min_coverage", 0.5),
+        # chaos is read from the DST alone (stitch angles agreeing within a tile, no reference), so every tile counts
         "direction_chaos": d["pct_chaos"] <= T["direction_pct_chaos_max"],
         "angle_coherence": bool(row["angle_coherence"].get("ok")),
         "density": row["density"]["flags"] <= T["density_flags_max"],
         "trims": row["trims"]["per_100cm2"] <= T["trims_per_100cm2_max"],
-        "satin_shape": row["satin"]["blob"] <= T["satin_blobs_max"] and row["satin"]["too_wide"] == 0 and row["satin"]["too_narrow"] == 0,
+        "satin_shape": row["satin"]["blob"] <= T["satin_blobs_max"] and row["satin"]["too_wide"] == 0 and row["satin"]["too_narrow"] == 0
+                       and row["satin"].get("cord_flags", 0) == 0,            # split-satin cords read from the DST (M2)
         "stack": s["max"] <= T["stack_max_layers"],
         "colours": row["colours"]["threads_in_file"] <= T["colours_max"] and row["colours"]["red"] and row["colours"]["gold"],
     }
+    if "separation" in row:                   # rule 3 (M2): touching same-thread parts closer than 15 deg, stubs included
+        checks["separation"] = row["separation"]["close"] <= T.get("separation_close_max", 0)
     return checks
 
 
@@ -155,8 +164,8 @@ def panel(row, aux, cfg_b, dst, origin, path, extra=None):
 # ------------------------------------------------------------------ scoreboard
 MD_HEAD = """# Benchmark (ENGINE_PLAN M0)
 
-Every engine milestone is scored on the same crop with the same gates (`engine/digitize/bench.py`). Rows are appended,
-never edited. Config: `bench.json` (crop, targets), registration: `registration.json` (config as data).
+Every engine milestone is scored on the same crop with the same gates (`engine/digitize/bench.py`). Rows are appended;
+a re-run of the same label at the same engine commit replaces its own row (M2). Config: `bench.json` (crop, targets), registration: `registration.json` (config as data).
 
 **Crop.** ENGINE_PLAN asked for x -180...+20, y 370...570 mm. Its bottom 5 mm fell outside the back_left close-up's
 registered region (feather weight down to 0.25 against the 0.6 threshold), so the crop is **x -180...+20, y 365...565 mm**
@@ -178,25 +187,56 @@ def md_row(row):
     d, ac, de, tr, sa, st, co = (row[k] for k in ("direction", "angle_coherence", "density", "trims", "satin", "stack", "colours"))
     acs = "pass" if ac.get("ok") else ("FAIL: no part ids" if "error" in ac else f"FAIL ({ac.get('fails', 'n/a')})")
     v = row["verdict"]; npass = sum(v.values())
-    return (f"| {row['date']} | {row['label']} | {d['pct_ok']} | {d['pct_chaos']} | {d['pct_ok_all_stitches']} | {acs} | "
+    ind = (row.get("direction_by_source") or {}).get("independent")
+    dok = f"{ind['pct_ok']} indep. ({ind['tiles']} of {d['tiles']} tiles); all {d['pct_ok']}" if ind else f"{d['pct_ok']}"
+    sep = f"; sep. close {row['separation']['close']}" if "separation" in row else ""
+    return (f"| {row['date']} | {row['label']} | {dok} | {d['pct_chaos']} | {d['pct_ok_all_stitches']} | {acs} | "
             f"{de['mean']} / {de['p95']} / {de['flags']} | {tr['per_100cm2']} ({tr['trims']}) | {sa['satins']} / {sa['blob']} / {sa['too_wide']} / {sa['too_narrow']} / {sa['fans']} | "
             f"{st['max']} / {st['over_cm2']} | {co['threads_in_file']} ({'y' if co['red'] else 'n'}, {'y' if co['gold'] else 'n'}) | "
-            f"{npass}/{len(v)} |\n")
+            f"{npass}/{len(v)}{sep} |\n")
+
+
+def git_sha(root=ROOT):
+    """the engine commit a row was scored with (short sha, '+dirty' when tracked files OUTSIDE any bench/ folder have
+    uncommitted changes). The bench's own outputs (bench/SCOREBOARD.json, BENCH.md, panels) are not the engine: the
+    first bench run rewrites them, and counting that as dirty gave a re-run on the same commit a new key and a duplicate
+    row (PR #6 review). For the same reason the sha is the last commit that changed anything OUTSIDE bench/ folders and
+    Markdown notes (RECAP, LESSONS, HANDOFF): committing a bench row or a note does not make a new engine version."""
+    try:
+        sha = subprocess.run(["git", "-C", root, "log", "-1", "--format=%H", "HEAD", "--", ":/", ":(top,exclude,glob)**/bench/**", ":(top,exclude,glob)**/*.md"],
+                             capture_output=True, text=True, check=True).stdout.strip()[:12]
+        if not sha: raise ValueError("no commit")
+        st = subprocess.run(["git", "-C", root, "status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True).stdout
+        dirty = [ln for ln in st.splitlines() if ln.strip() and "bench" not in ln[3:].strip().strip('"').split("/")[:-1]]
+        return sha + ("+dirty" if dirty else "")
+    except Exception:
+        return "unknown"
 
 
 def append(row, project, aux=None, cfg_b=None, dst=None, origin=None, extra=None, panel_path=None):
-    """append a scored row to bench/SCOREBOARD.json + BENCH.md (rows are never edited), with its panel"""
+    """add a scored row to bench/SCOREBOARD.json + BENCH.md, with its panel. IDEMPOTENT (M1 review): a row with the same
+    label AND git sha replaces the earlier one (its json row and its BENCH.md table line), so re-running a stage does
+    not stack duplicates; a new label or a new commit appends. Rows of other labels / commits are never edited."""
     bdir = os.path.join(project, "bench"); os.makedirs(bdir, exist_ok=True)
+    row.setdefault("git_sha", git_sha(project))
     if aux is not None:
         slug = "".join(ch if ch.isalnum() else "-" for ch in row["label"].lower()).strip("-")[:40]
         png = panel_path or os.path.join(bdir, f"panel_{row['date']}_{slug}.png"); panel(row, aux, cfg_b, dst, origin, png, extra)
         row["panel"] = os.path.basename(png)
     sb = os.path.join(bdir, "SCOREBOARD.json")
     rows = json.load(open(sb)) if os.path.exists(sb) else []
-    rows.append(row); json.dump(rows, open(sb, "w"), indent=1, default=float)
+    same = [i for i, r in enumerate(rows) if r.get("label") == row["label"] and r.get("git_sha") == row["git_sha"]]
     md = os.path.join(bdir, "BENCH.md")
     if not os.path.exists(md): open(md, "w").write(MD_HEAD)
-    with open(md, "a") as f: f.write(md_row(row))
+    text = open(md).read(); new_line = md_row(row)
+    if same:
+        old_line = md_row(rows[same[-1]]); rows[same[-1]] = row
+        for i in reversed(same[:-1]): del rows[i]
+        text = text.replace(old_line, new_line, 1) if old_line in text else text + new_line
+    else:
+        rows.append(row); text = text + new_line
+    json.dump(rows, open(sb, "w"), indent=1, default=float)
+    open(md, "w").write(text)
     return row
 
 

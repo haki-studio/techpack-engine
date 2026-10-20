@@ -11,7 +11,9 @@ different ones is expensive. The SMALLER weight is absorbed and the bigger keeps
 colour off a card, never an average). PROTECTED tones (run.yaml threads.protected: the founder's red and gold accents)
 never merge, neither into another thread nor absorbing one: an accent that disappears at build time was the Rev B
 colours failure (BENCH baseline: no red, no gold). Tones with zero weight are dropped first. Weight = covered area in
-mm2 (M4 adds importance: motif saliency, accents, optical mixing)."""
+mm2 x IMPORTANCE (run.yaml threads.importance, default 1): a tone a motif depends on (the water blues of the falls,
+M1 review: area weighting merged both blues away, small in area but the whole read of the water) gets a multiplier so
+it is expensive to absorb, without the hard guarantee of `protected`. M4 adds saliency and optical mixing."""
 import numpy as np
 
 
@@ -24,8 +26,12 @@ def _lab(hexes):
     return to_lab(np.array([[hex_rgb(h) for h in hexes]], float))[0]
 
 
-def plan(weights, palette, needles=12, protected=(), names=None):
+def plan(weights, palette, needles=12, protected=(), names=None, importance=None):
     protected = [p for p in protected]
+    imp = {k: float((importance or {}).get(k, 1.0)) for k in palette}
+    for k, v in (importance or {}).items():
+        if k not in palette: raise ThreadError(f"importance for {k!r}, which is not in the palette")
+        if not v > 0: raise ThreadError(f"importance of {k!r} must be > 0, got {v!r}")
     for p in protected:
         if p not in palette: raise ThreadError(f"protected tone {p!r} is not in the palette")
     if len(protected) > needles: raise ThreadError(f"{len(protected)} protected tones > {needles} needles")
@@ -41,14 +47,14 @@ def plan(weights, palette, needles=12, protected=(), names=None):
             raise ThreadError(f"cannot get to {needles} threads: only protected tones left to merge")
         for i, a in enumerate(ks):
             for b in ks[i + 1:]:
-                dE = float(delta_e(lab[a][None], lab[b][None])[0]); cost = dE * min(live[a], live[b])
+                dE = float(delta_e(lab[a][None], lab[b][None])[0]); cost = dE * min(live[a] * imp[a], live[b] * imp[b])
                 if best is None or cost < best[0]: best = (cost, a, b, dE)
         cost, a, b, dE = best
-        src, dst = (a, b) if live[a] < live[b] else (b, a)
+        src, dst = (a, b) if live[a] * imp[a] < live[b] * imp[b] else (b, a)
         live[dst] += live.pop(src); absorbed[dst] += [src] + absorbed.pop(src, [])
         for k, v in mp.items():
             if v == src: mp[k] = dst
         merges.append(dict(src=src, dst=dst, dE=round(dE, 1), cost=round(cost, 1)))
     threads = {k: dict(hex=palette[k], name=(names or {}).get(k, k), protected=k in protected, weight_mm2=round(live[k], 1),
-                       absorbed=absorbed.get(k, [])) for k in live}
+                       absorbed=absorbed.get(k, []), **({"importance": imp[k]} if imp[k] != 1.0 else {})) for k in live}
     return dict(map=mp, threads=threads, merges=merges, needles=needles)

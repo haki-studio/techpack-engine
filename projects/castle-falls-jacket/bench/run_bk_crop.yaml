@@ -1,8 +1,8 @@
-# Digitizing run: Castle Falls BK size M, benchmark crop (ENGINE_PLAN M1).
+# Digitizing run: Castle Falls BK size M, benchmark crop (ENGINE_PLAN M1, organic parts M2).
 #   python3 -m digitize.run projects/castle-falls-jacket/bench/run_bk_crop.yaml --stages all --no-api
 # Paths are relative to the project folder (the folder above bench/). No Anthropic API calls anywhere in this run.
 name: BK_M_crop
-label: "M1 skeleton (sky + falls splitters, zone stubs)"
+label: "M2 organic parts (strata + clouds, guided fill)"
 bench: bench/bench.json            # crop, view, registration, close-up, targets
 zones: bench/zones_BK.json         # hand-authored zones for the crop (from the images)
 out_dir: out/digitize/BK_M_crop
@@ -13,10 +13,18 @@ techniques:                        # toggles: the rulebook takes the first ENABL
   split_satin: true
   run: true
   bean: true
+  guided_fill: true                # M2: tatami along the reference grain (strata, cloud lobes)
+  contour_fill: true               # M2: rows along the outline (cloud lobes when guided_fill is off)
+  blend: true                      # M2: open shading layers and feather blends (no underlay)
 
 threads:
   needles: factory                 # factory.json: 12 colours per stitch file
   protected: [cf_red, cf_gold]     # never merged (founder: red and gold present wherever the design has them)
+  # importance x area in the merge cost (threads.py). M1 merged BOTH water blues away (area-weighted), so the falls were
+  # cream + mist only. 12 needles cannot hold all 18 tones: keeping sky light (the falls' blue streaks) and blossom deep
+  # costs mist grey -> sky light (dE 14.9); keeping both blues as well would cost blossom deep or cloud cream
+  # (RECAP-2026-10-20-engine-m2-organic.md). Change these numbers to move the trade-off.
+  importance: {cf_skylt: 3, cf_rose: 3}
   # candidate palette = the Castle Falls tones read from the mockup (cfcore.CF_PAL, PROPOSED threads); the evidence
   # classifies every reference pixel to the nearest one, then threads.py merges down to the needle limit
   palette:
@@ -64,3 +72,7 @@ stub: {min_part_mm2: 20.0, min_protected_mm2: 4.0, close_mm: 0.6}
 fall: {cords_min: 4, cords_max: 10, cord_mm: 5.0}
 sky: {min_band_mm: 3.0, blend_mm: 2.5}
 budget: {stitches_max: null}       # crop only; a full back is 250-350k (rule 6)
+direction: {sigma_mm: 4.0, fill_sigma_mm: 10.0, min_coh: 0.25}   # M2 field: grain smoothed over 4 mm, weak grain (< 0.25) from 10 mm
+stratum: {min_mass_mm2: 40.0, min_band_mm: 4.0, max_band_mm: 16.0, min_part_mm2: 30.0, crack_depth: 35.0, max_cracks: 4}
+cloud: {wisp_mm: 3.0, lobe_sep_mm: 4.0, min_lobe_mm2: 25.0, min_shade_mm2: 8.0, min_wisp_mm2: 10.0}
+specks: {min_mm2: 20.0}            # M2: traced parts under 20 mm2 merge into the neighbour they share most border with

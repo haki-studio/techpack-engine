@@ -18,8 +18,9 @@ from typing import Optional
 from shapely import wkt as _wkt
 from shapely.geometry.base import BaseGeometry
 
-DIR_MODES = ("fixed",)                 # M1: every direction is a fixed angle; M2 adds "field" (guided fill)
-DIR_SOURCES = ("rule", "field-mean", "splitter", "answer")
+DIR_MODES = ("fixed", "field", "contour")   # fixed angle (M1); "field": rows follow part.meta["field"] (guided fill, M2),
+                                            # angle = the field's mean + offset; "contour": rows follow the outline (M2)
+DIR_SOURCES = ("rule", "field-mean", "splitter", "answer", "field", "depth", "outline")   # digitize.audit re-derives each
 
 
 class PlanError(ValueError):

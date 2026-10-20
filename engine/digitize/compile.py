@@ -56,6 +56,35 @@ def pattern_segments(pat, labels, origin):
     return segs, lab
 
 
+class ReadbackMismatch(RuntimeError):
+    pass
+
+
+def labelled_dst(dst, origin, segs, labels, tol=0.16, skip_mm=0.2):
+    """The WRITTEN file's stitch segments (qa.dst_segments) with the plan's part id on each, matched in sew order
+    against the in-memory segments `segs` / `labels` (pattern_segments). Gates must judge the file the factory gets,
+    not the plan (M1 review): every planned segment longer than skip_mm must appear in the DST, in order, within tol mm
+    (the 0.1 mm grid); segments the writer adds (tie-on / tie-off) are labelled None and counted. A planned segment
+    missing from the file raises ReadbackMismatch. Returns (dst_segs, dst_labels, report)."""
+    import qa
+    D = qa.dst_segments(dst, origin); out = [None] * len(D); j = 0; n = len(segs); extra = 0; skipped = 0
+    def same(a, b): return max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2]), abs(a[3] - b[3])) <= tol
+    for i, d in enumerate(D):
+        while j < n and not same(d, segs[j]) and math.dist(segs[j][:2], segs[j][2:]) < skip_mm:
+            j += 1; skipped += 1                           # a sub-grid planned stitch rounded onto its neighbour
+        if j < n and same(d, segs[j]):
+            out[i] = labels[j]; j += 1
+        else:
+            extra += 1
+    while j < n and math.dist(segs[j][:2], segs[j][2:]) < skip_mm: j += 1; skipped += 1
+    if j < n:
+        raise ReadbackMismatch(f"{dst}: planned segment {j} of {n} {tuple(round(v, 2) for v in segs[j])} (part {labels[j]}) is not in "
+                               f"the written file in sew order: the gates would judge a plan the file does not contain")
+    lab = [l for l in out if l is not None]
+    return D, out, dict(file_segs=len(D), planned_segs=n, matched=n - skipped, writer_added=extra, skipped_subgrid=skipped,
+                        labelled=len(lab))
+
+
 def write(plan, base, origin, **mp_kw):
     """mp_kw: extra dst2.make_pattern options (M5: exact_travel=dict(...) for patches); none = the M1 behaviour"""
     stops = regions(plan)

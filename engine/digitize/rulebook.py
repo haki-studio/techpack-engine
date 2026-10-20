@@ -53,15 +53,34 @@ class Rulebook:
         base = dict(self.data["techniques"].get(t, {}))
         for key in ("spacing", "stitch_len", "underlay", "pull_comp"):
             if key in k: base[key] = k[key]
+        base.update(k.get("params", {}))                         # kind-level technique params (e.g. blend mode)
         params = {key: v for key, v in base.items() if key not in ("spacing", "stitch_len", "underlay", "pull_comp")}
         return StitchSpec(technique=t, spacing=float(base.get("spacing", 0.45)), stitch_len=float(base.get("stitch_len", 3.5)),
                           underlay=list(base.get("underlay", [])), pull_comp=float(base.get("pull_comp", 0.2)), params=params)
 
-    def direction(self, kind, field=None):
-        d = self.rule(kind)["dir"]
+    def direction(self, kind, field=None, outline=None, technique=None):
+        """the kind's direction rule -> DirSpec. dir: <number> (rule), "field-mean" (a measured angle, fixed rows),
+        "field" (guided rows along the reference grain; angle = the field's mean, pass field=), "contour" (rows follow the
+        outline; angle = the outline's long axis, pass outline=). A kind may give alt_dir: the fixed angle used when the
+        run's technique for it cannot follow a field / outline (e.g. contour_fill switched off -> split satin at alt_dir),
+        and dir_by_technique: {technique: dir} when the direction depends on the technique the run enabled (a cloud lobe:
+        guided_fill follows the grain, contour_fill the outline, anything else alt_dir)."""
+        k = self.rule(kind); d = k["dir"]
+        if technique is not None and technique in k.get("dir_by_technique", {}): d = k["dir_by_technique"][technique]
+        elif technique is not None and k.get("dir_by_technique"): d = k.get("alt_dir", d)
+        if isinstance(d, (int, float)): return DirSpec(float(d), source="rule")
+        if technique is not None and d in ("field", "contour") and technique not in k.get("follows", ("guided_fill", "contour_fill")):
+            if "alt_dir" not in k: raise RulebookError(f"kind {kind!r}: technique {technique!r} cannot follow {d!r} and the kind has no alt_dir")
+            return DirSpec(float(k["alt_dir"]), source="rule", note=f"alt_dir: {technique} cannot follow the {d}")
         if d == "field-mean":
             if field is None: raise RulebookError(f"kind {kind!r} takes the field-mean angle: pass field=<deg>")
             return DirSpec(float(field), source="field-mean")
+        if d == "field":
+            if field is None: raise RulebookError(f"kind {kind!r} follows the direction field: pass field=<mean deg>")
+            return DirSpec(float(field), mode="field", source="field")
+        if d == "contour":
+            if outline is None: raise RulebookError(f"kind {kind!r} follows its outline: pass outline=<long-axis deg>")
+            return DirSpec(float(outline), mode="contour", source="outline")
         return DirSpec(float(d), source="rule")
 
     def z(self, kind, default=None):

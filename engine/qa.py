@@ -680,3 +680,49 @@ def stack_map(runs, bounds, cell_mm=1.0, layer_min=1.5, max_layers=2, min_flag_m
     flags = _flag_regions(over, bounds, cell_mm, min_flag_mm2, value=grid.astype(float))
     return dict(grid=grid, cell_mm=cell_mm, bounds=tuple(bounds), max=int(grid.max()) if grid.size else 0,
                 over_mm2=round(float(over.sum()) * cell_mm ** 2, 1), max_layers=max_layers, flags=flags, ok=not flags)
+
+
+def split_satin_rows(segs, max_piece=7.0, align_tol=0.3, seam_frac=0.5, min_rows=6, turn_deg=10.0, min_piece=0.3):
+    """Split-satin CORDS read from the DST (ENGINE_PLAN M2, M1 review): satin_runs only sees satins whose stitches
+    reverse every time, so a split satin (each row sewn as 2+ collinear pieces) is invisible to it. Here a ROW is a
+    maximal chain of consecutive segments pointing the same way (within turn_deg); the short hop to the next row ends it.
+    segs: ONE cord's segments in sew order (e.g. the DST segments attributed to a part by compile.labelled_dst).
+    Measures, per cord: rows, row length (median / max), pieces per row, the longest piece, the column width across the
+    rows, and how many interior split points line up (within align_tol mm, along the row axis) with a split of the next
+    row: aligned splits are a visible seam (dst2.turning_satin ~1.0; a staggered split satin < 0.1).
+    Flags: too-long (a piece > max_piece mm: the machine limit, rule 4), seam (aligned fraction > seam_frac over
+    >= min_rows rows), too-narrow (column under 1 mm across: a run, not a cord).
+    Returns dict(rows, row_len_med, row_len_max, pieces_med, max_piece, column_w, aligned, flags, ok)."""
+    import math as _m
+    S = [s for s in segs if _m.hypot(s[2] - s[0], s[3] - s[1]) >= min_piece]
+    if not S: return dict(rows=0, row_len_med=0.0, row_len_max=0.0, pieces_med=0, max_piece=0.0, column_w=0.0, aligned=0.0, flags=[], ok=True)
+    rows = []; cur = [S[0]]
+    def ang(s): return _m.atan2(s[3] - s[1], s[2] - s[0])
+    for s in S[1:]:
+        p = cur[-1]; d = abs((ang(s) - ang(p) + _m.pi) % (2 * _m.pi) - _m.pi)
+        if d <= _m.radians(turn_deg) and abs(s[0] - p[2]) < 0.05 and abs(s[1] - p[3]) < 0.05: cur.append(s)
+        else: rows.append(cur); cur = [s]
+    rows.append(cur)
+    L = np.array([sum(_m.hypot(s[2] - s[0], s[3] - s[1]) for s in r) for r in rows])
+    keep = [r for r, l in zip(rows, L) if l >= 1.0]                       # the hops between rows are not rows
+    if not keep: return dict(rows=0, row_len_med=0.0, row_len_max=0.0, pieces_med=0, max_piece=0.0, column_w=0.0, aligned=0.0, flags=[], ok=True)
+    C = sum(_m.cos(2 * ang(s)) * _m.hypot(s[2] - s[0], s[3] - s[1]) for r in keep for s in r)
+    Sn = sum(_m.sin(2 * ang(s)) * _m.hypot(s[2] - s[0], s[3] - s[1]) for r in keep for s in r)
+    a = 0.5 * _m.atan2(Sn, C); u = (_m.cos(a), _m.sin(a)); v = (-u[1], u[0])
+    splits = [sorted(s[2] * u[0] + s[3] * u[1] for s in r[:-1]) for r in keep]   # interior split points on the row axis
+    hit = tot = 0
+    for s0, s1 in zip(splits, splits[1:]):
+        for t in s0:
+            tot += 1; hit += any(abs(t - t2) < align_tol for t2 in s1)
+    aligned = hit / tot if tot else 0.0
+    mids = [((r[0][0] + r[-1][2]) / 2) * v[0] + ((r[0][1] + r[-1][3]) / 2) * v[1] for r in keep]
+    col_w = (max(mids) - min(mids)) if len(mids) > 1 else 0.0
+    pieces = [len(r) for r in keep]; mp = max(_m.hypot(s[2] - s[0], s[3] - s[1]) for r in keep for s in r)
+    Lk = np.array([sum(_m.hypot(s[2] - s[0], s[3] - s[1]) for s in r) for r in keep])
+    flags = []
+    if mp > max_piece: flags.append(dict(kind="too-long", max_piece=round(mp, 2)))
+    if len(keep) >= min_rows and aligned > seam_frac: flags.append(dict(kind="seam", aligned=round(aligned, 2)))
+    if len(keep) >= min_rows and col_w < 1.0: flags.append(dict(kind="too-narrow", column_w=round(col_w, 2)))
+    return dict(rows=len(keep), row_len_med=round(float(np.median(Lk)), 2), row_len_max=round(float(Lk.max()), 2),
+                pieces_med=int(np.median(pieces)), max_piece=round(mp, 2), column_w=round(col_w, 2), aligned=round(aligned, 3),
+                flags=flags, ok=not flags)

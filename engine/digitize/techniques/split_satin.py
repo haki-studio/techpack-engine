@@ -19,8 +19,11 @@ PHASES = (0.0, 1.0, -1.0)            # x stagger: row k's split points shift by 
 
 def split_row(a, b, k, max_piece=5.5, stagger=0.25, limit=7.0, min_pieces=1):
     """points after a on the stitch a -> b: [b] when short, else the staggered split points then b. Every piece
-    <= (1 + stagger) * max_piece (6.9 mm with the defaults), never aligned with row k +- 1. min_pieces=2 splits every
-    row longer than 0.6 mm (fixed-angle cords: their short end rows would otherwise sew as a satin blob)."""
+    <= (1 + stagger) * max_piece (6.9 mm with the defaults). Rows k and k +- 1 get different phases (a three-phase
+    cycle), so on rows of similar length their split points do not line up; rows k and k + 3 share a phase, and rows of
+    different lengths can still coincide here and there, which is why the file is checked, not this promise
+    (qa.split_satin_rows aligned fraction; tests/test_digitize_m1.py::test_split_satin_staggers). min_pieces=2 splits
+    every row longer than 0.6 mm (fixed-angle cords: their short end rows would otherwise sew as a satin blob)."""
     L = math.dist(a, b)
     m = max(int(math.ceil(L / max_piece)), min_pieces if L > 0.6 else 1)
     if m <= 1 and L <= limit: return [b]

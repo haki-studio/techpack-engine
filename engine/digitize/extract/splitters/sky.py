@@ -64,5 +64,5 @@ def split(ctx, zone, z, claim):
                 if not gb.is_empty:
                     parts.append(Part(id=ctx.new_id(zone["id"]), kind="sky_blend", geom=gb, thread=t, z=z + (zb - ctx.rb.z("sky_band")),
                                       dir=ctx.rb.direction("sky_blend"), zone=zone["id"], rgb=None,
-                                      meta=dict(blend=f"{t} into {bands[k + 1][2]}", splitter="sky")))
+                                      meta=dict(blend=f"{t} into {bands[k + 1][2]}", splitter="sky", blend_from=[[x0 - 1, yb], [x1 + 1, yb]])))
     return parts, claim
