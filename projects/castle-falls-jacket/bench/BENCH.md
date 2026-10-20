@@ -42,8 +42,38 @@ part ids, so the gate raises before it measures anything (M1 runs carry part ids
 from a window fan needs the part map (M1+). stack_map counts sewn runs; objects joined by hidden travel share a run, so
 it can only under-count.
 
+## M1 skeleton (20 Oct 2026): parts, declared angles, falls as cords
+
+`PYTHONPATH=engine python3 -m digitize.run projects/castle-falls-jacket/bench/run_bk_crop.yaml --stages all --no-api`
+(zones: `zones_BK.json`, hand-authored windows + tone families; run config: `run_bk_crop.yaml`). The DST is a build
+output in `out/digitize/BK_M_crop/` (not in the repo).
+
+![M1 panel](panel_2026-10-20_m1-skeleton--sky---falls-splitters--zone.png)
+
+| check | baseline | M1 | target | |
+|---|---|---|---|---|
+| direction, visible layer (625 tiles, 0 masked) | 11.7 % OK, 77.9 % chaotic | 89.0 % OK, 7.0 % chaotic | >= 85 %, <= 5 % | OK / FAIL |
+| ... fall_cord tiles | - | 98.4 % (61 tiles) | >= 85 % | OK |
+| ... sky_band tiles | - | 100 % (2 tiles: the crop has almost no sky) | >= 85 % | OK, thin evidence |
+| ... zone_stub tiles / pool tiles | - | 88.0 % (552) / 75.0 % (8) | (stubs: M2/M3) | info |
+| parts | none (535 unlabelled constructed regions) | 381: 14 fall cords, 2 sky bands, 4 pools, 361 stubs; 18.4 % under 20 mm2 | <= 400, < 25 % | OK |
+| angles | 479 "auto", random fills | 0 undeclared, 0 random: 20 by rule, 361 field-mean | 0 | OK |
+| angle_coherence (by plan part id) | raises (no ids) | 109 fails, all stubs/pool: 58 buried (< 12 visible stitches), 51 spread > 10 deg | 0 | FAIL |
+| satin shape | 1159 blobs, 319 fans | 0 satins, 0 blobs, 0 fans | 0 blobs | OK |
+| density | 194 areas > 7 | 78 areas (13.8 cm2), mean 4.43 | 0 | FAIL |
+| stack | max 6, 19.97 cm2 > 2 | max 5, 8.7 cm2 > 2 (where 3+ zones meet) | <= 2 | FAIL |
+| trims per 100 cm2 of covered area | 113.1 (452) | 33.0 (132) | <= 25 | FAIL |
+| colours | 12, no red, no gold | 12, red (24 parts) and gold (13 parts) sewn | <= 12, red + gold | OK |
+| stitches in crop / stops | 150,250 / 24 | 84,090 / 17 (file 91,317 incl. travel) | | info |
+
+Reading it: falls and sky follow the reference grain; every part has a declared angle; red and gold survive. What
+fails is the zone STUBS (one field-mean angle per tone component): chaos and off-grain tiles sit in the village roofs and
+mixed foliage, and small buried stub parts trip angle_coherence. Those are M2/M3 (direction fields, strata, crowns,
+buildings). Thread v0 merged the two water blues away (area-weighted), so the falls are cream + mist only (M4).
+
 ## Scoreboard
 
 | date | label | dir OK % (visible) | chaotic % | dir all % | angle coh. | density mean / p95 / flags | trims per 100 cm2 of covered area | satins / blobs / >7 mm / <1 mm / fans | max stack / cm2 > 2 | threads (red, gold) | gates passed |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-10-19 | baseline: shipped Rev B DST | 11.7 | 77.9 | 2.4 | FAIL: no part ids | 5.67 / 10.45 / 194 | 113.1 (452) | 1925 / 1159 / 0 / 31 / 319 | 6 / 19.97 | 12 (n, n) | 0/8 |
+| 2026-10-20 | M1 skeleton (sky + falls splitters, zone stubs) | 89.0 | 7.0 | 63.5 | FAIL (109) | 4.43 / 8.09 / 78 | 33.0 (132) | 0 / 0 / 0 / 0 / 0 | 5 / 8.7 | 12 (y, y) | 3/8 |

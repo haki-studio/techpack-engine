@@ -41,14 +41,14 @@ def _chain(pts): return [pts[i] + pts[i + 1] for i in range(len(pts) - 1)]
 def test_satin_runs_rejects_bean_and_tight_zigzag():
     """a collinear bean (triple) run reverses every stitch and then goes on straight: never a column. A tight zig-zag
     turning ~100 deg (a decorative zig-zag run, stitches 0.6 mm) is not a satin either: satin rows reverse (> turn_deg
-    120). Mutation turn_deg=90 turns the zig-zag into a 'satin' -> red; dropping the reversal test from pair() turns the
-    bean into one -> red."""
+    120). Mutation turn_deg=90 turns the zig-zag into a 'satin' -> red. The bean is guarded twice (its forward stitches
+    neither reverse nor stay within max_adv_mm): dropping BOTH the reversal test and the advance limit -> red."""
     pts = [(0.0, 0.0)]
     for k in range(1, 16):                                            # bean: a->b, b->a, a->b, then on to c
         a = (2.0 * (k - 1), 0.0); b = (2.0 * k, 0.0); pts += [b, a, b]
     assert qa.satin_runs(_chain(pts)) == []
-    zz = [(0.0, 0.0)]; L = 0.6; up = math.radians(40)
-    for k in range(40):                                               # +-40 deg about x: 100 deg turn at every point
+    zz = [(0.0, 0.0)]; L = 0.6; up = math.radians(50)
+    for k in range(40):                                               # +-50 deg about x: 100 deg turn at every point
         a = up if k % 2 == 0 else -up; x, y = zz[-1]; zz.append((x + L * math.cos(a), y + L * math.sin(a)))
     assert qa.satin_runs(_chain(zz)) == []
     zz_sharp = [(0.0, 0.0)]                                           # same walk at +-80 deg: 160 deg turns = a satin column
@@ -270,7 +270,8 @@ def _regions():
     for pid in ("A", "B", "C"):
         x, y = pos[pid]
         blk = [sq(x, y)]
-        regs.append(dict(col="t1", geom=box(x - 0.5, y - 0.5, x + 2.5, y + 3.5), st="tatami", ang=0.0, grp="pool", part=pid, blocks=blk))
+        regs.append(dict(col="t1", geom=box(x - 0.5, y - 0.5, x + 2.5, y + 3.5), st="satin" if pid == "B" else "tatami", ang=0.0,
+                         grp="pool", part=pid, blocks=blk))
     return regs
 
 
@@ -305,7 +306,7 @@ def test_keep_order_preserves_rank():
     order = lambda **kw: [p for p, _, _ in _labelled(*_mp(dst2, regs, **kw))]
     seq = lambda o: [p for i, p in enumerate(o) if i == 0 or o[i - 1] != p]
     assert seq(order(keep_order=True)) == ["A", "B", "C"]
-    assert seq(order(keep_order=False)) == ["A", "C", "B"]           # the default router reorders nearest-first
+    assert seq(order(keep_order=False)) == ["A", "C", "B"]           # the default sorts tatami before satin, nearest-first
 
 
 def _mp(dst2, regs, **kw):
@@ -338,3 +339,15 @@ def test_config_json_fallback(tmp_path, monkeypatch):
     assert cfg["techniques"]["satin"] is False and cfg["techniques"]["tatami"] is True
     g = tmp_path / "run.yaml"; g.write_text("name: x\n")
     with pytest.raises(SystemExit, match="PyYAML"): config.load(str(g))
+
+
+def test_short_rows_never_sew_as_satin_blobs():
+    """rows shorter than one stitch are ONE stitch each; a run of them reverses like a satin and read back as 31 blob
+    satins on the first crop run (tatami stub parts, fall-cord ends). Tatami and fixed split satin give every such row a
+    staggered penetration. Mutation (split_short / min_pieces off) -> red."""
+    def segs(bl): return [tuple(a) + tuple(b) for blk in bl for a, b in zip(blk.pts, blk.pts[1:]) if tuple(a) != tuple(b)]
+    for n, g, ang in (("tatami", box(0, 0, 3.0, 3.2), 0.0), ("tatami", box(0, 0, 1.0, 6.0), 0.0), ("split_satin", box(0, 0, 5.0, 3.0), 90.0)):
+        p = Part(id="s", kind="pool", geom=g, thread="t1", z=0, dir=DirSpec(ang)); p.technique = n; p.stitch = _spec(n)
+        top = [b for b in techniques.get(n).plan(p) if b.role == "top"]
+        r = qa.satin_shape(segs(top))
+        assert r["counts"]["blob"] == 0 and r["satins"] == 0, (n, r["counts"])

@@ -138,7 +138,9 @@ class Run:
         bad = qa.angle_coherence(regs, groups=kinds, segs=vis, seg_parts=[sp[i] for i in idx])
         kc = {}
         for b in bad: kc[b["kind"]] = kc.get(b["kind"], 0) + 1
-        coh = dict(source="plan part ids (compile labels)", parts=len(plan.parts), ok=not bad, fails=len(bad), kinds=kc,
+        bk = {}
+        for b in bad: bk[f"{b['kind']} / {b['grp']}"] = bk.get(f"{b['kind']} / {b['grp']}", 0) + 1
+        coh = dict(source="plan part ids (compile labels)", parts=len(plan.parts), ok=not bad, fails=len(bad), kinds=kc, by_kind=bk,
                    failing=[dict(b) for b in bad[:40]])
         project = self.cfg["project"]
         row, aux = bench.run_gates(self.cfg_b, project, self.base + ".dst", self.origin, coherence=coh)
