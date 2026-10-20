@@ -1,22 +1,45 @@
 {
   "_doc": "What we know about the embroidery factory. Builders read frames/needles/spm from here (never hard-code 360). Update when the factory answers the F1 page.",
-  "name": "[proposed — confirm]",
+  "name": "Mandy's factory (Mandy Luo)",
   "frames_mm": [
     [
-      360,
-      360
+      300,
+      300
+    ],
+    [
+      400,
+      450
     ]
   ],
-  "frames_confirmed": false,
+  "frames_confirmed": true,
   "needles": 12,
   "needles_confirmed": true,
   "spm": 750,
   "thread_brands": [
-    "Madeira Polyneon",
-    "Isacord"
+    "factory's thread supplier colour book (brand to confirm)"
   ],
   "thread_card_received": false,
   "price_basis": "unknown — ask: per 1,000 stitches, per trim, per hooping, or per piece",
   "needles_note": "Manufacturer, 2026-10-16: max 12 distinct colours per stitch file (incl. basting / registration — sew those in a colour already in the file). Colour changes / repeated stops are fine.",
-  "colour_changes_ok": true
+  "colour_changes_ok": true,
+  "machine": "Brother",
+  "max_sewing_field_mm": 750,
+  "single_hooping_confirmed_mm": {
+    "front": [
+      340,
+      505
+    ]
+  },
+  "two_hoopings_confirmed_mm": {
+    "back": [
+      690,
+      575
+    ]
+  },
+  "embroiders": "cut pieces (before the garment is sewn)",
+  "chenille": true,
+  "puff_3d": true,
+  "jacquard_sherpa": true,
+  "embroidery_on_sherpa": true,
+  "factory_answers_2026_10_19": "Brother machines, biggest 750 mm; frames 300x300 and 400x450; embroider cut pieces; front 340x505 single hooping OK; back 690x575 = two hoopings combined; chenille yes; 3D puff yes; jacquard sherpa normally no problem; embroidery on sherpa yes; thread colour book from their supplier. Open: which frame holds the 340x505 front (505 > 450); sleeve 500x510 in one hooping?; thread brand name; send the colour book; sherpa design for review."
 }
