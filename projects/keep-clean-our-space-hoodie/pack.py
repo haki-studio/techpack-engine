@@ -213,7 +213,7 @@ def summary():
     qs = ["1. Text now from the founder's source frame: 宇宙をきれいに · KEEP CLEAN OUR SPACE · 不要世界汚染 (汚 as drawn; Simplified 污?) · 우리들 소중한 우주! (source reads 소중함 — confirm).",
           "2. 3D puff: JP + EN text, JP bars / hearts / stars, EN star border and the CN ring dots are digitized for 3 mm puff (dense column satin + lighter rim, foam pause). Can the factory sew puff? Fallback: same files without foam.",
           "3. Back and hood: the mockup shows only the front. Proposed: back + hood plain; star field on both fronts and all round both sleeves (back half of the sleeves seeded at the mockup's density).",
-          f"4. Frame: fronts are ~265 × 500 and sleeves ~480 × 560 → {sum(HOOP.values())} hoopings per jacket on {FR_S}. A bigger frame (≥ 300 × 520 for fronts) removes the front joins. Which frames?",
+          f"4. Frame: fronts are {CUR['FR']['size_mm'][0]:.0f} × {CUR['FR']['size_mm'][1]:.0f} and sleeves {CUR['SR']['size_mm'][0]:.0f} × {CUR['SR']['size_mm'][1]:.0f} (DST) → {sum(HOOP.values())} hoopings per jacket on {FR_S}. A bigger frame removes the front joins. Which frames?",
           f"5. Thread board: {len(kccore.KC_KEYS)} targets read from a low-res AI render (Rev B adds mint / blue / red tints for the domed rims + star haze) — approve physical colours (G3).",
           "6. Welt pockets at the mockup's steep slash position (58°, centre 245 from CF / 360 below the neck at M, graded by the block) — the CN badge needs the space. Confirm.",
           "7. Badge grade: A 92 % / B 100 % / C 106 %; badges keep their shape and move with the panel. Or one badge size for all sizes?",

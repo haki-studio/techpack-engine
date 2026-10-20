@@ -324,7 +324,12 @@ def speck_motif(s, x, y, col="kc_white", unit=None, uniform=False, fn=None):
         else: sp = SPAN(ext)
         rot = ((x * 13 + y * 7) % 9) - 4
         st = KM.sparkle_cols(x, y, sp, col, unit, rot=rot)
-        if fn is not None: st = fit(st, fn, "05", "sparkle", aspect=True, starts=SP_STARTS)
+        if fn is not None:
+            st, i_st = fit(st, fn, "05", "sparkle", aspect=True, starts=SP_STARTS, ret_iou=True)
+            if i_st < 0.78:          # the primitive does not reach the gate with margin: stitch the traced silhouette (A14)
+                cxy = unary_union([r["geom"] for r in st]).centroid; tp = TR.trace_polygon(fn, cxy.x, cxy.y)
+                if tp is not None and tp.area >= 1.6 and tp.distance(cxy) < 1.5:
+                    tr_log("05", "traced silhouettes", True); st = [KM.R(col, tp, "satin", "auto", "DOT", unit=unit, kob=0.6)]
         x, y = unary_union([r["geom"] for r in st]).centroid.coords[0]
         return KM.haze(x, y, 0.55 * sp, unit, star=unary_union([r["geom"] for r in st])) + st
     d = {2: 1.45, 3: 1.7, 4: 2.0}.get(ext, 1.45)
