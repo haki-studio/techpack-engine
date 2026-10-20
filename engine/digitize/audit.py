@@ -58,6 +58,9 @@ def basis(p, rb):
     if s in ("field", "field-mean"): return field_basis(p)[0]
     if s == "rule":
         d = rb.rule(p.kind).get("dir")
+        if d == "construct":                    # M3a: a rule on fitted geometry, re-derived from the points the part stores
+            from digitize.extract.building_fit import rule_basis
+            return rule_basis(p, rb)
         return float(d) if isinstance(d, (int, float)) else None
     return {"field-mean": m.get("field_angle"), "field": m.get("field_mean"), "answer": m.get("answer_angle"),
             "outline": m.get("outline_angle"), "depth": _depth(m["depth"]) if "depth" in m else None}.get(s)

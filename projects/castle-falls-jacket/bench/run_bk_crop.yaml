@@ -2,7 +2,7 @@
 #   python3 -m digitize.run projects/castle-falls-jacket/bench/run_bk_crop.yaml --stages all --no-api
 # Paths are relative to the project folder (the folder above bench/). No Anthropic API calls anywhere in this run.
 name: BK_M_crop
-label: "M2 organic parts (strata + clouds, guided fill)"
+label: "M3a buildings (roof planes down-slope, walls by course, eaves, windows, studs)"
 bench: bench/bench.json            # crop, view, registration, close-up, targets
 zones: bench/zones_BK.json         # hand-authored zones for the crop (from the images)
 out_dir: out/digitize/BK_M_crop
@@ -76,3 +76,15 @@ direction: {sigma_mm: 4.0, fill_sigma_mm: 10.0, min_coh: 0.25}   # M2 field: gra
 stratum: {min_mass_mm2: 40.0, min_band_mm: 4.0, max_band_mm: 16.0, min_part_mm2: 30.0, crack_depth: 35.0, max_cracks: 4}
 cloud: {wisp_mm: 3.0, lobe_sep_mm: 4.0, min_lobe_mm2: 25.0, min_shade_mm2: 8.0, min_wisp_mm2: 10.0}
 specks: {min_mm2: 20.0}            # M2: traced parts under 20 mm2 merge into the neighbour they share most border with
+# --- M3a --- building template fitter (extract/splitters/building.py). roles = which palette tones are roof / wall /
+# member / ornament (a design decision for this artwork: blue roofs, cream / white / tan walls, red timber, gold trims);
+# every other tone inside a building window goes back to the zones below. Fit numbers default in the splitter (DEFAULTS).
+building:
+  roles:
+    roof: [cf_navy, cf_sky, cf_skylt, cf_slate, cf_lav]
+    wall: [cf_white, cf_cream, cf_mist, cf_bark, cf_brown]
+    member: [cf_red]
+    ornament: [cf_gold]
+  eave_w_mm: 1.8
+  tile_mm: 3.0
+separate_kinds: [stratum_band, cloud_shade, cloud_wisp, wall, roof]   # M3a: walls / roofs re-separated after the plan's cut-under

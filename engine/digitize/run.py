@@ -71,6 +71,8 @@ class Run:
             if k == "stub": return stub.split(ctx, z, zz, m)
             if k == "stratum": return stratum.split(ctx, z, zz, m)
             if k == "cloud": return cloud.split(ctx, z, zz, m)
+            if k == "building":                                    # M3a: building template fitter
+                from digitize.extract.splitters import building; return building.split(ctx, z, zz, m)
             raise ValueError(f"zone {z['id']}: unknown splitter {k!r}")
         parts, log = ZN.claim_and_split(zs, ev, z_of, split)
         n_traced = len(parts); sk = cfg.get("specks", {}) or {}

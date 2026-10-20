@@ -85,11 +85,11 @@ def merge_specks(parts, min_mm2=20.0, protected=(), min_protected_mm2=4.0, touch
     alive = [True] * len(parts); geoms = [clean(p.geom) for p in parts]
     tree = STRtree(geoms); moves = []
     for i in sorted(range(len(parts)), key=lambda i: geoms[i].area):
-        if parts[i].kind in fixed or not alive[i] or geoms[i].area >= lim(parts[i]): continue
+        if parts[i].kind in fixed or parts[i].meta.get("keep_small") or not alive[i] or geoms[i].area >= lim(parts[i]): continue
         g = geoms[i].buffer(touch); best = None
         for j in tree.query(g, predicate="intersects"):
             j = int(j)
-            if j == i or not alive[j] or parts[j].kind in fixed: continue
+            if j == i or not alive[j] or parts[j].kind in fixed or parts[j].meta.get("keep_small"): continue
             share = g.intersection(geoms[j].buffer(touch)).area
             if share > 0 and (best is None or share > best[0]): best = (share, j)
         if best is None: continue
@@ -107,7 +107,8 @@ def absorb_fragments(parts, min_mm2=2.0):
     from digitize.techniques import polys
     keep, dropped = [], []
     for p in parts:
-        ps = [q for q in polys(p.geom) if q.area >= min_mm2]
+        lim = float(p.meta.get("min_fragment_mm2", min_mm2))      # M3a: a deliberate small part (a 1-1.5 mm stud) states its own
+        ps = [q for q in polys(p.geom) if q.area >= lim]
         if not ps: dropped.append(p.id); continue
         p.geom = unary_union(ps) if len(ps) > 1 else ps[0]; keep.append(p)
     return keep, dropped
