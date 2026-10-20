@@ -17,6 +17,10 @@ merges, simplification) is a separate, later pass — never trade away a visible
 Inventory: garment, fit chart (POM, half-measures!), fabric + hardware, every embroidery/print/trim element with
 its pattern piece, process and keep-outs. List what's PROPOSED. Ask only what blocks (usually: fit chart, frame size
 at the factory, number of needles).
+**Ask for the founder's vector art first** (true-size SVG in mm, one layer per thread, layers in stitch order): with it
+the parts engine digitises straight from the file (`digitize.run <run.yaml with source: svg>`, ENGINE_PLAN M5,
+`projects/konpeito-jeans/bench/run_*_svg.yaml`) and the mockups are placement / colour reference only. Konpeito: the
+lettering gates went from "pass after a lot of fitting" to a mean centreline distance of 0.05-0.14 mm on every string.
 
 ## 0b. Low-resolution sources (the normal case)
 There are usually no originals: the mockup is an AI render ~1–1.5k px for the whole garment (≈1 px per mm of art).

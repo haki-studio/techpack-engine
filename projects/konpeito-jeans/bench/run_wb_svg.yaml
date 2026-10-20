@@ -35,9 +35,9 @@ threads:
           kj_yellow: Yellow, kj_yellow_hi: "Yellow tint", kj_blue: Blue, kj_blue_hi: "Blue tint", kj_rose: Rose}
   weight: {kj_black: 60wt}                   # every other thread 40wt
   tints: [kj_pink_hi, kj_yellow_hi, kj_blue_hi]
-sequence: {cut_under: false}                 # house patch spec: motifs sew ON the full field (2 layers), nothing cut
+sequence: {cut_under: false, touch: -0.05}   # house patch spec: motifs sew ON the full field, nothing cut; paint order binds only shapes that OVERLAP
 compile:
-  exact_travel: {halo: 0.15, max_ex: 0.25, unsewn_only: true}   # a thread across a 0.7 mm gap shows
+  exact_travel: {halo: 0.25, max_ex: 0.3, unsewn_only: true}    # = the exposed-stitch gate: a thread across a 0.7 mm gap shows
 gates:
   ppm: 20
   centreline: {d_max: 0.5, w_tol: 0.20, near_mm: 1.0}

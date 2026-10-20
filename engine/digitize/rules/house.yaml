@@ -29,7 +29,7 @@ techniques:                    # defaults; a kind may override any of these numb
   # spacing is half of it; `spacing` is not read. dot: needle = art - allow, never below min_d (house-min reported).
   column_satin:  {spacing: 0.20, stitch_len: 5.5, underlay: [centre_run], pull_comp: 0.10, same_side: {40wt: 0.40, 60wt: 0.28}, centre_run_min_w: 1.4, centre_run_min_len: 2.5, max_piece: 5.5, stagger: 0.25}
   dot:           {spacing: 0.18, stitch_len: 1.5, underlay: [cross], pull_comp: 0.0, min_d: 1.1, allow: 0.2}
-  radial:        {spacing: 0.36, stitch_len: 7.0, underlay: [edge_run], pull_comp: 0.10, allowed_kinds: [floret, star, ring]}
+  radial:        {spacing: 0.36, stitch_len: 7.0, underlay: [edge_run], pull_comp: 0.10, allowed_kinds: [floret, star, star_tint, ring]}
   turning_satin: {spacing: 0.30, stitch_len: 7.0, underlay: [centre_run], pull_comp: 0.15, short: false}
 
 kinds:
@@ -91,6 +91,11 @@ kinds:
     dir: geometry
     pull_comp: 0.15
     note: puffy star body, radial from its centre
+  star_tint:
+    techniques: [radial]
+    dir: geometry
+    underlay: []
+    note: star highlight on top of its body, radial
   ring:
     techniques: [radial]
     dir: geometry

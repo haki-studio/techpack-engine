@@ -144,6 +144,8 @@ def test_dirspec_never_auto():
 
 SYNTH = {"tatami": (box(0, 0, 30, 20), 30.0), "split_satin": (box(0, 0, 6, 40), 90.0), "satin": (box(0, 0, 3, 25), 0.0),
          "run": (box(0, 0, 0.6, 20), 0.0), "bean": (box(0, 0, 0.6, 20), 0.0)}
+SYNTH.update({"column_satin": (box(0, 0, 2, 20), 0.0), "dot": (Point(5, 5).buffer(0.8), 30.0),       # M5 patch plugins
+              "radial": (Point(5, 5).buffer(3.0), 0.0), "turning_satin": (box(0, 0, 3, 12), 0.0)})
 
 
 def test_registry_contract():

@@ -76,7 +76,7 @@ class SvgRun:
         if sq.get("cut_under", False): SQ.cut_under(plan.parts, sq["keep_mm"])
         for p in plan.parts: issues += techniques.get(p.technique).check(p, P)
         body = [p for p in plan.parts if not p.meta.get("last")]; last = [p for p in plan.parts if p.meta.get("last")]
-        plan.stops = SQ.order(body) if body else []
+        plan.stops = order_complete(body, touch=float(sq.get("touch", 0.5))) if body else []
         for p in sorted(last, key=lambda p: p.z):
             if plan.stops and plan.stops[-1]["thread"] == p.thread and plan.stops[-1].get("last"): plan.stops[-1]["parts"].append(p.id)
             else: plan.stops.append(dict(thread=p.thread, parts=[p.id], last=True))
@@ -173,6 +173,35 @@ class SvgRun:
         live_big = dstlive.render(self.base + ".dst", cols, ppm=30, shell="#1f1f22", bounds=bb, origin=tuple(rbk["origin"]))
         live_big.save(self.f("live.png"))
         print(f"panel: {self.f('panel.png')} + live.png")
+
+
+# ------------------------------------------------------------------ sequence for patches
+def order_complete(parts, touch=0.5):
+    """sequence.order's z-DAG (a part sews after every lower-z part it touches / overlaps), with one change in how the
+    next thread is chosen when the current one has no free part: prefer a thread whose REMAINING parts are all free
+    now or waits only on its own thread (sewing it empties it: no second stop of that colour later), then the deepest free z, then the most free area.
+    On the coin patch the M1 rule ("deepest free layer first") sewed the white specks once per candy (3 white stops);
+    this sews them once, after all candies (14 -> 12 stops)."""
+    from collections import defaultdict
+    pred = SQ.dag(parts, touch); n = len(parts); done = [False] * n; left = {i: set(pred[i]) for i in range(n)}
+    stops = []; cur = None; pos = None
+    while not all(done):
+        free = [i for i in range(n) if not done[i] and not left[i]]
+        if not free: raise RuntimeError("sequence: cycle in the z-DAG")
+        same = [i for i in free if parts[i].thread == cur]
+        if not same:
+            fr = defaultdict(list)
+            for i in free: fr[parts[i].thread].append(i)
+            waits = defaultdict(bool)                  # a remaining part of t waits on a part of ANOTHER thread
+            for i in range(n):
+                if not done[i] and any(parts[j].thread != parts[i].thread for j in left[i]): waits[parts[i].thread] = True
+            key = lambda t: (not waits[t], -min(parts[i].z for i in fr[t]), sum(parts[i].area for i in fr[t]), t)
+            cur = max(fr, key=key); stops.append(dict(thread=cur, parts=[])); continue
+        c = lambda i: parts[i].geom.representative_point().coords[0]
+        i = min(same, key=lambda i: (math.dist(pos, c(i)) if pos else 0.0, parts[i].z, parts[i].id))
+        done[i] = True; stops[-1]["parts"].append(parts[i].id); pos = c(i)
+        for j in range(n): left[j].discard(i)
+    return [s for s in stops if s["parts"]]
 
 
 # ------------------------------------------------------------------ part map

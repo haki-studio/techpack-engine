@@ -31,7 +31,7 @@ def bead_points(knots, sp=0.18, underlay=True):
 
 def needle_d(art_d, min_d=1.1, allow=0.2):
     """(needle diameter, house_min) for an art dot of diameter art_d"""
-    d = art_d - allow
+    d = round(art_d - allow, 3)
     return (max(min_d, d), d < min_d - 1e-9)
 
 
