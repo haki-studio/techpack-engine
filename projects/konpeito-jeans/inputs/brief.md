@@ -37,3 +37,8 @@ silhouette WITHOUT cargo pockets. Measurements: Hidden Inventory published size 
     knee, outseam MISSING (factory HI tech pack "tech pack CAMOPANTS1.pdf").
 14. Patches 01 + 03 sewn on after the garment wash (cream field stays cream); direct embroidery goes through the wash.
 15. HI knee panel seam removed (mockup shows a plain leg).
+16. Founder change (19 Oct, evening): patches 01 / 03, the facing konpeito 02 and the stars are digitised from the
+    founder's vector art (inputs/svg, 16 Oct clean art, true size): lettering / face / frame / hearts = satin columns on
+    the SVG stroke centrelines, one width per layer; petals / lobes along their axes; dots round. The AI mockups are
+    reference only. 'haki' (not in the SVGs) stays traced from inputs/back_pocket_haki.png.
+17. Facing konpeito placement: the SVG centred on the coin pocket, its lower 3 mm under the patch (no guide in the SVG).

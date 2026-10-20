@@ -22,21 +22,24 @@ KJ_PAL = {   # Haki house spec Rev A (Oct 2026), 40wt polyester unless noted
 for k, v in KJ_PAL.items():
     motifs2.PAL[k] = v; motifs2.HEX[k] = v[0]; motifs.HEX[k] = v[0]
 tech.COLOUR_ORDER = list(KJ_PAL) + [c for c in tech.COLOUR_ORDER if c not in KJ_PAL]
-WEIGHT = {k: ("60wt" if k == "kj_black" else "40wt") for k in KJ_PAL}
+WEIGHT = {k: ("60wt" if k in ("kj_black", "kj_blue60") else "40wt") for k in KJ_PAL}
 
 KJ_RULES = {  # code -> (name, stitch, angle rule, density, stitch length, underlay, pull comp, notes)
  "BAND":  ("Patch band (under the border motifs)", "Tatami", "across the band", "0.42", "3.5", "edge run + 90° tatami", "0.20", "4.5 wide + under the edge"),
  "FIELD": ("Patch field",                 "Tatami",           "0°",                     "0.42", "3.5", "edge run + 90° tatami @ 2.0", "0.20", "motifs sew on top"),
- "EDGE":  ("Heat-cut edge satin",         "Satin column",     "across the edge",        "0.30 zz", "—", "edge run",            "0.15", "2.0 wide, sewn last"),
+ "EDGE":  ("Heat-cut edge satin",         "Satin column",     "across the edge",        "0.36 same side", "—", "edge run",            "0.15", "2.0 wide, sewn last"),
  "BFL":   ("Border flower Ø4.0",          "Satin, radial",    "radial from flower centre", "0.38", "—", "none",                "0.10", "red centre left open"),
  "BDOT":  ("Border dot Ø1.5",             "Satin dot",        "across",                 "0.38",  "—",  "none",                 "0.10", ""),
- "TXC":   ("Lettering / line column",     "Satin column",     "across the stroke",      "0.25 zz", "—", "centre run if ≥ 1.4", "0.10", "traced strokes, 1 column each"),
- "LINE":  ("Face line art (60wt)",        "Satin column",     "across the line",        "0.30 zz", "—", "none",                 "0.00", "0.7 wide, traced centrelines"),
- "FL":    ("Flower petals",               "Satin, radial",    "radial from flower centre", "0.38", "—", "edge run if > 2.5",   "0.15", "short stitches to centre"),
- "KNOT":  ("Knot dot (centre / sparkle)", "Satin dot",        "across",                 "0.36",  "—",  "none",                 "0.10", "Ø ≥ 1.1"),
+ "TXC":   ("Lettering column",            "Satin column",     "across the stroke",      "0.40 same side (60wt 0.28)", "—", "centre run if ≥ 1.4", "0.10", "font centreline fitted to the mockup, 1 width per string, round ends"),
+ "LINE":  ("Face line art (60wt)",        "Satin column",     "across the line",        "0.28 same side", "—", "none",                 "0.00", "smoothed traced centrelines, 1 width"),
+ "FL":    ("Flower petal",                "Satin, turning",   "across the petal axis",  "0.30", "—", "centre run on the axis", "0.15", "1 satin per petal, domed"),
+ "FL-hi": ("Flower petal highlight",      "Satin, turning",   "across the petal axis",  "0.30", "—", "none",                 "0.10", "tint, lit side of each petal"),
+ "KNOT":  ("Knot cluster / sparkle",      "Knot dot ×2 layers", "crossed 90°",          "0.20",  "—",  "none",                 "0.00", "Ø 0.9–1.15, touching in a cluster"),
  "DOT":   ("Accent dot / cheek",          "Satin dot",        "across",                 "0.38",  "—",  "none",                 "0.10", "Ø ≥ 1.2"),
- "KP":    ("Konpeito candy body",         "Satin, radial",    "radial from candy centre", "0.38", "—", "edge run",             "0.15", "domed, lobes traced"),
- "KP-hi": ("Konpeito highlight",          "Satin, radial",    "radial from candy centre", "0.38", "—", "none",                 "0.10", "on top of the body"),
+ "KP":    ("Konpeito candy lobe",         "Satin",            "across each lobe axis",   "0.30", "—", "centre run on the axis", "0.15", "1 satin per traced lobe, domed"),
+ "KPB":   ("Konpeito, back row (facing)",  "Satin",            "across each lobe axis",  "0.30", "—", "centre run on the axis", "0.15", "sewn first, behind the front row"),
+ "KPB-hi": ("Konpeito tint, back row",    "Satin",            "across each lobe axis",  "0.30", "—", "none",                 "0.10", ""),
+ "KP-hi": ("Konpeito lobe highlight",     "Satin, turning",   "across the lobe axis",   "0.30", "—", "none",                 "0.10", "tint, lit side of each lobe"),
  "STAR":  ("Puffy star body",             "Satin, radial",    "radial from star centre", "0.38", "—", "edge run",              "0.15", "direct on denim"),
  "STAR-hi": ("Puffy star highlight",      "Satin, radial",    "radial",                 "0.38",  "—",  "none",                 "0.10", ""),
 }
@@ -45,7 +48,9 @@ sheet.FONT = "Noto Sans CJK JP"     # replaced below if missing
 import subprocess
 if "Noto Sans CJK" not in subprocess.run(["fc-list"], capture_output=True, text=True).stdout:
     sheet.FONT = "Zen Maru Gothic"
-COL_SP = {"TXC": 0.30, "EDGE": 0.30}
+# column satin (kjsatin.column_pts) puts ONE needle point per row on alternate sides, so the same-side spacing is 2 x this
+# value. Rev A used 0.30 (0.60 same side: open, comb-like satin) — fix pass: 0.20 / 0.18 (0.40 / 0.36 same side).
+COL_SP = {"TXC": 0.20, "EDGE": 0.18, "LINE": 0.18, "FL": 0.30, "FL-hi": 0.30, "KP": 0.30, "KP-hi": 0.30, "KPB": 0.30, "KPB-hi": 0.30}
 
 STYLE = "HK-JN-KONPEITO-BK"
 NAME = "Konpeito Jeans — Washed Black"
@@ -63,8 +68,12 @@ def patch_dst2():
     _orig = dst2.build_object
     def build_object(r, earlier_tones):
         code = tech.rule_for(r["grp"])
+        if r.get("ang") == "knots":                             # knot cluster: one block, touching knots
+            import kjletter
+            return [kjletter.knot_points(r["knots"])]
         if r.get("ang") == "col" and r.get("col_cl"):
             sp = COL_SP.get(code, 0.28); pull = dst2.pull_for(code)
+            if r["col"] in ("kj_black", "kj_blue60"): sp = min(sp, 0.14)          # 60wt: 0.28 same side (finer thread needs denser rows)
             cl, w, caps, closed = r["col_cl"], r["col_w"], r["col_caps"], r["col_closed"]
             blocks = []
             if not closed and KS.poly_len(cl) > 2.5 and w >= 1.4:

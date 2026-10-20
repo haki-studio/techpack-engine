@@ -150,6 +150,24 @@ def radial_region(col, geom, code, centre=None):
     c = centre or (geom.centroid.x, geom.centroid.y)
     return R(col, geom, "satin", code, ang=("radial", c[0], c[1]))
 
+
+# ------------------------------------------------------------------ fix pass: digitised lettering / line art / petals
+import kjletter as KL
+LETTER = {}                 # element -> string -> fit report (widths, font, per-glyph chamfer)
+def lettering(el, key, col, text, zone_src, kind, weight_thread="40wt", min_w=0.8, font="bold", zone_mm=0.6, w_max=9.0):
+    """font glyphs fitted on the mockup skeleton, satin columns at ONE width per string (mockup visible width minus KL.ALLOW
+    = needle span). Returns (regions, half-max reference mask)."""
+    zone = ndi.binary_dilation(ndi.binary_closing(zone_src, iterations=3), iterations=int(zone_mm * PPM))
+    ref = KL.halfmax(el, kind, zone)
+    sk, mm = KL.skel(ref)
+    w_vis = KL.width_on(mm, sk)
+    w = min(w_max, max(min_w, round(w_vis - KL.ALLOW, 2)))
+    fits = KL.fit_string(text, ref, font)
+    regs = KL.string_columns(col, "TXC", fits, w)
+    LETTER.setdefault(el, {})[key] = dict(text=text, font=f"Zen Maru Gothic {font.title()} (centrelines)", w_mockup=round(w_vis, 2), w_needle=w,
+                                          thread=weight_thread, glyph_fit=[(f_["ch"], round(f_.get("cost", 0) / 2, 2)) for f_ in fits])
+    return regs, ref
+
 # ------------------------------------------------------------------ house border (fixed mm, shared by both patches)
 def side_positions(a, b, pitch=PITCH):
     L = b - a; n = max(2, round(L / pitch))
@@ -261,59 +279,97 @@ def waistband():
     for m in comps(black, 6):
         x, y = cen(m)
         if area(m) < 0.15: continue
-        (face if (x < 30.5 and y > 24) else text).__ior__(m)
+        (face if (x < 33.0 and y > 26.0) else text).__ior__(m)      # fix pass: by component centroid (a hair strand sat in the text)
     ref.update(frame=frame, chihiro=chihiro, hearts=hearts, text=text, face=face, risa=risa,
                flowers=np.any([*pflowers, *yfl, *bflower], axis=0), dots=np.any(dots, axis=0) if dots else np.zeros_like(F),
                cheeks=np.any(cheeks, axis=0) if cheeks else np.zeros_like(F))
     g = lambda m, **k: mask_geom(m, **k)
     out_f, mot, edge, pitch = border(W, H)
     vis = list(out_f) + list(mot)
-    # flowers: petals radial satin + white centre knots traced from the white pixels inside the flower
-    V = img.astype(float).mean(-1)
+    # flowers: one satin per petal along its axis + tint highlight; white knot cluster (1 + 6) on the traced centre
     def flower(m, col):
-        """petals = traced silhouette (radial satin from the traced centre); centre knots = brightness peaks of the
-        traced white centre cluster, one Ø1.1 knot dot per peak (min pitch 1.5 mm)."""
         geo = g(m, sigma=1.2).buffer(0.15).buffer(-0.15)
+        geo = max(polys(geo), key=lambda q: q.area)
         blob = np.zeros_like(m)
         for k in comps(m & white, 4):
             if math.dist(cen(k), cen(m)) < 2.6: blob |= k
         cx, cy = cen(blob) if blob.any() else cen(m)
-        # knot cluster: centre knot + 5 round it (r 1.6, Ø1.1) on the traced centre, ring turned to the flower's petals
-        ang0 = math.degrees(math.atan2(*(np.array(cen(m))[::-1] - np.array((cx, cy))[::-1])))
-        kn = [R("kj_white", Point(cx, cy).buffer(0.55, quad_segs=12), "satin", "KNOT")]
-        for j in range(5):
-            t = math.radians(ang0 + 36 + j * 72)
-            kn.append(R("kj_white", Point(cx + 1.6 * math.cos(t), cy + 1.6 * math.sin(t)).buffer(0.55, quad_segs=12), "satin", "KNOT"))
-        petals = [radial_region(col, p, "FL", (cx, cy)) for p in polys(geo)]
-        return petals, kn
-    knots = []
+        bd = 2 * math.sqrt(max(area(ndi.binary_fill_holes(blob)), 1.0) / math.pi) if blob.any() else 3.0
+        kd = min(1.15, max(0.9, bd / 3.0))                     # 3 knots across the traced white centre
+        petals, his, n = KL.petal_regions(col, HI[col], geo, (cx, cy), force_n=5)
+        kn = KL.knot_cluster("kj_white", cx, cy, kd, 6, rot=-90 + 30)
+        return petals, his, kn
+    knots = []; his = []
     for m in pflowers:
-        p, k = flower(m, "kj_pink"); vis += p; knots += k
+        p, h_, k = flower(m, "kj_pink"); vis += p; his += h_; knots.append(k)
     for m in yfl:
-        p, k = flower(m, "kj_yellow"); vis += p; knots += k
+        p, h_, k = flower(m, "kj_yellow"); vis += p; his += h_; knots.append(k)
     for m in bflower:
-        p, k = flower(m, "kj_blue"); vis += p; knots += k
-    vis += colsat("kj_pink", g(hearts, sigma=1.0), uniform=True)
-    T = {}
-    T["risa"] = text_regions("kj_blue", "理砂", risa)
+        p, h_, k = flower(m, "kj_blue"); vis += p; his += h_; knots.append(k)
+    vis += his
+    vis += colsat("kj_pink", g(hearts, sigma=1.0), uniform=True, spur=2.5)
+    # lettering: font glyphs fitted to the mockup skeleton, one satin width per string
+    # 理砂: the mockup's own strokes are clean thick columns with counters (理's 田 shows 4); the font's 理砂 differs
+    # from that hand (wider 田, different 石), so these two are digitised on the mockup's own smoothed stroke centrelines.
+    # 田's horizontals are only ~1.25 mm apart: no 40wt column (0.8 min) leaves a counter, so 理砂 sews in 60wt blue,
+    # 0.8 mm, and the strokes inside 田 (box from the mockup's own counters) at 0.55 mm -> counters ~0.45 mm (60wt min)
+    zr = ndi.binary_dilation(ndi.binary_closing(risa, iterations=3), iterations=12)
+    ref["hm_risa"] = KL.halfmax("wb", "blue", zr)
+    skr, mmr = KL.skel(ref["hm_risa"]); wr_vis = KL.width_on(mmr, skr)
+    wr = 0.8; wi = 0.55
+    r_risa, _ = KL.line_art("kj_blue60", "TXC", ref["hm_risa"], wr, holes=True, dots=False, win_mm=0.8)
+    hl, hn = ndi.label(~ref["hm_risa"]); hb = []
+    for k_ in range(1, hn + 1):
+        hm = hl == k_; a_ = hm.sum() / PPM ** 2
+        if 0.05 < a_ < 1.0:
+            ys_, xs_ = np.nonzero(hm)
+            if xs_.mean() / PPM < 62.0: hb.append((xs_.min() / PPM, ys_.min() / PPM, (xs_.max() + 1) / PPM, (ys_.max() + 1) / PPM))
+    n_in = 0
+    if hb:
+        bx = box(min(b[0] for b in hb), min(b[1] for b in hb), max(b[2] for b in hb), max(b[3] for b in hb)).buffer(0.7)
+        for i_, r_ in enumerate(r_risa):
+            ls_ = LineString(list(r_["col_cl"]) + ([r_["col_cl"][0]] if r_["col_closed"] else []))
+            if bx.contains(ls_.interpolate(0.5, normalized=True)) and ls_.intersection(bx).length > 0.6 * ls_.length:
+                r_risa[i_] = KS.column_region("kj_blue60", "TXC", r_["col_cl"], wi, r_["col_caps"], r_["col_closed"]); n_in += 1
+    LETTER.setdefault("wb", {})["risa"] = dict(text="理砂", font="mockup stroke centrelines (traced, smoothed)", w_mockup=round(wr_vis, 2),
+                                              w_needle=wr, w_inner=wi, inner_strokes=n_in, thread="60wt", strokes=len(r_risa))
+    vis += r_risa
     vis += knots
-    vis += [dot_region("kj_rose", g(m, sigma=1.0), "DOT", 1.6) for m in cheeks]
-    vis += colsat("kj_black", g(face, sigma=2.0, simp=0.08), code="LINE", min_w=MIN_W["kj_black"], uniform=True)
+    # cheeks (rose) + accent dots (red): round satin dots at the traced centres / sizes (half-max masks)
+    ref["hm_cheeks"] = ndi.binary_fill_holes(KL.halfmax("wb", "rose", ndi.binary_dilation(ref["cheeks"], iterations=10)))   # white glint = part of the dot
+    vis += KL.dot_regions("kj_rose", "DOT", KL.dot_shapes(ref["hm_cheeks"], min_d=1.6))
+    # face line art: smoothed centrelines of the traced strokes, one 60wt satin width; eyes = dots
+    ref["hm_face"] = KL.halfmax("wb", "black", ndi.binary_dilation(face, iterations=8) & ~ndi.binary_dilation(text, iterations=4))
+    skf, mmf = KL.skel(ref["hm_face"]); wf_vis = KL.width_on(mmf, skf)
+    wf = max(0.42, round(wf_vis - KL.ALLOW, 2))
+    lines, eyes = KL.line_art("kj_black", "LINE", ref["hm_face"], wf)
+    vis += lines
+    vis += KL.dot_regions("kj_black", "LINE", [("round", (x, y, max(1.0, d - 0.2))) for x, y, d in eyes])
+    LETTER.setdefault("wb", {})["face"] = dict(text="face line art", w_mockup=round(wf_vis, 2), w_needle=wf, thread="60wt",
+                                              strokes=len(lines), eyes=len(eyes))
     l1 = np.zeros_like(text); l2 = np.zeros_like(text)
     for m in comps(text, 2):
         if area(m) < 0.3: continue                       # shadow specks next to the flowers, not lettering
         (l1 if cen(m)[1] < 25.0 else l2).__ior__(m)
-    T["line1"] = text_regions("kj_black", "元気でね", l1, min_w=MIN_W["kj_black"], sigma=3.5)
-    T["line2"] = text_regions("kj_black", "また会おうね", l2, min_w=MIN_W["kj_black"], sigma=3.5)
-    vis += colsat("kj_red", g(frame, sigma=1.0), uniform=True)
-    T["chihiro"] = text_regions("kj_red", "ちひろ", chihiro)
-    for k in ("risa", "line1", "line2", "chihiro"):
-        vis += T[k]["regs"]
-    TEXTFIT["wb"] = {k: T[k]["fit"] for k in T}
-    vis += [dot_region("kj_red", g(m, sigma=0.8), "DOT", 1.2) for m in dots if area(m) > 0.25]
+    r1, ref["hm_line1"] = lettering("wb", "line1", "kj_black", "元気でね", l1, "black", "60wt", min_w=0.7)
+    r2, ref["hm_line2"] = lettering("wb", "line2", "kj_black", "また会おうね", l2, "black", "60wt", min_w=0.7)
+    vis += r1 + r2
+    vis += colsat("kj_red", g(frame, sigma=1.0), uniform=True, spur=2.5)
+    r_ch, ref["hm_chihiro"] = lettering("wb", "chihiro", "kj_red", "ちひろ", chihiro, "red", min_w=0.8)
+    vis += r_ch
+    TEXTFIT["wb"] = dict(LETTER["wb"])
+    dz = np.zeros_like(F)
+    for m in dots:
+        if area(m) > 0.25: dz |= m
+    near_frame = ndi.binary_dilation(frame | chihiro, iterations=int(0.5 * PPM))
+    dz = np.any([m for m in dots if area(m) > 0.25 and not (m & near_frame).any()] or [np.zeros_like(F)], axis=0)
+    ref["hm_dots"] = ndi.binary_fill_holes(KL.halfmax("wb", "red", ndi.binary_dilation(dz, iterations=6)) & ~near_frame)
+    vis += KL.dot_regions("kj_red", "DOT", KL.dot_shapes(ref["hm_dots"], min_d=1.1))
     vis.append(edge)
     GENERATED["wb"] = ["border (house spec: 2.0 edge + 4.5 band, Ø4.0 flowers / Ø1.5 dots at 5.8 pitch — fixed mm, not traced)",
-                       "flower centre knots: traced centre, knot pattern (1 + 5 at r 1.6, Ø1.1) generated"]
+                       "flower centre knots: traced centre and cluster size, knot pattern (1 + 6 touching) generated",
+                       "lettering: Zen Maru Gothic glyph centrelines fitted per character to the mockup's stroke skeletons (position, scale, tilt, slant), one satin width per string measured from the mockup",
+                       "petal highlight (tint): inset of each traced petal on the lit side"]
     return vis, ref, (W, H), pitch
 
 # ------------------------------------------------------------------ 01 coin pocket
@@ -344,15 +400,36 @@ def coin():
                dots=np.any(dots, axis=0) if dots else np.zeros_like(F))
     hi_regs, sp_regs = [], []
     for col, m in sorted(candies, key=lambda cm: cen(cm[1])[0]):
-        body, hi, sparks = candy(col, m, light)
-        vis.append(body); hi_regs += hi; sp_regs += sparks
+        body, hi, sparks = candy2(col, m, lab == 6)          # sparkles: WHITE thread pixels only (cream = field)
+        vis += body; hi_regs += hi; sp_regs += sparks
     vis += hi_regs + sp_regs
-    T = text_regions("kj_red", "こんぺいとう", letters)
-    vis += T["regs"]; TEXTFIT["coin"] = {"konpeito": T["fit"]}
-    vis += [dot_region("kj_red", mask_geom(m, sigma=1.0), "DOT", 1.3) for m in dots if area(m) > 0.3]
+    r_k, ref["hm_letters"] = lettering("coin", "konpeito", "kj_red", "こんぺいとう", letters, "red", min_w=0.8)
+    # ぺ handakuten: annulus from the mockup's own ring (outer edge of the traced ring, hole sized so >= 0.6 mm stays open
+    # as sewn: + pull comp + thread), radial satin across it
+    hm = ref["hm_letters"]; hl, hn = ndi.label(~hm)
+    for k_ in range(1, hn + 1):
+        h_ = hl == k_; a_ = h_.sum() / PPM ** 2
+        if not (0.03 < a_ < 2.0): continue
+        hx, hy = cen(h_)
+        ringm = ndi.binary_fill_holes(ndi.binary_dilation(h_, iterations=int(1.6 * PPM)) & hm | h_)
+        Ro = math.sqrt(area(ringm) / math.pi) - KL.ALLOW / 2
+        ri = max(0.3, math.sqrt(a_ / math.pi)) + 0.35
+        ann = Point(hx, hy).buffer(Ro, quad_segs=24).difference(Point(hx, hy).buffer(ri, quad_segs=24))
+        for i_, r_ in enumerate(r_k):
+            if r_.get("glyph") == "ぺ" and isinstance(r_.get("ang"), tuple) and r_["geom"].distance(Point(hx, hy)) < 1.0:
+                r_k[i_] = dict(r_, geom=ann, ang=("radial", hx, hy))
+                LETTER["coin"]["konpeito"]["handakuten"] = dict(outer_d=round(2 * Ro, 2), hole_d=round(2 * ri, 2))
+    vis += r_k; TEXTFIT["coin"] = dict(LETTER["coin"])
+    dz = np.zeros_like(F)
+    for m in dots:
+        if area(m) > 0.3: dz |= m
+    ref["hm_dots"] = ndi.binary_fill_holes(KL.halfmax("coin", "red", ndi.binary_dilation(dz, iterations=6)))
+    vis += KL.dot_regions("kj_red", "DOT", KL.dot_shapes(ref["hm_dots"], min_d=1.3))
     vis.append(edge)
     GENERATED["coin"] = ["border (house spec, fixed mm; mockup edge reads cream, house spec red kept)",
-                         "candy highlight = traced silhouette inset (tint), sparkle dots Ø1.1 at traced positions"]
+                         "candy lobes: traced silhouette split at its valleys, one satin per lobe along its axis; tint highlight = inset of each lobe on the lit side",
+                         "sparkle knots Ø1.0 (two-layer knot dots) at the traced white specks",
+                         "lettering: Zen Maru Gothic glyph centrelines fitted per character to the mockup's stroke skeletons, one satin width (mockup) for the word"]
     return vis, ref, (W, H), pitch, VIS
 
 HI = {"kj_pink": "kj_pink_hi", "kj_yellow": "kj_yellow_hi", "kj_blue": "kj_blue_hi"}
@@ -379,6 +456,25 @@ def candy(col, m, light, x0=0.0, y0=0.0, clip=None, close=2, sigma=1.2):
             p = Point(x, y).buffer(0.55, quad_segs=12)
             if geo.buffer(-0.5).contains(p) and all(p.distance(s["geom"]) > 0.5 for s in sparks):
                 sparks.append(R("kj_white", p, "satin", "KNOT"))
+    return body, hi, sparks
+
+def candy2(col, m, light, close=5, sigma=1.2):
+    """traced candy silhouette -> one satin per lobe along its axis + tint highlight per lobe; white knots at the traced
+    light specks (two-layer knot dots, >= 0.6 mm apart)."""
+    fm = ndi.binary_fill_holes(ndi.binary_closing(m, np.ones((3, 3)), close))
+    geo = mask_geom(fm, sigma=sigma).buffer(0.1).buffer(-0.1)
+    geo = max(polys(geo), key=lambda p: p.area)
+    c = geo.centroid; c = (c.x, c.y)
+    body, hi, n = KL.petal_regions(col, HI[col], geo, c, code="KP", code_hi="KP-hi")
+    sparks = []
+    inner = ndi.binary_erosion(fm, np.ones((3, 3)), 8) & light
+    for k in comps(inner, 3):
+        a = area(k)
+        if 0.02 < a < 1.6:
+            x, y = cen(k)
+            p = Point(x, y).buffer(0.5, quad_segs=12)
+            if geo.buffer(-0.5).contains(p) and all(p.distance(s_["geom"]) > 0.6 for s_ in sparks):
+                sparks.append(KL.knot_cluster("kj_white", x, y, 1.0, 0))
     return body, hi, sparks
 
 # ------------------------------------------------------------------ 02 konpeito spill (facing, above the coin pocket)
@@ -448,10 +544,9 @@ def puffy_star(cx, cy, width=10.0, rot=0.0, inner=0.50, tip=0.75, valley=0.45):
 STARS = {"Y": ("kj_yellow", "kj_yellow_hi", -6, "wearer's LEFT back pocket, lower outer corner"),
          "P": ("kj_pink", "kj_pink_hi", 8, "wearer's RIGHT back pocket, upper outer corner below the rivet")}
 def star(sid):
-    base, tint, rot, _ = STARS[sid]
-    g, hi = puffy_star(0, 0, rot=rot)
-    GENERATED["star" + sid] = ["whole star (flat lay shows it at ~10 px; 5-point puffy star redrawn, colour from the house palette)"]
-    return [radial_region(base, g, "STAR", (0, 0)), radial_region(tint, hi, "STAR-hi", (hi.centroid.x, hi.centroid.y))]
+    import kjsvg
+    GENERATED["star" + sid] = []
+    return kjsvg.star_regions(sid, 0.0, 0.0, STAR_D)       # founder's vector star (inputs/svg), 10 mm tip to tip
 
 # ------------------------------------------------------------------ 04 back-pocket "haki" group (inputs/back_pocket_haki.png)
 HAKI_SRC = (175, 405, 310, 460)   # crop of the group in the back-pocket mockup (px)
@@ -482,21 +577,26 @@ def haki_group():
     regs = colsat("kj_blue_hi", geo, code="TXC", min_w=1.2, uniform=True)
     out = []
     for (cx, cy, w), (base, tint) in zip(star_px, (("kj_yellow", "kj_yellow_hi"), ("kj_pink", "kj_pink_hi"))):
-        g, hi = puffy_star((cx - ox) * k, (cy - oy) * k, STAR_D, rot=0)
-        out += [radial_region(base, g, "STAR", ((cx - ox) * k, (cy - oy) * k)), radial_region(tint, hi, "STAR-hi", (hi.centroid.x, hi.centroid.y))]
-    GENERATED["haki"] = ["stars: 10 mm puffy-star shape at the traced centres (the mockup shows them at 14 px)",
+        import kjsvg
+        out += kjsvg.star_regions("Y" if base == "kj_yellow" else "P", (cx - ox) * k, (cy - oy) * k, STAR_D)
+    GENERATED["haki"] = ["stars: the founder's vector star (inputs/svg), 10 mm, at the traced centres (the mockup shows them at 14 px)",
                          "one stroke width (2 mm) for the whole word; the stroke centrelines are traced (x8 upscale only to read them)"]
     ref = dict(blue=bm, k=k, ox=ox, oy=oy, yel=yel, pnk=pnk, scale=STAR_D / (np.mean([w for _, _, w in star_px]) / HAKI_UP) / (10.0 / 30.0))
     return out + regs, ref
 
 def build_all():
+    """founder change 19 Oct (evening): patches 01 / 03, the facing spill 02 and the stars from the founder's vector art
+    (kjsvg, inputs/svg); the 'haki' lettering (not in the SVGs) stays traced from inputs/back_pocket_haki.png."""
+    import kjsvg
     A = {}
-    vis, ref, wh, pitch, VIS = coin(); A["coin"] = dict(vis=vis, ref=ref, wh=wh, pitch=pitch, vis_to=VIS)
-    vis, ref = spill(); A["spill"] = dict(vis=vis, ref=ref)
-    vis, ref, wh, pitch = waistband(); A["wb"] = dict(vis=vis, ref=ref, wh=wh, pitch=pitch)
+    vis, ref, wh, src = kjsvg.coin(); A["coin"] = dict(vis=vis, ref=ref, wh=wh, src=src, vis_to=wh[1])
+    vis, ref, wh, src, off = kjsvg.spill(); A["spill"] = dict(vis=vis, ref=ref, wh=wh, src=src, offset=off)
+    vis, ref, wh, src = kjsvg.waistband(); A["wb"] = dict(vis=vis, ref=ref, wh=wh, src=src)
     for s in STARS: A["star" + s] = dict(vis=star(s))
     vis, ref = haki_group(); A["haki"] = dict(vis=vis, ref=ref)
-    A["generated"] = dict(GENERATED); A["textfit"] = dict(TEXTFIT)
+    GENERATED["coin"] = []; GENERATED["wb"] = []
+    GENERATED["spill"] = [f"placement: SVG centred on the coin pocket, art bottom {kjsvg.SPILL_UNDER} mm below the pocket's top edge (runs under the patch) [proposed — confirm]"]
+    A["generated"] = dict(GENERATED); A["textfit"] = dict(kjsvg.REPORT)
     pickle.dump(A, open("out/art.pkl", "wb"))
     return A
 

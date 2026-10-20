@@ -386,7 +386,7 @@ def T8():
 
 # ---------------------------------------------------------------- G1 embroidery summary + thread chart
 def G1():
-    o = hdr("G1 · EMBROIDERY SUMMARY — files, read-back numbers, threads", f"Every number read back from the written DST (readback.dst). Machine time at {PROF['spm']} spm + 6 s per trim + 4 s per colour change (factory.json). <= {factory.max_threads()} threads per file.", "G1")
+    o = hdr("G1 · EMBROIDERY SUMMARY — files, read-back numbers, threads", f"01–03 + stars digitised from the founder's vector art (inputs/svg); 04 'haki' traced from its mockup. Every number read back from the written DST (readback.dst). Machine time at {PROF['spm']} spm + 6 s per trim + 4 s per colour change (factory.json). <= {factory.max_threads()} threads per file.", "G1")
     rows = []; tot = dict(st=0, tr=0, mi=0)
     for k, no, title, piece, proc, stem in EL:
         r = RB[k]
@@ -440,7 +440,7 @@ def stitch_check(vis):
     for col, gs in by.items():
         g = unary_union(gs)
         if g.area < 0.5: continue
-        thin60 = col == "kj_black"
+        thin60 = col in ("kj_black", "kj_blue60")
         ms, mg, mc = (0.6, 0.35, 0.45) if thin60 else (0.8, 0.5, 0.6)
         px = 30; ink = rast(g, px)
         thin = ink & ~ndi.binary_opening(ink, structure=disk(ms, px))
@@ -455,7 +455,7 @@ def stitch_check(vis):
         out.append([KJ_PAL[col][1], f"{ms}/{mg}/{mc}", f"{thin_pct:.1f} %", str(small), "PASS" if thin_pct < 3 and small == 0 else "CHECK"])
     return out
 
-def element_page(pid, key, no, title, piece, proc, stem, ref_png=None, ref_crop=None, extra=None, miss=""):
+def element_page(pid, key, no, title, piece, proc, stem, ref_png=None, ref_crop=None, extra=None, miss="", ref_label="B · MOCKUP REFERENCE (placement + colour; art from inputs/svg)"):
     rb = RB[key]
     pair = " · house patch spec (6.5 border, 5.8 pitch), pairs with patch " + ("03" if no == "01" else "01") if "patch" in proc else " · konpeito stars 10 mm, same as every star on the jean"
     o = hdr(f"{pid} · {no} {title}", f"{proc} · {piece} · {REV} · {DATE} · finished size, mm · DST/PES {stem}{pair}", pid)
@@ -470,7 +470,8 @@ def element_page(pid, key, no, title, piece, proc, stem, ref_png=None, ref_crop=
     if ref_png:
         im = Image.open(ref_png).convert("RGB")
         if ref_crop: im = im.crop(ref_crop)
-        tag, hh = img(im, 12, y + 2, h=min(SH - y - 18, 46)); o.append(t(12, y, "B · MOCKUP REFERENCE (traced from it)", 2.1, 700)); o.append(tag)
+        hh_ = min(SH - y - 18, 46, 130 * im.height / im.width)          # never wider than the left column
+        tag, hh = img(im, 12, y + 2, h=hh_); o.append(t(12, y, ref_label, 2.1, 700)); o.append(tag)
         y += hh + 4
     # C: numbers
     cx = 150
@@ -492,6 +493,12 @@ def element_page(pid, key, no, title, piece, proc, stem, ref_png=None, ref_crop=
         col = {(i, 2): (GREEN if r["passed"] == r["motifs"] else RED) for i, r in enumerate(g["families"])}
         tb, yy = table(cx, yy, [("Family", 50), ("Motifs", 11), ("Pass", 10), ("min IoU", 13), ("mean", 11)], rows, 1.7, 3.3, colours=col)
         o.append(tb)
+        if g.get("centreline"):
+            yy += 1.5; o.append(t(cx, yy, "Lettering + line art — centreline gate (mean dist <= 0.5 mm, width +-20 % vs the art)", 1.9, 700)); yy += 3.6
+            rows = [[r["family"][:30], str(r["mean_d"]), str(r["w_ref"]), str(r["w_dst"]), str(r["ratio"]), "PASS" if r["ok"] else "FAIL"] for r in g["centreline"]]
+            col = {(i, 5): (GREEN if r["ok"] else RED) for i, r in enumerate(g["centreline"])}
+            tb, yy = table(cx, yy, [("String / line", 40), ("dist mm", 13), ("w art", 15), ("w DST", 13), ("ratio", 10), ("", 11)], rows, 1.7, 3.3, colours=col)
+            o.append(tb)
     gen = A.get("generated", {}).get(key) or (A.get("generated", {}).get("star" + key[-1]) if key.startswith("star") else None)
     yy += 2
     o.append(t(cx, yy, "F · NOTES", 2.1, 700)); yy += 3.8
@@ -539,10 +546,15 @@ def G7():
     return o
 
 def compare_page(pid, name, title):
-    o = hdr(f"{pid} · COMPARE — {title}", "Mockup (left) vs stitch preview drawn from the shipped DST (right), same scale; zooms; A14 motif_match + A15 uncovered tables.", pid)
+    o = hdr(f"{pid} · COMPARE — {title}", "Founder's vector art (left; 04 haki: mockup) vs stitch preview drawn from the shipped DST (right), same scale; live view; zooms; centreline + A14 motif_match + A15 tables.", pid)
     im = Image.open(f"out/compare_{name}.png")
-    sc = min(273 / im.width, 172 / im.height)
-    tag, h = img(im, 12, 30, w=im.width * sc, q=85); o.append(tag)
+    gap = 4
+    def fit(n): return min((273 - gap * (n - 1)) / n / im.width, 172 / math.ceil(im.height / n))
+    n = max(range(1, 5), key=fit)                       # tall sheet: n side-by-side columns, largest scale wins
+    ch = math.ceil(im.height / n); sc = fit(n)
+    for k in range(n):
+        part = im.crop((0, k * ch, im.width, min(im.height, (k + 1) * ch)))
+        tag, h = img(part, 12 + k * (im.width * sc + gap), 30, w=im.width * sc, q=88); o.append(tag)
     return o
 
 def F1():
@@ -558,6 +570,9 @@ def F1():
 # ---------------------------------------------------------------- build
 def build():
     PAGES.clear()
+    import kjsvg
+    for k_, nm in (("coin", "coin"), ("spill", "spill"), ("wb", "wb")):
+        W_, H_ = A[k_]["wh"]; kjsvg.render_svg(A[k_]["src"], W_, H_, 20, bg="#2A2A2E" if k_ == "spill" else "#FFFFFF").save(f"out/svg_{nm}.png")
     idx_plan = [("T1", "Cover / style summary + contents", ""), ("T2", "Flats — front + back", "front-leg art"),
                 ("T3", "POM / size chart (HI, inches + cm)", "size 24, back rise, thigh, knee, outseam"),
                 ("T4", "Pattern — factory HI pattern, minus cargo", "pattern file"), ("T5", "Bill of materials", "label + hangtag art"),
@@ -572,38 +587,46 @@ def build():
     add("T2", "Flats", T2(), "front-leg art"); add("T3", "POM", T3(), "x"); add("T4", "Pattern", T4(), "x"); add("T5", "BOM", T5(), "x")
     add("T6", "Construction", T6(), "x"); add("T7", "Labels", T7(), "x"); add("T8", "Placement", T8())
     add("G1", "Embroidery summary", G1())
+    SV = "digitised from the founder's vector art (inputs/svg, 16 Oct clean art, true size)"
+    tf = A["textfit"]
     add("G2", "Coin", element_page("G2", "coin", "01", "Coin-pocket patch — こんぺいとう", "front-right coin pocket", "embroidered patch, heat-cut edge", RB["coin"]["file"],
-                                   "inputs/1792126222329_image.png", None,
-                                   ["Text exactly as the mockup: こんぺいとう (traced per stroke from the close-up mockup, red satin columns).",
-                                    "Border: house spec — 2.0 red heat-cut satin edge + 4.5 band, Ø4.0 white flowers / Ø1.5 dots at 5.8 pitch; rivet corners TL + TR plain (Ø8 caps at 4.25 / 4.25).",
-                                    "Mockup edge reads cream; house-spec red edge kept (shared with patch 03) [proposed — confirm].",
-                                    "Candies: traced silhouettes, radial satin + tint highlight + white sparkle knots. Below 47.5 mm the mockup patch is tucked into the pocket mouth (masked, A15).",
-                                    "Backing: patch twill + cut-away; sew on with a 1 mm red edge stitch; top edge open (pocket opening).", "Sew-out on the production twill before bulk; do not re-set the text from a font."]))
+                                   "out/svg_coin.png", None,
+                                   [f"Art: {SV}: HAKI_coin-pocket_konpeito_ART.svg, layers 01–06 in stitch order; thread = layer fill.",
+                                    f"こんぺいとう: satin COLUMNS on the centrelines of the SVG outlines, one width: art {tf['coin']['04_lettering_RED']['w_art']} mm -> {tf['coin']['04_lettering_RED']['w_needle']} mm needle span; round ends, centre-run underlay; ぺ ring = radial satin.",
+                                    "Border: house spec — 2.0 red heat-cut satin edge + 4.5 band, Ø4.0 white flowers / Ø1.5 dots at 5.8 pitch (the SVG's layer 03); rivet corners TL + TR plain (Ø8 caps at 4.25 / 4.25).",
+                                    "Konpeito: one satin per SVG lobe along its axis; the tint centre star = its own lobes on top; white specks + red accent dots = round bead satin dots at the SVG centres.",
+                                    "Mockup edge reads cream; house-spec red edge kept (as in the SVG; shared with patch 03) [proposed — confirm].",
+                                    "Backing: patch twill + cut-away; sew on with a 1 mm red edge stitch; top edge open (pocket opening).", "Sew-out on the production twill before bulk."],
+                                   ref_label="B · FOUNDER'S VECTOR ART (digitised from it)"))
     add("G3", "Spill", element_page("G3", "spill", "02", "Konpeito spilling out of the coin pocket", "front-right pocket facing", "direct embroidery", RB["spill"]["file"],
-                                    "inputs/1792126222329_image.png", (90, 0, 700, 220),
-                                    ["Candies traced from the mockup above the coin pocket: 3 yellow, 2 blue, 3 pink (behind).",
-                                     "File y = 0 is the coin pocket's top edge; the candies run 3 mm below it so no gap shows at the pocket mouth.",
+                                    "out/svg_spill.png", None,
+                                    [f"Art: {SV}: HAKI_facing_konpeito_ART.svg — F1 back row (sewn first), then F2 front row (lobes, tint centres, white specks).",
+                                     "File y = 0 is the coin pocket's top edge; the art's lower 3 mm runs under the patch so no gap shows at the pocket mouth; SVG centred on the pocket [proposed — confirm].",
                                      "Embroider the cut facing BEFORE the coin-pocket patch is attached; tearaway backing.",
-                                     "Facing must reach >= 14 mm above the coin pocket and stay 3 mm clear of the WB seam [proposed — confirm]."]))
+                                     "Facing must reach >= 14 mm above the coin pocket and stay 3 mm clear of the WB seam [proposed — confirm]."],
+                                    ref_label="B · FOUNDER'S VECTOR ART (digitised from it)"))
     add("G4", "WB patch", element_page("G4", "wb", "03", "Waistband patch — ちひろ note", "back waistband, wearer's right", "embroidered patch, heat-cut edge", RB["wb"]["file"],
-                                       "out/trace/wb_rect.png", None,
-                                       ["Text exactly as the mockup: ちひろ / ♡♡♡ / 元気でね / また会おうね / 理砂 — every stroke traced from the mockup close-up.",
-                                        "ちひろ red, 元気でね + また会おうね black 60wt, 理砂 blue; face line art black 60wt (0.7 lines), cheeks rose.",
-                                        "Mockup field registered on the house field (x 0.95, y 0.92) so the traced art sits inside the 6.5 border.",
-                                        "Dense kanji (気, 会, 理, 砂) at 6–8 mm: check counters on the sew-out; thin joins may need opening by the digitiser.",
-                                        "Sew on after the waistband is attached (patch crosses the WB / yoke seam); 1 mm red edge stitch."]))
+                                       "out/svg_wb.png", None,
+                                       [f"Art: {SV}: HAKI_waistband-patch_ART.svg, layers 01–16 in stitch order; thread = layer fill.",
+                                        "Lettering ちひろ / 元気でね / また会おうね / 理砂, frame, hearts, face: satin COLUMNS on the centrelines of the SVG outlines, ONE width per layer (art width - 0.15 mm):",
+                                        "  " + "; ".join(f"{k_.split('_', 1)[1].rsplit('_', 1)[0]} {v['w_art']} -> {v['w_needle']} ({v['thread']})" for k_, v in tf['wb'].items()) + ".",
+                                        "Flowers: one satin per petal along its axis; white centres, cheeks, eyes and accent dots = round bead satin dots at the SVG centres and sizes.",
+                                        "Flower-centre dots are Ø1.0 in the art: 0.9 mm needle span (visible ~1.1, the house-minimum satin dot). Check 気, 会, 理, 砂 counters on the sew-out.",
+                                        "Sew on after the waistband is attached (patch crosses the WB / yoke seam); 1 mm red edge stitch."],
+                                       ref_label="B · FOUNDER'S VECTOR ART (digitised from it)"))
     add("G5", "Haki", element_page("G5", "haki", "04", "Back pocket L — 'haki' + 2 konpeito stars", "wearer's LEFT back pocket", "direct embroidery", RB["haki"]["file"],
                                    "inputs/back_pocket_haki.png", (150, 380, 340, 480),
                                    [f"Founder: scale up so the konpeito match. Mockup stars 14 px vs right-pocket star 30 px -> group scaled x2.14; stars now 10 mm.",
                                     f"Final sizes: group {RB['haki']['size_mm'][0]:.1f} × {RB['haki']['size_mm'][1]:.1f} mm; 'haki' ~{RB['haki']['size_mm'][0] - 2 * 10 - 8:.0f} mm wide, 2 mm light-blue satin strokes; stars 10 mm.",
                                     f"Placement: yellow-star centre {HAKI_POS[0]:.0f} mm in from the outer edge, {HAKI_POS[1]:.0f} mm below the pocket top edge (moved down from the mockup to clear the hem topstitch).",
                                     "Lettering light blue = Blue tint #8ED2EE (closest house thread to the mockup's light blue) [proposed — confirm].",
+                                    "Stars: the founder's vector stars (inputs/svg), 10 mm. 'haki' is not in the SVGs: traced from inputs/back_pocket_haki.png (as before).",
                                     "Embroider the cut pocket before hemming / attaching; tearaway."]))
     add("G6", "Stars", element_page("G6", "starP", "05", "Back pocket R — pink konpeito star (+ 06 yellow, PROPOSED)", "wearer's RIGHT back pocket", "direct embroidery", RB["starP"]["file"],
                                     "inputs/back_pocket_haki.png", (1040, 370, 1180, 520),
                                     [f"05: centre {STARP_POS[0]:.0f} mm in from the outer edge, {STARP_POS[1]:.0f} mm below the top edge (mockup ~8 mm in: moved inward to clear the outer topstitch).",
                                      f"06 (file {RB['starY']['file']}, {RB['starY']['stitches']} st, {RB['starY']['trims']} trim): yellow star at the left pocket's lower outer corner, in the first flat only [proposed — confirm keep or drop].",
-                                     "Stars: 10 mm puffy 5-point star, body + tint highlight, radial satin, edge-run underlay."]))
+                                     "Stars: the founder's vector star (inputs/svg/HAKI_back-pocket-stars_ART.svg: STAR_P / STAR_Y + highlight layers), 10 mm tip to tip; body + tint highlight, radial satin, edge-run underlay."]))
     add("G7", "Front leg", G7(), "x")
     add("C1", "Compare coin", compare_page("C1", "coin-pocket-patch", "01 coin-pocket patch"))
     add("C2", "Compare spill", compare_page("C2", "coin-spill", "02 konpeito spill"))
