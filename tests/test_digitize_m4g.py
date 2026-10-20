@@ -266,3 +266,72 @@ def test_foam_stop_never_merges_with_its_flat_colour_and_sews_after_touching_fla
         G = SPC.plan_gates(plan)
         assert G["foam_stop"]["ok"] and G["foam_isolated"]["ok"], (plan.stops, G["foam_stop"], G["foam_isolated"])
         assert [s["thread"] for s in plan.stops].count("cream" + SPC.FOAM) == 1
+
+
+# ================================================================== PR #8 review fixes
+def test_reach_cut_keeps_the_seam_underlap_band():
+    """review must-fix 2 (rule 6, keep ~1 mm): the reach cut may take a lower part's overlap under the seam of two higher
+    parts, but never the band within keep_band of its VISIBLE edge: seam_report shows 0 seam length without underlap.
+    L runs 3 mm under A and B. Mutation: keep_band ignored -> the band under the A|B seam is gone, seams lose underlap."""
+    def fx():
+        return [P("L", box(0, 0, 20, 13), z=0), P("A", box(0, 10, 10, 20), "b", z=1), P("B", box(10, 10, 20, 20), "c", z=1)]
+    bare = fx(); SQ.limit_stack(bare, max_layers=2, reach=1.0, keep_band=0.0)
+    assert SQ.seam_report(bare)["without_mm"] > 1.5, SQ.seam_report(bare)            # the control: band taken at the seam
+    ps = fx(); SQ.limit_stack(ps, max_layers=2, reach=1.0, keep_band=1.0)
+    L = ps[0].geom
+    assert abs(L.intersection(box(9, 10, 11, 11)).area - 2.0) < 0.05                  # the 1 mm band stays under the seam
+    assert L.intersection(box(9, 11.05, 11, 13)).area < 0.05                          # deeper than the band: cut
+    r = SQ.seam_report(ps)
+    assert r["without_mm"] < 0.05 and r["seam_mm"] > 19, r
+
+
+def test_default_planner_runs_the_reach_cut_with_the_house_band(monkeypatch):
+    """review must-fix 3: the headline stack result depends on the DEFAULT wiring: plan_sequence calls limit_stack with
+    stack_reach_mm 1.0 and a band = the house keep (cut_keep_mm 1.0). Mutation: default reach 1.0 -> 0.0 -> red."""
+    assert SQ.SEQ_DEFAULTS["stack_reach_mm"] == 1.0 and SQ.SEQ_DEFAULTS["stack_keep_band_mm"] is None
+    seen = {}
+    real = SQ.limit_stack
+    def spy(parts, max_layers=2, min_mm2=0.05, reach=0.0, keep_band=0.0):
+        seen.update(max_layers=max_layers, reach=reach, keep_band=keep_band); return real(parts, max_layers, min_mm2, reach, keep_band)
+    monkeypatch.setattr(SQ, "limit_stack", spy)
+    plan = ObjectPlan(name="t", parts=[P("L", box(0, 0, 20, 11), z=0), P("A", box(0, 10, 10, 20), "b", z=1), P("B", box(10, 10, 20, 20), "c", z=1)])
+    SQ.plan_sequence(plan, {}, Rulebook().principles)
+    assert seen == dict(max_layers=2, reach=1.0, keep_band=Rulebook().principles["cut_keep_mm"]), seen
+
+
+def test_foam_key_is_the_same_needle():
+    """review: '<colour>+foam' is the same physical thread as its flat colour (the operator reuses the needle): 12
+    colours + a puff of one of them is 12 needles, not 13. Mutation: count plan.threads keys -> 13."""
+    from digitize.techniques import specialty as SPC
+    th = {f"c{i}": dict(hex="#%06X" % (i * 1000), name=f"c{i}") for i in range(12)}
+    parts = [P("flat", box(0, 0, 10, 10), "c3", 0), P("puff", box(20, 0, 30, 10), "c3", 1)]
+    parts[1].technique = "puff"
+    plan = ObjectPlan(name="t", parts=parts, threads=th); SPC.isolate_foam(plan)
+    assert len(plan.threads) == 13 and TH.needles_used(plan.threads) == 12
+    th2 = dict(th); th2["c5" + SPC.FOAM] = dict(hex="#000000")                         # keyed without foam_of: suffix read
+    assert TH.needles_used(th2) == 12
+    th2["c99"] = dict(hex="#111111"); assert TH.needles_used(th2) == 13
+
+
+def test_review_options_follow_the_run_and_stale_ids_are_reported():
+    """review nice-to-haves: (1) a technique question offers only techniques the run enables; (2) an empty kind: / zone: /
+    group: selector raises like an unknown id; (3) thread options with a worst merge over dE 18 are offered as NOT
+    RECOMMENDED; (4) answers about parts / zones the next run no longer has are reported as stale. Mutations: options
+    unfiltered; empty selector accepted; recommended flag dropped; stale ids not reported."""
+    plan = _review_plan()
+    issues = [dict(part="village.0", technique="tatami", kind="zone_stub", text="fill narrower than 5.0 mm everywhere (rule 4)")]
+    q = next(x for x in RV.questions(plan, issues, rb=Rulebook(toggles={"satin": False})) if x["topic"] == "type-follows-shape")
+    assert "satin" not in q["options"] and "run" in q["options"] and "tatami" not in q["options"], q["options"]
+    with pytest.raises(SQ.HintError): SQ.dag_v1([P("x", box(0, 0, 1, 1), seq_after=["kind:rooff"])])
+    with pytest.raises(SQ.HintError): SQ.dag_v1([P("x", box(0, 0, 1, 1), seq_before=["group:nope"])])
+    opts = TH.alternatives(W8, PAL, 4, ["red"], alt_min_dE=5.0, max_dE=10.0)
+    assert any(not o["recommended"] for o in opts) and all(o["recommended"] == (o["worst_dE"] <= 10.0) for o in opts)
+    plan.meta["thread_tradeoff"]["options"][1]["recommended"] = False
+    tq = next(x for x in RV.questions(plan, []) if x["id"] == "threads.tradeoff")
+    assert "[keep_c] keep c (NOT RECOMMENDED" in tq["text"]
+    qs = RV.questions(_review_plan(), [])
+    cfg, rep = RV.apply_answers({}, {"direction:low_grain:village": "45 deg", "zone_stub:ground": "leave out"}, qs)
+    nxt = _review_plan(); nxt.parts = [p for p in nxt.parts if p.id != "village.1" and p.zone != "ground"]   # ids changed
+    RV.apply_extract(cfg, nxt.parts)
+    out = RV.apply_plan(cfg, nxt, Rulebook())
+    assert out["stale"] == ["village.1"] and cfg["_answers_report"]["stale"] == ["zone:ground", "village.1"], cfg["_answers_report"]

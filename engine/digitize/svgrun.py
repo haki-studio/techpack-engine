@@ -22,7 +22,7 @@ if ENGINE not in sys.path: sys.path.insert(0, ENGINE)
 
 import numpy as np
 from shapely.ops import unary_union
-from digitize import config, sequence as SQ, compile as CP, techniques
+from digitize import config, sequence as SQ, compile as CP, techniques, threads as TH
 from digitize.schema import ObjectPlan, Layer
 from digitize.rulebook import Rulebook
 
@@ -81,7 +81,8 @@ class SvgRun:
             if plan.stops and plan.stops[-1]["thread"] == p.thread and plan.stops[-1].get("last"): plan.stops[-1]["parts"].append(p.id)
             else: plan.stops.append(dict(thread=p.thread, parts=[p.id], last=True))
         need = config.needles(self.cfg)
-        if len(plan.threads) > need: raise SystemExit(f"plan uses {len(plan.threads)} threads > {need} needles")
+        if TH.needles_used(plan.threads) > need:                                                # M4g: <colour>+foam = the same needle
+            raise SystemExit(f"plan uses {TH.needles_used(plan.threads)} threads > {need} needles")
         CP.plan_blocks(plan)
         plan.meta.update(issues=issues)
         plan.to_json(self.f("plan.json")); self.plan = plan

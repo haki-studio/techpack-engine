@@ -73,7 +73,7 @@ def _slug(s):
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")[:48]
 
 
-def questions(plan, issues, extract_log=None, gates=None):
+def questions(plan, issues, extract_log=None, gates=None, rb=None):
     """structured questions for the person who approves the run. Every question names the parts it is about, has a
     default (= what this run did) and a stable id. Topics: zone_stub (unresolved kinds: zones whose splitter is not
     built), direction (stub parts with almost no reference grain), confidence (parts a splitter was unsure of,
@@ -113,7 +113,8 @@ def questions(plan, issues, extract_log=None, gates=None):
         topic = "house-min" if sev == "report" else "type-follows-shape"
         q(f"{topic}:{tech}:{_slug(text)}", topic,
           f"{len(ids)} {tech} parts: {text} ({'rule 9, house minimum' if sev == 'report' else 'DIGITIZING_PRINCIPLES rule 4'}). "
-          f"Keep {tech}, or change the stitch?", ids, ["keep", "satin", "tatami", "run", "bean", "drop"], "keep",
+          f"Keep {tech}, or change the stitch?", ids,
+          ["keep"] + [t for t in ("satin", "tatami", "run", "bean") if t != tech and (rb is None or rb.enabled(t))] + ["drop"], "keep",
           "another technique: those parts use it in the next run (it must be enabled in run.yaml); drop: not sewn")
     for t, v in sorted(plan.threads.items()):
         if v.get("protected"):
@@ -129,7 +130,7 @@ def questions(plan, issues, extract_log=None, gates=None):
         mixtxt = "; ".join(f"{m['src']} as {m['dst']} dE {m['dE']}, or an optical mix {int(100 * (1 - m['mix']['ratio']))}% "
                            f"{m['mix']['a']} + {int(100 * m['mix']['ratio'])}% {m['mix']['b']} dE {m['mix']['dE']}"
                            for m in mixes if m["mix"]["dE"] < m["dE"] - 2)
-        lines = [f"[{o['id']}] {o['label']}: merges {', '.join(o['merges']) or 'none'} (worst dE {o['worst_dE']})" for o in opts]
+        lines = [f"[{o['id']}] {o['label']}{'' if o.get('recommended', True) else ' (NOT RECOMMENDED: worst dE ' + str(o['worst_dE']) + ')'}: merges {', '.join(o['merges']) or 'none'} (worst dE {o['worst_dE']})" for o in opts]
         q("threads.tradeoff", "threads",
           f"The needle limit ({len(plan.threads)} threads) forces merges. Which trade-off? " + " | ".join(lines) +
           (f". Optical mixes that read closer than the merge (an open layer, rule 8; not sewn unless chosen per motif): {mixtxt}" if mixtxt else ""),
@@ -185,13 +186,16 @@ def apply_extract(cfg, parts):
     """extract-stage overrides: parts of zones answered 'leave out' are not sewn. Returns (parts, dropped ids)."""
     dz = set((cfg.get("review") or {}).get("drop_zones", []))
     keep = [p for p in parts if p.zone not in dz]
+    stale = sorted(dz - {p.zone for p in parts})
+    if stale: (cfg.setdefault("_answers_report", {})).setdefault("stale", []).extend(f"zone:{z}" for z in stale)
     return keep, [p.id for p in parts if p.zone in dz]
 
 
 def apply_plan(cfg, plan, rb):
     """plan-stage overrides, after the rulebook chose technique + direction: an answered angle (fixed rows, source
     'answer', meta answer_angle for the audit), an answered technique (must be enabled in the run: a toggle is a promise),
-    'drop'. Returns dict(angles=[ids], technique=[ids], dropped=[ids])."""
+    'drop'. Part ids answered about that this run no longer has are STALE: returned and added to the answers report
+    (cfg["_answers_report"]["stale"]), never silently skipped. Returns dict(angles, technique, dropped, stale)."""
     from digitize.schema import DirSpec
     rv = cfg.get("review") or {}; A = rv.get("angles", {}); Tq = rv.get("technique", {}); out = dict(angles=[], technique=[], dropped=[])
     keep = []
@@ -207,4 +211,7 @@ def apply_plan(cfg, plan, rb):
             out["angles"].append(p.id)
         keep.append(p)
     plan.parts = keep
+    have = {p.id for p in plan.parts} | set(out["dropped"])
+    out["stale"] = sorted((set(A) | set(Tq)) - have)          # answered about parts this run does not have (ids changed)
+    if out["stale"]: (cfg.setdefault("_answers_report", {})).setdefault("stale", []).extend(out["stale"])
     return out

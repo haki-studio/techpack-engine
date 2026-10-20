@@ -146,19 +146,22 @@ def _desc(tp, names):
     return [f"{nm(m['src'])} -> {nm(m['dst'])} (dE {m['dE']})" for m in tp["merges"]]
 
 
-def alternatives(weights, palette, needles=12, protected=(), names=None, importance=None, sal=None, alt_min_dE=8.0, max_alts=4):
+def alternatives(weights, palette, needles=12, protected=(), names=None, importance=None, sal=None, alt_min_dE=8.0, max_alts=4, max_dE=18.0):
     """the trade-off as options (the founder decides, LESSONS: thread choices are design decisions). Options:
       default            the plain plan (area x importance)
       keep_<tone>        for each VISIBLE merge of the default (dE >= alt_min_dE, most expensive first, at most max_alts):
                          the plan that keeps that tone, and what it merges instead
       saliency           area x importance x salience() (if sal given)
-    Each: dict(id, label, keep, saliency, merges=[text], lost=[merges not in the default], worst_dE, cost)."""
+    Each: dict(id, label, keep, saliency, merges=[text], lost=[merges not in the default], worst_dE, cost, recommended):
+    recommended = False when the option's worst merge is over max_dE (18: a different colour, not a shade; PR #8 review),
+    shown to the founder as NOT RECOMMENDED but still offered."""
     base = plan(weights, palette, needles, protected, names, importance)
     def opt(id_, label, keep=(), saliency=None):
         tp = plan(weights, palette, needles, protected, names, importance, keep=keep, saliency=saliency)
         bm = {(m["src"], m["dst"]) for m in base["merges"]}
         lost = [m for m in tp["merges"] if (m["src"], m["dst"]) not in bm]
-        return dict(id=id_, label=label, keep=list(keep), saliency=bool(saliency), merges=_desc(tp, names),
+        worst = max([m["dE"] for m in tp["merges"]] or [0.0])
+        return dict(id=id_, label=label, keep=list(keep), saliency=bool(saliency), merges=_desc(tp, names), recommended=worst <= max_dE,
                     lost=[f"{(names or {}).get(m['src'], m['src'])} -> {(names or {}).get(m['dst'], m['dst'])} (dE {m['dE']})" for m in lost],
                     worst_dE=max([m["dE"] for m in tp["merges"]] or [0.0]), cost=round(sum(m["cost"] for m in tp["merges"]), 1),
                     threads=sorted(tp["threads"]))
@@ -189,3 +192,13 @@ def plan_from_config(weights, T, needles, sal=None):
     tp = plan(weights, pal, needles, prot, names, imp, keep=keep, saliency={k: v["x"] for k, v in sal.items()} if use_sal else None)
     tp["tradeoff"] = dict(choice=choice, keep=keep, saliency=bool(use_sal), options=opts, salience=sal)
     return tp
+
+
+def needles_used(threads):
+    """physical threads = needles: a puff stop's key '<colour>+foam' (M6 isolate_foam, threads[k]["foam_of"]) is the
+    SAME thread as its flat colour, reused on the same needle; it never counts twice against the needle limit"""
+    from digitize.techniques.specialty import FOAM
+    def base(k, v):
+        if isinstance(v, dict) and v.get("foam_of"): return v["foam_of"]
+        return k[:-len(FOAM)] if k.endswith(FOAM) else k
+    return len({base(k, v) for k, v in threads.items()})

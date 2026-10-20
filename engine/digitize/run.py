@@ -124,6 +124,9 @@ class Run:
                 p.meta["dir_was"] = dict(angle=p.dir.angle, mode=p.dir.mode, source=p.dir.source)   # toggled off: the kind's alt_dir
                 p.dir = self.rb.direction(p.kind, technique=p.technique); p.meta.pop("sep_deg", None); p.meta.pop("band_offset_deg", None)
         answered = RV.apply_plan(self.cfg, plan, self.rb)                                      # M4g: answers
+        if self.cfg.get("_answers_report", {}).get("stale"):                                    # M4g: stale ids reported
+            json.dump(self.cfg["_answers_report"], open(self.f("answers_report.json"), "w"), indent=1)
+            print(f"answers: STALE (no such part / zone in this run): {self.cfg['_answers_report']['stale'][:8]}")
         sq = dict(SQ.SEQ_DEFAULTS, **self.cfg["sequence"]); n0 = len(plan.parts); m4 = sq["planner"] != "m1"   # M4g
         if m4: seqi = SQ.plan_sequence(plan, sq, P); dropped = seqi["dropped"]                             # M4g
         else:
@@ -138,15 +141,17 @@ class Run:
         used = {p.thread for p in plan.parts}
         plan.threads = {k: v for k, v in plan.threads.items() if k in used}
         need = config.needles(self.cfg)
-        if len(plan.threads) > need: raise SystemExit(f"plan uses {len(plan.threads)} threads > {need} needles")
+        if TH.needles_used(plan.threads) > need:                                                # M4g: <colour>+foam = the same needle
+            raise SystemExit(f"plan uses {TH.needles_used(plan.threads)} threads > {need} needles")
         CP.plan_blocks(plan)
         if m4:                                                                                             # M4g
             if sq["orient"]: seqi["travel"] = SQ.sequence_blocks(plan, sq["touch"], sq["group_bonus_mm"], pred=pred, inner_travel=sq["inner_travel"])
             seqi["budget"] = SQ.budget(plan, (self.cfg.get("budget") or {}).get("stitches_max"))
             seqi["report"] = SQ.report(plan, pred=pred); seqi["stack_max_plan"] = SQ.stack_count(plan.parts)
+            seqi["seams"] = dict(pair=SQ.seam_report(plan.parts), any_lower=SQ.seam_report(plan.parts, any_lower=True))   # rule 6 underlap
             plan.meta["sequence"] = dict(planner="m4", stack_cut_parts=len(seqi["stack_cut"]),
                                          stack_cut_mm2=round(sum(c for _, c in seqi["stack_cut"]), 1), **{k: seqi[k] for k in
-                                         ("hints", "budget", "report", "stack_max_plan") if k in seqi}, travel=seqi.get("travel"))
+                                         ("hints", "budget", "report", "stack_max_plan", "seams") if k in seqi}, travel=seqi.get("travel"))
             print(f"sequence (M4): {plan.meta['sequence']['report']['stops']} stops, stack <= {seqi['stack_max_plan']} "
                   f"({len(seqi['stack_cut'])} parts cut), travel {seqi.get('travel')}, budget {seqi['budget']}")
         plan.meta.update(dropped_fragments=dropped, issues=issues, parts_before_sequence=n0, field_basis_refreshed=refreshed, review_answers_plan=answered,
@@ -160,7 +165,7 @@ class Run:
     def review(self):
         plan = ObjectPlan.from_json(self.f("plan.json") if os.path.exists(self.f("plan.json")) else self.f("parts.json"))
         RV.part_map(plan, self.crop, self.f("part_map.png"))
-        qs = RV.questions(plan, plan.meta.get("issues", []))
+        qs = RV.questions(plan, plan.meta.get("issues", []), rb=self.rb)                       # M4g: options = enabled techniques
         json.dump(qs, open(self.f("questions.json"), "w"), indent=1)
         parts_json = dict(name=plan.name, n=len(plan.parts), parts=[dict(id=p.id, kind=p.kind, zone=p.zone, thread=p.thread, z=p.z,
                           technique=p.technique, angle=p.dir.angle, dir_source=p.dir.source, area_mm2=round(p.area, 1)) for p in plan.parts])

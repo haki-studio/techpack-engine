@@ -171,7 +171,7 @@ def order(parts, touch=0.5):
 # cycle raises too. A hint wins over a contradicting z edge (seq_after on a part that is lower).
 import numpy as _np
 
-SEQ_DEFAULTS = dict(planner="m4", keep_mm=1.0, min_fragment_mm2=2.0, max_layers=2, stack_reach_mm=1.0, touch=0.5, orient=True, stop_lookahead=True,
+SEQ_DEFAULTS = dict(planner="m4", keep_mm=1.0, min_fragment_mm2=2.0, max_layers=2, stack_reach_mm=1.0, stack_keep_band_mm=None, touch=0.5, orient=True, stop_lookahead=True,
                     inner_travel=True, group_bonus_mm=3.0)
 LINE_STYPES = ("run", "bean")
 
@@ -200,10 +200,11 @@ def _select(parts, sel, me=None):
     if sel.startswith("kind:"): out = [i for i, p in enumerate(parts) if p.kind == sel[5:]]
     elif sel.startswith("zone:"): out = [i for i, p in enumerate(parts) if p.zone == sel[5:]]
     elif sel.startswith("group:"): out = [i for i, p in enumerate(parts) if p.meta.get("group") == sel[6:]]
-    else:
-        out = [i for i, p in enumerate(parts) if p.id == sel]
-        if not out: raise HintError(f"sequence hint {sel!r} (on part {parts[me].id if me is not None else '?'}) names no part")
-    return [i for i in out if i != me]
+    else: out = [i for i, p in enumerate(parts) if p.id == sel]
+    out = [i for i in out if i != me]
+    if not out:              # a typo ("kind:rooff") must not silently drop an order the splitter asked for (PR #8 review)
+        raise HintError(f"sequence hint {sel!r} (on part {parts[me].id if me is not None else '?'}) matches no other part")
+    return out
 
 
 def apply_hints(parts):
@@ -236,7 +237,7 @@ def _over_k(g, others, k):
     return clean(unary_union(acc)) if acc else None
 
 
-def limit_stack(parts, max_layers=2, min_mm2=0.05, reach=0.0):
+def limit_stack(parts, max_layers=2, min_mm2=0.05, reach=0.0, keep_band=0.0):
     """rule 6: never more than max_layers stacked fill layers. Wherever more overlap (the 1 mm underlap bands of two
     lower parts meeting under a third, a neighbour's band under a lobe + its open shade), the LOWEST part loses that
     area: it is buried under max_layers others there, so nothing visible changes and no gap opens (by induction from the
@@ -245,7 +246,9 @@ def limit_stack(parts, max_layers=2, min_mm2=0.05, reach=0.0):
     reach > 0: the file gate counts layers per 1 mm CELL (qa.stack_map), so a lower part's band under the SEAM of two
     higher parts (each of them within `reach` mm) is a third layer in that cell although no point has three. With reach,
     the lower part also loses the band it has UNDER a higher part within `reach` of a second higher part (only area that
-    is already covered: its visible area is never cut). Returns [(part id, mm2 cut)]."""
+    is already covered: its visible area is never cut). keep_band > 0 (PR #8 review, rule 6 "keep ~1 mm"): the reach cut
+    never takes the band within keep_band mm of the lower part's VISIBLE edge, so its seams keep their underlap; only a
+    point that is really 3 fill parts deep (the exact cut above) loses it. Returns [(part id, mm2 cut)]."""
     lay = [i for i, p in enumerate(parts) if _stype(p) not in LINE_STYPES]
     if not lay: return []
     geoms = {i: clean(parts[i].geom) for i in lay}
@@ -263,13 +266,56 @@ def limit_stack(parts, max_layers=2, min_mm2=0.05, reach=0.0):
         if reach:
             near = _over_k(g, [h.buffer(reach) for h in hs], max_layers)
             if near is not None:
-                near = clean(near.intersection(unary_union(hs)))          # only where it is already under a higher part
+                H = unary_union(hs)
+                near = clean(near.intersection(H))                        # only where it is already under a higher part
+                if keep_band and not near.is_empty:                       # rule 6: the seam keeps its underlap band
+                    near = clean(near.difference(clean(g.difference(H)).buffer(keep_band)))
                 over = near if over is None else clean(unary_union([over, near]))
         if over is None or over.area <= min_mm2: continue
         ng = clean(g.difference(over))
         cut.append((parts[i].id, round(g.area - ng.area, 2))); geoms[i] = ng
     for i in lay: parts[i].geom = geoms[i]
     return cut
+
+
+def seam_report(parts, min_depth=0.5, near=0.3, visible=True, any_lower=False):
+    """rule 6 (keep ~1 mm under a seam), measured on the plan geometry: for every pair of touching FILL parts of
+    different z, the seam = the higher part's outline within `near` mm of the lower part; the seam HAS underlap where the
+    lower part runs at least `min_depth` mm under the higher one there (the overlap, opened by min_depth, reaches the
+    outline). any_lower=True: the seam is backed by ANY lower fill running min_depth under the higher part there (what
+    keeps bare fabric out when the upper edge pulls in), not only by the pair's own lower part. visible=True: seam stretches covered by a third, higher part are left out (buried, not on the garment).
+    Equal-z neighbours (a traced partition: neither sews first) are reported apart. Returns dict(seam_mm,
+    without_mm, pct_without, equal_z_seam_mm, pairs, pairs_without)."""
+    lay = [p for p in parts if _stype(p) not in LINE_STYPES and not clean(p.geom).is_empty]
+    G = [clean(p.geom) for p in lay]; tree = STRtree(G)
+    seam = without = eq = 0.0; pairs = pw = 0; vis = {}
+    for i, p in enumerate(lay):
+        for j in tree.query(G[i].buffer(near), predicate="intersects"):
+            j = int(j)
+            if j <= i: continue
+            lo, hi = (i, j) if lay[i].z < lay[j].z else (j, i)
+            S = G[hi].boundary.intersection(G[lo].buffer(near))
+            if S.is_empty or S.length < 0.05: continue
+            if lay[i].z != lay[j].z:                       # the seam is where the LOWER part's VISIBLE area meets the higher
+                if lo not in vis:                          # outline, not where it runs under this or another higher part
+                    up = [G[int(k)] for k in tree.query(G[lo], predicate="intersects") if lay[int(k)].z > lay[lo].z]
+                    vis[lo] = clean(G[lo].difference(unary_union(up))) if up else G[lo]
+                S = S.intersection(vis[lo].buffer(near))
+                if S.is_empty or S.length < 0.05: continue
+            if visible:                                   # a seam buried under a third, higher part is not a seam on the garment
+                top = [G[int(k)] for k in tree.query(S, predicate="intersects") if lay[int(k)].z > lay[hi].z]
+                if top: S = S.difference(unary_union(top))
+                if S.is_empty or S.length < 0.05: continue
+            if lay[i].z == lay[j].z: eq += S.length; continue
+            if any_lower:
+                low = [G[int(k)] for k in tree.query(G[hi].buffer(near), predicate="intersects") if lay[int(k)].z < lay[hi].z]
+                U = unary_union(low).intersection(G[hi]) if low else G[lo].intersection(G[hi])
+            else: U = G[lo].intersection(G[hi])
+            deep = U.buffer(-min_depth / 2).buffer(min_depth / 2 + 0.15)   # +0.15: square corners survive the opening if not U.is_empty else U
+            cov = S.intersection(deep).length if not deep.is_empty else 0.0
+            seam += S.length; without += S.length - cov; pairs += 1; pw += (cov < 0.05 * S.length)
+    return dict(seam_mm=round(seam, 1), without_mm=round(without, 1), pct_without=round(100 * without / max(seam, 1e-9), 1),
+                equal_z_seam_mm=round(eq, 1), pairs=pairs, pairs_without=pw, min_depth=min_depth, visible=visible, any_lower=any_lower)
 
 
 def stack_count(parts):
@@ -665,6 +711,8 @@ def plan_sequence(plan, sq, P, stitches_max=None, log=print):
     sq = dict(SEQ_DEFAULTS, **(sq or {}))
     hints = apply_hints(plan.parts)
     underlap(plan.parts, sq["keep_mm"]); cut_under(plan.parts, sq["keep_mm"])
-    cut = limit_stack(plan.parts, int(sq.get("max_layers", P.get("max_stacked_layers", 2))), reach=float(sq.get("stack_reach_mm", 0.0)))
+    band = sq.get("stack_keep_band_mm"); band = float(sq["keep_mm"] if band is None else band)
+    cut = limit_stack(plan.parts, int(sq.get("max_layers", P.get("max_stacked_layers", 2))), reach=float(sq.get("stack_reach_mm", 0.0)),
+                      keep_band=band)
     plan.parts, dropped = absorb_fragments(plan.parts, sq["min_fragment_mm2"])
     return dict(hints=hints, stack_cut=cut, dropped=dropped)
