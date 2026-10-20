@@ -261,14 +261,16 @@ def test_rulebook_m3b_kinds_follow_the_playbook():
 
 def test_limbs_cut_forks_not_square_ends():
     """a branching bark stroke is cut into one limb per skeleton branch (a Y: 3 limbs), while the medial-axis forks
-    into the corners of a square-ended stroke are spurs, not limbs (a 7 x 24 mm bar: 1 limb). Mutation (spurs kept)
+    into the corners of a square-ended stroke are spurs, not limbs (a 7 x 24 mm bar at 30 deg: 1 limb, not 5). Mutation (spurs kept)
     -> red."""
     from digitize.extract.splitters import trunk
     x, y, rgb = _canvas(60, 50)
     ctx, ev = _ctx(rgb, (0, 0, 60, 50))
-    X, Y = np.meshgrid((np.arange(ev.W) + 0.5) / ev.ppm, (np.arange(ev.H) + 0.5) / ev.ppm)
-    bar = (np.abs(X - 30) < 12) & (np.abs(Y - 10) < 3.5)
-    assert len(trunk.limbs(ctx, bar, 2.0)) == 1
+    from shapely import affinity
+    bar = affinity.rotate(box(18, 6.5, 42, 13.5), 30)              # square ends, off the pixel grid
+    assert len(trunk.limbs(ctx, ev.mask(bar), 2.0)) == 1
+    knob = box(15, 30, 45, 37).union(box(20, 29, 22, 38))          # a bump on the outline is not a limb either
+    assert len(trunk.limbs(ctx, ev.mask(knob), 2.0)) == 1
     seg = lambda a, b, w: LineString([a, b]).buffer(w / 2)
     yy = seg((30, 45), (30, 32), 3).union(seg((30, 32), (20, 22), 2.5)).union(seg((30, 32), (40, 22), 2.5))
     assert len(trunk.limbs(ctx, ev.mask(yy), 2.0)) == 3
