@@ -48,7 +48,7 @@ All 112 files (7 sizes x 4 pieces + splits) pass prod_gates; A14/A15 blocking 0;
 - One foam procedure (`kcdoc.foam_steps`): STOP before the first puff stop, tear after the last; per full file and per
   split, printed on S1 (STOP + TEAR rows), F2 and the README (every size); G3 / G5 wording aligned.
 - Tests `tests/test_kcos_gates.py` (6, red-then-green) for foam_gates, foam mask, straight_chains, glyph_check; gate code
-  moved to `kcgates.py` (pure). LESSONS A32 / B40 / B41 / D5 (main ended at A31 / B39 / D4 when merged in).
+  moved to `kcgates.py` (pure). LESSONS A32 / B41 / B42 / D5 (renumbered after merging main: PR #21 took B40).
 - Also: compare sheets say Rev C, compare_03 zooms fixed, T1 lists F2, F1 chenille section dropped (chenille=False), Q5
   shown large (G4), G4 sizes from the DST, E05 star count reconciled (187; the 190 predates the glint exclusion), JP text
   rows on a stated text tier (IoU >= 0.40, size 0.55-1.45) instead of an exemption, the 'moved' JP mint row was a real miss

@@ -149,6 +149,10 @@ def verdict(row, T):
         checks["separation"] = row["separation"]["close"] <= T.get("separation_close_max", 0)
     # --- M4c --- chaos after the radial-floret exemption (digitize.gates_radial), same threshold, same tile count
     if "radial_exemption" in row: checks["direction_chaos"] = row["radial_exemption"]["pct_chaos_after"] <= T["direction_pct_chaos_max"]
+    # --- M4s --- two NEW lines on the labelled file (part-based stack, travel on sewn fill), appended after the old 9;
+    # rows without them keep their 8 / 9 lines. The strict run-based "stack" line above is NOT retired (BENCH_m4s.md).
+    from digitize import gates_stack
+    checks.update(gates_stack.verdict_lines(row, T))
     return checks
 
 
@@ -194,6 +198,10 @@ def md_row(row):
     sep = f"; sep. close {row['separation']['close']}" if "separation" in row else ""
     rx = row.get("radial_exemption")                                    # M4c: raw chaos, then after the radial exemption
     chs = f"{d['pct_chaos']} raw; {rx['pct_chaos_after']} after radial exemption ({rx['n_exempt']} tiles)" if rx else f"{d['pct_chaos']}"
+    if "stack_parts" in row or "travel_on_fill" in row:                 # --- M4s --- old 9 kept visible next to x/11
+        from digitize import gates_stack
+        old = [k for k in gates_stack.OLD_GATES if k in v]
+        sep += f"; old {len(old)}: {sum(v[k] for k in old)}/{len(old)}"
     return (f"| {row['date']} | {row['label']} | {dok} | {chs} | {d['pct_ok_all_stitches']} | {acs} | "
             f"{de['mean']} / {de['p95']} / {de['flags']} | {tr['per_100cm2']} ({tr['trims']}) | {sa['satins']} / {sa['blob']} / {sa['too_wide']} / {sa['too_narrow']} / {sa['fans']} | "
             f"{st['max']} / {st['over_cm2']} | {co['threads_in_file']} ({'y' if co['red'] else 'n'}, {'y' if co['gold'] else 'n'}) | "

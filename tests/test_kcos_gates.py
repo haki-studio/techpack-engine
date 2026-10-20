@@ -1,5 +1,5 @@
 """KCOS Rev C gates (PR #20 review): each proven red on a synthetic failing file and green on a passing one.
-foam_gates (LESSONS B40), the foam travel mask in the project's make_pattern patch (B40), straight_chains (B41) and the
+foam_gates (LESSONS B41), the foam travel mask in the project's make_pattern patch (B41), straight_chains (B42) and the
 per-glyph text gate glyph_check (A32)."""
 import os, sys, math, tempfile
 import numpy as np
