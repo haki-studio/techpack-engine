@@ -29,7 +29,7 @@ from digitize import direction as DR
 
 STAGES = ["extract", "review", "plan", "compile", "gates", "panel", "bench"]
 SPLIT_KIND = {"sky": "sky_band", "fall": "fall_cord", "pool": "pool"}
-from digitize.extract.splitters import trunk, crown, blossom          # --- M3b ---
+from digitize.extract.splitters import trunk, crown, blossom, hints   # --- M3b ---
 M3B_SPLITTERS = {"trunk": trunk.split, "crown": crown.split, "blossom": blossom.split}
 NO_FILL_DIRECTION = ("dot",)                                          # beads: judged by size (rule 9), not by angle
 
@@ -102,6 +102,7 @@ class Run:
         n_traced = len(parts); sk = cfg.get("specks", {}) or {}
         parts, merged = SQ.merge_specks(parts, sk.get("min_mm2", cfg["stub"]["min_part_mm2"]), protected=T["protected"],
                                         min_protected_mm2=cfg["stub"]["min_protected_mm2"])
+        hint_fix = hints.repoint(parts, merged)            # M3b: knockout_of targets merged away -> re-pointed (PR #10 review)
         sep = self.rb.principles["neighbour_sep_deg"]
         moves = DR.separate(parts, sep=tuple(sep), kinds=set(self.cfg.get("separate_kinds", ["stratum_band", "cloud_shade", "cloud_wisp"])))
         layers = sorted({(p.kind if p.kind != "zone_stub" else p.zone, p.z) for p in parts}, key=lambda t: t[1])
@@ -111,7 +112,7 @@ class Run:
                                                            source_ppm_median=self.ref()["source_ppm_median"],
                                                            separation_moves=[list(m) for m in moves], traced_parts=n_traced,
                                                            specks_merged=[list(m) for m in merged],
-                                                           splitter_stats=getattr(ctx, "stats", {})))   # M3b: florets / clumps / trunks
+                                                           splitter_stats=getattr(ctx, "stats", {}), hint_repairs=[list(h) for h in hint_fix]))   # M3b: florets / clumps / trunks
         plan.to_json(self.f("parts.json"), with_blocks=False)
         self.plan = plan
         print(f"extract: {len(parts)} parts from {len(zs['zones'])} zones ({n_traced} traced, {len(merged)} specks merged, "
@@ -131,6 +132,7 @@ class Run:
         sq = self.cfg["sequence"]; n0 = len(plan.parts)
         SQ.underlap(plan.parts, sq["keep_mm"]); SQ.cut_under(plan.parts, sq["keep_mm"])
         plan.parts, dropped = SQ.absorb_fragments(plan.parts, sq["min_fragment_mm2"])
+        hint_fix = hints.repoint(plan.parts)                # M3b: a knockout_of target dropped as a fragment -> hint removed
         refreshed = DR.refresh_field_basis(plan.parts)                  # bases on the geometry actually sewn (audited)
         sep = self.rb.principles["neighbour_sep_deg"]
         moves = DR.separate(plan.parts, sep=tuple(sep), kinds=set(self.cfg.get("separate_kinds", ["stratum_band", "cloud_shade", "cloud_wisp"])))
@@ -141,7 +143,7 @@ class Run:
         need = config.needles(self.cfg)
         if len(plan.threads) > need: raise SystemExit(f"plan uses {len(plan.threads)} threads > {need} needles")
         CP.plan_blocks(plan)
-        plan.meta.update(dropped_fragments=dropped, issues=issues, parts_before_sequence=n0, field_basis_refreshed=refreshed,
+        plan.meta.update(hint_repairs_plan=[list(h) for h in hint_fix], dropped_fragments=dropped, issues=issues, parts_before_sequence=n0, field_basis_refreshed=refreshed,
                          separation_moves_plan=[list(m) for m in moves])
         plan.to_json(self.f("plan.json")); self.plan = plan
         print(f"plan: {len(plan.parts)} parts ({len(dropped)} fragments dropped), {len(plan.stops)} stops, {len(plan.threads)} threads, "
@@ -271,8 +273,13 @@ class Run:
         if fa["parts"]:                                     # guided / contour parts: >= 85 % of their visible stitches within 15 deg
             coh["field_adherence"] = fa; coh["ok"] = coh["ok"] and fa["pct_within"] >= 85.0
         ra = blossom.radial_adherence(plan, segs, sp, self.crop, ppm=ppm)    # M3b: radial florets, every stitch on its ray
-        if ra["parts"]:
-            coh["radial_adherence"] = ra; coh["ok"] = coh["ok"] and ra["pct_within"] >= 85.0
+        if ra["parts"] or ra["no_centre"] or ra["unseen"]:
+            coh["radial_adherence"] = dict(ra, no_centre=ra["no_centre"][:40], unseen=ra["unseen"][:40], n_no_centre=len(ra["no_centre"]), n_unseen=len(ra["unseen"]))
+            coh["ok"] = coh["ok"] and ra["ok"] and not ra["unseen"]
+            for key, ids in (("no-visible-stitches / floret", ra["unseen"]), ("no-centre / floret", ra["no_centre"])):
+                if ids:
+                    coh["by_kind"][key] = len(ids); coh["fails"] += len(ids)
+                    k0 = key.split(" / ")[0]; coh["kinds"][k0] = coh["kinds"].get(k0, 0) + len(ids)
         ca = trunk.column_adherence(plan, segs, sp, self.crop, ppm=ppm)     # M3b: branch columns, across the centreline
         if ca["parts"]:
             coh["column_adherence"] = ca; coh["ok"] = coh["ok"] and ca["pct_within"] >= 85.0

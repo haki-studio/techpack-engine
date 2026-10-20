@@ -131,7 +131,7 @@ def split(ctx, zone, z, claim):
             ph = math.degrees(math.atan2(c[1] - gc.y, c[0] - gc.x)) % 72.0     # first petal points away from the mass centre
             fg = five_petals(c, r, ph, sc["notch_mm"], sc["notch_deg"], sc["petal_waist"]).intersection(reg).difference(Point(c).buffer(kd / 2)).buffer(0)
             if r >= sc["floret_r_min"] and not fg.is_empty and fg.area >= sc["floret_min_mm2"]:
-                con = dict(rule="radial", centre=[float(c[0]), float(c[1])])
+                con = dict(rule="radial")                     # the centre lives in meta["centre"] only
                 parts.append(Part(id=f"{fid}", kind="floret", geom=fg, thread=fl_t, z=z + zf,
                                   dir=DirSpec(0.0, mode="radial", source="splitter", note="radial from the floret centre"),
                                   zone=zone["id"], meta=dict(splitter="blossom", mass=int(mi), phase=round(ph, 2), centre=[float(c[0]), float(c[1])],
@@ -159,10 +159,15 @@ def split(ctx, zone, z, claim):
 
 def radial_adherence(plan, segs, labels, crop, ppm=12.0, max_dev=15.0, min_len=0.6, centre_mm=0.9):
     """radial parts on the WRITTEN file: each visible stitch (>= min_len, midpoint >= centre_mm from the centre) vs the ray
-    from its part's centre through the stitch midpoint. -> dict(parts, stitches, within, pct_within)"""
+    from its part's centre (meta["centre"]) through the stitch midpoint. EVERY radial-mode part is accounted for: one
+    without a centre is listed in no_centre and makes ok False (PR #10 review: it used to be skipped); one with no visible
+    stitch is listed in unseen (A22: flagged, never passed). -> dict(parts, stitches, within, pct_within, no_centre,
+    unseen, ok)"""
     import qa
     vis, idx = qa.visible_segments(segs, crop, ppm=ppm, return_index=True)
-    cen = {p.id: p.meta.get("centre") for p in plan.parts if p.dir.mode == "radial" and p.meta.get("centre")}
+    radial = [p for p in plan.parts if p.dir.mode == "radial"]
+    no_centre = [p.id for p in radial if not p.meta.get("centre")]
+    cen = {p.id: p.meta["centre"] for p in radial if p.meta.get("centre")}
     n = w = 0; seen = set()
     for s, i in zip(vis, idx):
         pid = labels[i]
@@ -174,4 +179,7 @@ def radial_adherence(plan, segs, labels, crop, ppm=12.0, max_dev=15.0, min_len=0
         a = math.degrees(math.atan2(s[3] - s[1], s[2] - s[0])) % 180; ray = math.degrees(math.atan2(my - cy, mx - cx)) % 180
         d = abs(a - ray) % 180; d = min(d, 180 - d)
         n += 1; w += d <= max_dev; seen.add(pid)
-    return dict(parts=len(seen), stitches=n, within=int(w), pct_within=round(100.0 * w / max(1, n), 1))
+    pct = round(100.0 * w / max(1, n), 1)
+    unseen = [p.id for p in radial if p.id in cen and p.id not in seen]
+    return dict(parts=len(seen), stitches=n, within=int(w), pct_within=pct, no_centre=no_centre, unseen=unseen,
+                ok=not no_centre and n > 0 and pct >= 85.0)

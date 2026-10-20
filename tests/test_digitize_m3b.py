@@ -67,7 +67,7 @@ def test_constructed_angles_are_rebuilt_by_the_audit():
     far = Part(id="c.2", kind="crown_clump_dark", geom=Point(50, 30).buffer(4), thread="t", z=2, dir=DirSpec(90.0, source="splitter"),
                meta=dict(construct={"rule": "fan", "from": [50.0, 10.0], "to": [50.0, 30.0]}))
     fl = Part(id="f.1", kind="floret", geom=Point(70, 10).buffer(3).difference(Point(70, 10).buffer(0.75)), thread="t", z=7,
-              dir=DirSpec(0.0, mode="radial", source="splitter"), meta=dict(construct=dict(rule="radial", centre=[70.0, 10.0])))
+              dir=DirSpec(0.0, mode="radial", source="splitter"), meta=dict(centre=[70.0, 10.0], construct=dict(rule="radial")))
     r = audit.angle_audit(ObjectPlan(name="t", parts=[honest, banded, forged, bare, col, fan, far, fl]), rb)
     assert {u["part"] for u in r["unexplained"]} == {"t.3", "t.4", "c.2"}, r
     assert any("support" in u["why"] for u in r["unexplained"] if u["part"] == "c.2")
@@ -247,6 +247,49 @@ def test_florets_by_part_map_refiles_only_radial_runs(monkeypatch):
     assert row["satin"]["bead_runs_by_part_map"]["too-narrow"] == 1
 
 
+def test_radial_part_without_centre_fails_audit_and_file_check():
+    """PR #10 review (prove-the-guard): the audit rebuilt a floret from meta.construct.centre while the file check read
+    meta.centre, so a radial part with a construct centre and NO meta.centre passed the audit and was SKIPPED by the file
+    check: it could be sewn at any angle. Now there is one field (meta.centre): such a part is counted by the audit and
+    listed in radial_adherence no_centre (ok False). Mutations: (a) adherence skips parts without a centre -> red; (b) the
+    audit reads construct.centre again -> red."""
+    from digitize.extract.splitters import blossom
+    g = Point(10, 10).buffer(3.2).difference(Point(10, 10).buffer(0.75))
+    p = Part(id="f", kind="floret", geom=g, thread="t", z=7, dir=DirSpec(0.0, mode="radial", source="splitter"),
+             meta=dict(construct=dict(rule="radial", centre=[10.0, 10.0])))
+    rng = np.random.default_rng(11)
+    segs = []
+    for _ in range(60):
+        x, y = rng.uniform(7.5, 12.5, 2); a = rng.uniform(0, math.pi)
+        segs.append((x, y, x + 1.5 * math.cos(a), y + 1.5 * math.sin(a)))
+    r = blossom.radial_adherence(ObjectPlan(name="t", parts=[p]), segs, ["f"] * len(segs), (0, 0, 20, 20))
+    assert r["no_centre"] == ["f"] and not r["ok"], r
+    a = audit.angle_audit(ObjectPlan(name="t", parts=[p]), Rulebook())
+    assert a["random_angles"] == 1 and "centre" in a["unexplained"][0]["why"], a
+
+
+def test_knockout_hints_survive_merges():
+    """PR #10 review: with M4g's sequencer the crop died on `knockout_of 'foliage.172' names no part`: a dark clump that is
+    almost all lit is a < 20 mm2 speck, merge_specks folds it into a neighbour, and its lit piece still pointed at it.
+    hints.repoint follows the merge chain (or drops the hint when the target is gone); no hint dangles, and M4g's
+    validator (sequence.apply_hints, when present) accepts the plan. Mutation (repoint does nothing) -> red."""
+    from digitize.extract.splitters import crown, hints
+    x, y, rgb = _canvas(60, 40)
+    small = (x > 20) & (x < 29) & (y > 12) & (y < 18)                # a 54 mm2 crown, lit all over but a 0.6 mm rim
+    _paint(rgb, small, "cf_grndk")
+    _paint(rgb, small & (x > 20.6) & (x < 28.4) & (y > 12.6) & (y < 17.4), "cf_grn")
+    ctx, ev = _ctx(rgb, (0, 0, 60, 40))
+    claim = np.isin(ev.tone, [ev.keys.index("cf_grndk"), ev.keys.index("cf_grn")])
+    parts, _ = crown.split(ctx, {"id": "foliage", "tones": ["cf_grndk", "cf_grn"]}, 2.0, claim)
+    rock = Part(id="cliffs.1", kind="stratum_band", geom=box(10, 18, 40, 30), thread="cf_grndk", z=1.5, dir=DirSpec(10.0))
+    parts, merged = SQ.merge_specks(parts + [rock], 20.0)          # the dark rim (< 20 mm2) folds into the rock below it
+    assert hints.dangling(parts), "the scene must trigger the merge the review found (else this test proves nothing)"
+    changes = hints.repoint(parts, merged)
+    assert changes and not hints.dangling(parts), changes
+    if hasattr(SQ, "apply_hints"):                                   # M4g's validator (PR #8)
+        SQ.apply_hints(parts)
+
+
 def test_beads_neither_grow_nor_drop():
     """a 1.5 mm bead (knot) sews its declared knots: underlap must not grow it 1 mm into the canopy (it would touch its
     neighbours and read as one blob for rule 3), and absorb_fragments must not drop it as a < 2 mm2 sliver. Mutations:
@@ -258,6 +301,12 @@ def test_beads_neither_grow_nor_drop():
     assert abs(k.geom.area - a0) < 0.05, k.geom.area
     kept, dropped = SQ.absorb_fragments([k, c], 2.0)
     assert "k" not in dropped and len(kept) == 2
+    # PR #10 review: a floret is knocked out of the canopy too; a 1 mm underlap under it is a second layer (florets read
+    # 9.4 mm/mm2 on the crop file). Mutation (floret out of NO_UNDERLAP) -> red.
+    f = Part(id="f", kind="floret", geom=Point(20, 5).buffer(3), thread="p", z=6.9, dir=DirSpec(0.0, mode="radial", source="splitter"))
+    c2 = Part(id="c2", kind="canopy", geom=box(12, 0, 28, 10).difference(Point(20, 5).buffer(3)), thread="r", z=7, dir=DirSpec(30.0))
+    a1 = f.geom.area; SQ.underlap([f, c2], 1.0)
+    assert abs(f.geom.area - a1) < 0.05, f.geom.area
 
 
 def test_radial_parts_are_a_different_texture_for_rule_3():

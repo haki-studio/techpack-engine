@@ -33,6 +33,9 @@ def _higher(parts, i, tree, pad=0.0):
 
 
 KEEP_TINY = ("knot",)                           # M3b: a bead is a designed 1 mm2 object, not a cut-under sliver
+NO_UNDERLAP = KEEP_TINY + ("floret",)           # M3b: knocked out of the fill around them, so a 1 mm underlap is a SECOND
+                                                # layer under the canopy (PR #10 review: florets 9.4 mm/mm2); the seam is the
+                                                # two pull comps meeting
 
 
 def underlap(parts, keep=1.0):
@@ -41,7 +44,7 @@ def underlap(parts, keep=1.0):
     for p in parts: p.geom = clean(p.geom)
     tree = STRtree([p.geom for p in parts]); grow = {}
     for i, p in enumerate(parts):
-        if p.kind in KEEP_TINY: continue                    # M3b: a bead sews its declared knots, not its outline: no growth
+        if p.kind in NO_UNDERLAP: continue                  # M3b: beads sew their knots; florets are knocked out of the canopy
         hi = _higher(parts, i, tree, pad=keep)
         if hi:
             band = clean(p.geom.buffer(keep).intersection(unary_union([parts[j].geom for j in hi])))

@@ -16,8 +16,9 @@ random (LESSONS A23 / A24).
                        the declared angle is across the centreline's mean direction (polyline_angle) + 90. Check: the centreline's middle lies on
                        the part, and it is >= 1.5 x the part's width long. The file is judged per stitch (trunk.column_adherence).
   rule "radial"        face-on florets (DirSpec mode "radial"): every stitch on a ray from the floret centre; the declared
-                       angle is the conventional 0. construct = {rule, centre: [x, y]}. Check: the centre lies on the
-                       floret (within 1.5 mm, the knot hole). The file is judged per stitch (blossom.radial_adherence).
+                       angle is the conventional 0. construct = {rule}; the centre is part.meta["centre"], the ONE field
+                       the radial plugin sews from, the audit rebuilds from and the file check (blossom.radial_adherence)
+                       reads (PR #10 review). Check: the centre exists and lies on the floret (within 1.5 mm, the knot hole).
 plus the recorded adjustments digitize.audit already allows (meta sep_deg <= 25, band_offset_deg <= 12.5).
 
 Independence (A24): axis / radial / between_petals angles come from POSITIONS (where the trunk runs, the floret centre),
@@ -78,6 +79,8 @@ def basis(p):
         return (polyline_angle(cl) + 90.0) % 180.0, None
     if r == "radial":
         if p.dir.mode != "radial": return None, "radial construction on a part that is not in radial mode"
-        if p.geom.distance(Point(c["centre"])) > 1.5: return None, "radial centre is not on the floret"
+        cen = (p.meta or {}).get("centre")
+        if not cen: return None, "radial part without meta centre (the field the plugin sews from and the file check reads)"
+        if p.geom.distance(Point(cen)) > 1.5: return None, "radial centre is not on the floret"
         return 0.0, None
     return None, f"unknown construction rule {r!r} (have {RULES})"
