@@ -53,14 +53,14 @@ def field_basis(p, tol=0.5):
     return b, None
 
 
-def basis(p, rb):
+def basis(p, rb, peers=None):
     s, m = p.dir.source, p.meta
     if s in ("field", "field-mean"): return field_basis(p)[0]
     if s == "rule":
         d = rb.rule(p.kind).get("dir")
         if d == "construct":                    # M3a: a rule on fitted geometry, re-derived from the points the part stores
             from digitize.extract.building_fit import rule_basis
-            return rule_basis(p, rb)
+            return rule_basis(p, rb, peers)
         return float(d) if isinstance(d, (int, float)) else None
     return {"field-mean": m.get("field_angle"), "field": m.get("field_mean"), "answer": m.get("answer_angle"),
             "outline": m.get("outline_angle"), "depth": _depth(m["depth"]) if "depth" in m else None}.get(s)
@@ -69,7 +69,7 @@ def basis(p, rb):
 def angle_audit(plan, rb, tol=0.05):
     bad = []
     for p in plan.parts:
-        b = basis(p, rb); sep = float(p.meta.get("sep_deg", 0.0)); band = float(p.meta.get("band_offset_deg", 0.0))
+        b = basis(p, rb, plan.parts); sep = float(p.meta.get("sep_deg", 0.0)); band = float(p.meta.get("band_offset_deg", 0.0))
         why = None
         if b is None: why = (field_basis(p)[1] if p.dir.source in ("field", "field-mean") else None) or f"no basis for source {p.dir.source!r}"
         elif abs(sep) > SEP_MAX + tol: why = f"separation turn {sep} > {SEP_MAX}"

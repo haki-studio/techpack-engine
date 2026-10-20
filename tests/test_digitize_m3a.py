@@ -140,21 +140,36 @@ def test_studs_never_touch_each_other():
 
 
 # ================================================================== far tier (rule 3 depth)
-def test_far_tier_runs_along_its_eave_without_tiles_or_eave():
-    """rule 3 (far = near-horizontal) + rule 9: a tier shorter than near_tier_mm is ONE plane with rows ALONG its fitted
-    eave line (here sloped 5 deg), with no tile lines and no eave satin; the wall under it runs along the courses too.
-    Mutation (depth rule ignored: every tier down the slope) -> red."""
-    W, H = 80, 50; s = math.tan(math.radians(5.0))
-    roof = Polygon([(10, 22), (70, 22 + 60 * s), (70, 30 + 60 * s), (10, 30)])
-    wall = Polygon([(12, 30), (68, 30 + 56 * s), (68, 42 + 56 * s), (12, 42)])
-    rgb, grey = _paint(W, H, [("c", wall), ("n", roof)])
+def _two_buildings(k=1.0):
+    """one zone, two building windows: a big near temple (26 mm tier) and a small far house (8 mm tier, eave sloped 5
+    deg) with a wall under it; every length scaled by k"""
+    s = math.tan(math.radians(5.0)); W, H = 160 * k, 64 * k
+    sc = lambda g: __import__("shapely.affinity", fromlist=["scale"]).scale(g, k, k, origin=(0, 0))
+    big = Polygon([(10, 36), (26, 10), (54, 10), (70, 36)])
+    small = Polygon([(90, 22), (150, 22 + 60 * s), (150, 30 + 60 * s), (90, 30)])
+    wall = Polygon([(92, 30), (148, 30 + 56 * s), (148, 42 + 56 * s), (92, 42)])
+    rgb, grey = _paint(W, H, [("c", sc(box(14, 36, 66, 52))), ("n", sc(big)), ("c", sc(wall)), ("n", sc(small))])
     ctx, ev = _ctx(rgb, grey, W, H)
-    parts, _ = _split(ctx, {"id": "bld", "geoms": [box(0, 0, W, H)]}, np.ones((ev.H, ev.W), bool))
-    roofs = [p for p in parts if p.kind == "roof"]; walls = [p for p in parts if p.kind == "wall"]
-    assert len(roofs) == 1 and roofs[0].meta["far"] and abs(roofs[0].dir.angle - 5.0) < 1.5, [(p.dir, p.meta.get("tier_h_mm")) for p in roofs]
-    assert not [p for p in parts if p.kind in ("roof_tile_line", "eave")]
-    assert walls and abs(max(walls, key=lambda p: p.area).dir.angle - 5.0) < 1.5
-    assert audit.angle_audit(ObjectPlan(name="t", parts=parts), Rulebook())["random_angles"] == 0
+    zone = {"id": "bld", "geoms": [sc(box(0, 0, 80, 64)), sc(box(80, 0, 160, 64))]}
+    return _split(ctx, zone, np.ones((ev.H, ev.W), bool))[0]
+
+
+def test_far_tier_is_relative_to_the_largest_tier_and_runs_along_its_eave():
+    """rule 3 depth RELATIVE to scale (review of PR #9: an absolute 22 mm was picked on the crop): roof tiers of one
+    style shrink with distance, so a tier under near_tier_rel x the zone's largest tier is FAR: one plane with rows
+    ALONG its fitted eave (here sloped 5 deg), no tile lines; the wall under it runs along the courses; the big tier
+    stays near (down the slope). The same scene at half size classifies the same way (scale-invariant). Mutations
+    (depth rule ignored; an absolute mm threshold) -> red."""
+    for k in (1.0, 0.5):
+        parts = _two_buildings(k)
+        roofs = [p for p in parts if p.kind == "roof"]
+        far = [p for p in roofs if p.meta["building"] == 1]; near = [p for p in roofs if p.meta["building"] == 0]
+        assert len(far) == 1 and far[0].meta["far"] and abs(far[0].dir.angle - 5.0) < 1.5, (k, [(p.dir.angle, p.meta.get("tier_h_mm")) for p in roofs])
+        assert near and not any(p.meta["far"] for p in near) and any(abs(p.dir.angle - 90.0) < 2 for p in near), (k, [p.dir for p in near])
+        assert not [p for p in parts if p.kind == "roof_tile_line" and p.meta["building"] == 1]
+        wall = max([p for p in parts if p.kind == "wall" and p.meta["building"] == 1], key=lambda p: p.area)
+        assert abs(wall.dir.angle - 5.0) < 1.5, (k, wall.dir)
+        assert audit.angle_audit(ObjectPlan(name="t", parts=parts), Rulebook())["random_angles"] == 0
 
 
 # ================================================================== occlusion
@@ -285,3 +300,61 @@ def test_house_yaml_m3a_kinds_follow_the_playbook():
     lo, hi = P["stud_mm"]; sp = K["stud"]["params"]
     assert lo <= sp["min_d"] <= sp["max_d"] <= hi
     assert 15 <= K["roof"]["params"]["hip_min_sep"] <= K["roof"]["params"]["hip_max_sep"] <= 45
+
+
+# ================================================================== PR #9 review fixes
+def test_referenced_plane_survives_merge_specks():
+    """review 1: a roof plane named in a tile line's / eave's seq_after must survive merge_specks, or the M4g sequencer
+    meets an id that names no part (HintError). Here the referenced hip plane is shrunk to a 9 mm2 speck touching the
+    wall, which merge_specks WOULD merge: protect_referenced keeps it, and every seq_after id still resolves.
+    Mutation (protect_referenced a no-op) -> red."""
+    ctx, ev, claim, zone = _near_scene()
+    parts, _ = _split(ctx, zone, claim)
+    ref = {i for p in parts for i in (p.meta.get("seq_after") or [])}
+    byid = {p.id: p for p in parts}
+    hip = next(byid[i] for i in sorted(ref) if byid[i].kind == "roof" and byid[i].meta["side"] != 0)
+    wall = max([p for p in parts if p.kind == "wall"], key=lambda p: p.area)
+    x0, y0, x1, y1 = wall.geom.bounds
+    hip.geom = box(x0 - 3.0, y0, x0, y0 + 3.0)                        # a speck touching the wall's corner
+    out, moves = sequence.merge_specks(parts, 20.0)
+    ids = {p.id for p in out}
+    assert hip.id in ids, moves
+    assert all(set(p.meta.get("seq_after") or []) <= ids for p in out)
+
+
+def _wall_scene(layers, W=80, H=64, **bcfg):
+    rgb, grey = _paint(W, H, layers)
+    ctx, ev = _ctx(rgb, grey, W, H, **bcfg)
+    return ctx, ev, np.ones((ev.H, ev.W), bool), {"id": "bld", "geoms": [box(0, 0, W, H)]}
+
+
+def test_details_are_kept_at_underlaps_and_small_ones_are_suggested():
+    """review 2 (fidelity first): a row of windows on the wall's lower edge (a 1 mm underlap with the zone below lies
+    there) is KEPT by default (the stack cost is reported, the sequencer cuts it); a single window too small for a
+    satin band is not silently dropped: it is listed in report["suggest"] (plan meta building_suggest).
+    Mutations (underlap clearance on by default; suggestion not recorded) -> red."""
+    layers = [("c", box(14, 36, 66, 52)), ("n", ROOF_NEAR)] + [("d", box(x, 49.5, x + 2.5, 52)) for x in (20, 25, 30, 35)]
+    layers += [("d", box(55, 42, 57, 44))]
+    ctx, ev, claim, zone = _wall_scene(layers)
+    parts, _ = _split(ctx, zone, claim)
+    wins = [p for p in parts if p.kind == "window"]
+    assert any(p.meta.get("n_windows") == 4 for p in wins), [(p.meta.get("n_windows"), p.meta["cl"]) for p in wins]
+    sug = ctx.building_report["suggest"]
+    assert any(s["kind"] == "window" and abs(s["at"][0] - 56) < 1.5 and abs(s["at"][1] - 43) < 1.5 for s in sug), sug
+
+
+def test_wall_ground_is_the_plaster_not_the_frame():
+    """review 4: a plaster wall drawn with a heavy red timber frame (red is ~70 % of the face) takes the PLASTER as its
+    ground (the mean of its brightest pixels, nearest thread), and the frame becomes members: rails along the courses
+    (satin across = 90 deg) and posts across them (0 deg), not one red wall slab. Mutations (ground = the most frequent
+    thread; no frame decomposition) -> red."""
+    layers = [("c", box(14, 20, 66, 36))]
+    layers += [("r", box(14, y, 66, y + 2.5)) for y in (20, 25, 30, 33.5)]
+    layers += [("r", box(x, 20, x + 3.0, 36)) for x in (14, 26, 38.5, 51, 63)]
+    ctx, ev, claim, zone = _wall_scene(layers)
+    parts, _ = _split(ctx, zone, claim)
+    wall = max([p for p in parts if p.kind == "wall"], key=lambda p: p.area)
+    assert wall.thread == "c", wall.thread
+    mem = [p for p in parts if p.kind == "member" and p.thread == "r"]
+    rails = [p for p in mem if DR.axial_diff(p.dir.angle, 90.0) < 5]; posts = [p for p in mem if DR.axial_diff(p.dir.angle, 0.0) < 5]
+    assert len(rails) >= 3 and len(posts) >= 3, [(p.dir.angle, p.meta["cl"]) for p in mem]

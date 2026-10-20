@@ -184,15 +184,19 @@ kinds:
     dir: construct
     construct: course          # one angle per plane, square to the eave of the roof above; rule 3 depth: under a far roof
                                # along the courses (near-horizontal), under a near roof across them (near-vertical); 0 without a roof
-    params_from: roof          # near_tier_mm
+    params_from: roof          # near_tier_rel
     note: one wall plane, tatami along (far) / across (near) the courses
   roof:
     techniques: [tatami]
     dir: construct
     construct: down_slope      # NEAR tier: front plane perpendicular to its eave line, hip planes fan halfway to their hip line
                                # FAR tier (rule 3 depth: far = near-horizontal): rows along the eave, hips along their hip line
-    params: {hip_min_sep: 20.0, hip_max_sep: 45.0, near_tier_mm: 22.0}   # hips 20-45 deg off the front (rule 3); a tier whose
-                               # fitted height is under near_tier_mm is far (founder-tunable; null = every tier down the slope)
+    params: {hip_min_sep: 20.0, hip_max_sep: 45.0, near_tier_rel: 0.75}   # hips 20-45 deg off the front (rule 3)
+                               # near_tier_rel: rule 3 depth RELATIVE to scale. Tiers of one style shrink with distance, so
+                               # the largest tiers on the piece are the nearest: a tier under 0.75 x the zone's largest tier
+                               # (a quarter smaller = clearly further back) is FAR. The default is a perspective argument, not
+                               # fitted to the crop; the choice it makes moves the grain gate (BENCH_m3a.md), so a far / near
+                               # result there is partly grain-informed. null = every tier down the slope (playbook only).
     note: one roof plane, tatami down the slope (near) / along the eave (far)
   eave:
     techniques: [column_satin, satin]      # same-side density (LESSONS B26); M1 satin spacing is per row

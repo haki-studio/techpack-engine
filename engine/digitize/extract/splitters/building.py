@@ -7,19 +7,23 @@ One zone WINDOW = one building (zones_BK.json: hand-authored windows, the silhou
   2. roofs: the roof-role pixels opened by roof_open_mm (thin blue frames are not roofs), stacked tiers cut apart where a
      row is mostly not roof (building_fit.split_tiers), components >= min_roof_mm2. Each is fitted (building_fit.fit_roof):
      eave line along its unoccluded bottom edge, ridge, hip planes from the unoccluded top / side edges. Depth (rule 3):
-     a tier under near_tier_mm (house.yaml roof params) is FAR: one plane with rows along its eave, no eave satin and
-     no tile lines (rule 9: too small to read); a NEAR tier gets planes down the slope (hips fan), a satin eave in the
-     roof's other tone and bean tile lines down the slope in its second roof tone. Tiers sew bottom-up.
-  3. walls: building pixels that are not roof, components >= min_wall_mm2, one tatami per plane, ground = the lightest
-     thread holding >= wall_min_share; square to the eave of the roof above (rule 3: along it under a far roof, across
-     it under a near one; 0 deg without a roof).
-  4. on each wall, off-tone features: compact ones -> window BANDS (a row of windows merged, along the courses, satin
-     across, aspect >= band_aspect; rule 9: windows as bands, a row too short for a band stays wall), long thin ones ->
-     members (timber, trims) satin across their width. Off the walls: gold ornaments -> studs (dot 1-1.5 mm, never
-     touching), long ones members.
+     a tier under near_tier_rel x the zone's largest tier (house.yaml roof params) is FAR: one plane with rows along its
+     eave and no tile lines; a NEAR tier gets planes down the slope (hips fan) and bean tile lines down the slope in its
+     second roof tone. Every visible eave gets a satin band across it (roof's other tone, else the trim colour). Tiers
+     sew bottom-up.
+  3. walls: building pixels that are not roof, components >= min_wall_mm2, one tatami per plane. Ground colour = the mean
+     of the face's brightest wall_bright_frac of pixels, nearest thread (the tone trace calls plaster "bark"); square to
+     the eave of the roof above (rule 3: along it under a far roof, across it under a near one; 0 deg without a roof).
+  4. on each wall, details (member / ornament / roof-tone pixels, or dark_dlum darker than the ground): compact ones ->
+     window BANDS (a row of windows merged, along the courses, satin across, aspect >= band_aspect), long thin ones ->
+     members satin across their width, frames (timber grids) split into rails and posts. Off the walls: gold ornaments
+     -> studs (dot 1-1.5 mm, never touching), long ones members. Anything under a rule 9 minimum (a single window too
+     small for a band, a member too short for a stroke) is listed in report["suggest"] (plan meta building_suggest).
   5. leftover building pixels within reach_mm of a plane join it (rule 1: no specks).
-  6. satin features are clipped clear of every UNDERLAP (rule 6: a 1-2 mm satin over a 1 mm underlap is a third layer).
-  7. rule 3 separation among the building's own walls / roofs (recorded turns <= 25 deg, audited).
+  6. FIDELITY FIRST: satin features are kept where the art has them; a stack cost on an underlap is reported (the
+     sequencer cuts to <= 2 layers). seam_keep_mm (default off) would clip them clear of underlaps instead.
+  7. rule 3 separation among the building's own walls / roofs (recorded turns <= 25 deg, audited); planes named in
+     another part's seq_after are kept out of merge_specks (protect_referenced).
 z inside the zone: walls z, roofs z+0.10 (+0.01 per tier up), eaves z+0.30, tile lines z+0.40, windows / members z+0.50,
 studs z+0.60: sequence.py's z-DAG then sews walls -> roofs bottom-up -> eaves -> tile lines -> windows -> studs last.
 M4g sequencing hints (optional meta, ignored by the M1 sequencer): `group` = the building, `seq_after` = the plane(s) a
@@ -40,7 +44,8 @@ DEFAULTS = dict(roof_open_mm=1.2, min_roof_mm2=30.0, min_roof_w_mm=6.0, min_roof
                 feat_min_mm2=1.5, window_max_mm=8.0, member_aspect=2.5, window_gap_mm=3.0, window_min_len_mm=3.0,
                 stud_max_mm=2.6, stud_pitch_mm=2.0, max_studs=4, reach_mm=1.5, ridge_tol_mm=1.0, ridge_tol_frac=0.25,
                 min_plane_mm=4.0, min_hip_slope_deg=10.0, small_fragment_mm2=0.5, tier_gap_frac=0.25, tier_full_frac=0.5,
-                min_free_eave=0.5, max_hip_frac=0.45, band_aspect=3.0, seam_keep_mm=1.0, wall_min_share=0.25)
+                min_free_eave=0.5, max_hip_frac=0.45, band_aspect=3.0, seam_keep_mm=None, wall_bright_frac=0.15,
+                dark_dlum=60.0, member_min_len_mm=3.0)
 SEWN = 0.25          # a column satin reads back ~0.25 mm wider than its centreline width (pull comp both sides + 0.1 grid)
 Z = dict(wall=0.0, roof=0.10, eave=0.30, roof_tile_line=0.40, window=0.50, member=0.50, stud=0.60)
 
@@ -79,20 +84,20 @@ def _part(ctx, zone, kind, geom, thread, z, angle, note, **meta):
 def split(ctx, zone, z, claim):
     ev = ctx.ev; sc = _cfg(ctx); R = sc["roles"]; parts = []; used = np.zeros_like(claim)
     if not claim.any(): return parts, used
-    rb = ctx.rb; rprm = dict(rb.rule("roof").get("params", {}))
+    rb = ctx.rb; rprm = dict(rb.rule("roof").get("params", {})); rel = rprm.get("near_tier_rel")
     hip_min, hip_max = float(rprm.get("hip_min_sep", 20.0)), float(rprm.get("hip_max_sep", 45.0))
     roof_t = np.isin(ev.tone, _idx(ev, R.get("roof", [])))
     orn_t = np.isin(ev.tone, _idx(ev, R.get("ornament", [])))
+    mem_t = np.isin(ev.tone, _idx(ev, R.get("member", [])))
     bld_t = np.isin(ev.tone, _idx(ev, sum((list(v) for v in R.values()), [])))
-    report = dict(windows_dropped=0, eaves_skipped=0, tiles_skipped=0, studs=0, leftover_px=0)
-    geoms = zone.get("geoms") or [None]
-    for wi, win in enumerate(geoms):
+    lum = ev.rgb @ np.array([0.299, 0.587, 0.114])
+    report = dict(windows_too_small=0, eaves_skipped=0, tiles_skipped=0, studs=0, leftover_px=0, suggest=[])
+    # ---------------------------------------------------------------- pass 1: every roof tier of the zone (depth is relative)
+    wins = []
+    for wi, win in enumerate(zone.get("geoms") or [None]):
         wm = claim & (ev.mask(win) if win is not None else True)
         bld = wm & bld_t
         if bld.sum() < sc["min_wall_mm2"] * ev.ppm ** 2: continue
-        lab = np.zeros(claim.shape, np.int32); owners = [None]          # pixel -> index into owners (plane / wall parts)
-        pending = []                                                     # satin features: (kind, cl, w, thread, note, meta)
-        # ---------------------------------------------------------------- roofs
         rm = ndi.binary_opening(wm & roof_t, BF.disk(ev, sc["roof_open_mm"]))
         rm = ndi.binary_closing(rm, BF.disk(ev, 1.0)) & bld
         rm = BF.split_tiers(rm, sc["tier_gap_frac"], sc["tier_full_frac"])     # stacked tiers joined by a blue frame: cut apart
@@ -103,15 +108,23 @@ def split(ctx, zone, z, claim):
             if a < sc["min_roof_mm2"]: continue
             cols = np.nonzero(comp.any(0))[0]; rows = np.nonzero(comp.any(1))[0]
             if len(cols) / ev.ppm < sc["min_roof_w_mm"] or len(rows) / ev.ppm < sc["min_roof_h_mm"]: continue
+            if _counts(ctx, comp).sum() == 0: continue
             roofs.append((comp, BF.fit_roof(ev, comp, sc, free=free)))
         roofs.sort(key=lambda t: -t[1]["eave_y"])                       # bottom tier first (largest eave y on the garment)
+        wins.append((wi, wm, bld, roofs))
+    hs = [BF.tier_height(f["eave_pts"], f["top_pts"]) for _, _, _, rr in wins for _, f in rr]
+    hs = [h for h in hs if h is not None]
+    h_ref = max(hs) if hs else None                                   # = building_fit.zone_tier_ref over the roof parts
+    for wi, wm, bld, roofs in wins:
+        lab = np.zeros(claim.shape, np.int32); owners = [None]          # pixel -> index into owners (plane / wall parts)
+        pending = []                                                     # satin features: (kind, cl, w, thread, note, meta)
         roof_info = []
         for rank, (comp, fit) in enumerate(roofs):
             zr = z + Z["roof"] + 0.01 * min(rank, 9)
             eave_cl, eave_g = BF.eave_band(ev, comp, fit, sc["eave_w_mm"], sc["eave_tol_mm"]) if fit["eave_visible"] else (None, None)
             plane_threads = []
-            far_tier = BF.is_far(fit["eave_pts"], fit["top_pts"], rprm.get("near_tier_mm"))
-            if far_tier:                                                 # rule 9 + rule 3: a far tier is ONE plane along its eave
+            far = BF.is_far(fit["eave_pts"], fit["top_pts"], rel, h_ref)
+            if far:                                                      # rule 9 + rule 3: a far tier is ONE plane along its eave
                 fit["planes"] = [dict(side=0, c0=int(fit["cols"][0]), c1=int(fit["cols"][-1]) + 1, hip_pts=None)]
             for pl in fit["planes"]:
                 pm = comp.copy(); pm[:, :pl["c0"]] = False; pm[:, pl["c1"]:] = False
@@ -119,18 +132,18 @@ def split(ctx, zone, z, claim):
                 cnt = _counts(ctx, pm)
                 if cnt.sum() == 0: continue
                 th = ctx.threads[int(cnt.argmax())]
-                far = BF.is_far(fit["eave_pts"], fit["top_pts"], rprm.get("near_tier_mm"))
                 ang = BF.roof_angle(fit["eave_pts"], pl["hip_pts"], pl["side"], hip_min, hip_max, far=far)
                 side = {-1: "left hip", 0: "front", 1: "right hip"}[pl["side"]]
-                how = (f"FAR tier ({fit['height_mm']:.1f} mm < {rprm.get('near_tier_mm')} mm): along the eave (rule 3 depth)" if far
-                       else f"down the slope")
+                how = (f"FAR tier ({fit['height_mm']:.1f} mm < {rel} x {h_ref:.1f} mm): along the eave (rule 3 depth)" if far
+                       else "down the slope")
                 owners.append(dict(kind="roof", thread=th, z=zr, angle=ang, note=f"{how} ({side}), eave {fit['eave_deg']:+.1f} deg",
                                    meta=dict(eave_pts=fit["eave_pts"], top_pts=fit["top_pts"], hip_pts=pl["hip_pts"], side=pl["side"],
-                                             building=wi, tier=rank, far=far, tier_h_mm=fit["height_mm"]),
+                                             building=wi, tier=rank, far=far, tier_h_mm=fit["height_mm"],
+                                             tier_h_ref_mm=round(h_ref, 3) if h_ref else None),
                                    cnt=cnt))
                 lab[pm & (lab == 0)] = len(owners) - 1
                 plane_threads.append((len(owners) - 1, th, cnt))
-            roof_info.append(dict(fit=fit, comp=comp, rank=rank, eave_cl=eave_cl, eave_g=eave_g, planes=plane_threads, far=far_tier))
+            roof_info.append(dict(fit=fit, comp=comp, rank=rank, eave_cl=eave_cl, eave_g=eave_g, planes=plane_threads, far=far))
         roof_mask = lab > 0
         # ---------------------------------------------------------------- walls + their features
         wl = bld & ~roof_mask
@@ -138,47 +151,52 @@ def split(ctx, zone, z, claim):
         for i in range(1, nw + 1):
             comp = Lw == i
             if comp.sum() < sc["min_wall_mm2"] * ev.ppm ** 2: continue
-            cnt = _counts(ctx, comp & ~orn_t) if (comp & ~orn_t).any() else _counts(ctx, comp)
-            if cnt.sum() == 0: continue
-            # the wall's ground = the LIGHTEST thread holding >= wall_min_share of the plane (a plaster wall drawn with dark
-            # frames and windows: the dark outline tone is often the most frequent pixel, but it is the detail, not the wall)
-            share = cnt / cnt.sum(); cand = [t for t in range(len(cnt)) if share[t] >= sc["wall_min_share"]]
-            ti = max(cand, key=lambda t: _lum(ctx, t)) if cand else int(cnt.argmax()); th = ctx.threads[ti]
+            # the wall's GROUND colour is read from the face's own pixels: the mean colour of its brightest wall_bright_frac
+            # (plaster between the frames and windows), matched to the nearest thread (CIEDE2000). The tone trace alone
+            # called the castle's plaster "bark tan" and gave the temple a red wall (its timber frame is the most
+            # frequent tone there); dark outlines, red timber and gold are the wall's DETAILS, not its ground.
+            ti, gl = _wall_ground(ctx, comp & ~(mem_t | orn_t | roof_t), lum, sc)
+            if ti is None: continue
+            th = ctx.threads[ti]
             rr, cc = np.nonzero(comp); cx, cy = BF.px_mm(ev, rr.mean(), cc.mean()); x0w, _ = BF.px_mm(ev, 0, cc.min()); x1w, _ = BF.px_mm(ev, 0, cc.max())
             above = [ri for ri in roof_info if ri["fit"]["eave_y"] <= cy + 1.0 and min(x1w, ri["fit"]["x1"]) - max(x0w, ri["fit"]["x0"]) > 0.3 * (x1w - x0w)]
             ra = max(above, key=lambda ri: ri["fit"]["eave_y"]) if above else None
             eave_pts = ra["fit"]["eave_pts"] if ra else None; top_pts = ra["fit"]["top_pts"] if ra else None
-            ang = BF.course_angle(eave_pts, top_pts, rprm.get("near_tier_mm"))
+            ang = BF.course_angle(eave_pts, top_pts, rel, h_ref)
             near = ra is not None and abs(BF.axial_diff(ang, BF.eave_angle(eave_pts))) > 45
             owners.append(dict(kind="wall", thread=th, z=z + Z["wall"], angle=ang,
                                note=(f"{'across' if near else 'along'} the courses ({'under a near' if near else 'under a far'} roof, tier {ra['rank']})"
                                      if ra else "no roof above: 0 deg"),
-                               meta=dict(eave_pts=eave_pts, top_pts=top_pts, building=wi), cnt=cnt))
+                               meta=dict(eave_pts=eave_pts, top_pts=top_pts, building=wi, ground_lum=round(gl, 1)), cnt=None))
             wid = len(owners) - 1; lab[comp & (lab == 0)] = wid
-            # features: pixels of another thread than the wall's, inside the wall plane
-            fm = comp & (ctx.thread_lab != ti) & (ctx.thread_lab >= 0)
+            course = BF.eave_angle(eave_pts) % 180.0 if eave_pts else 0.0
+            # details: member / ornament / roof-tone pixels and anything much darker than the ground (frames, windows)
+            fm = comp & ((mem_t | orn_t | roof_t) | (lum < gl - sc["dark_dlum"])) & (ctx.thread_lab != ti) & (ctx.thread_lab >= 0)
             Lf, nf = ndi.label(fm)
             for j in range(1, nf + 1):
                 f = Lf == j
                 if f.sum() < sc["feat_min_mm2"] * ev.ppm ** 2: continue
-                g = _poly(ev, f)
-                if g is None: continue
-                ax, Ln, Sh = BF.rect_axis(g)
-                if ax is None: continue
-                feats.append(dict(mask=f, geom=g, axis=ax, L=Ln, S=Sh, wall=wid, course=BF.eave_angle(eave_pts) % 180.0 if eave_pts else 0.0,
-                                  thread=ctx.threads[int(_counts(ctx, f).argmax())]))
+                feats += _features(ctx, f, wid, course, sc, role=bool((f & (mem_t | orn_t | roof_t)).sum() * 2 >= f.sum()))
         # windows (compact) -> bands per row; members (long, thin) -> satin across
-        for f in feats: f["is_win"] = f["L"] <= sc["window_max_mm"] and f["L"] / max(f["S"], 1e-6) < sc["member_aspect"]
-        wins = [f for f in feats if f["is_win"]]
-        mems = [f for f in feats if not f["is_win"] and f["L"] / max(f["S"], 1e-6) >= sc["member_aspect"] and 0.8 <= f["S"] <= 7.0]
-        for grp in _rows(wins, sc["window_gap_mm"]):
+        wins_f = [f for f in feats if f["is_win"]]; mems = [f for f in feats if not f["is_win"]]
+        for grp in _rows(wins_f, sc["window_gap_mm"]):
             band = _band(grp, sc)
-            if band is None: report["windows_dropped"] += len(grp); continue
+            if band is None:                                             # rule 9: too small for a band -> SUGGEST, never silent
+                report["windows_too_small"] += len(grp)
+                for f in grp:
+                    c = f["geom"].centroid
+                    report["suggest"].append(dict(kind="window", at=[round(c.x, 1), round(c.y, 1)], size_mm=[round(f["L"], 1), round(f["S"], 1)],
+                                                  thread=f["thread"], building=wi, why="single window too small for a satin band (rule 9)"))
+                continue
             cl, w, th = band
             pending.append(("window", cl, w, th, f"window band of {len(grp)}, satin across", dict(n_windows=len(grp))))
         for f in mems:
             w = _member_w(f["geom"].area, f["L"], sc)
-            if w is None: continue                                      # too short for a stroke: it stays wall
+            if w is None:
+                c = f["geom"].centroid
+                report["suggest"].append(dict(kind="member", at=[round(c.x, 1), round(c.y, 1)], size_mm=[round(f["L"], 1), round(f["S"], 1)],
+                                              thread=f["thread"], building=wi, why="member too short for a 1 mm satin stroke (rule 9)"))
+                continue
             pending.append(("member", f["axis"], w, f["thread"], "member, satin across its width", {}))
         # ---------------------------------------------------------------- ornaments off the walls: studs / members
         om = wm & orn_t & ~(lab > 0)
@@ -215,22 +233,21 @@ def split(ctx, zone, z, claim):
             near = left & (dist <= sc["reach_mm"] * ev.ppm)
             lab[near] = lab[ii[near], jj[near]]
             report["leftover_px"] += int((left & ~near).sum())
-        # ---------------------------------------------------------------- satin features, clear of the underlaps (rule 6)
-        # a 1-2 mm satin cuts nothing under it (cut-under keeps 1 mm), so on an UNDERLAP (sequence.underlap: a lower part
-        # runs 1 mm under the higher one) it would be the THIRD layer. Inside plane k the underlaps are the 1 mm bands
-        # along its borders with LOWER parts (lower planes of this building, other zones' parts): the centreline is clipped
-        # to where the band stays inside plane k and seam_keep_mm clear of those borders; a band left shorter than
-        # band_aspect x w is dropped (reported)
+        # ---------------------------------------------------------------- satin features
+        # FIDELITY FIRST (founder): every window band / member / trim is kept where the art has it; the stack cost on an
+        # underlap (a 1-2 mm satin cuts nothing under it) is reported, and sequencing cuts the plan to <= 2 layers (M4g).
+        # seam_keep_mm (default None = off) restores the old clearance: centrelines clipped clear of lower borders.
         zk = np.array([0.0] + [o["z"] for o in owners[1:]])
         for kind, cl, w, th, note, extra in pending:
-            cl2 = None
-            for _ in range(3):                                          # a shorter band is narrower (aspect >= band_aspect)
-                cl2 = _clear_cl(ev, lab, zk, cl, w / 2.0 + 0.1, w / 2.0 + sc["seam_keep_mm"])
-                if cl2 is None or math.dist(cl2[0], cl2[-1]) >= sc["band_aspect"] * (w + SEWN): break
-                w = math.dist(cl2[0], cl2[-1]) / sc["band_aspect"] - SEWN
-                if w < 1.0: cl2 = None; break
-            if cl2 is None or math.dist(cl2[0], cl2[-1]) < sc["band_aspect"] * (w + SEWN):
-                report[f"{kind}s_seam_dropped"] = report.get(f"{kind}s_seam_dropped", 0) + 1; continue
+            cl2 = cl
+            if sc.get("seam_keep_mm") is not None:
+                for _ in range(3):                                      # a shorter band is narrower (aspect >= band_aspect)
+                    cl2 = _clear_cl(ev, lab, zk, cl, w / 2.0 + 0.1, w / 2.0 + sc["seam_keep_mm"])
+                    if cl2 is None or math.dist(cl2[0], cl2[-1]) >= sc["band_aspect"] * (w + SEWN): break
+                    w = math.dist(cl2[0], cl2[-1]) / sc["band_aspect"] - SEWN
+                    if w < 1.0: cl2 = None; break
+                if cl2 is None or math.dist(cl2[0], cl2[-1]) < sc["band_aspect"] * (w + SEWN):
+                    report[f"{kind}s_seam_dropped"] = report.get(f"{kind}s_seam_dropped", 0) + 1; continue
             parts.append(_part(ctx, zone, kind, LineString(cl2).buffer(w / 2.0, cap_style=2), th, z + Z[kind], BF.across_angle(cl2), note,
                                cl=[list(c) for c in cl2], w=round(w, 3), building=wi, keep_small=True,
                                min_fragment_mm2=sc["small_fragment_mm2"], **extra))
@@ -249,7 +266,7 @@ def split(ctx, zone, z, claim):
                 if p is None: continue
                 alt = [ctx.threads[t] for t in np.argsort(-cnt) if cnt[t] >= sc["tile_min_share"] * cnt.sum() and ctx.threads[t] != th
                        and ctx.threads[t] in _role_threads(ctx, R.get("roof", []))]
-                if p.meta.get("far"): report["tiles_far"] = report.get("tiles_far", 0) + 1; continue   # rule 9: a far tier is too small for tile rows
+                if p.meta.get("far"): report["tiles_far"] = report.get("tiles_far", 0) + 1; continue   # far tiers: rows along the eave, no tile rows across them
                 body = p.geom.difference(ri["eave_g"]) if ri["eave_g"] is not None else p.geom
                 line = BF.tile_lines(body, p.dir.angle, sc["tile_mm"], sc["tile_inset_mm"]) if alt else None
                 if not line or len(line) < 2: report["tiles_skipped"] += 1; continue
@@ -257,30 +274,89 @@ def split(ctx, zone, z, claim):
                                    "tile rows down the slope (bean)", line=[list(c) for c in line], seq_after=[p.id], eave_pts=p.meta["eave_pts"],
                                    top_pts=p.meta["top_pts"], hip_pts=p.meta["hip_pts"], side=p.meta["side"], plane=p.id, building=wi,
                                    keep_small=True, min_fragment_mm2=sc["small_fragment_mm2"]))
-            if ri["eave_cl"] is None: report["eaves_skipped"] += 1; continue
-            if ri.get("far"): report["eaves_far"] = report.get("eaves_far", 0) + 1; continue   # rule 9: a far tier's eave is its roof's own edge row
+            if ri["eave_cl"] is None: report["eaves_skipped"] += 1; continue   # eave hidden (occluded / out of the window)
             em = ev.mask(ri["eave_g"]) & ri["comp"]; cnt = _counts(ctx, em)
             front = [th for k, th, _ in ri["planes"] if owners[k]["meta"]["side"] == 0]
             order = [ctx.threads[t] for t in np.argsort(-cnt) if cnt[t] > 0 and ctx.threads[t] not in front]
+            if not order:                                                # the eave edge shows no second tone: the trim colour
+                order = [t for t in _role_threads(ctx, R.get("ornament", [])) if t not in front]
             if not order: report["eaves_skipped"] += 1; continue
             cl = ri["eave_cl"]
             parts.append(_part(ctx, zone, "eave", ri["eave_g"], order[0], z + Z["eave"], BF.across_angle(cl), "eave, satin across",
                                cl=[list(c) for c in cl], w=sc["eave_w_mm"], eave_pts=fit["eave_pts"], building=wi, tier=ri["rank"],
                                seq_after=[pid_of[k].id for k, _, _ in ri["planes"] if k in pid_of],
                                keep_small=True, min_fragment_mm2=sc["small_fragment_mm2"]))
+    protect_referenced(parts)
     # rule 3 among the building's own planes (walls, roofs): recorded turns, audited
     from digitize import direction as DR
     sep = tuple(ctx.rb.principles["neighbour_sep_deg"])
     DR.separate(parts, sep=sep, kinds={"wall", "roof"})
     ctx.building_report = report
-    print(f"    building {zone['id']}: " + ", ".join(f"{k} {sum(1 for p in parts if p.kind == k)}" for k in Z) + f"; {report}")
+    print(f"    building {zone['id']}: " + ", ".join(f"{k} {sum(1 for p in parts if p.kind == k)}" for k in Z) +
+          f"; h_ref {h_ref}; " + str({k: (len(v) if isinstance(v, list) else v) for k, v in report.items()}))
     return parts, used
 
 
-def _lum(ctx, t):
-    """luminance of thread index t (its palette colour)"""
-    h = ctx.ev.hex[ctx.ev.keys.index(ctx.threads[t])].lstrip("#")
-    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4)); return 0.299 * r + 0.587 * g + 0.114 * b
+def protect_referenced(parts):
+    """a part another part names in seq_after (a roof plane under its tile lines / eave) must survive merge_specks, or
+    the hint names a part that no longer exists (M4g raises HintError on an unknown id): it gets meta keep_small"""
+    ref = {i for p in parts for i in (p.meta.get("seq_after") or [])}
+    for p in parts:
+        if p.id in ref: p.meta["keep_small"] = True; p.meta["seq_referenced"] = True
+    return ref
+
+
+def _wall_ground(ctx, comp, lum, sc):
+    """(thread index, ground luminance) of a wall face: the mean colour of its brightest wall_bright_frac of pixels,
+    nearest thread by CIEDE2000 among the run's threads"""
+    from digitize.extract import evidence as EV
+    ev = ctx.ev; L = lum[comp]
+    if not len(L): return None, None
+    cut = np.quantile(L, 1.0 - sc["wall_bright_frac"]); sel = comp & (lum >= cut)
+    rgb = ev.rgb[sel].mean(0); gl = float(lum[sel].mean())
+    labs = EV.to_lab(np.array([[EV.hex_rgb(ev.hex[ev.keys.index(t)]) for t in ctx.threads]], float))[0]
+    me = EV.to_lab(rgb[None, None, :])[0, 0]
+    d = EV.delta_e(np.broadcast_to(me, labs.shape), labs)
+    return int(np.argmin(d)), gl
+
+
+def _features(ctx, f, wid, course, sc, role=True):
+    """one detail component inside a wall -> [feature]: compact = window; long and thin = member; a frame (a red timber
+    grid, a blue lattice) is split into its rails (opened along the courses) and posts (opened across them), each a
+    member when it is a stroke. Members come from the member / ornament / roof roles only (role=True): a dark component
+    that is not compact is the render's outline shading, not timber, and stays wall."""
+    ev = ctx.ev; out = []
+    def mk(mask):
+        g = _poly(ev, mask)
+        if g is None: return None
+        ax, Ln, Sh = BF.rect_axis(g)
+        if ax is None: return None
+        return dict(mask=mask, geom=g, axis=ax, L=Ln, S=Sh, wall=wid, course=course,
+                    thread=ctx.threads[int(_counts(ctx, mask).argmax())] if _counts(ctx, mask).sum() else None)
+    d = mk(f)
+    if d is None or d["thread"] is None: return out
+    asp = d["L"] / max(d["S"], 1e-6)
+    if d["L"] <= sc["window_max_mm"] and asp < sc["member_aspect"]:
+        d["is_win"] = True; return [d]
+    if not role: return out
+    if asp >= sc["member_aspect"] and 0.8 <= d["S"] <= 7.0:
+        d["is_win"] = False; return [d]
+    n = max(3, int(round(sc["member_min_len_mm"] * ev.ppm)))           # a frame: rails along the courses, posts across
+    a = math.radians(course)
+    for ang in (a, a + math.pi / 2):
+        se = np.zeros((2 * n + 1, 2 * n + 1), bool)
+        for t in np.linspace(-n, n, 4 * n + 1):
+            se[int(round(n + t * math.sin(ang))), int(round(n + t * math.cos(ang)))] = True
+        op = ndi.binary_opening(f, se)
+        Lp, k = ndi.label(op)
+        for i in range(1, k + 1):
+            m = Lp == i
+            if m.sum() < sc["feat_min_mm2"] * ev.ppm ** 2: continue
+            q = mk(m)
+            if q is None or q["thread"] is None: continue
+            if q["L"] / max(q["S"], 1e-6) >= sc["member_aspect"] and 0.8 <= q["S"] <= 7.0:
+                q["is_win"] = False; out.append(q)
+    return out
 
 
 def _role_threads(ctx, keys):

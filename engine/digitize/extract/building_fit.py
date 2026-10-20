@@ -10,8 +10,8 @@ Directions are RULES applied to the fitted geometry, never the reference grain (
 direction gate, LESSONS A24):
   roof plane  NEAR tier (rule 2) down the slope: the front plane runs perpendicular to its fitted eave line; a hip plane
               (left / right of the ridge) fans halfway between that and its fitted hip line, kept hip_min_sep..hip_max_sep
-              off the front. FAR tier (rule 3 depth: far = near-horizontal; fitted tier height < near_tier_mm): along
-              the eave line.
+              off the front. FAR tier (rule 3 depth: far = near-horizontal; fitted tier height < near_tier_rel x the
+              zone's largest tier): along the eave line.
   wall plane  one angle per plane, square to the eave of the roof above it: along it under a far roof, across it under a
               near one (rule 3 depth); 0 deg without a roof
   eave / member / window band   satin across the member's width = its centreline's chord + 90
@@ -59,30 +59,39 @@ def eave_angle(eave_pts):
     return slope(f[0]) if f else 0.0
 
 
-def course_angle(eave_pts, top_pts=None, near_tier_mm=None):
+def course_angle(eave_pts, top_pts=None, near_rel=None, h_ref=None):
     """wall plane, one angle per plane, square to the eave of the roof above it; rule 3 depth decides which way: under a
-    FAR roof (or with no roof above) along the courses = parallel to the eave (near-horizontal), under a NEAR roof
-    across them (near-vertical). No roof above: 0 deg."""
+    FAR roof along the courses = parallel to the eave (near-horizontal), under a NEAR roof across them (near-vertical).
+    No roof above: 0 deg. near_rel None = depth rule off: every wall along its courses."""
     if not eave_pts: return 0.0
     ea = eave_angle(eave_pts) % 180.0
-    if near_tier_mm is None: return round(ea, 3)                    # depth rule off: every wall along its courses
-    far = is_far(eave_pts, top_pts, near_tier_mm) if top_pts else False   # roof height unknown -> near, like the roof
+    if near_rel is None: return round(ea, 3)
+    far = is_far(eave_pts, top_pts, near_rel, h_ref) if top_pts else False   # roof height unknown -> near, like the roof
     return round(ea if far else (ea + 90.0) % 180.0, 3)
 
 
 def tier_height(eave_pts, top_pts):
     """the roof tier's visible height (mm): 75th percentile of bottom - top over the paired profile samples (an occluded
     top only lowers a column, so the upper quartile reads the real tier)"""
-    if not top_pts or len(top_pts) != len(eave_pts): return None
+    if not top_pts or not eave_pts or len(top_pts) != len(eave_pts): return None
     h = [b[1] - t[1] for b, t in zip(eave_pts, top_pts)]
     return float(np.percentile(h, 75)) if h else None
 
 
-def is_far(eave_pts, top_pts, near_tier_mm):
-    """rule 3 (depth: far = near-horizontal, near = near-vertical): a roof tier shorter than near_tier_mm is FAR"""
-    if near_tier_mm is None: return False
+def is_far(eave_pts, top_pts, near_rel, h_ref):
+    """rule 3 (depth: far = near-horizontal, near = near-vertical), RELATIVE to scale: roof tiers of one style shrink
+    with distance, so the nearest tiers on the piece are the largest ones. A tier is FAR when its fitted height is under
+    near_rel x h_ref, h_ref = the largest fitted tier height in the zone (zone_tier_ref). near_rel None = rule off."""
+    if near_rel is None or not h_ref: return False
     h = tier_height(eave_pts, top_pts)
-    return h is not None and h < float(near_tier_mm)
+    return h is not None and h < float(near_rel) * float(h_ref)
+
+
+def zone_tier_ref(parts, zone):
+    """h_ref for is_far: the largest tier height over the zone's roof parts that store their fit points"""
+    hs = [tier_height(p.meta.get("eave_pts"), p.meta.get("top_pts")) for p in parts if p.kind == "roof" and p.zone == zone]
+    hs = [h for h in hs if h is not None]
+    return max(hs) if hs else None
 
 
 def roof_angle(eave_pts, hip_pts=None, side=0, hip_min_sep=20.0, hip_max_sep=45.0, far=False):
@@ -115,16 +124,20 @@ def across_angle(cl):
     return round((math.degrees(math.atan2(y1 - y0, x1 - x0)) + 90.0) % 180.0, 3)
 
 
-def rule_basis(p, rb):
-    """the declared angle of a constructed part, RE-DERIVED from the fitted points stored in its meta (digitize.audit).
-    Returns None when the part does not carry what its rule needs."""
+def rule_basis(p, rb, peers=None):
+    """the declared angle of a constructed part, RE-DERIVED from the fitted points stored in its meta and (for the depth
+    rule) in the zone's other roof parts, `peers` (digitize.audit passes the plan's parts). Returns None when the part
+    does not carry what its rule needs."""
     k = rb.rule(p.kind); rule = k.get("construct"); m = p.meta; prm = rb.rule(k.get("params_from", p.kind)).get("params", {})
+    rel = prm.get("near_tier_rel")
     try:
+        h_ref = zone_tier_ref(peers, p.zone) if (rel is not None and peers is not None) else None
+        if rel is not None and peers is None and rule in ("down_slope", "course"): return None
         if rule == "down_slope":
-            far = is_far(m["eave_pts"], m.get("top_pts"), prm.get("near_tier_mm"))
+            far = is_far(m["eave_pts"], m.get("top_pts"), rel, h_ref)
             return roof_angle(m["eave_pts"], m.get("hip_pts"), int(m.get("side", 0)), float(prm.get("hip_min_sep", 20.0)),
                               float(prm.get("hip_max_sep", 45.0)), far=far)
-        if rule == "course": return course_angle(m.get("eave_pts"), m.get("top_pts"), prm.get("near_tier_mm"))
+        if rule == "course": return course_angle(m.get("eave_pts"), m.get("top_pts"), rel, h_ref)
         if rule == "across": return across_angle(m["cl"])
     except (KeyError, TypeError, IndexError):
         return None

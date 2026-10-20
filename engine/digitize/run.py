@@ -87,6 +87,8 @@ class Run:
                                                            source_ppm_median=self.ref()["source_ppm_median"],
                                                            separation_moves=[list(m) for m in moves], traced_parts=n_traced,
                                                            specks_merged=[list(m) for m in merged]))
+        if getattr(ctx, "building_report", None):                  # M3a: details under a rule 9 minimum, as SUGGESTIONS
+            plan.meta["building_suggest"] = ctx.building_report.get("suggest", [])
         plan.to_json(self.f("parts.json"), with_blocks=False)
         self.plan = plan
         print(f"extract: {len(parts)} parts from {len(zs['zones'])} zones ({n_traced} traced, {len(merged)} specks merged, "
