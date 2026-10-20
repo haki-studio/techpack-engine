@@ -46,18 +46,59 @@ def underlap(parts, keep=1.0):
     return parts
 
 
+def is_open(p):
+    """an OPEN layer (blend / shading, rule 8) lies ON TOP of the fill below it: nothing is cut under it"""
+    if not p.technique: return False
+    from digitize import techniques
+    return bool(techniques.get(p.technique).sequencing.get("open_layer"))
+
+
 def cut_under(parts, keep=1.0):
     """a part keeps only `keep` mm under every higher part that covers it (rule 6). Cut against the ORIGINAL higher
-    geometry, so an overlap kept under one part is never cut by another part lower still."""
+    geometry, so an overlap kept under one part is never cut by another part lower still. Open layers (blend / shading,
+    is_open) cut nothing: they are sewn over the fill they shade."""
     if not parts: return parts
-    orig = [clean(p.geom) for p in parts]; tree = STRtree(orig); new = {}
+    orig = [clean(p.geom) for p in parts]; tree = STRtree(orig); new = {}; opn = [is_open(p) for p in parts]
     for i, p in enumerate(parts):
-        hi = [j for j in tree.query(orig[i], predicate="intersects") if parts[j].z > p.z]
+        hi = [j for j in tree.query(orig[i], predicate="intersects") if parts[j].z > p.z and not opn[j]]
         if not hi: continue
         cover = unary_union([orig[j].buffer(-keep) for j in hi])
         if not cover.is_empty: new[i] = clean(orig[i].difference(cover))
     for i, g in new.items(): parts[i].geom = g
     return parts
+
+
+LINE_KINDS = ("stratum_crack",)
+KEEP_SMALL = ("cloud_wisp", "cloud_shade")      # deliberately small parts: a wisp, a shade layer (never a speck, never a target)
+
+
+def merge_specks(parts, min_mm2=20.0, protected=(), min_protected_mm2=4.0, touch=0.3, line_kinds=LINE_KINDS, keep_small=KEEP_SMALL):
+    """rule 1 (parts, not colours; LESSONS A19): a traced part smaller than min_mm2 (protected accents: min_protected_mm2)
+    is a SPECK: merged into the touching part it shares the most border with, whatever zone that is (a navy shadow
+    between leaves, a rock speck left between zones). Smallest first; a speck that touches nothing is kept. Line parts
+    (cracks) and deliberately small parts (keep_small: wisps, shade layers) neither merge nor take specks.
+    Returns (parts, [(speck id, into id)])."""
+    from shapely.strtree import STRtree
+    if not parts: return parts, []
+    lim = lambda p: min_protected_mm2 if p.thread in protected else min_mm2
+    fixed = set(line_kinds) | set(keep_small)
+    alive = [True] * len(parts); geoms = [clean(p.geom) for p in parts]
+    tree = STRtree(geoms); moves = []
+    for i in sorted(range(len(parts)), key=lambda i: geoms[i].area):
+        if parts[i].kind in fixed or not alive[i] or geoms[i].area >= lim(parts[i]): continue
+        g = geoms[i].buffer(touch); best = None
+        for j in tree.query(g, predicate="intersects"):
+            j = int(j)
+            if j == i or not alive[j] or parts[j].kind in fixed: continue
+            share = g.intersection(geoms[j].buffer(touch)).area
+            if share > 0 and (best is None or share > best[0]): best = (share, j)
+        if best is None: continue
+        j = best[1]; geoms[j] = clean(unary_union([geoms[j], geoms[i].buffer(min(touch, 0.15))]))
+        alive[i] = False; moves.append((parts[i].id, parts[j].id))
+    out = []
+    for p, g, a in zip(parts, geoms, alive):
+        if a: p.geom = g; out.append(p)
+    return out, moves
 
 
 def absorb_fragments(parts, min_mm2=2.0):

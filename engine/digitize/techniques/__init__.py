@@ -8,7 +8,8 @@ Contract (tests/test_digitize_m1.py::test_registry_contract plans a synthetic pa
   check(part, principles) -> [issue dict]   type-follows-shape problems (rule 4), for the review questions
   plan(part)              -> [Block]        underlay first, then the top layer; every stitch <= 7 mm
   estimate(part)          -> stitches
-  sequencing              -> dict: hints for sequence.py (e.g. {"after_fill": True} for line work)
+  sequencing              -> dict: hints for sequence.py (e.g. {"after_fill": True} for line work, {"open_layer": True}
+                             for blends / shading: nothing is cut under them)
 
   from digitize import techniques
   techniques.get("tatami").plan(part)
@@ -36,7 +37,7 @@ def names():
 
 
 def _load_all():
-    from digitize.techniques import tatami, satin, split_satin, run, bean  # noqa: F401  (registers)
+    from digitize.techniques import tatami, satin, split_satin, run, bean, guided_fill, contour_fill, blend  # noqa: F401  (registers)
 
 
 # ---------------------------------------------------------------- shared shape helpers
