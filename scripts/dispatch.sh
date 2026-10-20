@@ -10,7 +10,7 @@
 #   scripts/dispatch.sh --dry-run <role> <slug> ...     print what would run; no worktree, no session
 #
 # Watch: `claude agents` (attach / logs / stop), `python3 scripts/status.py`, status.html.
-# Limits: TECHPACK_MAX_WORKERS (default 2) tech pack sessions at once, HAKI_MAX_SESSIONS (default 6) background
+# Limits: TECHPACK_MAX_WORKERS (default 3) tech pack sessions at once, HAKI_MAX_SESSIONS (default 6) background
 # sessions machine-wide, >= 6 GB RAM free (the 2026-10-05 freeze, ~/.claude/company/PROTOCOL.md). A job that does
 # not fit is queued in ~/.techpack/queue and started by the next dispatch/drain (every worker drains when it ends).
 set -euo pipefail
@@ -28,6 +28,7 @@ except Exception: d=[]
 for a in d:
     if a.get('kind')!='background' or not a.get('pid'): continue
     if pre and not (a.get('name') or '').startswith(pre): continue
+    if str(a.get('pid')) == os.environ.get('CLAUDE_PID', '-'): continue   # a worker handing off does not count itself
     try: os.kill(int(a['pid']),0); print(a.get('name') or a.get('id'))
     except OSError: pass" "${1:-}"
 }
@@ -35,7 +36,7 @@ room() {      # 0 = there is room for one more worker
   [ "$DRY" = 1 ] && return 0
   local tp all mb
   tp=$(live_bg tp- | wc -l); all=$(live_bg | wc -l); mb=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo)
-  [ "$tp" -lt "${TECHPACK_MAX_WORKERS:-2}" ] && [ "$all" -lt "${HAKI_MAX_SESSIONS:-6}" ] && [ "$mb" -ge 6000 ]
+  [ "$tp" -lt "${TECHPACK_MAX_WORKERS:-3}" ] && [ "$all" -lt "${HAKI_MAX_SESSIONS:-6}" ] && [ "$mb" -ge 6000 ]
 }
 board() {     # board <slug> <key> <value>: record who is working on what, outside git
   python3 - "$STATE/board/$1.json" "$2" "$3" <<'EOF'
