@@ -1,5 +1,5 @@
 {
-  "_doc": "Zones for the Castle Falls BK size-M benchmark crop (x -180..20, y 365..565 garment mm; x from CB, + = wearer's right; y from the CB neck seam). Hand-authored on 19 Oct 2026 from the 12 ppm reference (mockup + back_left close-up) and its tone trace. A zone is a WINDOW plus the tones that belong to it: the silhouette inside is traced from the input pixels (digitize.extract.zones), never drawn here. Zones claim pixels from the highest z down (ground last = everything left over). splitter: sky -> sky bands, fall -> cords, pool -> pools, stub -> zone_stub parts (M2/M3 replace the stubs with real splitters: clouds, foliage, strata, buildings, blossoms).",
+  "_doc": "Zones for the Castle Falls BK size-M benchmark crop (x -180..20, y 365..565 garment mm; x from CB, + = wearer's right; y from the CB neck seam). Hand-authored on 19 Oct 2026 from the 12 ppm reference (mockup + back_left close-up) and its tone trace. A zone is a WINDOW plus the tones that belong to it: the silhouette inside is traced from the input pixels (digitize.extract.zones), never drawn here. Zones claim pixels from the highest z down (ground last = everything left over). splitter: sky -> sky bands, fall -> cords, pool -> pools, cloud -> lobes + shade + wisps (M2), stratum -> bedding bands + cracks (M2), stub -> zone_stub parts (M3 replaces the remaining stubs: buildings, trunks, crowns, florets). Options (M2): except = cut those zones' windows out of this one; close_mm = claim specks of other tones enclosed by this zone's tones.",
   "piece": "BK",
   "size": "M",
   "crop": [-180, 365, 20, 565],
@@ -19,7 +19,7 @@
     {"id": "pool_centre", "splitter": "pool", "tones": ["cf_white", "cf_cream", "cf_mist"],
      "windows": [[[-66, 478], [-24, 478], [-24, 500], [-66, 500]]],
      "note": "foam where the centre fall lands, over the roof line"},
-    {"id": "cloud_centre", "splitter": "stub", "z": 4, "tones": ["cf_white", "cf_cream", "cf_mist"],
+    {"id": "cloud_centre", "splitter": "cloud", "z": 4, "tones": ["cf_white", "cf_cream", "cf_mist"],
      "windows": [[[-128, 443], [-66, 443], [-66, 472], [-128, 472]]],
      "note": "cloud bank between the falls (cloud splitter: M2)"},
     {"id": "village", "splitter": "stub", "z": 5, "tones": "all",
@@ -29,7 +29,13 @@
     {"id": "blossom", "splitter": "stub", "z": 7, "tones": ["cf_pinklt", "cf_pink", "cf_rose"],
      "windows": [[[-180, 365], [20, 365], [20, 565], [-180, 565]]],
      "note": "every cherry blossom crown and petal in the crop (floret splitter: M3)"},
+    {"id": "foliage", "splitter": "stub", "z": 2, "tones": ["cf_grndk", "cf_grn", "cf_grnlt"], "close_mm": 1.5, "except": ["sky_right"],
+     "windows": [[[-180, 365], [20, 365], [20, 565], [-180, 565]]],
+     "note": "pine and shrub crowns over the cliffs (crown splitter: M3); claimed before the cliffs so the rock is what is left"},
+    {"id": "cliffs", "splitter": "stratum", "z": 1.5, "tones": ["cf_navy", "cf_slate", "cf_sky", "cf_skylt", "cf_mist", "cf_lav", "cf_bark"], "except": ["sky_right"],
+     "windows": [[[-180, 365], [20, 365], [20, 565], [-180, 565]]],
+     "note": "the rock faces (navy / slate facets, tan and mist highlights): stratum splitter (M2), bands along the reference grain; masses under 40 mm2 go to the ground"},
     {"id": "ground", "splitter": "stub", "z": 1, "tones": "all", "rest": true,
-     "note": "everything not claimed above: cliffs, strata, foliage, trunks (strata / crown splitters: M2/M3)"}
+     "note": "everything not claimed above: trunks, small rock specks, leftovers (trunk splitter: M3)"}
   ]
 }

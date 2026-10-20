@@ -143,7 +143,11 @@ def test_dirspec_never_auto():
 
 
 SYNTH = {"tatami": (box(0, 0, 30, 20), 30.0), "split_satin": (box(0, 0, 6, 40), 90.0), "satin": (box(0, 0, 3, 25), 0.0),
-         "run": (box(0, 0, 0.6, 20), 0.0), "bean": (box(0, 0, 0.6, 20), 0.0)}
+         "run": (box(0, 0, 0.6, 20), 0.0), "bean": (box(0, 0, 0.6, 20), 0.0),
+         # M2 plugins: guided_fill needs its field (a constant 30 deg grid here), contour_fill / blend plan from the shape
+         "guided_fill": (box(0, 0, 30, 20), 30.0), "contour_fill": (box(0, 0, 20, 14), 0.0), "blend": (box(0, 0, 30, 6), 0.0)}
+SYNTH_META = {"guided_fill": dict(field=dict(x0=-2.0, y0=-2.0, step=1.0, nx=35, ny=25, deg=[30.0] * (35 * 25)), field_mean=30.0),
+              "blend": dict(blend_from=[[-1.0, 0.0], [31.0, 0.0]])}
 
 
 def test_registry_contract():
@@ -153,7 +157,8 @@ def test_registry_contract():
     assert set(names) >= {"tatami", "satin", "split_satin", "run", "bean"}, names
     for n in names:
         g, ang = SYNTH[n]; t = techniques.get(n)
-        p = Part(id=f"syn.{n}", kind="pool", geom=g, thread="t1", z=0, dir=DirSpec(ang)); p.technique = n; p.stitch = _spec(n)
+        p = Part(id=f"syn.{n}", kind="pool", geom=g, thread="t1", z=0, dir=DirSpec(ang), meta=dict(SYNTH_META.get(n, {})))
+        p.technique = n; p.stitch = _spec(n)
         bl = t.plan(p)
         assert bl and all(isinstance(b, Block) and b.part == p.id and len(b.pts) > 1 for b in bl), n
         roles = [b.role for b in bl]

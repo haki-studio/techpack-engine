@@ -36,7 +36,7 @@
   },
   "panel_labels": {
     "ref": "12 ppm reference (mockup + {closeup} close-up, min weight {min_weight}; source detail ~{source_ppm} px/mm)",
-    "part_map": "part map: {parts} parts by kind (sky blue, falls white/blue, pool cyan, zone stubs in their thread colour, washed grey); red tick = declared angle",
+    "part_map": "part map: {parts} parts by kind (sky blue, falls white/blue, pool cyan, clouds white, strata in their thread colour, zone stubs in their thread colour washed grey); red tick = declared angle",
     "live": "live view (dstlive) - {stitches:,} stitches, {trims} trims ({trims_per_100cm2}/100 cm2 of covered area)",
     "heat": "direction (visible layer): {dir_ok}% OK, {dir_chaos}% chaotic, {n_dev} off-grain  [all stitches: {dir_all}%]",
     "density": "density mm/mm2: mean {dens_mean}, p95 {dens_p95}, {dens_flags} areas > {dens_thr} (white boxes)",
