@@ -199,6 +199,8 @@ def test_bench_rerun_on_same_commit_through_real_git(tmp_path):
     bench.append(_brow("M2", 80.0), str(proj))
     git("add", "."); git("commit", "-q", "-m", "first bench row")             # the bench outputs are tracked, as on the branch
     sha = bench.git_sha(str(proj)); assert "+dirty" not in sha and sha != "unknown"
+    (repo / "RECAP.md").write_text("notes\n"); git("add", "."); git("commit", "-q", "-m", "a note")   # docs: not an engine change
+    assert bench.git_sha(str(proj)) == sha
     bench.append(_brow("M2", 81.0), str(proj))                               # rewrites the tracked bench files ...
     bench.append(_brow("M2", 82.0), str(proj))                               # ... which are now modified: still the same key
     rows = json.load(open(proj / "bench" / "SCOREBOARD.json"))

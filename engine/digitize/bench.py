@@ -200,10 +200,10 @@ def git_sha(root=ROOT):
     """the engine commit a row was scored with (short sha, '+dirty' when tracked files OUTSIDE any bench/ folder have
     uncommitted changes). The bench's own outputs (bench/SCOREBOARD.json, BENCH.md, panels) are not the engine: the
     first bench run rewrites them, and counting that as dirty gave a re-run on the same commit a new key and a duplicate
-    row (PR #6 review). For the same reason the sha is the last commit that changed anything OUTSIDE bench/ folders:
-    committing a bench row does not make a new engine version."""
+    row (PR #6 review). For the same reason the sha is the last commit that changed anything OUTSIDE bench/ folders and
+    Markdown notes (RECAP, LESSONS, HANDOFF): committing a bench row or a note does not make a new engine version."""
     try:
-        sha = subprocess.run(["git", "-C", root, "log", "-1", "--format=%H", "HEAD", "--", ":/", ":(exclude,glob)**/bench/**"],
+        sha = subprocess.run(["git", "-C", root, "log", "-1", "--format=%H", "HEAD", "--", ":/", ":(top,exclude,glob)**/bench/**", ":(top,exclude,glob)**/*.md"],
                              capture_output=True, text=True, check=True).stdout.strip()[:12]
         if not sha: raise ValueError("no commit")
         st = subprocess.run(["git", "-C", root, "status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True).stdout
