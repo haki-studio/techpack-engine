@@ -24,7 +24,6 @@ class Ctx:
         ti = {t: i for i, t in enumerate(self.threads)}
         lut = np.array([ti[tone_thread[k]] if tone_thread.get(k) else -1 for k in keys], int)
         self.thread_lab = lut[ev.tone]                     # (H, W) index into self.threads
-        self.tone_thread = dict(tone_thread)               # --- KOI --- palette tone -> thread (fish.py maps template pixels)
         self.n = 0
         self._field = None
 

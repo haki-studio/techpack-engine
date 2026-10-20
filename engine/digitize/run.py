@@ -35,7 +35,7 @@ NO_FILL_DIRECTION = ("dot",)                                          # beads: j
 
 
 def zero_bare(w, keys, bare):
-    """--- KOI --- run.yaml threads.bare: palette tones that are the BARE shell (Koi's navy duck between motifs). They
+    """--- mockup-governs --- run.yaml threads.bare: palette tones that are the BARE shell (fabric left unsewn between motifs). They
     stay in the evidence (so a duck pixel is not classified as the nearest thread) but get zero weight, so the thread
     planner maps them to no thread (splitters see thread_lab -1 and never sew them). Default (none) = unchanged."""
     w = np.array(w, float)
@@ -97,7 +97,7 @@ class Run:
 
     def ref(self):
         if self._ref is None:
-            reg = register.load(config.path(self.cfg, self.cfg.get("registration") or self.cfg_b["registration"]))   # --- KOI --- run.yaml
+            reg = register.load(config.path(self.cfg, self.cfg.get("registration") or self.cfg_b["registration"]))   # --- mockup-governs --- run.yaml
             # `registration:` = the EXTRACTION source (mockup + informing close-ups); bench.json's stays the gate reference
             self._ref = register.reference(reg, self.view, self.crop, ppm=float(self.cfg_b["ppm"]))
         return self._ref
@@ -108,7 +108,7 @@ class Run:
         ev = evidence.build(self.ref(), T["palette"], **cfg["evidence"])
         ev.tone_png(self.f("evidence_tones.png"))
         w = np.bincount(ev.tone.ravel(), minlength=len(ev.keys)) / ev.ppm ** 2
-        w = zero_bare(w, ev.keys, T.get("bare"))           # --- KOI --- bare-shell tones: evidence only, never a thread
+        w = zero_bare(w, ev.keys, T.get("bare"))           # --- mockup-governs --- bare-shell tones: evidence only, never a thread
         # M4g: thread planner with the trade-off as options (threads.choice / answers.json), salience per tone
         zs0 = ZN.load(config.path(cfg, cfg["zones"]))
         zm = {z["id"]: (np.ones((ev.H, ev.W), bool) if z.get("rest") else ev.mask(ZN.window(z))) &
@@ -131,9 +131,6 @@ class Run:
             if k in M3B_SPLITTERS: return M3B_SPLITTERS[k](ctx, z, zz, m)          # M3b: trunk, crown, blossom
             if k == "building":                                    # M3a: building template fitter
                 from digitize.extract.splitters import building; return building.split(ctx, z, zz, m)
-            if k in ("fish", "lily"):                               # --- KOI --- motif splitters (engine trial on Koi Blossom)
-                from digitize.extract.splitters import fish, lily
-                return {"fish": fish.split, "lily": lily.split}[k](ctx, z, zz, m)
             raise ValueError(f"zone {z['id']}: unknown splitter {k!r}")
         parts, log = ZN.claim_and_split(zs, ev, z_of, split)
         parts, left_out = RV.apply_extract(self.cfg, parts)                                    # M4g: answers

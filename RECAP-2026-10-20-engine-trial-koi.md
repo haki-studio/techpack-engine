@@ -169,3 +169,37 @@ Copied to `C:\Users\devin\Desktop\koi-trial\`.
 3. The dark lower flower's petals.
 4. Gates: an independent organic rule; a Koi trims value from the founder.
 5. M7 pack path.
+
+---
+
+# Salvage: generic parts only (branch engine-mockup-governs, 2026-10-20)
+
+Founder decision: the engine must handle ANY mockup with generic shape primitives plus a vision step, never a rule per subject ("we are not going to go through the entire animal kingdom").
+
+## What happened to PR #13
+PR #13 had already been merged into main (ad0577c) by the time the salvage instruction arrived, although the plan was to keep it unmerged. This branch therefore works off that main and REMOVES the Koi-specific parts.
+
+## Removed from main
+- fish.py and lily.py
+- the KOI kinds in house.yaml
+- fish_fin in the radial allowed_kinds
+- construct rule ray
+- Ctx.tone_thread
+- the run.py fish/lily dispatch
+- tests/test_digitize_koi.py
+- the projects/koi-blossom-hoodie/bench/ trial files
+
+The trial record stays on branch engine-trial-koi and PR #13.
+
+## Kept (generic, all with tests)
+| part | what it does |
+|---|---|
+| extract/inform.py + the register.reference hook | informs per motif; the motif test is now colour-agnostic (distance from fabric only; blue/lum filters optional); IoU 0.5 acceptance is enforced inside composite (MIN_IOU) |
+| bench.run_gates | accepts closeup: null (mockup-only reference, no feather mask) |
+| bench targets.accents | lists the accents a design has |
+| run.py | zero_bare / threads.bare; run.yaml registration: as the extraction source |
+| sequence.underlap | tone_group plus TONE_SEAM_MM |
+
+Tests: tests/test_digitize_mockup.py, 7 tests; 8 mutations each went red, then green on restore.
+
+LESSONS row numbered A30.

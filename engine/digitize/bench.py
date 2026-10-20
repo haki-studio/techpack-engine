@@ -57,7 +57,7 @@ def run_gates(cfg_b, project, dst, origin, regions_pkl=None, coherence=None):
     attributes stitches to its plan's part ids); else read from regions_pkl when given."""
     t0 = time.time(); crop = tuple(cfg_b["crop"]); view = cfg_b["view"]; ppm = float(cfg_b["ppm"])
     reg = register.load(os.path.join(project, cfg_b["registration"]))
-    min_w = register.crop_inside(reg, view, crop, cfg_b["closeup"]) if cfg_b.get("closeup") else None   # --- KOI --- closeup null:
+    min_w = register.crop_inside(reg, view, crop, cfg_b["closeup"]) if cfg_b.get("closeup") else None   # --- mockup-governs --- closeup null:
     if min_w is not None and min_w <= cfg_b.get("min_weight", 0.6):                                  # a mockup-only reference
         raise SystemExit(f"crop {crop} is not inside close-up {cfg_b['closeup']} (min feather weight {min_w:.2f}); "
                          f"register.fit_crop suggests {register.fit_crop(reg, view, crop, cfg_b['closeup'])}")
@@ -73,7 +73,7 @@ def run_gates(cfg_b, project, dst, origin, regions_pkl=None, coherence=None):
                stitches_in_crop=len(clipped))
 
     # direction: the visible top layer (gate) and every stitch (info, the old behaviour)
-    wmask = ref.get("closeup_weight") if cfg_b.get("closeup") else None; mw = cfg_b.get("min_weight", 0.6)   # KOI: no close-up, no mask
+    wmask = ref.get("closeup_weight") if cfg_b.get("closeup") else None; mw = cfg_b.get("min_weight", 0.6)   # no close-up: no feather mask
     dm = qa.direction_match(ref["grey"], ppm, local, weight=wmask, min_weight=mw)
     dm_all = qa.direction_match(ref["grey"], ppm, local, visible=False, weight=wmask, min_weight=mw)
     out["direction"] = dict(tiles=dm["tiles"], pct_ok=dm["pct_ok"], pct_chaos=dm["pct_chaos"], n_dev=len(dm["fail_dev"]), masked=dm["masked"],
@@ -144,7 +144,7 @@ def verdict(row, T):
                        and row["satin"].get("cord_flags", 0) == 0,            # split-satin cords read from the DST (M2)
         "stack": s["max"] <= T["stack_max_layers"],
         "colours": row["colours"]["threads_in_file"] <= T["colours_max"] and all(row["colours"][a] for a in T.get("accents", ("red", "gold"))),
-    }                                         # --- KOI --- targets.accents: the accents THIS design has (Koi: red only; default red + gold)
+    }                                         # targets.accents: the accents THIS design has (default red + gold, the Castle bench)
     if "separation" in row:                   # rule 3 (M2): touching same-thread parts closer than 15 deg, stubs included
         checks["separation"] = row["separation"]["close"] <= T.get("separation_close_max", 0)
     return checks
