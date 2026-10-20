@@ -45,9 +45,10 @@ def cm_in(mm):
 def chart_banner(o, spec, x, y, width=SW - 24):
     st = spec.chart.status
     if is_prop(st):
-        o.append(f'<rect x="{f(x - 1)}" y="{f(y - 3)}" width="{f(width + 2)}" height="4.4" fill="#FFF4DD" stroke="{PROP}" stroke-width="0.2"/>')
-        o.append(t(x, y, f"MEASUREMENTS: {st.v}  {TAG}", 1.75, 700, PROP))
-        return y + 5
+        lines = wrap(f"MEASUREMENTS: {st.v}  {TAG}", width * 0.9, 1.75)   # bold runs wider
+        o.append(f'<rect x="{f(x - 1)}" y="{f(y - 3)}" width="{f(width + 2)}" height="{f(1.4 + 2.8 * len(lines))}" fill="#FFF4DD" stroke="{PROP}" stroke-width="0.2"/>')
+        for i, l in enumerate(lines): o.append(t(x, y + i * 2.8, l, 1.75, 700, PROP))
+        return y + 2.2 + 2.8 * len(lines)
     return y
 
 
@@ -217,7 +218,7 @@ def p_cover(spec, index):
     for d in spec.decorations:
         rows.append((d.code, V(f"{d.name} · {d.label} · {d.view}", is_prop(d.method_v))))
     for a, v in rows:
-        o.append(t(ix, y, a, 1.7, 400, MUTED)); y = vpara(o, ix + 20, y, v, 66, 1.65, 2.9) + 0.8
+        o.append(t(ix, y, a, 1.7, 400, MUTED)); y = vpara(o, ix + 20, y, v, 60, 1.65, 2.9) + 0.8
     y += 2; o.append(t(ix, y, "Amber = proposed by Haki — please confirm (all listed on F1).", 1.6, 700, PROP))
     o.append(t(SW - 14, SH - 8, foot(spec), 1.8, 400, MUTED, "end"))
     return o

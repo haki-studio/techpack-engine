@@ -104,6 +104,7 @@ effect is on record.
 | D1 | `&` in SVG text broke rendering; overlapping labels. | Escape `&`; render every page to PNG and look at it before merging. | preview PNGs (`prev_*.png`). |
 | D2 | 85 MB PDF. | Recompress embedded images (`shrink.py`, max 3000 px, q82) → ~12 MB. | file size before delivery. |
 | D3 | Pages referenced stale numbers after a rebuild. | Rebuild order: stitch files → results json → specs → embroidery pack → garment pack → merge. Never hand-type a count. | `build_all.py`. |
+| D4 | Every product carried its own 3–6k lines of page builders, palette and placement; the founder: "a tee techpack suite … only a print and tee colour each time" (20 Oct 2026). Copies drift and every new product re-typed facts (fabric, labels, chart). | A product type is a FAMILY (`families/<family>/family.yaml` + `engine/family/`), a product is a data-only VARIANT yaml. The POM chart is ONE entry (`pom_chart: base + deltas`): changing it changes the table, the flats and every placement. Unknowns are `{proposed: x}` → amber "[proposed — confirm]" and listed on F1 automatically. A variant with an unknown method / field fails with a message naming the fix. | `tests/test_family_tee.py` (red-then-green: amber off, half chest doubled, unknown method accepted, F1 drops a group, deltas ignored, placement not from the chart — each turns it red). |
 
 ## E. Process
 
