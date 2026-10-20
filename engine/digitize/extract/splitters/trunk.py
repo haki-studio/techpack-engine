@@ -25,7 +25,9 @@ import dst2
 from digitize.schema import Part, DirSpec
 from digitize.extract.splitters import dominant
 from digitize.extract.splitters.fall import sections, cords
-from digitize.extract.splitters.construct import basis as cbasis, line_angle
+from digitize.extract.splitters.construct import basis as cbasis, line_angle, polyline_angle
+from shapely.geometry import Point
+from shapely.ops import substring
 
 DEFAULTS = dict(min_mm2=6.0, support_tones=["cf_pinklt", "cf_pink", "cf_rose"],
                 support_ring_mm=2.0, support_frac=0.35, min_w_mm=1.0, max_w_mm=14.0, min_aspect=2.5, max_turn_deg=25.0,
@@ -40,26 +42,26 @@ def tangent_deg(line, s):
     return math.degrees(dst2.tangent_at(line, s)) % 360.0
 
 
-def segments(P, line, max_turn=25.0, min_len=3.0):
-    """cut P along its axis where the axis turns > max_turn deg from the segment's start: [(piece, (a, b) chord)]"""
+def segments(P, line, max_turn=25.0, min_len=3.0, tol=0.8):
+    """cut P along its axis where the axis BENDS > max_turn deg (at the vertices of the axis simplified to tol mm, so
+    pixel wiggle is not a bend; pieces >= min_len): [(piece, (s0, s1) arc range along the axis)]"""
     L = line.length
-    if L < 1.0: return [(P, (line.coords[0], line.coords[-1]))]
-    cuts = [0.0]; t0 = tangent_deg(line, 0.0); s = 1.0
-    while s < L:
-        t = tangent_deg(line, s); d = abs(((t - t0) + 180) % 360 - 180)
-        if d > max_turn and s - cuts[-1] >= min_len and L - s >= min_len:
-            cuts.append(s); t0 = t
-        s += 1.0
+    if L < 1.0: return [(P, (0.0, L))]
+    sl = line.simplify(tol); cs = list(sl.coords); cuts = [0.0]
+    for k in range(1, len(cs) - 1):
+        t1 = math.degrees(math.atan2(cs[k][1] - cs[k - 1][1], cs[k][0] - cs[k - 1][0]))
+        t2 = math.degrees(math.atan2(cs[k + 1][1] - cs[k][1], cs[k + 1][0] - cs[k][0]))
+        s = line.project(Point(cs[k]))
+        if abs(((t2 - t1) + 180) % 360 - 180) > max_turn and s - cuts[-1] >= min_len and L - s >= min_len: cuts.append(s)
     cuts.append(L)
-    if len(cuts) == 2: return [(P, (line.coords[0], line.coords[-1]))]
+    if len(cuts) == 2: return [(P, (0.0, L))]
     secs = sections(P, line, step=0.5)
     out = []
     for s0, s1 in zip(cuts, cuts[1:]):
         ss = [q for q in secs if s0 - 1e-6 <= q[0] <= s1 + 1e-6]
         quads = [Polygon([ss[k][1], ss[k][2], ss[k + 1][2], ss[k + 1][1]]).buffer(0) for k in range(len(ss) - 1)]
         g = unary_union([q for q in quads if not q.is_empty]).buffer(0.01).intersection(P) if quads else Polygon()
-        a, b = line.interpolate(s0), line.interpolate(s1)
-        out.append([g, ((a.x, a.y), (b.x, b.y))])
+        out.append([g, (s0, s1)])
     taken = Polygon(); clean = []
     for g, ch in out:
         g = g.difference(taken).buffer(0); clean.append([g, ch]); taken = taken.union(g)
@@ -72,8 +74,10 @@ def segments(P, line, max_turn=25.0, min_len=3.0):
 
 
 def limbs(ctx, C, min_limb_mm=2.0):
-    """a branching bark component -> one mask per LIMB: the skeleton is cut at its junctions, spurs shorter than
-    min_limb_mm are dropped, and every pixel goes to the nearest remaining skeleton branch"""
+    """a branching bark component -> one mask per LIMB: the skeleton is cut at its junctions; SPURS are dropped (a
+    branch shorter than min_limb_mm, or a free-ended branch shorter than 2.5 x the stroke's half-width where it leaves
+    the junction: the medial axis forks into the corners at a stroke's square end); every pixel goes to the nearest
+    remaining skeleton branch"""
     from skimage.morphology import skeletonize
     sk = skeletonize(C)
     if sk.sum() < 2: return [C]
@@ -82,7 +86,11 @@ def limbs(ctx, C, min_limb_mm=2.0):
     lab, n = ndi.label(br, np.ones((3, 3), bool))
     if n <= 1: return [C]
     sz = np.bincount(lab.ravel(), minlength=n + 1)
-    keep = [i for i in range(1, n + 1) if sz[i] >= min_limb_mm * ctx.ev.ppm]
+    dt = ndi.distance_transform_edt(C)
+    ends = sk & (nb == 1)
+    free = np.bincount(lab[ends & (lab > 0)].ravel(), minlength=n + 1)
+    dmax = ndi.maximum(dt, lab, index=np.arange(n + 1))
+    keep = [i for i in range(1, n + 1) if sz[i] >= min_limb_mm * ctx.ev.ppm and not (free[i] and sz[i] < 2.5 * dmax[i])]
     if len(keep) <= 1: return [C]
     seed = np.where(np.isin(lab, keep), lab, 0)
     _, (iy, ix) = ndi.distance_transform_edt(seed == 0, return_indices=True)
@@ -90,17 +98,26 @@ def limbs(ctx, C, min_limb_mm=2.0):
     return [own == i for i in keep if (own == i).any()]
 
 
-def chord_of(g, ch):
-    """an axis chord that lies on g: the segment's own chord, else g's own medial axis ends, else None"""
-    probe = lambda c: Part(id="_", kind="branch", geom=g, thread="", z=0, dir=DirSpec(0.0),
-                           meta=dict(construct=dict(rule="axis", line=[list(c[0]), list(c[1])])))
-    if cbasis(probe(ch))[0] is not None: return ch
+def seg_axis(g, sub):
+    """a segment's axis angle: the long side of its minimum rotated rectangle when it is a stroke (aspect >= 1.5; the
+    traced medial axis of a square-ended stroke runs into its corners), else the axis polyline's mean direction"""
+    from digitize.techniques import aspect_of
     gp = g if g.geom_type == "Polygon" else max(g.geoms, key=lambda q: q.area)
-    cl = dst2.centreline(gp)
-    if cl is not None and cl.length > 0:
-        c2 = (cl.coords[0], cl.coords[-1])
-        if cbasis(probe(c2))[0] is not None: return c2
-    return None
+    if aspect_of(gp) >= 1.5:
+        cs = list(gp.minimum_rotated_rectangle.exterior.coords)
+        e = max(((cs[k], cs[k + 1]) for k in range(4)), key=lambda ab: math.dist(*ab))
+        return line_angle(*e)
+    return polyline_angle(list(sub.coords))
+
+
+def chord_of(g, ang, L):
+    """the axis chord of a strip: through its representative point, at the segment's axis angle, L mm long; None when
+    it does not rebuild (construct rule "axis": on the part, a stroke)"""
+    rp = g.representative_point(); ux, uy = math.cos(math.radians(ang)) * L / 2, math.sin(math.radians(ang)) * L / 2
+    c = ((rp.x - ux, rp.y - uy), (rp.x + ux, rp.y + uy))
+    probe = Part(id="_", kind="trunk_strip", geom=g, thread="", z=0, dir=DirSpec(0.0),
+                 meta=dict(construct=dict(rule="axis", line=[list(c[0]), list(c[1])])))
+    return c if cbasis(probe)[0] is not None else None
 
 
 def split(ctx, zone, z, claim):
@@ -132,6 +149,8 @@ def split(ctx, zone, z, claim):
             w = P.area / line.length
             if w < sc["min_w_mm"] or w > sc["max_w_mm"] or line.length < sc["min_aspect"] * w: stats["blob"] += 1; continue
             stats["limbs"] += 1; used |= Lm
+            if line.length > 3 * w:                         # the axis' last half-width turns into the end's corners: trim it
+                line = substring(line, w / 2, line.length - w / 2)
             if w <= sc["strip_split_mm"]:                     # a branch: ONE satin column across the stroke, along the limb
                 cl = [list(map(float, q)) for q in line.coords]
                 con = dict(rule="column", cl=cl)
@@ -145,20 +164,16 @@ def split(ctx, zone, z, claim):
                                   meta=dict(splitter="trunk", tree=int(ci), limb=li, cl=cl, w=round(w, 2), construct=con)))
                 stats["branches"] += 1
                 continue
-            for si, (g, ch) in enumerate(segments(P, line, sc["max_turn_deg"], sc["min_seg_mm"])):
-                stats["segments"] += 1
-                L = math.dist(*ch); ws = g.area / max(L, 1e-6)
-                if ws > sc["strip_split_mm"]:
-                    k = int(math.ceil(ws / sc["strip_mm"]))
-                    sline = LineString([ch[0], ch[1]])
-                    strips = cords(g, k, sline) if k > 1 else [g]
-                    kind = "trunk_strip"
-                else:
-                    strips = [g]; kind = "trunk_strip"                 # a narrow segment of a wide limb
+            for si, (g, (s0, s1)) in enumerate(segments(P, line, sc["max_turn_deg"], max(sc["min_seg_mm"], 1.5 * w))):
+                stats["segments"] += 1; kind = "trunk_strip"
+                sub = substring(line, s0, s1); L = max(sub.length, 1e-6); ws = g.area / L
+                axis = seg_axis(g, sub)                                 # the segment's run (its long axis)
+                k = int(math.ceil(ws / sc["strip_mm"])) if ws > sc["strip_split_mm"] else 1
+                strips = cords(g, k, sub) if k > 1 else [g]
                 got = []
                 for j, sg in enumerate(strips):
                     if sg.is_empty or sg.area < 1.5: continue
-                    c = chord_of(sg, ch)
+                    c = chord_of(sg, axis, L)
                     if c is None: stats["no_chord"] += 1; continue
                     sm = ev.mask(sg); t = dominant(ctx, sm) or dominant(ctx, C)
                     if t is not None: got.append((j, sg, c, sm, t))

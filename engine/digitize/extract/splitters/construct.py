@@ -13,7 +13,7 @@ random (LESSONS A23 / A24).
   rule "between_petals" knots: the bead rows sit across the floret's first petal, between two petal axes (phase + 90
                        + 18: 5 petals are 36 deg apart axially). construct = {rule, phase}.
   rule "column"        branches (DirSpec mode "contour"): a satin column ACROSS the stroke along the traced centreline;
-                       the declared angle is across the chord (cl[0] -> cl[-1]) + 90. Check: the centreline's middle lies on
+                       the declared angle is across the centreline's mean direction (polyline_angle) + 90. Check: the centreline's middle lies on
                        the part, and it is >= 1.5 x the part's width long. The file is judged per stitch (trunk.column_adherence).
   rule "radial"        face-on florets (DirSpec mode "radial"): every stitch on a ray from the floret centre; the declared
                        angle is the conventional 0. construct = {rule, centre: [x, y]}. Check: the centre lies on the
@@ -32,6 +32,16 @@ OUTLINE_RULES = ("fan",)          # angles read off the traced outline's shape: 
 
 def line_angle(a, b):
     return math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])) % 180.0
+
+
+def polyline_angle(cl):
+    """the length-weighted axial mean direction of a polyline's segments (deg): a branch's overall run, robust to the
+    centreline's ends turning into the outline's corners"""
+    C = S = 0.0
+    for a, b in zip(cl, cl[1:]):
+        L = math.dist(a, b); t = math.atan2(b[1] - a[1], b[0] - a[0])
+        C += L * math.cos(2 * t); S += L * math.sin(2 * t)
+    return math.degrees(0.5 * math.atan2(S, C)) % 180.0
 
 
 def _width(g):
@@ -65,7 +75,7 @@ def basis(p):
         mid = cl[len(cl) // 2]
         if p.geom.distance(Point(mid)) > 1.5: return None, "column centreline does not lie on the part"
         if LineString(cl).length < 1.5 * _width(p.geom): return None, "column shorter than 1.5 x its width (not a stroke)"
-        return (line_angle(cl[0], cl[-1]) + 90.0) % 180.0, None
+        return (polyline_angle(cl) + 90.0) % 180.0, None
     if r == "radial":
         if p.dir.mode != "radial": return None, "radial construction on a part that is not in radial mode"
         if p.geom.distance(Point(c["centre"])) > 1.5: return None, "radial centre is not on the floret"
