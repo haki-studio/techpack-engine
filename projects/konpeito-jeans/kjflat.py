@@ -12,7 +12,7 @@ from render import f, geom_to_path
 
 SRC = "inputs/1792127150159_image.png"
 MM = 420.0 / 432.0
-STITCH = "#C8A45A"      # tonal copper-gold topstitch as in the mockup
+STITCH = "#141416"      # DTM black topstitch (founder 19 Oct), drawn just darker than the denim
 INK = "#1A1A1A"; DENIM = "#3A3B3F"; DENIM_LT = "#4A4B50"
 
 def silhouettes():
@@ -65,8 +65,8 @@ def back_svg(sil, emb=True, callouts=True):
         o.append(topst(T([(x0, 198), (x1, 198)], ox)))
         inner = Polygon(T(pk, ox)).buffer(-2.0, join_style="mitre")
         o.append(path(list(inner.exterior.coords), STITCH, 0.35, "1.2 0.8"))
-        for rx in (x0 + 6, x1 - 6):
-            o.append(f'<circle cx="{f(X(rx))}" cy="{f(Y(190))}" r="2.2" fill="#B8826A" stroke="#7A4E3A" stroke-width="0.3"/>')
+        for rx, sg in ((x0 + 3, 1), (x1 - 3, -1)):      # bartacks at the top corners (founder 19 Oct, as HI): 8 mm, along the pocket side
+            o.append(f'<line x1="{f(X(rx))}" y1="{f(Y(185))}" x2="{f(X(rx + sg * 0.4))}" y2="{f(Y(185) + 10)}" stroke="#B4B4B8" stroke-width="2.4" stroke-linecap="round"/>')
     # inseam / crotch hint
     o.append(path(T([(380, 470), (372, 500)], ox)))
     return "\n".join(o), P.bounds
@@ -80,7 +80,7 @@ def front_svg(sil):
     for bx in (1040, 1190):
         o.append(path(T([(bx - 7, 42), (bx + 7, 42), (bx + 7, 104), (bx - 7, 104)], ox), close=True, fill=DENIM_LT))
     # shank button + fly (zip fly, founder 19 Oct: YKK #4.5 close-end, 6 in; J topstitch) + CF
-    o.append(f'<circle cx="{f((1112 - ox) * MM)}" cy="{f(72 * MM)}" r="8.5" fill="#B8826A" stroke="#7A4E3A" stroke-width="0.4"/>')
+    o.append(f'<circle cx="{f((1112 - ox) * MM)}" cy="{f(72 * MM)}" r="8.5" fill="#1E1E20" stroke="#8A8A8E" stroke-width="0.4"/>')
     o.append(path(T([(1105, 98), (1100, 470)], ox)))
     o.append(topst(T(bez((1075, 98), (1072, 250), (1070, 330), (1100, 368)), ox)))
     zt, zb = 100 * MM, 100 * MM + 152.4             # 6 in zip under the fly (hidden, shown dashed) + slider at the top
@@ -92,7 +92,7 @@ def front_svg(sil):
     o.append(path(T(bez((1198, 96), (1215, 160), (1270, 190), (1338, 200)), ox)))
     o.append(topst(T(bez((1190, 96), (1207, 166), (1264, 197), (1340, 208)), ox)))
     for rx, ry in ((1016, 130), (1200, 128)):
-        o.append(f'<circle cx="{f((rx - ox) * MM)}" cy="{f(ry * MM)}" r="2.2" fill="#B8826A" stroke="#7A4E3A" stroke-width="0.3"/>')
+        o.append(f'<circle cx="{f((rx - ox) * MM)}" cy="{f(ry * MM)}" r="2.2" fill="#1E1E20" stroke="#8A8A8E" stroke-width="0.3"/>')
     o.append(path(T([(1100, 470), (1092, 500)], ox)))
     return "\n".join(o), P.bounds
 

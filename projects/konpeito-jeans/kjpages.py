@@ -146,7 +146,7 @@ def T1(index):
     ix = 176; o.append(t(ix, 54, "CONTENTS", 2.8, 700)); y = 60
     for pid, title, miss in index:
         o.append(t(ix, y, f"{pid}", 1.95, 700)); o.append(t(ix + 9, y, title[:58], 1.95, 400))
-        if miss: o.append(t(SW - 14, y, "MISSING", 1.8, 700, AMBER, "end"))
+        if miss: o.append(t(SW - 14, y, "MISSING: " + "; ".join(m_.split(" / ")[0] for m_ in miss.split("; ")), 1.7, 700, AMBER, "end"))
         y += 3.55
     y += 3
     o.append(t(ix, y, "Legend", 2.2, 700)); y += 4
@@ -159,7 +159,7 @@ def T1(index):
 
 # ---------------------------------------------------------------- T2 flats
 def T2():
-    o = hdr("T2 · FLATS — front + back (drawn to the mockup)", "Silhouette traced from the client flat lay; construction lines placed from it; embroidery drawn at true size on the flat (scale bar). Washed black denim, tonal copper-gold topstitch.", "T2")
+    o = hdr("T2 · FLATS — front + back (drawn to the mockup)", "Silhouette traced from the client flat lay; construction lines placed from it; embroidery drawn at true size on the flat (scale bar). Washed black denim, DTM black topstitch, matte black hardware.", "T2")
     s = 0.128
     o.append(flat_group("front", 16 - FB[0] * s, 32, s)); o.append(flat_group("back", 110 - BB[0] * s, 32, s))
     o.append(t(20, 32 + 1240 * MMPX * s + 4, "FRONT", 2.6, 700)); o.append(t(114, 32 + 1240 * MMPX * s + 4, "BACK", 2.6, 700))
@@ -183,9 +183,9 @@ def T2():
     for s_ in ["5-pocket jean: 2 front scoop pockets,", "coin pocket (= patch 01), yoke,", "2 patch back pockets, 5 belt loops,",
                "zip fly, 15 L rivets (T5).", "No cargo pockets (Hidden Inventory", "pattern minus cargo, see T4)."]:
         o.append(t(lx, y, s_, 1.9, 400, MUTED)); y += 3.4
-    y += 2; o.append(prop(lx, y, "Metal finish antique copper", 1.8)); y += 3.4
+    y += 2; o.append(t(lx, y, "Matte black metal, DTM black thread (19 Oct)", 1.8, 600, INK)); y += 3.4
     o.append(prop(lx, y, "Flat scale 0.97 mm/px (size 32)", 1.8)); y += 3.4
-    o.append(missing(lx, y + 2, 70, 21, ["[MISSING — front-leg art]", "soot-sprite trail declined", "(licensed lookalike, A7);", "candy stars only, PROPOSED"], 1.8))
+    o.append(missing(lx, y + 2, 70, 21, ["07 front-leg art: see G7", "soot-sprite trail declined", "(licensed lookalike, A7);", "candy stars only, PROPOSED"], 1.8))
     # scale bar
     o.append(f'<line x1="24" y1="{SH-14}" x2="{24 + 100 * s}" y2="{SH-14}" stroke="{INK}" stroke-width="0.5"/>')
     o.append(t(24, SH - 15.5, "100 mm at flat scale", 1.8, 400, MUTED))
@@ -237,7 +237,7 @@ def T3():
         steps = sorted({round(HI[b][idx] - HI[a][idx], 2) for a, b in zip(list(HI)[:-1], list(HI)[1:])})
         o.append(t(gx, gy, f"{code} {name}: +{' / +'.join(f'{s:g}' for s in steps)} in per size", 1.9)); gy += 3.6
     o.append(t(12, SH - 14, "Tolerances are PROPOSED (house standard for denim)  " + PROPOSED + ".  Fabric as HI (RHT 3x1 denim 12 oz, 100 % cotton, enzyme + stone wash): shrinkage", 1.8, 500, AMBER))
-    o.append(t(12, SH - 10.5, "after washing is built into the pattern by the factory as for HI (wash test on the bulk denim before cutting).  Size labels: open question (T7b).", 1.8, 500, AMBER))
+    o.append(t(12, SH - 10.5, "after washing is built into the pattern by the factory as for HI (wash test on the bulk denim before cutting).  Size labels: waist 24–40 (T7b).", 1.8, 500, AMBER))
     return o
 
 # ---------------------------------------------------------------- T4 pattern
@@ -273,13 +273,13 @@ def T5():
         ["Shell", "RHT 3x1 denim, 12 oz, 100 % cotton; finishing enzyme wash + stone wash (as HI)", "washed black (T6)", "—", "body, yoke, WB, pockets, loops"],
         ["Pocket bag", "40's twill, 160 GSM, 100 % cotton (as HI)", "DTM black", "—", "front pocket bags"],
         ["Interlining", "Fusible woven, waistband [proposed — confirm]", "black", "—", "waistband"],
-        ["Thread — topstitch", "All-purpose polyester Tex 135 / TKT 20 (as HI); colour [proposed — confirm, alt. DTM black]", "copper-gold, tonal", "—", "all visible topstitch, 8–9 SPI"],
-        ["Thread — overlock", "All-purpose polyester Tex 60 / TKT 50 (as HI); colour [proposed — confirm]", "DTM black", "—", "overlock, construction seams"],
-        ["Thread — buttonhole", "All-purpose polyester Tex 60 / TKT 50 (as HI); colour [proposed — confirm]", "copper-gold", "—", "WB keyhole buttonhole"],
-        ["Shank button", "Flat tack button with shank, 28 Line, brass / zinc alloy (as HI); finish [proposed — confirm]", "antique copper", "1", "waistband CF closure (B1)"],
-        ["Zip", "YKK #4.5 metal, close-end, automatic lock slider, 6 in (as HI) — replaces the button fly; finish [proposed — confirm]", "ant. copper + DTM tape", "1", "CF fly (Z1)"],
-        ["Rivets", "Inverted nipple rivet 15 L (9.5 mm), metal (as HI); finish [proposed — confirm]", "antique copper", "4", "2 front scoop corners + 2 coin-pocket top corners"],
-        ["Rivets — back pockets", "Same 15 L rivet at the back-pocket top corners, as the mockup (HI has none) [proposed — confirm, else bartack]", "antique copper", "4", "back pocket top corners"],
+        ["Thread — topstitch", "All-purpose polyester Tex 135 / TKT 20 (as HI)", "DTM black", "—", "all visible topstitch, 8–9 SPI"],
+        ["Thread — overlock", "All-purpose polyester Tex 60 / TKT 50 (as HI)", "DTM black", "—", "overlock, construction seams"],
+        ["Thread — buttonhole", "All-purpose polyester Tex 60 / TKT 50 (as HI)", "DTM black", "—", "WB keyhole buttonhole"],
+        ["Shank button", "Flat tack button with shank, 28 Line, brass / zinc alloy (as HI)", "matte black", "1", "waistband CF closure (B1)"],
+        ["Zip", "YKK #4.5 metal, close-end, automatic lock slider, 6 in (as HI) — replaces the button fly", "matte black + DTM tape", "1", "CF fly (Z1)"],
+        ["Rivets", "Inverted nipple rivet 15 L (9.5 mm), metal (as HI)", "matte black", "4", "2 front scoop corners + 2 coin-pocket top corners"],
+        ["Bartacks — back pockets", "Bartack at each back-pocket top corner, DTM black, as HI (no rivets)", "DTM black", "4", "back pocket top corners"],
         ["Patch 01", "Embroidered patch 76 × 56, twill base, heat-cut edge; sewn on after the wash", "threads: G1", "1", "coin pocket (sewn on, rivets)"],
         ["Patch 03", "Embroidered patch 80 × 54, twill base, heat-cut edge; sewn on after the wash", "threads: G1", "1", "back waistband, wearer's right"],
         ["Direct embroidery", "02 facing spill, 04 haki group, 05 star, 06 star, 07 front leg [proposed / MISSING]", "threads: G1", "—", "on cut pieces"],
@@ -287,7 +287,7 @@ def T5():
         ["Backing", "Tearaway 1.8 oz under direct embroidery; patches on twill + cut-away [proposed — confirm]", "white/black", "—", ""],
         ["Patch attach thread", "Polyester Tex 60 / TKT 50, 1 mm edge stitch [proposed — confirm]", "red #C8162B", "—", "patches 01 + 03"],
         ["Main label", "Damask woven, flat, 5 × 2.5 cm, hakistop logo (as HI, artwork T7b)", "jet black / optic white", "1", "inside CB, centred on the waistband"],
-        ["Size label", "Damask woven, centrefold, 2 × 1 cm (as HI); size marks: open question (T7b)", "jet black / optic white", "1", "left side of the main label"],
+        ["Size label", "Damask woven, centrefold, 2 × 1 cm (as HI); waist sizes 24 26 28 30 32 34 36 38 40", "jet black / optic white", "1", "left side of the main label"],
         ["Care label", "Printed polyester satin ribbon, 3 × 6 cm, HI care text (T7b)", "optic white / jet black", "1", "wearer's right, waist seam, 5 cm in from side seam"],
         ["Hangtag + string", "[MISSING — hangtag artwork]; label string; retail sticker on the hangtag (as HI)", "", "1", "hung on the size label"],
         ["Packing", "Transparent polybag 43 × 31 cm + polybag sticker, bottom left (as HI)", "print black", "1", ""]]
@@ -299,16 +299,16 @@ def T5():
 # ---------------------------------------------------------------- T6 construction + wash
 def T6():
     o = hdr("T6 · CONSTRUCTION, STITCHING + WASH", "Standard 5-pocket jean construction on the HI silhouette; threads + hardware as the HI BOM (T5). Amber = proposed.", "T6")
-    rows = [["Threads", "topstitch Tex 135 / TKT 20; overlock + buttonhole Tex 60 / TKT 50 (as HI)"],
+    rows = [["Threads", "DTM black everywhere: topstitch Tex 135 / TKT 20; overlock + buttonhole Tex 60 / TKT 50 (as HI)"],
             ["Seat (CB) seam", "flat-felled, 2 rows topstitch 6 mm apart [proposed — confirm]"], ["Yoke seam", "flat-felled, 2 rows [proposed — confirm]"],
             ["Inseam", "flat-felled, 2 rows [proposed — confirm]"], ["Outseam", "4-thread overlock, pressed to back, 1 row topstitch 6 mm to WB-30 mm [proposed — confirm]"],
             ["Front scoops", "turned + 2 rows topstitch; 15 L rivet at each scoop corner (as HI)"],
             ["Coin pocket (patch 01)", "1 mm red edge stitch on sides + bottom; top edge open; 15 L rivets at the 2 top corners"],
-            ["Back pockets", "hem 2 rows; attach 2 rows round; rivets at the top corners [proposed — confirm]; NO arcuate stitch"],
+            ["Back pockets", "hem 2 rows; attach 2 rows round; bartacks at the 2 top corners (as HI, no rivets); NO arcuate stitch"],
             ["Waistband", "2-pc, CB seam, closed; 2 rows topstitch; keyhole buttonhole for the 28 L shank button; patch 03 after the wash"],
             ["Fly", "zip fly: YKK #4.5 close-end 6 in, automatic lock slider (as HI); J-stitch 2 rows, bartack at the bottom"],
             ["Belt loops", "5, 10 mm wide, bartacked top + bottom [proposed — confirm]"], ["Hem", "double-turned 15 mm, chain stitch [proposed — confirm]"],
-            ["Stitch density", "8–9 SPI topstitch, 10–12 SPI construction [proposed — confirm]"], ["Bartacks", "fly bottom, pocket corners without rivets, belt loops"],
+            ["Stitch density", "8–9 SPI topstitch, 10–12 SPI construction [proposed — confirm]"], ["Bartacks", "fly bottom, back-pocket top corners, belt loops"],
             ["Labels", "main + size label inside CB on the WB; care label in the waist seam, wearer's right (T7, as HI)"]]
     tb, y = table(12, 36, [("Operation", 36), ("Spec", 148)], rows, 1.9, 5.4)
     o.append(tb)
@@ -341,12 +341,12 @@ def T7():
     o.append(f'<line x1="{f(fx + 13)}" y1="{f(ly + 9)}" x2="{f(cx0)}" y2="{f(ly)}" stroke="{GUIDE}" stroke-width="0.25"/>')
     o.append(t(fx + 12.5, ly + 9.6, "care label (inside)", 1.7, 600, GUIDE, "end"))
     rows = [["Main label", "damask woven, flat", "inside back waistband, centred on CB, 5 × 2.5 cm; stitched round in jet black", "artwork: HI main label (T7b)"],
-            ["Size label", "damask woven, centrefold", "left side of the main label, 2 × 1 cm folded", "size marks: OPEN QUESTION (T7b)"],
+            ["Size label", "damask woven, centrefold", "left side of the main label, 2 × 1 cm folded", "waist sizes 24–40 (T7b)"],
             ["Care label", "printed satin", "wearer's right side, in the waist seam, 5 cm in from the side seam; 3 × 6 cm", "text: HI care text (T7b)"],
             ["Hangtag", "", "hung on the size label with the label string (as HI)", "[MISSING — hangtag artwork]"],
-            ["Shank button", "28 Line flat tack", "CF waistband, centred on the WB height", "finish antique copper [proposed — confirm]"],
-            ["Zip fly", "YKK #4.5, 6 in", "CF fly, close-end, automatic lock slider", "finish antique copper [proposed — confirm]"],
-            ["Rivets", "15 L (9.5 mm)", "front scoop corners (2); coin pocket top corners (2, through patch 01, centre 4.25 / 4.25 from the patch edges)", "+4 back pocket top corners [proposed — confirm]"],
+            ["Shank button", "28 Line flat tack", "CF waistband, centred on the WB height", "matte black"],
+            ["Zip fly", "YKK #4.5, 6 in", "CF fly, close-end, automatic lock slider", "matte black, DTM tape"],
+            ["Rivets", "15 L (9.5 mm)", "front scoop corners (2); coin pocket top corners (2, through patch 01, centre 4.25 / 4.25 from the patch edges)", "matte black; back pockets: bartacks, no rivets"],
             ["Patch 03", "embroidered", "back WB, wearer's right: outer edge 25 mm from the side belt loop; top edge 3 mm below WB top", "[proposed — confirm]"],
             ["Patch 01", "embroidered", "coin pocket position of the HI front-right facing (T8); Ø9.5 rivet caps cover only edge, band + plain cream field corner", ""]]
     yy = 36
@@ -370,7 +370,7 @@ def T7b():
     o.append(t(12, y, "C · KONPEITO LABEL SPEC", 2.3, 700)); y += 5
     lines = [("Main label", "damask woven, flat, 5 × 2.5 cm; jet black ground, optic white hakistop logo; stitched round (jet black); inside CB, centred on the waistband.", INK),
              ("Size label", "damask woven, centrefold, 2 × 1 cm folded (0.5 cm folds); jet black ground, optic white text; on the left side of the main label.", INK),
-             ("Size marks", "OPEN QUESTION — HI labels read XS–3XL, Konpeito sells waist 24–40. Proposed: waist numbers 24 26 28 30 32 34 36 38 40 on the same label " + PROPOSED, AMBER),
+             ("Size marks", "waist numbers 24 26 28 30 32 34 36 38 40 on the HI label (one per size), replacing HI's XS–3XL — confirmed 19 Oct.", INK),
              ("Care label", "printed polyester satin ribbon, 3 × 6 cm, 0.5 cm stitching allowance at the top; optic white ground, jet black text; wearer's right, waist seam, 5 cm in from the side seam.", INK),
              ("Care text (HI)", "front: hakistop ★ · SHELL: 100% COTTON · POCKETS: 100% COTTON · MADE IN [factory: country of origin] · www.hakistop.com", INK),
              ("", "back: MACHINE WASH COLD INSIDE OUT AND SEPARATE · DO NOT BLEACH · TUMBLE DRY LOW HEAT INSIDE OUT OR LINE DRY · IRON MEDIUM HEAT INSIDE OUT ·", INK),
@@ -544,7 +544,7 @@ def element_page(pid, key, no, title, piece, proc, stem, ref_png=None, ref_crop=
     gen = A.get("generated", {}).get(key) or (A.get("generated", {}).get("star" + key[-1]) if key.startswith("star") else None)
     yy += 2
     o.append(t(cx, yy, "F · NOTES", 2.1, 700)); yy += 3.8
-    notes = (extra or []) + [("Generated, not traced: " + g_) for g_ in (gen or [])]
+    notes = (extra or []) + [("Generated, not traced: " + (g_.replace("[proposed — confirm]", "(confirmed 19 Oct)") if key == "spill" else g_)) for g_ in (gen or [])]
     for n_ in notes:
         for k_, ln in enumerate(wrap(n_, 92)):
             o.append(t(cx, yy, ln, 1.7, 400, AMBER if ("PROPOSED" in ln or "MISSING" in ln or "proposed" in ln) else INK)); yy += 3.0
@@ -611,7 +611,7 @@ def F1():
     y = F1_Y
     extra = [t(12, y, "5  Measurements + pattern (garment factory) — founder 19 Oct", 3.2, 700)]
     for i, ln in enumerate(["Back rise, thigh, knee, outseam (every size), size 24 and any other gap in the HI chart (blue cells on T3):"] + FACTORY_POM
-                           + ["Size labels: HI is sized XS–XXXL, the shop sells waist 24–40 — which size marks should the labels carry? (T7b)"]):
+                           + ["Size labels: waist numbers 24–40 on the HI size label (not XS–XXXL), confirmed (T7b)."]):
         extra.append(t(16, y + 5 + i * 3.9, ln, 2.4, 400, FAC if i in (1, 2) else INK))
     return svgs[0].replace("</svg>", "\n".join(extra) + "</svg>")
 
@@ -631,7 +631,6 @@ def build():
                 ("G7", "07 Front-leg trail — PROPOSED map", "front-leg artwork / file"),
                 ("C1", "Compare — coin-pocket patch", ""), ("C2", "Compare — konpeito spill", ""), ("C3", "Compare — waistband patch", ""),
                 ("C4", "Compare — back-pocket haki", ""), ("F1", "Factory requests", "")]
-    add("T1", "Cover", T1(idx_plan))
     add("T2", "Flats", T2(), "front-leg art"); add("T3", "POM", T3()); add("T4", "Pattern", T4()); add("T5", "BOM", T5(), "x")
     add("T6", "Construction", T6(), "x"); add("T7", "Labels", T7(), "x"); add("T7b", "Label artwork", T7b()); add("T8", "Placement", T8())
     add("G1", "Embroidery summary", G1())
@@ -642,7 +641,7 @@ def build():
                                    [f"Art: {SV}: HAKI_coin-pocket_konpeito_ART.svg, layers 01–06 in stitch order; thread = layer fill.",
                                     f"こんぺいとう: satin COLUMNS on the centrelines of the SVG outlines, one width: art {tf['coin']['04_lettering_RED']['w_art']} mm -> {tf['coin']['04_lettering_RED']['w_needle']} mm needle span; round ends, centre-run underlay; ぺ ring = radial satin.",
                                     "Border: house spec — 2.0 red heat-cut satin edge + 4.5 band, Ø4.0 white flowers / Ø1.5 dots at 5.8 pitch (the SVG's layer 03); rivet corners TL + TR plain.",
-                                    "Rivets: HI 15 L (Ø9.5 cap) centred 4.25 / 4.25 from the edges: the cap covers edge + band + 3.5 mm² of plain cream field per corner, no motif; overhangs the patch edge 0.5 mm.",
+                                    "Rivets: HI 15 L matte black (Ø9.5 cap) centred 4.25 / 4.25 from the edges: the cap covers edge + band + 3.5 mm² of plain cream field per corner, no motif; overhangs the patch edge 0.5 mm.",
                                     "Konpeito: one satin per SVG lobe along its axis; the tint centre star = its own lobes on top; white specks + red accent dots = round bead satin dots at the SVG centres.",
                                     "Edge red, as in the SVG (shared with patch 03): confirmed by the founder 19 Oct (the mockup edge reads cream).",
                                     "Backing: patch twill + cut-away; sew on AFTER the garment wash (confirmed 19 Oct) with a 1 mm red edge stitch; top edge open (pocket opening).", "Sew-out on the production twill before bulk."],
@@ -650,7 +649,7 @@ def build():
     add("G3", "Spill", element_page("G3", "spill", "02", "Konpeito spilling out of the coin pocket", "front-right pocket facing", "direct embroidery", RB["spill"]["file"],
                                     "out/svg_spill.png", None,
                                     [f"Art: {SV}: HAKI_facing_konpeito_ART.svg — F1 back row (sewn first), then F2 front row (lobes, tint centres, white specks).",
-                                     "File y = 0 is the coin pocket's top edge; the art's lower 3 mm runs under the patch so no gap shows at the pocket mouth; SVG centred on the pocket [proposed — confirm].",
+                                     "File y = 0 is the coin pocket's top edge; the art's lower 3 mm runs under the patch so no gap shows at the pocket mouth; SVG centred on the pocket (placement confirmed 19 Oct).",
                                      "Embroider the cut facing BEFORE the coin-pocket patch is attached; tearaway backing.",
                                      "Facing must reach >= 14 mm above the coin pocket and stay 3 mm clear of the WB seam [proposed — confirm]."],
                                     ref_label="B · FOUNDER'S VECTOR ART (digitised from it)"))
@@ -682,6 +681,12 @@ def build():
     add("C3", "Compare wb", compare_page("C3", "waistband-patch", "03 waistband patch"))
     add("C4", "Compare haki", compare_page("C4", "back-pocket-haki", "04 back-pocket haki group"))
     PAGES.append(("F1", "Factory requests", F1(), ""))
+    # cover flags come from each page's actual content: a page is flagged when it carries a "[MISSING — …]" box
+    import re
+    state = {pid: sorted(set(re.findall(r"\[MISSING — ([^\]]+)\]", svg))) for pid, _, svg, _ in PAGES}
+    index = [(pid, title, "; ".join(state.get(pid, []))) for pid, title, _ in idx_plan]
+    print("cover flags:", {p_: m for p_, _, m in index if m})
+    PAGES.insert(0, ("T1", "Cover", page(T1(index)), ""))
     pdfs = []
     for pid, title, svg, miss in PAGES:
         p = f"{OUT}/{pid}.pdf"; cairosvg.svg2pdf(bytestring=svg.encode(), write_to=p); pdfs.append(p)
@@ -763,7 +768,8 @@ Files:
 Fabric, threads, hardware (YKK #4.5 zip fly, 28 L shank button, 15 L rivets) and main / size / care labels as the Hidden
 Inventory pants (T5-T7b). Measurements not on the HI chart (back rise, thigh, knee, outseam, size 24): factory to fill
 in from its HI spec/pattern and return with the fit sample (T3, T4, F1).
-PROPOSED: thread colours, metal finish (antique copper), back-pocket rivets, size-label marks (open question), and
+Confirmed 19 Oct: matte black metal, DTM black thread, bartacks (no rivets) on the back pockets, size labels 24-40.
+PROPOSED:
 07a/07b (front-leg stars; the founder's front-leg artwork is MISSING — the soot-sprite characters in the mockup are a
 licensed lookalike and were not drawn). 06 (lower yellow star) is confirmed. MISSING: hangtag artwork, wash standard.
 Sew-out (strike-off) of every file on the washed production denim / patch twill before bulk.

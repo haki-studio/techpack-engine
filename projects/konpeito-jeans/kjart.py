@@ -595,7 +595,7 @@ def build_all():
     for s in STARS: A["star" + s] = dict(vis=star(s))
     vis, ref = haki_group(); A["haki"] = dict(vis=vis, ref=ref)
     GENERATED["coin"] = []; GENERATED["wb"] = []
-    GENERATED["spill"] = [f"placement: SVG centred on the coin pocket, art bottom {kjsvg.SPILL_UNDER} mm below the pocket's top edge (runs under the patch) [proposed — confirm]"]
+    GENERATED["spill"] = [f"placement: SVG centred on the coin pocket, art bottom {kjsvg.SPILL_UNDER} mm below the pocket's top edge (runs under the patch) (confirmed 19 Oct)"]
     A["generated"] = dict(GENERATED); A["textfit"] = dict(kjsvg.REPORT)
     pickle.dump(A, open("out/art.pkl", "wb"))
     return A

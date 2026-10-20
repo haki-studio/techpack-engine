@@ -16,8 +16,8 @@ silhouette WITHOUT cargo pockets. Measurements: Hidden Inventory published size 
 ## Assumptions (all PROPOSED in the documents)
 1. Fabric: SUPERSEDED (founder 19 Oct, see below) — RHT 3x1 denim 12 oz as HI.
 2. Fly: SUPERSEDED — YKK #4.5 zip fly as HI.
-3. Hardware finish: antique copper (mockup shows copper rivets; suits black) PROPOSED; back-pocket rivets (mockup, HI has none) PROPOSED.
-4. Thread colours: topstitch Tex 135 copper-gold (tonal, as the mockup), overlock DTM black, buttonhole copper-gold — PROPOSED.
+3. Hardware finish: SUPERSEDED — matte black metal (CONFIRMED 19 Oct); back pockets bartacked, no rivets (CONFIRMED).
+4. Thread colours: SUPERSEDED — DTM black everywhere (CONFIRMED 19 Oct).
 5. Patch sizes from the 16 Oct house spec: coin pocket 76 × 56, waistband patch 80 × 54; every konpeito star 10 mm.
 6. The konpeito spilling out of the coin pocket are direct embroidery on the front-right pocket facing, sewn before the
    coin-pocket patch is attached, so the patch covers their lower half (as in the mockup).
@@ -56,4 +56,6 @@ silhouette WITHOUT cargo pockets. Measurements: Hidden Inventory published size 
   knee, outseam, size 24 and any other gap from HER HI pants spec/pattern and returns them for approval with the fit sample.
 - New assumption: coin-pocket rivets 15 L (Ø9.5 cap) centred 4.25 / 4.25 from the patch edges; the cap covers edge + band +
   3.5 mm² of plain cream field per corner (no motif), overhangs the patch edge 0.5 mm. No art change.
-- Open: size-label marks — HI is XS–XXXL, the shop sells waist 24–40 (PROPOSED: waist numbers).
+- Founder 19 Oct (final): size labels = waist numbers 24–40; MATTE BLACK zip / 28L button / 15L rivets; DTM black thread for
+  topstitch Tex 135 and overlock + buttonhole Tex 60; back-pocket top corners BARTACKED (as HI, no rivets); 02 facing
+  konpeito placement confirmed as placed. All CONFIRMED.
