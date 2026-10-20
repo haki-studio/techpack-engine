@@ -64,3 +64,28 @@ PAUSED (work committed; restart with a FRESH builder per product, short brief + 
 - keep-clean: Rev B. Next: final build + page check.
 - koi: Rev C started (refmask, floratrace).
 Factory answered (factory.json): Brother, 750 mm field, frames 300×300 + 400×450, front single hooping, back 2, chenille/puff/sherpa yes.
+
+## ENGINE WORK — state 2026-10-20 (coordinator d3fafdf9 handing off; start a fresh session)
+Founder: hold all product work until the shared parts-based digitizing engine is done (docs/ENGINE_PLAN.md,
+docs/DIGITIZING_PRINCIPLES.md = founder-approved house rules). Techniques are plugins, toggled per run; the end goal is a PLM
+self-serve flow (memory: techpack-end-goal-plm).
+- **M0** honest gates + bench: MERGED (PR #3, 73ae3dd). Baseline on the Castle crop: 0/8 gates.
+- **M1** skeleton: PR #4 https://github.com/haki-studio/techpack-engine/pull/4 (head 853961b), reviewer APPROVED. Waiting
+  for the founder to merge. Crop: 89 % direction OK / 7 % chaos, 0 blob satins / fans / random angles, red + gold sewn,
+  33 trims per 100 cm², 84k stitches, 3/8 gates. The live view reads as flat paint-by-numbers (stubs), as expected.
+- **Fold into M2 first** (from the M1 review):
+  - (1) derive random_angles in run.py (it is hard-coded 0 today)
+  - (2) a split-satin cord gate read from the DST (width / row length), since satin_runs is blind to cords
+  - (3) report direction split by independent tiles (rule angles) vs self-derived ones (field-mean stubs)
+  - (4) gates read the written DST: check the labelled segments against readback
+  - (5) protect the water blues (falls lost their blue)
+  - (6) bench idempotent: replace the row for the same label + sha
+  - (7) a LESSONS note on angle_coherence no-visible-stitches
+  - LOW: soften the split_row docstring; stub field_angle raises; fence the column.py jitter
+- **Next 3 steps:**
+  1. After #4 merges, launch a fresh builder for **M2** (organic parts: direction field, guided/contour fill, blends, stratum + cloud splitters) + the follow-ups above. One builder at a time, in a worktree, PR, reviewer, founder merge.
+  2. **M5** (SVG parity on Konpeito) can run in parallel after M1 is merged.
+  3. Then M3 → M4 (crop passes every gate + the founder signs off the live view) → M6 (puff / chenille / chain) → M7 (Castle) → M8 (Wave).
+- **Konpeito:** pack final (21 pp), only the front-leg art is open. The handoff prompt is out/HANDOFF_PROMPT_front-leg-07.md
+  (skill /techpack-handoff).
+- **Factory (Mandy):** answers are in factory.json. Still to ask her: which frame takes the 340×505 front; whether a sleeve (~500×510) fits one hooping; whether the 580×490 back needs 3–4 hoopings on 400×450; her thread brand + colour book; the sherpa design review.
