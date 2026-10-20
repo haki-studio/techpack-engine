@@ -1,11 +1,11 @@
 # Bench write-up: M3a buildings (20 Oct 2026, after the PR #9 review)
 
-Row "M3a buildings (rule-angled roofs, walls, members; depth by tier)" in BENCH.md / SCOREBOARD.json, scored at engine
-commit cef3c8d (branch `engine-m3a-buildings`, origin/main 182a82b merged in; M4g, PR #8, NOT yet merged: the stack /
-density numbers below are without its cut-to-2 sequencing and must be re-scored on the merged tree). Command:
+Row "M3a buildings (rule-angled roofs, walls, members; depth by tier)" in BENCH.md / SCOREBOARD.json is scored on the
+MERGED tree, commit 218d24b. That commit is branch `engine-m3a-buildings` (review fixes cef3c8d) plus origin/main 505aa6c
+(M4g, PR #8: sequencing planner m4). Command:
 `PYTHONPATH=engine python3 -m digitize.run projects/castle-falls-jacket/bench/run_bk_crop.yaml --stages all --no-api`.
-Every number is from `out/digitize/BK_M_crop/gates.json` (DST sha256 b759f3d3b9a4611e) or from a scratch variant run
-named as such (never benched).
+Every number is from `out/digitize/BK_M_crop/gates.json` (DST sha256 c95bbbc796459e7b) or from a scratch variant run
+named as such (never benched). There was no HintError: every seq_after id resolves (protect_referenced).
 
 ![M3a panel](panel_2026-10-20_m3a-buildings--rule-angled-roofs--walls-.png)
 
@@ -31,42 +31,51 @@ M3b). Village stub area: 11,389 mm2 -> 0.
 
 ## Crop table
 
-| check | M2 (71f0097) | M3a first PR (49aebb8) | **M3a after review (cef3c8d)** | target |
-|---|---|---|---|---|
-| direction, INDEPENDENT tiles | 98.6 % of 73 (11.7 %) | 79.9 % of 204 (32.6 %) | **62.6 % of 203 (32.5 %)**: FAIL | >= 85 % on >= 50 % |
-| (combined, info) | 91.7 | 86.7 | 80.5 | |
-| chaos, all tiles | 4.2 % | 4.3 % | **10.7 % FAIL** | <= 5 % |
-| parts / under 20 mm2 | 367 / 11.2 % | 324 / 10.8 % | 364 | <= 400, < 25 % |
-| random angles (audited) | 0 | 0 | 0 | 0 |
-| angle_coherence fails | 61 | 42 | 48 (stubs 31, studs 6 no-visible, building 10) | 0 |
-| separation close | 46 | 24 | 25 | 0 |
-| density flags | 113 | 163 | 160 | 0 |
-| max stack / cm2 > 2 | 4 / 9.07 | 5 / 12.08 | 5 / 17.44 | <= 2 |
-| trims per 100 cm2 | 26.5 | 23.3 | **28.8 FAIL** | <= 25 |
-| satin columns / blobs | 0 / 0 | 10 / 0 | 45 / 0 | 0 blobs |
-| colours | 12, red + gold | same | same | |
-| stitches (file) | 93,036 | 93,961 | 98,561 | info |
-| gates | 3/9 | 4/9 | **2/9**: satin, colours | |
+| check | M2 (71f0097) | M4g on main (f78d1a3, no buildings) | M3a first PR (49aebb8) | M3a review, pre-M4g (cef3c8d) | **M3a merged with M4g (218d24b, bench row)** | target |
+|---|---|---|---|---|---|---|
+| direction, INDEPENDENT tiles | 98.6 % of 73 (11.7 %) | 98.6 % of 73 | 79.9 % of 204 (32.6 %) | 62.6 % of 203 | **62.1 % of 203 (32.5 %)**: FAIL | >= 85 % on >= 50 % |
+| (combined, info) | 91.7 | 91.5 | 86.7 | 80.5 | 80.2 | |
+| chaos, all tiles | 4.2 % | 4.3 % | 4.3 % | 10.7 % | **11.2 % FAIL** | <= 5 % |
+| parts / under 20 mm2 | 367 / 11.2 % | | 324 / 10.8 % | 364 | 364 / 15.1 % | <= 400, < 25 % |
+| random angles (audited) | 0 | 0 | 0 | 0 | 0 | 0 |
+| angle_coherence fails | 61 | 54 | 42 | 48 | 49 (stubs 33, studs 6 no-visible, building 10) | 0 |
+| separation close | 46 | 45 | 24 | 25 | 22 | 0 |
+| density flags | 113 | 84 | 163 | 160 | **118** | 0 |
+| max stack / cm2 > 2 | 4 / 9.07 | 4 / 4.41 | 5 / 12.08 | 5 / 17.44 | **4 / 8.15** (39 flags) | <= 2 |
+| trims per 100 cm2 | 26.5 | 20.0 | 23.3 | 28.8 | **26.3 FAIL** | <= 25 |
+| satin columns / blobs | 0 / 0 | 0 / 0 | 10 / 0 | 45 / 0 | 45 / 0 | 0 blobs |
+| colours | 12, red + gold | same | same | same | same | |
+| stitches (file) | 93,036 | | 93,961 | 98,561 | 97,928 | info |
+| gates | 3/9 | 4/9 | 4/9 | 2/9 | **2/9**: satin, colours | |
 
 **Reading it.** The first PR passed chaos and trims by dropping detail: 17 window bands and 7 members were dropped at
 underlaps, far eaves were not sewn and the temple wall was one red slab. The review asked for fidelity first: keep the
 detail and report what it costs. That is what this row does. 45 satin details (windows, rails, posts, eaves, trims) cost
 the chaos gate (a 1-2 mm satin across a band of horizontal far-tier rows makes the 8 mm tile read as mixed directions),
-5.5 trims per 100 cm2 and 4,600 stitches. The stack and density cost is expected to be cut by M4g's sequencer: the
-reviewer's trial merge of the first PR measured stack 4 with 0 flags and density 113 -> 59. **This row has to be
-re-scored on the M4g-merged tree.**
+5.5 trims per 100 cm2 and 4,600 stitches (pre-M4g).
 
-**Trial merge with M4g (PR #8 head 3b9ad49, local, not pushed or benched):** pytest 186 passed, no HintError. The crop
-scored independent 62.1 % of 203, chaos 11.2 %, trims 26.3, density flags 118, max stack 4 with 8.15 cm2 > 2 (39
-flags), separation 22, 2/9 gates. M4g lowers stack, density and trims; it does not lower chaos (the satin details across
-far-tier rows).
+On the merged tree, M4g's sequencer cuts the stack from 5 / 17.44 cm2 to 4 / 8.15 cm2 over 2, density flags from 160
+to 118 and trims from 28.8 to 26.3. Chaos stays at 11.2 %: it comes from the satin details across far-tier rows, which
+sequencing cannot change. Compared with M4g alone on main, buildings add trims (+6.3 per 100 cm2), density flags (+34)
+and stack area (+3.7 cm2). The scratch variants in the depth-rule section below were run before the merge.
 
 ## Direction gate and independent coverage
 
 Rule-angled building tiles moved the independent count from 73 to 203 of 625 (+130). The coverage gate needs 313:
 buildings alone cannot reach it on this crop, because cliffs (160 tiles) and stubs (246) read their angles from the
-reference. On the building tiles the details now on top (eaves 3 tiles all chaotic, members 9, windows 3) and the walls
-(46 tiles, 14 chaotic) pull the independent OK rate to 62.6 %.
+reference. On the merged run, building tiles score as follows (OK / off-grain / chaotic):
+
+| kind | tiles | OK | off-grain | chaotic |
+|---|---|---|---|---|
+| roof | 66 | 26 | 20 | 20 |
+| wall | 46 | 26 | 5 | 15 |
+| member | 9 | 2 | 1 | 6 |
+| roof tile line | 5 | 1 | 4 | 0 |
+| eave | 3 | 0 | 0 | 3 |
+| window | 3 | 1 | 0 | 2 |
+| stud | 1 | 1 | 0 | 0 |
+
+The details now sewn on top, and the walls under them, pull the independent OK rate down to 62.1 %.
 
 ## The depth rule (review item 3): relative to scale, partly grain-informed
 
@@ -81,7 +90,7 @@ On this crop the largest tier is the temple (26.1 mm). The castle tiers (4.8-13.
 (20.1 mm, two tiers the fitter could not split) and one 6.3 mm tier whose eave is hidden (height unknown, so near) are
 near.
 
-| variant (scratch runs) | independent OK of 203 | chaos | trims |
+| variant (scratch runs at cef3c8d, before the M4g merge) | independent OK of 203 | chaos | trims |
 |---|---|---|---|
 | depth rule off (`near_tier_rel: null`, playbook only: every tier down the slope) | 43.3 % | 16.2 % | 31.3 |
 | 0.60 | 62.6 % | 10.7 % | 28.8 |
@@ -129,6 +138,9 @@ The red slab under the temple roof is gone: the temple wall is cream with red ra
 
 ## Default-preserving (scripts/identity_check.sh)
 
-dst2 probe dst 84ff50ea74938675 / pes 1ecd8f657db3f53a; M5 wb DST 449c14f6e8f693b6; Castle crop DST changes
-(intended) 0d86f00be8e9f8fa -> b759f3d3b9a4611e. The same engine with main's zones_BK.json (village = stub) reproduces
-0d86f00be8e9f8fa.
+Run on the merged tree (218d24b):
+- dst2 probe: dst 84ff50ea74938675 / pes 1ecd8f657db3f53a, unchanged.
+- M5 wb DST: 449c14f6e8f693b6, unchanged.
+- Castle crop DST: c95bbbc796459e7b. This change is intended: the village zone now uses the building splitter.
+- The merged engine run with main's zones_BK.json (village = stub) reproduces main's M4g crop DST 239edce864f8fdd3, so
+  the M3a hooks change nothing on their own.

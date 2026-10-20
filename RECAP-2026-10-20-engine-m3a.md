@@ -71,3 +71,14 @@ trims 28.8 (FAIL, was 23.3); stack 5 / 17.44 cm2; density 160; separation 25; co
 The detail (14 window bands, 15 members, 11 eaves) costs chaos and trims; the decision is fidelity first, cost reported.
 Stack / density to be re-scored once M4g (PR #8) merges. Variants (scratch): depth off 43.3 %; rel 0.6 = 0.75; rel 0.9
 65.5 %; clearance on 67.0 % with 2 windows. 15 of 21 walls cream (2 before), 17 suggestions (7 windows, 10 members).
+
+## Part C: merged origin/main 505aa6c (M4g, PR #8) at 218d24b; crop re-scored there (bench row replaced)
+- Conflicts: run.py plan meta (kept thread_tradeoff + review_answers + building_suggest), run_bk_crop.yaml label (one
+  `separate_kinds` list), BENCH.md / SCOREBOARD.json (main's, then one M3a row from the bench run), LESSONS (main ends at
+  A25 / B35; the M3a rows are now **A26** relative depth / occlusion / audit, **A27** wall ground, **B36** satin details
+  kept + suggest + protect_referenced).
+- pytest 186 passed. identity: dst2 84ff50ea74938675 / 1ecd8f657db3f53a, wb 449c14f6e8f693b6, crop c95bbbc796459e7b;
+  main's zones on the merged engine reproduce main's M4g crop 239edce864f8fdd3. No HintError.
+- Crop (218d24b): independent 62.1 % of 203 (32.5 %); chaos 11.2 % FAIL; trims 26.3 FAIL; density 118; stack 4 / 8.15
+  cm2 (39 flags); separation 22; coherence 49; satin 45 / 0 blobs; 2/9 (satin, colours). M4g cut stack 5 / 17.44 -> 4 /
+  8.15, density 160 -> 118, trims 28.8 -> 26.3; chaos is the satin details across far-tier rows.
