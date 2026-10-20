@@ -91,3 +91,13 @@ _load_m1 = _load_all
 def _load_all():
     _load_m1()
     from digitize.techniques import column_satin, dot, radial, turning  # noqa: F401  (registers)
+
+
+# --- M6 --- specialty plugins: puff (3D foam satin columns), chenille (moss / loop plan for a chenille head), chain
+# (chain-mode path on a chenille head) + faux_chain (its lock-stitch fallback for the Brother heads). Same hook pattern.
+_load_m5 = _load_all
+
+
+def _load_all():
+    _load_m5()
+    from digitize.techniques import puff, chenille, chain  # noqa: F401  (registers puff, chenille, chain, faux_chain)
