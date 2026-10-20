@@ -15,13 +15,18 @@ def split(ctx, zone, z, claim, kind="zone_stub"):
         if not geoms: continue
         g = geoms[0] if len(geoms) == 1 else unary_union(geoms)
         if kind == "zone_stub":
-            ang, coh = ev.field_angle(mask=m); d = ctx.rb.direction(kind, field=ang if ang is not None else 0.0)
+            ang, coh = ev.field_angle(mask=m)
+            if ang is None:                                       # never a silent 0 deg (M1 review)
+                raise ValueError(f"zone {zone['id']}: stub part ({thread}) has no evidence pixels, so it has no field-mean "
+                                 f"angle; a direction is never defaulted (DIGITIZING_PRINCIPLES rule 2)")
+            d = ctx.rb.direction(kind, field=ang)
             d.note = f"field-mean over the part, coherence {coh:.2f}"
         else:
             d = ctx.rb.direction(kind); coh = None
         pid = ctx.new_id(f"{zone['id']}")
         parts.append(Part(id=pid, kind=kind, geom=g, thread=thread, z=z, dir=d, zone=zone["id"], rgb=ev.mean_rgb(m),
-                          meta=dict(coherence=round(coh, 3) if coh is not None else None, splitter="stub" if kind == "zone_stub" else kind)))
+                          meta=dict(coherence=round(coh, 3) if coh is not None else None, splitter="stub" if kind == "zone_stub" else kind,
+                                         **({"field_angle": d.angle} if kind == "zone_stub" else {}))))
     return parts, used
 
 

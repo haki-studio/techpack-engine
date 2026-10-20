@@ -21,7 +21,7 @@ if ENGINE not in sys.path: sys.path.insert(0, ENGINE)
 
 import numpy as np
 from digitize import config, threads as TH, sequence as SQ, compile as CP, review as RV, techniques
-from digitize.schema import ObjectPlan, Layer
+from digitize.schema import ObjectPlan, Layer, DIR_SOURCES
 from digitize.rulebook import Rulebook
 from digitize.extract import register, evidence, zones as ZN
 from digitize.extract.splitters import Ctx, sky, fall, stub
@@ -55,7 +55,8 @@ class Run:
         ev = evidence.build(self.ref(), T["palette"], **cfg["evidence"])
         ev.tone_png(self.f("evidence_tones.png"))
         w = np.bincount(ev.tone.ravel(), minlength=len(ev.keys)) / ev.ppm ** 2
-        tp = TH.plan(dict(zip(ev.keys, w.tolist())), T["palette"], needles=config.needles(cfg), protected=T["protected"], names=T.get("names"))
+        tp = TH.plan(dict(zip(ev.keys, w.tolist())), T["palette"], needles=config.needles(cfg), protected=T["protected"], names=T.get("names"),
+                     importance=T.get("importance"))
         ctx = Ctx(ev, self.rb, cfg, tp["map"], T["protected"])
         zs = ZN.load(config.path(cfg, cfg["zones"]))
         def z_of(z):
@@ -127,10 +128,13 @@ class Run:
     # ------------------------------------------------------------ gates
     def gates(self):
         import qa
-        from digitize import bench
+        from digitize import bench, audit
         from shapely.geometry import Point
         plan = ObjectPlan.from_json(self.f("plan.json")); z = np.load(self.f("stitch_parts.npz"))
-        segs = [tuple(map(float, s)) for s in z["segs"]]; sp = [s or None for s in z["parts"].tolist()]
+        mem = [tuple(map(float, s)) for s in z["segs"]]; mem_parts = [s or None for s in z["parts"].tolist()]
+        # judge the WRITTEN file (M1 review): the plan's part ids are carried onto the DST's own segments, in sew order
+        dst = self.base + ".dst"
+        segs, sp, match = CP.labelled_dst(dst, self.origin, mem, mem_parts)
         ppm = float(self.cfg_b["ppm"])
         vis, idx = qa.visible_segments(segs, self.crop, ppm=ppm, return_index=True)
         kinds = tuple(sorted({p.kind for p in plan.parts}))
@@ -140,29 +144,51 @@ class Run:
         for b in bad: kc[b["kind"]] = kc.get(b["kind"], 0) + 1
         bk = {}
         for b in bad: bk[f"{b['kind']} / {b['grp']}"] = bk.get(f"{b['kind']} / {b['grp']}", 0) + 1
-        coh = dict(source="plan part ids (compile labels)", parts=len(plan.parts), ok=not bad, fails=len(bad), kinds=kc, by_kind=bk,
-                   failing=[dict(b) for b in bad[:40]])
+        coh = dict(source="plan part ids carried onto the written DST (compile.labelled_dst)", parts=len(plan.parts), ok=not bad,
+                   fails=len(bad), kinds=kc, by_kind=bk, failing=[dict(b) for b in bad[:40]])
         project = self.cfg["project"]
-        row, aux = bench.run_gates(self.cfg_b, project, self.base + ".dst", self.origin, coherence=coh)
-        # direction per part kind: each 8 mm tile belongs to the top-most part under its centre
+        row, aux = bench.run_gates(self.cfg_b, project, dst, self.origin, coherence=coh)
+        row["readback_match"] = match
+        # split-satin cords read from the DST (satin_runs is blind to them): rows, pieces, stagger, column width
+        cords = {}
+        by_part = {}
+        for sg, pid in zip(segs, sp):
+            if pid is not None: by_part.setdefault(pid, []).append(sg)
+        for p in plan.parts:
+            if p.technique != "split_satin": continue
+            r = qa.split_satin_rows(by_part.get(p.id, []), max_piece=7.1)
+            cords[p.id] = r
+        cflags = [dict(part=k, **f) for k, r in cords.items() for f in r["flags"]]
+        row["cords"] = dict(n=len(cords), flags=len(cflags), failing=cflags[:20],
+                            max_piece=max([r["max_piece"] for r in cords.values()] or [0.0]),
+                            aligned_max=max([r["aligned"] for r in cords.values()] or [0.0]),
+                            column_w=sorted(r["column_w"] for r in cords.values()))
+        row["satin"]["cord_flags"] = len(cflags)
+        # direction per part kind and per direction SOURCE: each 8 mm tile belongs to the top-most part under its centre
         from shapely.strtree import STRtree
         x0, y0 = self.crop[:2]; geoms = [p.geom for p in plan.parts]; tree = STRtree(geoms)
-        def kind_at(c):
+        def part_at(c):
             pt = Point(c[0] + x0, c[1] + y0); hit = [plan.parts[i] for i in tree.query(pt, predicate="intersects")]
-            return max(hit, key=lambda p: p.z).kind if hit else "bare"
+            return max(hit, key=lambda p: p.z) if hit else None
+        def kind_at(c):
+            p = part_at(c); return p.kind if p is not None else "bare"
         per = {}
         dm = aux["dm"]
         for c in dm["ok_tiles"]: per.setdefault(kind_at(c), [0, 0, 0])[0] += 1
         for r in dm["fail_dev"]: per.setdefault(kind_at(r["at_mm"]), [0, 0, 0])[1] += 1
         for r in dm["fail_chaos"]: per.setdefault(kind_at(r["at_mm"]), [0, 0, 0])[2] += 1
-        row["direction_by_kind"] = {k: dict(tiles=sum(v), ok=v[0], dev=v[1], chaos=v[2], pct_ok=round(100 * v[0] / max(1, sum(v)), 1)) for k, v in sorted(per.items())}
+        row["direction_by_kind"] = {k: dict(tiles=sum(v), ok=v[0], dev=v[1], chaos=v[2], pct_ok=round(100 * v[0] / max(1, sum(v)), 1),
+                                            pct_chaos=round(100 * v[2] / max(1, sum(v)), 1)) for k, v in sorted(per.items())}
+        row["direction_by_source"] = audit.direction_by_source(dm, part_at)
+        aa = audit.angle_audit(plan, self.rb); sw = audit.sewn_angles(plan, segs, sp, self.crop, ppm=ppm)
         areas = np.array([p.area for p in plan.parts])
         ev_mm2 = plan.meta.get("evidence_tone_mm2", {})
-        prot = [k for k, v in plan.threads.items() if v.get("protected")]
         row["parts"] = dict(n=len(plan.parts), pct_under_20mm2=round(100 * float((areas < 20).mean()), 1) if len(areas) else 0.0,
                             by_kind={k: sum(1 for p in plan.parts if p.kind == k) for k in kinds},
-                            undeclared_angles=sum(1 for p in plan.parts if p.dir.source not in ("rule", "field-mean", "splitter", "answer")),
-                            random_angles=0, dir_sources={s: sum(1 for p in plan.parts if p.dir.source == s) for s in {p.dir.source for p in plan.parts}})
+                            undeclared_angles=sum(1 for p in plan.parts if p.dir.source not in DIR_SOURCES),
+                            random_angles=aa["random_angles"], unexplained_angles=aa["unexplained"], sewn_off_angle=sw["sewn_off_angle"],
+                            sewn_off=sw["off"], field_adherence=sw["field_adherence"],
+                            dir_sources={s: sum(1 for p in plan.parts if p.dir.source == s) for s in {p.dir.source for p in plan.parts}})
         row["accents"] = {k: dict(evidence_mm2=ev_mm2.get(k, 0.0), parts=sum(1 for p in plan.parts if p.thread == k),
                                   sewn_in_crop=k in plan.threads and plan.threads[k]["hex"].lower() in [h.lower() for h in row["colours"]["hex"]])
                           for k in self.cfg["threads"]["protected"]}
@@ -170,14 +196,16 @@ class Run:
         row["file"] = dict(stitches=rbk["readback"]["stitches"], trims=rbk["readback"]["trims"], stops=rbk["readback"]["stops"],
                            colours=len(plan.threads), max_stitch=rbk["readback"]["max_stitch"])
         row["date"] = datetime.date.today().isoformat(); row["label"] = self.cfg.get("label", self.name); row["bench"] = self.cfg_b["name"]
-        row["dst"] = os.path.relpath(self.base + ".dst", bench.main_checkout()) if self.base.startswith(bench.main_checkout()) else self.base + ".dst"
-        row["dst_sha256"] = hashlib.sha256(open(self.base + ".dst", "rb").read()).hexdigest()[:16]; row["origin"] = list(self.origin)
+        row["dst"] = os.path.relpath(dst, bench.main_checkout()) if self.base.startswith(bench.main_checkout()) else dst
+        row["dst_sha256"] = hashlib.sha256(open(dst, "rb").read()).hexdigest()[:16]; row["origin"] = list(self.origin)
         row["verdict"] = bench.verdict(row, self.cfg_b["targets"])
         json.dump(row, open(self.f("gates.json"), "w"), indent=1, default=float)
         self._row, self._aux = row, aux
         d = row["direction"]
         print(f"gates: direction {d['pct_ok']} % OK / {d['pct_chaos']} % chaotic; by kind " +
               ", ".join(f"{k} {v['pct_ok']}% of {v['tiles']}" for k, v in row["direction_by_kind"].items()) +
+              "; by source " + ", ".join(f"{k} {v['pct_ok']}% of {v['tiles']}" for k, v in row["direction_by_source"].items()) +
+              f"; random angles {aa['random_angles']}, sewn off angle {sw['sewn_off_angle']}; cords {len(cords)} ({len(cflags)} flags)"
               f"; coherence {'pass' if coh['ok'] else coh['kinds']}; {sum(row['verdict'].values())}/{len(row['verdict'])} gates")
         return row, aux
 
