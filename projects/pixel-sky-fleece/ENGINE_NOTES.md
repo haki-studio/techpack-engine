@@ -79,3 +79,16 @@ Fix (project `jacquard.checker_px` + `regularise_checker`): blueness filtered wi
 lattice of q cells (q by agreement, 3 here) with the phase chosen per cell in +- 2 squares and majority-smoothed.
 Proposal: `jacquard.regularise(cmap, centre_px, img)` engine helper for any knit/pixel pattern with dither fringes.
 Check: synthetic checker with a drifting grid -> lattice with <= 3 phase patches and >= 90 % agreement.
+
+## 11. Jacquard / cell maps: no floating 1-2 cell islands (PR #28 round 3)
+- **Problem:** traced cell maps kept 1-6 cell specks: a sparkle's anti-aliased rim read cream and was even picked up
+  by the checker filter, and mirrors with a per-row axis (the traced run's own edge) sheared the generated sleeve halves
+  into fragments. A mill knits each speck as a floating single-cell colour change. Reviewer counted 30-49 <=2-cell
+  islands per M map.
+- **Proposed fix (engine):** a `jacquard` module with (a) `despeckle(grid, protected)` - same-colour 4-connected islands
+  <= 4 cells take their surroundings' colour (bird / third-colour drawing protected), (b) motif footprints (embroidered
+  motif pixels dilated ~9 px) excluded from the checker filter and forced to ground colour, (c) generated halves mirrored
+  about ONE fixed axis per panel (centre line, or the first/last >= 80 %-covered traced column), never a per-row axis,
+  (d) checker lattices snapped to whole squares (complete >= half-in squares, drop the rest).
+- **Check:** `gates_jq.py` here - 0 islands <= 2 cells in every map of every size (bird-enclosed excepted), red on 2/2
+  planted specks. Move it into `tests/` as a generic gate on any `*_JQ_*.png` set.

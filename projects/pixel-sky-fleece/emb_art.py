@@ -136,7 +136,7 @@ def family_exemplars(comps):
 EX_CELL = 1.0       # mm, matrix cell of a family exemplar (resampled to N cells for a small sparkle)
 
 SMALL_KMAX = 1      # small sparkles (< star_fit.SMALL_MM): one cross = the plain 4-arm plus. A 2nd tier fitted on a
-                    # blur this wide rounds them into stepped octagons/blobs (round 2 check, work/r2)
+                    # blur this wide rounds them into stepped octagons/blobs (round 2 check)
 
 def fit_motif(c, exs=None):
     """every sparkle = its own tiered pixel sprite (star_fit.fit_tiers: k concentric crosses with blunt square arms,

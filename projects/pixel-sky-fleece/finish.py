@@ -2,7 +2,7 @@
 import os, shutil, subprocess, json, glob
 from pypdf import PdfReader, PdfWriter
 
-STYLE = "HK-FL-PIXSKY"; REV = "RevC"; OUT = "out"
+STYLE = "HK-FL-PIXSKY"; REV = "RevD"; OUT = "out"
 src = f"{OUT}/HAKI_{STYLE}_TECHPACK_{REV}.pdf"; dst = f"{OUT}/HAKI_{STYLE}_TECHPACK_{REV}_small.pdf"
 w = PdfWriter(clone_from=src)
 for page in w.pages:
@@ -26,7 +26,7 @@ shutil.copy(f"{OUT}/art/placements.json", f"{pkg}/elements/")
 G = json.load(open(f"{OUT}/stitch/gates_fl.json"))
 lines = "\n".join(f"elements/{STYLE}_{F}.dst/.pes   {r['piece']}  {r['stitches']:,} stitches, {r['trims']} trims, {r['stops']} stops, {r['threads']} threads, {r['size_mm'][0]} x {r['size_mm'][1]} mm"
                   for F, r in G.items())
-open(f"{pkg}/README.txt", "w").write(f"""HAKI STUDIOS - Pixel Sky sherpa fleece jacket ({STYLE}) - Rev C - 21 Oct 2026
+open(f"{pkg}/README.txt", "w").write(f"""HAKI STUDIOS - Pixel Sky sherpa fleece jacket ({STYLE}) - Rev D - 21 Oct 2026
 
 HAKI_{STYLE}_TECHPACK_{REV}.pdf   T1-T5 garment, J1-J3 jacquard, G1-G5 embroidery, F1-F2 factory + mill requests, Q1 questions, R1 checks
 

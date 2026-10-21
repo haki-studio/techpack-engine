@@ -36,10 +36,11 @@ def gate_table(G, width):
             (not G["coherence"], f"A16 angle coherence: {len(G['coherence'])} fails / {G['coherence_parts']} parts"),
             (G["direction"]["ok"], f"A16/A17 chaos {G['direction']['chaos_tiles']}/{G['direction']['tiles']} tiles; vs reference: not judged (no close-up)"),
             (not G["exposed_035"], f"exposed stitches @0.35: {len(G['exposed_035'])}")]
-    H = 40 + 34 * ((len(rows) + 1) // 2); im = Image.new("RGB", (width, H), "white"); d = ImageDraw.Draw(im)
+    nc = 2 if width >= 1800 else 1                    # one column on a narrow strip (round 3: G4's two columns overlapped)
+    H = 40 + 34 * ((len(rows) + nc - 1) // nc); im = Image.new("RGB", (width, H), "white"); d = ImageDraw.Draw(im)
     d.text((6, 4), "FILE GATES (gates_fl.json)", fill=(20, 20, 20), font=FONT)
     for k, (ok, s) in enumerate(rows):
-        x = 6 + (k % 2) * (width // 2); y = 40 + (k // 2) * 34
+        x = 6 + (k % nc) * (width // nc); y = 40 + (k // nc) * 34
         d.text((x, y), ("PASS  " if ok else "FAIL  ") + s, fill=(30, 130, 60) if ok else (200, 30, 30), font=FS)
     return im
 
@@ -79,9 +80,12 @@ def element(F, title):
         top = hcat([label(mk, f"MOCKUP {title}", "sleeve front half as seen (foreshortened)"), label(st, f"STITCH PREVIEW {F} (sleeve pattern coords)", sub)])
         zooms = []
         for col, geom, ref in art[F]:
-            g = geom.bounds; zb = (g[0] - 4, g[1] - 4, g[2] + 4, g[3] + 4); zp = min(14.0, 420 / (zb[2] - zb[0]))
-            zooms.append(label(live(F, zb, zp, so, org, stops), "stitches", col))
-        z = hcat(zooms, 24); out = vcat([top, z, gate_table(G, max(top.size[0], z.size[0]))])
+            g = geom.bounds; zb = (g[0] - 4, g[1] - 4, g[2] + 4, g[3] + 4); zp = min(28.0, 620 / max(zb[2] - zb[0], zb[3] - zb[1]))
+            zooms.append(label(live(F, zb, zp, so, org, stops), "stitches", f"{col} · {zb[2]-zb[0]:.0f} mm wide"))
+        # landscape (round 3): the sleeve file is tall (45 x 92 mm), so a stacked sheet came out portrait and G4 shrank it
+        # to a small block. Mockup + preview left, zooms 2 x 2 + gate table right -> same aspect as the other G pages.
+        z = vcat([hcat(zooms[k:k + 2], 24) for k in range(0, len(zooms), 2)], 24)
+        out = hcat([top, vcat([z, gate_table(G, z.size[0])])], 40)
     out.save(f"out/compare_{F}.png"); return out
 
 def jacquard_sheet():

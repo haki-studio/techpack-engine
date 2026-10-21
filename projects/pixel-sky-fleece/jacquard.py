@@ -39,14 +39,15 @@ def cell_sample(x0, y0, x1, y1):
     return PX.frac(px0, py0, px1, py1, lab())
 
 _SPK = None
-def spark_near(x0, y0, x1, y1):
+def spark_near(x0, y0, x1, y1, mask=None):
     """any sparkle / bird pixel (+3 px rim: its anti-aliased edge reads cream) in a garment-mm box -> True.
     The sparkles are embroidered ON the sky, so the knit under them is sky (Rev A left cream specks at their rims)."""
     global _SPK
-    if _SPK is None:
+    if _SPK is None and mask is None:
         from scipy import ndimage as ndi
         _SPK = ndi.binary_dilation(np.isin(lab(), [PX.YELLOW, PX.GOLD, PX.BLACK]), iterations=3)
     px0, py0 = MM.Pinv(x0, y0); px1, py1 = MM.Pinv(x1, y1)
+    if mask is not None: return bool(mask[int(py0):int(np.ceil(py1)), int(px0):int(np.ceil(px1))].any())
     return bool(_SPK[int(py0):int(np.ceil(py1)), int(px0):int(np.ceil(px1))].any())
 
 VIS = None
@@ -114,7 +115,9 @@ def regularise_checker(cmap, centre_px):
         p = centre_px(*k)
         if p is None: continue
         px, py = int(round(p[0])), int(round(p[1]))
-        if 0 <= px < W and 0 <= py < H and C[py, px]: inr[k] = v
+        # a sparkle's anti-aliased rim alternates cream / blue too: cells in a sparkle footprint are never checker
+        # (round 3: rim cells regularised into lattice specks floating in the sky)
+        if 0 <= px < W and 0 <= py < H and C[py, px] and not foot()[py, px]: inr[k] = v
     if not inr: return set()
     I0 = min(i for i, _ in inr); J0 = min(j for _, j in inr); I1 = max(i for i, _ in inr); J1 = max(j for _, j in inr)
     G = np.zeros((J1 - J0 + 1, I1 - I0 + 1), bool)
@@ -150,10 +153,30 @@ def regularise_checker(cmap, centre_px):
         agree = 0
         for (i, j) in cells:
             v = latv(i, j, ph_of[(i, j)]); agree += v == val[(i, j)]
-            cmap[(i, j)] = (v, cmap[(i, j)][1]); done.add((i, j))
+            cmap[(i, j)] = (v, cmap[(i, j)][1], 1); done.add((i, j))    # third element 1 = checker lattice cell
+        # whole squares only (round 3): the region mask is round, so its edge clipped lattice squares into 1-2 cell
+        # slivers and rounded "arches". A square with >= half its cells in the region is completed, a smaller one is
+        # given back to its surroundings (majority of the non-checker neighbours).
+        sq = {}
+        for (i, j) in cells:
+            ph = ph_of[(i, j)]; sq.setdefault(((i + ph[0]) // q, (j + ph[1]) // q, ph), []).append((i, j))
+        for (si, sj, ph), cl in sq.items():
+            allc = [(si * q - ph[0] + a, sj * q - ph[1] + b) for a in range(q) for b in range(q)]
+            v = latv(*cl[0], ph)
+            if 2 * len(cl) >= q * q:
+                for k in allc:
+                    w = cmap.get(k)
+                    if w is not None and w[0] in (SKY, CREAM) and k not in done:
+                        cmap[k] = (v, w[1], 1); done.add(k); SQ_STATS[0] += 1
+            else:
+                nb = [cmap[(a, b)][0] for (i, j) in cl for a in (i - 1, i, i + 1) for b in (j - 1, j, j + 1)
+                      if (a, b) not in cs and cmap.get((a, b)) is not None and cmap[(a, b)][0] in (SKY, CREAM)]
+                bg = max(set(nb), key=nb.count) if nb else v
+                for k in cl: cmap[k] = (bg, cmap[k][1]); done.discard(k); SQ_STATS[1] += 1
         CHK_STATS.append(dict(cells=len(cells), q=q, agree=round(agree / len(cells), 3), phases=len(set(ph_of.values()))))
     return done
 CHK_STATS = []
+SQ_STATS = [0, 0]          # cells added to complete squares, cells of dropped part-squares
 
 def trace_front_M(phase):
     """dict (i, j) -> (code, flag) on the cloud grid. i: column from CF (x = i*CLOUD .. +CLOUD), j: row up from the hem
@@ -175,7 +198,84 @@ def trace_front_M(phase):
         x0 = i * CLOUD; y0 = hem - (j + 1) * CLOUD
         return MM.Pinv(x0 + ox - round(ox / CLOUD) * CLOUD + CLOUD / 2, y0 + oy - round(oy / CLOUD) * CLOUD + CLOUD / 2)
     regularise_checker(out, centre)
+    sky_rims(out)
     return out
+
+# ---------------------------------------------------------------- despeckle (PR #28 round 3)
+RIM_FOOT_PX = 9          # px (~5.4 mm): a sparkle's footprint for rim clean-up = its pixels dilated by this. The render's
+                         # anti-aliased rim reads cream up to ~6-8 px out; spark_near's 3 px only caught the inner half.
+SPECK_MAX = 4            # cells: a same-colour 4-connected island this small (<= one 5 x 5 mm block) is noise, not art.
+                         # The mockup's smallest feature is one checker square (~6.5 mm = 7-9 cells).
+SPECK_MAX_CHK = 4        # inside a checker area: a lattice square is 3 x 3 = 9 cells, so <= 4 is a clipped sliver
+
+_FOOT = None
+def foot():
+    global _FOOT
+    if _FOOT is None:
+        from scipy import ndimage as ndi
+        bl, n = ndi.label(lab() == PX.BLACK)
+        bird = bl == (1 + int(np.argmax(ndi.sum(np.ones_like(bl), bl, range(1, n + 1))))) if n else np.zeros(bl.shape, bool)
+        # sparkles + the bird (largest black component); the zip tape and bindings also read black and are not art
+        _FOOT = ndi.binary_dilation(np.isin(lab(), [PX.YELLOW, PX.GOLD]) | bird, iterations=RIM_FOOT_PX)
+    return _FOOT
+
+def sky_rims(cmap):
+    """cream islands (4-connected, outside the checker lattice) lying wholly inside a sparkle / bird footprint
+    (pixels dilated by RIM_FOOT_PX) are the render's anti-aliased rim, not cloud -> sky. Round 3: F01 kept 1-6 cell
+    cream specks around every sparkle, mirrored into the back."""
+    from scipy import ndimage as ndi
+    F_ = foot()
+    ks = [k for k, v in cmap.items() if v is not None and v[0] in (SKY, CREAM)]
+    I0 = min(i for i, _ in ks); J0 = min(j for _, j in ks)
+    G = np.zeros((max(j for _, j in ks) - J0 + 1, max(i for i, _ in ks) - I0 + 1), np.int8) - 1
+    for (i, j) in ks:
+        if len(cmap[(i, j)]) < 3: G[j - J0, i - I0] = cmap[(i, j)][0]
+    lb, n = ndi.label(G == CREAM); hit = 0
+    for r in range(1, n + 1):
+        cells = [(i + I0, j + J0) for j, i in zip(*np.nonzero(lb == r))]
+        if len(cells) > 40: continue                                     # a cloud, not a rim
+        inside = all(spark_near(i * CLOUD, MM_hem() - (j + 1) * CLOUD, (i + 1) * CLOUD, MM_hem() - j * CLOUD, F_) for i, j in cells)
+        if inside:
+            for k in cells: cmap[k] = (SKY, cmap[k][1])
+            hit += len(cells)
+    RIM_STATS.append(hit)
+    return hit
+RIM_STATS = []
+
+def MM_hem():
+    return FL.draft("M")[1]["hem_f"]
+
+def despeckle(grid, chk, keep=()):
+    """same-colour 4-connected islands of SKY / CREAM with <= SPECK_MAX cells (<= SPECK_MAX_CHK where any cell is in a
+    checker area) take the colour of their surroundings; repeated until stable. Cells with codes in keep (bird) and
+    OUTSIDE are never changed. Returns the number of cells changed."""
+    from scipy import ndimage as ndi
+    ch = 0
+    for _ in range(6):
+        changed = 0
+        for v in (SKY, CREAM):
+            lb, n = ndi.label(grid == v)
+            if not n: continue
+            sz = ndi.sum(np.ones_like(lb), lb, range(1, n + 1)); inchk = ndi.maximum(chk.astype(np.uint8), lb, range(1, n + 1))
+            for r in np.nonzero(sz <= SPECK_MAX)[0] + 1:
+                if inchk[r - 1] and sz[r - 1] > SPECK_MAX_CHK: continue
+                m = lb == r; ring = ndi.binary_dilation(m) & ~m
+                nb = grid[ring]; nb = nb[(nb == SKY) | (nb == CREAM)]
+                if nb.size == 0 or not (nb != v).any(): continue
+                grid[m] = SKY if (nb == SKY).sum() >= (nb == CREAM).sum() else CREAM
+                changed += int(m.sum())
+        ch += changed
+        if not changed: break
+    return ch
+
+def islands(grid, chk=None, n_max=2):
+    """count of SKY / CREAM 4-connected islands with <= n_max cells (the round-3 gate: must be 0)"""
+    from scipy import ndimage as ndi
+    k = 0
+    for v in (SKY, CREAM):
+        lb, n = ndi.label(grid == v)
+        if n: k += int((ndi.sum(np.ones_like(lb), lb, range(1, n + 1)) <= n_max).sum())
+    return k
 
 def fill_front(tr):
     """resolve detail cells (zip, pockets) by mirroring the traced cells across the detail's edge in each row
@@ -257,21 +357,22 @@ def raster_panel(code, size, cloud_of, bird=None, bird_anchor=None):
     # anchor: columns on x = 0 (CF / CB / sleeve centre), rows on the hem / cuff edge
     i0, i1 = math.floor(x0 / CELL), math.ceil(x1 / CELL); j0, j1 = math.floor((hem - y1) / CELL), math.ceil((hem - y0) / CELL)
     W, H = i1 - i0, j1 - j0
-    grid = np.full((H, W), OUTSIDE, np.uint8); flags = np.zeros((H, W), np.uint8)
+    grid = np.full((H, W), OUTSIDE, np.uint8); flags = np.zeros((H, W), np.uint8); chk = np.zeros((H, W), bool)
     for r in range(H):
         j = j1 - 1 - r                                    # row index from the hem (0 = first row above the hem edge)
         yc = hem - (j + 0.5) * CELL
         for cidx in range(W):
             i = i0 + cidx; xc = (i + 0.5) * CELL
             if not Ap.contains(Point(xc, yc)): continue
-            v, fl = cloud_of(xc, hem - yc)
-            grid[r, cidx] = v; flags[r, cidx] = fl
+            v, fl, ck = cloud_of(xc, hem - yc)
+            grid[r, cidx] = v; flags[r, cidx] = fl; chk[r, cidx] = bool(ck)
+    nspeck = despeckle(grid, chk)                         # round 3: no floating 1-4 cell yarn changes (mirror seams, rims)
     if bird is not None:
         for (ci, cy) in bird:                             # bird cells: column from CF, row from the CF neck seam
             xc = (ci + 0.5) * CELL; yc = bird_anchor(size) + (cy + 0.5) * CELL
             r = int(math.floor((hem - yc) / CELL)); r = j1 - 1 - r; cidx = int(math.floor(xc / CELL)) - i0
             if 0 <= r < H and 0 <= cidx < W and grid[r, cidx] != OUTSIDE: grid[r, cidx] = BLACK; flags[r, cidx] = TRACED
-    return dict(grid=grid, flags=flags, i0=i0, j1=j1, hem=hem, cell=CELL, area=A, piece=pc)
+    return dict(grid=grid, flags=flags, chk=chk, despeckled=nspeck, i0=i0, j1=j1, hem=hem, cell=CELL, area=A, piece=pc)
 
 def sew_hem_y(pc):
     """y of the hem / cuff edge of a panel (max y of the sew line)"""
@@ -289,13 +390,14 @@ def grid_fn(cmap):
     def f(x, yh):
         i, j = math.floor(x / CLOUD), math.floor(yh / CLOUD)
         ii, g1 = refl(i, imin, imax); jj, g2 = refl(j, jmin, jmax)
-        if j > jmax: return SKY, GENERATED                            # above the traced rows: sky
+        if j > jmax: return SKY, GENERATED, 0                         # above the traced rows: sky
         v = cmap.get((ii, jj))
-        if v is None: return SKY, GENERATED
-        return v[0], (GENERATED if (g1 or g2) else v[1])
+        if v is None: return SKY, GENERATED, 0
+        return v[0], (GENERATED if (g1 or g2) else v[1]), (v[2] if len(v) > 2 else 0)
     return f
 
-SLV_EDGE_PX = 22         # px (~13 mm): the sleeve outline overlaps the body side by 15-20 px at the inner edge (work/r2/sl.png)
+SLV_AXES = []
+SLV_EDGE_PX = 22         # px (~13 mm): the sleeve outline overlaps the body side by 15-20 px at the inner edge (measured round 2)
 
 def sleeve_trace(side, size="M"):
     """{(i, j): (code, flag)} on the CLOUD grid of the sleeve (i from the sleeve centre line, j up from the cuff edge),
@@ -336,22 +438,47 @@ def sleeve_trace(side, size="M"):
         if len(ks) > 6:
             for i in (min(ks), max(ks)): out[(i, j)] = None
     regularise_checker(out, centre)
-    # unresolved cells: mirrored from the traced run of the row, else by height
-    rows = {}
-    for (i, j), v in out.items(): rows.setdefault(j, {})[i] = v
-    res = {}
+    # unresolved cells (round 3). Rev C mirrored each row about ITS OWN traced edge: the axis moved row by row with the
+    # silhouette, which sheared the clouds into a "butterfly of fragments". Now:
+    #  1. gaps on the traced half (outline rim, sleeve fold) grow in from their 8 neighbours (majority), in 2-D;
+    #  2. the hidden half = the traced half mirrored about the sleeve centre line (one axis, i <-> -1 - i), checker flag kept;
+    #  3. anything still open (no source) grows in the same way; rows with nothing known: cream low, sky high.
+    res = {k: v for k, v in out.items() if v is not None}
+    todo = {k for k, v in out.items() if v is None}
+    def grow(cells, keep_flag=None):
+        cells = set(cells)
+        while cells:
+            done = {}
+            for (i, j) in cells:
+                nb = [res[(i + a, j + b)][0] for a in (-1, 0, 1) for b in (-1, 0, 1) if (a or b) and (i + a, j + b) in res]
+                if len(nb) >= 3: done[(i, j)] = (max(set(nb), key=nb.count), keep_flag if keep_flag is not None else GENERATED)
+            if not done:
+                for (i, j) in cells: done[(i, j)] = (CREAM if j * CLOUD < 120 else SKY, GENERATED)
+            res.update(done); cells -= set(done)
+    # traced columns run from u = A_IN to A_OUT (u = cell index from the sleeve centre line, traced half); the centre strip
+    # and the underarm side are hidden. Each is MIRRORED about ONE fixed column per sleeve (no row-by-row axis -> no shear):
+    # A_IN / A_OUT = first / last column traced in >= 80 % of the best-covered column's rows.
+    U = (lambda i: i) if sg > 0 else (lambda i: -1 - i); Ii = U          # U is its own inverse
+    cov = {}
     for (i, j), v in out.items():
-        if v is not None: res[(i, j)] = v; continue
-        known = {q: w for q, w in rows[j].items() if w is not None}
-        if known:                                     # MIRROR across the traced run's edge (nearest-in-row smeared the
-            ks = sorted(known)                        # edge cell into horizontal stripes, round 2)
-            if i < ks[0]: src = 2 * ks[0] - i
-            elif i > ks[-1]: src = 2 * ks[-1] - i
-            else:                                     # a gap (e.g. both sides of the sleeve fold): mirror from the nearer side
-                a_ = max(q for q in ks if q < i); b_ = min(q for q in ks if q > i)
-                src = 2 * a_ - i if i - a_ <= b_ - i else 2 * b_ - i
-            q = min(ks, key=lambda q: abs(q - src)); res[(i, j)] = (known[q][0], GENERATED)
-        else: res[(i, j)] = (CREAM if j * CLOUD < 120 else SKY, GENERATED)
+        if np.sign(i + 0.5) == sg: cov.setdefault(U(i), [0, 0]); cov[U(i)][0] += v is not None; cov[U(i)][1] += 1
+    mx = max(c[0] for c in cov.values()); good = sorted(u for u, c in cov.items() if c[0] >= 0.8 * mx)
+    A_IN, A_OUT = good[0], good[-1]; SLV_AXES.append((side, A_IN, A_OUT))
+    own = sorted((k for k in todo if np.sign(k[0] + 0.5) == sg), key=lambda k: abs(U(k[0]) - (A_IN + A_OUT) / 2))
+    for (i, j) in own:                                          # 1a: centre strip + 1b: underarm side (nearest first)
+        u = U(i)
+        if u < A_IN: src = 2 * A_IN - u
+        elif u > A_OUT: src = 2 * A_OUT - u
+        else: continue
+        m = res.get((Ii(max(src, 0)), j))
+        if m is not None: res[(i, j)] = (m[0], GENERATED) + tuple(m[2:])
+    grow({k for k in own if k not in res})                      # 1c: gaps (sleeve fold) grow in from 8 neighbours
+    hidden = {k for k in out if np.sign(k[0] + 0.5) != sg}    # 2 (sleeve_to_img samples the hidden half at the mirrored
+    for (i, j) in hidden:                                       #    image point, but unregularised: take the cell instead)
+        m = res.get((-1 - i, j)) if np.sign(-1 - i + 0.5) == sg else None
+        if m is not None: res[(i, j)] = (m[0], GENERATED) + tuple(m[2:])
+        else: res.pop((i, j), None)
+    grow({k for k in out if k not in res})                      # 3
     return res
 
 def panel_png(P, path, scale=1):
@@ -393,8 +520,9 @@ def build(sizes=None, verbose=True):
     n_ = sum(c["cells"] for c in CHK_STATS)
     chk = dict(regions=len(CHK_STATS), cells=n_, q=Counter(c["q"] for c in CHK_STATS for _ in range(c["cells"])).most_common(1)[0][0] if CHK_STATS else None,
                q_by_region=[c["q"] for c in CHK_STATS], agree=round(sum(c["agree"] * c["cells"] for c in CHK_STATS) / max(n_, 1), 3),
+               completed_cells=SQ_STATS[0], dropped_cells=SQ_STATS[1],
                note="checker areas from the render's 2-D checker filter, redrawn as a regular lattice (phase fitted locally); agree = share of those cells keeping their traced colour")
-    stats = dict(checker=chk, cell_mm=CELL, cloud_mm=CLOUD, phase=dict(purity=round(ph[0], 4), ox=ph[1], oy=ph[2]), bird=binfo, panels={})
+    stats = dict(checker=chk, rim_cells_to_sky=sum(RIM_STATS), speck_max=SPECK_MAX, rim_foot_px=RIM_FOOT_PX, cell_mm=CELL, cloud_mm=CLOUD, phase=dict(purity=round(ph[0], 4), ox=ph[1], oy=ph[2]), bird=binfo, panels={})
     json.dump({"front_M": {f"{i},{j}": v for (i, j), v in fm.items()}, "sleeve_R": {f"{i},{j}": v for (i, j), v in sR.items()},
                "sleeve_L": {f"{i},{j}": v for (i, j), v in sL.items()}, "bird": sorted(bird)}, open(f"{OUT}/design_cloudgrid.json", "w"))
     for size in sizes:
@@ -403,7 +531,7 @@ def build(sizes=None, verbose=True):
             if code in ("F01", "F02"):
                 fn = lambda x, yh: ffront(x, yh)
             elif code == "B01":
-                fn = lambda x, yh: (lambda v: (v[0], GENERATED))(ffront(-x, yh))
+                fn = lambda x, yh: (lambda v: (v[0], GENERATED, v[2]))(ffront(-x, yh))
             else:
                 fs = fR if code == "S01" else fL
                 fn = fs
@@ -416,6 +544,7 @@ def build(sizes=None, verbose=True):
                 stats["panels"][tag] = dict(piece=code, size=size, cols=int(gr.shape[1]), rows=int(gr.shape[0]),
                     width_mm=round(gr.shape[1] * CELL, 1), height_mm=round(gr.shape[0] * CELL, 1),
                     cells=int(ins.sum()), sky=int((gr == SKY).sum()), cream=int((gr == CREAM).sum()), black=int((gr == BLACK).sum()),
+                    despeckled=int(P["despeckled"]), islands_le2=islands(gr), checker_cells=int((P["chk"] & ins).sum()),
                     traced=int(((fl == TRACED) & ins).sum()), filled=int(((fl == FILLED) & ins).sum()), generated=int(((fl == GENERATED) & ins).sum()))
         if verbose: print(size, "done")
     json.dump(stats, open(f"{OUT}/jacquard_stats.json", "w"), indent=1)
@@ -440,6 +569,6 @@ def design():
 def panel(code, size, opt="A"):
     ff, fR, fL, bird = design()
     if code in ("F01", "F02"): fn = ff
-    elif code == "B01": fn = lambda x, yh: (ff(-x, yh)[0], GENERATED)
+    elif code == "B01": fn = lambda x, yh: (lambda v: (v[0], GENERATED, v[2]))(ff(-x, yh))
     else: fn = fR if code == "S01" else fL
     return raster_panel(code, size, fn, bird=(bird if (code == "F02" and opt == "A") else None), bird_anchor=lambda s: 0.0)

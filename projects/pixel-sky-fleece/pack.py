@@ -9,7 +9,7 @@ from sheet import t, doc, INK, MUTED, RED, GREEN, ORANGE, SW, SH, embed
 import factory, tech, readback
 import fleece as FL, pattern as PT, pattern_draw as PD
 
-STYLE = "HK-FL-PIXSKY"; REV = "Rev C"; DATE = "21 Oct 2026"; NAME = "Pixel Sky sherpa fleece jacket"
+STYLE = "HK-FL-PIXSKY"; REV = "Rev D"; DATE = "21 Oct 2026"; NAME = "Pixel Sky sherpa fleece jacket"
 SHT.FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · {REV} · {DATE}"
 PROP = "#8A5A00"; ALT = "#F5F2EC"
 OUT = "out"; PG = f"{OUT}/pages"; os.makedirs(PG, exist_ok=True)
@@ -17,6 +17,7 @@ SIZES = FL.SIZES
 GATES = json.load(open(f"{OUT}/stitch/gates_fl.json")); JQS = json.load(open(f"{OUT}/jacquard/jacquard_stats.json"))
 PLACE = json.load(open(f"{OUT}/art/placements.json")); CLR = json.load(open(f"{OUT}/clearances.json"))
 AGREE = json.load(open(f"{OUT}/jacquard/agreement.json"))
+GJQ = json.load(open(f"{OUT}/jacquard/gates_jq.json")) if os.path.exists(f"{OUT}/jacquard/gates_jq.json") else None   # island gate (round 3)
 CHK = JQS["checker"]; CHKQ = CHK["q"]                                      # checker lattice (jacquard.regularise_checker)
 _small = f"{OUT}/HAKI_{STYLE}_TECHPACK_{REV.replace(' ', '')}_small.pdf"       # finish.py output (run_all runs pack twice)
 SMALL_OK = os.path.exists(_small) and os.path.getsize(_small) < 0.6 * os.path.getsize(_small.replace("_small", "")) if os.path.exists(_small) else False
@@ -232,11 +233,14 @@ def p_j3():
     items = [("Traced per 2.5 mm cell (Rev B).", f"Rev A traced the clouds in 5 mm blocks on one global phase; the render's ~6–7 mm checker sits on an irregular grid, so its edges and the cream cut-outs were lost. Every cell is now decided on its own (Rev B band 94.4 %); with the regular checker lattice below the band agrees {AGREE['agree_band']*100:.1f} % pixel for pixel (Rev A 91.8 %): the lattice trades a few pixels for the mockup's regular look.", INK),
              ("Checker fringe regularised (Rev C).", f"The render's 2-colour checker along the cloud edges (~6–7 mm squares on an irregular AI grid) traced per cell as scattered single cells. "
               f"Checker areas are found by a 2-D checker filter on the render (both colours alternating along both axes), then drawn as a REGULAR lattice of {CHKQ} × {CHKQ} cell squares "
-              f"({CHKQ * 2.5:.1f} mm [proposed]), phase fitted locally (± 2 squares) to the traced cells: {CHK['cells']:,} cells in {CHK['regions']} areas, {CHK['agree'] * 100:.0f} % of them keep their traced colour.", PROP),
+              f"({CHKQ * 2.5:.1f} mm [proposed]), phase fitted locally (± 2 squares) to the traced cells: {CHK['cells']:,} cells in {CHK['regions']} areas, {CHK['agree'] * 100:.0f} % of them keep their traced colour. "
+              f"Only whole squares (Rev D): a square half inside an area is completed ({CHK['completed_cells']} cells), a smaller part is given back to its surroundings ({CHK['dropped_cells']} cells).", PROP),
+             ("No floating cells (Rev D).", (f"Every map, all sizes: {GJQ['islands_total']} sky / cream islands of ≤ 2 cells ({GJQ['maps']} maps; gates_jq.py, red on {GJQ['selftest']['caught']}/{GJQ['selftest']['planted']} planted specks). " if GJQ else "")
+              + f"Islands of ≤ {JQS['speck_max']} cells (rim leftovers, mirror seams) take their surroundings' colour; the bird's own gaps are kept.", INK),
              ("Cell edges (diff map, left).", f"Red = render sky / map cream ({ds:.1f} % of judged pixels), orange = render cream / map sky ({dc:.1f} %). They lie on the cloud outlines: a 2.5 mm cell cannot follow a 0.6 mm render pixel edge. No cloud, cut-out or checker group is missing; part of the difference is the checker lattice (above).", INK),
              ("FILLED (zip, pocket zips + pulls).", "Cells under the CF zip and the pocket zips are mirrored from the traced cells across the detail's edge, row by row (Rev A grew a majority inward and left horizontal stripes).", PROP),
-             ("GENERATED (not in the mockup).", "Body sides under the sleeves (reflected from the traced columns), the whole back (front mirrored at the side seams), sleeve back halves (front half mirrored) — lighter cells on J2.", PROP),
-             ("Sparkles.", "Cells under the embroidered sparkles (and their 3 px render rim) are sky: the sparkles sew on top.", INK),
+             ("GENERATED (not in the mockup).", "Body sides under the sleeves (reflected from the traced columns), the whole back (front mirrored at the side seams), sleeve back halves (the traced half mirrored about the sleeve centre line; the hidden strips of the front half about one fixed column each, Rev D) — lighter cells on J2.", PROP),
+             ("Sparkles.", f"Cells under the embroidered sparkles are sky: the sparkles sew on top. Their anti-aliased render rim (up to {JQS['rim_foot_px']} px out) is sky too and never counts as checker (Rev D: Rev C left cream specks there).", INK),
              ("Low-res source.", "Redrawn from a low-res mockup (~0.6 mm per render pixel; no close-ups yet: prompts in inputs/closeup_request.md, Q1). A designer may touch up the PNG maps directly (1 px = 1 cell).", PROP)]
     for h, body, col in items:
         o.append(t(tx, y, h, 1.75, 700, col)); y += 3.3; y = para(o, tx + 2, y, body, 92, 1.6, col, 2.9) + 1.8
@@ -270,7 +274,7 @@ def p_g1():
     y += 2; o.append(t(12, y, "PLACEMENT (design centre, mm) — fronts: x from CF (+ wearer's left), y below the CF neck seam; sleeve: x from the sleeve centre line, y from the underarm line", 1.6, 700)); y += 4
     for F, nm, use in FILES:
         c = PLACE["files"][F]["centre"]; pc = PLACE["files"][F]["piece"]
-        o.append(t(14, y, f"{F}  {pc}  centre x {c[0]:+.1f}, y {c[1]:.1f}  ·  art {PLACE['files'][F]['art_bounds'][2]-PLACE['files'][F]['art_bounds'][0]:.0f} × {PLACE['files'][F]['art_bounds'][3]-PLACE['files'][F]['art_bounds'][1]:.0f} mm  ·  marked on the pattern (DXF layer 8, plot PDF)", 1.55)); y += 3.4
+        o.append(t(14, y, f"{F}  {pc}  centre x {c[0]:+.1f}, y {c[1]:.1f}  ·  file {GATES[F]['size_mm'][0]:.0f} × {GATES[F]['size_mm'][1]:.0f} mm (DST)  ·  marked on the pattern (DXF layer 8, plot PDF)", 1.55)); y += 3.4
     mn = {}
     for sz, rows in CLR.items():
         for r in rows:
@@ -373,6 +377,7 @@ def p_r1():
             ("A16", "qa.angle_coherence (visible stitches per part)", ", ".join(f"{F} {len(GATES[F]['coherence'])} fails/{GATES[F]['coherence_parts']}" for F in GATES), all(not GATES[F]["coherence"] for F in GATES)),
             ("A16/A17", "qa.direction_match: chaos ≤ 5 %; vs reference", ", ".join(f"{F} {GATES[F]['direction']['chaos_tiles']}/{GATES[F]['direction']['tiles']}" for F in GATES) + " chaotic; vs reference NOT RUN (no close-up)", all(GATES[F]["direction"]["ok"] for F in GATES)),
             ("guards", "New gates red on a planted defect (gates_selftest.py)", ("colour " + str(SELFTEST["colour_red"]) + " / A15 " + str(SELFTEST["a15_red"]) + " / A16 " + str(SELFTEST["a16_red"]) + " rows red; 0 on the shipped E2") if SELFTEST else "not run", bool(SELFTEST and SELFTEST["ok"])),
+            ("J-isl", "Jacquard: no ≤ 2-cell island (all maps, sizes)", (f"{GJQ['islands_total']} islands in {GJQ['maps']} maps; planted {GJQ['selftest']['caught']}/{GJQ['selftest']['planted']} caught (gates_jq.py)") if GJQ else "not run", bool(GJQ and GJQ["ok"])),
             ("B5", f"≤ {PROF['needles']} threads per file (PES)", ", ".join(f"{F} {GATES[F]['threads']}" for F in GATES), all(GATES[F]["threads"] <= PROF["needles"] for F in GATES)),
             ("B7/B17", "Max stitch ≤ 7.5 mm (DST)", ", ".join(f"{F} {GATES[F]['max_stitch']}" for F in GATES), all(GATES[F]["max_stitch"] <= 7.5 for F in GATES)),
             ("B8/B20", "Trims + stitches from the DST read-back", "gates_fl.json via readback.dst (process)", "DONE"),
