@@ -16,7 +16,7 @@ Environment:
   SVG2DST_MAX_CONCURRENCY parallel engine runs, default 1 (CPU bound)
   PORT                    default 8080
 """
-import base64, hmac, json, os, subprocess, sys, tempfile, threading, time
+import base64, hmac, json, os, socket, subprocess, sys, tempfile, threading, time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -84,6 +84,17 @@ def convert(req, env=os.environ, timeout_s=None):
     return dict(result=result, files=files, duration_ms=int((time.time() - t0) * 1000), log_tail=log_tail)
 
 
+class DualStackServer(ThreadingHTTPServer):
+    """Listens on "::" with IPV6_V6ONLY off, so IPv6 and IPv4 both reach it. Railway private DNS
+    (*.railway.internal) resolves to IPv6 only in legacy environments; an IPv4-only bind is unreachable."""
+    address_family = socket.AF_INET6
+    daemon_threads = True
+
+    def server_bind(self):
+        self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        super().server_bind()
+
+
 def make_handler(secret, slots, env=os.environ):
     class H(BaseHTTPRequestHandler):
         server_version = "svg2dst/1"
@@ -128,7 +139,7 @@ def main():
     port = int(os.environ.get("PORT", "8080"))
     cli, name = engine_cli()
     print(f"svg2dst worker on :{port}, engine={name or 'NONE (503 on every convert)'}", flush=True)
-    ThreadingHTTPServer(("0.0.0.0", port), make_handler(secret, slots)).serve_forever()
+    DualStackServer(("::", port), make_handler(secret, slots)).serve_forever()
 
 
 if __name__ == "__main__":

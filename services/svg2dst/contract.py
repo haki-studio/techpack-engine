@@ -7,6 +7,7 @@ import re
 CONTRACT = "svg2dst/1"
 FABRICS = ("twill", "denim", "jersey", "fleece", "pique", "sherpa")
 HOOP_RE = re.compile(r"^(\d{2,3})x(\d{2,3})$")
+_HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 WIDTH_MIN_MM, WIDTH_MAX_MM = 5.0, 700.0
 MAX_SVG_BYTES = 2 * 1024 * 1024
 MAX_ANSWERS = 100
@@ -67,8 +68,14 @@ def check_result(r):
     s = r.get("stats") or {}
     for k in ("stitches", "trims", "colour_changes", "machine_minutes", "max_stitch_mm"):
         need(isinstance(s.get(k), (int, float)) and not isinstance(s.get(k), bool), f"stats.{k} must be a number")
+    need(isinstance(s.get("jumps", 0), (int, float)) and not isinstance(s.get("jumps", 0), bool), "stats.jumps must be a number")
+    z = r.get("size_mm") or {}
+    need(all(isinstance(z.get(k), (int, float)) and not isinstance(z.get(k), bool) for k in ("w", "h")), "size_mm needs w and h numbers")
     need(isinstance(r.get("threads"), list), "threads must be a list")
-    for t in r["threads"]: need(isinstance(t, dict) and isinstance(t.get("hex"), str), "each thread needs a hex")
+    for t in r["threads"]:
+        need(isinstance(t, dict) and isinstance(t.get("hex"), str) and _HEX.match(t["hex"]), "each thread needs a #rrggbb hex")
+        need(isinstance(t.get("index"), int) and not isinstance(t.get("index"), bool) and t["index"] >= 1, "thread index must be an int >= 1")
+    need(isinstance(r.get("warnings", []), list) and all(isinstance(w, str) for w in r.get("warnings", [])), "warnings must be a list of strings")
     need(isinstance(r.get("gates"), list), "gates must be a list")
     for g in r["gates"]:
         need(isinstance(g, dict) and isinstance(g.get("id"), str) and isinstance(g.get("pass"), bool) and isinstance(g.get("hard"), bool),
@@ -77,6 +84,8 @@ def check_result(r):
     for q in r["questions"]:
         need(isinstance(q, dict) and isinstance(q.get("id"), str) and isinstance(q.get("text"), str)
              and isinstance(q.get("options"), list) and q["options"], "each question needs id, text, options")
+        need(len(q["id"]) <= 80 and all(isinstance(o, str) and 0 < len(o) <= 200 for o in q["options"]),
+             "question id <= 80 chars, options 1..200 chars")
     need(r["ok"] == all(g["pass"] for g in r["gates"] if g["hard"]), "ok must equal 'every hard gate passed'")
     f = r.get("files") or {}
     for k in ("dst", "pes", "preview"): need(isinstance(f.get(k), str), f"files.{k} missing")

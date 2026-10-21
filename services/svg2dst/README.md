@@ -15,8 +15,13 @@ Once `scripts/svg2dst.py` is on `main` and Railway redeploys, the real engine ta
 - Every convert call needs `Authorization: Bearer $SVG2DST_SHARED_SECRET`, and the server will not start
   without a secret of at least 32 characters. `/healthz` is open, but it only returns which engine is
   installed.
-- SVGs that link outside the file (http/https/file URLs) or carry a DOCTYPE/ENTITY are refused, because the
-  renderer would otherwise fetch those URLs or read local files. Size cap: 2 MB.
+- **The real defence against fetching URLs or reading local files is the renderer itself:** `cairosvg>=2.7.1`
+  (pinned in requirements.txt) called with `unsafe=False`. `tests/test_svg2dst_worker.py` renders `href` /
+  `@import` / `url()` payloads against a local listener and requires zero hits, so dropping either goes red.
+  The engine CLI (S1) must keep `unsafe=False` too. On top of that, as a second layer, a quick text check
+  refuses plain outside `href`/`url()` links and any DOCTYPE/ENTITY. It is not complete on its own (CSS
+  `@import`, CSS escapes and links nested inside data: URIs get past it). Size cap: 2 MB.
+- Listens on `::` with IPv4 also enabled (dual-stack), because Railway private DNS can resolve to IPv6 only.
 - The engine subprocess runs with a clean environment, so it never sees the secret. Each request runs in
   its own temp dir, which is deleted afterwards. The worker keeps nothing: PLM stores the files in its
   private bucket.

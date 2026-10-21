@@ -105,3 +105,92 @@ def test_http_auth_and_errors(http):
 def test_server_refuses_to_start_without_secret():
     p = subprocess.run([sys.executable, os.path.join(SVC, "server.py")], env={"PATH": os.environ["PATH"]}, capture_output=True, text=True, timeout=30)
     assert p.returncode != 0 and "SVG2DST_SHARED_SECRET" in p.stderr
+
+
+# ---- review round 1 (6afea3a0) -------------------------------------------------------------------------------
+
+@pytest.fixture
+def listener():
+    """A local HTTP server that counts every request it gets: any fetch by the renderer shows up here."""
+    import http.server
+    hits = []
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            hits.append(self.path); self.send_response(200); self.send_header("Content-Type", "image/svg+xml"); self.end_headers()
+            self.wfile.write(b'<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>')
+        def log_message(self, *a): pass
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{srv.server_address[1]}", hits
+    srv.shutdown()
+
+
+def remote_payloads(base):
+    nested = base64.b64encode(f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><image xlink:href="{base}/nested.png" width="5" height="5"/></svg>'.encode()).decode()
+    head = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 20 20">'
+    return [
+        head + f'<image xlink:href="{base}/href.png" width="10" height="10"/><rect width="5" height="5"/></svg>',
+        head + f'<style>@import "{base}/import.css";</style><rect width="5" height="5"/></svg>',
+        head + f'<rect width="5" height="5" style="fill:url({base}/u.svg#g)"/></svg>',
+        head + f'<rect width="5" height="5" style="fill:u\\72l({base}/esc.svg#g)"/></svg>',
+        head + f'<image xlink:href="data:image/svg+xml;base64,{nested}" width="10" height="10"/></svg>',
+    ]
+
+
+def test_renderer_fetches_nothing_remote(listener):
+    """The real SSRF defence is cairosvg>=2.7 with unsafe=False (CVE-2023-27586); the regex is only a second layer."""
+    import stub_engine
+    base, hits = listener
+    for svg in remote_payloads(base):
+        try: stub_engine.rasterise(svg, 20)
+        except Exception: pass   # a refusal to render is fine; a fetch is not
+    assert hits == []
+
+
+def test_listener_can_see_a_fetch(listener):
+    """Control for the test above: with unsafe=True the same payloads DO reach the listener, so zero hits means something."""
+    import cairosvg
+    base, hits = listener
+    for svg in remote_payloads(base)[:2]:
+        try: cairosvg.svg2png(bytestring=svg.encode(), output_width=20, unsafe=True)
+        except Exception: pass
+    assert hits, "the listener saw nothing even with unsafe=True; the no-fetch test proves nothing"
+
+
+def test_cairosvg_pinned_to_a_safe_version():
+    import cairosvg, re as _re
+    req = open(os.path.join(ROOT, "requirements.txt")).read()
+    assert _re.search(r"^cairosvg\s*>=\s*2\.7\.1", req, _re.M), "requirements.txt must pin cairosvg>=2.7.1"
+    major, minor = (int(x) for x in cairosvg.__version__.split(".")[:2])
+    assert (major, minor) >= (2, 7)
+
+
+def test_server_listens_on_ipv4_and_ipv6():
+    import socket
+    srv = server.DualStackServer(("::", 0), server.make_handler(SECRET, threading.BoundedSemaphore(1), env=STUB_ENV))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    port = srv.server_address[1]
+    try:
+        for host in ("127.0.0.1", "[::1]"):
+            with urllib.request.urlopen(f"http://{host}:{port}/healthz", timeout=5) as r: assert json.loads(r.read())["ok"] is True
+    finally: srv.shutdown()
+
+
+def test_main_uses_the_dual_stack_server():
+    src = open(os.path.join(SVC, "server.py")).read()
+    assert 'DualStackServer(("::", port)' in src and '"0.0.0.0"' not in src
+
+
+@pytest.mark.parametrize("mut,needle", [
+    (lambda r: r["threads"][0].update(hex="navy"), "hex"),
+    (lambda r: r["threads"][0].update(index=0), "index"),
+    (lambda r: r.pop("size_mm"), "size_mm"),
+    (lambda r: r.update(warnings="x"), "warnings"),
+    (lambda r: r["questions"].append(dict(id="q" * 81, text="t", options=["a"])), "question id"),
+])
+def test_check_result_matches_plm_contract(mut, needle):
+    r = json.loads(json.dumps(server.convert(dict(REQ), env=STUB_ENV)["result"]))
+    contract.check_result(json.loads(json.dumps(r)))
+    mut(r)
+    with pytest.raises(ValueError, match=needle): contract.check_result(r)
