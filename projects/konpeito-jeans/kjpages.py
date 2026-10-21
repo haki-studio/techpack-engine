@@ -192,7 +192,7 @@ def T2():
     y += 3
     for s_ in ["5-pocket jean, same fit + construction as the", "Hidden Inventory (HI) pants, without the cargo", "pockets:",
                "• 2 front scoop pockets + coin pocket (= patch 01)", "• NO back yoke (as HI): back panel runs up to", "  the waistband",
-               "• 2 back patch pockets (sewn on the outside),", "  HI pointed shape, bartacked top corners",
+               "• 2 back patch pockets, HI pointed shape,", "  bartacked top corners",
                "• regular waistband, 2 pieces joined at CB", "• 5 belt loops, zip fly, 15 L rivets (T5)",
                "• front + back legs: ONE panel each, waist", "  to hem (no knee seam)"]:
         o.append(t(lx, y, s_, 1.9, 400, INK)); y += 3.4
@@ -268,7 +268,7 @@ def T4():
                   ("Back", "NO back yoke (as HI): the back panel runs straight up to the waistband; the two back panels are joined by the centre-back (seat) seam."),
                   ("Waistband", "Regular waistband, 2 pieces joined at centre back (CB), shank button at the centre front (CF)."),
                   ("Pockets (5-pocket)", "2 front scoop pockets (pocket bag + facing) with the coin pocket on the wearer's right facing (= patch 01, as HI: scoop + coin pocket + rivets);"),
-                  ("", "2 back patch pockets: sewn on the outside of the back panel, HI pointed shape, centred on each back leg (as HI)."),
+                  ("", "2 back patch pockets, HI pointed shape, centred on each back leg (as HI)."),
                   ("Fly, loops", "Zip fly (fly + fly shield, YKK #4.5 6 in) as HI; 5 belt loops as HI (2 front 1 cm from the pocket, 2 back, 1 at CB)."),
                   ("Shrinkage", "Wash the bulk denim (T6 wash), measure shrinkage, add it to the pattern before the first sample (as HI).")]:
         o.append(t(14, y, s_, 2.3, 700)); o.append(t(56, y, b, 2.05, 400, AMBER if "proposed" in b.lower() else INK)); y += 5.9
@@ -281,7 +281,7 @@ def T4():
             ["Front pocket facing L / R", "2", "shell", "R carries 02 (konpeito spill) + coin pocket 01"],
             ["Front pocket bag", "2", "pocketing (T5)", ""],
             ["Coin pocket", "1", "= embroidered patch 01", "76 × 56, sewn on, rivets at the 2 top corners"],
-            ["Back patch pocket L / R", "2", "shell", "sewn on the outside; L carries 04 (+06), R carries 05"],
+            ["Back patch pocket L / R", "2", "shell", "L carries 04 (+06), R carries 05"],
             ["Belt loop", "5", "shell", "2 front, 2 back, 1 CB (as HI)"]]
     tb, y = table(14, y, [("Piece", 50), ("Qty", 12), ("Material", 44), ("Embroidery / note", 120)], rows, 2.1, 4.6)
     o.append(tb)
@@ -332,7 +332,7 @@ def T6():
             ["Front pockets", "Scoop pockets as HI: turned edge with topstitch; 15 L rivet at each pocket's top corner."],
             ["Coin pocket = patch 01", "Embroidered patch sewn onto the right pocket facing (1 mm red edge stitch on the sides + bottom; top edge left open = pocket"],
             ["", "opening); 15 L rivets through its 2 top corners. Sewn on after the wash."],
-            ["Back pockets", "2 back patch pockets: pieces of denim sewn ON THE OUTSIDE of the back panel (HI pointed shape, centred on each back leg)."],
+            ["Back pockets", "2 back patch pockets (HI pointed shape, centred on each back leg)."],
             ["", "Top edge hemmed with topstitch; sides + point sewn on with 2 rows of topstitch; bartack at both top corners (as HI, no rivets)."],
             ["Fly", "Zip fly, YKK #4.5 close-end 6 in, automatic lock slider; J-shaped topstitch on the front, bartack at the bottom (as HI)."],
             ["Belt loops", "5 loops (2 front 1 cm from the pocket, 2 back, 1 at CB), bartacked top + bottom (as HI)."],
@@ -913,7 +913,7 @@ Files:
 
 Fabric, threads, hardware (YKK #4.5 zip fly, 28 L shank button, 15 L rivets) and label types as the Hidden Inventory
 pants (T5-T7b); same fit + construction as HI: no back yoke, regular 2-piece waistband joined at CB, 2 back patch pockets
-(sewn on the outside, HI pointed shape), one-piece legs (no knee seam). Wash: washed black matched to the mockup (T6).
+(HI pointed shape), one-piece legs (no knee seam). Wash: washed black matched to the mockup (T6).
 Measurements not on the HI chart (back rise, thigh, knee, outseam): factory to fill in from its HI spec/pattern and return
 with the fit sample (T3, T4, F1).
 Legend: [proposed - confirm] = for the FACTORY to confirm or correct; [MISSING] = Haki still owes it.

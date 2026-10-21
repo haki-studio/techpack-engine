@@ -62,7 +62,7 @@ silhouette WITHOUT cargo pockets. Measurements: Hidden Inventory published size 
 
 ## Rev B — founder review of Rev A (20 Oct 2026) + coordinator overrides — CONFIRMED unless marked
 Founder items 1–15 (prompt of the Rev B run), with the coordinator's overrides (20 Oct): wash = match the MOCKUP's washed
-black (not "as HI"); waistband 2 pieces joined at CB; back pockets = "2 back patch pockets (sewn on the outside)".
+black (not "as HI"); waistband 2 pieces joined at CB; back pockets = "2 back patch pockets" (founder, later: no explanation).
 - No knee seam: front + back legs one panel waist to hem. NO back yoke (as HI). Construction as HI, plain words (T4, T6).
 - Front-leg 07: "artwork to follow [MISSING]"; the licensed-lookalike note removed everywhere. Star map re-derived from the
   mockup (kjfront.py: scale 420.4 mm / 436.8 px front waistband = 0.9623 mm/px, origin = WB top at the side seam, pocket
