@@ -18,3 +18,6 @@ Founder priority 2026-10-20: PLM "SVG → DST" window, ASAP. This repo holds the
 - Bind "::" dual-stack (Railway private DNS may be IPv6-only).
 - Pin cairosvg>=2.7.1; listener test proves no remote fetch for href / @import / url() / CSS-escape / nested data: payloads.
 - check_result tightened to match plm contract.ts (size_mm, thread index/hex, question lengths, warnings, jumps).
+
+## Approved
+- REVIEW: APPROVE 02970449 (reviewer-svg2dst). S1 follow-up: point the remote_payloads no-fetch test at the real engine renderer when scripts/svg2dst.py lands.
