@@ -564,6 +564,61 @@ def _unsewn_done(uo, o, sewn_same):
     sewn_same[:] = uo["base"] | (uo["cnt"] > 0)        # full refresh: also drops the tatami stamp made just before
 
 
+def _over_rows(a, b, blocks, half=0.25, ends=0.5, ex=0.5, row_end=0.6):
+    """B39 (G1): True when the straight hop a -> b lies on the rows of `blocks` (already sewn top blocks of the same
+    part) for more than ex mm, ignoring `ends` mm at either end of the hop (it starts on the row it left). Only row
+    INTERIORS count: every stitch of a block is trimmed row_end mm at both ends and buffered half a row spacing, so a hop
+    that runs along the part's edge past the row ends (hidden by the pull compensation and the next block's edge) is not
+    a hop over the rows (PR review: counting the end caps turned ~1,300 edge hops on the crop into trims)."""
+    ln = LineString([a, b])
+    if ln.length <= 2 * ends: return False
+    ln = substring(ln, ends, ln.length - ends)
+    segs = []
+    for bl in blocks:
+        for p, q in zip(bl, bl[1:]):
+            L = math.dist(p, q)
+            if L <= 2 * row_end + 0.1: continue
+            segs.append(substring(LineString([p, q]), row_end, L - row_end))
+    if not segs: return False
+    from shapely.strtree import STRtree
+    hit = [segs[i] for i in STRtree(segs).query(ln.buffer(half))]
+    if not hit: return False
+    return ln.intersection(unary_union([g.buffer(half, 2) for g in hit])).length > ex
+
+
+JOIN_GUARD_DEG = 30.0     # B39 (G1) mode "parallel": a hop within this of the part's row angle is an extra ROW (reads as satin)
+JOIN_RUN_L = 1.5          # ... and is sewn as a run of stitches <= this (mm) along the rows instead of one long stitch
+
+
+def _guarded(o, a, b):
+    """B39 (G1): which hops the join guard judges. r["join_guard"] = "all": every hop between blocks (strict LESSONS B39);
+    "parallel" (compile default): hops within JOIN_GUARD_DEG of the part's declared row angle r["ang"], the ones that
+    become an extra row among the rows and read back as satin (the B39 blob: 6.6 deg off its rows); they are sewn as a run
+    of <= JOIN_RUN_L stitches along the rows (no trim: a trim per such hop cost the crop 156 -> 603 trims). A hop ACROSS
+    the rows is a travel line, judged by the travel-on-fill gate (M4s). "all": every hop over own rows is routed through
+    the unsewn part or trimmed."""
+    mode = o["r"].get("join_guard", "parallel")
+    if mode == "all": return True
+    t = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])) % 180.0; d = abs(t - float(o["r"].get("ang", 0.0)) % 180.0)
+    return min(d, 180.0 - d) <= JOIN_GUARD_DEG
+
+
+def _join_route(cov, a, b, si, o, own_top):
+    """B39 (G1): a hidden path a -> b for a hop between two blocks of one part: through what is still UNSEWN of the part
+    (its outline minus its sewn top rows, 0.6 mm each side: the raster router hugs edges) or under later stops; never over the part's own sewn rows.
+    Resampled at TRAVEL_L; None when there is no such path (the caller trims)."""
+    g = o["r"]["geom"].difference(unary_union([LineString(bl).buffer(0.6, 4) for bl in own_top if len(bl) > 1]))   # clear of the rows
+    m = cov.blank()
+    if not g.is_empty: m |= cov._draw(g, 0.0)
+    rp = cov.route(a, b, si, m, None, pad=max(6.0, 0.5 * math.hypot(b[0] - a[0], b[1] - a[1])))
+    if not rp: return None
+    pts = path_resample(rp, TRAVEL_L)
+    seq = [tuple(a)] + [tuple(q) for q in pts]
+    for p_, q_ in zip(seq, seq[1:]):
+        if math.dist(p_, q_) > 1.0 and _over_rows(p_, q_, own_top, ends=0.3): return None
+    return pts
+
+
 def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=False, threads=None, exact_travel=None):
     """Regions -> pyembroidery pattern, with hidden travel and trims (see the module doc).
     Hooks for engine/digitize/compile.py (ENGINE_PLAN M1); the defaults reproduce the old behaviour exactly:
@@ -575,7 +630,10 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
       exact_travel dict(halo=0.3, max_ex=0.5, unsewn_only=True) (ENGINE_PLAN M5): every travel run / short move is
                    checked on the exact geometry (ExactCover) and trimmed when it would lie > max_ex mm on bare fabric;
                    unsewn_only: travel hides under this stop's objects only until they are sewn. None = old behaviour.
-    stats["labels"] holds one entry per STITCH added: the region's r.get("part") (None = travel / registration)."""
+    stats["labels"] holds one entry per STITCH added: the region's r.get("part") (None = travel / registration).
+    B39 (G1): a prebuilt region may carry r["block_roles"] (one "underlay" / "top" per block, compile.regions); then a hop
+    between two blocks of that region that would lie on its own already-sewn TOP rows is a trim (stats join_trims), never a
+    sewn hop. Regions without block_roles route exactly as before."""
     ex = ExactCover(stops, **exact_travel) if exact_travel else None
     cov = Cover(bounds_of([r["geom"] for r in vis]))
     for i, s in enumerate(stops):
@@ -619,8 +677,11 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
         regs = list(s["regions"]) if keep_order else sorted(s["regions"], key=lambda r: {"tatami": 0, "padded": 1, "satin": 2, "run": 3, "bean": 4}[r["st"]])
         for r in regs:
             if builder is not None:             # prebuilt / plugin blocks: one object per region, blocks as given
-                bl = [b for b in builder(r, earlier) if len(b) > 1]
-                if bl: objs.append(dict(blocks=bl, r=r, own=r["geom"].buffer(OWN_HALO)))
+                raw = builder(r, earlier); rl = r.get("block_roles")
+                keep = [i for i, b in enumerate(raw) if len(b) > 1]
+                bl = [raw[i] for i in keep]
+                if bl: objs.append(dict(blocks=bl, r=r, own=r["geom"].buffer(OWN_HALO),
+                                        roles=[rl[i] for i in keep] if rl and len(rl) == len(raw) else None))
                 continue
             for p in polys(r["geom"]):          # one object per connected piece, so ordering can chain them
                 rp_ = dict(r, geom=p)
@@ -658,14 +719,24 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
             rest.remove(j); order.append(j); pos = objs[j]["blocks"][-1][-1]; pc = objs[j]["c1"] or objs[j]["c0"]
         prev_o = None
         for j in order:
-            o = objs[j]
-            for b in o["blocks"]:
+            o = objs[j]; own_top = []                          # B39 (G1): this object's TOP blocks sewn so far (visible rows)
+            for bi, b in enumerate(o["blocks"]):
                 x0, y0 = b[0]
                 if cur is not None:
                     d = math.hypot(x0 - cur[0], y0 - cur[1])
                     route = None
+                    over_rows = d > 1.0 and own_top and _guarded(o, cur, (x0, y0)) and _over_rows(cur, (x0, y0), own_top)
                     if d < 0.3: route = []
                     elif d <= 1.0: route = [(x0, y0)]
+                    elif over_rows and o["r"].get("join_guard", "parallel") != "all":   # B39 (G1) "parallel": a hop ALONG the
+                        route = path_resample([cur, (x0, y0)], JOIN_RUN_L)      # rows, over rows it sewed, is sewn as a short-stitch
+                        stats["join_runs"] = stats.get("join_runs", 0) + 1      # run in the row direction (hides in the texture;
+                                                                                # one long stitch there is an extra row: satin)
+                    elif over_rows:                    # B39 (G1): a hop between two blocks of ONE part that would lie on the
+                        route = _join_route(cov, cur, (x0, y0), si, o, own_top)   # rows it already sewed (a zig-zag that
+                        if route is None:                                         # reads as satin): routed through the part's
+                            d = max(d, TRIM_MIN); stats["join_trims"] = stats.get("join_trims", 0) + 1   # UNSEWN area / later
+                        else: stats["join_routes"] = stats.get("join_routes", 0) + 1                    # stops, else a trim
                     elif LineString([cur, (x0, y0)]).within(o["own"]) or cov.hidden(cur, (x0, y0), si, sewn_same):
                         route = path_resample([cur, (x0, y0)], TRAVEL_L)
                     else:
@@ -700,6 +771,7 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
                                 pat.add_stitch_absolute(pe.STITCH, (q[0]-ox)*U, (q[1]-oy)*U); stats["stitches"] += 1; stitch_labels.append(o["r"].get("part"))
                     pat.add_stitch_absolute(pe.STITCH, (x-ox)*U, (y-oy)*U); stats["stitches"] += 1; last = (x, y); stitch_labels.append(o["r"].get("part"))
                 cur = b[-1]; o["started"] = True
+                if o.get("roles") and o["roles"][bi] == "top": own_top.append(b)
             if o["r"]["st"] in ("tatami", "padded"): cov.stamp(sewn_same, o["r"]["geom"])
             if _uo is not None: _unsewn_done(_uo, o, sewn_same)
             prev_o = o

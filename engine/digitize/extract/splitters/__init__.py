@@ -19,6 +19,7 @@ class Ctx:
     def __init__(self, ev, rb, cfg, tone_thread, protected):
         self.ev, self.rb, self.cfg = ev, rb, cfg
         self.protected = set(protected)
+        self.tone_thread = dict(tone_thread)        # --- G1 --- palette tone -> thread (labels colour: <key>)
         keys = ev.keys
         self.threads = sorted({t for t in tone_thread.values() if t})
         ti = {t: i for i, t in enumerate(self.threads)}

@@ -32,12 +32,14 @@ def _higher(parts, i, tree, pad=0.0):
     return [j for j in tree.query(p.geom.buffer(pad) if pad else p.geom, predicate="intersects") if parts[j].z > p.z]
 
 
-KEEP_TINY = ("knot",)                           # M3b: a bead is a designed 1 mm2 object, not a cut-under sliver
+KEEP_TINY = ("knot", "bead")                    # M3b: a bead is a designed 1 mm2 object, not a cut-under sliver (G1: bead)
 NO_UNDERLAP = KEEP_TINY                         # M3b: beads sew their declared knots: their outline never grows
 SEAM_MM = {"floret": 0.3}                       # M3b: a floret is knocked out of the canopy, so the full 1 mm underlap is a
                                                 # SECOND layer ring under it (PR #10 review: florets 9.4 mm/mm2); 0.3 mm
                                                 # closes the seam (no-underlap left 9 gaps >= 0.1 mm2 at floret edges)
 SEAM_MM["crown_clump_lit"] = 0.3                # --- M4c --- lit pieces are knocked out of their dark clump the same way
+SEAM_MM["radial"] = 0.3                         # --- G1 --- the generic radial cluster = floret; a part may also carry meta
+                                                # seam_mm (knocked-out lit lobe pieces, primitives/lobe.py)
                                                 # (PR #14 review: grown lit pieces' 1 mm underlap, density flags 167 -> 181)
 
 
@@ -51,7 +53,7 @@ def underlap(parts, keep=1.0):
     tree = STRtree([p.geom for p in parts]); grow = {}
     for i, p in enumerate(parts):
         if p.kind in NO_UNDERLAP: continue                  # M3b: beads sew their knots
-        k = SEAM_MM.get(p.kind, keep)                       # M3b: florets only overlap their knocked-out canopy by a seam
+        k = float(p.meta.get("seam_mm", SEAM_MM.get(p.kind, keep)))   # M3b: florets only overlap their knocked-out canopy by a seam
         hi = _higher(parts, i, tree, pad=k)
         tg = p.meta.get("tone_group")                       # --- mockup-governs --- abutting TONE pieces of one motif (a petal's shades,
         if hi and tg is not None:                           # a motif's bands) overlap by TONE_SEAM_MM, not the 1 mm underlap:
@@ -91,9 +93,10 @@ def cut_under(parts, keep=1.0):
     return parts
 
 
-LINE_KINDS = ("stratum_crack",)
+LINE_KINDS = ("stratum_crack", "line")         # G1: line
 KEEP_SMALL = ("cloud_wisp", "cloud_shade")      # deliberately small parts: a wisp, a shade layer (never a speck, never a target)
 KEEP_SMALL += ("floret", "knot", "branch", "trunk_strip", "crown_clump_lit")   # M3b: floret parts, branches, lit clump sides are motifs
+KEEP_SMALL += ("lobe_shade", "radial", "bead", "stroke", "cord")   # --- G1 --- the generic kinds that are motifs by design
 
 
 def merge_specks(parts, min_mm2=20.0, protected=(), min_protected_mm2=4.0, touch=0.3, line_kinds=LINE_KINDS, keep_small=KEEP_SMALL):

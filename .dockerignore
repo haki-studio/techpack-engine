@@ -1,0 +1,9 @@
+# Docker build context = repo root (services/svg2dst/Dockerfile). Keep the image to the engine.
+projects/
+inbox/
+docs/
+tests/
+.git/
+.claude/
+**/__pycache__/
+**/out/

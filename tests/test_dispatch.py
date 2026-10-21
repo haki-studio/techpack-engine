@@ -33,6 +33,16 @@ def test_no_room_queues_instead_of_starting(tmp_path):
     assert run(["--drain"], tmp_path, TECHPACK_MAX_WORKERS="0").returncode == 0
     assert (tmp_path / "queue").read_text().count("\n") == 1
 
+
+def test_dry_run_drain_lists_the_queue_and_keeps_it(tmp_path):
+    """LESSONS E13: `--dry-run --drain` deleted every queued job while only printing them (2026-10-21)."""
+    q = f"review\t{SLUG}\t28\nfix\t{SLUG}\t34\n"
+    (tmp_path / "queue").write_text(q)
+    r = run(["--dry-run", "--drain"], tmp_path)
+    assert r.returncode == 0, r.stderr
+    assert f"tp-review-{SLUG}" in r.stdout and f"tp-fix-{SLUG}" in r.stdout
+    assert (tmp_path / "queue").read_text() == q
+
 def test_board_mirror_reaches_status(tmp_path):
     e = dict(os.environ, TECHPACK_STATE=str(tmp_path))
     proj = os.path.join(ROOT, "projects", SLUG, "STATUS.json")

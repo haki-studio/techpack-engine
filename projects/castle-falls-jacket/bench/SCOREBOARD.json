@@ -5178,5 +5178,1696 @@
   },
   "git_sha": "c835adfcc2c1",
   "panel": "panel_2026-10-20_m4c-chaos--radial-exemption---crown-clum.png"
+ },
+ {
+  "crop": [
+   -180,
+   365,
+   20,
+   565
+  ],
+  "crop_min_closeup_weight": 0.647,
+  "source_ppm_median": 2.58,
+  "stitches_in_crop": 107547,
+  "direction": {
+   "tiles": 625,
+   "pct_ok": 67.8,
+   "pct_chaos": 17.1,
+   "n_dev": 94,
+   "masked": 0,
+   "n_chaos": 107,
+   "pct_ok_all_stitches": 52.5,
+   "pct_chaos_all_stitches": 41.3
+  },
+  "angle_coherence": {
+   "source": "plan part ids carried onto the written DST (compile.labelled_dst)",
+   "parts": 207,
+   "ok": false,
+   "fails": 49,
+   "kinds": {
+    "no-visible-stitches": 15,
+    "angle-spread": 34
+   },
+   "by_kind": {
+    "no-visible-stitches / plane": 6,
+    "angle-spread / plane_grain": 5,
+    "angle-spread / band": 7,
+    "angle-spread / plane": 4,
+    "angle-spread / lobe": 18,
+    "no-visible-stitches / floret": 9
+   },
+   "failing": [
+    {
+     "kind": "no-visible-stitches",
+     "part": "temple.wall.690",
+     "grp": "plane",
+     "n": 4,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "pagoda.wall.710",
+     "grp": "plane",
+     "n": 9,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "castle.walls.777",
+     "grp": "plane",
+     "n": 3,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "castle.walls.779",
+     "grp": "plane",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "castle.walls.787",
+     "grp": "plane",
+     "n": 8,
+     "min_segs": 12
+    },
+    {
+     "kind": "no-visible-stitches",
+     "part": "castle.walls.790",
+     "grp": "plane",
+     "n": 3,
+     "min_segs": 12
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.florets.099",
+     "grp": "plane_grain",
+     "n": 921,
+     "spread_deg": 10.2,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.florets.109",
+     "grp": "plane_grain",
+     "n": 76,
+     "spread_deg": 13.1,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.florets.450",
+     "grp": "plane_grain",
+     "n": 3195,
+     "spread_deg": 15.8,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.florets.463",
+     "grp": "plane_grain",
+     "n": 45,
+     "spread_deg": 13.5,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "blossom.florets.524",
+     "grp": "plane_grain",
+     "n": 552,
+     "spread_deg": 12.1,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "castle.roofs.661",
+     "grp": "band",
+     "n": 230,
+     "spread_deg": 10.7,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "castle.roofs.663",
+     "grp": "band",
+     "n": 135,
+     "spread_deg": 10.8,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "castle.roofs.669",
+     "grp": "band",
+     "n": 33,
+     "spread_deg": 11.2,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "castle.walls.740",
+     "grp": "plane",
+     "n": 13,
+     "spread_deg": 22.5,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "castle.walls.774",
+     "grp": "plane",
+     "n": 20,
+     "spread_deg": 20.9,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.821",
+     "grp": "lobe",
+     "n": 52,
+     "spread_deg": 10.7,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.823",
+     "grp": "lobe",
+     "n": 106,
+     "spread_deg": 12.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.825",
+     "grp": "lobe",
+     "n": 85,
+     "spread_deg": 14.7,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.827",
+     "grp": "lobe",
+     "n": 404,
+     "spread_deg": 15.7,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.830",
+     "grp": "lobe",
+     "n": 48,
+     "spread_deg": 11.9,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.833",
+     "grp": "lobe",
+     "n": 54,
+     "spread_deg": 15.4,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.836",
+     "grp": "lobe",
+     "n": 798,
+     "spread_deg": 17.0,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.837",
+     "grp": "lobe",
+     "n": 84,
+     "spread_deg": 13.0,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.842",
+     "grp": "lobe",
+     "n": 513,
+     "spread_deg": 12.4,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.858",
+     "grp": "lobe",
+     "n": 68,
+     "spread_deg": 10.1,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.860",
+     "grp": "lobe",
+     "n": 89,
+     "spread_deg": 15.4,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.865",
+     "grp": "lobe",
+     "n": 272,
+     "spread_deg": 15.4,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.867",
+     "grp": "lobe",
+     "n": 149,
+     "spread_deg": 12.1,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.868",
+     "grp": "lobe",
+     "n": 29,
+     "spread_deg": 10.6,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.876",
+     "grp": "lobe",
+     "n": 63,
+     "spread_deg": 12.1,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.888",
+     "grp": "lobe",
+     "n": 70,
+     "spread_deg": 11.9,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.897",
+     "grp": "lobe",
+     "n": 197,
+     "spread_deg": 12.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "foliage.clumps.898",
+     "grp": "lobe",
+     "n": 34,
+     "spread_deg": 11.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "pagoda.roof.648",
+     "grp": "band",
+     "n": 217,
+     "spread_deg": 11.2,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "pagoda.roof.649",
+     "grp": "band",
+     "n": 284,
+     "spread_deg": 10.5,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "pagoda.roof.651",
+     "grp": "band",
+     "n": 210,
+     "spread_deg": 10.0,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "pagoda.roof.655",
+     "grp": "band",
+     "n": 50,
+     "spread_deg": 11.2,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "temple.wall.679",
+     "grp": "plane",
+     "n": 29,
+     "spread_deg": 15.3,
+     "source": "dst-part"
+    },
+    {
+     "kind": "angle-spread",
+     "part": "temple.wall.684",
+     "grp": "plane",
+     "n": 29,
+     "spread_deg": 16.4,
+     "source": "dst-part"
+    }
+   ],
+   "field_adherence": {
+    "parts": 133,
+    "stitches": 9820,
+    "within": 9180,
+    "pct_within": 93.5
+   },
+   "radial_adherence": {
+    "parts": 207,
+    "stitches": 2176,
+    "within": 2093,
+    "pct_within": 96.2,
+    "no_centre": [],
+    "unseen": [
+     "blossom.florets.010",
+     "blossom.florets.022",
+     "blossom.florets.146",
+     "blossom.florets.160",
+     "blossom.florets.270",
+     "blossom.florets.318",
+     "blossom.florets.329",
+     "blossom.florets.374",
+     "blossom.florets.498"
+    ],
+    "ok": true,
+    "n_no_centre": 0,
+    "n_unseen": 9
+   },
+   "column_adherence": {
+    "parts": 54,
+    "stitches": 880,
+    "within": 754,
+    "pct_within": 85.7
+   }
+  },
+  "density": {
+   "covered_cm2": 399.8,
+   "mean": 4.88,
+   "p95": 8.96,
+   "max_smoothed": 11.09,
+   "over_cm2": 34.29,
+   "flags": 139,
+   "threshold": 7.0,
+   "flags_by_zones_meeting": {
+    "1": 30,
+    "2": 62,
+    "3": 34,
+    "4+": 13
+   },
+   "flags_touching_kind": {
+    "band": 47,
+    "band_grain": 64,
+    "bead": 63,
+    "cord": 6,
+    "lobe": 62,
+    "lobe_grain": 5,
+    "lobe_shade": 4,
+    "plane": 44,
+    "plane_grain": 62,
+    "radial": 58,
+    "stroke": 30
+   }
+  },
+  "trims": {
+   "trims": 143,
+   "per_100cm2": 35.8,
+   "area_cm2": 399.8
+  },
+  "satin": {
+   "satins": 691,
+   "fans": 9,
+   "blob": 0,
+   "too_wide": 0,
+   "too_narrow": 0,
+   "cord_flags": 0,
+   "floret_runs_by_part_map": {
+    "blob": 142,
+    "too-narrow": 4,
+    "too-wide": 0
+   },
+   "bead_runs_by_part_map": {
+    "blob": 0,
+    "too-narrow": 18,
+    "too-wide": 0
+   }
+  },
+  "stack": {
+   "max": 4,
+   "over_cm2": 8.1,
+   "flags": 27,
+   "pct_cells_over": 2.0
+  },
+  "runs_in_crop": 176,
+  "colours": {
+   "stops_in_crop": 31,
+   "threads_in_crop": 12,
+   "threads_in_file": 12,
+   "hex": [
+    "#22355c",
+    "#2f402d",
+    "#4e3f31",
+    "#566577",
+    "#5a7240",
+    "#79a4d0",
+    "#958262",
+    "#b23f2e",
+    "#b4506f",
+    "#d3a63f",
+    "#d4caba",
+    "#de8ea6"
+   ],
+   "red": true,
+   "gold": true
+  },
+  "secs": 12.2,
+  "readback_match": {
+   "file_segs": 107936,
+   "planned_segs": 107307,
+   "matched": 107238,
+   "writer_added": 698,
+   "skipped_subgrid": 69,
+   "labelled": 100118
+  },
+  "cords": {
+   "n": 64,
+   "flags": 0,
+   "failing": [],
+   "max_piece": 6.95,
+   "aligned_max": 0.5,
+   "column_w": [
+    1.94,
+    2.53,
+    2.77,
+    3.12,
+    3.35,
+    3.43,
+    3.75,
+    3.78,
+    3.96,
+    4.18,
+    4.37,
+    4.43,
+    4.55,
+    4.58,
+    4.95,
+    5.22,
+    5.24,
+    5.33,
+    5.43,
+    5.44,
+    5.49,
+    5.86,
+    6.03,
+    6.16,
+    6.17,
+    6.36,
+    6.39,
+    6.47,
+    6.69,
+    6.74,
+    7.16,
+    7.27,
+    7.33,
+    7.6,
+    7.61,
+    7.61,
+    7.65,
+    7.77,
+    7.78,
+    7.89,
+    7.94,
+    7.94,
+    7.98,
+    8.46,
+    8.55,
+    8.59,
+    9.22,
+    9.4,
+    9.94,
+    10.34,
+    10.41,
+    10.44,
+    11.29,
+    11.62,
+    12.31,
+    12.45,
+    12.52,
+    12.72,
+    12.88,
+    12.91,
+    15.36,
+    15.98,
+    17.54,
+    25.44
+   ]
+  },
+  "direction_by_kind": {
+   "band": {
+    "tiles": 76,
+    "ok": 58,
+    "dev": 13,
+    "chaos": 5,
+    "pct_ok": 76.3,
+    "pct_chaos": 6.6
+   },
+   "band_grain": {
+    "tiles": 171,
+    "ok": 155,
+    "dev": 1,
+    "chaos": 15,
+    "pct_ok": 90.6,
+    "pct_chaos": 8.8
+   },
+   "bare": {
+    "tiles": 9,
+    "ok": 7,
+    "dev": 1,
+    "chaos": 1,
+    "pct_ok": 77.8,
+    "pct_chaos": 11.1
+   },
+   "bead": {
+    "tiles": 6,
+    "ok": 2,
+    "dev": 1,
+    "chaos": 3,
+    "pct_ok": 33.3,
+    "pct_chaos": 50.0
+   },
+   "cord": {
+    "tiles": 59,
+    "ok": 54,
+    "dev": 2,
+    "chaos": 3,
+    "pct_ok": 91.5,
+    "pct_chaos": 5.1
+   },
+   "lobe": {
+    "tiles": 115,
+    "ok": 52,
+    "dev": 45,
+    "chaos": 18,
+    "pct_ok": 45.2,
+    "pct_chaos": 15.7
+   },
+   "lobe_grain": {
+    "tiles": 7,
+    "ok": 7,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "lobe_shade": {
+    "tiles": 3,
+    "ok": 3,
+    "dev": 0,
+    "chaos": 0,
+    "pct_ok": 100.0,
+    "pct_chaos": 0.0
+   },
+   "plane": {
+    "tiles": 60,
+    "ok": 33,
+    "dev": 22,
+    "chaos": 5,
+    "pct_ok": 55.0,
+    "pct_chaos": 8.3
+   },
+   "plane_grain": {
+    "tiles": 66,
+    "ok": 36,
+    "dev": 4,
+    "chaos": 26,
+    "pct_ok": 54.5,
+    "pct_chaos": 39.4
+   },
+   "radial": {
+    "tiles": 39,
+    "ok": 12,
+    "dev": 2,
+    "chaos": 25,
+    "pct_ok": 30.8,
+    "pct_chaos": 64.1
+   },
+   "stroke": {
+    "tiles": 14,
+    "ok": 5,
+    "dev": 3,
+    "chaos": 6,
+    "pct_ok": 35.7,
+    "pct_chaos": 42.9
+   }
+  },
+  "direction_by_source": {
+   "bare": {
+    "tiles": 9,
+    "ok": 7,
+    "dev": 1,
+    "chaos": 1,
+    "pct_ok": 77.8,
+    "pct_chaos": 11.1
+   },
+   "independent": {
+    "tiles": 254,
+    "ok": 164,
+    "dev": 43,
+    "chaos": 47,
+    "pct_ok": 64.6,
+    "pct_chaos": 18.5
+   },
+   "outline": {
+    "tiles": 115,
+    "ok": 52,
+    "dev": 45,
+    "chaos": 18,
+    "pct_ok": 45.2,
+    "pct_chaos": 15.7
+   },
+   "self-derived": {
+    "tiles": 247,
+    "ok": 201,
+    "dev": 5,
+    "chaos": 41,
+    "pct_ok": 81.4,
+    "pct_chaos": 16.6
+   }
+  },
+  "direction_label": {
+   "tiles": 69,
+   "ok": 41,
+   "dev": 22,
+   "chaos": 6,
+   "pct_ok": 59.4,
+   "note": "tiles whose top part's angle is the labeller's (source label); included in 'independent'"
+  },
+  "direction_by_source_raw": {
+   "bare": {
+    "tiles": 9,
+    "ok": 7,
+    "dev": 1,
+    "chaos": 1,
+    "pct_ok": 77.8,
+    "pct_chaos": 11.1
+   },
+   "independent": {
+    "tiles": 254,
+    "ok": 164,
+    "dev": 43,
+    "chaos": 47,
+    "pct_ok": 64.6,
+    "pct_chaos": 18.5
+   },
+   "outline": {
+    "tiles": 115,
+    "ok": 52,
+    "dev": 45,
+    "chaos": 18,
+    "pct_ok": 45.2,
+    "pct_chaos": 15.7
+   },
+   "self-derived": {
+    "tiles": 247,
+    "ok": 201,
+    "dev": 5,
+    "chaos": 41,
+    "pct_ok": 81.4,
+    "pct_chaos": 16.6
+   }
+  },
+  "radial_exemption": {
+   "tiles": 625,
+   "chaos_raw": 107,
+   "pct_chaos_raw": 17.1,
+   "exempt": [],
+   "n_exempt": 0,
+   "chaos_after": 107,
+   "pct_chaos_after": 17.1,
+   "candidates_refused": [
+    {
+     "at_mm": [
+      196.0,
+      164.0
+     ],
+     "share": 0.29,
+     "adherence": 93.1,
+     "why": "radial share 0.29 < 0.7"
+    },
+    {
+     "at_mm": [
+      196.0,
+      36.0
+     ],
+     "share": 0.1,
+     "adherence": 87.5,
+     "why": "radial share 0.10 < 0.7"
+    },
+    {
+     "at_mm": [
+      188.0,
+      44.0
+     ],
+     "share": 0.1,
+     "adherence": 100.0,
+     "why": "radial share 0.10 < 0.7"
+    },
+    {
+     "at_mm": [
+      36.0,
+      156.0
+     ],
+     "share": 0.11,
+     "adherence": 100.0,
+     "why": "radial share 0.11 < 0.7"
+    },
+    {
+     "at_mm": [
+      4.0,
+      164.0
+     ],
+     "share": 0.43,
+     "adherence": 95.8,
+     "why": "radial share 0.43 < 0.7"
+    },
+    {
+     "at_mm": [
+      12.0,
+      164.0
+     ],
+     "share": 0.38,
+     "adherence": 100.0,
+     "why": "radial share 0.38 < 0.7"
+    },
+    {
+     "at_mm": [
+      4.0,
+      132.0
+     ],
+     "share": 0.06,
+     "adherence": 85.7,
+     "why": "radial share 0.06 < 0.7"
+    },
+    {
+     "at_mm": [
+      36.0,
+      132.0
+     ],
+     "share": 0.13,
+     "adherence": 85.7,
+     "why": "radial share 0.13 < 0.7"
+    },
+    {
+     "at_mm": [
+      172.0,
+      164.0
+     ],
+     "share": 0.01,
+     "adherence": 100.0,
+     "why": "radial share 0.01 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      188.0
+     ],
+     "share": 0.01,
+     "adherence": 100.0,
+     "why": "radial share 0.01 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      164.0
+     ],
+     "share": 0.15,
+     "adherence": 100.0,
+     "why": "radial share 0.15 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      44.0
+     ],
+     "share": 0.05,
+     "adherence": 100.0,
+     "why": "radial share 0.05 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      36.0
+     ],
+     "share": 0.01,
+     "adherence": 100.0,
+     "why": "radial share 0.01 < 0.7"
+    },
+    {
+     "at_mm": [
+      196.0,
+      44.0
+     ],
+     "share": 0.22,
+     "adherence": 95.7,
+     "why": "radial share 0.22 < 0.7"
+    },
+    {
+     "at_mm": [
+      92.0,
+      164.0
+     ],
+     "share": 0.25,
+     "adherence": 100.0,
+     "why": "radial share 0.25 < 0.7"
+    },
+    {
+     "at_mm": [
+      84.0,
+      172.0
+     ],
+     "share": 0.07,
+     "adherence": 100.0,
+     "why": "radial share 0.07 < 0.7"
+    },
+    {
+     "at_mm": [
+      100.0,
+      188.0
+     ],
+     "share": 0.02,
+     "adherence": 100.0,
+     "why": "radial share 0.02 < 0.7"
+    },
+    {
+     "at_mm": [
+      4.0,
+      172.0
+     ],
+     "share": 0.07,
+     "adherence": 100.0,
+     "why": "radial share 0.07 < 0.7"
+    },
+    {
+     "at_mm": [
+      52.0,
+      124.0
+     ],
+     "share": 0.09,
+     "adherence": 100.0,
+     "why": "radial share 0.09 < 0.7"
+    },
+    {
+     "at_mm": [
+      52.0,
+      140.0
+     ],
+     "share": 0.22,
+     "adherence": 100.0,
+     "why": "radial share 0.22 < 0.7"
+    },
+    {
+     "at_mm": [
+      52.0,
+      132.0
+     ],
+     "share": 0.3,
+     "adherence": 100.0,
+     "why": "radial share 0.30 < 0.7"
+    },
+    {
+     "at_mm": [
+      172.0,
+      28.0
+     ],
+     "share": 0.01,
+     "adherence": 100.0,
+     "why": "radial share 0.01 < 0.7"
+    },
+    {
+     "at_mm": [
+      100.0,
+      180.0
+     ],
+     "share": 0.22,
+     "adherence": 100.0,
+     "why": "radial share 0.22 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      172.0
+     ],
+     "share": 0.02,
+     "adherence": 100.0,
+     "why": "radial share 0.02 < 0.7"
+    },
+    {
+     "at_mm": [
+      84.0,
+      156.0
+     ],
+     "share": 0.26,
+     "adherence": 100.0,
+     "why": "radial share 0.26 < 0.7"
+    },
+    {
+     "at_mm": [
+      76.0,
+      164.0
+     ],
+     "share": 0.28,
+     "adherence": 100.0,
+     "why": "radial share 0.28 < 0.7"
+    },
+    {
+     "at_mm": [
+      68.0,
+      156.0
+     ],
+     "share": 0.22,
+     "adherence": 88.9,
+     "why": "radial share 0.22 < 0.7"
+    },
+    {
+     "at_mm": [
+      68.0,
+      164.0
+     ],
+     "share": 0.29,
+     "adherence": 97.4,
+     "why": "radial share 0.29 < 0.7"
+    },
+    {
+     "at_mm": [
+      76.0,
+      156.0
+     ],
+     "share": 0.14,
+     "adherence": 93.8,
+     "why": "radial share 0.14 < 0.7"
+    },
+    {
+     "at_mm": [
+      100.0,
+      156.0
+     ],
+     "share": 0.07,
+     "adherence": 80.0,
+     "why": "radial share 0.07 < 0.7; adherence 80 % < 85.0"
+    },
+    {
+     "at_mm": [
+      108.0,
+      180.0
+     ],
+     "share": 0.4,
+     "adherence": 95.7,
+     "why": "radial share 0.40 < 0.7"
+    },
+    {
+     "at_mm": [
+      108.0,
+      188.0
+     ],
+     "share": 0.46,
+     "adherence": 98.1,
+     "why": "radial share 0.46 < 0.7"
+    },
+    {
+     "at_mm": [
+      116.0,
+      180.0
+     ],
+     "share": 0.32,
+     "adherence": 100.0,
+     "why": "radial share 0.32 < 0.7"
+    },
+    {
+     "at_mm": [
+      36.0,
+      124.0
+     ],
+     "share": 0.2,
+     "adherence": 100.0,
+     "why": "radial share 0.20 < 0.7"
+    },
+    {
+     "at_mm": [
+      28.0,
+      124.0
+     ],
+     "share": 0.12,
+     "adherence": 78.6,
+     "why": "radial share 0.12 < 0.7; adherence 79 % < 85.0"
+    },
+    {
+     "at_mm": [
+      20.0,
+      148.0
+     ],
+     "share": 0.38,
+     "adherence": 95.1,
+     "why": "radial share 0.38 < 0.7"
+    },
+    {
+     "at_mm": [
+      4.0,
+      148.0
+     ],
+     "share": 0.33,
+     "adherence": 83.3,
+     "why": "radial share 0.33 < 0.7; adherence 83 % < 85.0"
+    },
+    {
+     "at_mm": [
+      20.0,
+      164.0
+     ],
+     "share": 0.19,
+     "adherence": 94.7,
+     "why": "radial share 0.19 < 0.7"
+    },
+    {
+     "at_mm": [
+      4.0,
+      124.0
+     ],
+     "share": 0.35,
+     "adherence": 92.1,
+     "why": "radial share 0.35 < 0.7"
+    },
+    {
+     "at_mm": [
+      188.0,
+      172.0
+     ],
+     "share": 0.12,
+     "adherence": 76.9,
+     "why": "radial share 0.12 < 0.7; adherence 77 % < 85.0"
+    },
+    {
+     "at_mm": [
+      196.0,
+      28.0
+     ],
+     "share": 0.35,
+     "adherence": 97.3,
+     "why": "radial share 0.35 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      20.0
+     ],
+     "share": 0.15,
+     "adherence": 94.1,
+     "why": "radial share 0.15 < 0.7"
+    },
+    {
+     "at_mm": [
+      172.0,
+      12.0
+     ],
+     "share": 0.26,
+     "adherence": 96.8,
+     "why": "radial share 0.26 < 0.7"
+    },
+    {
+     "at_mm": [
+      180.0,
+      4.0
+     ],
+     "share": 0.28,
+     "adherence": 92.3,
+     "why": "radial share 0.28 < 0.7"
+    },
+    {
+     "at_mm": [
+      196.0,
+      12.0
+     ],
+     "share": 0.4,
+     "adherence": 95.6,
+     "why": "radial share 0.40 < 0.7"
+    },
+    {
+     "at_mm": [
+      196.0,
+      20.0
+     ],
+     "share": 0.37,
+     "adherence": 97.9,
+     "why": "radial share 0.37 < 0.7"
+    },
+    {
+     "at_mm": [
+      28.0,
+      148.0
+     ],
+     "share": 0.23,
+     "adherence": 100.0,
+     "why": "radial share 0.23 < 0.7"
+    },
+    {
+     "at_mm": [
+      68.0,
+      148.0
+     ],
+     "share": 0.22,
+     "adherence": 100.0,
+     "why": "radial share 0.22 < 0.7"
+    },
+    {
+     "at_mm": [
+      4.0,
+      156.0
+     ],
+     "share": 0.4,
+     "adherence": 97.9,
+     "why": "radial share 0.40 < 0.7"
+    },
+    {
+     "at_mm": [
+      28.0,
+      140.0
+     ],
+     "share": 0.44,
+     "adherence": 100.0,
+     "why": "radial share 0.44 < 0.7"
+    },
+    {
+     "at_mm": [
+      20.0,
+      172.0
+     ],
+     "share": 0.29,
+     "adherence": 96.3,
+     "why": "radial share 0.29 < 0.7"
+    },
+    {
+     "at_mm": [
+      36.0,
+      140.0
+     ],
+     "share": 0.6,
+     "adherence": 100.0,
+     "why": "radial share 0.60 < 0.7"
+    },
+    {
+     "at_mm": [
+      44.0,
+      124.0
+     ],
+     "share": 0.17,
+     "adherence": 100.0,
+     "why": "radial share 0.17 < 0.7"
+    },
+    {
+     "at_mm": [
+      60.0,
+      156.0
+     ],
+     "share": 0.06,
+     "adherence": 100.0,
+     "why": "radial share 0.06 < 0.7"
+    },
+    {
+     "at_mm": [
+      100.0,
+      172.0
+     ],
+     "share": 0.46,
+     "adherence": 98.1,
+     "why": "radial share 0.46 < 0.7"
+    },
+    {
+     "at_mm": [
+      52.0,
+      148.0
+     ],
+     "share": 0.32,
+     "adherence": 100.0,
+     "why": "radial share 0.32 < 0.7"
+    },
+    {
+     "at_mm": [
+      44.0,
+      140.0
+     ],
+     "share": 0.36,
+     "adherence": 97.7,
+     "why": "radial share 0.36 < 0.7"
+    },
+    {
+     "at_mm": [
+      188.0,
+      20.0
+     ],
+     "share": 0.33,
+     "adherence": 97.4,
+     "why": "radial share 0.33 < 0.7"
+    },
+    {
+     "at_mm": [
+      4.0,
+      116.0
+     ],
+     "share": 0.2,
+     "adherence": 85.0,
+     "why": "radial share 0.20 < 0.7"
+    }
+   ],
+   "n_refused": 59,
+   "eligible_parts": 216,
+   "radial_parts_not_eligible": [],
+   "n_radial_not_eligible": 0,
+   "conditions": {
+    "min_radial_share": 0.7,
+    "min_adherence_pct": 85.0,
+    "floret_r_max_mm": 4.0,
+    "max_dev_deg": 15.0,
+    "min_len": 0.6,
+    "centre_mm": 0.9
+   }
+  },
+  "parts": {
+   "n": 962,
+   "pct_under_20mm2": 59.1,
+   "by_kind": {
+    "band": 33,
+    "band_grain": 131,
+    "bead": 348,
+    "cord": 10,
+    "lobe": 84,
+    "lobe_grain": 3,
+    "lobe_shade": 3,
+    "plane": 69,
+    "plane_grain": 11,
+    "radial": 216,
+    "stroke": 54
+   },
+   "undeclared_angles": 0,
+   "random_angles": 0,
+   "unexplained_angles": [],
+   "sewn_off_angle": 0,
+   "sewn_off": [],
+   "field_adherence": {
+    "parts": 133,
+    "stitches": 9820,
+    "within": 9180,
+    "pct_within": 93.5
+   },
+   "dir_sources": {
+    "field": 134,
+    "splitter": 392,
+    "label": 74,
+    "rule": 348,
+    "field-mean": 14
+   }
+  },
+  "stub_area": {
+   "mm2": 0,
+   "pct_of_parts": 0.0,
+   "by_zone": {},
+   "note": "zone stubs left for M3 (buildings, trunks, crowns, florets)"
+  },
+  "separation": {
+   "pairs": 161,
+   "close": 8,
+   "examples": [
+    [
+     "blossom.florets.108",
+     "blossom.florets.109",
+     6.8
+    ],
+    [
+     "pagoda.studs.587",
+     "castle.studs.598",
+     0.0
+    ],
+    [
+     "pagoda.roof.648",
+     "rock.faces.918",
+     13.8
+    ],
+    [
+     "pagoda.roof.651",
+     "castle.roofs.657",
+     14.0
+    ],
+    [
+     "castle.roofs.657",
+     "castle.roofs.661",
+     12.0
+    ],
+    [
+     "cloud.bank.801",
+     "cloud.bank.803",
+     11.2
+    ],
+    [
+     "fall_left.water.810",
+     "fall_left.water.812",
+     4.6
+    ],
+    [
+     "rock.faces.917",
+     "rock.faces.918",
+     12.7
+    ]
+   ]
+  },
+  "accents": {
+   "cf_red": {
+    "evidence_mm2": 593.4,
+    "parts": 30,
+    "sewn_in_crop": true
+   },
+   "cf_gold": {
+    "evidence_mm2": 167.2,
+    "parts": 52,
+    "sewn_in_crop": true
+   }
+  },
+  "file": {
+   "stitches": 116480,
+   "trims": 146,
+   "stops": 31,
+   "colours": 12,
+   "max_stitch": 7.02
+  },
+  "date": "2026-10-21",
+  "label": "G1 labels: generic primitives (session-written labels)",
+  "bench": "castle-bk-m",
+  "dst": ".claude/worktrees/tp-engine-g1/projects/castle-falls-jacket/out/digitize/BK_M_crop_labels/BK_M_crop_labels.dst",
+  "dst_sha256": "30df3600f5976174",
+  "origin": [
+   -80.0,
+   465.0
+  ],
+  "stack_parts": {
+   "params": {
+    "cell_mm": 0.25,
+    "window_mm": 1.0,
+    "layer_min": 1.5,
+    "erode_cells": 1,
+    "max_parts": 2,
+    "min_region_mm2": 4.0,
+    "cap_per_100cm2": 2.5
+   },
+   "parts_seen": 959,
+   "max": 3,
+   "raw_over_mm2": 25.0,
+   "over_mm2": 0.0,
+   "covered_mm2": 39865.4,
+   "per_100cm2": 0.0,
+   "cap_per_100cm2": 2.5,
+   "flags": [],
+   "n_flags": 0,
+   "ok": true
+  },
+  "travel_on_fill": {
+   "exposed": [
+    [
+     55176,
+     -41.6,
+     372.3,
+     7.02
+    ],
+    [
+     55177,
+     -36.4,
+     376.9,
+     6.94
+    ],
+    [
+     32206,
+     -16.4,
+     461.4,
+     6.9
+    ],
+    [
+     81514,
+     -88.2,
+     482.2,
+     6.9
+    ],
+    [
+     89400,
+     -128.0,
+     537.2,
+     6.86
+    ],
+    [
+     71999,
+     -149.1,
+     392.5,
+     6.8
+    ],
+    [
+     81512,
+     -74.5,
+     482.4,
+     6.8
+    ],
+    [
+     81513,
+     -81.3,
+     482.3,
+     6.8
+    ],
+    [
+     87843,
+     -34.8,
+     515.8,
+     6.8
+    ],
+    [
+     87844,
+     -41.6,
+     515.8,
+     6.8
+    ],
+    [
+     88364,
+     -33.2,
+     515.8,
+     6.8
+    ],
+    [
+     88365,
+     -40.0,
+     515.7,
+     6.8
+    ],
+    [
+     88366,
+     -46.8,
+     515.5,
+     6.8
+    ],
+    [
+     88367,
+     -53.6,
+     515.5,
+     6.8
+    ],
+    [
+     88368,
+     -60.4,
+     515.3,
+     6.8
+    ],
+    [
+     88369,
+     -67.2,
+     515.2,
+     6.8
+    ],
+    [
+     6171,
+     -124.0,
+     393.0,
+     6.79
+    ],
+    [
+     41120,
+     -36.2,
+     520.8,
+     6.79
+    ],
+    [
+     106411,
+     -105.8,
+     522.0,
+     6.79
+    ],
+    [
+     74108,
+     -61.9,
+     455.8,
+     6.77
+    ],
+    [
+     7717,
+     -144.8,
+     399.2,
+     6.73
+    ],
+    [
+     89399,
+     -123.1,
+     542.0,
+     6.72
+    ],
+    [
+     89641,
+     -140.9,
+     545.3,
+     6.72
+    ],
+    [
+     24155,
+     -32.5,
+     459.8,
+     6.7
+    ],
+    [
+     71998,
+     -149.1,
+     385.8,
+     6.7
+    ],
+    [
+     72000,
+     -149.3,
+     399.2,
+     6.7
+    ],
+    [
+     29039,
+     -175.1,
+     376.9,
+     6.69
+    ],
+    [
+     74107,
+     -62.9,
+     462.4,
+     6.68
+    ],
+    [
+     84618,
+     -18.9,
+     560.0,
+     6.65
+    ],
+    [
+     87584,
+     -15.1,
+     508.4,
+     6.65
+    ],
+    [
+     99514,
+     6.7,
+     532.2,
+     6.65
+    ],
+    [
+     27144,
+     -69.2,
+     457.3,
+     6.6
+    ],
+    [
+     27145,
+     -69.2,
+     450.7,
+     6.6
+    ],
+    [
+     52338,
+     -126.3,
+     555.2,
+     6.6
+    ],
+    [
+     29038,
+     -176.2,
+     370.4,
+     6.59
+    ],
+    [
+     98665,
+     1.2,
+     387.4,
+     6.51
+    ],
+    [
+     104088,
+     -147.2,
+     519.0,
+     6.51
+    ],
+    [
+     106389,
+     -85.0,
+     519.2,
+     6.51
+    ],
+    [
+     51164,
+     -99.0,
+     552.4,
+     6.46
+    ],
+    [
+     69899,
+     -66.2,
+     411.1,
+     6.38
+    ]
+   ],
+   "n_exposed": 3788,
+   "exposed_mm": 6384.3,
+   "on_fill_mm_all": 6465.2,
+   "travel_mm": 25483.7,
+   "travel_segs": 9636,
+   "covered_mm2": 39889.8,
+   "per_100cm2": 1600.5,
+   "n_per_100cm2": 949.6,
+   "target_exposed": 0,
+   "params": {
+    "cell_mm": 0.5,
+    "window_mm": 1.0,
+    "layer_min": 1.5,
+    "min_mm": 0.5,
+    "min_ex": 0.3,
+    "target_exposed": 0
+   },
+   "ok": false,
+   "planned_travel_segs": 1818
+  },
+  "verdict": {
+   "direction_ok": false,
+   "direction_chaos": false,
+   "angle_coherence": false,
+   "density": false,
+   "trims": false,
+   "satin_shape": true,
+   "stack": false,
+   "colours": true,
+   "separation": false,
+   "stack_parts": true,
+   "travel_on_fill": false
+  },
+  "git_sha": "e6e43fc98835",
+  "panel": "panel_2026-10-21_g1-labels--generic-primitives--session-w.png"
  }
 ]

@@ -22,7 +22,8 @@ def _col(p, threads):
         h = threads.get(p.thread, {}).get("hex", "#969696").lstrip("#"); c = [int(h[i:i + 2], 16) for i in (0, 2, 4)]
         return tuple(int(v * 0.55 + 150 * 0.45) for v in c)
     if p.kind in ("stratum_band", "stratum_crack", "cloud_shade", "cloud_wisp",
-                  "canopy", "petal", "knot", "trunk_strip", "branch", "crown_clump_dark", "crown_clump_lit"):   # + M3b   # M2 organic parts: their own thread colour
+                  "canopy", "petal", "knot", "trunk_strip", "branch", "crown_clump_dark", "crown_clump_lit",   # + M3b
+                  "stroke", "cord", "band", "band_grain", "lobe", "lobe_grain", "lobe_shade", "plane", "plane_grain", "radial", "bead", "line"):   # + G1   # M2 organic parts: their own thread colour
         h = threads.get(p.thread, {}).get("hex", "#969696").lstrip("#"); return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
     if p.kind == "cloud_lobe": return (250, 250, 245) if p.meta.get("lobe", 0) % 2 == 0 else (225, 228, 240)
     if p.kind == "fall_cord": return (235, 240, 250) if p.meta.get("cord", 0) % 2 == 0 else (190, 210, 240)
@@ -137,6 +138,9 @@ def questions(plan, issues, extract_log=None, gates=None, rb=None):
           (f". Optical mixes that read closer than the merge (an open layer, rule 8; not sewn unless chosen per motif): {mixtxt}" if mixtxt else ""),
           [], [o["id"] for o in opts], cur, "the option's plan is used in the next run (run.yaml threads.choice)",
           alternatives=opts)
+    for x in plan.meta.get("label_questions", []) or []:        # --- G1 --- low-confidence labelled parts (labels/compile.py)
+        ids = [p.id for p in plan.parts if p.meta.get("label") == x["label"]]
+        q(x["id"], "label", x["text"], ids, x["options"], x["default"], x["effect"], label=x["label"])
     bud = (plan.meta.get("sequence") or {}).get("budget")
     if bud and not bud.get("ok", True):
         q("sequence.budget", "sequence", f"The plan has {bud['planned']} stitches, over the budget {bud['max']} (rule 6). "
@@ -158,7 +162,7 @@ def apply_answers(cfg, answers, qs):
     person outside the engine, e.g. re-draw a zone)."""
     from digitize import config
     cfg = config.merge(cfg, {}); rv = cfg.setdefault("review", {})
-    rv.setdefault("drop_zones", []); rv.setdefault("angles", {}); rv.setdefault("technique", {})
+    rv.setdefault("drop_zones", []); rv.setdefault("angles", {}); rv.setdefault("technique", {}); rv.setdefault("labels", {})   # G1
     byid = {x["id"]: x for x in qs}; rep = dict(answered=[], defaulted=[], unknown=sorted(set(answers) - set(byid)), pending=[])
     for qid, x in byid.items():
         if qid not in answers:
@@ -179,6 +183,7 @@ def apply_answers(cfg, answers, qs):
             for pid in x["part_ids"]: rv["technique"][pid] = "drop"
         elif t in ("type-follows-shape", "house-min"):
             for pid in x["part_ids"]: rv["technique"][pid] = a
+        elif t == "label": rv["labels"][x["label"]] = a              # --- G1 --- another primitive / drop: next compile
         else: rep["pending"].append((qid, a))
     return cfg, rep
 

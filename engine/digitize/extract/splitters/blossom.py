@@ -58,7 +58,8 @@ def centres(ctx, mass, sc):
     top = Ls - ndi.gaussian_filter(L, sc["tophat_mm"] * ppm)
     inner = ndi.binary_erosion(mass, iterations=max(1, int(round(0.5 * ppm))))
     if not inner.any(): return []
-    pk = peak_local_max(np.where(inner, Ls, Ls.min()), min_distance=max(1, int(round(sc["floret_sep_mm"] * ppm / 2))),
+    sep = sc["sep_mm"] if "sep_mm" in sc else sc["floret_sep_mm"]      # G1: the generic radial primitive passes sep_mm
+    pk = peak_local_max(np.where(inner, Ls, Ls.min()), min_distance=max(1, int(round(sep * ppm / 2))),
                         labels=inner.astype(int), exclude_border=False)
     return [ev.to_mm(x + 0.5, y + 0.5) for y, x in pk if top[y, x] >= sc["prominence"]]
 

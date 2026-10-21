@@ -192,13 +192,16 @@ def split(ctx, zone, z, claim):
     return parts, used
 
 
+COLUMN_KINDS = ("branch", "stroke")      # --- G1 --- the generic stroke primitive is judged the same way
+
+
 def column_adherence(plan, segs, labels, crop, ppm=12.0, max_dev=15.0, min_len=0.6):
     """branch columns on the WRITTEN file: each visible stitch (>= min_len) of a part with a centreline (meta cl, mode
     contour) vs across the centreline at the stitch's nearest centreline point. -> dict(parts, stitches, within, pct_within)"""
     import qa
     from shapely.geometry import Point
     vis, idx = qa.visible_segments(segs, crop, ppm=ppm, return_index=True)
-    cls = {p.id: LineString(p.meta["cl"]) for p in plan.parts if p.dir.mode == "contour" and p.meta.get("cl") and p.kind == "branch"}
+    cls = {p.id: LineString(p.meta["cl"]) for p in plan.parts if p.dir.mode == "contour" and p.meta.get("cl") and p.kind in COLUMN_KINDS}
     n = w = 0; seen = set()
     for s, i in zip(vis, idx):
         pid = labels[i]

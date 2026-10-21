@@ -1,0 +1,80 @@
+# Digitizing run: Castle Falls BK size M, benchmark crop, through the LABELS CONTRACT (ENGINE_PLAN G1).
+#   python3 -m digitize.run projects/castle-falls-jacket/bench/run_bk_crop_labels.yaml --stages all --no-api
+# Same bench (crop, reference, targets), palette, thread plan and sequencing as run_bk_crop.yaml; the only difference is
+# WHERE the parts come from: parts.labels.json (written by the session looking at the sheet) -> generic primitives
+# (engine/digitize/primitives) instead of zones -> subject splitters. No Anthropic API calls anywhere in this run.
+name: BK_M_crop_labels
+label: "G1 labels: generic primitives (session-written labels)"
+bench: bench/bench.json
+labels: bench/labels_BK.json       # the vision step's output (G1 contract: digitize/labels/schema.py)
+out_dir: out/digitize/BK_M_crop_labels
+
+techniques:                        # toggles: the rulebook takes the first ENABLED technique per kind
+  tatami: true
+  satin: true
+  split_satin: true
+  run: true
+  bean: true
+  guided_fill: true                # M2: tatami along the reference grain (strata, cloud lobes)
+  contour_fill: true               # M2: rows along the outline (cloud lobes when guided_fill is off)
+  blend: true                      # M2: open shading layers and feather blends (no underlay)
+
+threads:
+  needles: factory                 # factory.json: 12 colours per stitch file
+  protected: [cf_red, cf_gold]     # never merged (founder: red and gold present wherever the design has them)
+  # importance x area in the merge cost (threads.py). M1 merged BOTH water blues away (area-weighted), so the falls were
+  # cream + mist only. 12 needles cannot hold all 18 tones: keeping sky light (the falls' blue streaks) and blossom deep
+  # costs mist grey -> sky light (dE 14.9); keeping both blues as well would cost blossom deep or cloud cream
+  # (RECAP-2026-10-20-engine-m2-organic.md). Change these numbers to move the trade-off.
+  importance: {cf_skylt: 3, cf_rose: 3}
+  # candidate palette = the Castle Falls tones read from the mockup (cfcore.CF_PAL, PROPOSED threads); the evidence
+  # classifies every reference pixel to the nearest one, then threads.py merges down to the needle limit
+  palette:
+    cf_white: "#EEEAE0"
+    cf_cream: "#D4CABA"
+    cf_mist: "#9EA3A6"
+    cf_skylt: "#79A4D0"
+    cf_sky: "#3F6FA9"
+    cf_navy: "#22355C"
+    cf_slate: "#566577"
+    cf_lav: "#9690B6"
+    cf_grndk: "#2F402D"
+    cf_grn: "#5A7240"
+    cf_grnlt: "#9DA65F"
+    cf_pinklt: "#F2C3CE"
+    cf_pink: "#DE8EA6"
+    cf_rose: "#B4506F"
+    cf_red: "#B23F2E"
+    cf_gold: "#D3A63F"
+    cf_bark: "#958262"
+    cf_brown: "#4E3F31"
+  names:
+    cf_white: Cloud white
+    cf_cream: Cloud cream
+    cf_mist: Mist grey
+    cf_skylt: Sky light
+    cf_sky: Sky blue
+    cf_navy: Deep navy
+    cf_slate: Rock slate
+    cf_lav: Far lavender
+    cf_grndk: Pine dark
+    cf_grn: Leaf green
+    cf_grnlt: Moss light
+    cf_pinklt: Blossom pale
+    cf_pink: Blossom pink
+    cf_rose: Blossom deep
+    cf_red: Vermilion
+    cf_gold: Gold
+    cf_bark: Bark tan
+    cf_brown: Bark dark
+
+evidence: {ppm: 4.0, smooth_mm: 0.35, mode_mm: 0.6}
+sequence: {keep_mm: 1.0, min_fragment_mm2: 2.0}   # M4g defaults: sequence.SEQ_DEFAULTS
+stub: {min_part_mm2: 20.0, min_protected_mm2: 4.0, close_mm: 0.6}   # partition minimums (protected accents from 4 mm2)
+budget: {stitches_max: null}
+direction: {sigma_mm: 4.0, fill_sigma_mm: 10.0, min_coh: 0.25}
+specks: {min_mm2: 20.0}
+# rule 3: touching same-thread parts of these generic kinds are turned 15-25 deg apart (audited sep_deg)
+separate_kinds: [band, band_grain, lobe, lobe_grain, plane, plane_grain]
+rule_overrides:                    # as run_bk_crop.yaml: jacket florets (duck, 40wt) at the house satin spacing
+  kinds: {radial: {spacing: 0.45}}
