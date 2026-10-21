@@ -113,6 +113,22 @@ def test_block_join_routes_round_the_sewn_rows_through_the_unsewn_part():
     assert st.get("join_routes", 0) >= 1 and st["trims"] == 0
 
 
+def test_block_join_strict_unroutable_short_hop_is_trimmed_not_jumped():
+    """strict mode ("all"), no unsewn path left in the part and a SHORT hop (2.1 mm < TRIM_MIN): the fallback must still
+    trim. Without `d = max(d, TRIM_MIN)` the hop becomes a plain jump, i.e. a float over the sewn rows (PR #37 review:
+    deleting the fallback left every test green)."""
+    import dst2
+    from digitize import compile as CP
+    g = box(0, 0, 6, 4)                                    # the part is block 1 only: nothing unsewn to route through
+    b1 = _rows(0.5, 5.5, 0.2, 3.8)                         # ends at (0.5, 3.8)
+    b2 = [(2.2, 2.6), (3.6, 2.6), (3.6, 2.2), (2.2, 2.2)]  # starts 2.08 mm away, across block 1's rows
+    assert math.dist(b1[-1], b2[0]) < dst2.TRIM_MIN and dst2._over_rows(b1[-1], b2[0], [b1])
+    r = dict(col="#336699", geom=g, st="tatami", ang=0.0, grp="t", part="P1", blocks=[b1, b2], block_roles=["top", "top"], join_guard="all")
+    pat, st = dst2.make_pattern([r], [dict(col=r["col"], regions=[r])], (3.0, 2.0), builder=CP.prebuilt, keep_order=True)
+    assert st.get("join_trims", 0) == 1 and st.get("join_routes", 0) == 0
+    assert st["trims"] == 1 and st["jumps"] == 0
+
+
 def test_block_join_guard_keeps_a_hop_over_unsewn_rows():
     """the guard only refuses hops over rows ALREADY sewn: a hop that runs over the second block's (not yet sewn) area
     stays a hidden travel (no extra trim)"""
@@ -161,6 +177,8 @@ def _labels(**part):
     (dict(direction={"intent": "auto"}), "never 'auto'"),
     (dict(primitive="cord", direction={"intent": "angle", "angle": 0}), "takes direction"),
     (dict(direction={"intent": "angle"}), "needs a number"),
+    (dict(direction={"intent": "angle", "angle": float("nan")}), "needs a number"),
+    (dict(direction={"intent": "angle", "angle": float("inf")}), "needs a number"),
     (dict(confidence=1.5), "confidence"),
     (dict(hint={}), "hint.polygons"),
     (dict(tones=["teal"]), "not in the run palette"),

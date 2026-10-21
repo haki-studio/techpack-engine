@@ -36,7 +36,7 @@ trims 38.0 /100 cm2, satin 1 blob (the B39 join), stack 5 / 12.97 cm2, separatio
 | r2-r3 | bead dir 0, studs <= 1.5 mm, foliage lit >= 20 mm2, long_axis records the outline | random 0, chaos 16.6 |
 | r4-r6 | B39 guard modes; stroke column_satin tried (19 blobs, reverted); declared column sewn once | 2 cord flags left |
 | r7 (final) | strokes < 1.4 mm without centre run | **3/11**, DST 30df3600f5976174 (bench/BENCH_g1.md) |
-Main zones + fixes: 3/11, DST 8f7d5301d233c180. identity_check probe + wb unchanged (84ff50ea74938675 / 1ecd8f657db3f53a, 449c14f6e8f693b6); full suite 309 passed.
+Main zones + fixes: 3/11, DST 911978994b664110 (rebuilt at f229d0c in the review fix round; the first 8f7d5301 was built before 0db583c/e6e43fc). identity_check probe + wb unchanged (84ff50ea74938675 / 1ecd8f657db3f53a, 449c14f6e8f693b6); full suite 309 passed.
 
 ## B39 story (why the fix looks the way it does)
 Strict "no sewn hop over own rows" = trims 156 -> 1,445 (trim), 1,158 (routed via unsewn area), 722 (row ends excluded), 603
@@ -53,3 +53,14 @@ tamper (typed angle, moved outline, label_angle mismatch) turns random_angles re
 - unsewn_only: travel 5.8 -> 1.6 m but ~3x trims; founder call.
 - Buildings read flatter than the fitter: finer labels (stroke rows, dots) or an expert behind the contract.
 - direction_ok coverage 41 %: label angles 59 % OK; consider more constructed intents.
+
+## Review fix round (PR #37, REVIEW: CHANGES f229d0c), 21 Oct 2026
+- The "main zones + G1 engine fixes" column was stale (built before 0db583c / e6e43fc). Rebuilt at f229d0c with
+  `scripts/identity_check.sh`: DST 911978994b664110, 126,219 stitches, 154 trims in the file / 150 in the crop (37.5),
+  density flags 164 (was 163), travel on sewn fill 6680.4 mm. Everything else in the column unchanged. Probe + wb hashes unchanged.
+- Trim counting: the gate (`qa.trims_per_area`, crop bounds) drops trims whose needle sits on the crop edge (<= 0.2 mm
+  outside), so it reads 3-4 below the compile line on every column. BENCH_g1.md now shows both rows and says which is which.
+- Two guards the reviewer's mutations survived now have tests, proven red by mutation: a strict-mode short unroutable hop must
+  trim (deleting `d = max(d, TRIM_MIN)` -> red), and NaN / inf label angles are rejected (deleting `math.isfinite` -> 2 red).
+- identity_check.sh header: crop hash updated. Side-by-side PNG rebuilt from the new zones panel and committed (half size;
+  it was git-ignored, so the PR link 404'd).
