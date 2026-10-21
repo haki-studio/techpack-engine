@@ -587,13 +587,16 @@ def _over_rows(a, b, blocks, half=0.25, ends=0.5, ex=0.5, row_end=0.6):
 
 
 JOIN_GUARD_DEG = 30.0     # B39 (G1) mode "parallel": a hop within this of the part's row angle is an extra ROW (reads as satin)
+JOIN_RUN_L = 1.5          # ... and is sewn as a run of stitches <= this (mm) along the rows instead of one long stitch
 
 
 def _guarded(o, a, b):
     """B39 (G1): which hops the join guard judges. r["join_guard"] = "all": every hop between blocks (strict LESSONS B39);
     "parallel" (compile default): hops within JOIN_GUARD_DEG of the part's declared row angle r["ang"], the ones that
-    become an extra row among the rows and read back as satin (the B39 blob: 6.6 deg off its rows); a hop ACROSS the rows
-    is a travel line, judged by the travel-on-fill gate (M4s), not trimmed here."""
+    become an extra row among the rows and read back as satin (the B39 blob: 6.6 deg off its rows); they are sewn as a run
+    of <= JOIN_RUN_L stitches along the rows (no trim: a trim per such hop cost the crop 156 -> 603 trims). A hop ACROSS
+    the rows is a travel line, judged by the travel-on-fill gate (M4s). "all": every hop over own rows is routed through
+    the unsewn part or trimmed."""
     mode = o["r"].get("join_guard", "parallel")
     if mode == "all": return True
     t = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])) % 180.0; d = abs(t - float(o["r"].get("ang", 0.0)) % 180.0)
@@ -725,6 +728,10 @@ def make_pattern(vis, stops, origin, reg_marks=None, builder=None, keep_order=Fa
                     over_rows = d > 1.0 and own_top and _guarded(o, cur, (x0, y0)) and _over_rows(cur, (x0, y0), own_top)
                     if d < 0.3: route = []
                     elif d <= 1.0: route = [(x0, y0)]
+                    elif over_rows and o["r"].get("join_guard", "parallel") != "all":   # B39 (G1) "parallel": a hop ALONG the
+                        route = path_resample([cur, (x0, y0)], JOIN_RUN_L)      # rows, over rows it sewed, is sewn as a short-stitch
+                        stats["join_runs"] = stats.get("join_runs", 0) + 1      # run in the row direction (hides in the texture;
+                                                                                # one long stitch there is an extra row: satin)
                     elif over_rows:                    # B39 (G1): a hop between two blocks of ONE part that would lie on the
                         route = _join_route(cov, cur, (x0, y0), si, o, own_top)   # rows it already sewed (a zig-zag that
                         if route is None:                                         # reads as satin): routed through the part's

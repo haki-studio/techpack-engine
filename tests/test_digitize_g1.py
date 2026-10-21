@@ -18,7 +18,7 @@ def _rows(x0, x1, y0, y1, sp=0.4, start_left=True):
     return pts
 
 
-def _travel_over(pat_stats, pat, origin, footprint, planned, ex=0.4):
+def _travel_over(pat_stats, pat, origin, footprint, planned, ex=0.4):  # ex=0.0: any overlap
     """sewn segments that are NOT one of the planned block segments (travel / hops between blocks) lying on
     `footprint` for more than ex mm. A hop is labelled with the stitch it ends on, so labels cannot tell it apart: the
     planned segments (consecutive points inside one block, 0.1 mm grid) can."""
@@ -36,7 +36,7 @@ def _travel_over(pat_stats, pat, origin, footprint, planned, ex=0.4):
                     from shapely.ops import substring
                     ln = substring(ln, 0.5, ln.length - 0.5)
                 L = ln.intersection(footprint).length
-                if L > ex: bad.append((prev, q, round(L, 2)))
+                if L > ex or (ex == 0.0 and L > 0): bad.append((prev, q, round(L, 2)))
             prev = q
         else: prev = None
     return bad
@@ -69,8 +69,9 @@ def test_block_join_parallel_hop_over_own_rows_is_never_sewn():
     if b2p[0][0] > 9: b2p = [(6.5 + 11.5 - x, y) for x, y in b2p]      # make it start at (6.5, 3.4)
     r = dict(col="#336699", geom=g, st="tatami", ang=0.0, grp="t", part="P1", blocks=[b1, b2p], block_roles=["top", "top"])
     pat, st = dst2.make_pattern([r], [dict(col=r["col"], regions=[r])], (6.0, 2.0), builder=CP.prebuilt, keep_order=True)
-    assert _travel_over(st, pat, (6.0, 2.0), _interiors(b1), r["blocks"]) == []
-    assert st.get("join_trims", 0) + st.get("join_routes", 0) == 1
+    long_ = [h for h in _travel_over(st, pat, (6.0, 2.0), _interiors(b1), r["blocks"], ex=0.0) if math.dist(h[0], h[1]) > 1.6]
+    assert long_ == []                                         # no long stitch along the rows: a short run hides in them
+    assert st.get("join_runs", 0) == 1 and st["trims"] == 0
 
 
 def test_block_join_parallel_mode_leaves_a_crossing_hop_to_the_travel_gate():
@@ -80,7 +81,7 @@ def test_block_join_parallel_mode_leaves_a_crossing_hop_to_the_travel_gate():
     from digitize import compile as CP
     g, b1, b2p, r = _two_block_region(); r["join_guard"] = "parallel"
     pat, st = dst2.make_pattern([r], [dict(col=r["col"], regions=[r])], (6.0, 2.0), builder=CP.prebuilt, keep_order=True)
-    assert st.get("join_trims", 0) + st.get("join_routes", 0) == 0
+    assert st.get("join_trims", 0) + st.get("join_routes", 0) + st.get("join_runs", 0) == 0
 
 
 def test_block_join_never_sews_over_the_parts_own_rows():
