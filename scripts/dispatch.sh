@@ -32,6 +32,20 @@ for a in d:
     try: os.kill(int(a['pid']),0); print(a.get('name') or a.get('id'))
     except OSError: pass" "${1:-}"
 }
+reap_idle() { # stop finished tp- workers: a --bg session stays alive (idle) after its last turn, holding a slot and
+              # making launch() see "already running" for the next round of the same role (2026-10-20, LESSONS E11)
+  [ "${TECHPACK_REAP:-1}" = 1 ] || return 0
+  claude agents --json 2>/dev/null | python3 -c "
+import json,os,signal,sys
+try: d=json.load(sys.stdin)
+except Exception: d=[]
+for a in d:
+    n=a.get('name') or ''
+    if a.get('kind')!='background' or not a.get('pid') or not n.startswith('tp-') or a.get('status')!='idle': continue
+    if str(a.get('pid')) == os.environ.get('CLAUDE_PID', '-'): continue   # never the worker that is handing off
+    try: os.kill(int(a['pid']), signal.SIGTERM); print('reaped idle', n)
+    except OSError: pass"
+}
 room() {      # 0 = there is room for one more worker
   [ "$DRY" = 1 ] && return 0
   local tp all mb
@@ -93,8 +107,8 @@ drain() {     # start queued jobs while there is room
 }
 
 case "${1:-}" in
-  --drain) exec 9>"$STATE/dispatch.lock"; flock 9; drain ;;
+  --drain) exec 9>"$STATE/dispatch.lock"; flock 9; reap_idle; drain ;;
   build|fix|review) [ $# -ge 2 ] || { sed -n 5,9p "$0"; exit 2; }
-                    exec 9>"$STATE/dispatch.lock"; flock 9; launch "$1" "$2" "${*:3}"; [ "$DRY" = 1 ] || drain ;;
+                    exec 9>"$STATE/dispatch.lock"; flock 9; [ "$DRY" = 1 ] || reap_idle; launch "$1" "$2" "${*:3}"; [ "$DRY" = 1 ] || drain ;;
   *) sed -n 2,15p "$0"; exit 2 ;;
 esac

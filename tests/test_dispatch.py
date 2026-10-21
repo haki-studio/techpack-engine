@@ -5,7 +5,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SLUG = sorted(d for d in os.listdir(os.path.join(ROOT, "projects")) if os.path.isdir(os.path.join(ROOT, "projects", d)))[0]
 
 def run(args, state, **env):
-    e = dict(os.environ, TECHPACK_STATE=str(state), **env)
+    e = dict(os.environ, TECHPACK_STATE=str(state), TECHPACK_REAP="0", **env)   # never touch real sessions
     return subprocess.run(["bash", os.path.join(ROOT, "scripts", "dispatch.sh"), *args], capture_output=True, text=True, env=e)
 
 def test_dry_run_starts_a_background_session_not_a_subagent(tmp_path):
@@ -94,3 +94,28 @@ def test_a_worker_handing_off_does_not_count_itself(tmp_path):
                                      env=dict(env, CLAUDE_PID=str(pid))).stdout.split()
     assert sorted(out(1)) == ["tp-build-me", "tp-build-other"]
     assert out(os.getpid()) == ["tp-build-other"]
+
+
+def test_finished_workers_are_reaped_busy_and_foreign_ones_are_not(tmp_path):
+    """LESSONS E11: an idle --bg worker held its slot and made the next fix round of the same slug 'already running'."""
+    src = open(os.path.join(ROOT, "scripts", "dispatch.sh")).read()
+    i = src.index("reap_idle() {"); fn = src[i:src.index("\n}\n", i) + 3]
+    procs = {k: subprocess.Popen(["sleep", "60"]) for k in ("idle_tp", "busy_tp", "idle_other", "idle_me")}
+    agents = [{"kind": "background", "pid": procs["idle_tp"].pid, "name": "tp-fix-x", "status": "idle"},
+              {"kind": "background", "pid": procs["busy_tp"].pid, "name": "tp-review-x", "status": "busy"},
+              {"kind": "background", "pid": procs["idle_other"].pid, "name": "lead-eng-x", "status": "idle"},
+              {"kind": "background", "pid": procs["idle_me"].pid, "name": "tp-build-me", "status": "idle"}]
+    fake = tmp_path / "bin"; fake.mkdir()
+    (fake / "claude").write_text("#!/bin/sh\necho '" + json.dumps(agents) + "'\n"); (fake / "claude").chmod(0o755)
+    env = dict(os.environ, PATH=f"{fake}:{os.environ['PATH']}")
+    try:
+        r = subprocess.run(["bash", "-c", fn + "\nreap_idle"], capture_output=True, text=True, timeout=30,
+                           env=dict(env, CLAUDE_PID=str(procs["idle_me"].pid)))
+        assert r.stdout.split() == ["reaped", "idle", "tp-fix-x"], r.stdout + r.stderr
+        procs["idle_tp"].wait(timeout=5)
+        assert all(procs[k].poll() is None for k in ("busy_tp", "idle_other", "idle_me"))
+        r = subprocess.run(["bash", "-c", fn + "\nreap_idle"], capture_output=True, text=True, timeout=30,
+                           env=dict(env, TECHPACK_REAP="0"))
+        assert r.stdout == ""
+    finally:
+        for p in procs.values(): p.kill()
