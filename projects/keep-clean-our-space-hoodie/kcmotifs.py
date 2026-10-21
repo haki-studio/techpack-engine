@@ -185,6 +185,74 @@ def gap_fillers(P, sts, min_mm2=2.0):
         out.append(dict(cl=[tuple(c - u * h), tuple(c + u * h)], w=w, caps=("round", "round"), closed=False, filler=True))
     return out
 
+FLAT_PIECE_MIN_MM = 8.0   # Rev I: inside a puff glyph a FLAT piece must be a whole stroke at least this long
+
+def puff_absorb(sts, wide):
+    """Rev I (founder 21 Oct, EN badge FL M): a puff glyph's narrow bits (gap fillers, < puff_min stroke pieces) were sewn
+    as stand-alone flat satins AFTER the foam was torn, at their own angle (P, R x2, S, A x2, E: 1.2-6 mm strips).
+    Rule: inside a puff glyph only WHOLE strokes may stay flat. Returns ids of the narrow columns that sew PUFF instead
+    (same puff stop, under the dome): every gap filler, and every connected group of narrow columns that touches a
+    puff stroke or whose extent (long side of its rotated bounding box) is < FLAT_PIECE_MIN_MM. A flat piece left in a
+    puff glyph is a whole stroke group >= 8 mm standing free of the puff. Gate on the DST: kcgates.flat_fragments."""
+    narrow = [s for s in sts if not wide(s)]
+    if not narrow: return set()
+    G = {id(s): KS.column_geom(s["cl"], s["w"], s["caps"], s.get("closed", False)) for s in narrow}
+    out = {id(s) for s in narrow if s.get("filler")}
+    rest = [s for s in narrow if id(s) not in out]
+    pw = [KS.column_geom(s["cl"], s["w"], s["caps"], s.get("closed", False)) for s in sts if wide(s)]
+    PW = unary_union(pw) if pw else None                     # the glyph's puff strokes
+    seen = set()
+    for s in rest:                                          # connected groups of narrow strokes (touching within 0.2 mm)
+        if id(s) in seen: continue
+        grp = [s]; seen.add(id(s)); i = 0
+        while i < len(grp):
+            for t in rest:
+                if id(t) not in seen and G[id(grp[i])].distance(G[id(t)]) < 0.2: grp.append(t); seen.add(id(t))
+            i += 1
+        U = unary_union([G[id(t)] for t in grp])
+        if U.is_empty or long_side(U) < FLAT_PIECE_MIN_MM or (PW is not None and U.distance(PW) < 0.2): out |= {id(t) for t in grp}
+    return out
+
+def speck_sliver(body, min_w=1.0, min_in=1.0, max_aspect=3.0):
+    """Rev I speck filter: None if every part of a star speck sews as a star, else (inscribed width, (narrow, long) of the
+    rotated bounding box) of the worst part. Concave sparkles hold only a small disc at their centre, so the narrow side
+    of the bounding rectangle judges a sliver; the inscribed disc catches a thin traced shape that bends."""
+    from shapely.ops import polylabel
+    worst = None
+    for p in polys(body):
+        c = polylabel(p, 0.02); w = 2 * p.exterior.distance(c)
+        cs = list(p.minimum_rotated_rectangle.exterior.coords); e = sorted((math.dist(cs[0], cs[1]), math.dist(cs[1], cs[2])))
+        if e[0] < min_w or e[1] > max_aspect * max(e[0], 1e-6) or w < min_in: worst = (w, e)
+    return worst
+
+FILLER_OVERLAP_MM = 0.6
+
+def bridge_fillers(sts, wide, absorbed, ovl=FILLER_OVERLAP_MM):
+    """Rev I: an absorbed gap filler is a column centred on the widest point of the uncovered piece, so it stopped short
+    of the stroke it belongs to and still read as a detached strip (P of KEEP, even in the puff stop). Widen it toward the
+    nearest puff stroke until it runs ovl mm into it (its outer edge stays on the glyph outline), so core + rim sew as one
+    shape with that stroke."""
+    from shapely.ops import nearest_points
+    from shapely.geometry import Point as _P
+    pw = [KS.column_geom(s["cl"], s["w"], s["caps"], s.get("closed", False)) for s in sts if wide(s)]
+    if not pw: return
+    PW = unary_union(pw)
+    for s in sts:
+        if id(s) not in absorbed or not s.get("filler") or len(s["cl"]) != 2: continue
+        a, b = np.array(s["cl"][0]), np.array(s["cl"][1]); c = (a + b) / 2
+        q = nearest_points(_P(*c), PW)[1]; v = np.array(q.coords[0]) - c; d = float(np.linalg.norm(v))
+        if d < 1e-6: continue
+        u = (b - a) / max(np.linalg.norm(b - a), 1e-9); nrm = np.array([-u[1], u[0]])
+        if np.dot(nrm, v) < 0: nrm = -nrm
+        reach = abs(float(np.dot(nrm, v))) + ovl              # how far the inner edge must go across the column axis
+        w0 = s["w"]; w1 = max(w0, w0 / 2 + reach)
+        sh = nrm * (w1 - w0) / 2
+        s["cl"] = [tuple(a + sh), tuple(b + sh)]; s["w"] = w1; s["bridged"] = round(w1 - w0, 2)
+
+def long_side(g):
+    cs = list(g.minimum_rotated_rectangle.exterior.coords)
+    return max(math.dist(cs[0], cs[1]), math.dist(cs[1], cs[2])) if len(cs) >= 3 else 0.0
+
 PUFF_LOG = []          # Rev D: one row per glyph / part whose puff was decided by width (scene META["puff"])
 
 def text_columns(glyphs, col, code, cap, unit, rim=False, rim_code="PF-RIM", flat_code="TXC", puff_min=None, **kw):
@@ -201,16 +269,20 @@ def text_columns(glyphs, col, code, cap, unit, rim=False, rim_code="PF-RIM", fla
             allst += [(pi, s) for s in sts]
         if not allst: continue
         decide = puff_min is not None and code.startswith("PF-")
-        wide = lambda s: (not decide) or s["w"] >= puff_min
+        wide0 = lambda s: (not decide) or s["w"] >= puff_min
         L = [max(KS.poly_len(s["cl"]), 0.1) for _, s in allst]
-        share = sum(l for l, (_, s) in zip(L, allst) if wide(s)) / sum(L)
+        share = sum(l for l, (_, s) in zip(L, allst) if wide0(s)) / sum(L)
         glyph_puff = code.startswith("PF-") and ((not decide) or share >= kccore.PUFF_GLYPH_SHARE)
+        absorbed = puff_absorb([s for _, s in allst], wide0) if (glyph_puff and decide) else set()
+        wide = lambda s: wide0(s) or id(s) in absorbed
+        if absorbed: bridge_fillers([s for _, s in allst], wide0, absorbed)
         if decide:
             ws = [s["w"] for _, s in allst]; fl = [s["w"] for _, s in allst if not (glyph_puff and wide(s))]
             PUFF_LOG.append(dict(unit=unit, ch=ch, strokes=len(allst), puff=len(allst) - len(fl), flat=len(fl), share=round(share, 3),
                                  w_min=round(min(ws), 2), w_med=round(float(np.median(ws)), 2), w_max=round(max(ws), 2),
                                  flat_w_max=round(max(fl), 2) if fl else None,
-                                 below_house=sum(1 for _, s in allst if glyph_puff and wide(s) and s["w"] < kccore.PUFF_HOUSE_MIN_MM)))
+                                 below_house=sum(1 for _, s in allst if glyph_puff and wide(s) and s["w"] < kccore.PUFF_HOUSE_MIN_MM),
+                                 absorbed=len(absorbed), absorbed_fill=sum(1 for _, s in allst if id(s) in absorbed and s.get("filler"))))
         for pi in range(len(PS)):
             sts = [s for P_, s in allst if P_ == pi]
             pst = [s for s in sts if glyph_puff and wide(s)]

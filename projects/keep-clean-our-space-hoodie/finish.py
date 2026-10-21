@@ -50,6 +50,9 @@ Rev G (review fix 21 Oct): G1 cover caption CN glyph fixed (was a missing-glyph 
 Rev H (founder answers 21 Oct): BACK = embroidered stars only in the front's style (BK files, element 06; layout seeded from
 the front star field - PROPOSED), hood plain; glow halo + star haze dropped (Glow green + Star haze threads removed, 10 threads);
 3D puff kept on the 2.5-3.0 mm strokes - factory to confirm on the strike-off (F1/F2); CN text weight 800 kept. All files rebuilt.
+Rev I (founder defect 21 Oct, EN badge FL M): the small flat satins sewn on top after the foam (P, R, S, A, E) now sew with
+the puff stroke they join; no flat fragment is left inside any puff glyph (JP, EN, CN; frag_gate.json = 0 at every size).
+Sliver star specks sew as the house dot (count kept). All files rebuilt.
 """ + FOAM + """
 Files are production-intent drafts: the factory digitizer checks
 density, pull and puff on the washed duck, edits if needed, and sews out size M before bulk. Every value marked

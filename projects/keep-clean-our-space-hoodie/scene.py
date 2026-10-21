@@ -409,6 +409,27 @@ def speck_motif(s, x, y, col="kc_white", unit=None, uniform=False, fn=None):
             tr_log("05", "traced silhouettes", True)
             return [KM.R(col, tp, "satin", "auto", "DOT", unit=unit, kob=0.6)]
     return dr
+# Rev I (founder 21 Oct, FL M: a ~5 mm zigzag right of CLEAN; reviewer LOW note on the back): the smallest traced specks
+# came out as slivers (0.7 x 7.9 mm), and a satin that narrow sews as a zigzag line, not a star. Minimum-size filter on
+# every star speck (field 05, CN sparkles 03-sp; the back 06 copies the guarded front stars): the bounding rectangle's
+# narrow side >= SPECK_MIN_W, long side <= SPECK_MAX_ASPECT x narrow side, inscribed disc >= SPECK_MIN_IN, else it sews as the house dot at
+# the same centre (count kept); a speck smaller than SPECK_DROP_MM2 is dropped. Counts per piece -> META counts.
+SPECK_MIN_W, SPECK_MIN_IN, SPECK_MAX_ASPECT, SPECK_DROP_MM2, SPECK_DOT_D = 1.0, 1.0, 3.0, 0.5, 1.45
+SPECK_FIX = {}
+def speck_guard(regs, P, col="kc_white"):
+    from shapely.ops import polylabel
+    body = unary_union([r["geom"] for r in regs if not r.get("glow")]).buffer(0)
+    if body.is_empty: return regs
+    if body.area < SPECK_DROP_MM2:
+        SPECK_FIX.setdefault(P, dict(dotted=0, dropped=0))["dropped"] += 1; return []
+    worst = KM.speck_sliver(body, SPECK_MIN_W, SPECK_MIN_IN, SPECK_MAX_ASPECT)
+    if worst is None: return regs
+    SPECK_FIX.setdefault(P, dict(dotted=0, dropped=0))["dotted"] += 1
+    SPECK_FIX.setdefault("log", []).append((P, regs[0].get("unit"), [r["grp"] for r in regs], round(worst[0], 2), [round(v, 2) for v in worst[1]]))
+    c = polylabel(max(getattr(body, "geoms", [body]), key=lambda q: q.area), 0.02)
+    u = regs[0].get("unit"); cl = regs[0]["col"]
+    tr_log("05", "sliver specks sewn as dots", True)
+    return KM.dot(c.x, c.y, SPECK_DOT_D, cl, u)
 nfield = {"FR": 0, "FL": 0, "SR": 0, "SL": 0}; ncn = 0
 # sleeve quads in the mockup (px): top fold at the shoulder, cuff outer, underarm, cuff inner
 SLQ = {"SR": dict(A=(203, 428), B=(50, 1240), C=(226, 565), D=(246, 1236)),
@@ -445,7 +466,7 @@ for i, s in enumerate(SP):
     if max(s["w"], s["h"]) > 9: EXCL["big_glint"] += 1; continue
     if any(z is not None and z.contains(pt) for z in BADGE_PX.values()): EXCL["in_badge"] += 1; continue
     if cn_ring_px.contains(pt):           # sparkles inside the CN dot ring are part of badge 03
-        x, y = C(px, py); add("FR", speck_motif(s, x, y, unit=f"03-sp{ncn}", uniform=True, fn=ref_fn_for(C0, CC, "white")), 21, "03", unit=f"03-sp{ncn}"); ncn += 1; continue
+        x, y = C(px, py); add("FR", speck_guard(speck_motif(s, x, y, unit=f"03-sp{ncn}", uniform=True, fn=ref_fn_for(C0, CC, "white")), "FR-03"), 21, "03", unit=f"03-sp{ncn}"); ncn += 1; continue
     side = None
     for P in ("SR", "SL"):
         if on_sleeve(P, px, py): side = P
@@ -457,14 +478,14 @@ for i, s in enumerate(SP):
     x, y = MM.P(px, py)
     P = "FR" if x < 0 else "FL"
     META.setdefault("field_specks", []).append(dict(P=P, px=px, py=py, x=x, y=y, unit=f"05-{P}{nfield[P]}"))
-    add(P, speck_motif(s, x, y, unit=f"05-{P}{nfield[P]}", fn=ref_fn_field("white")), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
+    add(P, speck_guard(speck_motif(s, x, y, unit=f"05-{P}{nfield[P]}", fn=ref_fn_field("white")), P), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
 # sleeves: mapped front half + seeded back half at the same density and size mix
 for P in ("SR", "SL"):
     sp = SLV[P].sew_poly()
     front_half = sp.intersection(box(0, -500, 600, 600) if P == "SR" else box(-600, -500, 0, 600))
     back_half = sp.difference(front_half)
     for (x, y, s) in sleeve_mapped[P]:
-        add(P, speck_motif(s, x, y, unit=f"05-{P}{nfield[P]}"), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
+        add(P, speck_guard(speck_motif(s, x, y, unit=f"05-{P}{nfield[P]}"), P), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
     nf = len(sleeve_mapped[P]); dens = nf / max(front_half.area, 1)
     rng = random.Random(55 if P == "SR" else 66); nb = int(round(dens * back_half.area)); pts = []
     exts = [max(s["w"], s["h"]) for _, _, s in sleeve_mapped[P]] or [3]
@@ -475,7 +496,7 @@ for P in ("SR", "SL"):
         pts.append(q)
     for q in pts:
         e = rng.choice(exts); s = dict(w=e, h=e)
-        add(P, speck_motif(s, *q, unit=f"05-{P}{nfield[P]}"), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
+        add(P, speck_guard(speck_motif(s, *q, unit=f"05-{P}{nfield[P]}"), P), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
     META["counts"][P + "_front_mapped"] = nf; META["counts"][P + "_back_seeded"] = len(pts)
 # ================================================================ 06 back star field (Rev H, founder 21 Oct 2026)
 # "embroidered stars on the back only; same star style as the front; place them from the front's star-field logic".
@@ -512,11 +533,14 @@ order = list(range(len(LIB))); rng.shuffle(order)
 for i, q in enumerate(bpts):
     rs = LIB[order[i % len(order)]]; c0 = unary_union([r["geom"] for r in rs]).centroid
     u = f"06-BK{i}"
-    add("BK", [dict(KS.move(r, 1.0, (0, 0), (q[0] - c0.x, q[1] - c0.y)), unit=u) for r in rs], 21, "06", unit=u)
+    add("BK", speck_guard([dict(KS.move(r, 1.0, (0, 0), (q[0] - c0.x, q[1] - c0.y)), unit=u) for r in rs], "BK"), 21, "06", unit=u)
 META["counts"].update(BK_field=len(bpts), BK_target=nb_target, BK_density_per_dm2=round(DENS_F * 1e4, 2), BK_nn_min_mm=round(NN_MIN, 1),
                       BK_front_nn_median_mm=round(float(np.median(_nn)), 1), BK_free_area_cm2=round(BK_CLIP.area / 100, 0),
                       front_free_area_cm2=round(_free_front.area / 100, 0), front_field_stars=len(FRONT_STARS), BK_library=len(LIB))
 META["counts"].update({k + "_field": v for k, v in nfield.items()}, cn_sparkles=ncn, specks_detected=len(SP), **{"excluded_" + k: v for k, v in EXCL.items()})
+META["counts"]["speck_filter"] = dict(rule=f"bounding-rect narrow side >= {SPECK_MIN_W} mm, long <= {SPECK_MAX_ASPECT} x narrow, inscribed disc >= {SPECK_MIN_IN} mm, else house dot {SPECK_DOT_D} mm; < {SPECK_DROP_MM2} mm2 dropped",
+                                      per_piece={k: SPECK_FIX.get(k, dict(dotted=0, dropped=0)) for k in ("FR", "FR-03", "FL", "SR", "SL", "BK")},
+                                      BK_note="the back copies the guarded front stars, then is checked again", log=SPECK_FIX.get("log", []))
 META["counts"]["glints"] = json.load(open("out/ref/specks_glints.json"))
 spans = [SPAN(max(s["w"], s["h"])) for s in SP if 5 <= max(s["w"], s["h"]) <= 9]
 META["counts"]["sparkle_spans"] = dict(n=len(spans), lt5=sum(1 for v in spans if v < 5), s5_8=sum(1 for v in spans if 5 <= v <= 8), gt8=sum(1 for v in spans if v > 8))

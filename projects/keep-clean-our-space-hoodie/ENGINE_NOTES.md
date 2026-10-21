@@ -274,3 +274,14 @@ Chinese phrase, upside-down mirrored Hangul)." Check: the spec page prints the s
   project key added later has no thread row and `dst2.write` raises `KeyError`. Project fix: kccore tops up `specbase.TH`
   if specbase is already loaded. Engine fix: `specbase.th(key)` computed lazily. Check: full `pytest tests` (275 pass;
   the KCOS foam test was red in the full suite, green alone, before the top-up).
+
+## 30. Flat fragments inside a puff glyph (Rev I, founder defect 21 Oct, EN badge FL M) — LESSONS row, ready to paste
+Builders may not edit LESSONS.md (rule 5), so the row is here for the coordinator:
+
+| B43 | KCOS Rev D–H 3D puff text: a puff glyph's gap fillers (`kcmotifs.gap_fillers`) and narrow stroke bits came out under `PUFF_MIN_MM`, so the width rule classed them FLAT while the rest of the glyph was PUFF. They sewed as 8 separate little satins on top AFTER the foam was torn, each at its own angle (EN FL M stops 7–8, 21–36 st, 1.2–6 mm: P, R ×2, S, A ×2, E, N; CN 27 more, JP 宙 one). Glyph IoU / A14 gates passed: the bits lie inside the glyph outline. The founder found them on a screenshot. | Puff is decided per GLYPH, flat only for WHOLE strokes: inside a puff glyph every gap filler, every narrow group touching a puff stroke and every narrow group < 8 mm sews PUFF in the stroke's own stop (`kcmotifs.puff_absorb`); an absorbed filler is widened 0.6 mm into the stroke it joins so core + rim make one shape (`bridge_fillers`; a filler centred on its own piece stayed a detached strip, seen on the P zoom). No per-letter rules. | `kcgates.flat_fragments` on every written DST (full + splits, every size, `frag_gate.py`, in `build_all.py`): no flat-after-foam fragment < 8 mm or touching the glyph's puff stitches. Red on Rev H FL M (exactly the 8 founder spots) + 28 on FR, 0 on Rev I; synthetic red/green in `tests/test_kcos_gates.py`. |
+| A33 | KCOS Rev H: the smallest traced star specks (A14 "traced silhouette" fallback) were slivers, 0.7 × 7.9 mm right of CLEAN on FL M, that sewed as a zigzag line, and the back copied them. | Minimum-size filter on every star speck after tracing: rotated-box narrow side ≥ 1.0 mm, long side ≤ 3 × narrow, inscribed disc ≥ 1.0 mm, else the house dot at the same centre (< 0.5 mm² dropped); count per piece on the E05 page. | `kcmotifs.speck_sliver` (test: sliver red, dot + concave sparkle green); counts in scene META `speck_filter` (M: FR 1, CN ring 1, FL 3, sleeves 0, back 0 dotted, 0 dropped). |
+
+- Proposed engine fix: the digitize pipeline's puff decision (`engine/digitize` specialty) works per object today; give
+  it a "decide per glyph / per connected art shape" step and the same fragment gate on the written file
+  (`specialty.plan_gates` + a DST read-back check), so no product sews a stray flat bit on top of torn foam.
+- Check: port `tests/test_kcos_gates.py::test_flat_fragment_*` to the engine with an engine palette.

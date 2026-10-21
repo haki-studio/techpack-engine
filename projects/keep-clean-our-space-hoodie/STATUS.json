@@ -2,16 +2,6 @@
  "slug": "keep-clean-our-space-hoodie",
  "log": [
   [
-   "2026-10-16T23:56:40",
-   "qa",
-   "all 7 sizes x 4 pieces + splits built; every section fits 360 frame; keep-outs pass all sizes"
-  ],
-  [
-   "2026-10-17T00:12:46",
-   "pattern",
-   "WAITING: hoodie block is on origin (engine/hoodie.py, c026934) but not in the shared tree (builders no longer pull); it also hard-codes the Drum Island welt, which collides with badge 03 \u2014 needs a welt override (ENGINE_NOTES 10)"
-  ],
-  [
    "2026-10-17T00:12:46",
    "documents",
    "embroidery pack 15 pp (G1-G6, E01-E05, S1-S2, R1, F1), merged + shrunk 4.0 MB, zip 29.9 MB"
@@ -200,16 +190,26 @@
    "2026-10-21T12:08:27",
    "review",
    "PR #38 Rev H"
+  ],
+  [
+   "2026-10-21T13:05:50",
+   "art",
+   "Rev I fix round started: puff-glyph flat fragments (EN P/R/S/A/E) + star-speck slivers"
+  ],
+  [
+   "2026-10-21T13:20:10",
+   "stitch",
+   "Rev I: puff glyph bits merged into the puff stop (EN 7, CN 31, JP 1), 5 sliver specks -> dots at M; frag gate red on Rev H FL M (8 = the founder's spots); building M fronts"
   ]
  ],
  "questions": [
   "Back stars (06, Rev H): the back layout is seeded from the front field logic (248 stars at M, density + spacing of the front field, copies of the front stars) - confirm, or send a back view to place them from. [PROPOSED]",
   "Factory (Mandy, F1/F2): can the thin 3D puff strokes 2.5-3.0 mm wide (JP / CN text, list on G4) puff cleanly? Confirm on the strike-off; any that do not are sewn flat."
  ],
- "stage": "review",
- "stage_index": 8,
+ "stage": "stitch",
+ "stage_index": 4,
  "blocked": false,
- "updated": "2026-10-21T12:08:27",
+ "updated": "2026-10-21T13:20:10",
  "preview": "out/pages/prev_G1.png",
  "answers": [
   {

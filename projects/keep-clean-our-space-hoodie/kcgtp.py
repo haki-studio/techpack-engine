@@ -404,7 +404,9 @@ def p_revisions():
             ("Rev G", DATE, "Review fix (PR #38): G1 cover caption set the CN glyph as a missing-glyph box; now drawn as a font outline, and every page build stops on CJK in plain text (tofu guard). "
                             "Stitch files unchanged from Rev F (same counts); pages, compare sheets and zip rebuilt."),
             ("Rev H", DATE, "Founder answers (21 Oct): BACK = embroidered stars only in the front's style (06, B01; layout seeded from the front field, proposed), hood plain; "
-                            "glow halo + star haze DROPPED (Glow green + Star haze threads removed); puff kept on the 2.5-3.0 mm strokes, asked of the factory (F1/F2); CN weight 800 kept. Every stitch file, gate and page rebuilt.")]
+                            "glow halo + star haze DROPPED (Glow green + Star haze threads removed); puff kept on the 2.5-3.0 mm strokes, asked of the factory (F1/F2); CN weight 800 kept. Every stitch file, gate and page rebuilt."),
+            ("Rev I", DATE, "Founder defect (21 Oct, EN badge FL M): small flat satins sewn on top after the foam at P, R, S, A, E now sew WITH the puff stroke they join (no flat piece left inside a puff glyph, "
+                            "same for JP / CN); new gate on every DST (frag gate: 0 at every size). Sliver star specks (e.g. right of CLEAN) sew as the house dot. Every stitch file, gate and page rebuilt.")]
     y = 36
     for rv, dt, ch in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(36, y, dt, 1.7))

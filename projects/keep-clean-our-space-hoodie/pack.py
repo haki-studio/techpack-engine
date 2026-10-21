@@ -293,6 +293,8 @@ def puff_rows():
         line = f"•  {nm}: PUFF {pu} of {pu + fl} strokes" + (f" ({bh} of them {kccore.PUFF_MIN_MM:.1f}–{kccore.PUFF_HOUSE_MIN_MM:.1f} mm)" if bh else "")
         if rs[0]["ch"] == "ring": line = f"•  {nm}: PUFF, traced width {rs[0]['w_min']:.1f}–{rs[0]['w_max']:.1f} mm (+ 1.1 lemon line on top)"
         if rs[0]["ch"] == "dot": line = f"•  {nm}: PUFF, Ø {rs[0]['w_max']:.2f} mm (no rim)"
+        ab = sum(r.get("absorbed") or 0 for r in rs)
+        if ab: line += f"; {ab} narrow bit(s) / gap filler(s) sewn WITH the puff stroke they join (Rev I, frag gate 0)"
         if fl: line += f"; FLAT {fl}: " + ", ".join(f"{r['ch']} {r['flat']}×≤{r['flat_w_max']:.2f}" for r in flats) + " mm (sewn flat after the foam is torn)"
         out.append(line + ".")
     out.append("•  Background star field (E05) and the CN ring sparkles: flat, as asked. Hearts, big stars, 16 spark bars, CN ring dots, EN border stars: puff (all ≥ 2.5 mm).")
@@ -496,6 +498,8 @@ def star_page():
              (lambda T: f"Sizes + shapes traced (A14): every front star is fitted to its own mockup silhouette (kctrace) — {T.get('sparkles', [0, 0])[1]} sparkles + {T.get('dots', [0, 0])[1]} dots snapped, "
                         f"{T.get('traced silhouettes', [0, 0])[1]} tiny stars stitched as their traced outline; gate table on compare_front_M (A14/A15).")(META.get("traced", {}).get("05", {})),
              f"Star size is constant over sizes (positions follow the panel), so sleeve files are near-identical across sizes: {sl_txt} — intended (review item 11).",
+             (lambda F_: "Rev I minimum-size filter: a speck that would sew as a sliver (bounding box narrow side < 1.0 mm, longer than 3 x its width, or no 1.0 mm disc inside) sews as the house dot at the same spot: "
+                         + ", ".join(f"{k} {v['dotted']}" for k, v in F_.get("per_piece", {}).items()) + " (dropped 0; the back copies the filtered front stars).")(c.get("speck_filter", {})),
              "Each speckle is an island on bare fabric: one trim each (one thread, no haze since Rev H). Trims are reported, not reduced (fidelity first)."]
     for i, l in enumerate(lines): o.append(t(14, y + i*3.3, l, 1.6, 400, ORANGE if PROP in l else INK))
     y += len(lines)*3.3 + 3
