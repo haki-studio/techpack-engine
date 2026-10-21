@@ -70,6 +70,46 @@ def gate(ref, out, ppm, near_mm=1.5, **kw):
     return rows
 
 import kjletter as KL
+
+TINT = {"kj_pink": "kj_pink_hi", "kj_yellow": "kj_yellow_hi", "kj_blue": "kj_blue_hi"}
+KP_CODES = ["KP", "KP-hi", "KPB", "KPB-hi", "STAR", "STAR-hi", "KNOT"]
+def outline_p90(r, o, ppm=PPM):
+    """p90 distance (mm) from the reference outline to the DST outline and back. IoU alone passes a 5-point star
+    against a konpeito (0.85, red test 20 Oct); the outline does not (star 1.3-1.5 mm vs konpeito 0.4 mm)."""
+    edge = lambda m: m & ~ndi.binary_erosion(m)
+    o = ndi.binary_fill_holes(ndi.binary_opening(o, iterations=2))
+    if not o.any(): return 99.0, 99.0
+    dt_o = ndi.distance_transform_edt(~edge(o)) / ppm; dt_r = ndi.distance_transform_edt(~edge(r)) / ppm
+    return round(float(np.percentile(dt_o[edge(r)], 90)), 2), round(float(np.percentile(dt_r[edge(o)], 90)), 2)
+OUTLINE_MAX = 0.7
+
+def candy_gate(cands, M, rj, ppm=PPM, near_mm=0.3, iou_min=0.70, ratio_min=0.80):
+    """A14 per konpeito (reviewer PR #29 item 6 / LESSONS A21): one row per candy, never per merged blob.
+    cands: [(label, full mask, body thread)] on the DST grid. Each candy is digitised as its FULL SVG shape (back-row
+    candies are sewn whole, the front row lands on top), so the reference is the candy's own full cairosvg mask and the
+    DST side is only that candy's own stops (back row: KPB codes; front: KP / STAR + its white specks) within near_mm of
+    it. visible_mm2 reports how much of it stays visible after the candies sewn later."""
+    rows = []; it = max(1, int(round(near_mm * ppm)))
+    for i, (label, m, col) in enumerate(cands):
+        later = [c[1] for c in cands[i + 1:]]
+        vis = m & ~np.any(later, axis=0) if later else m
+        back = "back row" in label
+        codes = ["KPB", "KPB-hi"] if back else ["KP", "KP-hi", "STAR", "STAR-hi"]
+        st = stops_of(rj, col, codes) + stops_of(rj, TINT[col], codes) + ([] if back else stops_of(rj, "kj_white", ["KNOT"]))
+        o = S_(M, *sorted(set(st)))
+        o = (o if o is not None else np.zeros_like(m)) & ndi.binary_dilation(m, iterations=it)
+        iou = (m & o).sum() / max((m | o).sum(), 1)
+        def ext(q, ax):
+            idx = np.nonzero(q.any(axis=ax))[0]; return (idx[-1] - idx[0] + 1) / ppm if len(idx) else 0.0
+        wr, hr = ext(o, 0) / max(ext(m, 0), 1e-9), ext(o, 1) / max(ext(m, 1), 1e-9)
+        p_r, p_o = outline_p90(m, o, ppm)
+        ok = bool(iou >= iou_min and min(wr, 1 / max(wr, 1e-9)) >= ratio_min and min(hr, 1 / max(hr, 1e-9)) >= ratio_min
+                  and max(p_r, p_o) <= OUTLINE_MAX)
+        ys, xs = np.nonzero(m)
+        rows.append(dict(family=label, motifs=1, passed=int(ok), min_iou=round(float(iou), 2), mean_iou=round(float(iou), 2),
+                         x_mm=round(float(xs.mean()) / ppm, 1), y_mm=round(float(ys.mean()) / ppm, 1),
+                         visible_mm2=round(float(vis.sum()) / ppm ** 2, 1), w_ratio=round(float(wr), 2), h_ratio=round(float(hr), 2), outline_p90=max(p_r, p_o), ok=ok))
+    return rows
 def stops_of(rj, col, codes):
     """1-based stop numbers that sew colour col with any of codes (from the read-back json)."""
     return [i + 1 for i, st in enumerate(rj["per_stop"]) if st.get("col") == col and set(st.get("codes", [])) & set(codes)]
@@ -189,9 +229,8 @@ FAM = {   # family -> (colour(s), codes, kind, thread, pull)
            "元気でね / また会おうね (black)": (["kj_black"], ["TXC"], "cl", "60wt", 0.10), "ちひろ (red)": (["kj_red"], ["TXC"], "cl", "40wt", 0.10),
            "理砂 (blue)": (["kj_blue"], ["TXC"], "cl", "40wt", 0.10), "accent dots (red)": (["kj_red"], ["DOT"], "iou", None, 0)},
     "coin": {"こんぺいとう (red)": (["kj_red"], ["TXC"], "cl", "40wt", 0.10),
-             "konpeito (lobes + tint + specks)": (["kj_pink", "kj_pink_hi", "kj_yellow", "kj_yellow_hi", "kj_blue", "kj_blue_hi", "kj_white"], ["KP", "KP-hi", "KNOT"], "iou", None, 0),
              "accent dots (red)": (["kj_red"], ["DOT"], "iou", None, 0)},
-    "spill": {"konpeito (all)": (["kj_pink", "kj_pink_hi", "kj_yellow", "kj_yellow_hi", "kj_blue", "kj_blue_hi", "kj_white"], ["KP", "KP-hi", "KPB", "KPB-hi", "KNOT"], "iou", None, 0)},
+    "spill": {},
 }
 STEM = {"wb": "HAKI_KJ_03_waistband-patch", "coin": "HAKI_KJ_01_coin-pocket-patch", "spill": "HAKI_KJ_02_coin-spill-facing"}
 
@@ -215,10 +254,18 @@ def svg_gates(name, A):
         else:
             om = KL.dst_mask(seq, None, shape, lambda x, y: ((x + ox - dx) * PPM, (y + oy - dy) * PPM), {s - 1 for s in st}, KL.THREAD_D[thread])
             cl.append(KL.cl_gate(f"{fam} {thread}", ref[fam], om, pull=pull))
+    fams = summarise(name, iou)
+    kp = {"coin": ("05_konpeito",), "spill": ("F",)}.get(name)
+    krows = []
+    if kp:
+        import kjsvg
+        W_, H_ = A[name]["wh"]
+        krows = candy_gate([(l, m, c) for l, m, c, _ in kjsvg.candy_masks(A[name]["src"], W_, H_, kp)], M, rj)
+        fams += krows
     allout = np.any([m for k_, m in M.items() if isinstance(k_, str)], axis=0)
     design = np.any(list(ref.values()), axis=0)
     unc = qa.uncovered(ndi.binary_fill_holes(design), allout, PPM)
-    return dict(families=summarise(name, iou), rows=iou, uncovered=unc, centreline=cl,
+    return dict(families=fams, rows=iou, konpeito=krows, uncovered=unc, centreline=cl,
                 exposed=exposed_for(name, path, rj)), rj, path, shape, to_px
 
 def run():
@@ -262,11 +309,80 @@ def run():
                ["Mockup shown at the upscaled crop; the DST is drawn on it at the same scale (group scaled up per the founder).",
                 "Stars: the founder's vector star (inputs/svg/HAKI_back-pocket-stars_ART.svg), 10 mm, at the traced centres. 'haki' is not in the SVGs: traced from inputs/back_pocket_haki.png."],
                live=__import__("dstlive").render("out/stitch/HAKI_KJ_04_back-pocket-L-haki.dst", colours=[t.hex_color() for t in pe.read("out/stitch/HAKI_KJ_04_back-pocket-L-haki.pes").threadlist], ppm=30, shell="#1f1f22"))
+    kg, tiles = konpeito_gates(A); konpeito_sheet(tiles)
+    for k_, v in kg.items():
+        if k_ == "haki": G["haki"]["families"] += v["families"]; G["haki"]["konpeito"] = v["konpeito"]
+        else: G[k_] = v
     json.dump(G, open("out/gates.json", "w"), indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o))
     for e, g in G.items():
         for r in g["families"]: print(e, r)
         print(e, "uncovered", g["uncovered"])
     return G
+
+KSTEM = {"haki": "HAKI_KJ_04_back-pocket-L-haki", "starP": "HAKI_KJ_05_back-pocket-R-star-pink", "starY": "HAKI_KJ_06_back-pocket-L-lower-star-yellow",
+         "front1": "HAKI_KJ_07a_front-leg-stars-upper_PROPOSED", "front2": "HAKI_KJ_07b_front-leg-stars-lower_PROPOSED"}
+KNO = {"haki": "04", "starP": "05", "starY": "06", "front1": "07a", "front2": "07b"}
+def konpeito_gates(A):
+    """founder change 20 Oct: every konpeito on 04-07 = the 02 facing konpeito. Reference per candy = the founder's own
+    02 candy paths (inputs/svg/HAKI_facing_konpeito_ART.svg), placed + recoloured, rendered by cairosvg; DST per candy
+    from the shipped file. Returns {key: gate dict}, and tiles for the compare sheet."""
+    import kjsvg
+    from shapely.ops import unary_union
+    out, tiles = {}, []
+    for key, stem in KSTEM.items():
+        rj = json.load(open(f"out/stitch/{stem}.json")); path = f"out/stitch/{stem}.dst"
+        if key.startswith("front"):
+            import kjfront
+            F = json.load(open("out/front_stars.json")); byid = {d["id"]: d for d in F["stars"]}
+            sec = [byid[i] for i in F["sections"][int(key[-1]) - 1]]
+            pl = [dict(id=d["id"], col=kjfront.COLS[d["col"]][0], cx=d["x_from_side_mm"], cy=d["y_from_waist_mm"]) for d in sec]
+        else:
+            vis = A[key]["vis"]; pl = []
+            for col in ("kj_yellow", "kj_pink", "kj_blue"):
+                g = unary_union([r["geom"] for r in vis if r["col"] == col and r["grp"] == "STAR"])
+                if g.is_empty: continue
+                for P in kjsvg.polys(g.buffer(0.3)):
+                    b = P.bounds; pl.append(dict(id=f"K{len(pl) + 1}", col=col, cx=(b[0] + b[2]) / 2, cy=(b[1] + b[3]) / 2))
+            pl.sort(key=lambda p: p["cx"])
+            for k_, p in enumerate(pl, 1): p["id"] = f"K{k_}"
+        xs = [p["cx"] for p in pl]; ys = [p["cy"] for p in pl]
+        x0, y0 = min(xs) - 8, min(ys) - 8; W, H = max(xs) - min(xs) + 16, max(ys) - min(ys) + 16
+        svg = kjsvg.konpeito_ref_svg(pl, W, H, x0, y0)
+        to_px = lambda x, y, x0=x0, y0=y0: ((x - x0) * PPM, (y - y0) * PPM)
+        shape = (int(round(H * PPM)), int(round(W * PPM)))
+        M = dst_masks_on(path, rj["origin_mm"], shape, to_px)
+        cands = [(f"{KNO[key]} {p['id']} {p['col'][3:]}", kjsvg.svg_string_mask(svg, W, H, keep_id=p["id"]), p["col"]) for p in pl]
+        rows = candy_gate(cands, M, rj)
+        ref_img = kjsvg.svg_string_render(svg, W, H, PPM * 2, bg="#2A2A2E")
+        prev = render_on(path, rj["origin_mm"], shape, to_px, bg=(42, 42, 46), sc=2)
+        for p, r in zip(pl, rows):
+            cx, cy = (p["cx"] - x0) * PPM * 2, (p["cy"] - y0) * PPM * 2; h = 7 * PPM * 2
+            box_ = (int(cx - h), int(cy - h), int(cx + h), int(cy + h))
+            tiles.append((r, ref_img.crop(box_), prev.crop(box_)))
+        out[key] = dict(families=rows, konpeito=rows, uncovered=[], placements=pl)
+    return out, tiles
+
+def konpeito_sheet(tiles):
+    """compare_konpeito.png: the 02 source candy, then every konpeito of 04-07: founder's 02 paths placed (left) vs DST (right)."""
+    import kjsvg
+    T = 300; pad = 24; per = 4; W = pad + per * (2 * T + 3 * pad)
+    rowsN = math.ceil(len(tiles) / per)
+    H = 230 + T + 120 + rowsN * (T + 80) + 60
+    im = Image.new("RGB", (W, H), "white"); d = ImageDraw.Draw(im)
+    d.text((pad, 20), "Compare — every konpeito on 04 / 05 / 06 / 07a / 07b vs the 02 facing konpeito (founder change 20 Oct)", fill=(20, 20, 20), font=font(40))
+    d.text((pad, 72), "LEFT of each pair: the founder's 02 candy paths (inputs/svg/HAKI_facing_konpeito_ART.svg) placed + recoloured at 10 mm, rendered by cairosvg.", fill=(90, 90, 90), font=font(26))
+    d.text((pad, 106), "RIGHT: stitch preview drawn from the shipped DST, same scale (14 x 14 mm tiles). Same digitising as 02: one satin per lobe, tint lobes on top, 3 white bead specks.", fill=(90, 90, 90), font=font(26))
+    src = Image.open("out/svg_spill.png") if __import__("os").path.exists("out/svg_spill.png") else None
+    sp = Image.open("out/stitch/HAKI_KJ_02_coin-spill-facing_preview.png")
+    y = 160
+    d.text((pad, y), "Source: 02 on the facing (DST preview) — every konpeito below uses its front-row candy shape", fill=(20, 20, 20), font=font(28)); y += 40
+    s_ = T / sp.height; im.paste(sp.resize((int(sp.width * s_), T)), (pad, y)); y += T + 60
+    for k, (r, a, b) in enumerate(tiles):
+        cx = pad + (k % per) * (2 * T + 3 * pad); cy = y + (k // per) * (T + 80)
+        im.paste(a.resize((T, T)), (cx, cy + 34)); im.paste(b.resize((T, T)), (cx + T + 8, cy + 34))
+        okc = (30, 140, 60) if r["ok"] else (180, 40, 30)
+        d.text((cx, cy), f"{r['family']}  IoU {r['min_iou']}  outline p90 {r['outline_p90']} mm  {'PASS' if r['ok'] else 'FAIL'}", fill=okc, font=font(24))
+    im.save("out/compare_konpeito.png")
 
 def render_on(path, origin, shape, to_px, bg=(52, 52, 56), wmm=None, sc=1):
     p = pe.read(path); cols = [t.hex_color() for t in pe.read(path[:-4] + ".pes").threadlist]

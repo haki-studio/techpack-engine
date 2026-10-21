@@ -12,3 +12,15 @@
 - Deliverables: projects/konpeito-jeans/out/HAKI_konpeito-jeans_TECHPACK_RevB.pdf (22 pages, 6.8 MB) + .zip; copied to C:/Users/devin/Desktop/konpeito-RevB/.
 - Open questions (status board): size run, loop-label size, hammer loop.
 - Left: untracked symlink named `*` at the worktree root (env.sh glob, ENGINE_NOTES 17) — the safety check blocked deleting it; not committed.
+
+## Rev B2 (20 Oct, evening) — PR #29 review (7 should-fix) + founder changes
+- Every konpeito = the 02 facing konpeito (kjsvg.konpeito_regions: front-row candy of HAKI_facing_konpeito_ART.svg, 10 mm,
+  same digitising as 02, white specks thread added) on 04/05/06/07a/07b. 05/06: 462 st, 8 trims; 04: 1,784 / 25; 07a 5,095 / 104; 07b 1,390 / 24.
+- A14 per konpeito (kjsvg.candy_masks + kjcompare.candy_gate): 01 = 3 rows, 02 = 9 rows, 04-07 = 18 rows, all pass. Red test:
+  the old 5-point star PASSED IoU 0.85 vs the konpeito DST, so an outline gate (p90 <= 0.7 mm) was added (star 1.3-1.5, konpeito 0.3).
+  New compare sheet + page C6.
+- Size labels: the 15 x 60 strips are withdrawn; HI centrefold label 30 x 10 mm with our waist numbers (kjlabels, T7b, zip labels/).
+- F1: chenille + quote basis + price clause removed, size-32 strike-off (project-side filter, ENGINE_NOTES 18).
+- C3 cuts on blank rows above the footer; T2 2nd front loop visible + light seams/topstitch; G3 white = bead dots (PASS); gates_log removed.
+- Deliverables: out/HAKI_konpeito-jeans_TECHPACK_RevB2.pdf (23 pages) + .zip, copied to Desktop/konpeito-RevB (Rev B files replaced).
+- PR #29 was merged by the founder before this round; Rev B2 goes in a new PR.

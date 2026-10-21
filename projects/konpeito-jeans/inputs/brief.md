@@ -82,3 +82,18 @@ black (not "as HI"); waistband 2 pieces joined at CB; back pockets = "2 back pat
     on both halves (back half turned 180°).
 20. Hammer loop, snaps and HI flag labels left off (not on the Konpeito mockup).
 21. Waistband interlining as the HI production waistband (the HI BOM lists none).
+
+## Rev B2 (20 Oct 2026, evening) — founder changes + PR #29 review — CONFIRMED unless marked
+- Every konpeito on the jean = the 02 facing konpeito (founder SVG HAKI_facing_konpeito_ART.svg, front-row candy), same
+  digitising as 02 (satin per lobe, tint lobes on top, 3 white Ø0.9 bead specks), colour kept, 10 mm (larger bbox side):
+  04 (2), 05, 06, 07a/07b (14). Files keep their names; a white thread is added to 04/05/06/07a/07b.
+- Size labels: NOT the 15 × 60 mm strips. The HI size label exactly (damask woven, centrefold, 30 × 10 mm: 5 mm seam
+  allowance each end, fold at 15 mm, size on the 15-25 mm face) with our waist numbers in Neue Metana ExtraBold, white on
+  black; hang-tag string through it. Number height 3 mm PROPOSED.
+- F1: chenille + quote basis sections removed (no chenille; prices asked separately); strike-off = size 32.
+- Review fixes: C3 layout, T2 2nd front belt loop + light construction lines, G3 white dots, A14 per konpeito.
+
+## Rev B2 assumptions (PROPOSED)
+19. Size-label number height 3 mm (HI "XS" ~2.5-3 mm).
+20. The canonical konpeito is the first front-row candy of the 02 SVG (all 02 front-row candies are this shape rotated);
+    every placed konpeito is upright (no rotation).

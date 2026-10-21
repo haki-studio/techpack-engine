@@ -76,3 +76,25 @@ Engine runs: `bench/run_{wb,coin,spill,starP,starY}_svg.yaml` -> `out/engine_m5/
    it (kjfront.py `below_opening_mm`, page C5). Check: a test that a star above a traced opening is flagged.
 17. **env.sh run from the wrong directory** creates a symlink literally named `*` in the repo root (the `inputs/*` glob does
    not match). Proposed: `shopt -s nullglob` in env.sh. (One such `*` is left untracked in this worktree: not committed.)
+
+## Rev B2 (20 Oct 2026, founder + PR #29 review)
+18. **F1 sections must follow the product** (founder: "F1 keeps only what applies to Konpeito"): `factory.requests_page`
+   prints chenille (section 5) and quote basis (section 4) and "size-M files" on every product. Konpeito has no chenille,
+   prices are asked separately, and sizes are waist numbers (strike-off = 32). Project workaround (kjpages.F1): pass
+   `prof=dict(factory.load(), chenille=False)`, cut every text at/after "4  Quote basis" and the price clause, rename
+   size-M -> size-32. Proposed: `requests_page(..., techniques=set(), quote=False, strike_size="M")`; each section only
+   when the product uses it. Check: a test that a non-chenille page has no "Chenille", and strike_size="32" prints "size-32".
+19. **A14 per motif, not per merged blob, for overlapping candies** (PR #29 item 6, A21 again): the per-layer cairosvg mask
+   merges touching candies (02: "3 motifs" for 9 candies). kjsvg.candy_masks renders each candy (body + tint + specks, in
+   document order) alone; kjcompare.candy_gate scores each against its OWN stops (back row: KPB codes). Proposed:
+   `qa.motif_match(refs=[...])` taking a list of per-object masks from svgart. Check: spill reports 9 rows.
+20. **IoU >= 0.70 cannot tell a 5-point star from a konpeito** (red test 20 Oct: the old star scored IoU 0.85 against the
+   konpeito DST and PASSED). Added an outline gate: p90 distance between the reference outline and the DST outline, both
+   ways, <= 0.7 mm (konpeito 0.3-0.4 mm, star 1.3-1.5 mm). Proposed: `qa.outline_match` in motif_match for every
+   shape motif. Check: the star-vs-konpeito red test fails, the konpeito passes.
+21. **stitch check counts the rim of round bead dots as 'thin area'** (G3 white 4.9 % CHECK, a thread with only Ø0.9 beads).
+   Proposed: the engine's stitch check measures `knots` regions as dots (needle span >= 0.9 = visible >= house-min Ø1.1)
+   and strokes separately. Check: a beads-only layer reports "dots only", PASS.
+22. **Flat line colours**: construction lines + topstitch in near-black on dark denim are invisible (PR #29 item 7). On
+   dark garments draw seams light grey (#D2D3D7) and topstitch mid grey, with a "drawing only" note. Proposed: flat
+   palette chosen by garment luminance in the engine's flat helper.
