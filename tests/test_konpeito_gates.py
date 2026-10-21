@@ -124,3 +124,34 @@ def test_candy_position_red_green():
     shifted = np.roll(ref, 2 * PPM, axis=1)                          # sewn 2 mm off
     e = C.candy_position({0: shifted}, rj, p, to_px)
     assert e > C.POS_MAX and abs(e - 2.0) < 0.2
+
+
+# ---- PR #34 review item 1: a pink + a yellow konpeito that touch were traced as ONE blob (S06, size 15 px) -------------
+def _blob(x, y, w, h):
+    return ("pink", (slice(y, y + h), slice(x, x + w)), np.ones((h, w), bool))
+
+
+def test_merge_guard_red_green():
+    import kjfront
+    ok = [_blob(10 * i, 0, 10, 10) for i in range(8)] + [_blob(100, 0, 9, 11)]
+    kjfront.check_merges(ok)                                     # green: every blob within 1.3 x the median
+    with pytest.raises(ValueError, match="merged"):
+        kjfront.check_merges(ok + [_blob(200, 0, 15, 10)])       # red: the Rev B3 S06 case (15 px vs median 10)
+
+
+def test_front_trace_splits_the_touching_pair_and_guard_catches_the_old_way():
+    """real mockup: the 4th soot sprite carries a pink AND a yellow konpeito. The per-colour trace must return both;
+    the Rev B3 all-hue labelling of the same pixels must trip the merge guard (the guard catches the original bug)."""
+    import kjfront, classify as CL
+    from scipy import ndimage as ndi
+    G = kjfront.geometry(); st = kjfront.trace(G)
+    near = [d for d in st if math.dist(d["px"], (897, 279)) < 8]
+    assert sorted(d["col"] for d in near) == ["pink", "yellow"], near
+    assert len(st) == 15
+    a = np.asarray(Image.open(kjfront.SRC).convert("RGB")).astype(float); h, s, v = CL.hsv(a)
+    m = (s > 0.45) & (v > 0.5) & (((h > 300) | (h < 15)) | ((h > 180) & (h < 215)) | ((h > 35) & (h < 65)))
+    m[:, :770] = False; m[:, 1000:] = False; m[60:186, 893:992] = False
+    lab, _ = ndi.label(ndi.binary_dilation(m, iterations=1))
+    blobs = [("x", sl, lab[sl] == i) for i, sl in enumerate(ndi.find_objects(lab), 1) if (lab[sl] == i).sum() >= 6]
+    with pytest.raises(ValueError, match="merged"):
+        kjfront.check_merges(blobs)
