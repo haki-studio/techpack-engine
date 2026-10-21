@@ -194,3 +194,21 @@ Chinese phrase, upside-down mirrored Hangul)." Check: the spec page prints the s
   pieces need > 1 hooping (`test_confirmed_frames_are_not_asked_again` asserts that). Rule 8 wants the list on F1, so the
   project adds a "5b Hoopings on your frames" block. **Proposed:** always list pieces with > 1 hooping (as information,
   not a question), compare each piece with `single_hooping_confirmed_mm`, and update that test.
+
+## 23. F1 page: product-specific sections (Rev D, founder 20 Oct 2026)
+- Problem: `factory.requests_page` always prints "4 Quote basis" (and a price ask in the strike-off list); the founder asks
+  the factory for prices separately and wants F1 to hold only what applies to the product. Chenille is already switchable
+  (`prof chenille=False`), quote basis is not.
+- Fix here (project): `pack.f1_pages` drops the quote-basis text elements and the "your price" clause from the SVG, with an
+  assert so an engine text change cannot silently bring it back; F2 no longer asks to price puff hoopings.
+- Proposed engine fix: `requests_page(..., sections={"quote": False, "chenille": False})` (default all on), and
+  renumber the remaining sections. Check: `tests/test_factory.py::test_requests_page_omits_disabled_sections`.
+
+## 24. Puff minimum width per stroke (Rev D)
+- Problem: founder asked for puff on every sign part, "thin strokes flat, say which with the measured width". The engine has
+  `house.yaml puff.min_w 3.0` but no per-stroke puff/flat decision for font text.
+- Fix here: `kcmotifs.text_columns(puff_min=2.5)` splits each glyph's stroke columns by full width; a glyph puffs only if
+  >= 50 % of its stroke length qualifies; decisions logged to scene META["puff"] -> G4 table. Strokes 2.5-3.0 are below
+  the house minimum and listed for the strike-off (F2).
+- Proposed engine fix: a `puff` part extractor step that applies `min_w` per column and reports the flat ones; the
+  project's 2.5 vs house 3.0 should be settled by the strike-off (feed back as a LESSONS row with the measured result).

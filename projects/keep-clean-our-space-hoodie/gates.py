@@ -51,7 +51,7 @@ FAM = {   # family -> (mockup colour test on float RGB arrays, DST thread keys)
     "white":  (lambda r, g, b: (r > 140) & (g > 140) & (b > 140) & (np.abs(r - b) < 45), ["kc_white"]),
 }
 BADGE_FAMS = {"01": ["mint", "blue", "red", "yellow", "white"], "02": ["mint", "yellow", "white"], "03": ["red", "blue", "mint", "white"], "04": ["yellow", "white"]}
-NOT_TRACED = {("03", "red"): "CN text 不要世界汚染 from the founder's source frame, set in Noto Sans SC (the render's glyphs are garbled)",
+NOT_TRACED = {("03", "red"): "CN text 不要世界污染 from the founder's source frame, set in Noto Sans SC (the render's glyphs are garbled)",
               ("04", "white"): "KR text 우리들 소중한 우주! from the source frame (read upright), set in Noto Sans KR (the render's Hangul is rotated + garbled)",
               ("01", "white"): "field stars inside the badge box are checked with the star field", ("02", "white"): "field stars inside the badge box are checked with the star field"}
 
