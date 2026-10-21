@@ -280,7 +280,7 @@ kinds:
     techniques: [split_satin]  # column mode (= branch). column_satin was tried: 19 curved limbs read back as satin blobs
     dir: label
     follows: [split_satin]
-    params: {mode: column}
+    params: {mode: column, centre_run_min_w: 1.4}   # no centre run under a column < 1.4 mm (= house column_satin)
     note: a stroke, satin column across it along the traced centreline
   cord:                        # falls, trunks, vines: split satin along the cord (= fall_cord / trunk_strip)
     techniques: [split_satin, tatami]

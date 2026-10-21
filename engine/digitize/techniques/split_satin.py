@@ -64,7 +64,8 @@ class SplitSatin(Technique):
             if cl is None:
                 line = dst2.centreline(p)
                 if line is not None: cl = list(line.coords)
-            if "centre_run" in st.underlay and cl is not None and len(cl) >= 2:
+            narrow = mode == "column" and float(part.meta.get("w") or 1e9) < float(P.get("centre_run_min_w", 0.0))   # G1: as column_satin
+            if "centre_run" in st.underlay and cl is not None and len(cl) >= 2 and not narrow:
                 out.append(Block(part.id, "underlay", dst2.path_resample([tuple(c) for c in cl], 2.0)))
             if mode == "column":
                 if cl is None: continue

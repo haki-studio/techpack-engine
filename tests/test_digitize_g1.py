@@ -436,3 +436,18 @@ def test_column_satin_with_a_declared_centreline_is_sewn_once_when_the_part_is_c
              stitch=rb.stitch_spec("stroke", "split_satin"), meta=dict(cl=[[0.5, 0.7], [19.5, 0.7]], w=1.4))
     bl = techniques.get("split_satin").plan(p)
     assert [b.role for b in bl] == ["underlay", "top"]
+
+
+def test_a_narrow_stroke_column_has_no_centre_run():
+    """house column rule (column_satin centre_run_min_w 1.4) applied to the stroke kind's split-satin column: a 1.35 mm
+    column's centre run read back as a split row ('seam') on the crop (castle.ornaments.618)"""
+    from digitize.schema import Part, DirSpec
+    from digitize.rulebook import Rulebook
+    from digitize import techniques
+    rb = Rulebook()
+    mk = lambda w: Part(id="s", kind="stroke", geom=box(0, 0, 20, w), thread="t", z=1, dir=DirSpec(90.0, mode="contour", source="splitter"),
+                        technique="split_satin", stitch=rb.stitch_spec("stroke", "split_satin"), meta=dict(cl=[[0.5, w / 2], [19.5, w / 2]], w=w))
+    assert [b.role for b in techniques.get("split_satin").plan(mk(1.35))] == ["top"]
+    assert [b.role for b in techniques.get("split_satin").plan(mk(2.0))] == ["underlay", "top"]
+    br = mk(1.35); br.kind = "branch"; br.stitch = rb.stitch_spec("branch", "split_satin")      # other kinds: unchanged
+    assert [b.role for b in techniques.get("split_satin").plan(br)] == ["underlay", "top"]
