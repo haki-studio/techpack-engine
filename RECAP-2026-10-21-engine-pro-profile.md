@@ -34,3 +34,15 @@ identity `st/cm² = 100·D·ρ/L` splits any rate into layering × density / sti
 - Founder decisions on proposals 1–3 (rate-based budget, trims gate 25→50, rule 6 re-based).
 - Get large-format pro files (jacket backs) — biggest gap in the reference.
 - Wire `pro_reference.json` into bench/gates once decided.
+
+## Fix round 1 (review CHANGES, PR #35)
+- Wording: "consistent with small-design pro practice; unmeasured at jacket scale"; dropped the 1.0–1.35M back figure.
+- LESSONS row numbered E12 (next free on origin/main) and marked PROVISIONAL.
+- Proposal 1 restated: report D/ρ/L per file, flag outside pro p10–p90 in EITHER direction as review; over-dense limit at
+  jacket scale is unknown (the old "> 512" flag caught nothing of ours).
+- Density: row spacing ~2x ours, thread per layer area 1.4x (2.80 vs 2.02).
+- Native vs resized: every pro PES header names `<code>_M.EMB` (Wilcom object design at size M) → stitches generated at
+  that size, not a scaled stitch file; whether 0.2 mm is deliberate or Wilcom size-dependent auto-density is unknown
+  (no EMB). `pes_source()` + `source_design` in the JSON.
+- New tests: 0.2 mm tatami reads 0.20 mm and ~2.2x thread of 0.45; pes_source. Overlap rows dropped from the doc table
+  (grid limit ~1 mm), kept in JSON.

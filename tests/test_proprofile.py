@@ -52,6 +52,28 @@ def test_fill_is_fill_with_its_spacing_and_stitch_length():
     assert not f["open"]
 
 
+def test_dense_pro_tatami_reads_its_own_spacing():
+    """the pro files measure 0.20-0.25 mm rows; the classifier must read a 0.20 mm tatami as a dense fill at 0.20 mm
+    (not halve or double it, not call it satin), with ~2.2x the thread per area of a 0.45 mm house fill"""
+    sq = box(0, 0, 20, 20)
+    objs, share = _classes(_design([_tatami(sq, ang=0.0, sp=0.20, L=2.6)]))
+    assert share.get("fill", 0) / sum(share.values()) > 0.9, share
+    f = _main(objs, "fill")
+    assert abs(f["spacing"] - 0.20) < 0.03 and not f["open"], f["spacing"]
+    dense, _, _, _ = PP.profile_design(_design([_tatami(sq, 0.0, sp=0.20, L=2.6)]))
+    house, _, _, _ = PP.profile_design(_design([_tatami(sq, 0.0, sp=0.45, L=2.6)]))
+    r = dense["decomposition"]["rho_thread_per_layer_mm2"] / house["decomposition"]["rho_thread_per_layer_mm2"]
+    assert 1.9 < r < 2.5, r
+
+
+def test_pes_source_reads_the_design_file_name(tmp_path):
+    p = tmp_path / "x.PES"
+    p.write_bytes(b"#PES0100\x00\x10\x00\x00A-0661 Drama Masks_M.EMB\x00Hoop SQ14 (140 x 140)\x00")
+    assert PP.pes_source(str(p)) == "A-0661 Drama Masks_M.EMB"
+    p.write_bytes(b"#PES0100\x00no design name here")
+    assert PP.pes_source(str(p)) is None
+
+
 def test_satin_is_satin_with_its_width():
     col = box(0, 0, 40, 3.0)                       # 3 mm column, satin across it (house spacing 0.42, pull 0.2)
     pts = _quantise(dst2.fixed_satin(col, 90.0, sp=0.42, pull=0.2))

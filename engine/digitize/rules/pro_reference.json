@@ -243,24 +243,6 @@
    "min": 0.5,
    "max": 1.25
   },
-  "satin-on-fill overlap (median)": {
-   "unit": "mm",
-   "n": 10,
-   "median": 1.188,
-   "p10": 1.038,
-   "p90": 1.375,
-   "min": 1.0,
-   "max": 1.379
-  },
-  "fill-on-fill overlap (median)": {
-   "unit": "mm",
-   "n": 10,
-   "median": 1.31,
-   "p10": 1.069,
-   "p90": 2.165,
-   "min": 1.0,
-   "max": 2.367
-  },
   "trims / 100 cm2 covered": {
    "unit": "",
    "n": 10,
@@ -469,7 +451,8 @@
     "last_block_satin_run_share": 0.99,
     "last_block_area_share": 0.007
    },
-   "sha256_16": "da8aed5cb910663d"
+   "sha256_16": "da8aed5cb910663d",
+   "source_design": "Wilcom EMB, size M"
   },
   "A-0698": {
    "name": "A-0698",
@@ -641,7 +624,8 @@
     "last_block_satin_run_share": 0.82,
     "last_block_area_share": 0.059
    },
-   "sha256_16": "8522b8d39a6f375c"
+   "sha256_16": "8522b8d39a6f375c",
+   "source_design": "Wilcom EMB, size M"
   },
   "C-3078": {
    "name": "C-3078",
@@ -813,7 +797,8 @@
     "last_block_satin_run_share": 0.82,
     "last_block_area_share": 0.14
    },
-   "sha256_16": "7a860d3d409b3772"
+   "sha256_16": "7a860d3d409b3772",
+   "source_design": "Wilcom EMB, size M"
   },
   "D-4015": {
    "name": "D-4015",
@@ -985,7 +970,8 @@
     "last_block_satin_run_share": 0.83,
     "last_block_area_share": 0.026
    },
-   "sha256_16": "9010250d53a82b4a"
+   "sha256_16": "9010250d53a82b4a",
+   "source_design": "Wilcom EMB, size M"
   },
   "D-4058": {
    "name": "D-4058",
@@ -1157,7 +1143,8 @@
     "last_block_satin_run_share": 0.94,
     "last_block_area_share": 0.03
    },
-   "sha256_16": "b085ecfa05841644"
+   "sha256_16": "b085ecfa05841644",
+   "source_design": "Wilcom EMB, size M"
   },
   "D-4063": {
    "name": "D-4063",
@@ -1329,7 +1316,8 @@
     "last_block_satin_run_share": 0.92,
     "last_block_area_share": 0.003
    },
-   "sha256_16": "5466361933ed27b7"
+   "sha256_16": "5466361933ed27b7",
+   "source_design": "Wilcom EMB, size M"
   },
   "E-4816": {
    "name": "E-4816",
@@ -1501,7 +1489,8 @@
     "last_block_satin_run_share": 0.8,
     "last_block_area_share": 0.019
    },
-   "sha256_16": "14503bac37d37a82"
+   "sha256_16": "14503bac37d37a82",
+   "source_design": "Wilcom EMB, size M"
   },
   "E-5045": {
    "name": "E-5045",
@@ -1673,7 +1662,8 @@
     "last_block_satin_run_share": 0.71,
     "last_block_area_share": 0.247
    },
-   "sha256_16": "2c9b895e828ebf56"
+   "sha256_16": "2c9b895e828ebf56",
+   "source_design": "Wilcom EMB, size M"
   },
   "E-5056": {
    "name": "E-5056",
@@ -1845,7 +1835,8 @@
     "last_block_satin_run_share": 0.8,
     "last_block_area_share": 0.014
    },
-   "sha256_16": "7ffad9891677288f"
+   "sha256_16": "7ffad9891677288f",
+   "source_design": "Wilcom EMB, size M"
   },
   "F-5643": {
    "name": "F-5643",
@@ -2017,7 +2008,8 @@
     "last_block_satin_run_share": 0.91,
     "last_block_area_share": 0.085
    },
-   "sha256_16": "8d99ea9d051d8d05"
+   "sha256_16": "8d99ea9d051d8d05",
+   "source_design": "Wilcom EMB, size M"
   }
  },
  "ours": {

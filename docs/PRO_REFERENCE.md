@@ -20,6 +20,21 @@ Machine Files/`). The other files in that folder (`Law.DST` and the `Chopper Jac
 amateur work. They are never read, and a test pins this. These designs are licensed: the stitch files and renders are
 never committed. Only derived numbers are committed. Renders go to the git-ignored `out/pro_reference/`.
 
+## Native size or auto-resized?
+
+Every pro PES header names its source as `<code> <title>_M.EMB`, for example `D-4063 WOLF STARE_M.EMB`. This is
+stored per file as `source_design` in the JSON. So each `_M` file was exported from its own Wilcom object design (EMB)
+at size M. It was not a stitch file scaled from another size: Wilcom regenerates stitches from objects when an EMB is
+resized, so density and stitch length are set for the size sewn.
+
+The row spacing is also the same across all 10 designs (medians 0.20–0.25 mm). A stitch-level rescale would make it
+vary with each design's scale factor.
+
+What the files cannot show is whether the digitiser set 0.20–0.25 mm on purpose, or whether Wilcom's
+size-dependent auto-density produced it. We do not have the EMB files to check. It matters because, if it is
+auto-density for small sizes, the same digitiser would sew a jacket back at a lighter density. The pro density is
+therefore **unmeasured at jacket scale**.
+
 ## Method
 
 Everything comes from the stitch file. Geometry and thread colours are read from the PES. Trims and jumps are counted
@@ -63,7 +78,9 @@ Two defects were found on the renders and fixed, each with a test:
   connectors.
 
 **Known limits.**
-- The overlap widths are limited by the raster: anything under about 1 mm reads as 1.0 mm. They are indicative only.
+- Overlap widths (how far a satin or fill sits on an earlier fill) are limited by the 0.5 mm raster: anything under
+  about 1 mm reads as 1.0 mm. They stay in the JSON but are not quoted here, because the pull-comp and underlap values
+  that matter (0.2–1 mm) are below the grid limit.
 - There is no text detector. None of the 10 designs has lettering, so "smallest text" is not measured.
 - Puff, chenille and chain are classed by geometry only. KCOS moss loops read as run.
 
@@ -102,8 +119,6 @@ Ours:
 | max stitch (mm) | 5.71 | 7.62 | 8.69 | 7.07 | 7.35 | 7.07 | 7.41 | 6.9 |
 | satin width p5 (smallest columns) (mm) | 0.849 | 0.98 | 1.19 | 1.26 **HIGH** | 1.08 | 1.13 | 0.83 **low** | 0.78 **low** |
 | smallest dense object (mm2) | 0.5 | 1 | 1.25 | 1 | 0.5 | 1 | 1.25 | 1 |
-| satin-on-fill overlap (median) (mm) | 1.04 | 1.19 | 1.38 | 1.14 | 1 **low** | 1 **low** | 1 **low** | 1.84 **HIGH** |
-| fill-on-fill overlap (median) (mm) | 1.07 | 1.31 | 2.17 | 1.08 | 1 **low** | - | 1 **low** | 1.27 |
 | trims / 100 cm2 covered | 6.09 | 31.4 | 52.5 | 37.6 | 89.2 **HIGH** | 185 **HIGH** | 39.7 | 190 **HIGH** |
 | objects / cm2 covered | 9.8 | 11.8 | 19.4 | 7.54 **low** | 14.6 | 6.24 **low** | 5.72 **low** | 4.61 **low** |
 | stitches per colour block (median) (st) | 507 | 1.04e+03 | 2.08e+03 | 2.35e+03 **HIGH** | 3.08e+04 **HIGH** | 1.43e+03 | 7.84e+03 **HIGH** | 318 **low** |
@@ -153,29 +168,34 @@ blends laid over fills, and details sewn on fills.
   **2.7×** one pro fill layer, and the crop at 289 / 110 = **2.6×** one crop fill layer.
 - Pro fill layer: 0.215 mm rows × 2.62 mm stitches = 178 st/cm². Crop fill layer: 0.41 × 2.2 = 110 st/cm².
 
-So "about 3× one fill layer" is normal pro practice. It is not an engine defect.
+So "about 3× one fill layer" is **consistent with small-design pro practice**. It is not an engine defect. It is
+**unmeasured at jacket scale**: no large-format pro file is in the set.
 
 Where we differ from the pro, in order of size:
-1. **Density per layer.** Pro fills are about 2× denser: 0.20–0.25 mm rows against our 0.39–0.44 mm.
+1. **Density per layer.** Pro fill row spacing is about half of ours: 0.20–0.25 mm against our 0.39–0.44 mm. Thread
+   per layer area (ρ, which includes satins, runs and edges) is 1.4× ours: 2.80 against 2.02 mm/mm².
 2. **Layering.** The pro is more layered: D 3.6 against our 2.7. Dense top layers are 2 or more deep on 74 % of the
    pro area (ours 48 %) and 3 or more deep on 37 % (ours 12 %). The pro lays a base fill, then narrow satin detail
    (fur, outlines) over it, then an outline last.
 3. **Detail.** The pro has similar or slightly longer mean stitches and more objects per cm² (11.8 against 7.5).
 
-Applied literally to a 2,800 cm² back, pro per-area rates would give about 1.0M (p10) to 1.35M (median) stitches. Our
-~890k is **below** the pro rate. The old 250–350k back budget is about 90–125 st/cm². No pro file comes close to that
-(minimum 356), and it is below even one pro fill layer (178).
+Our ~890k for the back (~318 st/cm²) is below the per-area rate of every small pro design here (min 356 st/cm²). The
+old 250–350k back budget works out to about 90–125 st/cm². No pro file comes close to that, and it is below even one
+pro fill layer (178 st/cm²). Small-design rates are not an estimate for a back, because a digitiser may sew large areas
+lighter. They are only an upper reference from small designs.
 
 Caveat: these are small designs. A digitiser may well sew a jacket back lighter, for hand and run time on 12 oz duck.
 That is unmeasured until we get large-format pro files.
 
 ## Proposed thresholds and engine changes (ranked; PROPOSED, nothing changed in this PR)
 
-1. **PROPOSED: per-area stitch rate replaces the absolute back budget.**
-   - Report st/cm² of covered area with D, ρ and L on the G pages and the bench.
-   - Flag a file when its rate is above the pro p90 (512 st/cm²) or D is above the pro p90 (4.1).
+1. **PROPOSED: report the per-area rate, not an absolute back budget.**
+   - Report st/cm² of covered area with D, ρ and L for every file, on the G pages and the bench.
+   - Mark any of the four that falls outside the pro p10–p90 band, **in either direction**, as "review" (not fail).
+     Today every full-coverage file of ours is below the band on rate, D and ρ.
+   - Say plainly that the over-dense limit for a jacket back is **unknown**. These small designs give no ceiling for
+     a back, so no "too many stitches" gate should be set from them.
    - Drop 250–350k as a reference for full-coverage scenes; it implies about 100 st/cm².
-   - Our current files would all pass: 227–348.
 2. **PROPOSED: trims gate from the pro.** `bench.json trims_per_100cm2_max` is 25, below the pro median of 31.4
    (p10–p90: 6–52). Set the max to 50 (≈ pro p90) and keep 31 as a target. The crop (37.6) would pass the max.
 3. **PROPOSED: rule 6 re-based on layering.**

@@ -93,6 +93,18 @@ def pro_files(folder=None):
     return out
 
 
+def pes_source(pes):
+    """the design file a PES was exported from, as written in its header (Wilcom writes '<name>.EMB': an object
+    design whose stitches are regenerated at its own size, not a scaled stitch file). None if not stated."""
+    try:
+        head = open(pes, "rb").read(400)
+    except OSError:
+        return None
+    import re
+    m = re.search(rb"([ -~]{3,80}\.(?:EMB|emb|PXF|pxf|ART|art|JAN|jan))", head)
+    return m.group(1).decode("ascii", "replace").strip() if m else None
+
+
 def main_checkout():
     try:
         g = subprocess.run(["git", "-C", ROOT, "rev-parse", "--git-common-dir"], capture_output=True, text=True,
@@ -576,8 +588,6 @@ KEYS = [  # (label, getter, unit, how to read)
     ("max stitch", lambda m: m["max_stitch"], "mm"),
     ("satin width p5 (smallest columns)", lambda m: m["smallest"]["satin_width_p5"], "mm"),
     ("smallest dense object", lambda m: m["smallest"]["element_min_mm2"], "mm2"),
-    ("satin-on-fill overlap (median)", lambda m: (m["overlap"]["satin_on_fill"] or {}).get("median"), "mm"),
-    ("fill-on-fill overlap (median)", lambda m: (m["overlap"]["fill_on_fill"] or {}).get("median"), "mm"),
     ("trims / 100 cm2 covered", lambda m: m["trims_per_100cm2"], ""),
     ("objects / cm2 covered", lambda m: m["objects_per_cm2"], ""),
     ("stitches per colour block (median)", lambda m: (m["stitches_per_block"] or {}).get("median"), "st"),
@@ -632,6 +642,8 @@ def run_all(render_png=True):
     for code, dst, pes in pro_files():
         m, objs, G, design = profile(dst, pes, name=code)
         m["sha256_16"] = hashlib.sha256(open(dst, "rb").read()).hexdigest()[:16]
+        src = pes_source(pes) if pes else None
+        m["source_design"] = ("Wilcom EMB, size " + src.rsplit("_", 1)[-1][:-4]) if src and src.upper().endswith(".EMB") and "_" in src else src
         pro[code] = _strip(m)
         if render_png:
             render(design, objs, G, os.path.join(OUT_DIR, f"{code}_preview.png"))
