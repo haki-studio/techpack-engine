@@ -1,5 +1,4 @@
-M BK primary {'stitches': 302534, 'trims': 1212, 'stops': 13, 'size_mm': (592.7, 578.1), 'max_stitch': 7.45} chenille plan {'paths': 946, 'needle_points': 9658, 'length_m': 20.0}
-M BK primary S1_left {'stitches': 160337, 'trims': 627, 'stops': 13, 'size_mm': (311.2, 597.6), 'fits': True}
-M BK primary S2_right {'stitches': 143703, 'trims': 600, 'stops': 11, 'size_mm': (296.5, 597.6), 'fits': True}
+M BK primary {'stitches': 322405, 'trims': 1285, 'stops': 13, 'size_mm': (592.6, 577.8), 'max_stitch': 7.41} chenille plan {'paths': 942, 'needle_points': 9638, 'length_m': 20.0}
+M BK primary S1_left {'stitches': 169602, 'trims': 635, 'stops': 13, 'size_mm': (311.1, 597.6), 'fits': True}
+M BK primary S2_right {'stitches': 152690, 'trims': 668, 'stops': 11, 'size_mm': (296.3, 597.6), 'fits': True}
 DONE M ['BK']
-DONE

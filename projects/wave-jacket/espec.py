@@ -73,7 +73,7 @@ def p1():
     y += 2
     o.append(t(rx, y, "Min: every seam the wave crosses 3 (armhole/cap, side, shoulder, underarm) ·", 1.45, 400, MUTED)); y += 2.9
     o.append(t(rx, y, "CF zip 15 · hem 10 · cuff 10 · welt 6 · collar flat 6 · neck 6 (emb_place.py).", 1.45, 400, MUTED)); y += 6
-    for l_ in ["!Art traced from the low-res AI render (~1.4 mm/px) + the founder's", "!close-up on the FL crest. Generated: seam warps + tapers (G7/G9)", "!and the art under the collar fall (mirrored to the neck keep-out).",
+    for l_ in ["!Art traced from the render + the founder's close-ups (20 Oct, pixel-", "!aligned; mockup = placement). Generated: seam warps + tapers (G7/G9)", "!and the art under the collar fall (mirrored to the neck keep-out).",
                "Rev B SEAMLESS wave: armhole mapped cap <-> body by seam length,", "stripes continue across every seam, 3 mm short, match notches", "on both pieces; each sleeve one continuous trace (no fold seam)."]:
         col = ORANGE if l_.startswith("!") else MUTED
         o.append(t(rx, y, l_.lstrip("!"), 1.6, 600 if col == ORANGE else 400, col)); y += 2.9
@@ -125,7 +125,7 @@ def p3():
         o.append(t(cx[10], y, "single run" if st.startswith("Run") else f"{q:.1f}%", 1.5, 600, MUTED if st.startswith("Run") else qc)); o.append(t(cx[11], y, f"{s_['n']}", 1.5, 400, MUTED))
     yb = 36 + len(order) * rh + 3
     notes = ["Globals: 40wt polyester, 75/11 sharp needle, 3.0 oz cutaway + 1.5 oz tearaway under the foam [proposed], no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; exposed moves > 2.0 trimmed.",
-             "FOAM: sewn LOCKSTITCH in every file: padded tatami per curl, rows along the curl (A16) + one continuous spiral curl cord + loop spiral. Grey hollows = thin 1.1 mm ridges. Stripes = twisted cords (rows along, 15° twist).",
+             f"FOAM: CHENILLE in ECRU is the look to sample first (founder 20 Oct); these files sew the LOCKSTITCH alternate: padded tatami, rows along the curl + spiral curl cord + loop spiral. Stripes: rows along a flow field, {WC.CORD_TWIST:.0f}° cord twist.",
              "      CHENILLE (factory: available, format unknown - LESSONS B33): a path PLAN per piece in chenille_plan/ (moss spirals 1.8 mm apart, constant 2.5 mm stitch; chain curl cords 2.0 mm), no machine file yet.",
              "Width = qa.check_geom share below the minimum (fill/satin 0.8, line 0.6). Amber/red codes are tapered ends + traced flecks: kept for fidelity, check on the sew-out.",
              "Stitch counts are never estimated per region: per-file and per-stop counts (p1, p4, p5, G4, G5) are read back from the DST files."]
@@ -175,9 +175,9 @@ def p6():
     tag, hh = SHT.embed("inputs/back.png", (0, 230, 620, 740), 46, 14, my + 3); o.append(tag)
     tag2, hh2 = SHT.embed("inputs/closeup_mockup_foam.png", None, 22, 62, my + 3); o.append(tag2)
     o.append(t(14, my + 3 + max(hh, hh2) + 3, "Render (back) · founder's detail close-up (FL shoulder crest)", 1.5, 400, MUTED))
-    o.append(t(14, my + 3 + max(hh, hh2) + 6.5, "Art TRACED from the low-res AI render (~1.4 mm/px), not originals.", 1.55, 700, ORANGE))
-    o.append(t(14, my + 3 + max(hh, hh2) + 9.5, "FL shoulder crest + bands: traced from the close-up, registered", 1.55, 700, ORANGE))
-    o.append(t(14, my + 3 + max(hh, hh2) + 12.5, "onto the render (A12); elsewhere it is the foam texture reference.", 1.55, 700, ORANGE))
+    o.append(t(14, my + 3 + max(hh, hh2) + 6.5, "Art TRACED from the AI render + founder close-ups, not originals.", 1.55, 700, ORANGE))
+    o.append(t(14, my + 3 + max(hh, hh2) + 9.5, "Close-ups (back, fronts, 4 sleeve halves) registered onto the", 1.55, 700, ORANGE))
+    o.append(t(14, my + 3 + max(hh, hh2) + 12.5, "render: classes, drop outlines + grain come from them (A12).", 1.55, 700, ORANGE))
     cx = 92
     o.append(t(cx, my, "WHAT CHANGED vs THE RENDER (and why)", 2.3, 700))
     import pickle as _pk
@@ -192,13 +192,13 @@ def p6():
           "  one smooth warp per piece side lines the stripes up across each",
           "  seam (generated, G7/G9); curls moved whole out of keep-outs.",
           "!Generated — under the collar fall (FL/FR): art mirrored to the neck.",
-          "Stripes: twisted cords (rows along, 15° twist), flecks dropped, dark",
+          f"Stripes: rows ALONG each stripe (flow field), {WC.CORD_TWIST:.0f}° cord twist, dark",
           "  slits closed; rope lines = continuous 2.4 mm cream cords.",
           "20 Oct: stripe patches < 150 mm² merged into their band (one",
           "  continuous cord per stripe); bare pockets in the art filled;",
           "  stripe THREAD handed over across every seam (tonematch, G7).",
           "Foam: grey blobs → thin ridges; one continuous spiral cord per curl;",
-          "  sewn lockstitch (padded); chenille = path plan (format unknown).",
+          "  CHENILLE ecru first (path plan); lockstitch padded = alternate.",
           "Keep-outs: seams 3, CF zip 15, hem/cuff 10, welt 6, neck 6.",
           "Threads: 9 (12 allowed): 2 creams + grey for the foam, 6 blues.",
           "!Re-check threads + hem/cuff keep-outs on the new shell + rib."]
@@ -208,7 +208,7 @@ def p6():
     pr = ["Embroider the 5 cut pieces flat, BEFORE any", "  seam, welt or zip. Pre-wash the shell first.",
           f"9 threads, 40wt polyester (G3); ≤ {FA.max_threads(PROF)} per file.", "12 oz duck: 75/11 sharp, 3.0 oz cutaway +", "  1.5 oz tearaway under foam [proposed].",
           "Notch the match marks (1:1 plot) on both", "  pieces; no armhole topstitch.",
-          "Foam: padded lockstitch in the files; chenille", "  = path plan until the factory names its format.",
+          "Foam: CHENILLE ecru first (path plan, format?);", "  the files sew the padded lockstitch alternate.",
           "Mark CF, welt box (drills), split lines +", "  needle starts (DXF layer 13) before hooping.",
           f"Frame {FA.largest_frame(PROF)[0]:.0f} × {FA.largest_frame(PROF)[1]:.0f} (factory.json): split files,", "  registration crosses open stop 1 (G6).",
           "Sew-out size M on production shell first (F1)."]

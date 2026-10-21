@@ -92,7 +92,7 @@ def stitch_cover(blocks, geom, ppm=10, thread=0.6):
 # The close-up's stripes are twisted cords: the stitch rows of each stripe run at a slant to the stripe, not along it.
 # Tatami rows of a WV stripe are laid at the local stripe direction + CORD_TWIST (alternating sign from tone to tone, so
 # neighbouring cords twist opposite ways, as in the close-up). Everything else is the engine's along-the-stripe sections.
-CORD_TWIST = 8.0           # LESSONS A16: rows ALONG the stripe; fix round 2 (PR #27 review 3): 15 -> 8 deg, the close-ups show the rows running along the band; 8 deg keeps a hint of the cord twist well inside the 25 deg grain tolerance
+CORD_TWIST = float(os.environ.get("WAVE_TWIST", 8.0))           # LESSONS A16: rows ALONG the stripe; fix round 2 (PR #27 review 3): 15 -> 8 deg, the close-ups show the rows running along the band; 8 deg keeps a hint of the cord twist well inside the 25 deg grain tolerance
 _CUR = {"r": None}
 def cord_sections(p, line, step=6.0, across=False):
     import dst2
@@ -104,8 +104,40 @@ def cord_sections(p, line, step=6.0, across=False):
 
 def covered_build_object(r, earlier_tones):
     _CUR["r"] = r
-    try: return _covered_build_object(r, earlier_tones)
+    try:
+        fb = flow_build_object(r)
+        if fb is not None: return fb
+        return _covered_build_object(r, earlier_tones)
     finally: _CUR["r"] = None
+
+def flow_build_object(r):
+    """PR #27 review 3 (A16): stripes (tatami AND the narrow ones that were turning satin) and padded foam sew in cells at
+    the constructed direction of flowdir.py (stripe flow field / nearest crest outline). Same underlay + density rules as
+    the engine's tatami / padded. None = not handled here (engine build)."""
+    import dst2, flowdir as FD
+    if FD._F["tree"] is None: return None
+    g = r["grp"]; st = r["st"]
+    # foam keeps waveart.curl_direction (rows along the curl around its eye): the outline-parallel cells scored worse on
+    # the close-up grain (SR foam 22 -> 13 % OK, more chaos under the loop spiral), so only the stripes use the flow field
+    if not (g == "WV" and st in ("tatami", "satin")): return None
+    pull = dst2.pull_for(tech.rule_for(g)); blocks = []
+    for p in dst2.polys(r["geom"]):
+        if p.area < 0.06: continue
+        blocks += dst2.edge_run(p, 0.6)
+        if g == "WV":
+            sg = 1 if WV_KEYS.index(r["col"]) % 2 == 0 else -1
+            parts = FD.wv_parts(p, sg * CORD_TWIST); FD.LOG["wv_cells"] += len(parts); sp, L = dst2.SP_TAT, 3.5
+        else:
+            parts = FD.fm_parts(p); FD.LOG["fm_cells"] += len(parts); sp, L = dst2.SP_PAD, 5.0
+        w = dst2.width_of(p)
+        for q, a in parts:
+            if g == "WV" and q.area > dst2.LATTICE_MIN:
+                blocks += dst2.join_rows(dst2.tatami_rows(q.buffer(-0.8), a + 90, 2.0, 4.0))
+            if g == "FM" and q.area > 4 and w > dst2.PAD_MIN_W:
+                blocks += dst2.join_rows(dst2.tatami_rows(q.buffer(-0.5), a + 90, 0.8 if dst2.PAD_LAYERS > 1 else 1.0, 4.0))
+                if dst2.PAD_LAYERS > 1: blocks += dst2.join_rows(dst2.tatami_rows(q.buffer(-0.5), a + 45, 0.8, 4.0))
+            blocks += dst2.join_rows(dst2.tatami_rows(q.buffer(pull * 0.5) if pull else q, a, sp, L))
+    return [b for b in blocks if len(b) > 1]
 
 def _covered_build_object(r, earlier_tones):
     """engine build_object, then: a satin object whose stitches cover < SAT_MIN_COV of it (turning satin fans out on the

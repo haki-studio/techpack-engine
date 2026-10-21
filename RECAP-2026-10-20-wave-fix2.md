@@ -12,3 +12,11 @@ next steps are at the top of `projects/wave-jacket/REVIEW_OPEN.md`.
 
 ## Open
 A14 drop rows, A16 stripes < 85 %, seam tone regression (gapfill after tonematch: reorder), page legibility, docs + review.
+
+## Round finished (same session, ~23:10) — the fresh-session handoff was cancelled
+The queued fix job was 4th in a full queue, so this session finished the round itself. Final state + per-item status:
+`projects/wave-jacket/REVIEW_OPEN.md` (bottom table). Totals M: 1,053,146 st, 4,145 trims, 8 hoopings, max 7.46.
+Extra fixes found on the way: the render's welt-pocket lips and the close-ups' wash creases were being traced as stripes
+(masked: wavetrace DETAILS_PX + crease rule); gapfill now runs before tonematch (redo_r2.sh). Stripes sew along a flow field
+(flowdir.py). Pack G2-G9 re-laid out (20 pages). Copied to Desktop/wave-RevB.
+Open: drops (39 rows), stripe direction 79-84 %, seams (red on G7/G9), foam swatch not rebuilt in ecru.

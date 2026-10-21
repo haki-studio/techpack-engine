@@ -62,7 +62,7 @@ def lobes(tr, min_dist_px=7.0):
         parts = {"w1": c["mass"].difference(c["shade"]).difference(c["grey"]), "w3": c["shade"], "g1": c["grey"]}
         inner = c["inner"]; blue = c.get("blue", {})
         if c["kind"] == "dot":
-            out.append(dict(kind="dot", anchor=c["filled"].centroid.coords[0], parts=parts, inner=inner, blue=blue, outline=c["filled"]))
+            out.append(dict(kind="dot", anchor=c["filled"].centroid.coords[0], parts=parts, inner=inner, blue=blue, outline=c["filled"], hr=c.get("hr")))
             continue
         F = c["filled"]; b = F.bounds; k = 4.0
         m = rasterize(F, b, k)

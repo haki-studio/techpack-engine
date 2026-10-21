@@ -1,7 +1,3 @@
 spec pages 6
-pages 16
-/mnt/c/Users/devin/Desktop/HakiCode/techpack-engine/.claude/worktrees/tp-wave-jacket/projects/wave-jacket/shrink.py:11: DeprecationWarning: remove_identicals is deprecated and will be removed in pypdf 7.0.0. Use remove_duplicates instead.
-  w.compress_identical_objects(remove_identicals=True, remove_orphans=True)
-/mnt/c/Users/devin/Desktop/HakiCode/techpack-engine/.claude/worktrees/tp-wave-jacket/projects/wave-jacket/shrink.py:11: DeprecationWarning: remove_orphans is deprecated and will be removed in pypdf 7.0.0. Use remove_unreferenced instead.
-  w.compress_identical_objects(remove_identicals=True, remove_orphans=True)
-zip MB 89.2 out/HAKI_WAVE_EMB-SAMPLING_RevB_M.zip
+pages 20 ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7 (1/3)', 'G7 (2/3)', 'G7 (3/3)', 'G8 (1/2)', 'G8 (2/2)', 'G9 (1/2)', 'G9 (2/2)']
+garment pages 16 total 36 out/HAKI_WAVE_FULL-TECHPACK_RevA.pdf

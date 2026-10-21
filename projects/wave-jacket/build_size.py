@@ -123,6 +123,7 @@ for P in which:
     rp = f"{OUT}/result_{P}.json"
     res = {}
     vis = dst2.merge_colours(D[P])
+    import flowdir; flowdir.install(vis)            # A16 constructed directions (stripe flow field + crest outlines)
     ub = unary_union([r["geom"] for r in vis]).bounds; c = ((ub[0]+ub[2])/2, (ub[1]+ub[3])/2)
     plan, frame = hoop_plan(P, ub)
     for variant, primary in (("primary", True),):
@@ -130,7 +131,7 @@ for P in which:
         t = time.time(); base = f"{OUT}/{sub}HAKI_WAVE_01_wave_{P}_{size}"
         w = write_set(vis, c, base, primary=primary, plan=True); stops = w["stops"]
         ex = dst2.exposed_travel(stops, w["st"].get("runs", []))
-        full = record(base, stops, dict(origin=c, art_box=ub, stops_before_merge=w["n0"], secs=round(time.time()-t), satin_guard=dict(glcore.COV_LOG),
+        full = record(base, stops, dict(origin=c, art_box=ub, stops_before_merge=w["n0"], secs=round(time.time()-t), satin_guard=dict(glcore.COV_LOG), flowdir=dict(flowdir.LOG),
                                         exposed_travel=dict(runs_over_1mm=sum(1 for e in ex if e > 1.0), runs_over_2mm=sum(1 for e in ex if e > 2.0), max_mm=round(max(ex), 1) if ex else 0.0),
                                         build_trims_by_code=sorted(w["st"].get("by", {}).items(), key=lambda kv: -kv[1])[:10]))
         if "chenille_plan" in w: full["chenille_plan"] = w["chenille_plan"]

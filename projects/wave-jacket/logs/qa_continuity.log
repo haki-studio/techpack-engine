@@ -1,14 +1,14 @@
-CF zip             {'art_mm': 69, 'meet': 54, 'tone': 46}
-armhole back L     {'art_mm': 196, 'meet': 92, 'tone': 82}
-armhole front L    {'art_mm': 244, 'meet': 95, 'tone': 63}
-side L             {'art_mm': 57, 'meet': 54, 'tone': 42}
-shoulder L         {'art_mm': 75, 'meet': 20, 'tone': 23}
-underarm L         {'art_mm': 66, 'meet': 70, 'tone': 64}
-sleeve centre L    {'art_mm': 214, 'meet': 53, 'tone': 47}
-armhole back R     {'art_mm': 4, 'meet': 0, 'tone': 0}
-armhole front R    {'art_mm': 17, 'meet': 59, 'tone': 41}
-side R             {'art_mm': 176, 'meet': 72, 'tone': 71}
+CF zip             {'art_mm': 61, 'meet': 57, 'tone': 51}
+armhole back L     {'art_mm': 193, 'meet': 93, 'tone': 85}
+armhole front L    {'art_mm': 244, 'meet': 93, 'tone': 64}
+side L             {'art_mm': 52, 'meet': 58, 'tone': 44}
+shoulder L         {'art_mm': 70, 'meet': 20, 'tone': 23}
+underarm L         {'art_mm': 60, 'meet': 77, 'tone': 75}
+sleeve centre L    {'art_mm': 205, 'meet': 53, 'tone': 46}
+armhole back R     {'art_mm': 3, 'meet': 0, 'tone': 0}
+armhole front R    {'art_mm': 17, 'meet': 59, 'tone': 47}
+side R             {'art_mm': 159, 'meet': 70, 'tone': 68}
 shoulder R         {'art_mm': 0, 'meet': None, 'tone': None}
-underarm R         {'art_mm': 341, 'meet': 66, 'tone': 55}
-sleeve centre R    {'art_mm': 121, 'meet': 58, 'tone': 44}
+underarm R         {'art_mm': 322, 'meet': 73, 'tone': 61}
+sleeve centre R    {'art_mm': 119, 'meet': 58, 'tone': 39}
 sheet (2280, 9610)

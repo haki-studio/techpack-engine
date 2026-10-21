@@ -1,6 +1,5 @@
-BK {'gaps': 12, 'filled': 6, 'regions_added': 39, 'merged_into_stripes': 0}
-FR {'gaps': 4, 'filled': 2, 'regions_added': 7, 'merged_into_stripes': 0}
-FL {'gaps': 7, 'filled': 5, 'regions_added': 21, 'merged_into_stripes': 1}
-SR {'gaps': 26, 'filled': 25, 'regions_added': 181, 'merged_into_stripes': 8}
-SL {'gaps': 22, 'filled': 19, 'regions_added': 197, 'merged_into_stripes': 0}
-CHAIN_DONE
+BK {'gaps': 12, 'filled': 6, 'regions_added': 44, 'merged_into_stripes': 16}
+FR {'gaps': 2, 'filled': 1, 'regions_added': 3, 'merged_into_stripes': 1}
+FL {'gaps': 6, 'filled': 4, 'regions_added': 20, 'merged_into_stripes': 7}
+SR {'gaps': 27, 'filled': 26, 'regions_added': 181, 'merged_into_stripes': 63}
+SL {'gaps': 23, 'filled': 20, 'regions_added': 208, 'merged_into_stripes': 85}

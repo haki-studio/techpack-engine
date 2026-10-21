@@ -136,6 +136,13 @@ def rigid_ref(P, fam, bb, shape):
             mv = MOVES.get((P, f"{view}{i}"))
             if mv is None: continue                                  # the motif is not on this piece any more (cleaned / clipped away)
             g = affinity.translate(g, *mv)
+            if fam == "drops":
+                hr = lb.get("hr")
+                if hr:      # traced at close-up resolution (wavetrace.dots_hr): the silhouette IS input pixels at 4-10 px/mm
+                    gh = affinity.translate(WA.rigid(o, a, A, a_mm), *mv)
+                    DROP_REF.append((unit_id(f"{view}{i}"), gh.intersection(PC.clip_for(SIZE, P).buffer(-0.4)), hr))
+                else:
+                    DROP_REF.append((unit_id(f"{view}{i}"), g.intersection(PC.clip_for(SIZE, P).buffer(-0.4)), None))
             for q in WR.polys_of(g):
                 d.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in q.exterior.coords], fill=255)
                 dm.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in q.exterior.coords], fill=int(min(250, round(float(np.hypot(*mv))))) + 1)
@@ -148,7 +155,7 @@ def rigid_ref(P, fam, bb, shape):
     return r & clipm
 
 from shapely import affinity
-MOVES = {}; MOVE_RASTER = [None]; GREY = {}; PXY = {}; UNIT_RASTER = [None]; _UID = {}
+MOVES = {}; MOVE_RASTER = [None]; GREY = {}; PXY = {}; DROP_REF = []; UNIT_RASTER = [None]; _UID = {}
 def unit_id(u):
     """stable int id of a rigid motif unit (under-collar copies '~uc' count as the same motif)"""
     u = str(u).split("~")[0]
@@ -289,8 +296,9 @@ def explain_gaps(P, gaps, bb):
         x, y = g["x_mm"] + bb[0], g["y_mm"] + bb[1]; g["x_mm"], g["y_mm"] = round(x, 1), round(y, 1)
         gb = _box(x - g["w_mm"] / 2, y - g["h_mm"] / 2, x + g["w_mm"] / 2, y + g["h_mm"] / 2)
         art_near = any(r["geom"].intersects(gb.buffer(SHIFT)) for r in D[P])
+        # PR #27 review 2: 'moved by the wrap' (within 45 mm of a seam, art within 40 mm) excused real bare navy; it is no
+        # longer an explanation - gapfill.py fills those areas from the mockup tones. Only the spec'd art limit may stay bare.
         if gb.distance(clipb) < 6.0 and g["area_mm2"] < 400: g["why"] = "keep-out edge"
-        elif seams and min(s.distance(gb) for s in seams) < 45.0 and art_near: g["why"] = "moved by the wrap"
         else: g["why"] = "UNEXPLAINED"
     return gaps
 
@@ -324,7 +332,47 @@ def closeup_grey12(P, shape12, up):
             g[iy, ix] = vals; w[iy[good], ix[good]] = 1.0
     return g, w
 
+def drops_hr_gate(P, bb):
+    """Drops at 12 ppm (PR #27 review 1): a 5 mm2 drop is 80 px at 4 ppm, so one boundary pixel moved IoU by 0.15. Each
+    reference drop (its traced silhouette: close-up resolution where a close-up covers it, else the x4 render trace) is
+    rasterised at 12 ppm in its own window and compared with the visible stitches of ITS motif (unit attribution, A21),
+    drawn at the house thread width (0.42 mm, qa.visible_segments) with each stitch shortened by the drop pull compensation
+    (the fabric pull-in). Same pass rule as qa.motif_match (IoU >= 0.70, width + height >= 80 %)."""
+    PP = 12.0
+    shape = (int((bb[3] - bb[1]) * PPM), int((bb[2] - bb[0]) * PPM))
+    ua = art_unit_raster(P, bb, shape)
+    vis, vcol = _PAT[P]; want = set(FAM_THREADS["drops"])
+    from collections import defaultdict
+    segs_u = defaultdict(list)
+    for (x0, y0, x1, y1), c in zip(vis, vcol):
+        if c not in want: continue
+        cx, cy = int((x0 + x1) / 2 * PPM), int((y0 + y1) / 2 * PPM)
+        if 0 <= cy < shape[0] and 0 <= cx < shape[1] and ua[cy, cx]: segs_u[int(ua[cy, cx])].append((x0 + bb[0], y0 + bb[1], x1 + bb[0], y1 + bb[1]))
+    rows = []
+    for u, g, hr in DROP_REF:
+        if g.is_empty or g.area < 4.0: continue
+        b = g.bounds; wb = (b[0] - 2.0, b[1] - 2.0, b[2] + 2.0, b[3] + 2.0)
+        W, H = int((wb[2] - wb[0]) * PP) + 1, int((wb[3] - wb[1]) * PP) + 1
+        rim = Image.new("L", (W, H), 0); d = ImageDraw.Draw(rim)
+        for q in WR.polys_of(g):
+            d.polygon([((x - wb[0]) * PP, (y - wb[1]) * PP) for x, y in q.exterior.coords], fill=255)
+            for h in q.interiors: d.polygon([((x - wb[0]) * PP, (y - wb[1]) * PP) for x, y in h.coords], fill=0)
+        oim = Image.new("L", (W, H), 0); do = ImageDraw.Draw(oim); lw = max(1, int(round(0.42 * PP)))
+        for x0, y0, x1, y1 in segs_u.get(u, []):
+            L = float(np.hypot(x1 - x0, y1 - y0)); k_ = min(0.45, PULL_DR / L) if L > 0 else 0.0
+            dx, dy = (x1 - x0) * k_, (y1 - y0) * k_
+            do.line([((x0 + dx - wb[0]) * PP, (y0 + dy - wb[1]) * PP), ((x1 - dx - wb[0]) * PP, (y1 - dy - wb[1]) * PP)], fill=255, width=lw)
+        r_ = np.asarray(rim) > 0; o_ = ndi.binary_closing(np.asarray(oim) > 0, iterations=2)
+        rr = qa.motif_match(r_, o_, PP, min_mm2=4.0, pad_mm=1.5)
+        rr = [max(rr, key=lambda x: x["area_mm2"])] if rr else []
+        for x in rr:
+            x["x_mm"] = round(x["x_mm"] + wb[0] - bb[0], 1); x["y_mm"] = round(x["y_mm"] + wb[1] - bb[1], 1)
+            x["unit"] = u; x["ref"] = f"close-up {hr}" if hr else "render x4"; x["gate_ppm"] = PP
+        rows += rr
+    return rows
+
 def gate_piece(P):
+    DROP_REF.clear()
     cls, bb = ref_classes(P); res = {}
     allart = [WT.NAMES.index(n) for n in WT.CREAM + WT.GREY + WT.BLUES]
     for fam in ("curls", "drops", "stripes"):
@@ -342,7 +390,12 @@ def gate_piece(P):
             ref = rigid_ref(P, fam, bb, cls.shape); out = dst_family(P, bb, fam)
             if fam == "curls":                                     # crests: the art's lobes merge into crests, compare crest by crest
                 ref = ndi.binary_closing(ref, iterations=2)
-            al, Aid, sh = align(ref, out, max_mm=4.0)               # residual registration only: the wrap's own moves are applied above
+            if fam == "drops" and not ART:
+                # drops: NO residual shift. The reference drop is placed by the same rigid map + wrap move as the art, and a
+                # 4 mm search against the whole cream / grey family pulled small drops onto a neighbouring crest (IoU 0)
+                al, sh = ref, {}; Aid, _ = ndi.label(ref)
+            else:
+                al, Aid, sh = align(ref, out, max_mm=4.0)           # residual registration only: the wrap's own moves are applied above
             # A21: each motif is compared with the family's stitches within near_mm of IT (touching crests / a drop sewn
             # against a crest no longer merge into one blob); 1.5 mm for crests, 1.0 mm for drops
             if fam == "drops" and not ART:
@@ -352,7 +405,7 @@ def gate_piece(P):
                     m_ = lab_r[sl_] == kk; uu = UNIT_RASTER[0][sl_][m_]; uu = uu[uu > 0]
                     if not len(uu): continue
                     ys_, xs_ = np.nonzero(Aid == kk); ru[ys_, xs_] = int(np.bincount(uu).argmax())
-                rows = drops_by_unit(P, bb, al, Aid, ru)
+                rows = drops_hr_gate(P, bb)
             else:
                 rows = qa.motif_match(al, out, PPM, min_mm2=4.0, near_mm=1.5 if fam == "curls" else 1.0)
         for r_ in rows:
@@ -424,7 +477,9 @@ def gate_piece(P):
         fams = {}
         for k, nm, tm, ms in ((1, "stripes", 8.0, 12), (2, "foam", 4.0, 6), (3, "drops", 4.0, 4)):
             f_ = qa.direction_match(g12, P12, by[k], tile_mm=tm, min_stitches=ms, visible=False, weight=W12, groups=grp_of[k])
-            fams[nm] = dict(tile_mm=tm, tiles=f_["tiles"], pct_ok=f_["pct_ok"], fail_dev=len(f_["fail_dev"]), fail_chaos=len(f_["fail_chaos"]), masked=f_.get("masked", 0))
+            fams[nm] = dict(tile_mm=tm, tiles=f_["tiles"], pct_ok=f_["pct_ok"], fail_dev=len(f_["fail_dev"]), fail_chaos=len(f_["fail_chaos"]), masked=f_.get("masked", 0),
+                            dev_tiles=[dict(t_, at_mm=[round(t_["at_mm"][0] + bb[0], 1), round(t_["at_mm"][1] + bb[1], 1)]) for t_ in f_["fail_dev"]][:400],
+                            chaos_tiles=[dict(t_, at_mm=[round(t_["at_mm"][0] + bb[0], 1), round(t_["at_mm"][1] + bb[1], 1)]) for t_ in f_["fail_chaos"]][:400])
         dm["by_family"] = fams; dm["ref_ppm"] = P12; dm["source"] = "founder close-ups (4-10 px/mm) inside their footprints; render-only tiles masked"; dm["closeup_share"] = round(float((W12 > 0).mean()), 3)
         for k in ("fail_dev", "fail_chaos"):
             for t_ in dm[k]: t_["at_mm"] = [round(t_["at_mm"][0] + bb[0], 1), round(t_["at_mm"][1] + bb[1], 1)]
