@@ -37,11 +37,11 @@ EL = [  # key, no, title, piece, process, json stem
     ("coin", "01", "Coin-pocket patch — こんぺいとう", "front-right coin pocket (wearer's right)", "embroidered patch, heat-cut edge, sewn on + 2 rivets", "HAKI_KJ_01_coin-pocket-patch"),
     ("spill", "02", "Konpeito spilling out of the coin pocket", "front-right pocket facing, above the coin pocket", "direct embroidery on the cut facing", "HAKI_KJ_02_coin-spill-facing"),
     ("wb", "03", "Waistband patch — ちひろ note", "back waistband, wearer's right", "embroidered patch, heat-cut edge, sewn on", "HAKI_KJ_03_waistband-patch"),
-    ("haki", "04", "Back pocket L — 'haki' + 2 konpeito stars", "wearer's LEFT back pocket", "direct embroidery on the cut pocket", "HAKI_KJ_04_back-pocket-L-haki"),
-    ("starP", "05", "Back pocket R — pink konpeito star", "wearer's RIGHT back pocket", "direct embroidery on the cut pocket", "HAKI_KJ_05_back-pocket-R-star-pink"),
-    ("starY", "06", "Back pocket L — lower yellow star", "wearer's LEFT back pocket, lower outer corner", "direct embroidery on the cut pocket", "HAKI_KJ_06_back-pocket-L-lower-star-yellow"),
-    ("front1", "07a", "Front-leg konpeito stars, upper [PROPOSED]", "wearer's RIGHT front leg panel", "direct embroidery on the cut front panel", "HAKI_KJ_07a_front-leg-stars-upper_PROPOSED"),
-    ("front2", "07b", "Front-leg konpeito stars, lower [PROPOSED]", "wearer's RIGHT front leg panel", "direct embroidery on the cut front panel", "HAKI_KJ_07b_front-leg-stars-lower_PROPOSED"),
+    ("haki", "04", "Back pocket L — 'haki' + 2 konpeito", "wearer's LEFT back pocket", "direct embroidery on the cut pocket", "HAKI_KJ_04_back-pocket-L-haki"),
+    ("starP", "05", "Back pocket R — pink konpeito", "wearer's RIGHT back pocket", "direct embroidery on the cut pocket", "HAKI_KJ_05_back-pocket-R-star-pink"),
+    ("starY", "06", "Back pocket L — lower yellow konpeito", "wearer's LEFT back pocket, lower outer corner", "direct embroidery on the cut pocket", "HAKI_KJ_06_back-pocket-L-lower-star-yellow"),
+    ("front1", "07a", "Front-leg konpeito, upper [PROPOSED]", "wearer's RIGHT front leg panel", "direct embroidery on the cut front panel", "HAKI_KJ_07a_front-leg-stars-upper_PROPOSED"),
+    ("front2", "07b", "Front-leg konpeito, lower [PROPOSED]", "wearer's RIGHT front leg panel", "direct embroidery on the cut front panel", "HAKI_KJ_07b_front-leg-stars-lower_PROPOSED"),
 ]
 RB = {k: json.load(open(f"out/stitch/{stem}.json")) for k, *_, stem in EL}
 
@@ -111,13 +111,15 @@ def emb_front():
         row = sil.intersection(box(0, y - 0.3, 3000, y + 0.3))
         ex = row.bounds[0] if not row.is_empty else 790 * MMPX
         x = ex + d["x_from_side_mm"]
-        g, hi = KA.puffy_star(x - ox * MMPX, y, KA.STAR_D)
+        import kjsvg          # founder change 20 Oct: every konpeito = the 02 facing konpeito
+        g, hi, sp = kjsvg.konpeito_geoms(x - ox * MMPX, y, KA.STAR_D)
         base, tint = {"pink": ("kj_pink", "kj_pink_hi"), "blue": ("kj_blue", "kj_blue_hi"), "yellow": ("kj_yellow", "kj_yellow_hi")}[d["col"]]
-        o.append(f'<path d="{geom_to_path(g)}" fill="{KJ_PAL[base][0]}"/><path d="{geom_to_path(hi)}" fill="{KJ_PAL[tint][0]}"/>')
+        o.append(f'<path d="{geom_to_path(g)}" fill="{KJ_PAL[base][0]}"/><path d="{geom_to_path(hi)}" fill="{KJ_PAL[tint][0]}"/>'
+                 + "".join(f'<path d="{geom_to_path(q)}" fill="{KJ_PAL["kj_white"][0]}"/>' for q in sp))
     return "\n".join(o)
 
 BACK_POCKETS = {"L": (160, 340, 183), "R": (423, 603, 183)}      # px: x0, x1, top
-HAKI_POS = (18.0, 27.0)       # yellow-star centre: mm in from the pocket's OUTER edge, mm below the pocket top edge
+HAKI_POS = (18.0, 27.0)       # yellow-konpeito centre: mm in from the pocket's OUTER edge, mm below the pocket top edge
 STARP_POS = (17.0, 25.0)      # right pocket star centre: in from OUTER edge, below top
 STARY_POS = (17.0, 20.0)      # lower yellow star: in from outer edge, ABOVE the lower corner (16 Oct spec)
 def emb_back():
@@ -178,16 +180,18 @@ def T2():
                (S07[0], S07[1], "07"), ((1112 - 760) * MMPX, 72 * MMPX, "B1"), ((1092 - 760) * MMPX, 150 * MMPX, "Z1")]
     calls_b = [(FL.WB_TL_PX[0] * MMPX + 40, FL.WB_TL_PX[1] * MMPX + 27, "03"), (160 * MMPX + 50, 183 * MMPX + 27, "04"),
                (603 * MMPX - 17, 183 * MMPX + 25, "05"), (168 * MMPX + 17, 352 * MMPX - 20, "06"), (380 * MMPX, 60, "L1")]
+    LEFT = {"01": (-13, 1), "02": (-13, -5), "Z1": (11, 7)}   # 01/02 left + Z1 down: no circle covers a front belt loop          # these two point left so the circles never cover the front belt loop
     for (x, y, lab), (gx, gy) in [(c, (16 - FB[0] * s, 32)) for c in calls_f] + [(c, (110 - BB[0] * s, 32)) for c in calls_b]:
         X, Y = gx + x * s, gy + y * s
-        o.append(f'<line x1="{f(X)}" y1="{f(Y)}" x2="{f(X + 9)}" y2="{f(Y - 6)}" stroke="{GUIDE}" stroke-width="0.25"/>')
-        o.append(f'<circle cx="{f(X + 11)}" cy="{f(Y - 7)}" r="2.6" fill="#FFFFFF" stroke="{GUIDE}" stroke-width="0.3"/>')
-        o.append(t(X + 11, Y - 6.2, lab, 2.0, 700, GUIDE, "middle"))
+        ddx, ddy = LEFT.get(lab, (11, -7)); ex, ey = X + ddx * 9 / 11, Y + ddy * 6 / 7
+        o.append(f'<line x1="{f(X)}" y1="{f(Y)}" x2="{f(ex)}" y2="{f(ey)}" stroke="{GUIDE}" stroke-width="0.25"/>')
+        o.append(f'<circle cx="{f(X + ddx)}" cy="{f(Y + ddy)}" r="2.6" fill="#FFFFFF" stroke="{GUIDE}" stroke-width="0.3"/>')
+        o.append(t(X + ddx, Y + ddy + 0.8, lab, 2.0, 700, GUIDE, "middle"))
     lx = 212; y = 36
     o.append(t(lx, y, "Callouts", 2.6, 700)); y += 5
     for lab, s_ in [("01", "coin-pocket patch こんぺいとう"), ("02", "konpeito spill on the facing"), ("03", "waistband patch (ちひろ note)"),
-                    ("04", "back pocket L: 'haki' + 2 stars"), ("05", "back pocket R: pink star"), ("06", "back pocket L lower yellow star"),
-                    ("07", "front-leg stars: artwork to follow [MISSING]"), ("B1", "28 L flat tack shank button"), ("Z1", "YKK #4.5 zip fly, 6 in"), ("L1", "main label inside CB (T7)")]:
+                    ("04", "back pocket L: 'haki' + 2 konpeito"), ("05", "back pocket R: pink konpeito"), ("06", "back pocket L lower yellow konpeito"),
+                    ("07", "front-leg konpeito: artwork to follow [MISSING]"), ("B1", "28 L flat tack shank button"), ("Z1", "YKK #4.5 zip fly, 6 in"), ("L1", "main label inside CB (T7)")]:
         o.append(t(lx, y, lab, 2.0, 700, GUIDE)); o.append(t(lx + 7, y, s_, 1.9, 400, AMBER if ("MISSING" in s_ or "proposed" in s_) else INK)); y += 3.8
     y += 3
     for s_ in ["5-pocket jean, same fit + construction as the", "Hidden Inventory (HI) pants, without the cargo", "pockets:",
@@ -197,7 +201,8 @@ def T2():
                "• front + back legs: ONE panel each, waist", "  to hem (no knee seam)"]:
         o.append(t(lx, y, s_, 1.9, 400, INK)); y += 3.4
     y += 2; o.append(t(lx, y, "Matte black metal, DTM black thread (19 Oct)", 1.8, 600, INK)); y += 3.4
-    o.append(missing(lx, y + 2, 70, 10, ["07 front-leg: artwork to follow [MISSING]", "PROPOSED star positions on G7"], 1.8))
+    o.append(t(lx, y, "Seams light grey, topstitch grey dashes = drawing only", 1.7, 400, MUTED)); y += 3.4
+    o.append(missing(lx, y + 2, 70, 10, ["07 front-leg: artwork to follow [MISSING]", "PROPOSED konpeito positions on G7"], 1.8))
     # scale bar
     o.append(f'<line x1="24" y1="{SH-14}" x2="{24 + 100 * s}" y2="{SH-14}" stroke="{INK}" stroke-width="0.5"/>')
     o.append(t(24, SH - 15.5, "100 mm at flat scale", 1.8, 400, MUTED))
@@ -274,7 +279,7 @@ def T4():
         o.append(t(14, y, s_, 2.3, 700)); o.append(t(56, y, b, 2.05, 400, AMBER if "proposed" in b.lower() else INK)); y += 5.9
     y += 3
     o.append(t(14, y, "Pattern pieces per garment — check against the HI pattern  " + PROPOSED, 2.5, 700, INK)); y += 6
-    rows = [["Front leg L / R", "2", "shell", "one piece waist to hem (no knee seam); R carries 07 (front-leg stars)"],
+    rows = [["Front leg L / R", "2", "shell", "one piece waist to hem (no knee seam); R carries 07 (front-leg konpeito)"],
             ["Back leg L / R", "2", "shell", "one piece waist to hem (no knee seam, no yoke)"],
             ["Waistband", "2", "shell + interlining as HI", "2 pieces joined at CB; patch 03 on the wearer's right back"],
             ["Fly / fly shield", "2", "shell", "YKK #4.5 zip 6 in + 28 L shank button"],
@@ -311,7 +316,7 @@ def T5():
         ["Rivets", "Inverted nipple rivet 15 L (9.5 mm), metal (as HI)", "matte black", "4", "2 front scoop corners + 2 coin-pocket top corners"],
         ["Bartacks", "Back-pocket top corners (as HI, no rivets), belt loops, fly bottom", "DTM black", "—", ""],
         ["Main label", "Damask woven, flat, 5 × 2.5 cm, sewn down on all 4 sides. Current HI artwork = reference; new artwork: to follow [MISSING]", "jet black / optic white", "1", "inside CB, centred on the waistband"],
-        ["Size label", f"Damask woven LOOP label (folded, open loop), waist number in Neue Metana; sizes {sz} (artwork T7b, zip labels/)", "jet black / optic white", "1", "inside CB, left of the main label"],
+        ["Size label", f"Damask woven CENTREFOLD label 30 × 10 mm (as HI), waist number in Neue Metana; sizes {sz} (artwork T7b, zip labels/)", "jet black / optic white", "1", "inside CB, left of the main label"],
         ["Care label", "Printed polyester satin ribbon, 3 × 6 cm. Current HI artwork = reference; new artwork: to follow [MISSING]", "optic white / jet black", "1", "wearer's right, waist seam, 5 cm in from side seam"],
         ["Hangtag + string", "Hangtag artwork: to follow [MISSING]; label string through the size-label loop; retail sticker on the hangtag (as HI)", "", "1", "hung from the SIZE label"],
         ["Barcode", "Barcode per size: HK code from PLM: to follow [MISSING] (Code 128, printed on the polybag sticker)", "print black", "1", "polybag sticker"],
@@ -337,7 +342,7 @@ def T6():
             ["Fly", "Zip fly, YKK #4.5 close-end 6 in, automatic lock slider; J-shaped topstitch on the front, bartack at the bottom (as HI)."],
             ["Belt loops", "5 loops (2 front 1 cm from the pocket, 2 back, 1 at CB), bartacked top + bottom (as HI)."],
             ["Hem", "Turned twice and topstitched, as the HI pants."],
-            ["Labels", "Main label inside CB sewn down on all 4 sides; size LOOP label on its left; care label in the waist seam, wearer's right (T7)."],
+            ["Labels", "Main label inside CB sewn down on all 4 sides; centrefold size label on its left; care label in the waist seam, wearer's right (T7)."],
             ["Not on Konpeito", "Cargo pockets, snap buttons, HI flag labels, hammer loop  " + PROPOSED]]
     tb, y = table(12, 36, [("Operation", 34), ("How (plain words)", 150)], rows, 1.85, 5.0)
     o.append(tb)
@@ -361,7 +366,7 @@ def T6():
 # ---------------------------------------------------------------- T7 labels / trims
 def label_detail(X, Y, s=0.4, size="32"):
     """inside back waistband at CB (drawn 1:1 in local mm, placed at scale s): main label sewn down on all 4 sides, size
-    LOOP label on its left with the hang-tag string through the loop, hang tag below (schematic)."""
+    centrefold size label on its left with the hang-tag string through it, hang tag below (schematic)."""
     import kjlabels as KL
     ts = lambda v: v / s                  # text size v mm on the page
     o = []
@@ -376,7 +381,7 @@ def label_detail(X, Y, s=0.4, size="32"):
     o.append(f'<rect x="{mx}" y="{my}" width="50" height="25" fill="#0A0A0A"/>')
     o.append(f'<rect x="{mx + 1.2}" y="{my + 1.2}" width="47.6" height="22.6" fill="none" stroke="#B0B0B0" stroke-width="0.5" stroke-dasharray="1.4 1"/>')
     o.append(t(mx + 25, my + 11, "main label", ts(1.7), 700, "#FFFFFF", "middle")); o.append(t(mx + 25, my + 11 + ts(1.7) * 1.3, "(reference art)", ts(1.5), 500, "#FFFFFF", "middle"))
-    lw = KL.W; loop = (KL.L - 2 * KL.SA) / 2
+    lw = KL.H; loop = (KL.W - 2 * KL.SA) / 2          # centrefold label folded: 10 wide, hangs 10
     lx = mx - 6 - lw; ly = wb_h
     o.append(f'<rect x="{lx}" y="{ly - KL.SA}" width="{lw}" height="{loop + KL.SA}" rx="2" fill="#0A0A0A" stroke="#555" stroke-width="0.4"/>')
     d, _ = KL.text_path(size, lx + lw / 2, ly + loop / 2, KL.CAP)
@@ -388,21 +393,21 @@ def label_detail(X, Y, s=0.4, size="32"):
     o.append(f'<circle cx="{tx + 12}" cy="{ty + 4}" r="1.4" fill="none" stroke="{AMBER}" stroke-width="0.5"/>')
     o.append(t(tx + 12, ty + 14, "hang tag", ts(1.6), 700, AMBER, "middle")); o.append(t(tx + 12, ty + 14 + ts(1.6) * 1.3, "to follow", ts(1.5), 500, AMBER, "middle"))
     o.append(t(tx + 12, ty + 14 + ts(1.6) * 2.6, "[MISSING]", ts(1.5), 700, AMBER, "middle"))
-    o.append(t(lx + lw + 4, ly + loop - 4, "size LOOP label: both ends sewn into the waist seam,", ts(1.6), 600, INK))
-    o.append(t(lx + lw + 4, ly + loop - 4 + ts(1.6) * 1.35, "loop open — the hang-tag string ties through it", ts(1.6), 600, INK))
+    o.append(t(lx + lw + 4, ly + loop - 4, "size label (centrefold, as HI): both ends sewn into the waist seam,", ts(1.6), 600, INK))
+    o.append(t(lx + lw + 4, ly + loop - 4 + ts(1.6) * 1.35, "a small loop — the hang-tag string ties through it", ts(1.6), 600, INK))
     o.append(t(60, -4.5, "main label: sewn down on all 4 sides", ts(1.6), 600, INK, "start"))
     return f'<g transform="translate({f(X)} {f(Y)}) scale({f(s)})">' + "\n".join(o) + "</g>"
 
 def T7():
-    o = hdr("T7 · LABELS + TRIMS PLACEMENT", "Inside / outside positions of every label and metal trim. Label types + positions as Hidden Inventory (factory tech pack p. 9, 10, 13); size label = LOOP label (founder 20 Oct); artwork on T7b.", "T7")
+    o = hdr("T7 · LABELS + TRIMS PLACEMENT", "Inside / outside positions of every label and metal trim. Label types + positions as Hidden Inventory (factory tech pack p. 9, 10, 13); size label = HI centrefold label with our waist sizes (founder 20 Oct); artwork on T7b.", "T7")
     s = 0.085
     o.append(flat_group("back", 14 - BB[0] * s, 32, s, emb=True))
     o.append(flat_group("front", 84 - FB[0] * s, 32, s, emb=True))
     bx = 14 - BB[0] * s; fx = 84 - FB[0] * s
-    # main label 50 x 25 centred on CB + size loop on its left (inside, dashed)
+    # main label 50 x 25 centred on CB + size label on its left (inside, dashed)
     o.append(f'<rect x="{f(bx + (380 * MMPX - 25) * s)}" y="{f(32 + 52 * s)}" width="{f(50 * s)}" height="{f(25 * s)}" fill="none" stroke="{GUIDE}" stroke-width="0.35" stroke-dasharray="1 0.6"/>')
     o.append(f'<rect x="{f(bx + (380 * MMPX - 25 - 21) * s)}" y="{f(32 + 85 * s)}" width="{f(15 * s)}" height="{f(25 * s)}" fill="none" stroke="{GUIDE}" stroke-width="0.35" stroke-dasharray="0.6 0.4"/>')
-    o.append(t(bx + 380 * MMPX * s, 32 + 52 * s - 2, "main + size loop label (inside, CB)", 1.7, 600, GUIDE, "middle"))
+    o.append(t(bx + 380 * MMPX * s, 32 + 52 * s - 2, "main + size label (inside, CB)", 1.7, 600, GUIDE, "middle"))
     # care label 30 x 60 hanging from the waist seam, 50 mm in from the wearer's right side seam (front flat: image left)
     cx0 = fx + ((886 - 760) * MMPX + 50 - 15) * s
     o.append(f'<rect x="{f(cx0)}" y="{f(32 + 95 * MMPX * s)}" width="{f(30 * s)}" height="{f(60 * s)}" fill="none" stroke="{GUIDE}" stroke-width="0.35" stroke-dasharray="1 0.6"/>')
@@ -412,9 +417,9 @@ def T7():
     o.append(t(14, 140, "LABEL DETAIL — inside back waistband at CB (0.4 : 1)", 2.1, 700))
     o.append(label_detail(40, 148, 0.4))
     rows = [["Main label", "damask woven, flat", "inside back waistband, centred on CB, 5 × 2.5 cm; SEWN DOWN ON ALL 4 SIDES (jet black). Nothing hangs from it.", "current HI art = reference; new artwork: to follow [MISSING]"],
-            ["Size label", "damask woven LOOP", f"inside CB, left of the main label: strip folded into an open loop, both ends in the waist seam; waist numbers {' '.join(SIZES)}", "artwork T7b + zip labels/ (Neue Metana, white on black)"],
+            ["Size label", "damask woven, centrefold", f"inside CB, left of the main label: 30 × 10 mm folded at the middle, both ends in the waist seam (small loop); waist numbers {' '.join(SIZES)}", "artwork T7b + zip labels/ (Neue Metana, white on black)"],
             ["Care label", "printed satin", "wearer's right side, in the waist seam, 5 cm in from the side seam; 3 × 6 cm", "current HI art = reference; new artwork: to follow [MISSING]"],
-            ["Hang tag", "", "hangs from the SIZE loop label (string through the loop), never from the main label", "hang tag artwork: to follow [MISSING]"],
+            ["Hang tag", "", "hangs from the SIZE label (string through its fold), never from the main label", "hang tag artwork: to follow [MISSING]"],
             ["Shank button", "28 Line flat tack", "CF waistband, centred on the WB height", "matte black"],
             ["Zip fly", "YKK #4.5, 6 in", "CF fly, close-end, automatic lock slider", "matte black, DTM tape"],
             ["Rivets", "15 L (9.5 mm)", "front scoop corners (2); coin pocket top corners (2, through patch 01, centre 4.25 / 4.25 from the patch edges)", "matte black; back pockets: bartacks, no rivets"],
@@ -432,34 +437,55 @@ def T7():
 
 def T7b():
     import kjlabels as KL
-    o = hdr("T7b · LABEL ARTWORK — size labels (new) + main / care label reference", "Size labels: recreated by Haki (files in the zip, labels/). Main + care label: the current Hidden Inventory artwork is shown as REFERENCE only — new artwork to follow from Haki.", "T7b")
-    # A: size labels at 1:1
-    o.append(t(12, 32, f"A · SIZE LOOP LABELS — 1 : 1, flat strip {KL.W:g} × {KL.L:g} mm, fold at the middle (files: labels/HAKI_KJ_size-label_<size>.svg / .pdf)", 2.2, 700))
-    x = 14; y = 38
-    for sz in KL.SIZE_RUN:
-        st, _ = KL.strip(sz, x, y, guides=True); o += st
-        o.append(t(x + KL.W / 2, y + KL.L + 4, sz, 2.0, 700, INK, "middle"))
-        x += KL.W + 4
-    lx = x + 2
-    for i, (ln, col) in enumerate([("Waist-size numbers, Neue Metana ExtraBold, optic white on jet black;", INK),
-                                   ("text outlined in the files (no font needed).", INK),
-                                   ("Damask woven (as HI); LOOP label: folded at the blue", INK),
-                                   ("line, both ends (red seam lines, 5 mm) sewn into the", INK),
-                                   ("waist seam inside CB, left of the main label; the loop", INK),
-                                   ("stays open so the hang-tag string ties through it.", INK),
-                                   ("Number on both halves (back half turned 180°), so both", INK),
-                                   ("faces read upright when the loop hangs.", INK),
-                                   ("Strip size + number height  " + PROPOSED, AMBER),
-                                   (f"Sizes: {' '.join(KL.SIZE_RUN)} (founder 20 Oct)", INK)]):
-        o.append(t(lx, 40 + i * 3.5, ln, 1.8, 400 if col == INK else 600, col))
-    # B: HI reference art
-    yb = 112
-    im = Image.open("inputs/reference/HI_p10-10.png"); im = im.crop((int(im.width * 0.03), int(im.height * 0.205), int(im.width * 0.97), int(im.height * 0.965)))
-    tag, h1 = img(im, 12, yb + 2, h=SH - yb - 22); o.append(t(12, yb, "B · MAIN + CARE LABEL — current HI artwork, REFERENCE ONLY (HI p. 10)", 2.2, 700)); o.append(tag)
-    w1 = h1 * im.width / im.height
-    o.append(missing(12 + w1 + 6, yb + 2, 120, 16, ["Main label + care label: new artwork to follow [MISSING]", "Haki sends new artwork; until then this HI art is a reference for", "type, size, colours and layout only. HI size label (XS–3XL) NOT used."], 1.9))
-    yy = yb + 24; cx = 12 + w1 + 6
-    for a, b in [("Main label", "damask woven, flat, 5 × 2.5 cm; jet black ground, optic white logo;"),
+    o = hdr("T7b · LABEL ARTWORK — size label (new, HI style) + main / care label reference", "Size label: the HI size label (damask woven, centrefold, 30 × 10 mm) with OUR waist sizes in Neue Metana ExtraBold — files in the zip, labels/. Main + care label: current HI artwork, REFERENCE only — new artwork to follow from Haki.", "T7b")
+    yb = 36; hcol = 104
+    im = Image.open("inputs/reference/HI_p10-10.png")
+    X0, X1, Y0, Y1 = int(im.width * 0.03), int(im.width * 0.97), int(im.height * 0.205), int(im.height * 0.965)
+    third = (X1 - X0) / 3
+    main = im.crop((X0, Y0, int(X0 + third), Y1)); care = im.crop((int(X0 + 2 * third), Y0, X1, Y1))
+    o.append(t(12, yb - 2, "A · LABELS — main + care = current HI artwork (REFERENCE ONLY, HI p. 10); size label = OURS, drawn in the HI style", 2.2, 700))
+    tag, h1 = img(main, 12, yb, h=hcol); o.append(tag); wc = h1 * main.width / main.height
+    xs = 12 + wc                                   # our size-label column, same frame as HI's middle column
+    tag, _ = img(care, xs + wc, yb, h=hcol); o.append(tag)
+    k = h1 / main.height                           # mm per HI px
+    o.append(f'<rect x="{f(xs)}" y="{f(yb)}" width="{f(wc)}" height="{f(h1)}" fill="#FFFFFF"/>')
+    o.append(f'<line x1="{f(xs)}" y1="{f(yb)}" x2="{f(xs)}" y2="{f(yb + h1)}" stroke="#222" stroke-width="0.3"/>')
+    o.append(f'<line x1="{f(xs + wc)}" y1="{f(yb)}" x2="{f(xs + wc)}" y2="{f(yb + h1)}" stroke="#222" stroke-width="0.3"/>')
+    o.append(f'<line x1="{f(xs)}" y1="{f(yb + h1 - 0.15)}" x2="{f(xs + wc)}" y2="{f(yb + h1 - 0.15)}" stroke="#222" stroke-width="0.3"/>')
+    cxm = xs + wc / 2
+    o.append(t(cxm, yb + 7, "Size Label", 2.9, 400, INK, "middle"))
+    o.append(t(cxm, yb + 10.5, "NEW — Haki waist sizes", 1.8, 700, GREEN, "middle"))
+    s1 = 0.68                                       # same drawing scale as HI's dimensioned label
+    lx = cxm - KL.W * s1 / 2 + 2; ly = yb + 19
+    st, _ = KL.label("26", lx, ly, s1); o += st
+    dm = 'stroke="#7A1F2B" stroke-width="0.2"'
+    o.append(f'<line x1="{f(lx)}" y1="{f(ly - 2.2)}" x2="{f(lx + (KL.W - KL.SA) * s1)}" y2="{f(ly - 2.2)}" {dm}/>')
+    for xx in (lx, lx + KL.SA * s1, lx + (KL.W - KL.SA) * s1): o.append(f'<line x1="{f(xx)}" y1="{f(ly - 3)}" x2="{f(xx)}" y2="{f(ly - 1.4)}" {dm}/>')
+    o.append(t(lx + KL.SA * s1 / 2, ly - 3.2, "0.5 cm", 1.6, 400, INK, "middle")); o.append(t(lx + KL.W * s1 / 2, ly - 3.2, "2 cm", 1.6, 400, INK, "middle"))
+    o.append(f'<line x1="{f(lx - 2)}" y1="{f(ly)}" x2="{f(lx - 2)}" y2="{f(ly + KL.H * s1)}" {dm}/>'); o.append(t(lx - 3, ly + KL.H * s1 / 2 + 0.6, "1 cm", 1.6, 400, INK, "end"))
+    o.append(f'<line x1="{f(lx + KL.FOLD * s1)}" y1="{f(ly + KL.H * s1 + 0.6)}" x2="{f(lx + KL.FOLD * s1)}" y2="{f(ly + KL.H * s1 + 2.6)}" stroke="#7A1F2B" stroke-width="0.25"/>')
+    o.append(t(lx + KL.FOLD * s1, ly + KL.H * s1 + 5, "folding lines", 1.8, 400, INK, "middle"))
+    gx = [xs + wc * 0.06, xs + wc * 0.53]; gy = yb + 38; s2 = 0.68
+    for i, sz in enumerate(KL.SIZE_RUN):
+        r_, c_ = divmod(i, 2)
+        x_ = (gx[c_] if i < len(KL.SIZE_RUN) - 1 or len(KL.SIZE_RUN) % 2 == 0 else cxm - KL.W * s2 / 2)
+        st, _ = KL.label(sz, x_, gy + r_ * 9.6, s2); o += st
+    o.append(t(cxm, yb + h1 - 4, "Type: Damask woven label. Centerfold", 2.0, 400, INK, "middle"))
+    # B: 1:1 artwork row
+    yr = yb + h1 + 8
+    o.append(t(12, yr, "B · SIZE LABELS 1 : 1 (flat, before folding) — files labels/HAKI_KJ_size-label_<size>.svg / .pdf, text outlined", 2.2, 700))
+    for i, sz in enumerate(KL.SIZE_RUN):
+        st, _ = KL.label(sz, 12 + (i % 6) * (KL.W + 4), yr + 3 + (i // 6) * (KL.H + 4)); o += st
+    w1 = 3 * wc
+    o.append(missing(12 + w1 + 6, yb, SW - 14 - (12 + w1 + 6), 16, ["Main label + care label: new artwork to follow [MISSING]", "Haki sends new artwork; until then this HI art is a reference for", "type, size, colours and layout only. HI size label (XS–3XL) NOT used."], 1.9))
+    yy = yb + 22; cx = 12 + w1 + 6
+    for a, b in [("Size label", "damask woven, CENTREFOLD, 30 × 10 mm flat (as HI): 5 mm seam allowance each"),
+                 ("", "end, fold at 15 mm; the 10 mm face shows the waist size, Neue Metana ExtraBold,"),
+                 ("", f"{KL.CAP:g} mm, optic white on jet black [proposed — confirm number height]."),
+                 ("", "Both ends sewn into the waist seam inside CB beside the main label: it stays a small"),
+                 ("", "loop — the hang-tag string ties through it."),
+                 ("", f"Sizes: {' '.join(KL.SIZE_RUN)} (founder 20 Oct)."),
+                 ("Main label", "damask woven, flat, 5 × 2.5 cm; jet black ground, optic white logo;"),
                  ("", "inside CB, centred on the waistband, SEWN DOWN ON ALL 4 SIDES (jet black)."),
                  ("Care label", "printed polyester satin ribbon, 3 × 6 cm, 0.5 cm stitching allowance at the top;"),
                  ("", "optic white ground, jet black text; wearer's right, waist seam, 5 cm in from the side seam."),
@@ -467,9 +493,9 @@ def T7b():
                  ("", "MACHINE WASH COLD INSIDE OUT AND SEPARATE · DO NOT BLEACH · TUMBLE DRY LOW"),
                  ("", "HEAT INSIDE OUT OR LINE DRY · IRON MEDIUM HEAT INSIDE OUT · DRY CLEAN · THIS"),
                  ("", "GARMENT MAY FADE AND STAIN OTHER LIGHT SURFACES AND GARMENTS (until new art)"),
-                 ("Hang tag", "hangs from the SIZE loop label; artwork to follow [MISSING]"),
+                 ("Hang tag", "hangs from the SIZE label; artwork to follow [MISSING]"),
                  ("Certification", "all items to be OEKO-TEX certified (as HI).")]:
-        o.append(t(cx, yy, a, 1.9, 700)); o.append(t(cx + 25, yy, b, 1.75, 600 if "MISSING" in b else 400, AMBER if "MISSING" in b else INK)); yy += 3.9
+        o.append(t(cx, yy, a, 1.9, 700)); o.append(t(cx + 18, yy, b, 1.6, 600 if ("MISSING" in b or "proposed" in b) else 400, AMBER if ("MISSING" in b or "proposed" in b) else INK)); yy += 3.6
     return o
 
 # ---------------------------------------------------------------- T8 embroidery placement overview
@@ -478,10 +504,10 @@ def T8():
     rows = [["01 coin patch", "front-R coin pocket", "76 × 56", "patch top edge = coin-pocket opening; centre on the HI coin-pocket position; rivets through the top corners", ""],
             ["02 spill", "front-R facing", "71 × 14", "pocket-line (y 0 in the file) = the coin pocket's top edge; candies run 3 mm under the patch", "facing >= 3 mm clear of the WB seam " + PROPOSED],
             ["03 WB patch", "back WB, wearer's R", "80 × 54", "top edge 3 mm below WB top, outer edge 25 mm from the side belt loop; runs over the waist seam onto the back panel (sew on after assembly + wash)", "CONFIRMED (founder 20 Oct)"],
-            ["04 haki group", "back pocket L", f"{RB['haki']['size_mm'][0]:.0f} × {RB['haki']['size_mm'][1]:.0f}", f"yellow-star centre {HAKI_POS[0]:.0f} mm in from the OUTER edge, {HAKI_POS[1]:.0f} mm below the pocket top edge; baseline level", "clears hem topstitch (13) + outer topstitch (11)"],
-            ["05 pink star", "back pocket R", "10 × 10", f"centre {STARP_POS[0]:.0f} mm in from the OUTER edge, {STARP_POS[1]:.0f} mm below the top edge (mockup 8 mm in: moved 9 mm inward, topstitch)", ""],
-            ["06 yellow star", "back pocket L", "10 × 10", f"centre {STARY_POS[0]:.0f} mm in from the outer edge, {STARY_POS[1]:.0f} mm above the lower outer corner", "kept: founder confirmed 19 Oct"],
-            ["07 front stars", "front-R leg panel", "14 × Ø10", "per-star table on G7 (x from side seam, y from WB top); check vs mockup on C5", "artwork to follow [MISSING]; stars PROPOSED"]]
+            ["04 haki group", "back pocket L", f"{RB['haki']['size_mm'][0]:.0f} × {RB['haki']['size_mm'][1]:.0f}", f"yellow-konpeito centre {HAKI_POS[0]:.0f} mm in from the OUTER edge, {HAKI_POS[1]:.0f} mm below the pocket top edge; baseline level", "clears hem topstitch (13) + outer topstitch (11)"],
+            ["05 pink konpeito", "back pocket R", f"{RB['starP']['size_mm'][0]:.0f} × {RB['starP']['size_mm'][1]:.0f}", f"centre {STARP_POS[0]:.0f} mm in from the OUTER edge, {STARP_POS[1]:.0f} mm below the top edge (mockup 8 mm in: moved 9 mm inward, topstitch)", ""],
+            ["06 yellow konpeito", "back pocket L", f"{RB['starY']['size_mm'][0]:.0f} × {RB['starY']['size_mm'][1]:.0f}", f"centre {STARY_POS[0]:.0f} mm in from the outer edge, {STARY_POS[1]:.0f} mm above the lower outer corner", "kept: founder confirmed 19 Oct"],
+            ["07 front konpeito", "front-R leg panel", "14 × 10 mm", "per-konpeito table on G7 (x from side seam, y from WB top); check vs mockup on C5", "artwork to follow [MISSING]; konpeito PROPOSED"]]
     tb, y = table(12, 36, [("Element", 28), ("Piece", 34), ("Size mm", 18), ("Position (finished)", 148), ("Note", 50)], rows, 1.85, 6.2)
     o.append(tb)
     # pocket detail drawings, 0.6 scale
@@ -519,7 +545,7 @@ def T8():
 
 # ---------------------------------------------------------------- G1 embroidery summary + thread chart
 def G1():
-    o = hdr("G1 · EMBROIDERY SUMMARY — files, read-back numbers, threads", f"01–03 + stars digitised from the founder's vector art (inputs/svg); 04 'haki' traced from its mockup. Every number read back from the written DST (readback.dst). Machine time at {PROF['spm']} spm + 6 s per trim + 4 s per colour change (factory.json). <= {factory.max_threads()} threads per file.", "G1")
+    o = hdr("G1 · EMBROIDERY SUMMARY — files, read-back numbers, threads", f"01–03 + every konpeito digitised from the founder's vector art (inputs/svg); 04 'haki' traced from its mockup. Every number read back from the written DST (readback.dst). Machine time at {PROF['spm']} spm + 6 s per trim + 4 s per colour change (factory.json). <= {factory.max_threads()} threads per file.", "G1")
     rows = []; tot = dict(st=0, tr=0, mi=0)
     for k, no, title, piece, proc, stem in EL:
         r = RB[k]
@@ -572,11 +598,20 @@ def stitch_check(vis):
     from scipy import ndimage as ndi
     from qa import rast, disk
     out = []
-    by = {}
-    for r in vis: by.setdefault(r["col"], []).append(r["geom"])
+    by, dots = {}, {}
+    for r in vis:      # round bead dots (knots) are checked as DOTS (needle span >= 0.9 = visible >= house-min Ø1.1), not as strokes:
+        if r.get("knots"): dots.setdefault(r["col"], []).extend(k[2] for k in r["knots"]); by.setdefault(r["col"], []); continue
+        by[r["col"]] = by.get(r["col"], []) + [r["geom"]]      # their round rims read as 'thin area' (G3 white 4.9 %, PR #29 item 5)
     for col, gs in by.items():
-        g = unary_union(gs)
-        if g.area < 0.5: continue
+        dd = dots.get(col, [])
+        dtxt = f" + {len(dd)} dots Ø{min(dd) + 0.2:.1f}" if dd else ""
+        dok = all(d >= 0.9 - 1e-6 for d in dd)
+        g = unary_union(gs) if gs else None
+        if g is None or g.area < 0.5:
+            if dd:
+                thin60 = col in ("kj_black", "kj_blue60")
+                out.append([KJ_PAL[col][1], "dot >= Ø1.1", "dots only" + dtxt, "0", "PASS" if dok else "CHECK"])
+            continue
         thin60 = col in ("kj_black", "kj_blue60")
         ms, mg, mc = (0.6, 0.35, 0.45) if thin60 else (0.8, 0.5, 0.6)
         px = 30; ink = rast(g, px)
@@ -589,12 +624,12 @@ def stitch_check(vis):
             if sl_i in border or sl is None: continue
             if 2 * bdt[sl][lab[sl] == sl_i].max() / px < mc: small += 1
         thin_pct = 100 * thin.sum() / max(ink.sum(), 1)
-        out.append([KJ_PAL[col][1], f"{ms}/{mg}/{mc}", f"{thin_pct:.1f} %", str(small), "PASS" if thin_pct < 3 and small == 0 else "CHECK"])
+        out.append([KJ_PAL[col][1], f"{ms}/{mg}/{mc}", f"{thin_pct:.1f} %" + dtxt, str(small), "PASS" if thin_pct < 3 and small == 0 and dok else "CHECK"])
     return out
 
 def element_page(pid, key, no, title, piece, proc, stem, ref_png=None, ref_crop=None, extra=None, miss="", ref_label="B · MOCKUP REFERENCE (placement + colour; art from inputs/svg)"):
     rb = RB[key]
-    pair = " · house patch spec (6.5 border, 5.8 pitch), pairs with patch " + ("03" if no == "01" else "01") if "patch" in proc else " · konpeito stars 10 mm, same as every star on the jean"
+    pair = " · house patch spec (6.5 border, 5.8 pitch), pairs with patch " + ("03" if no == "01" else "01") if "patch" in proc else " · konpeito 10 mm = the 02 shape, same on every location of the jean"
     o = hdr(f"{pid} · {no} {title}", f"{proc} · {piece} · {REV} · {DATE} · finished size, mm · DST/PES {stem}{pair}", pid)
     # A: stitch preview from the DST at a stated scale
     prev = Image.open(f"out/stitch/{stem}_preview.png")
@@ -621,7 +656,7 @@ def element_page(pid, key, no, title, piece, proc, stem, ref_png=None, ref_crop=
     st, y2 = stop_table(rb, cx + 62, 35 - 3.4); o.append(st)
     yy = max(35 + 8 * 3.8, y2) + 3
     o.append(t(cx, yy, "D · STITCH CHECK per thread (min stroke / gap / counter, mm)", 2.1, 700)); yy += 4
-    tb, yy = table(cx, yy, [("Thread", 30), ("Thresholds", 22), ("Thin area", 16), ("Small counters", 22), ("", 12)], stitch_check(A[key]["vis"] if key in A else []), 1.75, 3.4)
+    tb, yy = table(cx, yy, [("Thread", 30), ("Thresholds", 22), ("Thin area (+ bead dots, visible Ø)", 30), ("Counters", 12), ("", 12)], stitch_check(A[key]["vis"] if key in A else []), 1.75, 3.4)
     o.append(tb)
     g = GATES.get(key)
     if g:
@@ -655,9 +690,9 @@ def wrap(s, n):
     return lines
 
 def G7():
-    o = hdr("G7 · 07 FRONT-LEG KONPEITO STARS — artwork to follow, PROPOSED star map", "Wearer's right front leg panel. The front-leg artwork is to follow from Haki; this page holds the placement area and the PROPOSED positions of the candy stars, read from the garment mockup (check on C5).", "G7")
+    o = hdr("G7 · 07 FRONT-LEG KONPEITO — artwork to follow, PROPOSED konpeito map", "Wearer's right front leg panel. The front-leg artwork is to follow from Haki; this page holds the placement area and the PROPOSED positions of the konpeito, read from the garment mockup (check on C5).", "G7")
     o.append(missing(12, 30, 273, 11, ["07 front-leg: artwork to follow [MISSING]",
-                                       "The stars below are PROPOSED positions and PROPOSED stitch files (07a / 07b); they are replaced when Haki sends the front-leg artwork."], 2.0))
+                                       "The konpeito below are PROPOSED positions and PROPOSED stitch files (07a / 07b); they are replaced when Haki sends the front-leg artwork."], 2.0))
     s = 0.125
     o.append(f'<g transform="translate({f(14 - FB[0] * s)} 46) scale({s})">{FRONT_SVG}{emb_front()}</g>')
     sil = affinity.scale(SIL["front"], MMPX, MMPX, origin=(0, 0))
@@ -667,31 +702,31 @@ def G7():
     for d in FRONT["stars"]:
         X, Y = star_flat_mm(d["id"]); X = 14 - FB[0] * s + X * s; Y = 46 + Y * s
         o.append(t(X + 2.0, Y + 0.7, d["id"], 1.3, 700, "#FFFFFF"))
-    o.append(t(120, SH - 16, "Amber area on the flat = star area: below the front pocket opening to ~830 mm below the WB top, within ~120 mm of the side seam.", 1.8, 500, AMBER))
+    o.append(t(120, SH - 16, "Amber area on the flat = konpeito area: below the front pocket opening to ~830 mm below the WB top, within ~120 mm of the side seam.", 1.8, 500, AMBER))
     rows = [[d["id"], d["col"], f"{d['x_from_side_mm']:.0f}", f"{d['y_from_waist_mm']:.0f}",
              ("—" if d["below_opening_mm"] is None else f"{d['below_opening_mm']:.0f}"),
              (f"moved {d['moved_in_mm']:.0f} mm in (side-seam keep-out)" if d["moved_in_mm"] else ""),
              "07a" if d["id"] in FRONT["sections"][0] else "07b"] for d in FRONT["stars"]]
-    o.append(t(120, 48, "PROPOSED star map — 10 mm konpeito stars (same as every star on the jean), size 32", 2.2, 700, AMBER))
-    tb, y = table(120, 53, [("Star", 11), ("Colour", 14), ("x from side seam", 25), ("y from WB top", 22), ("gap below pocket opening", 36), ("Note", 46), ("File", 10)], rows, 1.8, 3.8)
+    o.append(t(120, 48, "PROPOSED konpeito map — 10 mm konpeito, the 02 shape (same on every location), size 32", 2.2, 700, AMBER))
+    tb, y = table(120, 53, [("Konp.", 11), ("Colour", 14), ("x from side seam", 25), ("y from WB top", 22), ("gap below pocket opening", 36), ("Note", 46), ("File", 10)], rows, 1.8, 3.8)
     o.append(tb)
     y += 3
     der = FRONT["derivation"]
-    for ln in ["x = mm in from the side seam at the star's height; y = mm down from the top of the waistband at the side seam (origin O, C5).",
-               "Gap = from the star's top edge down to the front pocket opening above it ('—' = the star is not under the opening).",
-               f"Every star sits on the front leg panel BELOW the pocket opening: {len(der['stars_inside_opening'])} of {len(FRONT['stars'])} inside the opening (check on C5).",
-               "Stars over the area where the front pocket bag hangs behind the panel are embroidered on the flat front panel BEFORE the",
+    for ln in ["x = mm in from the side seam at the konpeito's height; y = mm down from the top of the waistband at the side seam (origin O, C5).",
+               "Gap = from the konpeito's top edge down to the front pocket opening above it ('—' = the konpeito is not under the opening).",
+               f"Every konpeito sits on the front leg panel BELOW the pocket opening: {len(der['stars_inside_opening'])} of {len(FRONT['stars'])} inside the opening (check on C5).",
+               "Konpeito over the area where the front pocket bag hangs behind the panel are embroidered on the flat front panel BEFORE the",
                "pocket bag is attached, so the bag is never stitched shut.",
                "Positions are size 32; grade with the leg (keep the gap to the pocket opening and the distance to the side seam).",
                f"Files 07a ({RB['front1']['stitches']:,} st, {RB['front1']['trims']} trims, {RB['front1']['size_mm'][0]:.0f} × {RB['front1']['size_mm'][1]:.0f} mm) and 07b ({RB['front2']['stitches']:,} st, {RB['front2']['trims']} trims,",
-               f"{RB['front2']['size_mm'][0]:.0f} × {RB['front2']['size_mm'][1]:.0f} mm) = PROPOSED stars only, one hooping each on the {factory.largest_frame()[0]:.0f} × {factory.largest_frame()[1]:.0f} mm frame."]:
+               f"{RB['front2']['size_mm'][0]:.0f} × {RB['front2']['size_mm'][1]:.0f} mm) = PROPOSED konpeito only, one hooping each on the {factory.largest_frame()[0]:.0f} × {factory.largest_frame()[1]:.0f} mm frame."]:
         o.append(t(120, y, ln, 1.75, 400, AMBER if ("PROPOSED" in ln) else INK)); y += 3.3
     return o
 
 def C5():
     """07 star map: overlay check against the garment mockup (founder review item 15). The maths, read from out/front_stars.json."""
     der = FRONT["derivation"]
-    o = hdr("C5 · CHECK — 07 star map vs the garment mockup (overlay)", "Haki placement check (not a sewing instruction): the corrected star map drawn back onto the mockup and onto the flat, with the maths. Sewing positions are on G7.", "C5")
+    o = hdr("C5 · CHECK — 07 konpeito map vs the garment mockup (overlay)", "Haki placement check (not a sewing instruction): the corrected konpeito map drawn back onto the mockup and onto the flat, with the maths. Sewing positions are on G7.", "C5")
     im = Image.open("out/check_07_mockup.png")
     tag, h = img(im.crop((0, 0, im.width, int(im.height * 0.42))), 12, 32, h=118); o.append(tag)
     o.append(t(12, 30.5, "A · MOCKUP with the map (front view, wearer's right leg; 3x)", 2.0, 700))
@@ -722,19 +757,34 @@ def C5():
     for ln in lines: o.append(t(x0, y, ln, 1.8, 400, INK)); y += 3.5
     return o
 
-def compare_page(pid, name, title):
-    o = hdr(f"{pid} · COMPARE — {title}", "Founder's vector art (left; 04 haki: mockup) vs stitch preview drawn from the shipped DST (right), same scale; live view; zooms; centreline + A14 motif_match + A15 tables.", pid)
-    im = Image.open(f"out/compare_{name}.png")
-    gap = 4
-    def fit(n): return min((273 - gap * (n - 1)) / n / im.width, 172 / math.ceil(im.height / n))
-    n = max(range(1, 5), key=fit)                       # tall sheet: n side-by-side columns, largest scale wins
-    ch = math.ceil(im.height / n); sc = fit(n)
+def compare_page(pid, name, title, sub=None):
+    o = hdr(f"{pid} · COMPARE — {title}", sub or "Founder's vector art (left; 04 haki: mockup) vs stitch preview drawn from the shipped DST (right), same scale; live view; zooms; centreline + A14 motif_match + A15 tables.", pid)
+    im = Image.open(f"out/compare_{name}.png").convert("RGB")
+    gap = 4; TOP, HMAX, WMAX = 30, 166, 273          # columns end at 196 mm: clear of the footer (204) (PR #29 item 1)
+    a = np.asarray(im.convert("L"))
+    white = np.nonzero((a > 245).all(axis=1))[0]   # rows with nothing on them: the only places a sheet may be cut
+    def cuts(n):
+        ch = im.height / n; out = [0]
+        for k in range(1, n):
+            cand = white[(white <= out[-1] + ch * 1.15) & (white > out[-1] + ch * 0.55)]
+            if not len(cand): return None
+            tgt = out[-1] + ch
+            out.append(int(cand[np.argmin(abs(cand - tgt))]))
+        out.append(im.height); return out
+    best = None
+    for n in range(1, 5):
+        c = cuts(n)
+        if c is None: continue
+        seg = max(c[k + 1] - c[k] for k in range(n))
+        sc = min((WMAX - gap * (n - 1)) / n / im.width, HMAX / seg)
+        if best is None or sc > best[0]: best = (sc, n, c)
+    sc, n, c = best
     for k in range(n):
-        part = im.crop((0, k * ch, im.width, min(im.height, (k + 1) * ch)))
-        tag, h = img(part, 12 + k * (im.width * sc + gap), 30, w=im.width * sc, q=88); o.append(tag)
+        part = im.crop((0, c[k], im.width, c[k + 1]))
+        tag, h = img(part, 12 + k * (im.width * sc + gap), TOP, w=im.width * sc, q=88); o.append(tag)
+        assert TOP + h <= 197, (pid, h)
     return o
 
-F1_Y = 176        # below section 5 (chenille) of the engine page (checked on the render)
 def F1():
     strike = [dict(file=f"{RB[k]['file']}.dst", piece=title, stitches=RB[k]["stitches"], trims=RB[k]["trims"]) for k, no, title, *_ in EL]
     threads = []
@@ -742,11 +792,24 @@ def F1():
         pn = tech.match(hexc, "polyneon"); threads.append(dict(name=name, code=f"Polyneon {pn[0]}", de=pn[3]))
     pieces = [dict(piece=f"{no} {title[:30]}", w=RB[k]["size_mm"][0], h=RB[k]["size_mm"][1],
                    hoopings=1 if max(RB[k]["size_mm"]) <= min(factory.largest_frame()) - 16 else 2) for k, no, title, *_ in EL]
-    svgs = factory.requests_page(NAME + " (sizes are waist sizes; strike-off = size 32 positions, files are the same for all sizes)", strike, threads, pieces, "F1")
-    y = F1_Y
-    extra = [t(12, y, "6  Measurements + pattern (garment factory) — founder 19 Oct", 3.2, 700)]
+    # Rev B2 (founder 20 Oct): F1 keeps only what applies to Konpeito. No chenille on this product (prof chenille=False
+    # drops section 5); quote basis + prices are asked of the factory separately (section 4 + the price clause cut);
+    # strike-off = size 32 (waist sizes, no size M). Project-side filter of engine/factory.requests_page (ENGINE_NOTES 18).
+    import re
+    prof = dict(factory.load(), chenille=False)
+    svg = factory.requests_page(NAME + " (sizes are waist sizes; strike-off = size 32 positions, files are the same for all sizes)", strike, threads, pieces, "F1", prof)[0]
+    yq = float(re.search(r'<text[^>]*y="([\d.]+)"[^>]*>4  Quote basis</text>', svg).group(1))
+    def keep(m):
+        y_ = float(re.search(r' y="([\d.]+)"', m.group(0)).group(1))
+        return "" if yq - 0.1 <= y_ < SH - 10 else m.group(0)
+    svg = re.sub(r"<text[^>]*>[^<]*</text>", keep, svg)
+    svg = svg.replace("Sew these size-M files", "Sew these size-32 files").replace("(d) actual run time per hooping and your price for it.", "(d) actual run time per hooping.")
+    assert "Quote basis" not in svg and "Chenille" not in svg and "size-M" not in svg and "price" not in svg
+    svgs = [svg]
+    y = yq
+    extra = [t(12, y, "4  Measurements + pattern (garment factory) — founder 19 Oct", 3.2, 700)]
     for i, ln in enumerate(["Back rise, thigh, knee, outseam (every size) and any other gap in the HI chart (blue cells on T3); sizes 29 / 31 / 33 are new (T3):"] + FACTORY_POM
-                           + [f"Size labels: waist numbers {' '.join(SIZES)}, loop labels, artwork in the zip (labels/, T7b)."]):
+                           + [f"Size labels: waist numbers {' '.join(SIZES)}, centrefold labels 30 × 10 mm as HI, artwork in the zip (labels/, T7b)."]):
         extra.append(t(16, y + 5 + i * 3.6, ln, 2.2, 400, FAC if i in (1, 2) else INK))
     return svgs[0].replace("</svg>", "\n".join(extra) + "</svg>")
 
@@ -762,10 +825,10 @@ def build():
                 ("T6", "Construction, stitching + wash", ""), ("T7", "Labels + trims placement", ""), ("T7b", "Label artwork — size labels + reference", ""),
                 ("T8", "Embroidery placement overview", ""), ("G1", "Embroidery summary + thread chart", ""),
                 ("G2", "01 Coin-pocket patch こんぺいとう", ""), ("G3", "02 Konpeito spill (facing)", ""), ("G4", "03 Waistband patch ちひろ note", ""),
-                ("G5", "04 Back pocket L 'haki' + stars", ""), ("G6", "05 R star + 06 L lower star", ""),
-                ("G7", "07 Front-leg stars — PROPOSED map", ""),
+                ("G5", "04 Back pocket L 'haki' + 2 konpeito", ""), ("G6", "05 R konpeito + 06 L lower konpeito", ""),
+                ("G7", "07 Front-leg konpeito — PROPOSED map", ""),
                 ("C1", "Compare — coin-pocket patch", ""), ("C2", "Compare — konpeito spill", ""), ("C3", "Compare — waistband patch", ""),
-                ("C4", "Compare — back-pocket haki", ""), ("C5", "Check — 07 star map vs mockup", ""), ("F1", "Factory requests", "")]
+                ("C4", "Compare — back-pocket haki", ""), ("C5", "Check — 07 konpeito map vs mockup", ""), ("C6", "Compare — every konpeito vs the 02 shape", ""), ("F1", "Factory requests", "")]
     add("T2", "Flats", T2(), "front-leg art"); add("T3", "POM", T3()); add("T4", "Pattern", T4()); add("T5", "BOM", T5(), "x")
     add("T6", "Construction", T6(), "x"); add("T7", "Labels", T7(), "x"); add("T7b", "Label artwork", T7b()); add("T8", "Placement", T8())
     add("G1", "Embroidery summary", G1())
@@ -777,7 +840,7 @@ def build():
                                     f"こんぺいとう: satin COLUMNS on the centrelines of the SVG outlines, one width: art {tf['coin']['04_lettering_RED']['w_art']} mm -> {tf['coin']['04_lettering_RED']['w_needle']} mm needle span; round ends, centre-run underlay; ぺ ring = radial satin.",
                                     "Border: house spec — 2.0 red heat-cut satin edge + 4.5 band, Ø4.0 white flowers / Ø1.5 dots at 5.8 pitch (the SVG's layer 03); rivet corners TL + TR plain.",
                                     "Rivets: HI 15 L matte black (Ø9.5 cap) centred 4.25 / 4.25 from the edges: the cap covers edge + band + 3.5 mm² of plain cream field per corner, no motif; overhangs the patch edge 0.5 mm.",
-                                    "Konpeito: one satin per SVG lobe along its axis; the tint centre star = its own lobes on top; white specks + red accent dots = round bead satin dots at the SVG centres.",
+                                    "Konpeito: one satin per SVG lobe along its axis; the tint centre = its own lobes on top; white specks + red accent dots = round bead satin dots at the SVG centres.",
                                     "Edge red, as in the SVG (shared with patch 03): confirmed by the founder 19 Oct (the mockup edge reads cream).",
                                     "Backing: patch twill + cut-away; sew on AFTER the garment wash (confirmed 19 Oct) with a 1 mm red edge stitch; top edge open (pocket opening).", "Sew-out on the production twill before bulk."],
                                    ref_label="B · FOUNDER'S VECTOR ART (digitised from it)"))
@@ -797,25 +860,26 @@ def build():
                                         "Flower-centre dots are Ø1.0 in the art: 0.9 mm needle span (visible ~1.1, the house-minimum satin dot). Check 気, 会, 理, 砂 counters on the sew-out.",
                                         "Sew on after the waistband is attached and AFTER the garment wash (confirmed 19 Oct); the patch runs over the waist seam onto the back panel (no yoke); 1 mm red edge stitch. Position CONFIRMED (founder 20 Oct)."],
                                        ref_label="B · FOUNDER'S VECTOR ART (digitised from it)"))
-    add("G5", "Haki", element_page("G5", "haki", "04", "Back pocket L — 'haki' + 2 konpeito stars", "wearer's LEFT back pocket", "direct embroidery", RB["haki"]["file"],
+    add("G5", "Haki", element_page("G5", "haki", "04", "Back pocket L — 'haki' + 2 konpeito", "wearer's LEFT back pocket", "direct embroidery", RB["haki"]["file"],
                                    "inputs/back_pocket_haki.png", (150, 380, 340, 480),
-                                   [f"Founder: scale up so the konpeito match. Mockup stars 14 px vs right-pocket star 30 px -> group scaled x2.14; stars now 10 mm.",
-                                    f"Final sizes: group {RB['haki']['size_mm'][0]:.1f} × {RB['haki']['size_mm'][1]:.1f} mm; 'haki' ~{RB['haki']['size_mm'][0] - 2 * 10 - 8:.0f} mm wide, 2 mm light-blue satin strokes; stars 10 mm.",
-                                    f"Placement: yellow-star centre {HAKI_POS[0]:.0f} mm in from the outer edge, {HAKI_POS[1]:.0f} mm below the pocket top edge (moved down from the mockup to clear the hem topstitch).",
+                                   [f"Founder: scale up so the konpeito match. Mockup candies 14 px vs right-pocket candy 30 px -> group scaled x2.14; konpeito now 10 mm.",
+                                    f"Final sizes: group {RB['haki']['size_mm'][0]:.1f} × {RB['haki']['size_mm'][1]:.1f} mm; 'haki' ~{RB['haki']['size_mm'][0] - 2 * 10 - 8:.0f} mm wide, 2 mm light-blue satin strokes; konpeito 10 mm.",
+                                    f"Placement: yellow-konpeito centre {HAKI_POS[0]:.0f} mm in from the outer edge, {HAKI_POS[1]:.0f} mm below the pocket top edge (moved down from the mockup to clear the hem topstitch).",
                                     "Lettering light blue = Blue tint #8ED2EE (closest house thread to the mockup's light blue) [proposed — confirm].",
-                                    "Stars: the founder's vector stars (inputs/svg), 10 mm. 'haki' is not in the SVGs: traced from inputs/back_pocket_haki.png (as before).",
-                                    "Embroider the cut pocket before hemming / attaching; tearaway."]))
-    add("G6", "Stars", element_page("G6", "starP", "05", "Back pocket R — pink konpeito star (+ 06 L lower yellow star)", "wearer's RIGHT back pocket", "direct embroidery", RB["starP"]["file"],
+                                    "Konpeito: the 02 facing konpeito (founder change 20 Oct: every konpeito on the jean = the 02 shape, inputs/svg/HAKI_facing_konpeito_ART.svg front row), 10 mm, at the traced centres; digitised exactly as 02 (one satin per lobe, tint lobes on top, 3 white Ø0.9 bead specks). 'haki' is not in the SVGs: traced from inputs/back_pocket_haki.png (as before).",
+                                    "Embroider the cut pocket before hemming / attaching; tearaway."], ref_label="B · MOCKUP (placement + colour only; shape = the 02 konpeito, founder 20 Oct)"))
+    add("G6", "Stars", element_page("G6", "starP", "05", "Back pocket R — pink konpeito (+ 06 L lower yellow konpeito)", "wearer's RIGHT back pocket", "direct embroidery", RB["starP"]["file"],
                                     "inputs/back_pocket_haki.png", (1040, 370, 1180, 520),
                                     [f"05: centre {STARP_POS[0]:.0f} mm in from the outer edge, {STARP_POS[1]:.0f} mm below the top edge (mockup ~8 mm in: moved inward to clear the outer topstitch).",
-                                     f"06 (file {RB['starY']['file']}, {RB['starY']['stitches']} st, {RB['starY']['trims']} trim): yellow star at the left pocket's lower outer corner, {STARY_POS[0]:.0f} mm in from the outer edge, {STARY_POS[1]:.0f} mm above the lower corner — KEPT, confirmed by the founder 19 Oct.",
-                                     "Stars: the founder's vector star (inputs/svg/HAKI_back-pocket-stars_ART.svg: STAR_P / STAR_Y + highlight layers), 10 mm tip to tip; body + tint highlight, radial satin, edge-run underlay."]))
+                                     f"06 (file {RB['starY']['file']}, {RB['starY']['stitches']} st, {RB['starY']['trims']} trims): yellow konpeito at the left pocket's lower outer corner, {STARY_POS[0]:.0f} mm in from the outer edge, {STARY_POS[1]:.0f} mm above the lower corner — KEPT, confirmed by the founder 19 Oct.",
+                                     "Konpeito: the 02 facing konpeito (founder change 20 Oct: every konpeito on the jean = the 02 shape, inputs/svg/HAKI_facing_konpeito_ART.svg front row), 10 mm; digitised exactly as 02: one satin per lobe along its axis, tint lobes on top, 3 white Ø0.9 bead specks (white thread added). Replaces the Rev B 5-point star."], ref_label="B · MOCKUP (placement + colour only; shape = the 02 konpeito, founder 20 Oct)"))
     add("G7", "Front leg", G7(), "x")
     add("C1", "Compare coin", compare_page("C1", "coin-pocket-patch", "01 coin-pocket patch"))
     add("C2", "Compare spill", compare_page("C2", "coin-spill", "02 konpeito spill"))
     add("C3", "Compare wb", compare_page("C3", "waistband-patch", "03 waistband patch"))
     add("C4", "Compare haki", compare_page("C4", "back-pocket-haki", "04 back-pocket haki group"))
     add("C5", "Check 07", C5())
+    add("C6", "Compare konpeito", compare_page("C6", "konpeito", "every konpeito (04 / 05 / 06 / 07a / 07b) vs the 02 shape", "Founder change 20 Oct: every konpeito on the jean = the 02 facing konpeito. Left of each pair: the founder's 02 candy paths placed + recoloured (cairosvg); right: the shipped DST. A14 per konpeito: IoU >= 0.70 AND outline p90 <= 0.7 mm."))
     PAGES.append(("F1", "Factory requests", F1(), ""))
     # cover flags come from each page's actual content: a page is flagged when it carries a "[MISSING — …]" box
     import re
@@ -884,8 +948,8 @@ def package(final):
             open(f"{d}/ART.svg", "w").write(sv)
             cairosvg.svg2png(bytestring=sv.encode(), write_to=f"{d}/ART.png", output_width=int((b[2] - b[0] + 2) * 20))
         if "PROPOSED" in stem:
-            open(f"{d}/PROPOSED_README.txt", "w").write("PROPOSED placeholder: candy stars at the mockup positions (G7, check C5). Front-leg artwork: to follow [MISSING];\n"
-                                                         "replace this file when it arrives. Positions: G7 star table (x from side seam, y from waistband top, size 32).\n")
+            open(f"{d}/PROPOSED_README.txt", "w").write("PROPOSED placeholder: konpeito (02 shape) at the mockup candy positions (G7, check C5). Front-leg artwork: to follow [MISSING];\n"
+                                                         "replace this file when it arrives. Positions: G7 konpeito table (x from side seam, y from waistband top, size 32).\n")
     for pid, title, svg, miss in PAGES:
         if pid.startswith("G"): shutil.copy(f"{OUT}/{pid}.pdf", f"{pkg}/elements/SPEC_{pid}.pdf")
     import kjlabels
@@ -898,7 +962,7 @@ def package(final):
 Tech pack: {os.path.basename(final)} (T pages = garment, G = embroidery, C = compare sheets, F1 = factory requests).
 Pattern: use the factory's Hidden Inventory pants pattern, remove cargo pockets, 5-pocket jean construction (T4).
 Sizes: waist """ + " ".join(SIZES) + """ (measurements: T3, from the HI chart; 29 / 31 / 33 half-way PROPOSED; back rise / thigh / knee / outseam from the factory's HI spec).
-labels/                  size LOOP labels, one SVG + one PDF per size, 1:1 with dimensions (T7b)
+labels/                  size labels (HI centrefold style, 30 x 10 mm), one SVG + one PDF per size, 1:1 with dimensions (T7b)
 
 elements/<no>_<name>/  per embroidery element:
   *.dst *.pes            production stitch files (<= 12 threads each; numbers on G1 read back from these DSTs)
@@ -917,7 +981,7 @@ pants (T5-T7b); same fit + construction as HI: no back yoke, regular 2-piece wai
 Measurements not on the HI chart (back rise, thigh, knee, outseam): factory to fill in from its HI spec/pattern and return
 with the fit sample (T3, T4, F1).
 Legend: [proposed - confirm] = for the FACTORY to confirm or correct; [MISSING] = Haki still owes it.
-PROPOSED: 07a/07b front-leg stars (positions from the mockup, G7 / C5).
+PROPOSED: 07a/07b front-leg konpeito (positions from the mockup, G7 / C5).
 MISSING (to follow from Haki): front-leg artwork, main + care label artwork, hang tag artwork, packing design,
 barcode per size (HK code from PLM, Code 128 on the polybag sticker).
 Sew-out (strike-off) of every file on the washed production denim / patch twill before bulk.

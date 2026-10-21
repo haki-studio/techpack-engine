@@ -546,7 +546,8 @@ STARS = {"Y": ("kj_yellow", "kj_yellow_hi", -6, "wearer's LEFT back pocket, lowe
 def star(sid):
     import kjsvg
     GENERATED["star" + sid] = []
-    return kjsvg.star_regions(sid, 0.0, 0.0, STAR_D)       # founder's vector star (inputs/svg), 10 mm tip to tip
+    # founder change 20 Oct: every konpeito on the jean = the 02 facing konpeito (same shape + digitising), 10 mm
+    return kjsvg.konpeito_regions(STARS[sid][0], 0.0, 0.0, STAR_D)
 
 # ------------------------------------------------------------------ 04 back-pocket "haki" group (inputs/back_pocket_haki.png)
 HAKI_SRC = (175, 405, 310, 460)   # crop of the group in the back-pocket mockup (px)
@@ -578,8 +579,8 @@ def haki_group():
     out = []
     for (cx, cy, w), (base, tint) in zip(star_px, (("kj_yellow", "kj_yellow_hi"), ("kj_pink", "kj_pink_hi"))):
         import kjsvg
-        out += kjsvg.star_regions("Y" if base == "kj_yellow" else "P", (cx - ox) * k, (cy - oy) * k, STAR_D)
-    GENERATED["haki"] = ["stars: the founder's vector star (inputs/svg), 10 mm, at the traced centres (the mockup shows them at 14 px)",
+        out += kjsvg.konpeito_regions(base, (cx - ox) * k, (cy - oy) * k, STAR_D)
+    GENERATED["haki"] = ["konpeito: the 02 facing konpeito (founder SVG, founder change 20 Oct), 10 mm, at the traced star centres (the mockup shows them at 14 px)",
                          "one stroke width (2 mm) for the whole word; the stroke centrelines are traced (x8 upscale only to read them)"]
     ref = dict(blue=bm, k=k, ox=ox, oy=oy, yel=yel, pnk=pnk, scale=STAR_D / (np.mean([w for _, _, w in star_px]) / HAKI_UP) / (10.0 / 30.0))
     return out + regs, ref

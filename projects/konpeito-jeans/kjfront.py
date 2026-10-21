@@ -98,9 +98,8 @@ def section_vis(sec):
     vis = []
     for d in sec:
         base, tint = COLS[d["col"]]
-        g, hi = KA.puffy_star(d["x_from_side_mm"], d["y_from_waist_mm"], STAR_D, rot=0)
-        vis += [KA.radial_region(base, g, "STAR", (d["x_from_side_mm"], d["y_from_waist_mm"])),
-                KA.radial_region(tint, hi, "STAR-hi", (hi.centroid.x, hi.centroid.y))]
+        import kjsvg          # founder change 20 Oct: the 02 facing konpeito, same digitising, 10 mm
+        vis += kjsvg.konpeito_regions(base, d["x_from_side_mm"], d["y_from_waist_mm"], STAR_D)
     return vis
 
 def overlay(G, stars, out="out/check_07_mockup.png", s=3):

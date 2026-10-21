@@ -12,8 +12,9 @@ from render import f, geom_to_path
 
 SRC = "inputs/1792127150159_image.png"
 MM = (33.1 * 25.4 / 2) / 436.8      # Rev B: half relaxed waist size 32 (420.4 mm) / front waistband width on the mockup (436.8 px, kjfront.geometry)
-STITCH = "#141416"      # DTM black topstitch (founder 19 Oct), drawn just darker than the denim
+STITCH = "#A9AAAF"      # topstitch: thread is DTM black (founder 19 Oct); DRAWN light grey so the flat reads (PR #29 review item 7)
 INK = "#1A1A1A"; DENIM = "#3A3B3F"; DENIM_LT = "#4A4B50"
+CON = "#D2D3D7"         # construction lines (seams, pocket openings, fly) drawn light on the dark denim
 
 def silhouettes():
     a = np.asarray(Image.open(SRC).convert("RGB")).astype(float)
@@ -32,7 +33,7 @@ def silhouettes():
 def T(px_pts, ox):
     return [((x - ox) * MM, y * MM) for x, y in px_pts]
 
-def path(pts, stroke=INK, w=0.6, dash=None, fill="none", close=False):
+def path(pts, stroke=CON, w=0.6, dash=None, fill="none", close=False):
     d = "M" + " L".join(f"{f(x)} {f(y)}" for x, y in pts) + (" Z" if close else "")
     da = f' stroke-dasharray="{dash}"' if dash else ""
     return f'<path d="{d}" fill="{fill}" stroke="{stroke}" stroke-width="{w}"{da} stroke-linejoin="round" stroke-linecap="round"/>'
@@ -76,7 +77,7 @@ def front_svg(sil):
     o = [f'<path d="{geom_to_path(P)}" fill="{DENIM}" stroke="{INK}" stroke-width="0.7"/>']
     o.append(path(T([(886, 95), (1105, 98), (1322, 95)], ox)))
     o.append(topst(T([(888, 51), (1105, 53), (1320, 51)], ox))); o.append(topst(T([(887, 90), (1105, 93), (1321, 90)], ox)))
-    for bx in (1040, 1190):
+    for bx in (1020, 1190):            # 2 front loops, 1 cm outside each pocket opening end (as HI), mirrored about CF 1105
         o.append(path(T([(bx - 7, 42), (bx + 7, 42), (bx + 7, 104), (bx - 7, 104)], ox), close=True, fill=DENIM_LT))
     # shank button + fly (zip fly, founder 19 Oct: YKK #4.5 close-end, 6 in; J topstitch) + CF
     o.append(f'<circle cx="{f((1112 - ox) * MM)}" cy="{f(72 * MM)}" r="8.5" fill="#1E1E20" stroke="#8A8A8E" stroke-width="0.4"/>')

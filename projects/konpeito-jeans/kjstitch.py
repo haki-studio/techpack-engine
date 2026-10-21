@@ -20,12 +20,12 @@ FILES = {   # element -> (file stem, stop plan [(colour, region codes)])
               ("kj_pink", {"FL", "TXC"}), ("kj_yellow", {"FL"}), ("kj_blue", {"FL", "TXC"}), ("kj_white", {"KNOT"}),
               ("kj_rose", {"DOT"}), ("kj_black", {"TXC", "LINE"}), ("kj_red", {"TXC", "DOT"}), ("kj_red", {"EDGE"})]),
     "haki":  ("HAKI_KJ_04_back-pocket-L-haki", [("kj_yellow", {"STAR"}), ("kj_yellow_hi", {"STAR-hi"}), ("kj_blue_hi", {"TXC"}),
-              ("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"})]),
-    "starY": ("HAKI_KJ_06_back-pocket-L-lower-star-yellow", [("kj_yellow", {"STAR"}), ("kj_yellow_hi", {"STAR-hi"})]),
-    "starP": ("HAKI_KJ_05_back-pocket-R-star-pink", [("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"})]),
+              ("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"}), ("kj_white", {"KNOT"})]),
+    "starY": ("HAKI_KJ_06_back-pocket-L-lower-star-yellow", [("kj_yellow", {"STAR"}), ("kj_yellow_hi", {"STAR-hi"}), ("kj_white", {"KNOT"})]),
+    "starP": ("HAKI_KJ_05_back-pocket-R-star-pink", [("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"}), ("kj_white", {"KNOT"})]),
 }
 _FRONT_PLAN = [("kj_yellow", {"STAR"}), ("kj_yellow_hi", {"STAR-hi"}), ("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"}),
-               ("kj_blue", {"STAR"}), ("kj_blue_hi", {"STAR-hi"})]
+               ("kj_blue", {"STAR"}), ("kj_blue_hi", {"STAR-hi"}), ("kj_white", {"KNOT"})]
 FILES["front1"] = ("HAKI_KJ_07a_front-leg-stars-upper_PROPOSED", _FRONT_PLAN)
 FILES["front2"] = ("HAKI_KJ_07b_front-leg-stars-lower_PROPOSED", _FRONT_PLAN)
 OUT = "out/stitch"

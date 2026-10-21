@@ -297,3 +297,90 @@ def star_regions(sid, cx=0.0, cy=0.0, width=10.0):
     gb = affinity.translate(gb, cx, cy); gh = affinity.translate(gh, cx, cy)
     return [R(cb, gb, "satin", "STAR", ang=("radial", gb.centroid.x, gb.centroid.y)),
             R(ch, gh, "satin", "STAR-hi", ang=("radial", gh.centroid.x, gh.centroid.y))]
+
+# ------------------------------------------------------------------ founder change 20 Oct: every konpeito = the 02 shape
+KONPEITO_SRC = f"{SVG}/HAKI_facing_konpeito_ART.svg"
+KONPEITO_PICK = 0          # the first front-row candy (F2, yellow): every front-row candy of 02 is this shape, rotated
+def konpeito_shape(width=10.0):
+    """the 02 facing konpeito (founder SVG, front row): body, tint, white specks, scaled so its larger bbox side is
+    `width` mm, centred on its bbox centre. Returns (body, tint, [speck geoms], dict(scale, centre, src_bounds))."""
+    L = dict(layers(KONPEITO_SRC))["F2_front_row"]
+    bodies = [i for i, e in enumerate(L) if e["tag"] == "path" and COL.get(e["fill"]) in TINT_OF]
+    i0 = bodies[KONPEITO_PICK]
+    i1 = bodies[KONPEITO_PICK + 1] if KONPEITO_PICK + 1 < len(bodies) else len(L)
+    body = L[i0]["geom"]; tint = L[i0 + 1]["geom"]
+    specks = [e["geom"] for e in L[i0 + 2:i1] if e["tag"] == "circle"]
+    bb = body.bounds; s = width / max(bb[2] - bb[0], bb[3] - bb[1]); c = ((bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2)
+    f = lambda g: affinity.translate(affinity.scale(g, s, s, origin=c), -c[0], -c[1])
+    return f(body), f(tint), [f(g) for g in specks], dict(scale=s, centre=c, src_index=i0, src_bounds=[round(v, 3) for v in bb])
+
+def konpeito_geoms(cx=0.0, cy=0.0, width=10.0):
+    b, t, sp, _ = konpeito_shape(width)
+    T = lambda g: affinity.translate(g, cx, cy)
+    return T(b), T(t), [T(g) for g in sp]
+
+def konpeito_regions(col, cx=0.0, cy=0.0, width=10.0, code="STAR"):
+    """one konpeito digitised exactly like 02 (petals along each lobe for body and tint, round 0.9 bead specks).
+    col = body thread (kj_pink / kj_yellow / kj_blue); the tint is its _hi thread."""
+    b, t, sp = konpeito_geoms(cx, cy, width)
+    return (petals(col, code, b) + petals(TINT_OF[col], code + "-hi", t)
+            + [bead("kj_white", "KNOT", g, 0.9) for g in sp])
+
+def konpeito_ref_svg(placements, W, H, x0=0.0, y0=0.0, width=10.0):
+    """an SVG (string) that places the founder's 02 candy elements (recoloured per placement) at (cx, cy) in a W x H mm
+    frame whose top-left is (x0, y0) design mm: the gate reference for 04-07 is rendered from the founder's own paths."""
+    root = ET.parse(KONPEITO_SRC).getroot()
+    g2 = [g for g in root if g.tag == NS + "g" and g.attrib.get("id", "").startswith("F2")][0]
+    kids = list(g2); _, _, _, info = konpeito_shape(width)
+    i0 = info["src_index"]; nb = [k for k, ch in enumerate(kids) if ch.tag == NS + "path" and COL.get(ch.attrib.get("fill", "").upper()) in TINT_OF]
+    i1 = nb[nb.index(i0) + 1] if nb.index(i0) + 1 < len(nb) else len(kids)
+    els = kids[i0:i1]; s = info["scale"]; c = info["centre"]
+    HEXOF = {v: k for k, v in COL.items()}
+    out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}mm" height="{H}mm" viewBox="{x0} {y0} {W} {H}">']
+    for p in placements:
+        col = p["col"]; cx, cy = p["cx"], p["cy"]
+        out.append(f'<g id="{p.get("id", "K")}" transform="translate({cx} {cy}) scale({s}) translate({-c[0]} {-c[1]})">')
+        for e in els:
+            a = dict(e.attrib); f0 = a.get("fill", "").upper()
+            if COL.get(f0) in TINT_OF: a["fill"] = HEXOF[col]
+            elif COL.get(f0) in TINT_OF.values(): a["fill"] = HEXOF[TINT_OF[col]]
+            tag = e.tag.replace(NS, "")
+            out.append(f"<{tag} " + " ".join(f'{k}="{v}"' for k, v in a.items()) + "/>")
+        out.append("</g>")
+    out.append("</svg>")
+    return "\n".join(out)
+
+def svg_string_mask(svg, W, H, ppm=PPM, keep_id=None):
+    import cairosvg
+    root = ET.fromstring(svg)
+    if keep_id is not None:
+        for g in list(root):
+            if g.tag == NS + "g" and g.attrib.get("id") != keep_id: root.remove(g)
+    png = cairosvg.svg2png(bytestring=ET.tostring(root), output_width=int(round(W * ppm)), output_height=int(round(H * ppm)))
+    return np.asarray(Image.open(io.BytesIO(png)).convert("RGBA"))[..., 3] > 127
+
+def svg_string_render(svg, W, H, ppm=PPM, bg="#2A2A2E"):
+    import cairosvg
+    png = cairosvg.svg2png(bytestring=svg.encode(), output_width=int(round(W * ppm)), output_height=int(round(H * ppm)), background_color=bg)
+    return Image.open(io.BytesIO(png)).convert("RGB")
+
+def candy_masks(path, W, H, prefixes, ppm=PPM):
+    """one reference mask PER konpeito (reviewer PR #29 item 6, LESSONS A21: touching candies must not merge into one
+    'motif'). The founder's SVG lists each candy as body path, tint path, white specks in document order; each group is
+    rendered alone by cairosvg. Returns [(label, mask, body thread, layer id)] in stitch (document) order."""
+    import cairosvg
+    root = ET.parse(path).getroot(); groups = []
+    for g in root:
+        if g.tag != NS + "g" or not any(g.attrib.get("id", "").startswith(p) for p in prefixes): continue
+        for ch in g:
+            col = COL.get(ch.attrib.get("fill", "").upper())
+            if ch.tag == NS + "path" and col in TINT_OF: groups.append(dict(col=col, layer=g.attrib["id"], els=[ch]))
+            elif groups: groups[-1]["els"].append(ch)
+    out = []
+    head = f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}mm" height="{H}mm" viewBox="{root.attrib.get("viewBox", f"0 0 {W} {H}")}">'
+    for k, G in enumerate(groups, 1):
+        svg = head + "<g>" + "".join(ET.tostring(e, encoding="unicode") for e in G["els"]) + "</g></svg>"
+        png = cairosvg.svg2png(bytestring=svg.encode(), output_width=int(round(W * ppm)), output_height=int(round(H * ppm)))
+        m = np.asarray(Image.open(io.BytesIO(png)).convert("RGBA"))[..., 3] > 127
+        out.append((f"konpeito {k:02d} {G['col'][3:]}" + (" (back row)" if G["layer"].startswith("F1") else ""), m, G["col"], G["layer"]))
+    return out
