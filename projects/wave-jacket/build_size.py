@@ -123,7 +123,7 @@ for P in which:
     rp = f"{OUT}/result_{P}.json"
     res = {}
     vis = dst2.merge_colours(D[P])
-    import flowdir; flowdir.install(vis)            # A16 constructed directions (stripe flow field + crest outlines)
+    import flowdir; flowdir.install(vis, P, size)   # A16: stripe flow field + close-up grain (grainfield.py) + crest outlines
     ub = unary_union([r["geom"] for r in vis]).bounds; c = ((ub[0]+ub[2])/2, (ub[1]+ub[3])/2)
     plan, frame = hoop_plan(P, ub)
     for variant, primary in (("primary", True),):

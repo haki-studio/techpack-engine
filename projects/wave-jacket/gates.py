@@ -206,7 +206,7 @@ def drops_by_unit(P, bb, al, Aid, ref_units):
 for _P in WC.PIECES:
     for _r in D[_P]:
         if _r.get("unit") and (_P, _r["unit"]) not in MOVES: MOVES[(_P, _r["unit"])] = tuple(_r.get("mv", (0.0, 0.0)))
-_PAT = {}
+_PAT = {}; _RAW = {}
 def dst_family(P, bb, fam):
     """sewn stitches of the family's threads (DST read back), 0.6 mm thread"""
     shape = (int((bb[3] - bb[1]) * PPM), int((bb[2] - bb[0]) * PPM))
@@ -235,7 +235,7 @@ def dst_family(P, bb, fam):
                 prev = None
                 if k == pe.COLOR_CHANGE: ci += 1
         vis, ix = qa.visible_segments(segs, (0.0, 0.0, bb[2] - bb[0], bb[3] - bb[1]), ppm=12.0, return_index=True)
-        _PAT[P] = (vis, [sc[i] for i in ix])
+        _PAT[P] = (vis, [sc[i] for i in ix]); _RAW[P] = (np.array(segs, float), sc)
     vis, vcol = _PAT[P]
     im = Image.new("L", shape[::-1], 0); d = ImageDraw.Draw(im); lw = max(1, int(round(0.6 * PPM)))
     want = set(FAM_THREADS[fam])
@@ -335,19 +335,22 @@ def closeup_grey12(P, shape12, up):
 def drops_hr_gate(P, bb):
     """Drops at 12 ppm (PR #27 review 1): a 5 mm2 drop is 80 px at 4 ppm, so one boundary pixel moved IoU by 0.15. Each
     reference drop (its traced silhouette: close-up resolution where a close-up covers it, else the x4 render trace) is
-    rasterised at 12 ppm in its own window and compared with the visible stitches of ITS motif (unit attribution, A21),
-    drawn at the house thread width (0.42 mm, qa.visible_segments) with each stitch shortened by the drop pull compensation
-    (the fabric pull-in). Same pass rule as qa.motif_match (IoU >= 0.70, width + height >= 80 %)."""
+    rasterised at 12 ppm in its own window. Fix round 3: the SEWN drop is the z-buffer of every DST stitch in that window
+    (sew order, house thread width 0.42 mm, each stitch shortened by the drop pull compensation = the fabric pull-in);
+    a pixel counts when its TOP stitch is a drop thread of ITS motif (unit attribution by stitch midpoint, A21).
+    qa.visible_segments' re-centred visible-length segments were used before: on a satin zigzag each stroke hides most of
+    the previous one, so the re-centred pieces left false holes and false bare rims (BK drop 98: art = ref 0.98, gate
+    0.67). Only stitches within 1.0 mm of the drop count (as near_mm for the crests: a neighbour's stray stitch no longer
+    stretches its width / height). Same pass rule as qa.motif_match (IoU >= 0.70, width + height >= 80 %)."""
     PP = 12.0
     shape = (int((bb[3] - bb[1]) * PPM), int((bb[2] - bb[0]) * PPM))
     ua = art_unit_raster(P, bb, shape)
-    vis, vcol = _PAT[P]; want = set(FAM_THREADS["drops"])
-    from collections import defaultdict
-    segs_u = defaultdict(list)
-    for (x0, y0, x1, y1), c in zip(vis, vcol):
-        if c not in want: continue
-        cx, cy = int((x0 + x1) / 2 * PPM), int((y0 + y1) / 2 * PPM)
-        if 0 <= cy < shape[0] and 0 <= cx < shape[1] and ua[cy, cx]: segs_u[int(ua[cy, cx])].append((x0 + bb[0], y0 + bb[1], x1 + bb[0], y1 + bb[1]))
+    S, sc = _RAW[P]; want = set(FAM_THREADS["drops"]); isw = np.array([c in want for c in sc])
+    S = S + np.array([bb[0], bb[1], bb[0], bb[1]])
+    mx = ((S[:, 0] + S[:, 2]) / 2 - bb[0]) * PPM; my = ((S[:, 1] + S[:, 3]) / 2 - bb[1]) * PPM
+    ix_, iy_ = np.clip(mx.astype(int), 0, shape[1] - 1), np.clip(my.astype(int), 0, shape[0] - 1)
+    su = np.where(isw, ua[iy_, ix_], 0)
+    lo_x, hi_x = S[:, [0, 2]].min(1), S[:, [0, 2]].max(1); lo_y, hi_y = S[:, [1, 3]].min(1), S[:, [1, 3]].max(1)
     rows = []
     for u, g, hr in DROP_REF:
         if g.is_empty or g.area < 4.0: continue
@@ -357,13 +360,16 @@ def drops_hr_gate(P, bb):
         for q in WR.polys_of(g):
             d.polygon([((x - wb[0]) * PP, (y - wb[1]) * PP) for x, y in q.exterior.coords], fill=255)
             for h in q.interiors: d.polygon([((x - wb[0]) * PP, (y - wb[1]) * PP) for x, y in h.coords], fill=0)
-        oim = Image.new("L", (W, H), 0); do = ImageDraw.Draw(oim); lw = max(1, int(round(0.42 * PP)))
-        for x0, y0, x1, y1 in segs_u.get(u, []):
+        sel = np.nonzero((hi_x >= wb[0]) & (lo_x <= wb[2]) & (hi_y >= wb[1]) & (lo_y <= wb[3]))[0]
+        zim = Image.new("I", (W, H), 0); dz = ImageDraw.Draw(zim); lw = max(1, int(round(0.42 * PP)))
+        for j, i in enumerate(sel, 1):                       # sew order: sel is sorted, last writer = top thread
+            x0, y0, x1, y1 = S[i]
             L = float(np.hypot(x1 - x0, y1 - y0)); k_ = min(0.45, PULL_DR / L) if L > 0 else 0.0
             dx, dy = (x1 - x0) * k_, (y1 - y0) * k_
-            do.line([((x0 + dx - wb[0]) * PP, (y0 + dy - wb[1]) * PP), ((x1 - dx - wb[0]) * PP, (y1 - dy - wb[1]) * PP)], fill=255, width=lw)
-        r_ = np.asarray(rim) > 0; o_ = ndi.binary_closing(np.asarray(oim) > 0, iterations=2)
-        rr = qa.motif_match(r_, o_, PP, min_mm2=4.0, pad_mm=1.5)
+            dz.line([((x0 + dx - wb[0]) * PP, (y0 + dy - wb[1]) * PP), ((x1 - dx - wb[0]) * PP, (y1 - dy - wb[1]) * PP)], fill=j, width=lw)
+        z = np.asarray(zim); mine = np.zeros(len(sel) + 1, bool); mine[1:] = su[sel] == u
+        r_ = np.asarray(rim) > 0; o_ = ndi.binary_closing(mine[z], iterations=2)
+        rr = qa.motif_match(r_, o_, PP, min_mm2=4.0, pad_mm=1.5, near_mm=1.0)
         rr = [max(rr, key=lambda x: x["area_mm2"])] if rr else []
         for x in rr:
             x["x_mm"] = round(x["x_mm"] + wb[0] - bb[0], 1); x["y_mm"] = round(x["y_mm"] + wb[1] - bb[1], 1)

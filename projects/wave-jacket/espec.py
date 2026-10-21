@@ -79,9 +79,22 @@ def p1():
         o.append(t(rx, y, l_.lstrip("!"), 1.6, 600 if col == ORANGE else 400, col)); y += 2.9
     return o
 
+def crop_on(grp, w, h, P="BK"):
+    """fix round 3: detail crops are centred on the art they name (the old fixed offsets from the bbox showed bare fabric
+    after the Rev B wrap moved the crests): the w x h window holding the most area of group `grp` (DR: most drop motifs)"""
+    from shapely.geometry import box as _box
+    rs = [r for r in V[P] if r["grp"] == grp]
+    if not rs: b = BB[P]; return (b[0], b[1], b[0] + w, b[1] + h)
+    cs = [r["geom"].centroid for r in rs]; best, bv = None, -1
+    for c in cs:
+        bx = _box(c.x - w / 2, c.y - h / 2, c.x + w / 2, c.y + h / 2)
+        v = sum(1 for q in cs if bx.contains(q)) if grp == "DR" else sum(r["geom"].intersection(bx).area for r in rs if r["geom"].intersects(bx))
+        if v > bv: best, bv = (c.x - w / 2, c.y - h / 2, c.x + w / 2, c.y + h / 2), v
+    return best
+
 def p2():
     o = header(f"{N} · STITCH-DIRECTION MAP + REGION CODES (size M)", "Hatch = stitch direction. Dark solid = line work (bean / run). Labels = region code (stitch table p3). Each piece drawn at its own scale.", "p2 / 6")
-    lay = [("BK", 12, 30, 92), ("FR", 108, 30, 44), ("FL", 156, 30, 44), ("SR", 204, 30, 42), ("SL", 250, 30, 42)]
+    lay = [("BK", 12, 30, 88), ("FR", 104, 30, 42), ("FL", 150, 30, 42), ("SR", 196, 30, 42), ("SL", 242, 30, 42)]   # fix round 3: SL ran past the right margin
     for P, x, y, w in lay:
         b = BB[P]; bb = (b[0] - 3, b[1] - 3, b[2] + 3, b[3] + 3)
         dm = direction_map(V[P], bb, 3.0, label_min=150, label_mm=3.0)
@@ -90,9 +103,9 @@ def p2():
         o.append(t(x, y + hh + 3, f"{P} {PC.NAME[P]} ({w/(bb[2]-bb[0]):.2f}:1)", 1.6, 700))
     zy = 128; zx = 12
     o.append(t(zx, zy, "DETAIL CROPS (2:1)", 2.2, 700))
-    b = BB["BK"]; crops = [((b[0] + 40, b[1] + 60, b[0] + 100, b[1] + 100), "Crest: padded foam, curl lines, loops, grey hollow"),
-                           ((-40, 300, 20, 340), "Stripes: tatami along each tone + cream rope lines"),
-                           ((b[2] - 100, b[3] - 70, b[2] - 40, b[3] - 30), "Drops + crests at the lower right")]
+    crops = [(crop_on("FM", 60, 40), "Crest: padded foam, curl lines, loops, grey hollow"),
+             (crop_on("WV", 60, 40), "Stripes: tatami along each tone + cream rope lines"),
+             (crop_on("DR", 60, 40), "Spray drops: satin along each drop's long axis")]
     for c, cap in crops:
         im = direction_map(V["BK"], c, 12, label_min=25, label_mm=1.4)
         tag, hh = img_tag(im, zx, zy + 3, 120 * 0.75 if False else (c[2] - c[0]) * 1.4); o.append(tag)
@@ -164,8 +177,8 @@ def stops_page(Ps, page):
 def p6():
     o = header(f"{N} · 1:1 DETAILS, REFERENCE, WHAT CHANGED, PRODUCTION NOTES", "", "p6 / 6")
     o.append(t(14, 31, "1:1 STITCH-OUT DETAILS (print at 100 % to check scale)", 2.4, 700))
-    b = BB["BK"]; crops = [((b[0] + 45, b[1] + 55, b[0] + 105, b[1] + 100), "Crest + curls (BK)"), ((-30, 295, 30, 340), "Stripes + rope lines (BK)"),
-                           ((b[2] - 95, b[3] - 70, b[2] - 35, b[3] - 25), "Crest + drops (BK)")]
+    crops = [(crop_on("FM", 60, 45), "Crest + curls (BK)"), (crop_on("WV", 60, 45), "Stripes + rope lines (BK)"),
+             (crop_on("DR", 60, 45), "Crest + drops (BK)")]
     x = 14
     for c, cap in crops:
         im = SR.render(V["BK"], c, 12, base=WC.FABRIC); tag, hh = img_tag(im, x, 35, c[2] - c[0]); o.append(tag)

@@ -187,3 +187,51 @@ Problem → proposed fix → check. Worked around in project code only.
   the curl + loop spiral). Art level: 18 unexplained -> 1.
 - **Proposed LESSON (A15 addendum):** "moved by the wrap" is not an explanation unless the gap's reference content is found
   stitched within the reported shift (3 mm check); otherwise fill it.
+
+## 22. clean_vis deleted parts of small motifs (fix round 3, 21 Oct 2026)
+- **Problem:** `dst2.clean_vis` drops fill fragments < 1.5 mm2 or < 0.7 mm wide. On a spray drop (one rigid motif: cream
+  body + shade + grey crescents) that removed the shade / grey crescents whole (BK drop at -95.7/157.5: 19.8 mm2 traced,
+  12.5 mm2 left) and left bare navy inside the traced outline. A14 failed the drop (IoU 0.61) and A15 never saw it (each
+  hole < 25 mm2). Found by following one drop through every build stage (items_for -> ... -> clean_vis).
+- **Fix (project, waveart.keep_unit_slivers):** a piece removed by clean_vis inside a rigid motif goes to the touching
+  surviving region of the SAME motif (longest shared edge); nothing tiny is sewn alone, the silhouette stays traced.
+- **Proposed engine fix:** `clean_vis(vis, absorb_by="unit")`: absorb, don't delete, slivers that belong to a motif.
+- **Check:** test: a 5 mm disc split into a 4 mm core + a 0.5 mm ring (different colour, same unit): after clean_vis the
+  union area is still >= 98 % of the disc.
+
+## 23. qa.visible_segments under-reads satin (fix round 3)
+- **Problem:** the drop gate drew `qa.visible_segments` (each stitch shortened to its visible length, re-centred). On a satin
+  zigzag each stroke hides most of the one before, so the re-centred pieces leave false holes and false bare rims: BK
+  drop 98 art = reference (IoU 0.98) but gate IoU 0.67, with a hole in the middle of a fully sewn satin.
+- **Fix (project, gates.drops_hr_gate):** the sewn shape is the z-buffer raster itself (every stitch in sew order, 0.42 mm,
+  pull-in shortened; a pixel counts when its TOP stitch is a drop thread of that motif), stitches within 1 mm of the drop.
+  Red-then-green on the round-2 files: drop 98 / 105 / 120 pass (fully sewn), the drops that really lost their crescents
+  (82, 99, 100, 104, 109) stay red.
+- **Proposed engine fix:** `qa.visible_mask(segs, bounds, ppm, keep=predicate)` next to visible_segments, used by every
+  shape gate; visible_segments stays for direction only.
+- **Check:** test: a fixed-angle satin square; visible_mask covers >= 97 % of it, visible_segments' mask < 90 % (documents
+  why shape gates must not use it).
+
+## 24. Small constructed motifs need ONE declared angle (fix round 3)
+- **Problem:** drops were satin 'auto' -> turning satin across an elongated drop; the close-up grain at drop scale runs ALONG
+  the drop (edge-dominated): drops scored 10-15 % on A16, dev 70-88 deg.
+- **Fix (project, waveart.drop_angles + wavecore declared satin):** one angle per drop motif = its long axis (minimum rotated
+  rectangle of the whole motif), all its parts, sewn as fixed-angle satin (split > 7 mm), tatami at the same angle if the
+  satin covers < 97 %.
+- **Proposed engine fix:** region key `decl` (declared angle, source) honoured by `dst2.build_object` before the turning-satin
+  branch; `qa.angle_coherence` reads it.
+
+## 25. Stripe rows follow the close-up grain where it is clear (fix round 3)
+- **Problem:** stripes sewn along a geometric flow field + 8 deg cord twist reached 79-84 % on A16 (gate 85).
+- **Fix (project, grainfield.py + flowdir.wv_parts):** where a founder close-up covers the stripe (weight >= 0.6) and shows a
+  clear grain (coherence >= 0.3), the 6 mm cell is sewn at the close-up's thread angle (input pixels, same map + warp as the
+  gate); elsewhere the geometric field + twist. This is A16's rule for organic bands, not a gate change.
+- **Proposed engine fix:** `digitize.direction.grain_field(reference, weight)` producing the 1 mm angle / coherence grid that
+  fills use as their angle source ('closeup' bucket in A28).
+
+## 26. One-sided seam runs ended as straight cuts (fix round 3)
+- **Problem:** where only one piece carries art at a seam (shoulder L: the front wave runs over the shoulder, the back render
+  is bare there) the foam stopped on the keep-out as a straight line along the seam (G9 'parallel straight cut').
+- **Fix (project, seamedge.py):** along each one-sided run >= 6 mm the foam edge is scalloped into lobes (r 2.6 mm, notch
+  2.4 mm), as the mockup's crests end; nothing is invented on the bare partner. Items tagged gen='seam lobes'.
+- **Check:** discont.py parallel straight cuts on those runs -> 0.

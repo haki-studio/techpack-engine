@@ -18,7 +18,12 @@ for c in glob.glob("out/continuity_*.png") + glob.glob("out/discont_*.png"):
     if "_art" in c or "_before" in c or c.endswith("continuity_M.png"): continue
     shutil.copy(c, f"{PKG}/compare/seams/")
 shutil.copytree("out/placement", f"{PKG}/placement", ignore=shutil.ignore_patterns("*.png"))
-emb = f"out/HAKI_WAVE_EMBROIDERY-PACK_{WC.REV_EMB.replace(' ', '')}_small.pdf"; shutil.copy(emb, PKG)
+big = f"out/HAKI_WAVE_EMBROIDERY-PACK_{WC.REV_EMB.replace(' ', '')}.pdf"; emb = big.replace(".pdf", "_small.pdf")
+# PR #27 review 3 blocker 1: the zip carried a _small.pdf shrunk from the PREVIOUS pack (the shrink ran by hand after this
+# script). The small copy is now made HERE from the pack just built, and refused if it is older than the pack.
+subprocess.run(["python3", "shrink.py", big, emb, "3000", "82"], check=True)
+assert os.path.getmtime(emb) >= os.path.getmtime(big), "small pack older than the pack"
+shutil.copy(emb, PKG)
 cur = json.load(open("dst_current.json"))
 def TS(r): return r.get("total_stitches", r["stitches"])
 def TT(r): return r.get("total_trims", r["trims"])
@@ -41,7 +46,7 @@ elements/01_wave/M/                    BK back, FR / FL fronts, SR / SL sleeves:
                                        the last hooping.
 elements/01_wave/M/chenille_plan/      CHENILLE PLAN per piece (json in piece mm + preview): moss spirals + chain curl cords. NOT a
                                        machine file - tell us which chenille machine + file format you use (F1) and we write it.
-elements/01_wave/M/swatch/             FOAM SWATCH: one crest x4 (padded / moss look, Foam white / ecru) - sew first.
+elements/01_wave/M/swatch/             FOAM SWATCH: one crest x4 - A/B padded / moss in Foam ECRU (primary), C/D in Foam white (alternate) - sew first.
 placement/                             ART PLACEMENT ONLY (garment pattern to follow): 1:1 plot PDF + DXF per piece, size M,
                                        art outline, split lines, crosses, needle starts, MATCH MARKS (notch both pieces).
 elements/01_wave/*_SPEC_*.pdf          element spec; *_M_ART*.svg = size-M region art with digitizing attributes per piece.
@@ -61,3 +66,20 @@ for z in glob.glob("out/HAKI_WAVE_*SAMPLING*.zip"): os.remove(z)
 zp = f"out/HAKI_WAVE_EMB-SAMPLING_{WC.REV_EMB.replace(' ', '')}_M.zip"
 subprocess.run(f"cd {PKG} && zip -qr ../{os.path.basename(zp)} .", shell=True)
 print("zip MB", round(os.path.getsize(zp) / 1e6, 1), zp)
+
+# ---- A2 on the ZIP itself (review 3 blocker 1): every count printed in the zipped pack + README is re-read from the zipped DSTs
+import zipfile, tempfile, re
+from pypdf import PdfReader
+with tempfile.TemporaryDirectory() as td:
+    zipfile.ZipFile(zp).extractall(td)
+    tot = 0; trims = 0; per = {}
+    for P in WC.PIECES:
+        rb = __import__("readback").dst(f"{td}/elements/01_wave/M/HAKI_WAVE_01_wave_{P}_M.dst"); per[P] = (rb["stitches"], rb["trims"]); tot += rb["stitches"]; trims += rb["trims"]
+    txt = " ".join((pg.extract_text() or "") for pg in PdfReader(glob.glob(f"{td}/*_small.pdf")[0]).pages)
+    rd = open(f"{td}/README.txt").read()
+    miss = [f"{n:,}" for v in per.values() for n in v[:1] if f"{n:,}" not in txt]
+    ok = f"{tot:,}" in txt and f"{tot:,}" in rd and not miss
+    print("ZIP A2", "OK" if ok else "FAIL", {P: v for P, v in per.items()}, "total", f"{tot:,}", "trims", f"{trims:,}", "missing in pdf", miss,
+          "pages", len(PdfReader(glob.glob(f"{td}/*_small.pdf")[0]).pages))
+    json.dump(dict(ok=ok, per=per, total=tot, trims=trims, missing=miss), open("zip_check.json", "w"))
+    if not ok: raise SystemExit("ZIP A2 FAIL: the zipped pack does not print the zipped DSTs' numbers")

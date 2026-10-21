@@ -1,9 +1,10 @@
 """FOAM STRIKE-OFF SWATCH (review items 4 + 6): one small file, one hooping, that sews the SAME crest four times so the
 factory and the founder can compare the foam options side by side before the full pieces are sewn:
-    A  padded tatami + loop texture, Foam white (#F0EDEA)  = what the production files use
-    B  moss / chenille look on a flat head: flat tatami base + dense scalloped loop spirals (1.0 mm apart), Foam white
-    C  = A in the warm ecru candidate (#D3CAC1, close-up average incl. shadows)
-    D  = B in ecru
+    A  padded tatami + loop texture, Foam ECRU (#D3CAC1, w1)  = the production files' colour (founder 20 Oct: ecru first)
+    B  moss / chenille look on a flat head: flat tatami base + dense scalloped loop spirals (1.0 mm apart), ecru
+    C  = A in the Foam white alternate (#F0EDEA, the render colour)
+    D  = B in white
+Fix round 3 (PR #27 review 2): w1 IS ecru since 20 Oct, so the old 'Foam white' tiles had sewn ecru twice - rebuilt.
 The crest is the FL shoulder crest traced from the founder's close-up (LESSONS A12): the 92 x 92 mm window of the FL art with
 the most foam inside the close-up footprint. True chenille needs a chenille / moss head (chain stitch, its own file format):
 the FM outlines of this file (= ART svg) are the chenille regions if the factory has one (F1 asks).
@@ -18,8 +19,8 @@ import tech, readback, factory, motifs2, motifs
 import waveart as WA
 dst2 = WC.patch_dst2()
 
-ECRU = "#D3CAC1"
-motifs2.PAL["w1e"] = (ECRU, "Foam ecru (candidate)", "foam crests in the ecru candidate (swatch only)"); motifs2.HEX["w1e"] = ECRU; motifs.HEX["w1e"] = ECRU
+WHITE = WC.FOAM_WHITE_ALT[0]
+motifs2.PAL["w1e"] = (WHITE, "Foam white (alternate)", "foam crests in the white alternate (swatch only)"); motifs2.HEX["w1e"] = WHITE; motifs.HEX["w1e"] = WHITE
 import specbase as SB
 SB.TH["w1e"] = tech.thread_table(["w1e"])["w1e"]
 tech.COLOUR_ORDER = [c for c in tech.COLOUR_ORDER if c != "w1e"]
@@ -73,8 +74,8 @@ def build():
     win, foot = pick_window()
     base = [r for r in D["FL"] if r["geom"].intersects(win)]
     x0, y0 = win.bounds[0], win.bounds[1]
-    tiles = {"A padded, Foam white": (base, 0, 0), "B moss, Foam white": (moss(base), 1, 0),
-             "C padded, ecru": (recolour(base), 0, 1), "D moss, ecru": (recolour(moss(base)), 1, 1)}
+    tiles = {"A padded, Foam ecru": (base, 0, 0), "B moss, Foam ecru": (moss(base), 1, 0),
+             "C padded, Foam white (alt)": (recolour(base), 0, 1), "D moss, Foam white (alt)": (recolour(moss(base)), 1, 1)}
     vis = []
     for nm, (its, i, j) in tiles.items(): vis += tile(its, win, -x0 + i * (W + GAP), -y0 + j * (W + GAP))
     vis = dst2.merge_colours(vis)

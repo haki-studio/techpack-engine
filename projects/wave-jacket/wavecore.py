@@ -139,10 +139,46 @@ def flow_build_object(r):
             blocks += dst2.join_rows(dst2.tatami_rows(q.buffer(pull * 0.5) if pull else q, a, sp, L))
     return [b for b in blocks if len(b) > 1]
 
+def ends_satin(p, ang, pull, sp=None):
+    """fixed-angle satin whose pull compensation lengthens each stitch at BOTH ENDS only (fix round 3): dst2.fixed_satin
+    buffers the whole shape by the pull, which also adds rows along the sides - on a 2 mm drop that is +15 % width and the
+    sewn drop came out 20-30 % larger than the traced one (A14 width / height > 1.25)"""
+    import dst2, math, stitchrender as SR
+    sp = sp or dst2.SP_SAT; out = []
+    for i, s in enumerate(SR.hatch(p, ang, sp)):
+        cs = list(s.coords)
+        if len(cs) < 2: continue
+        a, b = (cs[0], cs[-1]) if i % 2 == 0 else (cs[-1], cs[0])
+        d = math.hypot(b[0] - a[0], b[1] - a[1])
+        if d < 1e-6: continue
+        ux, uy = (b[0] - a[0]) / d, (b[1] - a[1]) / d
+        a = (a[0] - ux * pull, a[1] - uy * pull); b = (b[0] + ux * pull, b[1] + uy * pull); d += 2 * pull
+        out += [a] + (dst2.sub(a, b, d / math.ceil(d / 6.0)) if d > 7.0 else [b])
+    return out
+
 def _covered_build_object(r, earlier_tones):
     """engine build_object, then: a satin object whose stitches cover < SAT_MIN_COV of it (turning satin fans out on the
     outside of a bend: drops, curl shades) is rebuilt as fixed-angle split satin, or tatami if that covers more"""
     import dst2, stitchrender as SR
+    if r.get("decl") and r["st"] == "satin" and isinstance(r.get("ang"), (int, float)):
+        # fix round 3 (A16): a DECLARED angle (spray drops: along the long axis) is sewn as one fixed-angle satin, never the
+        # engine's turning satin on an elongated shape; a coverage miss falls back to tatami at the SAME angle
+        code = tech.rule_for(r["grp"]); pull = dst2.pull_for(code); fs = []
+        import flowdir as _FD
+        ang = r["ang"]
+        if r.get("decl") == "drop long axis":
+            c_ = r["geom"].centroid; ga = _FD.grain_at(c_.x, c_.y, fine=True)      # the close-up's grain on THIS drop, if clear
+            if ga is not None: ang = ga; COV_LOG["drop_grain"] = COV_LOG.get("drop_grain", 0) + 1
+        for p in dst2.polys(r["geom"]):
+            if p.area < 0.06: continue
+            if dst2.width_of(p) > 4.0: fs += dst2.edge_run(p, 0.5)
+            fs.append(ends_satin(p, ang, pull))
+        fs = [b for b in fs if len(b) > 1]
+        COV_LOG["checked"] += 1
+        if stitch_cover(fs, r["geom"]) >= SAT_MIN_COV: COV_LOG.setdefault("declared", 0); COV_LOG["declared"] += 1; return fs
+        tb = dst2._orig_build_object(dict(r, st="tatami"), earlier_tones)
+        COV_LOG["tatami"] += 1
+        return tb if stitch_cover(tb, r["geom"]) > stitch_cover(fs, r["geom"]) else fs
     blocks = dst2._orig_build_object(r, earlier_tones)
     if r["st"] != "satin" or isinstance(r.get("ang"), tuple): return blocks
     COV_LOG["checked"] += 1

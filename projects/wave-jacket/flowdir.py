@@ -86,13 +86,40 @@ def outline_angle(p, c):
     a, b = bd.interpolate((s - 0.8) % L), bd.interpolate((s + 0.8) % L)
     return math.degrees(math.atan2(b.y - a.y, b.x - a.x))
 
+_G = {}
+def grain_at(x, y, w_min=0.6, coh_min=0.3, fine=False):
+    """close-up thread grain (grainfield.py) at garment point (x, y) or None (no close-up there / no clear grain);
+    fine=True: the 4 mm-scale field (drops), else the 8 mm one (stripes)"""
+    g = _G.get("cur")
+    if g is None: return None
+    if fine:
+        if "ang4" not in g: return None
+        g = dict(g, ang=g["ang4"], coh=g["coh4"])
+    i, j = int((y - g["y0"]) / g["step"]), int((x - g["x0"]) / g["step"])
+    if not (0 <= i < g["ang"].shape[0] and 0 <= j < g["ang"].shape[1]): return None
+    if g["w"][i, j] < w_min or g["coh"][i, j] < coh_min: return None
+    return float(g["ang"][i, j])
+
 def wv_parts(p, twist):
-    return [(q, field_angle(*q.representative_point().coords[0]) + twist) for q in cells(p, CELL_WV)]
+    """A16 fix round 3: rows at the close-up's grain where it is clear, else along the geometric stripe field; the cord twist
+    (alternating per tone) is added to the field angle only - the close-up grain already IS the sewn cord's direction"""
+    out = []
+    for q in cells(p, CELL_WV):
+        c = q.representative_point().coords[0]; a = grain_at(*c)
+        if a is not None: LOG["wv_grain"] = LOG.get("wv_grain", 0) + 1; out.append((q, a))
+        else: out.append((q, field_angle(*c) + twist))
+    return out
 
 def fm_parts(p):
     return [(q, outline_angle(p, q.representative_point())) for q in cells(p, CELL_FM)]
 
 LOG = {"wv_cells": 0, "fm_cells": 0, "field_pts": 0}
-def install(vis):
-    """call once per piece before stitching: builds the stripe field from this piece's art"""
+def install(vis, P=None, size="M"):
+    """call once per piece before stitching: builds the stripe field from this piece's art (+ the close-up grain of P)"""
+    import os
     LOG["field_pts"] = build_field(vis)
+    f = f"grain_{size}_{P}.npz"
+    if P and os.path.exists(f):
+        z = np.load(f); _G["cur"] = dict(ang=z["ang"], coh=z["coh"], w=z["w"], x0=float(z["x0"]), y0=float(z["y0"]), step=float(z["step"]))
+        if "ang4" in z.files: _G["cur"].update(ang4=z["ang4"], coh4=z["coh4"])
+    else: _G["cur"] = None
