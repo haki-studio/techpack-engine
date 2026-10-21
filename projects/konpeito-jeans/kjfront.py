@@ -49,21 +49,39 @@ def opening_y(x):
     if x < xs[0] or x > xs[-1]: return None
     return float(np.interp(x, xs, ys))
 
+MERGE_RATIO = 1.3
+
+def check_merges(blobs, ratio=MERGE_RATIO):
+    """guard (PR #34 review): a detected star wider/taller than ratio x the median star is probably two motifs read as
+    one blob. Raises, so a merge cannot reach the map silently."""
+    sz = [max(sl[0].stop - sl[0].start, sl[1].stop - sl[1].start) for _, sl, _ in blobs]
+    med = float(np.median(sz))
+    big = [(c, (sl[1].start, sl[0].start), z) for (c, sl, _), z in zip(blobs, sz) if z > ratio * med]
+    if big:
+        raise ValueError(f"possible merged stars (size > {ratio} x median {med:.0f} px): {big}")
+    return med
+
 def trace(G):
     a = np.asarray(Image.open(SRC).convert("RGB")).astype(float)
     h, s, v = CL.hsv(a)
-    m = (s > 0.45) & (v > 0.5) & (((h > 300) | (h < 15)) | ((h > 180) & (h < 215)) | ((h > 35) & (h < 65)))
-    m[:, :770] = False; m[:, 1000:] = False
-    m[60:186, 893:992] = False                         # the coin-pocket patch + its konpeito (elements 01/02)
-    lab, n = ndi.label(ndi.binary_dilation(m, iterations=1))
+    sv = (s > 0.45) & (v > 0.5)
+    # PR #34 review: label EACH colour on its own — a pink and a yellow star that touch (S06, 4th soot sprite) were
+    # one blob when all hues were labelled together.
+    masks = {"pink": sv & ((h > 300) | (h < 15)), "blue": sv & (h > 180) & (h < 215), "yellow": sv & (h > 35) & (h < 65)}
+    blobs = []
+    for col, m in masks.items():
+        m[:, :770] = False; m[:, 1000:] = False
+        m[60:186, 893:992] = False                     # the coin-pocket patch + its konpeito (elements 01/02)
+        lab, n = ndi.label(ndi.binary_dilation(m, iterations=1))
+        for i, sl in enumerate(ndi.find_objects(lab), 1):
+            mm = lab[sl] == i
+            if mm.sum() < 6: continue
+            blobs.append((col, sl, mm))
+    check_merges(blobs)
     mmpx = G["mmpx"]; oy = G["wb_top"]
     stars = []
-    for i, sl in enumerate(ndi.find_objects(lab), 1):
-        mm = lab[sl] == i
-        if mm.sum() < 6: continue
+    for col, sl, mm in blobs:
         ys, xs = np.nonzero(mm); cy, cx = ys.mean() + sl[0].start, xs.mean() + sl[1].start
-        hh = float(np.median(h[sl][mm]))
-        col = "pink" if (hh > 300 or hh < 15) else "blue" if 180 < hh < 215 else "yellow"
         ex = side_x(G["sil"], cy)
         x_side = (cx - ex) * mmpx; y_wb = (cy - oy) * mmpx
         x_mock = x_side
@@ -95,11 +113,22 @@ def sections(stars, frame=None):
 
 def section_vis(sec):
     """regions for one hooping, in leg mm (x from side seam, y from waistband top)."""
+    import kjsvg          # founder change 20 Oct: the 02 facing konpeito, same digitising, 10 mm
+    from shapely.ops import unary_union
+    per = [(d, kjsvg.konpeito_regions(COLS[d["col"]][0], d["x_from_side_mm"], d["y_from_waist_mm"], STAR_D)) for d in sec]
+    # overlapping konpeito (S06 yellow under S07 pink, PR #34 review): the candy sewn later (stop order yellow -> pink ->
+    # blue, kjstitch._FRONT_PLAN) lies on top, as on the mockup; the white bead specks are sewn last, so a speck of the
+    # candy underneath that falls under a later candy's body is dropped (it would show on top of the front candy).
+    RANK = {"yellow": 0, "pink": 1, "blue": 2}
     vis = []
-    for d in sec:
-        base, tint = COLS[d["col"]]
-        import kjsvg          # founder change 20 Oct: the 02 facing konpeito, same digitising, 10 mm
-        vis += kjsvg.konpeito_regions(base, d["x_from_side_mm"], d["y_from_waist_mm"], STAR_D)
+    for d, rs in per:
+        tops = [unary_union([r["geom"] for r in rs2 if r["grp"] != "KNOT"]) for e, rs2 in per
+                if e is not d and RANK[e["col"]] > RANK[d["col"]]
+                and math.dist((e["x_from_side_mm"], e["y_from_waist_mm"]), (d["x_from_side_mm"], d["y_from_waist_mm"])) < STAR_D]
+        if tops:
+            top = unary_union(tops).buffer(0.3)
+            rs = [r for r in rs if not (r["grp"] == "KNOT" and r["geom"].intersects(top))]
+        vis += rs
     return vis
 
 def overlay(G, stars, out="out/check_07_mockup.png", s=3):
@@ -118,10 +147,16 @@ def overlay(G, stars, out="out/check_07_mockup.png", s=3):
     d.text((ox + 12, oy + 2), "O (0,0)", fill=(0, 255, 0), font=fnt)
     d.line([P(*p) for p in POCKET_OPENING_PX], fill=(255, 140, 0), width=5)
     d.text(P(1026, 160), "pocket\nopening", fill=(255, 140, 0), font=fnt)
-    for st in stars:
-        cx, cy = P(*st["px"]); r = STAR_D / G["mmpx"] / 2 * s
+    # labels in a column right of the stars, pushed apart + leader lines (PR #34 review item 3: S01/S02 overlapped)
+    r = STAR_D / G["mmpx"] / 2 * s
+    pts = [P(*st["px"]) for st in stars]
+    xl = max(x for x, _ in pts) + r + 40
+    order = sorted(range(len(pts)), key=lambda i: pts[i][1]); ly = [0.0] * len(pts); last = -1e9
+    for i in order: ly[i] = max(pts[i][1], last + 28); last = ly[i]
+    for st, (cx, cy), yl in zip(stars, pts, ly):
         d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(255, 255, 255), width=3)
-        d.text((cx + r + 4, cy - 12), st["id"], fill=(255, 255, 255), font=fnt)
+        d.line([(cx + r, cy), (xl - 4, yl)], fill=(255, 255, 255), width=2)
+        d.text((xl, yl - 12), st["id"], fill=(255, 255, 255), font=fnt, stroke_width=2, stroke_fill=(0, 0, 0))
     c.save(out)
     # grid used to read the pocket opening (kept as evidence)
     x0g, y0g, x1g, y1g = 840, 30, 1060, 240; sg = 5

@@ -97,3 +97,6 @@ black (not "as HI"); waistband 2 pieces joined at CB; back pockets = "2 back pat
 19. Size-label number height 3 mm (HI "XS" ~2.5-3 mm).
 20. The canonical konpeito is the first front-row candy of the 02 SVG (all 02 front-row candies are this shape rotated);
     every placed konpeito is upright (no rotation).
+
+- Rev B4 (21 Oct, PR #34 review): the 07 front-leg map has 15 konpeito (the 4th soot sprite carries a pink AND a yellow
+  konpeito, overlapping; the pink is sewn on top). Size 24 is dropped (item 18 above); T3 and F1 say so.

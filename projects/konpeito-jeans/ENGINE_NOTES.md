@@ -120,3 +120,19 @@ Engine runs: `bench/run_{wb,coin,spill,starP,starY}_svg.yaml` -> `out/engine_m5/
 27. **Reviewer orientation check**: a back view is seen from behind, so image right = wearer's right (PR #30 review
    item 1 read it the other way). Pages now say so explicitly on T2 / T8 / G4-G6. Proposed: the reviewer prompt states
    the convention (CLAUDE.md "back = x from CB, + = wearer's right on a back view").
+
+## Rev B4 (21 Oct 2026, PR #34 review)
+28. **Touching motifs of different colours were traced as one blob** (07 front leg: a pink + a yellow konpeito on one soot
+   sprite -> one "yellow" star of 15 px, the pink was missing from every page and file). Cause: the colour mask was the
+   union of all hues, labelled once. Project fix: `kjfront.trace` labels each colour class on its own;
+   `kjfront.check_merges` stops the build when a blob is > 1.3 x the median size (possible merge). Proposed: the engine's
+   motif tracer labels per colour family and runs the merge guard on every traced motif set. Check:
+   tests/test_konpeito_gates.py::test_front_trace_splits_the_touching_pair_and_guard_catches_the_old_way (the B3
+   all-hue labelling of the real mockup must trip the guard; the per-colour trace returns pink + yellow there).
+29. **A position gate whose reference comes from the same trace cannot catch a missing motif** (C5 "independent" 07
+   centre = the same map, 0.0 mm by construction). The count needs its own check: merge guard (28) + an explicit count
+   in the test. Proposed: motif_match reports "mockup motifs found vs file motifs" from two different readers.
+30. **Overlapping motifs in one file**: the motif sewn later lies on top. Bead specks are sewn last, so specks of the
+   motif underneath that fall under a later motif's body must be dropped (`kjfront.section_vis`). Proposed: dst2 /
+   stop planner drops covered top-layer details generically.
+31. **Page date typed by hand went stale** (stamp said 20 Oct, the build ran 21 Oct): DATE = build date (kjcore).
