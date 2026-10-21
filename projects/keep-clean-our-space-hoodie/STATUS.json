@@ -2,11 +2,6 @@
  "slug": "keep-clean-our-space-hoodie",
  "log": [
   [
-   "2026-10-16T22:14:27",
-   "stitch",
-   "M fronts built (FR 23k st/127 trims, FL 22k/87, foam pause marked); all sizes + splits building"
-  ],
-  [
    "2026-10-16T23:56:40",
    "qa",
    "all 7 sizes x 4 pieces + splits built; every section fits 360 frame; keep-outs pass all sizes"
@@ -200,16 +195,21 @@
    "2026-10-21T12:07:04",
    "delivered",
    "Rev H delivered to Desktop/keep-clean-RevH: back stars (248, PROPOSED layout), glow+haze dropped, puff question on F1/F2, CN 800 kept; M total 67,479 st / 886 trims"
+  ],
+  [
+   "2026-10-21T12:08:27",
+   "review",
+   "PR #38 Rev H"
   ]
  ],
  "questions": [
   "Back stars (06, Rev H): the back layout is seeded from the front field logic (248 stars at M, density + spacing of the front field, copies of the front stars) - confirm, or send a back view to place them from. [PROPOSED]",
   "Factory (Mandy, F1/F2): can the thin 3D puff strokes 2.5-3.0 mm wide (JP / CN text, list on G4) puff cleanly? Confirm on the strike-off; any that do not are sewn flat."
  ],
- "stage": "delivered",
- "stage_index": 7,
+ "stage": "review",
+ "stage_index": 8,
  "blocked": false,
- "updated": "2026-10-21T12:07:04",
+ "updated": "2026-10-21T12:08:27",
  "preview": "out/pages/prev_G1.png",
  "answers": [
   {
