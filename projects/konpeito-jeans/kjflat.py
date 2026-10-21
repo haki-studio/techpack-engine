@@ -11,7 +11,7 @@ import kjcore
 from render import f, geom_to_path
 
 SRC = "inputs/1792127150159_image.png"
-MM = 420.0 / 432.0
+MM = (33.1 * 25.4 / 2) / 436.8      # Rev B: half relaxed waist size 32 (420.4 mm) / front waistband width on the mockup (436.8 px, kjfront.geometry)
 STITCH = "#141416"      # DTM black topstitch (founder 19 Oct), drawn just darker than the denim
 INK = "#1A1A1A"; DENIM = "#3A3B3F"; DENIM_LT = "#4A4B50"
 
@@ -54,9 +54,8 @@ def back_svg(sil, emb=True, callouts=True):
     o.append(topst(T([(166, 47), (380, 49), (595, 47)], ox))); o.append(topst(T([(167, 90), (380, 93), (596, 90)], ox)))
     for bx in (185, 380, 578):          # belt loops
         o.append(path(T([(bx - 7, 38), (bx + 7, 38), (bx + 7, 102), (bx - 7, 102)], ox), close=True, fill=DENIM_LT))
-    # yoke (V to CB) + CB seam
-    o.append(path(T([(150, 135), (380, 168), (612, 135)], ox))); o.append(topst(T([(150, 141), (380, 174), (612, 141)], ox)))
-    o.append(path(T([(380, 98), (380, 470)], ox))); o.append(topst(T([(386, 168), (386, 465)], ox)))
+    # NO back yoke (as HI): the CB (seat) seam runs from the waistband to the crotch, 2 rows of topstitch
+    o.append(path(T([(380, 98), (380, 470)], ox))); o.append(topst(T([(385, 99), (385, 465)], ox))); o.append(topst(T([(390, 99), (390, 462)], ox)))
     # back pockets (pentagon) + double topstitch + rivets
     for x0, x1 in ((160, 340), (423, 603)):
         cx = (x0 + x1) / 2
@@ -87,15 +86,18 @@ def front_svg(sil):
     o.append(f'<line x1="{f((1092 - ox) * MM)}" y1="{f(zt)}" x2="{f((1092 - ox) * MM)}" y2="{f(zb)}" stroke="{STITCH}" stroke-width="1.6" stroke-dasharray="0.5 0.5"/>')
     o.append(f'<rect x="{f((1092 - ox) * MM - 2.2)}" y="{f(zt + 1)}" width="4.4" height="7" rx="1" fill="none" stroke="{STITCH}" stroke-width="0.35" stroke-dasharray="0.8 0.6"/>')
     # front pockets: wearer's right (image left) scoop with the coin pocket; wearer's left scoop
-    o.append(path(T(bez((1012, 96), (995, 170), (940, 215), (868, 232)), ox)))
-    o.append(topst(T(bez((1020, 96), (1003, 175), (946, 222), (870, 240)), ox)))
-    o.append(path(T(bez((1198, 96), (1215, 160), (1270, 190), (1338, 200)), ox)))
-    o.append(topst(T(bez((1190, 96), (1207, 166), (1264, 197), (1340, 208)), ox)))
-    for rx, ry in ((1016, 130), (1200, 128)):
+    # Rev B: scoop openings traced from the mockup (kjfront.POCKET_OPENING_PX), wearer's left = mirror about CF (x 1105)
+    R = [(870, 172)] + OPENING_PX + [(1024, 98)]
+    L = [(2210 - x, y) for x, y in R]
+    for pts in (R, L):
+        o.append(path(T(pts, ox)))
+        o.append(topst(T([(x, y + 6) if i < len(pts) - 1 else (x + (6 if x < 1105 else -6), y) for i, (x, y) in enumerate(pts)], ox)))
+    for rx, ry in ((1021, 130), (1189, 130)):
         o.append(f'<circle cx="{f((rx - ox) * MM)}" cy="{f(ry * MM)}" r="2.2" fill="#1E1E20" stroke="#8A8A8E" stroke-width="0.3"/>')
     o.append(path(T([(1100, 470), (1092, 500)], ox)))
     return "\n".join(o), P.bounds
 
 # garment positions (mm, on these flats) of the embroidery, for placement drawings: x from the flat's left edge of each view
+OPENING_PX = [(878, 173), (904, 179), (930, 183), (960, 184), (980, 180), (1000, 168), (1012, 152), (1021, 130)]   # = kjfront.POCKET_OPENING_PX
 COIN_TL_PX = (902, 122)        # coin-pocket patch top-left on the front flat (px)
 WB_TL_PX = (478, 37)           # waistband patch top-left on the back flat (px)
