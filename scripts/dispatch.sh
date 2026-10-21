@@ -100,6 +100,9 @@ You are a background worker (LESSONS E10): nobody is waiting on you and the sess
 
 drain() {     # start queued jobs while there is room
   local role slug arg
+  if [ "$DRY" = 1 ]; then   # a dry run lists the queue and never pops it (LESSONS E13)
+    while IFS=$'\t' read -r role slug arg; do launch "$role" "$slug" "$arg" || true; done < "$QUEUE"; return 0
+  fi
   while [ -s "$QUEUE" ] && room; do
     IFS=$'\t' read -r role slug arg < "$QUEUE"; sed -i 1d "$QUEUE"
     launch "$role" "$slug" "$arg" || true
