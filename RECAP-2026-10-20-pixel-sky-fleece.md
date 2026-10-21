@@ -46,3 +46,13 @@
 | Jacquard simplified | trace per 2.5 mm cell (band 91.8 → 94.4 %, sleeves 97.7 %), mirror-fill under zip/pockets (no stripes), sky under sparkle rims, view slivers fixed, J3 diff map + list |
 Dead end: IoU-based fits (hard or soft) on the blurred render always prefer blobs/diamonds; only comparing blurred-candidate vs render (forward model) recovers 4-arm shapes.
 Open: wingtip sparkle above the bird still comes out a diamond (render too blurred); founder items unchanged (bird IP, bird side, back design).
+
+## Fix round 2 (PR #28 round-2 review: 3 should-fix) — Rev C
+| Review item | Fix |
+|---|---|
+| Big sparkles drawn as stepped diamonds | `star_fit.fit_tiers`: each sparkle = 1-3 concentric D4 crosses fitted by the blur forward model (coordinate descent, fewest tiers within 0.004 rmse; big ones may free edges when rmse drops >= 10 %; edges snapped < 1.25 mm; arms w <= 0.5 L and stick out >= 25 %). Small (< 16 mm) = one tier = plain plus. Replaces the 2.5 mm staircase + resampled exemplar. |
+| Jacquard checker = scattered specks | `jacquard.checker_px`: windowed 2-D checker filter on blueness (8-12 px squares) -> checker areas; `regularise_checker`: regular lattice of q cells (q=3 by agreement), phase per cell (+-2 squares) majority-smoothed. |
+| closeup_request.md missing | written (7 prompts + optional back), Q1 question added via status_set. |
+| Minor | R1: distinct motifs = 22 (E1B repeats E1), process rows print DONE not PASS, D2 reads the small PDF size; Rev C. |
+Dead ends: a uniform coarse grid (2.5-9 mm) for the big sprites - the fine cell always wins on rmse (render unit drifts); free-edge fits on small sparkles overfit into lopsided shapes; label-based checker detection fails (squares joined at corners by anti-aliasing).
+Repo root has a stray symlink `*` -> `inputs/*` (made by `source scripts/env.sh .`); safety check blocked removing it - not committed.
