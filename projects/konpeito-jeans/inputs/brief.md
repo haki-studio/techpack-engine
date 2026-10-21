@@ -59,3 +59,26 @@ silhouette WITHOUT cargo pockets. Measurements: Hidden Inventory published size 
 - Founder 19 Oct (final): size labels = waist numbers 24–40; MATTE BLACK zip / 28L button / 15L rivets; DTM black thread for
   topstitch Tex 135 and overlock + buttonhole Tex 60; back-pocket top corners BARTACKED (as HI, no rivets); 02 facing
   konpeito placement confirmed as placed. All CONFIRMED.
+
+## Rev B — founder review of Rev A (20 Oct 2026) + coordinator overrides — CONFIRMED unless marked
+Founder items 1–15 (prompt of the Rev B run), with the coordinator's overrides (20 Oct): wash = match the MOCKUP's washed
+black (not "as HI"); waistband 2 pieces joined at CB; back pockets = "2 back patch pockets" (founder, later: no explanation).
+- No knee seam: front + back legs one panel waist to hem. NO back yoke (as HI). Construction as HI, plain words (T4, T6).
+- Front-leg 07: "artwork to follow [MISSING]"; the licensed-lookalike note removed everywhere. Star map re-derived from the
+  mockup (kjfront.py: scale 420.4 mm / 436.8 px front waistband = 0.9623 mm/px, origin = WB top at the side seam, pocket
+  opening traced at 5x on a 10 px grid): 0 of 14 stars inside the opening. Rev A cause: the flat's scoop line was drawn
+  ~60 mm too low. 07a / 07b rebuilt (stars moved up 5–12 mm). Overlay check = page C5.
+- Size labels: waist numbers 26 28 29 30 31 32 33 34 36 38 40 in Neue Metana ExtraBold, white on black, LOOP label; hang
+  tag hangs from the size label; main label sewn down on all 4 sides. Artwork recreated (kjlabels.py, zip labels/).
+- Main + care label: current HI art kept as reference, new artwork to follow [MISSING]. Packing design to follow [MISSING].
+  Barcode per size: HK code from PLM, to follow [MISSING] (Code 128 on the polybag sticker). Nothing created in Shopify/PLM.
+- Patch 03 position CONFIRMED. BOM: one embroidery-threads line; method note (patch vs straight onto the panel) on G1.
+
+## Rev B assumptions (PROPOSED in the documents)
+18. Size run = the founder's label list 26 28 29 30 31 32 33 34 36 38 40 (the Rev A pack had 24–40 evens; the prompt said
+    "use the exact size run already in the pack/T3" — the explicit list wins). 24 dropped; 29 / 31 / 33 are half-way between
+    the neighbouring HI sizes on T3 (amber) until the factory grades them.
+19. Size loop label strip 15 × 60 mm flat (loop 15 × 25 mm, 5 mm seam allowance each end), number max 5 mm high, number
+    on both halves (back half turned 180°).
+20. Hammer loop, snaps and HI flag labels left off (not on the Konpeito mockup).
+21. Waistband interlining as the HI production waistband (the HI BOM lists none).

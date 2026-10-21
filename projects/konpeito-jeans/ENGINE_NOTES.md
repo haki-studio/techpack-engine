@@ -64,3 +64,15 @@ Engine runs: `bench/run_{wb,coin,spill,starP,starY}_svg.yaml` -> `out/engine_m5/
 - 14: `qa.direction_match(groups=...)` (per object layer) + the existing `tile_mm`; not wired into svgrun yet (an SVG
   source has no thread-grain reference).
 - 5, 6, 10 not in M5 (pages / fonts / stitchrender).
+
+## Rev B (20 Oct 2026)
+15. **F1 chenille section on a product without chenille** (LESSONS D5 again): `factory.requests_page` prints section 5
+   "Chenille machine + file format" on Konpeito; the project's own section had to move to 6 (F1_Y 158 -> 176).
+   Proposed: `requests_page(..., chenille=False)` + test that a non-chenille product has no chenille section.
+16. **Flat construction lines drawn by eye can misplace embroidery relative to garment features** (founder: "the top stars
+   look like they sit INSIDE the front pocket"): the stars were traced correctly, but the flat's scoop line was a guessed
+   bezier ~60 mm too low. Proposed rule (LESSONS D/A): every construction line that embroidery is placed against
+   (pocket openings, seams) is traced from the mockup and stored as data, and a check reports each motif's distance to
+   it (kjfront.py `below_opening_mm`, page C5). Check: a test that a star above a traced opening is flagged.
+17. **env.sh run from the wrong directory** creates a symlink literally named `*` in the repo root (the `inputs/*` glob does
+   not match). Proposed: `shopt -s nullglob` in env.sh. (One such `*` is left untracked in this worktree: not committed.)
