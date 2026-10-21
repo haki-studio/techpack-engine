@@ -9,7 +9,7 @@ from sheet import t, doc, INK, MUTED, RED, GREEN, ORANGE, SW, SH, embed
 import factory, tech, readback
 import fleece as FL, pattern as PT, pattern_draw as PD
 
-STYLE = "HK-FL-PIXSKY"; REV = "Rev E"; DATE = "21 Oct 2026"; NAME = "Pixel Sky sherpa fleece jacket"
+STYLE = "HK-FL-PIXSKY"; REV = "Rev F"; DATE = "21 Oct 2026"; NAME = "Pixel Sky sherpa fleece jacket"
 SHT.FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · {REV} · {DATE}"
 PROP = "#8A5A00"; ALT = "#F5F2EC"
 OUT = "out"; PG = f"{OUT}/pages"; os.makedirs(PG, exist_ok=True)
@@ -59,19 +59,21 @@ def p_cover(index):
          f'<line x1="14" y1="45" x2="{SW-14}" y2="45" stroke="{INK}" stroke-width="0.4"/>']
     img_fit(o, "inputs/front.png", 14, 50, 60, 62); o.append(t(14, 116, "MOCKUP (front only, AI render)", 1.9, 700))
     img_fit(o, f"{OUT}/flat_front_A.png", 78, 52, 118, 52); o.append(t(78, 108, "FRONT — drawn from the pattern (M), jacquard + embroidery", 1.9, 700))
-    img_fit(o, f"{OUT}/flat_back.png", 78, 116, 118, 52); o.append(t(78, 172, "BACK — NOT SHOWN in the mockup: cloud band continued [proposed — confirm]", 1.9, 700, PROP))
+    img_fit(o, f"{OUT}/flat_back.png", 78, 116, 118, 52); o.append(t(78, 172, "BACK — not in the mockup: cloud band continued, no back motif (confirmed 21 Oct)", 1.9, 700))
     ix = 204; o.append(t(ix, 54, "CONTENTS", 2.8, 700)); y = 60
     for name, pg in index: o.append(t(ix, y, name, 1.8)); o.append(t(SW - 14, y, str(pg), 1.8, 600, MUTED, "end")); y += 3.5
     y += 3; o.append(t(ix, y, "KEY SPECS", 2.4, 700)); y += 4.4
-    for a, b_ in [("Shell", "engineered jacquard sherpa: sky blue / cream"), ("Clouds", "knitted in (jacquard), 2.5 mm cells"),
-                  ("Sparkles", "embroidered, yellow + gold (E1–E3)"), ("Bird", "knitted black (A) or embroidered (B, E1B)"),
-                  ("Collar", "9 cm stand, blue taslan / cream sherpa"), ("Edges", "navy binding; elastic cuffs"),
-                  ("Closures", "CF zip + 2 vertical zip pockets"), ("Block", "Drum Island + pile ease")]:
-        o.append(t(ix, y, a, 1.8, 400, MUTED)); o.append(t(ix + 17, y, b_, 1.75, 600, PROP)); y += 3.6
+    for a, b_, c_ in [("Shell", "engineered jacquard sherpa: sky blue / cream", PROP), ("Clouds", "knitted in (jacquard), 2.5 mm cells", PROP),
+                  ("Sparkles", "embroidered, yellow + gold (E1–E3)", INK), ("Bird", "knitted black (A) or embroidered (B, E1B)", PROP),
+                  ("Collar", "9 cm stand, sky-blue taslan (= sherpa sky) / cream sherpa", PROP), ("Edges", "navy binding; elastic cuffs", PROP),
+                  ("Closures", "CF zip + 2 vertical zip pockets", PROP), ("Block", "Drum Island + pile ease (confirmed 21 Oct)", INK),
+                  ("Back", "cloud band continued, no motif (confirmed 21 Oct)", INK)]:
+        o.append(t(ix, y, a, 1.8, 400, MUTED)); o.append(t(ix + 17, y, b_, 1.75, 600, c_)); y += 3.6
+    o.append(t(ix, y + 1.5, "Amber = proposed — confirm; black = confirmed by the founder.", 1.5, 400, MUTED))
     o.append(t(SW - 14, SH - 8, SHT.FOOT, 1.8, 400, MUTED, "end"))
     return o
 
-NOTES = [("1", "Stand collar 9 cm: outer blue taslan (C01), inner cream sherpa (C02), seamed at the top edge, turned; navy piping (BD3) in the neck seam, visible 8 mm."),
+NOTES = [("1", "Stand collar 9 cm: outer SKY-BLUE taslan (C01), colour matched to the sky sherpa (lab dip against the sherpa, founder 21 Oct), inner cream sherpa (C02), seamed at the top edge, turned; navy piping (BD3) in the neck seam, visible 8 mm."),
          ("2", "CF zip: black #5 coil, separating, blue pull, hem binding edge to collar top − 5 mm; zip tape covered inside by a navy taslan facing strip (Z01)."),
          ("3", "Bird: knitted black in the jacquard (option A) — or embroidered E1B (option B) if the mill cannot add a 3rd colour. Sparkles E1/E2 always embroidered."),
          ("4", "Vertical zip pockets 16.5 cm, navy tape, blue pulls; tricot pocket bags (P02) bar-tacked to the zip facing."),
@@ -83,7 +85,7 @@ NOTES = [("1", "Stand collar 9 cm: outer blue taslan (C01), inner cream sherpa (
 def p_flats():
     o = H("FLATS + CONSTRUCTION", "Size M, drawn from the pattern pieces with the jacquard cell maps and the stitch art. Amber = proposed — confirm.", "T2")
     img_fit(o, f"{OUT}/flat_front_A.png", 12, 30, 190, 82); img_fit(o, f"{OUT}/flat_back.png", 12, 116, 190, 82)
-    o.append(t(12, 30, "FRONT", 2.2, 700)); o.append(t(12, 116, "BACK (assumed — not in the mockup)", 2.2, 700, PROP))
+    o.append(t(12, 30, "FRONT", 2.2, 700)); o.append(t(12, 116, "BACK (not in the mockup) — band continued, no motif: confirmed 21 Oct", 2.2, 700))
     y = 32; tx = 208
     for n, s_ in NOTES:
         o.append(f'<circle cx="{tx}" cy="{y - 0.8}" r="2.0" fill="#FFFFFF" stroke="{INK}" stroke-width="0.25"/>' + t(tx, y, n, 1.8, 700, INK, "middle"))
@@ -93,7 +95,7 @@ def p_flats():
     return o
 
 def p_pom():
-    o = H("SIZE CHART + MEASUREMENT CHECK", "cm. Rows from the approved Drum Island chart; pile ease and new rows are PROPOSED (amber). ½ = half measurement, flat.", "T3")
+    o = H("SIZE CHART + MEASUREMENT CHECK", "cm. Rows from the approved Drum Island chart + pile ease (confirmed by the founder 21 Oct); new rows M, Q, R are PROPOSED (amber). ½ = half measurement, flat.", "T3")
     hd = ["", "Point of measure", "How measured"] + SIZES + ["Tol", "Source"]; cx = [12, 18, 62, 120, 131, 142, 153, 164, 175, 186, 198, 210]
     for x_, h_ in zip(cx, hd): o.append(t(x_, 32, h_, 1.7, 700, MUTED))
     order = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "P", "M", "Q", "R"]
@@ -109,10 +111,10 @@ def p_pom():
     for j, sz in enumerate(SIZES):
         ok = CHECK[sz] and WALKS[sz] and SHAPE[sz]; o.append(t(cx[3 + j], y, "pass" if ok else "FAIL", 1.7, 700, GREEN if ok else RED))
     o.append(t(12, y, "chart · seam walks · shape checks (pattern QA)", 1.6, 400, MUTED)); y += 6
-    for l in [f"Pile ease vs Drum Island: {', '.join(f'{k} +{v:g}' for k, v in FL.EASE_CM.items())} cm; D (½ sweep) = B: straight bound hem, no rib.",
-              "Length A unchanged (cropped at the hip as the mockup). Sleeve G includes the 1.2 cm cuff binding.",
-              "A fit sample in M (blank sherpa is fine) is mandatory before the size set — first fleece on this block."]:
-        o.append(t(12, y, l, 1.65, 400, PROP)); y += 3.4
+    for l, c_ in [(f"Pile ease vs Drum Island: {', '.join(f'{k} +{v:g}' for k, v in FL.EASE_CM.items())} cm; D (½ sweep) = B: straight bound hem, no rib — CONFIRMED by the founder 21 Oct.", INK),
+              ("Length A unchanged (cropped at the hip as the mockup). Sleeve G includes the 1.2 cm cuff binding.", INK),
+              ("A fit sample in M (blank sherpa is fine) is MANDATORY before the size set — first fleece on this block (founder 21 Oct).", RED)]:
+        o.append(t(12, y, l, 1.65, 700 if c_ == RED else 400, c_)); y += 3.4
     return o
 
 def _draw(o, g, codes, x0, y0, wmax, s, lw=0.3, tm=1.2, gap=4):
@@ -151,7 +153,7 @@ def p_bom():
     zip_l = gM["F01"].edges[0].length + FL.COLLAR_H - 5
     rows = [("Shell — jacquard sherpa", "Engineered pile jacquard, sky blue / cream (+ black bird, option A), ~ 300 g/m², polyester", f"{area(['B01','F01','F02','S01','S02']):.2f} m (knit per panel)"),
             ("Collar inner", "Plain sherpa, cream (same pile)", f"{area(['C02']):.2f} m"),
-            ("Collar outer + zip facing + loop", "Nylon taslan, sky blue (collar) / navy (facing, loop)", f"{area(['C01']):.2f} + {area(['Z01','P04']):.2f} m"),
+            ("Collar outer + zip facing + loop", "Nylon taslan: collar SKY BLUE matched to the sky-blue sherpa (lab dip against the sherpa, not a darker stock blue); navy (facing, loop)", f"{area(['C01']):.2f} + {area(['Z01','P04']):.2f} m"),
             ("Binding", f"Navy taslan, cross-cut, {FL.BIND_CUT:.0f} mm cut, {FL.BIND_W:.0f} mm finished: hem {mM['hem_len']/10:.0f} cm, cuffs 2 × {mM['sleeve_open']/10:.0f} cm, collar piping {mM['Ln']/10:.0f} cm", "1 set"),
             ("Cuff elastic", f"{FL.CUFF_EL_W:.0f} mm woven elastic, {mM['el_cuff']/10:.1f} cm + 1.5 overlap (M)", "2"),
             ("CF zip", f"#5 coil, separating, black tape + teeth, blue pull, {zip_l/10:.0f} cm (M)", "1"),
@@ -206,7 +208,7 @@ def p_j1():
     y += 5
     y = para(o, 12, y, f"* filled across a garment detail (CF zip, pocket zips + pulls) from the surrounding cells.  ** not visible in the mockup: body sides under the sleeves "
              f"(reflected from the traced columns), the whole back (= front mirrored at the side seams), sleeve back halves (= front half mirrored) — GENERATED, not traced "
-             f"[proposed — confirm]. Trace vs mockup: {AGREE['agree_front']*100:.1f} % pixel agreement over the visible front, {AGREE['agree_band']*100:.1f} % in the cloud band, {AGREE['agree_sleeve']*100:.1f} % on the visible sleeves (J3).", 140, 1.5, MUTED)
+             f"(back design confirmed 21 Oct: band continued, no motif). Trace vs mockup: {AGREE['agree_front']*100:.1f} % pixel agreement over the visible front, {AGREE['agree_band']*100:.1f} % in the cloud band, {AGREE['agree_sleeve']*100:.1f} % on the visible sleeves (J3).", 140, 1.5, MUTED)
     y += 2; o.append(t(12, y, "FOR THE MILL — please answer (also on F2)", 2.0, 700, RED)); y += 4
     for q in ["Can you knit an ENGINEERED (placed per panel) pile jacquard sherpa from these maps? Machine gauge, cell → stitch/course conversion, pile height?",
               f"Minimum motif / cell size you can hold on pile (the bird uses single 2.5 mm cells; the cloud checker is drawn in squares of {CHKQ} cells = {CHKQ * 2.5:.1f} mm [proposed]; the render's checker squares measure ~6–7 mm)? A 3rd colour (black) in the bird area only?",
@@ -239,9 +241,9 @@ def p_j3():
               + f"Islands of ≤ {JQS['speck_max']} cells (rim leftovers, mirror seams) take their surroundings' colour; the bird's own gaps are kept.", INK),
              ("Cell edges (diff map, left).", f"Red = render sky / map cream ({ds:.1f} % of judged pixels), orange = render cream / map sky ({dc:.1f} %). They lie on the cloud outlines: a 2.5 mm cell cannot follow a 0.6 mm render pixel edge. No cloud, cut-out or checker group is missing; part of the difference is the checker lattice (above).", INK),
              ("FILLED (zip, pocket zips + pulls).", "Cells under the CF zip and the pocket zips are mirrored from the traced cells across the detail's edge, row by row (Rev A grew a majority inward and left horizontal stripes).", PROP),
-             ("GENERATED (not in the mockup).", "Body sides under the sleeves (reflected from the traced columns), the whole back (front mirrored at the side seams), sleeve back halves (the traced half mirrored about the sleeve centre line; the hidden strips of the front half about one fixed column each, Rev D) — lighter cells on J2.", PROP),
+             ("GENERATED (not in the mockup).", "Body sides under the sleeves (reflected from the traced columns), the whole back (front mirrored at the side seams), sleeve back halves (the traced half mirrored about the sleeve centre line; the hidden strips of the front half about one fixed column each, Rev D) — lighter cells on J2. Founder 21 Oct: band continued round back + sleeves at the same height, no back motif (confirmed).", INK),
              ("Sparkles.", f"Cells under the embroidered sparkles are sky: the sparkles sew on top. Their anti-aliased render rim (up to {JQS['rim_foot_px']} px out) is sky too and never counts as checker (Rev D: Rev C left cream specks there).", INK),
-             ("Low-res source.", "Redrawn from a low-res mockup (~0.6 mm per render pixel; no close-ups yet: prompts in inputs/closeup_request.md, Q1). A designer may touch up the PNG maps directly (1 px = 1 cell).", PROP)]
+             ("Low-res source.", "Redrawn from a low-res mockup (~0.6 mm per render pixel). No close-ups: the founder is happy with this fidelity (21 Oct), none needed. A designer may touch up the PNG maps directly (1 px = 1 cell).", INK)]
     for h, body, col in items:
         o.append(t(tx, y, h, 1.75, 700, col)); y += 3.3; y = para(o, tx + 2, y, body, 92, 1.6, col, 2.9) + 1.8
     return o
@@ -320,7 +322,7 @@ def p_gfile(F, nm, use, page):
          "arm longer when the render shows it; smaller ones are drawn as a plain 4-arm plus (the render is too blurred for their inner steps). "
          "Touching sparkles (bird wing pair) are split by colour first. "
          + ("Sleeve: shapes true size; each motif's position mapped from the hanging sleeve onto the sleeve pattern. " if F == "E3" else "")
-         + ("Bird = the jacquard bird cells (same drawing as option A). IP check pending (Q1)." if F == "E1B" else ""), 46, 1.5, MUTED, 2.8)
+         + ("Bird = the jacquard bird cells (same drawing as option A). Original pixel art: IP cleared by the founder 21 Oct." if F == "E1B" else ""), 46, 1.5, MUTED, 2.8)
     return o
 
 def f_pages():
@@ -339,7 +341,7 @@ def p_f2():
               ("2  Embroidery on sherpa", ["Factory said 'embroidery on sherpa yes'. Please confirm topping (water-soluble film) + backing (cutaway 2.5 oz) and whether you hoop the panel or float it on adhesive backing.",
                                          "Sew E1B and E2 in M on a jacquard (or plain blue) sherpa offcut: check pile poke-through, pull (measured size vs file), hoop marks. We expect to retune density / pull comp after this."]),
               ("3  Hoopings (information — frames confirmed)", [f"Every file is one hooping on your {FRAME[0]:.0f} × {FRAME[1]:.0f} frame: " + ", ".join(f"{F} {GATES[F]['size_mm'][0]:.0f} × {GATES[F]['size_mm'][1]:.0f} mm" for F, _, _ in FILES) + "."]),
-              ("4  Trims", ["Navy taslan binding + seam tape, blue taslan collar outer, #5 coil CF zip (black, blue pull), #3 coil pocket zips (navy tape, blue pull): please quote / propose your stock colours against the mockup."])]
+              ("4  Trims", ["Navy taslan binding + seam tape [proposed]; collar outer taslan in SKY BLUE matched to our sky-blue sherpa (lab dip against the sherpa, not a darker stock blue); #5 coil CF zip (black, blue pull), #3 coil pocket zips (navy tape, blue pull): please quote / propose your stock colours against the mockup."])]
     for h, items in blocks:
         o.append(t(12, y, h, 2.3, 700)); y += 4.6
         for s_ in items: y = para(o, 15, y, "•  " + s_, 160, 1.7, INK) + 1.0
@@ -349,18 +351,23 @@ def p_f2():
 # ---------------------------------------------------------------- Q1 + R1
 def p_q1():
     o = H("Q1 · OPEN QUESTIONS + ASSUMPTIONS (PROPOSED)", "Everything amber in this pack. Recorded on the board (status_set.py --question); answers update the brief and rebuild.", "Q1")
+    st = json.load(open("STATUS.json")) if os.path.exists("STATUS.json") else {}
     y = 34; o.append(t(12, y, "OPEN QUESTIONS", 2.4, 700)); y += 5
-    qs = json.load(open("STATUS.json")).get("questions", []) if os.path.exists("STATUS.json") else []
-    for i, q in enumerate(qs, 1): y = para(o, 14, y, f"{i}. {q}", 160, 1.65, RED) + 1.2
-    y += 3; o.append(t(12, y, "ASSUMPTIONS USED IN THIS PACK", 2.4, 700)); y += 5
-    for a in ["Block: Drum Island + pile ease (T3). Sizes XS–3XL. Unlined, taped seams. Fit sample in M mandatory.",
-              "Back + sleeve backs not shown: cloud band continued at the same height above the hem; back = front mirrored at the side seams; no back motif.",
+    for i, q in enumerate(st.get("questions", []), 1): y = para(o, 14, y, f"{i}. {q}", 160, 1.65, RED) + 1.2
+    ans = st.get("answered", [])
+    if ans:
+        y += 3; o.append(t(12, y, "ANSWERED BY THE FOUNDER (closed)", 2.4, 700)); y += 5
+        for a in ans:
+            y = para(o, 14, y, f"✓ {a['date']}: {a['answer']}", 160, 1.65, GREEN) + 0.4
+            y = para(o, 20, y, "Q: " + a["question"], 150, 1.4, MUTED, 2.6) + 1.0
+    y += 3; o.append(t(12, y, "ASSUMPTIONS STILL PROPOSED IN THIS PACK", 2.4, 700)); y += 5
+    for a in ["Sizes XS–3XL. Unlined, taped seams. (Block + pile ease confirmed 21 Oct; fit sample in M mandatory.)",
+              "Back = front mirrored at the side seams, sleeve backs mirrored (the back design itself is confirmed 21 Oct).",
               "Art scale 0.601 mm per render px (CF neck → hem = 565 mm at M). The render is slimmer than the block: art keeps the mockup's motif sizes; hidden body sides are generated.",
-              "Brief said the bird is on the wearer's LEFT chest; the mockup shows it on the wearer's RIGHT front (viewer's left). Built as the mockup shows.",
               f"Cloud checker fringe drawn as a regular lattice of {CHKQ * 2.5:.1f} mm squares ({CHKQ} cells); the render's are ~6–7 mm on an irregular grid.",
-              "Close-ups not generated yet: prompts per panel in inputs/closeup_request.md. When they land, the sparkles, bird and checker are re-traced from them and direction vs reference is judged.",
               "Jacquard cell 2.5 mm (clouds + bird traced per cell) and yarn colours; option A/B for the bird. Threads: catalogue matches, ΔE listed on F1.",
-              "Embroidery on sherpa: water-soluble topping + cutaway; tatami 0.40, pull 0.30 (to be tuned at the strike-off). Trims + colours per T5."]:
+              "Collar outer: sky-blue taslan (smooth woven) lab-dipped to the sky sherpa — rather than the sky-blue sherpa itself (question 4).",
+              "Embroidery on sherpa: water-soluble topping + cutaway; tatami 0.40, pull 0.30 (to be tuned at the strike-off). Binding / tape navy and zips per T5."]:
         y = para(o, 14, y, "•  " + a, 160, 1.65, PROP) + 1.0
     return o
 
@@ -370,8 +377,8 @@ def p_r1():
     nE1 = GATES["E1"]["motifs_n"]; distinct = sum(GATES[F]["motifs_n"] for F in GATES) - nE1      # E1B repeats E1's sparkles
     rows = [("A2/A11/A14", "Motif counts + silhouettes vs the mockup", f"{len(PLACE['sparkles'])} sparkles + bird = {distinct} motifs; A14 " + ", ".join(f"{F} {GATES[F]['motifs_pass']}/{GATES[F]['motifs_n']}" for F in GATES) + " (E1B repeats E1's)", allA),
             ("A3/C8", "Keep-outs on every size (pattern pieces)", "clearances.json XS–3XL", all(r["ok"] for rows in CLR.values() for r in rows)),
-            ("A7", "IP: copyrighted character?", "bird resembles a game sprite — question open (Q1); built as traced", None),
-            ("A10", "Low-res source stated; close-ups requested", "G2–G5, J3; inputs/closeup_request.md " + ("written" if os.path.exists("inputs/closeup_request.md") else "MISSING"), "DONE" if os.path.exists("inputs/closeup_request.md") else False),
+            ("A7", "IP: copyrighted character?", "bird = original pixel art, not from a game — cleared by the founder 21 Oct", "DONE"),
+            ("A10", "Low-res source stated on the art pages", "G2–G5, J3; close-ups not needed (founder 21 Oct, fidelity accepted)", "DONE"),
             ("A14+", "Colour per motif (render core hue vs sewn stop)", ", ".join(f"{F} {sum(c['ok'] for c in GATES[F]['colour'])}/{len(GATES[F]['colour'])}" for F in GATES), all(GATES[F]["colour_ok"] for F in GATES)),
             ("A15", "Details masked; qa.uncovered on every file", "details masked, mirror-filled (J3); gaps ≥ 25 mm²: " + ", ".join(f"{F} {len(GATES[F]['uncovered'])}" for F in GATES), all(not GATES[F]["uncovered"] for F in GATES)),
             ("A16", "qa.angle_coherence (visible stitches per part)", ", ".join(f"{F} {len(GATES[F]['coherence'])} fails/{GATES[F]['coherence_parts']}" for F in GATES), all(not GATES[F]["coherence"] for F in GATES)),

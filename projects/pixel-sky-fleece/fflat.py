@@ -11,7 +11,7 @@ from shapely import affinity
 import fleece as FL, jacquard as JQ, pattern as PT, pixels as PX
 
 PPM = 2.0
-NAVY, ZIPC, PULL, SKYC, CREAMC, TASLAN = (27, 38, 66), (30, 30, 30), (110, 160, 240), JQ.COL[0], JQ.COL[1], (120, 168, 246)
+NAVY, ZIPC, PULL, SKYC, CREAMC, TASLAN = (27, 38, 66), (30, 30, 30), (110, 160, 240), JQ.COL[0], JQ.COL[1], JQ.COL[0]   # collar outer = sky taslan matched to the sky sherpa (founder 21 Oct)
 ANG = math.radians(78)              # sleeve hangs 78 deg from horizontal (drop shoulder, as the mockup)
 COLS = {"yellow": (246, 226, 58), "gold": (217, 165, 33), "black": (35, 31, 30)}
 

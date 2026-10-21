@@ -2,7 +2,7 @@
 import os, shutil, subprocess, json, glob
 from pypdf import PdfReader, PdfWriter
 
-STYLE = "HK-FL-PIXSKY"; REV = "RevE"; OUT = "out"
+STYLE = "HK-FL-PIXSKY"; REV = "RevF"; OUT = "out"
 src = f"{OUT}/HAKI_{STYLE}_TECHPACK_{REV}.pdf"; dst = f"{OUT}/HAKI_{STYLE}_TECHPACK_{REV}_small.pdf"
 w = PdfWriter(clone_from=src)
 for page in w.pages:
@@ -26,7 +26,7 @@ shutil.copy(f"{OUT}/art/placements.json", f"{pkg}/elements/")
 G = json.load(open(f"{OUT}/stitch/gates_fl.json"))
 lines = "\n".join(f"elements/{STYLE}_{F}.dst/.pes   {r['piece']}  {r['stitches']:,} stitches, {r['trims']} trims, {r['stops']} stops, {r['threads']} threads, {r['size_mm'][0]} x {r['size_mm'][1]} mm"
                   for F, r in G.items())
-open(f"{pkg}/README.txt", "w").write(f"""HAKI STUDIOS - Pixel Sky sherpa fleece jacket ({STYLE}) - Rev D - 21 Oct 2026
+open(f"{pkg}/README.txt", "w").write(f"""HAKI STUDIOS - Pixel Sky sherpa fleece jacket ({STYLE}) - Rev F - 21 Oct 2026
 
 HAKI_{STYLE}_TECHPACK_{REV}.pdf   T1-T5 garment, J1-J3 jacquard, G1-G5 embroidery, F1-F2 factory + mill requests, Q1 questions, R1 checks
 
@@ -41,7 +41,7 @@ JACQUARD (engineered sherpa, 1 px = 1 cell = 2.5 mm finished [proposed]; palette
 PATTERN  pattern/{STYLE}_pattern_<size>.dxf (AAMA layers, mm), _ALL-SIZES.dxf, _M_1to1_PLOT.pdf (check the 100 mm box)
 COMPARE  compare/*.png  mockup vs stitch preview / cell map, same scale
 
-Amber = proposed by Haki tech design - confirm. Fit sample in M before the size set (first fleece).
+Amber = proposed by Haki tech design - confirm. Founder 21 Oct: fit (Drum Island + pile ease), back (band continued, no motif),\nbird position (wearer's right front) and bird IP (original art) confirmed; collar outer = sky-blue taslan matched to the sherpa.\nFit sample in M before the size set (first fleece) - mandatory.
 """)
 z = f"{OUT}/HAKI_{STYLE}_{REV}_files.zip"
 if os.path.exists(z): os.remove(z)

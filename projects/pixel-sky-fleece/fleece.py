@@ -1,12 +1,12 @@
-"""Pixel Sky fleece — PROPOSED block derived from the APPROVED Drum Island jacket (LESSONS C9: explicit delta list).
+"""Pixel Sky fleece — block (fit CONFIRMED by the founder 21 Oct 2026) derived from the APPROVED Drum Island jacket (LESSONS C9: explicit delta list).
 
 Body + sleeve = pattern.draft on the Drum Island chart with PILE EASE added (sherpa ~8-10 mm pile each side):
     B chest +2.0 (half = +4 cm round)   C shoulder +1.0   D sweep = chest (bound hem, no rib)   E armhole +1.0
     F bicep +1.0 (half)                 G sleeve +2.0     J neck opening +1.0 (stand collar over pile)
 Removed: corduroy collar, rib hem + cuffs, welt pockets, facings, flannel / taffeta lining (UNLINED: sherpa reverse
-inside, seams taped). Added: 9 cm stand collar (outer blue taslan, inner cream sherpa), navy bindings (hem, cuffs with
+inside, seams taped). Added: 9 cm stand collar (outer sky-blue taslan matched to the sky sherpa, inner cream sherpa), navy bindings (hem, cuffs with
 elastic, collar seam piping), CF zip facing strip, two vertical zip pockets with bags.
-Every delta is PROPOSED (amber in documents). The drum chart is swapped only inside `chart_ctx()` (engine untouched).
+Pile ease + bound hem CONFIRMED 21 Oct; trims / collar / binding details stay PROPOSED (amber in documents). The drum chart is swapped only inside `chart_ctx()` (engine untouched).
 Coords as pattern.py (mm, y down; fronts x from CF, + = wearer's left)."""
 import math, contextlib, copy
 import numpy as np
@@ -16,7 +16,7 @@ from pattern import Edge, Piece, alen, at, mirror, rev
 
 BLOCK = "pixel-sky-fleece"; NAME = "Pixel Sky sherpa fleece jacket"
 SIZES = drum.SIZES
-EASE_CM = {"B": 2.0, "C": 1.0, "E": 1.0, "F": 1.0, "G": 2.0, "J": 1.0}      # PROPOSED pile ease
+EASE_CM = {"B": 2.0, "C": 1.0, "E": 1.0, "F": 1.0, "G": 2.0, "J": 1.0}      # pile ease, CONFIRMED 21 Oct
 COLLAR_H = 90.0            # stand collar finished height (brief: about 9 cm)
 BIND_W = 12.0              # finished binding width (hem, cuffs) — visible navy band
 BIND_CUT = 50.0            # binding cut width (double fold over ~10 mm sherpa)
@@ -28,7 +28,7 @@ PKT_C = (198.0, 432.0)     # pocket opening centre, size M, wearer's-left front 
 PBAG_W, PBAG_D = 170.0, 215.0
 SHERPA = "Sherpa — jacquard, blue / cream (+ black, opt. A)"
 PROPOSED = {"Pile ease": "+4 cm chest round, +2 cm sleeve length, +1 cm shoulder / armhole / bicep, +1 cm neck",
-            "Stand collar": "9 cm, outer blue taslan, inner cream sherpa, navy piping in the neck seam",
+            "Stand collar": "9 cm, outer sky-blue taslan matched to the sky sherpa (lab dip), inner cream sherpa, navy piping in the neck seam",
             "Hem / cuffs": "navy binding 1.2 cm finished; cuffs gathered on 1 cm elastic in the binding",
             "CF zip": "black #5 coil, separating, blue pull; 3.5 cm taslan facing strip inside",
             "Pockets": "2 vertical zip pockets 16.5 cm, navy tape, blue pulls; tricot bags",
@@ -41,9 +41,9 @@ def chart_vals():
     for k, (nm, how, vals, tol) in drum.POM_CM.items():
         if k in ("M", "N"): continue                             # jacket collar
         e = EASE_CM.get(k, 0.0)
-        out[k] = (nm, how, [round(v + e, 2) for v in vals], tol, "jacket + pile ease (PROPOSED)" if e else "jacket (approved)")
+        out[k] = (nm, how, [round(v + e, 2) for v in vals], tol, "jacket + pile ease (confirmed 21 Oct)" if e else "jacket (approved)")
     nm, how, vals, tol = drum.POM_CM["D"]          # straight boxy body, bound (not ribbed) hem: sweep = chest
-    out["D"] = (nm, "1/2, along the bound hem edge, flat", [round(v + EASE_CM["B"], 2) for v in drum.POM_CM["B"][2]], tol, "= chest (no rib) (PROPOSED)")
+    out["D"] = (nm, "1/2, along the bound hem edge, flat", [round(v + EASE_CM["B"], 2) for v in drum.POM_CM["B"][2]], tol, "= chest, bound hem (confirmed 21 Oct)")
     out["M"] = ("Collar height at CB", "neck seam to collar edge, stand", [COLLAR_H / 10] * 7, 0.3, "PROPOSED")
     out["Q"] = ("Binding width", "hem + cuff, finished", [BIND_W / 10] * 7, 0.1, "PROPOSED")
     out["R"] = ("Pocket zip opening", "vertical zip pocket, teeth", [PKT_L / 10] * 7, 0.3, "PROPOSED")
@@ -109,7 +109,7 @@ def draft(size):
                                           Edge("top fold", top, PT.SA_EDGE, [alen(top) / 2]),
                                           Edge("front L", [top[-1], neck[0]], PT.SA_STD)],
                      grain=((0, -15), (0, -H + 15)), category=cat, note=note)
-    g["C01"] = collar("C01", "COLLAR OUTER", "Taslan — nylon, blue (matches sky)", "SHELL", "outer face; notches = CB + shoulder seams")
+    g["C01"] = collar("C01", "COLLAR OUTER", "Taslan — nylon, sky blue (lab dip to the sky sherpa)", "SHELL", "outer face; notches = CB + shoulder seams")
     g["C02"] = collar("C02", "COLLAR INNER", "Sherpa — cream, plain", "SHELL", "inside face; seamed to C01 at the top edge")
     # ---- CF zip facing strip (taslan) covers the zip tape + sherpa seam inside
     cf = g["F01"].edges[0].length

@@ -1,3 +1,5 @@
+> **NOT NEEDED — founder 21 Oct 2026:** happy with the fidelity traced from the mockup. Kept for reference only; not an open ask.
+
 # Close-ups to generate — pixel-sky-fleece
 
 **Why:** the only source is `inputs/front.png`, an AI render about 1500 px wide (0.6 mm per pixel on the garment). At that
