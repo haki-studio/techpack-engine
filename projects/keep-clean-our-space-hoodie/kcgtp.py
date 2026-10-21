@@ -366,8 +366,10 @@ def p_revisions():
             ("Rev D", "20 Oct 2026", f"Founder answers (20 Oct): 3D puff on every sign part that is not a background star (CN text in Noto Sans SC 800, KR oval ring, JP dot); strokes / parts under {kccore.PUFF_MIN_MM:.1f} mm stay flat "
                             "and are listed with their measured width (G4: KR text, a few thin strokes, 1 JP bar, the JP 4-point sparkle); CN text with the Simplified form of the 4th glyph (wording on E03); KR text approved; "
                             "back + hood = artwork to follow [MISSING]; answered questions removed; every stitch file, gate and page rebuilt."),
-            ("Rev E", DATE, "Review fix (PR #31): JP top star = dark centre pit inside a white satin ring + white glint on the upper-left arm (mockup); "
-                            "JP bottom star = one saturated red (no light facets) with a sharper star-shaped pit at the measured 0.45 R; sample tracker filled; files + pages rebuilt.")]
+            ("Rev E", "21 Oct 2026", "Review fix (PR #31): JP top star = dark centre pit inside a white satin ring + white glint on the upper-left arm (mockup); "
+                            "JP bottom star = one saturated red (no light facets) with a sharper star-shaped pit at the measured 0.45 R; sample tracker filled; files + pages rebuilt."),
+            ("Rev F", DATE, "Review fix 2 (PR #31): JP top star re-traced - all five arms gold (slimmer, sharp tips), dark pit in a thin white ring, white glint as a streak "
+                            "through the centre into the upper-left notch (mockup); the A14 gate passes on the shipped DST (was FAIL in Rev E); the pack build now stops on any failing gate; files + pages rebuilt.")]
     y = 36
     for rv, dt, ch in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(36, y, dt, 1.7))

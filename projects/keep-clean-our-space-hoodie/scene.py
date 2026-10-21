@@ -42,12 +42,14 @@ def fit(regs, fn, el, kind, aspect=False, starts=None, ret_iou=False):
     _, info = TR.register_glyph(body, fn, aspect=aspect, starts=starts, drop_frag=kind in ("sparkle", "dot"))
     META["traced"].setdefault(el, {}).setdefault("fits", []).append(dict(kind=kind, iou_before=info["iou_before"], iou_after=info["iou_after"], scale=info["scale"], aspect=info["aspect"]))
     return (TR.apply(regs, info), info["iou_after"]) if ret_iou else TR.apply(regs, info)
-def best_star(make, ks, fn, el, kind):
-    """trace a star's SHAPE too: try inner-radius ratios ks, fit each (affine + aspect), keep the best IoU"""
+def best_star(make, ks, fn, el, kind, cols=None):
+    """trace a star's SHAPE too: try inner-radius ratios ks, fit each (affine + aspect), keep the best IoU.
+    cols: only these threads make the fitted body (a star whose centre/glint is another colour is fitted on the colour
+    the mockup mask - and the A14 gate - sees; review PR #31 round 2)"""
     best = None
     for k in ks:
         regs = [r for r in make(k) if not r["geom"].is_empty]
-        body = unary_union([r["geom"] for r in regs if not r.get("glow")])
+        body = unary_union([r["geom"] for r in regs if not r.get("glow") and (cols is None or r["col"] in cols)])
         _, info = TR.register_glyph(body, fn, aspect=True)
         if best is None or info["iou_after"] > best[0]: best = (info["iou_after"], k, regs, info)
     META["traced"].setdefault(el, {}).setdefault("fits", []).append(dict(kind=kind, k=best[1], iou_after=best[3]["iou_after"], iou_before=best[3]["iou_before"], scale=best[3]["scale"], aspect=best[3]["aspect"]))
@@ -212,20 +214,28 @@ add("FR", best_star(lambda k: [dict(r, geom=r["geom"].difference(eyes).buffer(0)
 c = TR.snap("yellow", 460.0, 391.3); tr_log("01", "stars", c)
 sz1, rot1 = star_from(c, 6) if c else (14.4, 6)
 sx1, sy1 = J(*((c["cx"], c["cy"]) if c else (460.0, 391.3)))
-# Rev E (review PR #31 item 1): the mockup's centre is a small dark pit (fabric, r 0.6) inside a WHITE ring (satin column
-# r 0.6..1.9), and the upper facet of the upper-left arm carries the white glint. Star facets end at the ring (pit = 1.9 mm).
-_TOP_PIT_R, _TOP_RING_W = 0.6, 1.3
+# Rev F (review PR #31 round 2, A14 FAIL on the DST): measured on the mockup crop - the centre is a dark pit (fabric,
+# r 0.6) in a thin pale ring (out to r ~1.5), and the white glint is a STREAK through the centre (upper-left into the notch
+# between the top and left arms, short tail lower-right), not an arm facet. All five arms stay gold. Gold ends at r 1.1
+# (the ring overlaps it 0.4 mm; sharp tips, round 0.04). Fitted on the gold + lemon facets only (what the mockup's yellow mask and the gate see).
+_TOP_PIT_R, _TOP_RING_W, _TOP_GOLD_R = 0.6, 0.9, 1.1
+_TOP_GLINT = ((-132.0, 4.4, 1.0), (48.0, 2.9, 0.8))     # (direction deg y-down, reach from centre mm, width mm)
 def _top_star(kp):
-    regs = KM.star_facets(sx1, sy1, sz1, "kc_gold", "01-star1", rot=rot1, k=kp, pit=(_TOP_PIT_R + _TOP_RING_W) / (sz1 / 2), round_=0.12)[0]
-    out = []
-    for r in regs:
-        c = r["geom"].centroid; a = math.degrees(math.atan2(c.y - sy1, c.x - sx1))
-        # glint: the upper (light) facet of the upper-left arm (centroid ~ -150 deg, y down)
-        out.append(dict(r, col="kc_white", grp="FACE") if (-158 <= a <= -125 and r["col"] != "kc_gold") else r)
+    out = KM.star_facets(sx1, sy1, sz1, "kc_gold", "01-star1", rot=rot1, k=kp, pit=_TOP_GOLD_R / (sz1 / 2), round_=0.04)[0]
     rc = _TOP_PIT_R + _TOP_RING_W / 2
-    ring = [(sx1 + rc * math.cos(math.radians(t)), sy1 + rc * math.sin(math.radians(t))) for t in range(0, 360, 15)]
-    return out + [KS.column_region("kc_white", "FACE", ring, _TOP_RING_W, ("flat", "flat"), True, unit="01-star1")]
-fs = best_star(_top_star, (0.20, 0.23, 0.26, 0.30, 0.34, 0.38), ref_fn_for(J0, JC, "yellow"), "01", "star (top)")
+    # the ring is TWO half-arcs meeting at the glint roots (one closed ring forced a travel stitch straight across the
+    # dark pit to reach the second glint, seen on the Rev F M DST); arcs overlap 6 deg at each join
+    a0 = _TOP_GLINT[1][0]                        # the two glints are opposite (48 / -132 deg): arcs a0..a0+180, a0+180..a0+360
+    for t0, t1 in ((a0 - 6, a0 + 186), (a0 + 174, a0 + 366)):
+        arc = [(sx1 + rc * math.cos(math.radians(t)), sy1 + rc * math.sin(math.radians(t))) for t in np.linspace(t0, t1, 14)]
+        out.append(KS.column_region("kc_white", "FACE", arc, _TOP_RING_W, ("flat", "flat"), False, unit="01-star1"))
+    r0 = _TOP_PIT_R + _TOP_RING_W * 0.6
+    for ang, reach, w in _TOP_GLINT:
+        u = (math.cos(math.radians(ang)), math.sin(math.radians(ang)))
+        cl = [(sx1 + u[0] * r0, sy1 + u[1] * r0), (sx1 + u[0] * reach, sy1 + u[1] * reach)]
+        out.append(KS.column_region("kc_white", "FACE", cl, w, ("flat", "flat"), False, prof=("taper", 1.0, 0.15), unit="01-star1"))
+    return out
+fs = best_star(_top_star, (0.30, 0.34, 0.38, 0.42, 0.46, 0.50), ref_fn_for(J0, JC, "yellow"), "01", "star (top)", cols=("kc_gold", "kc_lemon", "kc_lemon_lt"))
 add("FR", [r for r in fs if r["grp"] != "FACE"], 30, "01", unit="01-star1"); add("FR", [r for r in fs if r["grp"] == "FACE"], 33, "01", unit="01-star1")
 # small top-right star: a 4-point sparkle in star gold (mockup)
 c = TR.snap("yellow", 482.5, 415.0); tr_log("01", "stars", c)

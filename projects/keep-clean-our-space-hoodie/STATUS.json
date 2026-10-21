@@ -140,6 +140,26 @@
    "2026-10-21T01:06:22",
    "documents",
    "Rev E: JP stars fixed (white ring + pit, solid red star pit), T9 tracker filled; 25 pp rebuilt"
+  ],
+  [
+   "2026-10-21T01:06:49",
+   "review",
+   "PR #31 (fix round Rev E)"
+  ],
+  [
+   "2026-10-21T05:06:18",
+   "stitch",
+   "fix round 2: A14 gate FAIL on JP top star (iou 0.70) \u2014 re-fitting"
+  ],
+  [
+   "2026-10-21T05:21:11",
+   "stitch",
+   "fix round 2: top JP star re-traced, A14 gate PASS on M DST (iou 0.74); rebuilding all sizes"
+  ],
+  [
+   "2026-10-21T06:03:44",
+   "documents",
+   "Rev F built: A14 gate 0 blocking (top JP star iou 0.74 on DST), 25 pp"
   ]
  ],
  "questions": [
@@ -149,6 +169,6 @@
  "stage": "documents",
  "stage_index": 6,
  "blocked": false,
- "updated": "2026-10-21T01:06:22",
+ "updated": "2026-10-21T06:03:44",
  "preview": "out/compare_01_jp-badge.png"
 }

@@ -60,7 +60,7 @@ KC_RULES = {
  "PF-TXC": ("Text stroke column, puff",   "Satin column over foam", "across the stroke",    "0.20 zz",  "—",    "none (foam)",           "0.30", "core under the rim"),
  "PF-RIM": ("Puff rim (lighter thread)",  "Satin column over foam", "across the rim",       "0.20 zz",  "—",    "none (foam)",           "0.15", "0.85 wide, on the edge"),
  "PF-DOT": ("Domed dot core, puff",       "Satin column (disc)", "parallel, 35°",           "0.20 zz",  "—",    "none (foam)",           "0.25", "staggered splits"),
- "PF-OVAL":("Oval ring, 3D puff",        "Satin column over foam, closed", "across the ring", "0.20 zz", "—",   "none (foam)",           "0.30", "5.0 wide, Rev D"),
+ "PF-OVAL":("Oval ring, 3D puff",        "Satin column over foam, closed", "across the ring", "0.20 zz", "—",   "none (foam)",           "0.30", "5.0 wide, founder 20 Oct"),
  "PF-OVHL":("Oval highlight, puff",        "Satin column over foam, closed", "across the ring", "0.20 zz", "—",   "none (foam)",           "0.10", "1.1 wide, on top of the ring"),
  "ORN":    ("Ornament (KR mark, accents)", "Satin column",      "across the stroke",        "0.25 zz",  "—",    "none",                  "0.10", "1.0–1.2 wide"),
 }
@@ -289,7 +289,7 @@ ELEMENTS = {   # id -> (slug, title, piece)
 # Text from the founder's source frame (inputs/reference.png, 19 Oct 2026). Rev D (founder answers, 20 Oct 2026): CN uses
 # the Simplified Chinese 污 (不要世界污染, not the source's 汚); KR 우리들 소중한 우주! approved.
 TEXT = {"01": "宇宙をきれいに", "02": ("KEEP", "CLEAN", "OUR SPACE"), "03": "不要世界污染", "04": "우리들 소중한 우주!"}
-REV_EMB = "Rev E"; REV_GAR = "Rev E"; DATE = "21 Oct 2026"
+REV_EMB = "Rev F"; REV_GAR = "Rev F"; DATE = "21 Oct 2026"
 # Rev D (founder 20 Oct): 3D puff on every sign part that is not a background star. A stroke / part narrower than
 # PUFF_MIN_MM stays FLAT (too thin for the foam to dome and be cut cleanly); a glyph puffs only if >= PUFF_GLYPH_SHARE of
 # its stroke length is wide enough (no isolated puff bits). House rules/house.yaml puff min_w is 3.0: strokes 2.5-3.0 are

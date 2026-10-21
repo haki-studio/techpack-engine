@@ -40,11 +40,12 @@ elements/art/                   per-size flat art previews + mockup comparison s
 Size M: """ + ", ".join(f"{P} {cur[P]['stitches']:,} stitches / {cur[P]['trims']} trims" for P in kccore.PIECES) + """ (read from the DST).
 Max 12 thread colours per file (factory limit); size M uses """ + ", ".join(f"{P} {cur[P]['threads']}" for P in kccore.PIECES) + f""" ({len(kccore.KC_KEYS)} threads on the jacket).
 Full files (no splits/) = one hooping on a frame that holds the whole piece (sizes on G5); else sew the split sections.
-Rev D (founder answers 20 Oct): 3D puff on every sign part (not the field stars); strokes under 2.5 mm stay flat (list on G4);
+Founder answers 20 Oct: 3D puff on every sign part (not the field stars); strokes under 2.5 mm stay flat (list on G4);
 CN text 不要世界污染 (Simplified). Back + hood: artwork to follow [MISSING]. Foam on its own machine stop, no flat stitches
 inside the foam beyond a 1 mm edge band (checked on every file, S1), all files rebuilt from the current art. Compare sheets in
 elements/art are drawn from the DST files; the art is traced from the garment mockup (source of truth).
-Rev E (review fix 21 Oct): JP top star dark pit inside a white ring + white glint; JP red star solid red with a star-shaped pit.
+Rev F (review fixes 21 Oct): JP top star all-gold arms, dark pit in a thin white ring + white glint streak (A14 gate passes on the DST);
+JP red star solid red with a star-shaped pit.
 """ + FOAM + """
 Files are production-intent drafts: the factory digitizer checks
 density, pull and puff on the washed duck, edits if needed, and sews out size M before bulk. Every value marked

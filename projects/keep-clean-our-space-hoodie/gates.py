@@ -217,3 +217,9 @@ if not ART_MODE: json.dump(RES, open("gates.json", "w"), indent=1, default=float
 else: json.dump(RES, open("out/ref/gates_art.json", "w"), indent=1, default=float)
 for k, s in RES["summary"].items(): print(f"{k:16s}", s)
 print("not traced:", RES["not_traced"]); print("BLOCKING", RES["blocking"])
+# review PR #31 round 2: a failing gate must stop the pack build (Rev E shipped with BLOCKING 1 because only a line was
+# printed). Binding mode exits 3 and names every failing row; build_all.py runs this with check=True.
+if not ART_MODE and RES["blocking"]:
+    for key, s in RES["summary"].items():
+        if s["fail"] or s["gaps_ge25"]: print("GATE FAIL:", key, s)
+    sys.exit(3)

@@ -212,3 +212,26 @@ Chinese phrase, upside-down mirrored Hangul)." Check: the spec page prints the s
   the house minimum and listed for the strike-off (F2).
 - Proposed engine fix: a `puff` part extractor step that applies `min_w` per column and reports the flat ones; the
   project's 2.5 vs house 3.0 should be settled by the strike-off (feed back as a LESSONS row with the measured result).
+
+## 25. A failing A14/A15 gate still produced a pack (Rev E, PR #31 round 2)
+- Problem: `gates.py` printed `BLOCKING 1` (JP top star, IoU 0.70 on the shipped size-M DST) but exited 0, so
+  `build_all.py` built and shipped the pack. The fix comment quoted the scene fit's IoU (0.73, `best_star`), which is
+  not the gate: the fit scored white ring + glint parts too, while the gate's mockup mask and stitched mask are the
+  yellow family only.
+- Fix here: `gates.py` exits 3 in binding mode when `blocking > 0` (prints each failing row); `build_all.py` stops with a
+  message and also asserts `gates.json["blocking"] == 0` before building pages. `best_star(..., cols=)` fits a
+  multi-colour star on the threads the gate measures. Proven red/green: iou_min forced to 0.95 -> 11 FAIL rows, exit 3;
+  real run exit 0.
+- Proposed engine fix: `qa.gate_or_die(res)` used by every project's pack build; LESSONS row "quote the gate number
+  read from the DST, never the art fit". Check: a test that runs the pack entry point on a fixture with one FAIL row
+  and asserts a non-zero exit and no PDF written.
+
+## 26. Ringed / glinted stars need a motif, not scene constants (review PR #31 item 3)
+- Problem: the JP top star (dark pit in a thin white ring, white glint streak through the centre) is built in
+  `scene.py` with constants measured from this mockup: `_TOP_PIT_R 0.6`, `_TOP_RING_W 0.9`, `_TOP_GOLD_R 1.1`,
+  `_TOP_GLINT ((-132°, 4.4 mm, 1.0), (48°, 2.9 mm, 0.8))`; the red star uses `pit_k 0.42` at 0.45 R. (Rev E's facet
+  recolour window -158..-125° was wrong - the mockup's glint is a streak into the notch, not an arm facet - and is gone.)
+- Proposed engine fix: `motifs.star_facets(..., centre=dict(pit_r, ring_w, ring_col), glints=[(ang, reach, w, col)])`
+  with the pit/ring/glint measured by a generic `trace_star_centre(mask)` (dark-blob radius + pale annulus + pale
+  streak directions), not typed. Check: a render test that a ringed star's gold-only IoU against a synthetic mask
+  stays >= 0.70 and the pit stays unstitched (no stitch within pit_r of the centre).

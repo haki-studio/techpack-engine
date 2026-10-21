@@ -4,7 +4,12 @@ import kccore
 import subprocess, sys, os
 from pypdf import PdfReader
 for cmd in (["make_current.py"], ["prod_gates.py"], ["glyph_gate.py"], ["gates.py"], ["compare.py", "M"], ["pattern_kc.py", "qa", "dxf", "pdf"], ["welt_check.py"]):
-    subprocess.run([sys.executable] + cmd, check=True)
+    r = subprocess.run([sys.executable] + cmd)
+    if r.returncode:
+        sys.exit(f"STOP: {' '.join(cmd)} failed (exit {r.returncode}) - " + ("the A14/A15 gate has a FAIL row or a bare gap >= 25 mm2 (gates.json); "
+                 "fix the art, rebuild the DSTs, then rerun. No pack is built on a failing gate." if cmd[0] == "gates.py" else "see the output above."))
+import json
+assert json.load(open("gates.json"))["blocking"] == 0, "gates.json BLOCKING > 0: no pack on a failing gate"
 import pack, kcgtp
 pack.build()
 base = len(kcgtp.PAGES) + 1
