@@ -421,3 +421,18 @@ def test_subject_word_guard_catches_a_subject_branch(tmp_path):
                  'def f(lp):\n    if lp["what"] == "koi": return 1\n')
     w = _code_words(str(p))
     assert "koi" in w and "falls" not in w and "fall" not in w            # docstring + import path ignored, the branch caught
+
+
+def test_column_satin_with_a_declared_centreline_is_sewn_once_when_the_part_is_cut_in_two():
+    """G1 (found on the crop: temple.timber.619): sequencing cut a column-mode stroke into two pieces; split_satin sewed
+    its declared centreline column once PER PIECE, i.e. twice over the same place (double density, an aligned 'seam')"""
+    from shapely.geometry import MultiPolygon
+    from digitize.schema import Part, DirSpec
+    from digitize.rulebook import Rulebook
+    from digitize import techniques
+    rb = Rulebook()
+    g = MultiPolygon([box(0, 0, 8, 1.4), box(9, 0, 20, 1.4)])
+    p = Part(id="s", kind="stroke", geom=g, thread="t", z=1, dir=DirSpec(90.0, mode="contour", source="splitter"), technique="split_satin",
+             stitch=rb.stitch_spec("stroke", "split_satin"), meta=dict(cl=[[0.5, 0.7], [19.5, 0.7]], w=1.4))
+    bl = techniques.get("split_satin").plan(p)
+    assert [b.role for b in bl] == ["underlay", "top"]

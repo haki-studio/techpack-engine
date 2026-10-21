@@ -276,8 +276,8 @@ kinds:
   # --- G1 --- generic primitive kinds (engine/digitize/primitives, fed by parts.labels.json). dir "label" = the labels
   # compiler declares every angle itself (construct axis / column / long_axis / radial, the label angle, or the grain);
   # the rulebook only picks the technique and its numbers. Same numbers as the subject kinds they replace.
-  stroke:                      # 1-7 mm strokes: a satin column across the stroke (= branch)
-    techniques: [split_satin]
+  stroke:                      # 1-7 mm strokes: a satin column across the stroke (= eave / member, LESSONS B36)
+    techniques: [split_satin]  # column mode (= branch). column_satin was tried: 19 curved limbs read back as satin blobs
     dir: label
     follows: [split_satin]
     params: {mode: column}
