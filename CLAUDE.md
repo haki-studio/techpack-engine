@@ -8,7 +8,7 @@ pass before anything is delivered.
 
 ## Layout
 - `engine/` — reusable: stitch engine (`dst2.py`), stitch rules + thread matching + colour stops (`tech.py`),
-  renderers (`stitchrender.py`, `render.py`), A4 sheet helpers (`sheet.py`, `specbase.py`), region QA (`qa.py`),
+  renderers (`stitchrender.py`, `render.py`), A4 sheet helpers (`sheet.py`, `specbase.py`), region QA (`qa.py`), pro reference profiler (`proprofile.py`: per-area stitch rates vs 10 pro files, docs/PRO_REFERENCE.md),
   motif library (`motifs.py`, `motifs2.py`), block from a POM chart (`drum.py`), derived blocks (`hoodie.py`: zip hoodie = Drum Island body + hood + elastic bands), pattern drafting + outputs
   (`pattern.py`, `pattern_draw.py`, `pattern_out.py`), thread palettes (`pal/`).
 - `projects/<style>/` — one folder per garment: its scene/art builders, spec + pack page builders, run scripts,
