@@ -19,6 +19,7 @@ import specbase as SB
 from specbase import img_tag
 import front as F, sleeve as SV, factory as FA, mockmap as MM
 import kcdoc as KD
+import tofu
 import dstview as DV
 from kcdoc import PROF, FRAME, FR_S, mh
 dst2 = kccore.patch_dst2()
@@ -73,7 +74,9 @@ def cover(index):
     im, bb, OFF = garment_view(1.6)
     tag, h = img_tag(im, 14, 54, 178); o.append(tag)
     o.append(t(14, 54 + h + 3.5, "FRONTS + SLEEVES, size M — the written DST files read back (sleeves laid flat beside the body). Back + hood: artwork to follow [MISSING] (founder, 20 Oct).", 2.0, 700))
-    o.append(t(14, 54 + h + 7, "Art traced from the garment mockup (source of truth, ~1 px/mm; no close-ups used). Text wording from the founder's source frame, set from fonts. Founder answers 20 Oct: puff on every sign, CN 污 (G4).", 1.9, 400, ORANGE))
+    # KD.auto: CJK runs as font outlines (the sheet font falls back to Liberation Sans for 污 -> tofu, review PR #38)
+    o.append(t(14, 54 + h + 7, "Art traced from the garment mockup (source of truth, ~1 px/mm; no close-ups used). Text wording from the founder's source frame, set from fonts.", 1.9, 400, ORANGE))
+    o.append(KD.auto(14, 54 + h + 10.3, "Founder answers 20 Oct: puff on every sign, CN 污 (G4).", 1.9, ORANGE))   # short run: the Latin width estimate stays tight
     ix = 200
     o.append(t(ix, 58, "CONTENTS", 2.8, 700)); y = 64
     for name, pg in index:
@@ -604,10 +607,11 @@ def build():
     pages[0] = ("G1", cover(index))
     w = PdfWriter(); os.makedirs("out/pages", exist_ok=True)
     for k, o in pages:
-        svg = doc(o); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"out/pages/{k}.pdf")
+        svg = tofu.check(doc(o), k); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"out/pages/{k}.pdf")
         cairosvg.svg2png(bytestring=svg.encode(), write_to=f"out/pages/prev_{k}.png", output_width=2400)
         w.append(PdfReader(f"out/pages/{k}.pdf"))
     for i, svg in enumerate(f1_pages()):
+        tofu.check(svg, f"F{i+1}")
         cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"out/pages/F{i+1}.pdf"); cairosvg.svg2png(bytestring=svg.encode(), write_to=f"out/pages/prev_F{i+1}.png", output_width=2400)
         w.append(PdfReader(f"out/pages/F{i+1}.pdf"))
     w.write(OUT_PDF)

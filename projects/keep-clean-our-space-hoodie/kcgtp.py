@@ -369,7 +369,9 @@ def p_revisions():
             ("Rev E", "21 Oct 2026", "Review fix (PR #31): JP top star = dark centre pit inside a white satin ring + white glint on the upper-left arm (mockup); "
                             "JP bottom star = one saturated red (no light facets) with a sharper star-shaped pit at the measured 0.45 R; sample tracker filled; files + pages rebuilt."),
             ("Rev F", DATE, "Review fix 2 (PR #31): JP top star re-traced - all five arms gold (slimmer, sharp tips), dark pit in a thin white ring, white glint as a streak "
-                            "through the centre into the upper-left notch (mockup); the A14 gate passes on the shipped DST (was FAIL in Rev E); the pack build now stops on any failing gate; files + pages rebuilt.")]
+                            "through the centre into the upper-left notch (mockup); the A14 gate passes on the shipped DST (was FAIL in Rev E); the pack build now stops on any failing gate; files + pages rebuilt."),
+            ("Rev G", DATE, "Review fix (PR #38): G1 cover caption set the CN glyph as a missing-glyph box; now drawn as a font outline, and every page build stops on CJK in plain text (tofu guard). "
+                            "Stitch files unchanged from Rev F (same counts); pages, compare sheets and zip rebuilt.")]
     y = 36
     for rv, dt, ch in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(36, y, dt, 1.7))
@@ -406,7 +408,7 @@ def build(emb_pdf, emb_pages, out_pdf):
     pages = [p_cover(index), p_flats(), p_pom(), p_pieces(), p_hood(), p_bom(), p_placement(), p_fit(), p_revisions()]
     w = PdfWriter(); os.makedirs("out/pages", exist_ok=True)
     for i, pg in enumerate(pages, 1):
-        svg = doc(pg); pdf = f"out/pages/T{i}.pdf"
+        import tofu; svg = tofu.check(doc(pg), f"T{i}"); pdf = f"out/pages/T{i}.pdf"
         cairosvg.svg2pdf(bytestring=svg.encode(), write_to=pdf)
         cairosvg.svg2png(bytestring=svg.encode(), write_to=f"out/pages/prev_T{i}.png", output_width=2400)
         w.append(PdfReader(pdf))

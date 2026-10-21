@@ -22,3 +22,10 @@ Gate on the shipped M DST: 01 yellow motif 1 IoU 0.74 (h 0.83), state ok; BLOCKI
 
 ## Open (founder, unchanged)
 Back + hood MISSING; star haze look; puff 2.5 mm rule + flat parts; CN weight 800.
+
+## Rev G — fix round PR #38 (21 Oct 2026)
+- Review: 1 should-fix (G1 cover caption showed 污 as a tofu box), 2 LOW notes, 4 founder items unchanged.
+- Root cause: no CJK font installed on the box; `sheet.t()` asks for Noto Sans CJK JP and cairosvg falls back to a Latin font. The caption now goes through `kcdoc.auto` (CJK runs as font outlines).
+- New `tofu.py` guard: every G/E/S/R/F/T page is checked before svg2pdf; any CJK in a plain `<text>` stops the build. Proven red (raises on the old caption) then green.
+- ENGINE_NOTES 26 (cont.): the star constants are one-star tuning. ENGINE_NOTES 27: route CJK in `sheet.t()` + a guard in `sheet.doc()`.
+- Stitch files unchanged from Rev F; REV → Rev G for the documents, compare sheets and zip.

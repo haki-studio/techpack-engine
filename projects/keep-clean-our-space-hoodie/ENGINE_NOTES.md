@@ -235,3 +235,19 @@ Chinese phrase, upside-down mirrored Hangul)." Check: the spec page prints the s
   with the pit/ring/glint measured by a generic `trace_star_centre(mask)` (dark-blob radius + pale annulus + pale
   streak directions), not typed. Check: a render test that a ringed star's gold-only IoU against a synthetic mask
   stays >= 0.70 and the pit stays unstitched (no stitch within pit_r of the centre).
+
+### 26 (cont.) - scope of the Rev F star constants (review PR #38, note)
+- `_TOP_GLINT` (48° / -132°), `_TOP_PIT_R`, `_TOP_GOLD_R`, `_TOP_RING_W` in `scene.py` and the `best_star` k range
+  0.30-0.50 fitted on the yellow mask only are **one-star tuning for this mockup**, measured from its crop. They are
+  not a generic primitive and the next product will not reuse them; the reusable route is item 26's
+  `trace_star_centre(mask)` + `star_facets(centre=, glints=)`.
+
+## 27. CJK in plain SVG text renders as tofu (review PR #38, G1 cover caption)
+- Problem: `sheet.t()` writes `font-family="Noto Sans CJK JP"`, but that font is not installed on the build box, so
+  cairosvg falls back to Liberation Sans / DejaVu and any CJK / Hangul char becomes a missing-glyph box. It hit T9
+  (Rev E) and then G1 (Rev F): fixed per call each time, so it came back.
+- Proposed engine fix: `sheet.t()` routes CJK / Hangul runs through the outline setter (what `kcdoc.auto` does in this
+  project), and `sheet.doc()` (or the page writer) refuses a page whose `<text>` holds a CJK char (this project:
+  `tofu.py`, called on every G/E/S/R/F/T page before svg2pdf).
+- Check: red then green done here - `tofu.check('<text>CN 污</text>')` raises, outline-set text passes; the Rev G
+  pack builds with the guard on every page.

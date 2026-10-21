@@ -46,6 +46,7 @@ inside the foam beyond a 1 mm edge band (checked on every file, S1), all files r
 elements/art are drawn from the DST files; the art is traced from the garment mockup (source of truth).
 Rev F (review fixes 21 Oct): JP top star all-gold arms, dark pit in a thin white ring + white glint streak (A14 gate passes on the DST);
 JP red star solid red with a star-shaped pit.
+Rev G (review fix 21 Oct): G1 cover caption CN glyph fixed (was a missing-glyph box); stitch files unchanged from Rev F.
 """ + FOAM + """
 Files are production-intent drafts: the factory digitizer checks
 density, pull and puff on the washed duck, edits if needed, and sews out size M before bulk. Every value marked

@@ -165,15 +165,30 @@
    "2026-10-21T06:05:02",
    "review",
    "PR #38 (Rev F fix round 2; #31 merged at Rev D)"
+  ],
+  [
+   "2026-10-21T06:18:42",
+   "documents",
+   "fix round 3: G1 caption tofu"
+  ],
+  [
+   "2026-10-21T06:20:35",
+   "documents",
+   "Rev G: G1 CN glyph tofu fixed + tofu guard on every page; rebuilding pack"
+  ],
+  [
+   "2026-10-21T06:58:09",
+   "documents",
+   "Rev G built: 25 pp, G1 CN glyph as outline, tofu guard on every page, gates blocking 0"
   ]
  ],
  "questions": [
   "Back + hood: a back design is planned - send the back view; back + hood = artwork to follow [MISSING] in Rev D.",
   "Star haze (soft glow round the badges + under the big sparkles): pending - kept as in Rev C. Keep, change or drop?"
  ],
- "stage": "review",
- "stage_index": 8,
+ "stage": "documents",
+ "stage_index": 6,
  "blocked": false,
- "updated": "2026-10-21T06:05:02",
- "preview": "out/compare_01_jp-badge.png"
+ "updated": "2026-10-21T06:58:09",
+ "preview": "out/pages/prev_G1.png"
 }
