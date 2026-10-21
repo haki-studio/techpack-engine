@@ -9,6 +9,7 @@ python3 rectify.py && python3 classify.py      # mockups -> finished-mm rectifie
 python3 kjart.py                               # art -> out/art.pkl: 01/02/03 + stars from the founder's SVGs (kjsvg), haki traced
 python3 kjfront.py                             # PROPOSED front-leg star map from the mockup (scale, origin, pocket opening) -> out/front_stars.json + out/check_07_mockup.png
 python3 kjstitch.py                            # DST/PES per element + read-back json + previews
+python3 kjsoot.py                              # 07 soot sprites (founder 21 Oct: kept): gates + out/compare_soot.png (after kjstitch front1 front2)
 python3 kjcompare.py                           # gates vs the SVG (cairosvg per layer): centreline + motif_match + A15 + exposed stitches; compare sheets with live view
 python3 kjstitch.py front1 front2 && python3 kjpages.py   # pages -> merged PDF (shrunk) + zip with elements/ + labels/ (kjlabels.py size loop labels) + README
 ```

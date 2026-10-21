@@ -147,7 +147,7 @@ def test_front_trace_splits_the_touching_pair_and_guard_catches_the_old_way():
     G = kjfront.geometry(); st = kjfront.trace(G)
     near = [d for d in st if math.dist(d["px"], (897, 279)) < 8]
     assert sorted(d["col"] for d in near) == ["pink", "yellow"], near
-    assert len([d for d in st if not d['clipped']]) == 14 and len(st) == 17
+    assert len([d for d in st if not d['clipped']]) == 14 and len(st) == 17      # detected (trace); the map drops the 3 clipped (J4)
     a = np.asarray(Image.open(kjfront.SRC).convert("RGB")).astype(float); h, s, v = CL.hsv(a)
     m = (s > 0.45) & (v > 0.5) & (((h > 300) | (h < 15)) | ((h > 180) & (h < 215)) | ((h > 35) & (h < 65)))
     m[:, :770] = False; m[:, 1000:] = False; m[60:186, 893:992] = False
@@ -165,14 +165,43 @@ def _clipped_found(st):
     return [c for c, xy in CLIPPED_MOCKUP if any(d["col"] == c and d["clipped"] and math.dist(d["px"], xy) < 4 for d in st)]
 
 
-def test_clipped_side_seam_candies_mapped(monkeypatch):
-    """green: all 3 clipped candies on the side-seam edge are on the map, moved in to the keep-out.
-    red: without the edge-sliver pass (the Rev B4 trace) two of the three go missing."""
+def test_clipped_side_seam_candies_detected_and_excluded(monkeypatch):
+    """founder 21 Oct (J4): the 3 clipped side-seam candies are DROPPED from this product, but the engine edge pass must
+    still DETECT them. green: trace finds all 3 (flagged clipped), product_map excludes exactly those 3 -> 14 whole,
+    renumbered S01..S14, none clipped. red: (a) without the edge pass only 1 of 3 is detected (the Rev B4 bug);
+    (b) with EXCLUDE_CLIPPED off the map is 17 again (the exclusion is what drops them)."""
     import kjfront
     G = kjfront.geometry(); st = kjfront.trace(G)
-    assert _clipped_found(st) == [c for c, _ in CLIPPED_MOCKUP]
-    for d in st:
-        if d["clipped"]:
-            assert d["moved_in_mm"] and d["x_from_side_mm"] >= kjfront.SIDE_KO + kjfront.STAR_D / 2 - 0.01
+    assert _clipped_found(st) == [c for c, _ in CLIPPED_MOCKUP]                       # detected
+    kept, dropped = kjfront.product_map(st)
+    assert len(kept) == 14 and not any(d["clipped"] for d in kept)                    # excluded
+    assert len(dropped) == 3 and _clipped_found(dropped) == [c for c, _ in CLIPPED_MOCKUP]
+    assert [d["id"] for d in kept] == [f"S{k:02d}" for k in range(1, 15)]
+    # the shipped map (out/front_stars.json) is the product map
+    import json
+    F = json.load(open("out/front_stars.json"))
+    assert len(F["stars"]) == 14 and not any(d["clipped"] for d in F["stars"]) and len(F["excluded_clipped"]) == 3
+    monkeypatch.setattr(kjfront, "EXCLUDE_CLIPPED", False)
+    assert len(kjfront.product_map(st)[0]) == 17                                       # red (b)
     monkeypatch.setattr(kjfront, "edge_slivers", lambda *a, **k: [])
-    assert len(_clipped_found(kjfront.trace(G))) == 1                 # only the old S10 survives: the Rev B4 bug
+    assert len(_clipped_found(kjfront.trace(G))) == 1                                  # red (a): the Rev B4 bug
+
+
+def test_soot_sprites_traced_and_gated():
+    """founder 21 Oct (J5): the soot sprites are kept. The trace finds the 9 sprites of the mockup (one per eye pair);
+    the sprite gate passes the shipped DSTs and fails a sprite moved 2 mm (red)."""
+    import json, kjfront, kjsoot
+    G = kjfront.geometry(); soot = kjfront.trace_soot(G)
+    assert len(soot) == 9
+    for q in soot:
+        assert all(math.hypot(*e) + kjfront.SOOT_EYE[0] * q["d_mm"] / 2 <= q["d_mm"] / 2 for e in q["eyes_mm"])   # eyes inside the body
+    rows = kjsoot.run()
+    assert len(rows) == 9 and all(r["ok"] for r in rows)
+    import kjcompare as C
+    F = json.load(open("out/front_stars.json")); q = dict(F["soot"][0]); q["x_from_side_mm"] += 2.0
+    stem = kjsoot.FILES["front1"]; rj = json.load(open(f"out/stitch/{stem}.json"))
+    x0, y0 = q["x_from_side_mm"] - 16, q["y_from_waist_mm"] - 16
+    to_px = lambda x, y: ((x - x0) * C.PPM, (y - y0) * C.PPM); shape = (32 * C.PPM, 32 * C.PPM)
+    M = C.dst_masks_on(f"out/stitch/{stem}.dst", rj["origin_mm"], shape, to_px)
+    r = kjsoot.sprite_gate(q, M, to_px, shape)
+    assert not r["ok"] and r["pos_mm"] > kjsoot.POS_MAX

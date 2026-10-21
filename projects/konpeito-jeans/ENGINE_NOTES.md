@@ -152,3 +152,25 @@ Engine runs: `bench/run_{wb,coin,spill,starP,starY}_svg.yaml` -> `out/engine_m5/
    mode denies kill). Proposed: `launch` refuses when a session of the same name exists in any state, and `drain` never
    starts a role/slug that already has a live session. Check: dispatch dry-run test, review + drain, gives exactly one
    session per name in `claude agents --json`.
+
+## Rev B6 (21 Oct 2026, founder answers J1-J5 on PR #34)
+34. **LESSONS A7 context — founder override (licensed-lookalike characters).** Problem: A7 says decline copyrighted
+   characters (soot sprites) in AI mockups; Konpeito Rev A-B5 declined them. Founder decision 21 Oct 2026 (J5): KEEP
+   the soot sprites on the Konpeito front leg; the licence risk is accepted by the founder. Proposed LESSONS A7 addition
+   (coordinator to merge): "A7 is the default; only the founder can override it, per product, in writing. Record the
+   override on the pack's decisions page (Q1) and in the brief, with the date, and digitise as the mockup." Check:
+   konpeito pack page Q1 carries the J5 line; brief.md "Founder answers 21 Oct" lists J5.
+35. **Clipped motifs: detect always, sew per product decision.** Problem: Rev B5 sewed 3 candies that were only slivers on
+   the side-seam edge; the founder dropped them (J4: "I don't think that's supposed to be there"). Project fix:
+   `kjfront.trace` keeps detecting + flagging `clipped`; `kjfront.product_map(EXCLUDE_CLIPPED=True)` leaves them off
+   the map (listed as excluded, red X on C5). Proposed (with note 32): the engine edge pass reports clipped motifs and
+   the DEFAULT is to exclude them from the sewn map and ask, not to move them in. Check:
+   tests/test_konpeito_gates.py::test_clipped_side_seam_candies_detected_and_excluded (green: 3 detected, 14 kept;
+   red: EXCLUDE_CLIPPED off -> 17; edge pass off -> 1 detected).
+36. **Character sprites from a low-res mockup (generic primitive).** Problem: no engine primitive for a "fuzzy ball
+   character" (black body + fur + eyes) — built project-side in `kjfront.trace_soot / soot_regions` (eye-pair detection,
+   uniform body Ø = median, radial random-length satin fur as a prebuilt block, triple-run legs, satin eyes, knot pupils)
+   and gated in `kjsoot.py` (centre, cover A15, 2 eyes). Proposed: engine `motifs` gets a `fuzzy_body(geom, fur=(a,b))`
+   primitive (radial random-length satin around any closed shape) usable for any furry motif; plus a `prebuilt` region
+   kind in dst2.build_object (kjcore patches it with `ang="pre"`). Check: a render test of fuzzy_body + sprite gate red
+   (sprite moved 2 mm fails) as in test_soot_sprites_traced_and_gated.

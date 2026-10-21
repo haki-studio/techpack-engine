@@ -411,7 +411,7 @@ def run():
     return G
 
 KSTEM = {"haki": "HAKI_KJ_04_back-pocket-L-haki", "starP": "HAKI_KJ_05_back-pocket-R-star-pink", "starY": "HAKI_KJ_06_back-pocket-L-lower-star-yellow",
-         "front1": "HAKI_KJ_07a_front-leg-stars-upper_PROPOSED", "front2": "HAKI_KJ_07b_front-leg-stars-lower_PROPOSED"}
+         "front1": "HAKI_KJ_07a_front-leg-trail-upper", "front2": "HAKI_KJ_07b_front-leg-trail-lower"}
 KNO = {"haki": "04", "starP": "05", "starY": "06", "front1": "07a", "front2": "07b"}
 POS_MAX = 0.5        # mm: DST konpeito centre vs its independent placement centre
 def indep_centres(key, A):
@@ -456,7 +456,7 @@ def konpeito_gates(A):
         if key.startswith("front"):
             import kjfront
             F = json.load(open("out/front_stars.json")); byid = {d["id"]: d for d in F["stars"]}
-            sec = [byid[i] for i in F["sections"][int(key[-1]) - 1]]
+            sec = [byid[i] for i in F["sections"][int(key[-1]) - 1] if i in byid]          # konpeito only (K.. = soot sprites, own gate)
             pl = [dict(id=d["id"], col=kjfront.COLS[d["col"]][0], cx=d["x_from_side_mm"], cy=d["y_from_waist_mm"], src="C5 map (mockup trace)") for d in sec]
         else:
             pl = indep_centres(key, A)

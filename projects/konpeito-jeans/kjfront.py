@@ -131,13 +131,125 @@ def trace(G):
     for k, d in enumerate(stars, 1): d["id"] = f"S{k:02d}"
     return stars
 
+# ---------------------------------------------------------------- founder answers 21 Oct (J4, J5)
+EXCLUDE_CLIPPED = True   # J4: the 3 konpeito clipped by the side seam are DROPPED ("I don't think that's supposed to be there").
+                         # The edge pass still DETECTS them (trace flags them clipped); this product excludes them from the map.
+
+def product_map(stars, exclude_clipped=None):
+    """the sewn konpeito map: trace result minus the clipped side-seam candies (J4), renumbered S01.. in y order.
+    Returns (kept, excluded); every entry keeps its trace id in 'trace_id'."""
+    ex = EXCLUDE_CLIPPED if exclude_clipped is None else exclude_clipped
+    keep = [dict(d, trace_id=d["id"]) for d in stars if not (ex and d["clipped"])]
+    drop = [dict(d, trace_id=d["id"]) for d in stars if ex and d["clipped"]]
+    for k, d in enumerate(keep, 1): d["id"] = f"S{k:02d}"
+    for k, d in enumerate(drop, 1): d["id"] = f"X{k}"
+    return keep, drop
+
+# J5 (founder 21 Oct): the soot-sprite characters on the front leg are KEPT (licence risk accepted by the founder,
+# LESSONS A7 overridden for this product). Traced from the mockup: every sprite has a pair of white eyes on a black body.
+SOOT_EYE_G = 130          # eye white: grey > 130, saturation < 0.25, next to the black body (grey < 35)
+SOOT_BODY_G = 35          # body: grey < 35 within 12 px of the eye pair (holes filled)
+SOOT_FUR = (0.2, 1.1)     # fuzz hairs reach 0.2-1.1 mm beyond the body edge (the light ring round each body on the mockup)
+SOOT_EYE = (0.24, 0.31)   # eye white = 0.24 D wide x 0.31 D tall (mockup ~3.5 x 4.5 px on a 15 px body, compare_soot.png)
+SOOT_EYE_OFF = 0.22      # eye-pair midpoint held within 0.22 D of the body centre
+SOOT_EYE_SEP = (0.31, 0.38)   # eye centre spacing 0.31-0.38 D (min: the 0.24 D eyes keep a 1 mm gap) (traced: 4.1-5.5 mm on a 14.2 mm body)
+SOOT_PUPIL_D = 1.2        # pupil: round satin dot, the house-minimum dot that reads
+SOOT_LEG = 2.8            # 2 legs, 2.8 mm beyond the body, 28 deg either side of straight down (mockup: thin dark legs)
+
+def trace_soot(G):
+    """soot sprites on the mockup: eye pairs -> body centre (centroid of the black body), one uniform body diameter
+    (median of the traced bodies), eye + pupil positions per sprite. Positions in the 07 frame (x from the side seam,
+    y from the WB top), with the same side-seam keep-out as the konpeito."""
+    a = np.asarray(Image.open(SRC).convert("RGB")).astype(float)
+    g = a.mean(2); s = (a.max(2) - a.min(2)) / np.maximum(a.max(2), 1)
+    w = (g > SOOT_EYE_G) & (s < 0.25) & ndi.binary_dilation(g < SOOT_BODY_G, iterations=2)
+    w[:, :780] = False; w[:, 1010:] = False; w[:int(G["wb_top"]) + 100, :] = False
+    w[60:186, 893:992] = False
+    lab, _ = ndi.label(ndi.binary_dilation(w, iterations=2))
+    H, W = g.shape; YY, XX = np.mgrid[0:H, 0:W]
+    out = []
+    for i, sl in enumerate(ndi.find_objects(lab), 1):
+        eye = (lab == i) & w
+        if eye.sum() < 3: continue
+        ys, xs = np.nonzero(eye); ex, ey = xs.mean(), ys.mean()
+        oyp = opening_y(ex)
+        if oyp is not None and ey < oyp: continue
+        near = (XX - ex) ** 2 + (YY - ey) ** 2 < 12 ** 2
+        body = ndi.binary_fill_holes(((g < SOOT_BODY_G) | eye) & near)
+        bl, _ = ndi.label(body); k = bl[int(round(ey)), int(round(ex))] or np.bincount(bl[body]).argmax()
+        by, bx = np.nonzero(bl == k)
+        # the two eyes: split the white pixels along their longest spread
+        P = np.c_[xs, ys].astype(float); c = P.mean(0); u, sv, vt = np.linalg.svd(P - c); ax = vt[0] * (1 if vt[0][0] >= 0 else -1)
+        t_ = (P - c) @ ax; eyes = [P[t_ < 0].mean(0) if (t_ < 0).any() else c, P[t_ >= 0].mean(0)]
+        pup = []
+        for e in eyes:                                     # pupil: darkness-weighted centroid in a 5 x 5 window on the eye
+            x0, y0 = int(round(e[0])) - 2, int(round(e[1])) - 2
+            win = 255 - g[y0:y0 + 5, x0:x0 + 5]; wy, wx = np.mgrid[0:5, 0:5]
+            pc = np.array([(wx * win).sum(), (wy * win).sum()]) / max(win.sum(), 1) + [x0, y0]
+            pup.append(pc - e)
+        out.append(dict(px=(round(float(bx.mean()), 1), round(float(by.mean()), 1)), d_px=round(2 * math.sqrt(len(bx) / math.pi), 1),
+                        eyes_px=[[round(float(v), 2) for v in e] for e in eyes], pupil_off_px=[[round(float(v), 2) for v in p] for p in pup]))
+    D_px = float(np.median([q["d_px"] for q in out])); mmpx = G["mmpx"]; oy = G["wb_top"]; D = D_px * mmpx
+    R_out = D / 2 + SOOT_FUR[1]
+    for q in out:
+        cx, cy = q["px"]; e_ = side_x(G["sil"], cy)
+        x_side = (cx - e_) * mmpx; moved = None
+        if x_side - R_out < SIDE_KO: moved = round(SIDE_KO + R_out - x_side, 1); x_side = SIDE_KO + R_out
+        ew = SOOT_EYE[0] * D; lim = 0.28 * ew
+        # eyes: measured midpoint + axis; the body centroid is pulled by the candies on top of the body and by denim
+        # shading, so the eye midpoint is held within SOOT_EYE_OFF x D of the body centre and the eye spacing within
+        # SOOT_EYE_SEP x D (the eyes stay inside the body, as on every mockup sprite)
+        (e1x, e1y), (e2x, e2y) = q["eyes_px"]
+        mx, my = ((e1x + e2x) / 2 - cx) * mmpx, ((e1y + e2y) / 2 - cy) * mmpx
+        r_ = math.hypot(mx, my); k_ = min(1.0, SOOT_EYE_OFF * D / r_) if r_ > 0 else 1.0; mx, my = mx * k_, my * k_
+        sep = math.hypot(e2x - e1x, e2y - e1y) * mmpx; ang = math.atan2(e2y - e1y, e2x - e1x)
+        sep = min(max(sep, SOOT_EYE_SEP[0] * D), SOOT_EYE_SEP[1] * D)
+        eyes = [[mx - sep / 2 * math.cos(ang), my - sep / 2 * math.sin(ang)], [mx + sep / 2 * math.cos(ang), my + sep / 2 * math.sin(ang)]]
+        q.update(d_mm=round(D, 2), x_from_side_mm=round(x_side, 1), y_from_waist_mm=round((cy - oy) * mmpx, 1), moved_in_mm=moved,
+                 eye_mid_traced_mm=[round(((e1x + e2x) / 2 - cx) * mmpx, 2), round(((e1y + e2y) / 2 - cy) * mmpx, 2)],
+                 eyes_mm=[[round(v, 2) for v in e] for e in eyes],
+                 pupils_mm=[[round(float(np.clip(dx * mmpx, -lim, lim)), 2), round(float(np.clip(dy * mmpx, -lim, lim)), 2)] for dx, dy in q["pupil_off_px"]])
+    out.sort(key=lambda q: q["y_from_waist_mm"])
+    for k, q in enumerate(out, 1): q["id"] = f"K{k:02d}"
+    return out
+
+def soot_regions(q, x=None, y=None, seed=None):
+    """one soot sprite in leg mm: black tatami body, radial fuzz of random length (prebuilt block), 2 triple-run legs,
+    2 white satin eyes, 2 black satin-dot pupils."""
+    from shapely.geometry import Point, LineString
+    from shapely import affinity
+    import kjsvg
+    cx = q["x_from_side_mm"] if x is None else x; cy = q["y_from_waist_mm"] if y is None else y
+    D = q["d_mm"]; R = D / 2
+    rng = np.random.default_rng(seed if seed is not None else int(q["id"][1:]) * 7919)
+    regs = [dict(col="kj_soot", geom=Point(cx, cy).buffer(R - 0.15, quad_segs=24), st="tatami", ang=45.0, grp="SOOT", layer=0)]
+    n = int(round(2 * math.pi * (R + 0.6) / 0.42)); pts = []
+    for k in range(n):
+        th = 2 * math.pi * k / n
+        r_ = R - 1.0 if k % 2 == 0 else R + SOOT_FUR[0] + rng.random() * (SOOT_FUR[1] - SOOT_FUR[0])
+        pts.append((cx + r_ * math.cos(th), cy + r_ * math.sin(th)))
+    pts.append(pts[0])
+    ring = Point(cx, cy).buffer(R + SOOT_FUR[1], quad_segs=24).difference(Point(cx, cy).buffer(R - 1.0, quad_segs=24))
+    regs.append(dict(col="kj_soot", geom=ring, st="satin", ang="pre", grp="FUR", layer=0, pre=[pts]))
+    for sgn in (-1, 1):
+        th = math.radians(90 + sgn * 28)
+        a = (cx + (R - 0.6) * math.cos(th), cy + (R - 0.6) * math.sin(th)); b = (cx + (R + SOOT_LEG) * math.cos(th), cy + (R + SOOT_LEG) * math.sin(th))
+        regs.append(dict(col="kj_soot", geom=LineString([a, b]).buffer(0.25), st="bean", ang="pre", grp="LEG", layer=0, pre=[[a, b, a, b]]))
+    ew, eh = SOOT_EYE[0] * D, SOOT_EYE[1] * D
+    for (ex, ey), (px_, py_) in zip(q["eyes_mm"], q["pupils_mm"]):
+        e = affinity.scale(Point(cx + ex, cy + ey).buffer(1.0, quad_segs=16), ew / 2, eh / 2)
+        regs.append(dict(col="kj_white", geom=e, st="satin", ang=0.0, grp="EYE", layer=0))
+        regs.append(kjsvg.bead("kj_soot", "PUPIL", Point(cx + ex + px_, cy + ey + py_).buffer(SOOT_PUPIL_D / 2 + 0.1, quad_segs=12), SOOT_PUPIL_D))
+    return regs
+
 def sections(stars, frame=None):
-    """group stars into hoopings that fit the factory frame (largest frame - 16 mm margin)."""
+    """group items (konpeito + soot sprites) into hoopings that fit the factory frame (largest frame - 16 mm margin)."""
     import factory
     fw, fh = factory.largest_frame()
-    lim = min(fw, fh) - 16.0 - STAR_D
+    big = max([STAR_D] + [d.get("d_mm", 0) + 2 * SOOT_FUR[1] for d in stars])
+    lim = min(fw, fh) - 16.0 - big
     secs = []
-    for d in stars:
+    for d in sorted(stars, key=lambda q: q["y_from_waist_mm"]):
         if secs and d["y_from_waist_mm"] - secs[-1][0]["y_from_waist_mm"] <= lim:
             xs = [q["x_from_side_mm"] for q in secs[-1]] + [d["x_from_side_mm"]]
             if max(xs) - min(xs) <= lim: secs[-1].append(d); continue
@@ -145,10 +257,11 @@ def sections(stars, frame=None):
     return secs
 
 def section_vis(sec):
-    """regions for one hooping, in leg mm (x from side seam, y from waistband top)."""
+    """regions for one hooping, in leg mm (x from side seam, y from waistband top): konpeito (S..) + soot sprites (K..)."""
     import kjsvg          # founder change 20 Oct: the 02 facing konpeito, same digitising, 10 mm
     from shapely.ops import unary_union
-    per = [(d, kjsvg.konpeito_regions(COLS[d["col"]][0], d["x_from_side_mm"], d["y_from_waist_mm"], STAR_D)) for d in sec]
+    cands = [d for d in sec if not d["id"].startswith("K")]; soots = [d for d in sec if d["id"].startswith("K")]
+    per = [(d, kjsvg.konpeito_regions(COLS[d["col"]][0], d["x_from_side_mm"], d["y_from_waist_mm"], STAR_D)) for d in cands]
     # overlapping konpeito (S06 yellow under S07 pink, PR #34 review): the candy sewn later (stop order yellow -> pink ->
     # blue, kjstitch._FRONT_PLAN) lies on top, as on the mockup; the white bead specks are sewn last, so a speck of the
     # candy underneath that falls under a later candy's body is dropped (it would show on top of the front candy).
@@ -162,9 +275,18 @@ def section_vis(sec):
             top = unary_union(tops).buffer(0.3)
             rs = [r for r in rs if not (r["grp"] == "KNOT" and r["geom"].intersects(top))]
         vis += rs
-    return vis
+    # soot sprites (J5): sewn FIRST (black), the konpeito they hold lie on top (as on the mockup); the body tatami is
+    # cut away under the candies (0.5 mm overlap kept) so the candy satin does not sit on a full tatami layer.
+    cand_body = unary_union([r["geom"] for _, rs in per for r in rs if r["grp"] in ("STAR",)]) if per else None
+    sv = []
+    for q in soots:
+        for r in soot_regions(q):
+            if r["grp"] == "SOOT" and cand_body is not None and not cand_body.is_empty:
+                r = dict(r, geom=r["geom"].difference(cand_body.buffer(-0.5)))
+            sv.append(r)
+    return sv + vis
 
-def overlay(G, stars, out="out/check_07_mockup.png", s=3):
+def overlay(G, stars, out="out/check_07_mockup.png", s=3, soot=(), dropped=()):
     """the corrected map drawn back onto the mockup: WB scale line, origin, pocket opening, star centres + ids."""
     im = Image.open(SRC).convert("RGB")
     x0, y0, x1, y1 = 790, 20, 1080, 920
@@ -190,6 +312,18 @@ def overlay(G, stars, out="out/check_07_mockup.png", s=3):
         d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(255, 255, 255), width=3)
         d.line([(cx + r, cy), (xl - 4, yl)], fill=(255, 255, 255), width=2)
         d.text((xl, yl - 12), st["id"], fill=(255, 255, 255), font=fnt, stroke_width=2, stroke_fill=(0, 0, 0))
+    # soot sprites (J5, kept): traced body circle (uniform D) + eye centres, labels left of the leg
+    for q in soot:
+        cx, cy = P(*q["px"]); rr = q["d_mm"] / G["mmpx"] / 2 * s
+        d.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], outline=(120, 255, 120), width=3)
+        for ex_, ey_ in q["eyes_px"]:
+            ex2, ey2 = P(ex_, ey_); d.ellipse([ex2 - 3, ey2 - 3, ex2 + 3, ey2 + 3], outline=(120, 255, 120), width=2)
+        d.text((cx - rr - 52, cy - 12), q["id"], fill=(120, 255, 120), font=fnt, stroke_width=2, stroke_fill=(0, 0, 0))
+    # konpeito clipped by the side seam: detected, NOT sewn (J4)
+    for q in dropped:
+        cx, cy = P(*q["px"])
+        d.line([(cx - 10, cy - 10), (cx + 10, cy + 10)], fill=(255, 60, 60), width=4); d.line([(cx - 10, cy + 10), (cx + 10, cy - 10)], fill=(255, 60, 60), width=4)
+        d.text((cx + 14, cy - 12), q["id"], fill=(255, 60, 60), font=fnt, stroke_width=2, stroke_fill=(0, 0, 0))
     c.save(out)
     # grid used to read the pocket opening (kept as evidence)
     x0g, y0g, x1g, y1g = 840, 30, 1060, 240; sg = 5
@@ -200,15 +334,19 @@ def overlay(G, stars, out="out/check_07_mockup.png", s=3):
     g.save("out/check_07_pocket_grid.png")
 
 if __name__ == "__main__":
-    G = geometry(); st = trace(G); secs = sections(st)
+    G = geometry(); det = trace(G); st, dropped = product_map(det); soot = trace_soot(G); secs = sections(st + soot)
     der = dict(half_waist_mm=round(HALF_WAIST_MM, 1), wb_width_px=round(G["wb_w_px"], 1), wb_mid_row_px=G["wb_mid"],
                mm_per_px=round(G["mmpx"], 4), origin_px=[round(v, 1) for v in G["origin"]],
                pocket_opening_px=POCKET_OPENING_PX,
                pocket_opening_mm=[[round((x - G["origin"][0]) * G["mmpx"], 1), round((y - G["wb_top"]) * G["mmpx"], 1)] for x, y in POCKET_OPENING_PX],
-               stars_inside_opening=[d["id"] for d in st if d["inside_opening"]])
-    json.dump(dict(stars=st, sections=[[d["id"] for d in s] for s in secs], mm_per_px=G["mmpx"], derivation=der),
+               stars_inside_opening=[d["id"] for d in st if d["inside_opening"]],
+               detected=len(det), detected_clipped=sum(1 for d in det if d["clipped"]), exclude_clipped=EXCLUDE_CLIPPED,
+               soot_d_px_traced=[q["d_px"] for q in soot])
+    json.dump(dict(stars=st, excluded_clipped=dropped, soot=soot, sections=[[d["id"] for d in s] for s in secs], mm_per_px=G["mmpx"], derivation=der),
               open("out/front_stars.json", "w"), indent=1)
-    overlay(G, st)
+    overlay(G, st, soot=soot, dropped=dropped)
     print(json.dumps(der, indent=1))
     for d in st: print(d)
+    for q in soot: print(q)
+    print("excluded:", [(d["trace_id"], d["col"]) for d in dropped])
     print([[d["id"] for d in s] for s in secs])

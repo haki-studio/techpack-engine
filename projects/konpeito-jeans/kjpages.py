@@ -30,6 +30,7 @@ OUT = "out/pack"; os.makedirs(OUT, exist_ok=True)
 A = pickle.load(open("out/art.pkl", "rb"))
 GATES = json.load(open("out/gates.json"))
 FRONT = json.load(open("out/front_stars.json"))
+SG = json.load(open("out/gates_soot.json"))          # soot-sprite gates (kjsoot.py)
 PROF = factory.load()
 
 # ---------------------------------------------------------------- element register
@@ -40,8 +41,8 @@ EL = [  # key, no, title, piece, process, json stem
     ("haki", "04", "Back pocket L — 'haki' + 2 konpeito", "wearer's LEFT back pocket", "direct embroidery on the cut pocket", "HAKI_KJ_04_back-pocket-L-haki"),
     ("starP", "05", "Back pocket R — pink konpeito", "wearer's RIGHT back pocket", "direct embroidery on the cut pocket", "HAKI_KJ_05_back-pocket-R-star-pink"),
     ("starY", "06", "Back pocket L — lower yellow konpeito", "wearer's LEFT back pocket, lower outer corner", "direct embroidery on the cut pocket", "HAKI_KJ_06_back-pocket-L-lower-star-yellow"),
-    ("front1", "07a", "Front-leg konpeito, upper [PROPOSED]", "wearer's RIGHT front leg panel", "direct embroidery on the cut front panel", "HAKI_KJ_07a_front-leg-stars-upper_PROPOSED"),
-    ("front2", "07b", "Front-leg konpeito, lower [PROPOSED]", "wearer's RIGHT front leg panel", "direct embroidery on the cut front panel", "HAKI_KJ_07b_front-leg-stars-lower_PROPOSED"),
+    ("front1", "07a", "Front-leg trail, upper — konpeito + soot sprites", "wearer's RIGHT front leg panel", "direct embroidery on the cut front panel", "HAKI_KJ_07a_front-leg-trail-upper"),
+    ("front2", "07b", "Front-leg trail, lower — konpeito + soot sprites", "wearer's RIGHT front leg panel", "direct embroidery on the cut front panel", "HAKI_KJ_07b_front-leg-trail-lower"),
 ]
 RB = {k: json.load(open(f"out/stitch/{stem}.json")) for k, *_, stem in EL}
 
@@ -124,6 +125,14 @@ def emb_front():
         base, tint = {"pink": ("kj_pink", "kj_pink_hi"), "blue": ("kj_blue", "kj_blue_hi"), "yellow": ("kj_yellow", "kj_yellow_hi")}[d["col"]]
         o.append(f'<path d="{geom_to_path(g)}" fill="{KJ_PAL[base][0]}"/><path d="{geom_to_path(hi)}" fill="{KJ_PAL[tint][0]}"/>'
                  + "".join(f'<path d="{geom_to_path(q)}" fill="{KJ_PAL["kj_white"][0]}"/>' for q in sp))
+    # soot sprites (founder 21 Oct, J5: kept), drawn under the konpeito they hold
+    import kjfront
+    for q in FRONT.get("soot", []):
+        x, y = item_flat_mm(q); x += ox * MMPX
+        rs = kjfront.soot_regions(q, x - ox * MMPX, y)
+        body = [r for r in rs if r["grp"] in ("SOOT", "FUR", "LEG")]; top = [r for r in rs if r["grp"] in ("EYE", "PUPIL")]
+        o.insert(2, "".join(f'<path d="{geom_to_path(r["geom"])}" fill="{KJ_PAL["kj_soot"][0]}"/>' for r in body))
+        o.append("".join(f'<path d="{geom_to_path(r["geom"])}" fill="{KJ_PAL[r["col"]][0]}"/>' for r in top))
     return "\n".join(o)
 
 BACK_POCKETS = {"L": (160, 340, 183), "R": (423, 603, 183)}      # px: x0, x1, top
@@ -170,7 +179,9 @@ def T1(index):
 # ---------------------------------------------------------------- T2 flats
 def star_flat_mm(sid):
     """flat (front view) mm position of a front-leg star, same maths as emb_front()."""
-    d = next(q for q in FRONT["stars"] if q["id"] == sid)
+    return item_flat_mm(next(q for q in FRONT["stars"] + FRONT.get("soot", []) if q["id"] == sid))
+
+def item_flat_mm(d):
     sil = affinity.scale(SIL["front"], MMPX, MMPX, origin=(0, 0))
     y = d["y_from_waist_mm"] + MMPX * FRONT["derivation"]["origin_px"][1]
     row = sil.intersection(box(0, y - 0.3, 3000, y + 0.3))
@@ -199,7 +210,7 @@ def T2():
     o.append(t(lx, y, "Callouts", 2.6, 700)); y += 5
     for lab, s_ in [("01", "coin-pocket patch こんぺいとう"), ("02", "konpeito spill on the facing"), ("03", "waistband patch (ちひろ note)"),
                     ("04", "back pocket L: 'haki' + 2 konpeito"), ("05", "back pocket R: pink konpeito"), ("06", "back pocket L lower yellow konpeito"),
-                    ("07", "front-leg konpeito: artwork to follow [MISSING]"), ("B1", "28 L flat tack shank button"), ("Z1", "YKK #4.5 zip fly, 6 in"), ("L1", "main label inside CB (T7)")]:
+                    ("07", f"front-leg trail: {len(FRONT['stars'])} konpeito + {len(FRONT['soot'])} soot sprites (G7)"), ("B1", "28 L flat tack shank button"), ("Z1", "YKK #4.5 zip fly, 6 in"), ("L1", "main label inside CB (T7)")]:
         o.append(t(lx, y, lab, 2.0, 700, GUIDE)); o.append(t(lx + 7, y, s_, 1.9, 400, AMBER if ("MISSING" in s_ or "proposed" in s_) else INK)); y += 3.8
     y += 3
     for s_ in ["5-pocket jean, same fit + construction as the", "Hidden Inventory (HI) pants, without the cargo", "pockets:",
@@ -212,7 +223,6 @@ def T2():
     o.append(t(lx, y, "Seams light grey, topstitch grey dashes = drawing only", 1.7, 400, MUTED)); y += 3.4
     for ln in ("L / R = the WEARER's: the back view is seen from behind", "(image right = wearer's right: 03, 05); the front view from", "the front (image left = wearer's right: 01, 02, 07)."):
         o.append(t(lx, y, ln, 1.7, 700, INK)); y += 3.0
-    o.append(missing(lx, y + 2, 70, 10, ["07 front-leg: artwork to follow [MISSING]", "PROPOSED konpeito positions on G7"], 1.8))
     # scale bar
     o.append(f'<line x1="24" y1="{SH-14}" x2="{24 + 100 * s}" y2="{SH-14}" stroke="{INK}" stroke-width="0.5"/>')
     o.append(t(24, SH - 15.5, "100 mm at flat scale", 1.8, 400, MUTED))
@@ -279,7 +289,7 @@ def T4():
     o = hdr("T4 · PATTERN — use the factory's Hidden Inventory pants pattern", "No pants block in our engine: we do not draft a pattern. The factory already has the Hidden Inventory (Haki cargo pant) pattern: same fit, same construction, cargo pockets left off.", "T4")
     y = 38
     for s_, b in [("Base pattern", "The factory's Hidden Inventory pants pattern, all sizes as graded for HI (T3). Same fit: waist, hip, rise, thigh, knee, leg opening, lengths."),
-                  ("Leave off", "Cargo pockets (bags, box pleats, flaps, snaps), the HI flag labels, the hammer loop (not on the Konpeito mockup)  " + PROPOSED),
+                  ("Leave off", "Cargo pockets (bags, box pleats, flaps, snaps), the HI flag labels, the hammer loop (not on the Konpeito mockup; confirmed by the founder 21 Oct)"),
                   ("Front + back legs", "ONE panel each from the waist to the hem: NO knee seam (the HI panel seams are joined into one piece; plain leg as the mockup)."),
                   ("Back", "NO back yoke (as HI): the back panel runs straight up to the waistband; the two back panels are joined by the centre-back (seat) seam."),
                   ("Waistband", "Regular waistband, 2 pieces joined at centre back (CB), shank button at the centre front (CF)."),
@@ -290,7 +300,7 @@ def T4():
         o.append(t(14, y, s_, 2.3, 700)); o.append(t(56, y, b, 2.05, 400, AMBER if "proposed" in b.lower() else INK)); y += 5.9
     y += 3
     o.append(t(14, y, "Pattern pieces per garment — check against the HI pattern  " + PROPOSED, 2.5, 700, INK)); y += 6
-    rows = [["Front leg L / R", "2", "shell", "one piece waist to hem (no knee seam); R carries 07 (front-leg konpeito)"],
+    rows = [["Front leg L / R", "2", "shell", "one piece waist to hem (no knee seam); R carries 07 (front-leg trail: konpeito + soot sprites)"],
             ["Back leg L / R", "2", "shell", "one piece waist to hem (no knee seam, no yoke)"],
             ["Waistband", "2", "shell + interlining as HI", "2 pieces joined at CB; patch 03 on the wearer's right back"],
             ["Fly / fly shield", "2", "shell", "YKK #4.5 zip 6 in + 28 L shank button"],
@@ -354,7 +364,7 @@ def T6():
             ["Belt loops", "5 loops (2 front 1 cm from the pocket, 2 back, 1 at CB), bartacked top + bottom (as HI)."],
             ["Hem", "Turned twice and topstitched, as the HI pants."],
             ["Labels", "Main label inside CB sewn down on all 4 sides; centrefold size label on its left; care label in the waist seam, wearer's right (T7)."],
-            ["Not on Konpeito", "Cargo pockets, snap buttons, HI flag labels, hammer loop  " + PROPOSED]]
+            ["Not on Konpeito", "Cargo pockets, snap buttons, HI flag labels, hammer loop (confirmed by the founder 21 Oct)"]]
     tb, y = table(12, 36, [("Operation", 34), ("How (plain words)", 150)], rows, 1.85, 5.0)
     o.append(tb)
     wx = 200; wy = 36
@@ -516,9 +526,9 @@ def T8():
             ["02 spill", "front-R facing", "71 × 14", "pocket-line (y 0 in the file) = the coin pocket's top edge; candies run 3 mm under the patch", "facing >= 3 mm clear of the WB seam " + PROPOSED],
             ["03 WB patch", "back WB, wearer's R", "80 × 54", "top edge 3 mm below WB top, outer edge 25 mm from the side belt loop; runs over the waist seam onto the back panel (sew on after assembly + wash)", "CONFIRMED (founder 20 Oct)"],
             ["04 haki group", "back pocket L", f"{RB['haki']['size_mm'][0]:.0f} × {RB['haki']['size_mm'][1]:.0f}", f"yellow-konpeito centre {HAKI_POS[0]:.0f} mm in from the OUTER edge, {HAKI_POS[1]:.0f} mm below the pocket top edge; baseline level", "clears hem topstitch (13) + outer topstitch (11)"],
-            ["05 pink konpeito", "back pocket R", f"{RB['starP']['size_mm'][0]:.0f} × {RB['starP']['size_mm'][1]:.0f}", f"centre {STARP_POS[0]:.0f} mm in from the OUTER edge, {STARP_POS[1]:.0f} mm below the top edge (mockup ~8 mm in; moved {STARP_POS[0] - 8:.0f} mm inward to clear the outer topstitch)", ""],
+            ["05 pink konpeito", "back pocket R", f"{RB['starP']['size_mm'][0]:.0f} × {RB['starP']['size_mm'][1]:.0f}", f"centre {STARP_POS[0]:.0f} mm in from the OUTER edge, {STARP_POS[1]:.0f} mm below the top edge (mockup ~8 mm in; moved {STARP_POS[0] - 8:.0f} mm inward to clear the outer topstitch)", "move CONFIRMED (founder 21 Oct)"],
             ["06 yellow konpeito", "back pocket L", f"{RB['starY']['size_mm'][0]:.0f} × {RB['starY']['size_mm'][1]:.0f}", f"centre {STARY_POS[0]:.0f} mm in from the outer edge, {STARY_POS[1]:.0f} mm above the lower outer corner", "kept: founder confirmed 19 Oct"],
-            ["07 front konpeito", "front-R leg panel", f"{len(FRONT['stars'])} × 10 mm", "per-konpeito table on G7 (x from side seam, y from WB top); check vs mockup on C5", "artwork to follow [MISSING]; konpeito PROPOSED"]]
+            ["07 front-leg trail", "front-R leg panel", f"{len(FRONT['stars'])} konp. + {len(FRONT['soot'])} sprites", "per-motif tables on G7 (x from side seam, y from WB top); check vs mockup on C5, compare C7", "kept as the mockup (founder 21 Oct)"]]
     tb, y = table(12, 36, [("Element", 28), ("Piece", 34), ("Size mm", 18), ("Position (finished)", 148), ("Note", 50)], rows, 1.85, 6.2)
     o.append(tb)
     o.append(t(12, y + 2.5, "L / R = the WEARER's. The back view is seen from behind, so image right = wearer's right (03, 05); the front view is seen from the front, so image left = wearer's right (01, 02, 07).", 1.9, 700, INK))
@@ -557,16 +567,16 @@ def T8():
 
 # ---------------------------------------------------------------- G1 embroidery summary + thread chart
 def G1():
-    o = hdr("G1 · EMBROIDERY SUMMARY — files, read-back numbers, threads", f"01–03 + every konpeito from the founder's vector art; 04 'haki' traced from its mockup. Numbers read back from the written DST. Machine time at {PROF['spm']} spm + 6 s / trim + 4 s / colour change (factory.json); <= {factory.max_threads()} threads per file.", "G1")
+    o = hdr("G1 · EMBROIDERY SUMMARY — files, read-back numbers, threads", f"01–03 + every konpeito from the founder's vector art; 04 'haki' + the 07 soot sprites redrawn from the mockups. Numbers read back from the written DST. Machine time at {PROF['spm']} spm + 6 s / trim + 4 s / colour change (factory.json); <= {factory.max_threads()} threads per file.", "G1")
     rows = []; tot = dict(st=0, tr=0, mi=0)
     for k, no, title, piece, proc, stem in EL:
         r = RB[k]
         rows.append([no, title[:44], f"{stem}.dst/.pes", f"{r['size_mm'][0]:.1f} × {r['size_mm'][1]:.1f}", f"{r['stitches']:,}", str(r["trims"]), str(r["stops"]),
                      str(r["threads"]), f"{r['max_stitch']}", f"{r['machine_min']}"])
-        if not k.startswith("front"): tot["st"] += r["stitches"]; tot["tr"] += r["trims"]; tot["mi"] += r["machine_min"]
+        tot["st"] += r["stitches"]; tot["tr"] += r["trims"]; tot["mi"] += r["machine_min"]
     tb, y = table(12, 34, [("#", 9), ("Element", 70), ("File", 72), ("Size mm", 22), ("Stitches", 18), ("Trims", 12), ("Stops", 12), ("Thr.", 10), ("Max st.", 14), ("Min", 12)], rows, 1.85, 4.6)
     o.append(tb)
-    o.append(t(12, y + 1, f"Per garment, confirmed elements 01–06: {tot['st']:,} stitches · {tot['tr']} trims · {tot['mi']:.1f} machine-min. 07a/07b (PROPOSED) not included.", 2.0, 700))
+    o.append(t(12, y + 1, f"Per garment, all files 01–07b: {tot['st']:,} stitches · {tot['tr']} trims · {tot['mi']:.1f} machine-min (07 front-leg trail included from Rev B6, founder 21 Oct).", 2.0, 700))
     y += 6
     o.append(t(12, y, "Method:", 2.0, 700))
     o.append(t(28, y, "PATCHES (01 coin pocket, 03 waistband): embroidered on twill, heat-cut edge, then sewn onto the jean AFTER the wash with a 1 mm red edge stitch; backing cut-away  " + PROPOSED, 1.85, 400, AMBER))
@@ -716,61 +726,62 @@ def wrap(s, n):
     return lines
 
 def G7():
-    o = hdr("G7 · 07 FRONT-LEG KONPEITO — artwork to follow, PROPOSED konpeito map", "Wearer's right front leg panel. The front-leg artwork is to follow from Haki; this page holds the placement area and the PROPOSED positions of the konpeito, read from the garment mockup (check on C5).", "G7")
-    o.append(missing(12, 30, 273, 11, ["07 front-leg: artwork to follow [MISSING]",
-                                       "The konpeito below are PROPOSED positions and PROPOSED stitch files (07a / 07b); they are replaced when Haki sends the front-leg artwork."], 2.0))
+    o = hdr(f"G7 · 07 FRONT-LEG TRAIL — {len(FRONT['stars'])} konpeito + {len(FRONT['soot'])} soot sprites, as the mockup", "Wearer's right front leg panel. The trail on the garment mockup is the artwork (founder 21 Oct: soot sprites KEPT, clipped side-seam konpeito DROPPED). Positions read from the mockup (check on C5), compare on C7.", "G7")
     s = 0.125
-    o.append(f'<g transform="translate({f(14 - FB[0] * s)} 46) scale({s})">{FRONT_SVG}{emb_front()}</g>')
-    sil = affinity.scale(SIL["front"], MMPX, MMPX, origin=(0, 0))
-    area = Polygon([(790 * MMPX, 190 * MMPX), (990 * MMPX, 190 * MMPX), (960 * MMPX, 900 * MMPX), (790 * MMPX, 900 * MMPX)]).intersection(sil)
-    area = affinity.translate(area, -760 * MMPX, 0)
-    o.append(f'<path d="{geom_to_path(affinity.translate(affinity.scale(area, s, s, origin=(0, 0)), 14 - FB[0] * s, 46))}" fill="#FFB000" fill-opacity="0.14" stroke="{AMBER}" stroke-width="0.4" stroke-dasharray="1.2 0.7"/>')
-    P = [star_flat_mm(d["id"]) for d in FRONT["stars"]]
-    P = [(14 - FB[0] * s + X * s, 46 + Y * s) for X, Y in P]
+    o.append(f'<g transform="translate({f(14 - FB[0] * s)} 34) scale({s})">{FRONT_SVG}{emb_front()}</g>')
+    items = FRONT["stars"] + FRONT["soot"]
+    P = [item_flat_mm(d) for d in items]
+    P = [(14 - FB[0] * s + X * s, 34 + Y * s) for X, Y in P]
     xl = max(X for X, _ in P) + 6.0                                   # label column with leader lines: no label overlaps
-    ly = spread([Y for _, Y in P], 2.3)
-    for d, (X, Y), yl in zip(FRONT["stars"], P, ly):
-        o.append(f'<line x1="{f(X + 0.8)}" y1="{f(Y)}" x2="{f(xl - 0.4)}" y2="{f(yl)}" stroke="#FFFFFF" stroke-width="0.15"/>')
+    order = sorted(range(len(P)), key=lambda i: P[i][1]); ly = [0.0] * len(P)
+    for i, yl in zip(order, spread([P[i][1] for i in order], 2.3)): ly[i] = yl
+    for d, (X, Y), yl in zip(items, P, ly):
+        sp = d["id"].startswith("K")
+        o.append(f'<line x1="{f(X + 0.8)}" y1="{f(Y)}" x2="{f(xl - 0.4)}" y2="{f(yl)}" stroke="{"#7CFF8A" if sp else "#FFFFFF"}" stroke-width="0.15"/>')
         o.append(f'<rect x="{f(xl - 0.4)}" y="{f(yl - 1.0)}" width="4.6" height="2.0" rx="0.4" fill="#26262A"/>')
-        o.append(t(xl, yl + 0.5, d["id"], 1.3, 700, "#FFFFFF"))
-    o.append(t(120, SH - 16, "Amber area on the flat = konpeito area: below the front pocket opening to ~830 mm below the WB top, within ~120 mm of the side seam.", 1.8, 500, AMBER))
+        o.append(t(xl, yl + 0.5, d["id"], 1.3, 700, "#7CFF8A" if sp else "#FFFFFF"))
+    sec = lambda i: "07a" if i in FRONT["sections"][0] else "07b"
+    x0 = 112
+    o.append(t(x0, 34, "Konpeito — 10 mm, the 02 shape (same on every location), size 32", 2.1, 700)); y = 38.5
     rows = [[d["id"], d["col"], f"{d['x_from_side_mm']:.0f}", f"{d['y_from_waist_mm']:.0f}",
-             ("—" if d["below_opening_mm"] is None else f"{d['below_opening_mm']:.0f}"),
-             ((f"clipped at side seam; moved {d['moved_in_mm']:.0f} mm in" if d.get("clipped") else f"moved {d['moved_in_mm']:.0f} mm in (keep-out)") if d["moved_in_mm"] else ""),
-             "07a" if d["id"] in FRONT["sections"][0] else "07b"] for d in FRONT["stars"]]
-    o.append(t(120, 48, "PROPOSED konpeito map — 10 mm konpeito, the 02 shape (same on every location), size 32", 2.2, 700, AMBER))
-    tb, y = table(120, 53, [("Konp.", 11), ("Colour", 14), ("x from side seam", 25), ("y from WB top", 22), ("gap below pocket opening", 36), ("Note", 46), ("File", 10)], rows, 1.8, 3.8)
+             ("—" if d["below_opening_mm"] is None else f"{d['below_opening_mm']:.0f}"), sec(d["id"])] for d in FRONT["stars"]]
+    tb, y = table(x0, y, [("Konp.", 11), ("Colour", 14), ("x side", 13), ("y WB", 12), ("gap opening", 19), ("File", 10)], rows, 1.7, 3.15)
     o.append(tb)
-    y += 3
-    der = FRONT["derivation"]
-    for ln in ["x = mm in from the side seam at the konpeito's height; y = mm down from the top of the waistband at the side seam (origin O, C5).",
-               "Gap = from the konpeito's top edge down to the front pocket opening above it ('—' = the konpeito is not under the opening).",
-               f"Every konpeito sits on the front leg panel BELOW the pocket opening: {len(der['stars_inside_opening'])} of {len(FRONT['stars'])} inside the opening (check on C5).",
-               "Konpeito over the area where the front pocket bag hangs behind the panel are embroidered on the flat front panel BEFORE the",
-               "pocket bag is attached, so the bag is never stitched shut.",
-               "Positions are size 32; grade with the leg (keep the gap to the pocket opening and the distance to the side seam).",
-               "S06 yellow + S07 pink overlap (one soot sprite, as on the mockup): the pink is sewn on top; the yellow's white speck under the pink is left out.",
-               *clipped_note()]:
-        o.append(t(120, y, ln, 1.75, 400, AMBER if ("PROPOSED" in ln) else INK)); y += 3.3
-    fn = (f"PROPOSED stitch files: 07a ({RB['front1']['stitches']:,} st, {RB['front1']['trims']} trims, {RB['front1']['size_mm'][0]:.0f} × {RB['front1']['size_mm'][1]:.0f} mm) and 07b ({RB['front2']['stitches']:,} st, "
-          f"{RB['front2']['trims']} trims, {RB['front2']['size_mm'][0]:.0f} × {RB['front2']['size_mm'][1]:.0f} mm), konpeito only, one hooping each on the {factory.largest_frame()[0]:.0f} × {factory.largest_frame()[1]:.0f} mm frame.")
-    for ln in wrap(fn, 128):                      # one amber note (PR #34 nit: it broke into a black + an amber line)
-        o.append(t(120, y, ln, 1.75, 400, AMBER)); y += 3.3
+    rows = [[q["id"], f"{q['d_mm']:.1f}", f"{q['x_from_side_mm']:.0f}", f"{q['y_from_waist_mm']:.0f}",
+             " / ".join(f"{e[0]:+.1f},{e[1]:+.1f}" for e in q["eyes_mm"]), sec(q["id"])] for q in FRONT["soot"]]
+    xs = x0 + 86
+    o.append(t(xs, 34, "Soot sprites — black body + fuzz, 2 eyes, 2 legs", 2.1, 700))
+    tb, y2 = table(xs, 38.5, [("Sprite", 11), ("Ø body", 12), ("x side", 12), ("y WB", 11), ("eye centres from body centre", 37), ("File", 9)], rows, 1.7, 3.15)
+    o.append(tb)
+    y = max(y, y2) + 2
+    der = FRONT["derivation"]; ex = FRONT["excluded_clipped"]
+    import kjfront
+    lines = ["x = mm in from the side seam at the motif's height; y = mm down from the top of the waistband at the side seam (origin O, C5). Positions are size 32;",
+             "grade with the leg (keep the gap to the pocket opening and the distance to the side seam). Gap = konpeito top edge to the front pocket opening above it.",
+             f"Every konpeito + sprite sits on the front leg panel BELOW the pocket opening ({len(der['stars_inside_opening'])} of {len(FRONT['stars'])} konpeito inside it, C5). Embroider the flat front panel BEFORE the pocket bag is attached.",
+             "S06 yellow + S07 pink overlap (both on sprite K04, as on the mockup): the pink is sewn on top; the yellow's white speck under the pink is left out.",
+             f"Founder 21 Oct (J4): the {len(ex)} konpeito clipped by the side seam on the mockup ({', '.join(d['col'] for d in ex)}) are NOT sewn. The trace still finds them (C5, red X); this product excludes them.",
+             f"Founder 21 Oct (J5): the soot-sprite characters are KEPT as on the mockup (licence risk accepted by the founder). Sewn first in Soot black 40wt; the konpeito they hold lie on top;",
+             f"eyes (white satin) + pupils (black Ø{kjfront.SOOT_PUPIL_D} satin dot) are sewn last. Body Ø{FRONT['soot'][0]['d_mm']:.1f} mm = median of the {len(FRONT['soot'])} traced bodies; tatami 45° cut away under the candies;",
+             f"fuzz = radial satin of random length ({kjfront.SOOT_FUR[0]}–{kjfront.SOOT_FUR[1]} mm beyond the body); 2 legs = triple run {kjfront.SOOT_LEG} mm. Redrawn from the low-res mockup (~1 mm per px):",
+             "eye + pupil positions traced per sprite; uniform body size, the fuzz length and the legs  [proposed — confirm on the sew-out].",
+             f"Gates per sprite (C7): centre <= {SG['limits']['pos_mm']} mm, cover >= {SG['limits']['cover']:.0%}, 2 eyes <= {SG['limits']['eye_mm']} mm: {sum(r['ok'] for r in SG['rows'])} of {len(SG['rows'])} PASS. Konpeito A14 + position: C6."]
+    for ln in lines:
+        o.append(t(x0, y, ln, 1.6, 400, AMBER if "proposed" in ln else INK)); y += 3.05
+    fn = (f"Stitch files: 07a ({RB['front1']['stitches']:,} st, {RB['front1']['trims']} trims, {RB['front1']['size_mm'][0]:.0f} × {RB['front1']['size_mm'][1]:.0f} mm, {RB['front1']['machine_min']} min) and 07b ({RB['front2']['stitches']:,} st, "
+          f"{RB['front2']['trims']} trims, {RB['front2']['size_mm'][0]:.0f} × {RB['front2']['size_mm'][1]:.0f} mm, {RB['front2']['machine_min']} min), {RB['front1']['threads']} threads each, one hooping each on the {factory.largest_frame()[0]:.0f} × {factory.largest_frame()[1]:.0f} mm frame.")
+    for ln in wrap(fn, 150):
+        o.append(t(x0, y, ln, 1.6, 700, INK)); y += 3.05
+    # stitch previews drawn from the shipped DSTs, turned 90° (waist end on the left), side by side, same scale
+    y += 3; sc = 0.30; xx = x0; hmax = 0
+    for k, no in (("front1", "07a"), ("front2", "07b")):
+        im = Image.open(f"out/stitch/{RB[k]['file']}_preview.png").rotate(90, expand=True)
+        w_ = RB[k]["size_mm"][1] * sc
+        o.append(t(xx, y, f"{no} stitch preview (DST), turned 90°, 1 : {1 / sc:.1f}", 1.6, 700))
+        tag, h_ = img(im, xx, y + 1.5, w=w_); o.append(tag); xx += w_ + 5; hmax = max(hmax, h_)
+    y += 1.5 + hmax
+    assert y <= SH - 12, ("G7 notes run into the footer", y)
     return o
-
-def clipped_note():
-    """PR #34 round 2: the mockup count, split into whole konpeito and konpeito clipped by the side seam, read from the map."""
-    cl = [d for d in FRONT["stars"] if d.get("clipped")]
-    n, nw = len(FRONT["stars"]), len(FRONT["stars"]) - len(cl)
-    ids = ", ".join(f"{d['id']} {d['col']}" for d in cl)
-    out = [f"Count = the mockup: {nw} whole konpeito + {len(cl)} clipped by the side seam ({ids}) = {n}, all kept. A clipped konpeito shows on the mockup",
-           f"only as a sliver on the garment edge (it wraps round the seam); it is mapped at its sliver's height and moved in to the {kjfront_SIDE_KO():.0f} mm side-seam keep-out,",
-           "so it is sewn whole on the front panel (a konpeito cannot be sewn across the side seam). PROPOSED."]
-    pairs = [(a, b) for i, a in enumerate(cl) for b in cl[i + 1:] if math.dist((a["x_from_side_mm"], a["y_from_waist_mm"]), (b["x_from_side_mm"], b["y_from_waist_mm"])) < 10.0]
-    for a, b in pairs:
-        top, und = (a, b) if a["col"] == "blue" else (b, a)
-        out.append(f"{a['id']} + {b['id']} sit {abs(a['y_from_waist_mm'] - b['y_from_waist_mm']):.0f} mm apart on the seam, so their tips touch after the move: {top['id']} {top['col']} is sewn on top, as for S06/S07.")
-    return out
 
 def kjfront_SIDE_KO():
     import kjfront
@@ -789,27 +800,27 @@ def C5():
     import kjfront
     """07 star map: overlay check against the garment mockup (founder review item 15). The maths, read from out/front_stars.json."""
     der = FRONT["derivation"]
-    o = hdr("C5 · CHECK — 07 konpeito map vs the garment mockup (overlay)", "Haki placement check (not a sewing instruction): the corrected konpeito map drawn back onto the mockup and onto the flat, with the maths. Sewing positions are on G7.", "C5")
+    o = hdr("C5 · CHECK — 07 trail map vs the garment mockup (overlay)", "Haki placement check (not a sewing instruction): konpeito (white, S..), soot sprites (green, K..) and the dropped clipped konpeito (red X) drawn back onto the mockup and onto the flat, with the maths. Sewing positions are on G7.", "C5")
     im = Image.open("out/check_07_mockup.png")
     # split the tall overlay between two stars (PR #34 round 2: the 0.42 cut went through S13): midpoint of the star gap
     # nearest 42 % of the height (overlay crop origin y 20 px, scale 3 — kjfront.overlay)
-    ys = sorted((d["px"][1] - 20) * 3 for d in FRONT["stars"])
+    ys = sorted((d["px"][1] - 20) * 3 for d in FRONT["stars"] + FRONT["soot"])
     mids = [(a + b) / 2 for a, b in zip(ys, ys[1:]) if b - a > 90]
     cut = int(min(mids, key=lambda m: abs(m - im.height * 0.42))) if mids else int(im.height * 0.42)
-    tag, h = img(im.crop((0, 0, im.width, cut)), 12, 32, h=118); o.append(tag)
+    tag, h = img(im.crop((0, 0, im.width, cut)), 12, 32, h=108); o.append(tag)
     o.append(t(12, 30.5, "A · MOCKUP with the map (front view, wearer's right leg; 3x)", 2.0, 700))
-    w = 118 * im.width / cut
-    tag2, h2 = img(im.crop((0, cut, im.width, im.height)), 12 + w + 4, 32, h=118); o.append(tag2)
+    w = 108 * im.width / cut
+    tag2, h2 = img(im.crop((0, cut, im.width, im.height)), 12 + w + 4, 32, h=108); o.append(tag2)
     o.append(t(12 + w + 4, 30.5, "lower leg", 2.0, 700))
     # B: flat with the same stars + the opening
     s = 0.1
-    bx = 12 + w + 4 + 118 * im.width / (im.height - cut) + 8
+    bx = 12 + w + 4 + 108 * im.width / (im.height - cut) + 8
     o.append(t(bx, 30.5, "B · FLAT (T2) with the same map", 2.0, 700))
     o.append(f'<g transform="translate({f(bx - FB[0] * s)} 34) scale({s})">{FRONT_SVG}{emb_front()}</g>')
     op = [((x - 760) * MMPX, y * MMPX) for x, y in FL.OPENING_PX]
     o.append('<path d="M' + " L".join(f"{f(bx - FB[0] * s + x * s)} {f(34 + y * s)}" for x, y in op) + '" fill="none" stroke="#FF8C00" stroke-width="0.6"/>')
     # C: maths
-    x0 = 12; y = 160
+    x0 = 12; y = 148
     o.append(t(x0, y, "C · MATHS (out/front_stars.json, kjfront.py)", 2.2, 700)); y += 5
     oxm = der["pocket_opening_mm"]
     ra = json.load(open("inputs/front_stars_RevA.json"))["stars"]       # Rev A map, kept for this comparison
@@ -826,9 +837,37 @@ def C5():
              f"   as if they were inside the pocket. Rev B redraws the scoop from the traced opening. With the new scale + origin the stars moved up {mv[0]:.0f}-{mv[1]:.0f} mm (sideways <= {mv[2]:.1f} mm); 07a / 07b rebuilt.",
              "6. Rev B4 (PR #34 review): the 4th soot sprite carries a pink AND a yellow konpeito that touch; Rev A-B3 traced them as one",
              f"   blob. The trace now labels each colour separately, and any blob over {kjfront.MERGE_RATIO} x the median size stops the build (possible merge). The pink is sewn on top of the yellow.",
-             f"7. Rev B5 (PR #34 round 2): the side-seam edge is searched for clipped candies (+-{kjfront.EDGE_PX} px band, saturation > {kjfront.EDGE_SAT}, >= {kjfront.EDGE_MIN_PX} px); the 6 px floor dropped 2 of the 3.",
-             f"   Mockup count {len(FRONT['stars'])} = {sum(1 for d in FRONT['stars'] if not d.get('clipped'))} whole + {sum(1 for d in FRONT['stars'] if d.get('clipped'))} clipped ({', '.join(d['id'] for d in FRONT['stars'] if d.get('clipped'))}), all kept, moved in to the side-seam keep-out. New vs Rev A: {', '.join(new)}."]
-    for ln in lines: o.append(t(x0, y, ln, 1.8, 400, INK)); y += 3.5
+             f"7. Rev B5 found 3 konpeito clipped by the side seam (edge band +-{kjfront.EDGE_PX} px, saturation > {kjfront.EDGE_SAT}, >= {kjfront.EDGE_MIN_PX} px). Rev B6 (founder 21 Oct): DROPPED. The trace still",
+             f"   detects them (red X: {', '.join(d['col'] for d in FRONT['excluded_clipped'])}); kjfront.EXCLUDE_CLIPPED leaves them off the map. Map = {len(FRONT['stars'])} whole konpeito, renumbered S01-S{len(FRONT['stars']):02d}. New vs Rev A: {', '.join(new) or 'none'}.",
+             f"8. Soot sprites (green, founder 21 Oct: kept): each found by its pair of white eyes on a black body (grey > {kjfront.SOOT_EYE_G} next to grey < {kjfront.SOOT_BODY_G}); centre = black-body centroid;",
+             f"   {len(FRONT['soot'])} sprites, body Ø median {FRONT['soot'][0]['d_mm']:.1f} mm (traced {min(FRONT['derivation']['soot_d_px_traced']):.0f}-{max(FRONT['derivation']['soot_d_px_traced']):.0f} px). None needs the side-seam keep-out move."]
+    for ln in lines: o.append(t(x0, y, ln, 1.75, 400, INK)); y += 3.3
+    assert y <= SH - 12, ("C5 maths run into the footer", y)
+    return o
+
+def Q1():
+    """founder decisions 21 Oct (answers to the PR #34 questions J1-J5) + what is still open."""
+    o = hdr("Q1 · FOUNDER DECISIONS + OPEN QUESTIONS", "Answers given by the founder on 21 Oct 2026 to the Rev B5 questions, and what they changed in this revision. Open items are listed at the bottom.", "Q1")
+    ex = FRONT["excluded_clipped"]
+    rows = [["J1", f"05 pink konpeito moved {STARP_POS[0] - 8:.0f} mm inward from the mockup (clears the outer topstitch)", "OK — CONFIRMED", "G6, T8: PROPOSED mark removed"],
+            ["J2", "Patch field (01 / 03): straight 0° tatami or a knit texture?", "Straight 0° tatami, no knit texture — CONFIRMED", "no change (FIELD = 0° tatami, G2 / G4)"],
+            ["J3", "Hammer loop left off (not on the Konpeito mockup)", "Left off — CONFIRMED", "T4, T6: PROPOSED mark removed"],
+            ["J4", f"Keep the {len(ex)} konpeito clipped by the side seam on the mockup?", "DROP them ('I don't think that's supposed to be there')",
+             f"07 map {len(FRONT['stars'])} konpeito (was 17); detected + excluded (C5); G7, C5, T8, C6 updated"],
+            ["J5", "Soot-sprite characters on the front leg (look like a licensed character, LESSONS A7)", "KEEP them — founder decision, licence risk accepted by the founder",
+             f"{len(FRONT['soot'])} soot sprites digitised into 07a / 07b (G7, C5, C7)"]]
+    tb, y = table(12, 36, [("#", 9), ("Question (Rev B5)", 112), ("Founder answer, 21 Oct", 82), ("What changed in " + REV, 70)], rows, 1.9, 6.0)
+    o.append(tb)
+    y += 4
+    for ln in ["J5 licence note: the soot sprites resemble a third-party licensed character. House rule LESSONS A7 is to decline such elements; for this product the founder",
+               "decided to keep them and accepts the licence risk (21 Oct 2026). Recorded here and in the project ENGINE_NOTES (A7 context) for the coordinator."]:
+        o.append(t(12, y, ln, 2.0, 700, RED)); y += 3.8
+    y += 5
+    o.append(t(12, y, "Still open", 2.6, 700)); y += 5
+    for ln in ["Q-a  Size run 26 28 29 30 31 32 33 34 36 38 40 (24 dropped; 29 / 31 / 33 half-way between the HI sizes on T3 until the factory grades them) — correct?  " + PROPOSED,
+               "Q-b  Soot-sprite drawing (redrawn from the low-res mockup): body Ø, fuzz length and the 2 legs — confirm on the 07a / 07b sew-out.  " + PROPOSED,
+               "Haki still owes (MISSING on T5 / T7 / T7b): main + care label art, hang tag art, packing design, barcodes per size."]:
+        o.append(t(12, y, ln, 2.0, 400, AMBER)); y += 4.2
     return o
 
 def compare_page(pid, name, title, sub=None):
@@ -900,10 +939,11 @@ def build():
                 ("T8", "Embroidery placement overview", ""), ("G1", "Embroidery summary + thread chart", ""),
                 ("G2", "01 Coin-pocket patch こんぺいとう", ""), ("G3", "02 Konpeito spill (facing)", ""), ("G4", "03 Waistband patch ちひろ note", ""),
                 ("G5", "04 Back pocket L 'haki' + 2 konpeito", ""), ("G6", "05 Back pocket R pink konpeito", ""), ("G6b", "06 Back pocket L lower yellow konpeito", ""),
-                ("G7", "07 Front-leg konpeito — PROPOSED map", ""),
+                ("G7", f"07 Front-leg trail — {len(FRONT['stars'])} konpeito + {len(FRONT['soot'])} soot sprites", ""),
                 ("C1", "Compare — coin-pocket patch", ""), ("C2", "Compare — konpeito spill", ""), ("C3", "Compare — waistband patch", ""),
-                ("C4", "Compare — back-pocket haki", ""), ("C5", "Check — 07 konpeito map vs mockup", ""), ("C6", "Compare — every konpeito vs the 02 shape", ""), ("F1", "Factory requests", "")]
-    add("T2", "Flats", T2(), "front-leg art"); add("T3", "POM", T3()); add("T4", "Pattern", T4()); add("T5", "BOM", T5(), "x")
+                ("C4", "Compare — back-pocket haki", ""), ("C5", "Check — 07 trail map vs mockup", ""), ("C6", "Compare — every konpeito vs the 02 shape", ""),
+                ("C7", "Compare — 07 soot sprites vs mockup", ""), ("F1", "Factory requests", ""), ("Q1", "Founder decisions + open questions", "")]
+    add("T2", "Flats", T2()); add("T3", "POM", T3()); add("T4", "Pattern", T4()); add("T5", "BOM", T5(), "x")
     add("T6", "Construction", T6(), "x"); add("T7", "Labels", T7(), "x"); add("T7b", "Label artwork", T7b()); add("T8", "Placement", T8())
     add("G1", "Embroidery summary", G1())
     SV = "digitised from the founder's vector art (inputs/svg, 16 Oct clean art, true size)"
@@ -944,7 +984,7 @@ def build():
                                     "Embroider the cut pocket before hemming / attaching; tearaway."], ref_label="B · MOCKUP (placement + colour only; shape = the 02 konpeito, founder 20 Oct)"))
     add("G6", "Stars", element_page("G6", "starP", "05", "Back pocket R — pink konpeito (06: page G6b)", "wearer's RIGHT back pocket (image right on the back view)", "direct embroidery", RB["starP"]["file"],
                                     "inputs/back_pocket_haki.png", (1040, 370, 1180, 520),
-                                    [f"05: centre {STARP_POS[0]:.0f} mm in from the outer edge, {STARP_POS[1]:.0f} mm below the top edge (mockup ~8 mm in; moved {STARP_POS[0] - 8:.0f} mm inward to clear the outer topstitch).",
+                                    [f"05: centre {STARP_POS[0]:.0f} mm in from the outer edge, {STARP_POS[1]:.0f} mm below the top edge (mockup ~8 mm in; moved {STARP_POS[0] - 8:.0f} mm inward to clear the outer topstitch; move CONFIRMED by the founder 21 Oct).",
                                      "Konpeito: the 02 facing konpeito (founder change 20 Oct: every konpeito on the jean = the 02 shape, inputs/svg/HAKI_facing_konpeito_ART.svg front row), 10 mm; digitised exactly as 02: one satin per lobe along its axis, tint lobes on top, 3 white Ø0.9 bead specks (white thread added). Replaces the Rev B 5-point star."], ref_label="B · MOCKUP (placement + colour only; shape = the 02 konpeito, founder 20 Oct)"))
     # PR #34 review item 2: 06 gets its own full element page (preview, D stitch check, E A14 + position + A15), as 04 / 05
     add("G6b", "Star 06", element_page("G6b", "starY", "06", "Back pocket L — lower yellow konpeito", "wearer's LEFT back pocket, lower outer corner (image left on the back view)", "direct embroidery", RB["starY"]["file"],
@@ -960,12 +1000,14 @@ def build():
     add("C4", "Compare haki", compare_page("C4", "back-pocket-haki", "04 back-pocket haki group"))
     add("C5", "Check 07", C5())
     add("C6", "Compare konpeito", compare_page("C6", "konpeito", "every konpeito (04 / 05 / 06 / 07a / 07b) vs the 02 shape", "Founder change 20 Oct: every konpeito on the jean = the 02 facing konpeito. Left of each pair: the founder's 02 candy paths placed + recoloured (cairosvg); right: the shipped DST. A14 per konpeito: IoU >= 0.70 AND outline p90 <= 0.7 mm."))
+    add("C7", "Compare soot", compare_page("C7", "soot", "07 soot sprites vs the garment mockup", "Founder 21 Oct (J5): the soot sprites are kept. Left: the garment mockup (low-res, ~1 mm per px); right: stitch preview from the shipped 07a / 07b DST, same scale. Gate per sprite: centre, cover, 2 eyes (kjsoot.py)."))
     PAGES.append(("F1", "Factory requests", F1(), ""))
+    add("Q1", "Decisions", Q1())
     # cover flags come from each page's actual content: a page is flagged when it carries a "[MISSING — …]" box
     import re
     # cover flags: what Haki still owes, per page; every flagged page must carry a [MISSING] mark and no other page may
-    FLAGS = {"T2": "front-leg artwork", "T5": "label + hang tag art; packing design; barcodes", "T7": "main, care + hang tag art",
-             "T7b": "main + care label art", "T8": "front-leg artwork", "G7": "front-leg artwork"}
+    FLAGS = {"T5": "label + hang tag art; packing design; barcodes", "T7": "main, care + hang tag art",
+             "T7b": "main + care label art"}
     has = {pid for pid, _, svg, _ in PAGES if "[MISSING]" in svg}
     assert has == set(FLAGS), f"[MISSING] marks on {sorted(has)} vs cover flags {sorted(FLAGS)}"
     state = {pid: [FLAGS[pid]] for pid in FLAGS}
@@ -1027,9 +1069,6 @@ def package(final):
             sv = art_svg(vis, K.FILES[k][1], b[2] - b[0] + 2, b[3] - b[1] + 2, b[0] - 1, b[1] - 1)
             open(f"{d}/ART.svg", "w").write(sv)
             cairosvg.svg2png(bytestring=sv.encode(), write_to=f"{d}/ART.png", output_width=int((b[2] - b[0] + 2) * 20))
-        if "PROPOSED" in stem:
-            open(f"{d}/PROPOSED_README.txt", "w").write("PROPOSED placeholder: konpeito (02 shape) at the mockup candy positions (G7, check C5). Front-leg artwork: to follow [MISSING];\n"
-                                                         "replace this file when it arrives. Positions: G7 konpeito table (x from side seam, y from waistband top, size 32).\n")
     for pid, title, svg, miss in PAGES:
         if pid.startswith("G"): shutil.copy(f"{OUT}/{pid}.pdf", f"{pkg}/elements/SPEC_{pid}.pdf")
     import kjlabels
@@ -1061,8 +1100,9 @@ pants (T5-T7b); same fit + construction as HI: no back yoke, regular 2-piece wai
 Measurements not on the HI chart (back rise, thigh, knee, outseam): factory to fill in from its HI spec/pattern and return
 with the fit sample (T3, T4, F1).
 Legend: [proposed - confirm] = for the FACTORY to confirm or correct; [MISSING] = Haki still owes it.
-PROPOSED: 07a/07b front-leg konpeito (positions from the mockup, G7 / C5).
-MISSING (to follow from Haki): front-leg artwork, main + care label artwork, hang tag artwork, packing design,
+07a/07b front-leg trail = the mockup (founder 21 Oct): """ + f"{len(FRONT['stars'])} konpeito + {len(FRONT['soot'])} soot sprites" + """, positions G7 / C5, compare C7.
+Soot-sprite drawing redrawn from the low-res mockup: body size, fuzz length, legs PROPOSED - confirm on the sew-out.
+MISSING (to follow from Haki): main + care label artwork, hang tag artwork, packing design,
 barcode per size (HK code from PLM, Code 128 on the polybag sticker).
 Sew-out (strike-off) of every file on the washed production denim / patch twill before bulk.
 """
