@@ -1,7 +1,7 @@
 """Engineered jacquard sherpa: cell maps per pattern panel and size (clouds blue / cream, optional black bird).
 
-Grid: one cell = CELL mm square (finished, PROPOSED — the mill converts to its knit gauge). Clouds are traced in 2 x 2
-cell blocks (CLOUD = 2 CELL, the mockup's cloud "pixel"), the bird in single cells (its own pixel is half the clouds').
+Grid: one cell = CELL mm square (finished, PROPOSED — the mill converts to its knit gauge). Clouds and bird are traced
+per cell (Rev A traced the clouds in 2 x 2 blocks; the irregular render grid then lost the checker detail).
 The AI render's pixel grid is not regular, so the art is REDRAWN on our grid: one global phase per panel family,
 chosen to reproduce the mockup best (cell purity), then anchored on the CF line (fronts), CB (back), sleeve centre line
 (sleeves) and the hem / cuff edge (all). Cells hidden in the mockup (zip, pockets, sleeves over the body sides, the back,
@@ -16,7 +16,10 @@ from shapely import affinity
 from shapely.prepared import prep
 import pattern as PT, fleece as FL, mockmap as MM, pixels as PX
 
-CELL = 2.5; CLOUD = 2 * CELL
+CELL = 2.5
+CLOUD = CELL                       # trace grid. Rev A traced the clouds in 2 x 2 cell blocks (5 mm): the render's checker
+                                   # squares are ~5.5 mm on an IRREGULAR grid, so one global 5 mm phase lost the checker
+                                   # edges and filled the cream cut-outs (PR #28 review). Re-traced per 2.5 mm cell.
 MARGIN = 12.0                      # knit area = cut line + margin (mm) so the pattern runs into the seam allowance
 SKY, CREAM, BLACK, OUTSIDE = 0, 1, 2, 9
 TRACED, FILLED, GENERATED = 0, 1, 2
@@ -34,6 +37,17 @@ def cell_sample(x0, y0, x1, y1):
     """class fractions in a garment-mm box on the front (mockup px)"""
     px0, py0 = MM.Pinv(x0, y0); px1, py1 = MM.Pinv(x1, y1)
     return PX.frac(px0, py0, px1, py1, lab())
+
+_SPK = None
+def spark_near(x0, y0, x1, y1):
+    """any sparkle / bird pixel (+3 px rim: its anti-aliased edge reads cream) in a garment-mm box -> True.
+    The sparkles are embroidered ON the sky, so the knit under them is sky (Rev A left cream specks at their rims)."""
+    global _SPK
+    if _SPK is None:
+        from scipy import ndimage as ndi
+        _SPK = ndi.binary_dilation(np.isin(lab(), [PX.YELLOW, PX.GOLD, PX.BLACK]), iterations=3)
+    px0, py0 = MM.Pinv(x0, y0); px1, py1 = MM.Pinv(x1, y1)
+    return bool(_SPK[int(py0):int(np.ceil(py1)), int(px0):int(np.ceil(px1))].any())
 
 VIS = None
 def visible(x, y):
@@ -69,16 +83,34 @@ def trace_front_M(phase):
             if not visible(cx, cy): out[(i, j)] = None; continue
             f, v = cell_sample(sx, sy, sx + CLOUD, sy + CLOUD)
             if v < 0.5: out[(i, j)] = ("detail", None); continue
+            if spark_near(sx, sy, sx + CLOUD, sy + CLOUD): out[(i, j)] = (SKY, TRACED); continue   # sparkle rim -> sky
             # sparkles (embroidered on top) and the bird sit on sky: any sparkle / bird pixel in the cell -> sky
             out[(i, j)] = (SKY if (f[2] + f[3] + f[4] > 0.12 or f[0] >= f[1]) else CREAM, TRACED)
     return out
 
 def fill_front(tr):
-    """resolve detail cells (zip, pockets) by 2-D majority of their resolved neighbours, grown inward ring by ring
-    (FILLED), then hidden cells (sides under the sleeves) by reflecting the traced columns about the outermost traced
+    """resolve detail cells (zip, pockets) by mirroring the traced cells across the detail's edge in each row
+    (FILLED; 3 x 3 majority only for what is left), then hidden cells (sides under the sleeves) by reflecting the traced columns about the outermost traced
     column of their row (GENERATED). Returns {(i, j): (code, flag)}"""
     out = {k: v for k, v in tr.items() if v is not None and v[0] != "detail"}
     todo = {k for k, v in tr.items() if v is not None and v[0] == "detail"}
+    # detail cells (zip, pockets): MIRROR the traced cells across the nearer edge of the detail run in that row, so the
+    # cloud texture continues under the zip / pocket (Rev A grew a 3 x 3 majority inward, which smeared the rows into
+    # horizontal stripes across the zip and the pockets)
+    byrow = {}
+    for (i, j) in todo: byrow.setdefault(j, []).append(i)
+    for j, cols in byrow.items():
+        cols = sorted(cols); runs = []; a = cols[0]; p = a
+        for c in cols[1:] + [None]:
+            if c is not None and c == p + 1: p = c; continue
+            runs.append((a, p)); a = p = c
+        for a, b in runs:
+            for i in range(a, b + 1):
+                srcs = [a - 1 - (i - a), b + 1 + (b - i)]
+                if i - a > b - i: srcs = srcs[::-1]
+                for q in srcs:
+                    if (q, j) in out: out[(i, j)] = (out[(q, j)][0], FILLED); break
+        todo -= {(i, j) for i in cols if (i, j) in out}
     while todo:
         done = {}
         for (i, j) in todo:

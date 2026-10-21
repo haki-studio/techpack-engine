@@ -18,37 +18,90 @@ OUT = "out/art"; os.makedirs(OUT, exist_ok=True)
 HEX = {"yellow": "#F6E23A", "gold": "#D9A521", "black": "#231F1E"}
 NAMES = {"yellow": "Sparkle yellow", "gold": "Sparkle gold", "black": "Bird black"}
 
+GOLD_GR = 0.93                      # core-pixel g/r below this = gold (gold 0.82-0.89, yellow 0.95-1.0 on the render)
+CORE_R = 195                        # ... and red > 195: rim pixels blended with the black bird darken AND lower g/r (read gold)
+CORE_B = 110                        # core = pixels with blue < 110: the sparkle's own colour, no blue sky blended in
+
 def components():
-    """sparkles from the render: [(id, colour, px mask bbox, garment geometry polygon in FRONT coords, centroid px)]"""
-    lab = PX.labels(); m = np.isin(lab, [PX.YELLOW, PX.GOLD])
+    """sparkles from the render: [dict(colour, xs, ys, cx, cy)] one per motif.
+    Colour is decided on the CORE pixels only (blue < CORE_B): the anti-aliased rim blends the sky in, and sky raises
+    g/r, so a small gold sparkle's rim reads yellow (PR #28 review: E2 gold sparkle stitched yellow). A component whose
+    core holds BOTH colours (two touching sparkles, e.g. the yellow + gold pair on the bird's wing) is split: every
+    pixel goes to the colour of its nearest core pixel, then each colour's pixels are labelled on their own."""
+    from scipy.spatial import cKDTree
+    lab = PX.labels(); a = MM.img(); m = np.isin(lab, [PX.YELLOW, PX.GOLD])
     m = ndi.binary_closing(m, iterations=1)
     L, n = ndi.label(m); out = []
     for k in range(1, n + 1):
         ys, xs = np.nonzero(L == k)
         if len(ys) < 50: continue
         if xs.mean() < 400 and ys.mean() > 1000: continue                 # sleeve fold shading near the body side, not art
-        col = "yellow" if (lab[ys, xs] == PX.YELLOW).mean() >= 0.5 else "gold"
-        out.append(dict(k=k, colour=col, xs=xs, ys=ys, cx=float(xs.mean()), cy=float(ys.mean())))
+        p = a[ys, xs]; core = (p[:, 2] < CORE_B) & (p[:, 0] > CORE_R)
+        if core.sum() < 8: core = p[:, 2] <= np.percentile(p[:, 2], 30)
+        gold_core = (p[:, 1] / np.maximum(p[:, 0], 1)) < GOLD_GR
+        cg, cy_ = (core & gold_core).sum(), (core & ~gold_core).sum()
+        if min(cg, cy_) >= 15 and min(cg, cy_) >= 0.15 * core.sum():   # two sparkles touching: split by nearest core colour
+            ci = np.nonzero(core)[0]; _, nn = cKDTree(np.c_[xs[ci], ys[ci]]).query(np.c_[xs, ys])
+            isg = gold_core[ci][nn]
+            for col, sel in (("gold", isg), ("yellow", ~isg)):
+                sub = np.zeros_like(m); sub[ys[sel], xs[sel]] = True
+                sub = ndi.binary_opening(sub, iterations=1)             # cut the 1-2 px rim strands left on the other motif
+                Ls, ns = ndi.label(sub)
+                for kk in range(1, ns + 1):
+                    yy, xx = np.nonzero(Ls == kk)
+                    if len(yy) < 25: continue
+                    out.append(dict(k=k, colour=col, xs=xx, ys=yy, cx=float(xx.mean()), cy=float(yy.mean()), split=True))
+            continue
+        col = "gold" if cg > cy_ else "yellow"
+        out.append(dict(k=k, colour=col, xs=xs, ys=ys, cx=float(xs.mean()), cy=float(ys.mean()), split=False))
     return out
 
-def stair(xs, ys, cell, search=6):
+SPARK_CELLS = (2.5, 2.0, 1.67, 1.25)   # candidate pixel cells (mm): big sparkles use 2.5, small 4-arm ones need a finer cell
+CELL_OK = 0.85                         # the coarsest cell whose staircase reaches this IoU vs the render is used (keeps the
+                                       # big sparkles' crisp 2.5 mm pixels); otherwise the best-fitting finer cell
+
+def stair_cells(xs, ys, cells=SPARK_CELLS):
+    """best staircase over the candidate cells: the coarsest cell unless a finer one fits the render pixels clearly
+    better (a 6 mm 4-arm sparkle on a 2.5 mm grid collapses to a square; PR #28 review)"""
+    best = None
+    for c in cells:
+        g, iou, pix = stair(xs, ys, c)
+        if iou >= CELL_OK: return (g, iou, pix, c)
+        if best is None or iou > best[1]: best = (g, iou, pix, c)
+    return best
+
+SYM_TOL = 0.03      # a sparkle is drawn mirror-symmetric (both axes) when that costs <= this IoU vs the render pixels
+
+def _sym(S):
+    """cell set -> its 2-axis mirror-symmetric version: a cell is kept when >= 2 of the 4 mirror images hold it
+    (pixel-art sparkles are 4-fold symmetric; the low-res render blurs one rim pixel here and there)"""
+    I = [i for i, _ in S]; J = [j for _, j in S]; si, sj = min(I) + max(I), min(J) + max(J)
+    cand = S | {(si - i, j) for i, j in S} | {(i, sj - j) for i, j in S} | {(si - i, sj - j) for i, j in S}
+    return {(i, j) for i, j in cand if ((i, j) in S) + ((si - i, j) in S) + ((i, sj - j) in S) + ((si - i, sj - j) in S) >= 2}
+
+def stair(xs, ys, cell, search=6, sym=True):
     """pixel mask (render px) -> staircase polygon on its own fitted grid (front mm). Best phase = max IoU vs the
-    render mask (the reference is the render's own pixels)"""
+    render mask (the reference is the render's own pixels). With sym, the 2-axis symmetric staircase is used when it
+    fits the render within SYM_TOL of the plain one."""
     gx, gy = MM.P(xs + 0.5, ys + 0.5)                                     # pixel centres in mm
     pix = unary_union([box(x - MM.S / 2, y - MM.S / 2, x + MM.S / 2, y + MM.S / 2) for x, y in zip(gx, gy)]).buffer(0)
-    best = None
+    best = None; best_s = None
     x0, y0, x1, y1 = pix.bounds
+    geo = lambda S, ox, oy: unary_union([box(ox + i * cell, oy + j * cell, ox + (i + 1) * cell, oy + (j + 1) * cell) for i, j in S]).buffer(0)
     for ox in np.arange(0, cell, cell / search):
         for oy in np.arange(0, cell, cell / search):
-            cells = []
+            S = set()
             for i in range(int(math.floor((x0 - ox) / cell)), int(math.ceil((x1 - ox) / cell)) + 1):
                 for j in range(int(math.floor((y0 - oy) / cell)), int(math.ceil((y1 - oy) / cell)) + 1):
                     b = box(ox + i * cell, oy + j * cell, ox + (i + 1) * cell, oy + (j + 1) * cell)
-                    if b.intersection(pix).area >= 0.5 * b.area: cells.append(b)
-            if not cells: continue
-            g = unary_union(cells).buffer(0)
-            iou = g.intersection(pix).area / g.union(pix).area
-            if best is None or iou > best[0]: best = (iou, g, ox, oy)
+                    if b.intersection(pix).area >= 0.5 * b.area: S.add((i, j))
+            if not S: continue
+            g = geo(S, ox, oy); iou = g.intersection(pix).area / g.union(pix).area
+            if best is None or iou > best[0]: best = (iou, g)
+            if sym:
+                gs = geo(_sym(S), ox, oy); ious = gs.intersection(pix).area / gs.union(pix).area
+                if best_s is None or ious > best_s[0]: best_s = (ious, gs)
+    if best_s is not None and best_s[0] >= best[0] - SYM_TOL: best = best_s
     return best[1], best[0], pix
 
 def bird_geom():
@@ -69,14 +122,48 @@ def sleeve_xy(px, py, mt, side="L", n=500):
     tree = cKDTree(np.stack([qx[ok], qy[ok]], -1)); _, k = tree.query([px, py])
     return float(X[ok][k]), float(Y[ok][k])
 
+def family_exemplars(comps):
+    """the well-resolved sparkles (>= star_fit.SMALL_MM): their staircases made D4-symmetric = the family's drawings"""
+    import star_fit as SF
+    exs = []
+    for c in comps:
+        if (c["xs"].max() - c["xs"].min() + 1) * MM.S < SF.SMALL_MM: continue
+        g, iou, pix, cell = stair_cells(c["xs"], c["ys"]); X = SF.exemplar(g, cell)
+        if not any(x.shape == X.shape and (x == X).all() for x in exs): exs.append(X)
+    return exs
+
+def fit_motif(c, exs):
+    """big sparkle: its own staircase (stair_cells). Small sparkle (< SMALL_MM, blurred past its own pixel steps): the
+    family drawing (exemplar scaled to N cells) that best explains the BLURRED render pixels (star_fit.fit_forward)."""
+    import star_fit as SF
+    if (c["xs"].max() - c["xs"].min() + 1) * MM.S >= SF.SMALL_MM:
+        g, iou, pix, cell = stair_cells(c["xs"], c["ys"]); return g, iou, pix, cell, "own staircase"
+    _, _, pix = stair(c["xs"], c["ys"], 2.5, search=1, sym=False)
+    g, err, cell, N = SF.fit_forward(c["xs"], c["ys"], exs)
+    iou = g.intersection(pix).area / g.union(pix).area
+    return g, iou, pix, cell, f"family drawing {N}x{N} cells (blur-model rmse {err:.3f})"
+
+def ref_pixels(c, level=0.5):
+    """A14 reference of a sparkle = its render pixels that are at least half motif colour (star_fit.soft_map >= level).
+    The class labels also keep the anti-aliased rim; against the black bird that rim (yellow blended with black) reads
+    GOLD, which inflated the wing sparkle's reference to 14 x 15 mm for a ~9.5 mm sparkle (PR #28 fix round)."""
+    import star_fit as SF
+    s, (x0, y0) = SF.soft_map(c["xs"], c["ys"], pad_px=0)
+    own = np.zeros(s.shape, bool); own[c["ys"] - y0, c["xs"] - x0] = True
+    yy, xx = np.nonzero((s >= level) & own); xx = xx + x0; yy = yy + y0
+    if len(xx) < 5: xx, yy = c["xs"], c["ys"]
+    gx, gy = MM.P(xx + 0.5, yy + 0.5)
+    return unary_union([box(x - MM.S / 2, y - MM.S / 2, x + MM.S / 2, y + MM.S / 2) for x, y in zip(gx, gy)]).buffer(0)
+
 def build():
-    comps = components(); g, mt = FL.draft("M")
+    comps = components(); g, mt = FL.draft("M"); exs = family_exemplars(comps)
     files = {"E1": dict(piece="F02", desc="Sparkles, wearer's right front (beside the bird)", parts=[]),
              "E2": dict(piece="F01", desc="Sparkles, wearer's left front", parts=[]),
              "E3": dict(piece="S02", desc="Sparkles, wearer's left sleeve", parts=[])}
     report = []
     for c in comps:
-        geom, iou, pix = stair(c["xs"], c["ys"], SPARK_CELL)
+        geom, iou, pix, cell, how = fit_motif(c, exs)
+        pix = ref_pixels(c); iou = geom.intersection(pix).area / geom.union(pix).area
         fid = "E1" if c["cx"] < MM.CFX else ("E2" if c["cx"] < 1124 else "E3")
         if fid == "E3":                                                        # move the motif onto the sleeve pattern
             gc = geom.centroid; sx, sy = sleeve_xy(c["cx"], c["cy"], mt, "L")
@@ -84,7 +171,8 @@ def build():
         files[fid]["parts"].append(dict(colour=c["colour"], geom=geom, ref=pix))
         b = geom.bounds
         report.append(dict(file=fid, colour=c["colour"], render_px=[round(c["cx"]), round(c["cy"])], w_mm=round(b[2] - b[0], 1),
-                           h_mm=round(b[3] - b[1], 1), stair_iou_vs_render=round(iou, 3)))
+                           h_mm=round(b[3] - b[1], 1), stair_iou_vs_render=round(iou, 3),
+                           cell_mm=cell, drawn_as=how, split_from_touching_pair=c["split"]))
     bg, binfo = bird_geom()
     E1 = files["E1"]
     files["E1B"] = dict(piece="F02", desc="Bird + sparkles, wearer's right front (option B: bird embroidered)",

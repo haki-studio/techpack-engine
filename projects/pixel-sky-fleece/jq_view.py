@@ -10,6 +10,11 @@ def render(opt="A", size="M", bird=None):
     ph = JQ.front_phase(); fm = JQ.fill_front(JQ.trace_front_M(ph)); ff = JQ.grid_fn(fm)
     bc, _ = JQ.bird_cells()
     g, mt = FL.draft(size)
+    # body cells up to the sleeve edges (+4 px): the sleeves are drawn on top, so no white sliver is left at the seam
+    # (Rev A clipped the body at visible_body().buffer(-3) -> white slivers between body and sleeves)
+    from shapely.prepared import prep
+    from shapely.geometry import Point
+    VIS = prep(MM.visible_body().buffer(4))
     for code in ("F01", "F02"):
         P = JQ.raster_panel(code, size, ff, bird=(bc if (code == "F02" and opt == "A") else None), bird_anchor=lambda s: 0.0)
         for r in range(P["grid"].shape[0]):
@@ -20,7 +25,7 @@ def render(opt="A", size="M", bird=None):
                 x0 = (P["i0"] + c) * JQ.CELL
                 if (code == "F01") != (x0 >= 0): continue
                 if y0 > P["hem"] - 0.1 or y0 < -5: continue
-                if not JQ.visible(x0 + JQ.CELL / 2, y0 + JQ.CELL / 2): continue
+                if not VIS.contains(Point(*MM.Pinv(x0 + JQ.CELL / 2, y0 + JQ.CELL / 2))): continue
                 px0, py0 = MM.Pinv(x0, y0); px1, py1 = MM.Pinv(x0 + JQ.CELL, y0 + JQ.CELL)
                 d.rectangle([px0, py0, px1 - 0.01, py1 - 0.01], fill=JQ.COL[v])
     for code, side in (("S01", "R"), ("S02", "L")):
