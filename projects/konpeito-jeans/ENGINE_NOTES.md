@@ -146,3 +146,9 @@ Engine runs: `bench/run_{wb,coin,spill,starP,starY}_svg.yaml` -> `out/engine_m5/
    Proposed: the engine's motif tracer runs an edge pass on every silhouette and reports whole vs clipped counts.
    Check: tests/test_konpeito_gates.py::test_clipped_side_seam_candies_mapped (green: all 3 found; red: without the
    edge pass only 1; mutation EDGE_MIN_PX=99 turns it red).
+33. **dispatch: `review` then `--drain` left two reviewer sessions on one scratch worktree** (21 Oct, PR #34 round 3:
+   `dispatch.sh review konpeito-jeans 34` started c95ec030 (busy); the following `--drain` then showed a second
+   `tp-review-konpeito-jeans` f9aa136d, idle, in the same worktree, with an empty queue). A worker cannot stop it (auto
+   mode denies kill). Proposed: `launch` refuses when a session of the same name exists in any state, and `drain` never
+   starts a role/slug that already has a live session. Check: dispatch dry-run test, review + drain, gives exactly one
+   session per name in `claude agents --json`.
