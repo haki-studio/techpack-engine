@@ -180,15 +180,20 @@
    "2026-10-21T06:58:09",
    "documents",
    "Rev G built: 25 pp, G1 CN glyph as outline, tofu guard on every page, gates blocking 0"
+  ],
+  [
+   "2026-10-21T06:58:44",
+   "review",
+   "PR #38 (Rev G fix round 3)"
   ]
  ],
  "questions": [
   "Back + hood: a back design is planned - send the back view; back + hood = artwork to follow [MISSING] in Rev D.",
   "Star haze (soft glow round the badges + under the big sparkles): pending - kept as in Rev C. Keep, change or drop?"
  ],
- "stage": "documents",
- "stage_index": 6,
+ "stage": "review",
+ "stage_index": 8,
  "blocked": false,
- "updated": "2026-10-21T06:58:09",
+ "updated": "2026-10-21T06:58:44",
  "preview": "out/pages/prev_G1.png"
 }
