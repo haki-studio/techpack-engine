@@ -160,15 +160,20 @@
    "2026-10-21T06:03:44",
    "documents",
    "Rev F built: A14 gate 0 blocking (top JP star iou 0.74 on DST), 25 pp"
+  ],
+  [
+   "2026-10-21T06:05:02",
+   "review",
+   "PR #38 (Rev F fix round 2; #31 merged at Rev D)"
   ]
  ],
  "questions": [
   "Back + hood: a back design is planned - send the back view; back + hood = artwork to follow [MISSING] in Rev D.",
   "Star haze (soft glow round the badges + under the big sparkles): pending - kept as in Rev C. Keep, change or drop?"
  ],
- "stage": "documents",
- "stage_index": 6,
+ "stage": "review",
+ "stage_index": 8,
  "blocked": false,
- "updated": "2026-10-21T06:03:44",
+ "updated": "2026-10-21T06:05:02",
  "preview": "out/compare_01_jp-badge.png"
 }
