@@ -67,3 +67,13 @@ Repo root has a stray symlink `*` -> `inputs/*` (made by `source scripts/env.sh 
 | Nit E1 45x59 vs 45x60 | placement line reads the DST size (gates_fl.json) like the G1 table. |
 Numbers: band agreement 92.2 % (Rev C 92.4), front 96.8 %, sleeves 94.5 %. Stitch files unchanged (E1 1,019 / E2 3,729 / E3 1,953 / E1B 7,872). 274 tests pass. ENGINE_NOTES 11.
 Dead end: 2-D majority growth for the sleeve's centre gap -> horizontal stripes (same failure as row-nearest fill).
+
+## Fix round 4 (2026-10-21, PR #28, pack Rev E)
+- Reviewer round 3: only one item left, should-fix: G4 (E3) not legible. Cause: the landscape sheet had an aspect of 1.5, but the G-page box is 273 × 104 mm (aspect 2.6), so the sheet was height-limited at about 0.05 mm/px and its 22 px text printed at about 3 pt.
+- Fix in `compare.py`: the E3 sheet is now 3566 × 1112 px.
+  - Mockup and preview share one lower scale (about 9.7 px/mm).
+  - The mockup is cropped to the sparkle run.
+  - The 4 zooms sit in one row at 560 px.
+  - The DST line and the gate table use 30 px text, which prints at about 2.3 mm. That is larger than G5's.
+- Stitch files and gates are unchanged. Rev E small PDF: 17 pages, 3.3 MB. Zip: 12.0 MB.
+- pytest has to run in the `scripts/env.sh` venv (`~/.venvs/techpack-grand-line`); system python3 has no shapely, which explains the reviewer's 20 collection errors.

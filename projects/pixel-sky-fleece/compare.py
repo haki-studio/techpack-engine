@@ -7,8 +7,8 @@ import mockmap as MM, dstlive, jacquard as JQ, pixels as PX
 
 SKY_HEX = "#80AEF7"
 COLS = {"yellow": "#F6E23A", "gold": "#D9A521", "black": "#231F1E"}
-try: FONT = ImageFont.truetype("DejaVuSans-Bold.ttf", 28); FS = ImageFont.truetype("DejaVuSans.ttf", 22)
-except Exception: FONT = FS = ImageFont.load_default()
+try: FONT = ImageFont.truetype("DejaVuSans-Bold.ttf", 28); FS = ImageFont.truetype("DejaVuSans.ttf", 22); FSB = ImageFont.truetype("DejaVuSans.ttf", 30)
+except Exception: FONT = FS = FSB = ImageFont.load_default()
 
 def mock_crop(b, ppm):
     """garment-mm box on the FRONT -> mockup crop resampled to ppm px/mm"""
@@ -28,7 +28,7 @@ def label(im, s, sub=""):
     W, H = im.size; out = Image.new("RGB", (W, H + 62), "white"); out.paste(im, (0, 62)); d = ImageDraw.Draw(out)
     d.text((6, 4), s, fill=(20, 20, 20), font=FONT); d.text((6, 36), sub, fill=(90, 90, 90), font=FS); return out
 
-def gate_table(G, width):
+def gate_table(G, width, fs=None):
     """the file's gate results as a text strip (gates_fl.json), for the compare sheet"""
     rows = [(G["motifs_pass"] == G["motifs_n"], f"A14 shape {G['motifs_pass']}/{G['motifs_n']} motifs (min IoU {min(m['iou'] for m in G['motifs']):.2f})"),
             (G["colour_ok"], f"colour {sum(c['ok'] for c in G['colour'])}/{len(G['colour'])} motifs sewn in the render's colour"),
@@ -37,11 +37,12 @@ def gate_table(G, width):
             (G["direction"]["ok"], f"A16/A17 chaos {G['direction']['chaos_tiles']}/{G['direction']['tiles']} tiles; vs reference: not judged (no close-up)"),
             (not G["exposed_035"], f"exposed stitches @0.35: {len(G['exposed_035'])}")]
     nc = 2 if width >= 1800 else 1                    # one column on a narrow strip (round 3: G4's two columns overlapped)
-    H = 40 + 34 * ((len(rows) + nc - 1) // nc); im = Image.new("RGB", (width, H), "white"); d = ImageDraw.Draw(im)
+    fs = fs or FS; lh = 34 if fs is FS else 44
+    H = 40 + lh * ((len(rows) + nc - 1) // nc); im = Image.new("RGB", (width, H), "white"); d = ImageDraw.Draw(im)
     d.text((6, 4), "FILE GATES (gates_fl.json)", fill=(20, 20, 20), font=FONT)
     for k, (ok, s) in enumerate(rows):
-        x = 6 + (k % nc) * (width // nc); y = 40 + (k // nc) * 34
-        d.text((x, y), ("PASS  " if ok else "FAIL  ") + s, fill=(30, 130, 60) if ok else (200, 30, 30), font=FS)
+        x = 6 + (k % nc) * (width // nc); y = 40 + (k // nc) * lh
+        d.text((x, y), ("PASS  " if ok else "FAIL  ") + s, fill=(30, 130, 60) if ok else (200, 30, 30), font=fs)
     return im
 
 def hcat(ims, gap=16):
@@ -76,16 +77,20 @@ def element(F, title):
     else:
         # sleeve: motifs were moved onto the sleeve pattern one by one (centroids via mockmap.sleeve_to_img), so the render
         # crop is shown at the same mm scale next to the file; zooms pair each motif with its own render pixels
-        bpx = (1225, 650, 1340, 890); mk = mock_crop_px(bpx, ppm)
-        top = hcat([label(mk, f"MOCKUP {title}", "sleeve front half as seen (foreshortened)"), label(st, f"STITCH PREVIEW {F} (sleeve pattern coords)", sub)])
+        # round 4: G4 fits the sheet into a 273 x 104 mm box (aspect 2.6). The sleeve file is tall (45 x 92 mm), so the
+        # sheet is laid out WIDE (round 4: zooms 560 px, gate text 30 px, mockup cropped to the sparkle run): mockup + preview at one shared, lower scale (height ~1050 px), the 4 motif zooms in ONE
+        # row and the gate table under them -> ~3000 x 1150 px, width-limited on the page like G2/G3/G5 (text >= 2 mm).
+        ppm = min(ppm, 1050 / (b[3] - b[1])); st = live(F, b, ppm, so, org, stops)
+        bpx = (1225, 715, 1340, 895); mk = mock_crop_px(bpx, ppm)
+        left = hcat([label(mk, f"MOCKUP {title}", "sleeve front half (foreshortened)"),
+                     label(st, f"STITCH PREVIEW {F}", "sleeve pattern coords, same scale")])
         zooms = []
         for col, geom, ref in art[F]:
-            g = geom.bounds; zb = (g[0] - 4, g[1] - 4, g[2] + 4, g[3] + 4); zp = min(28.0, 620 / max(zb[2] - zb[0], zb[3] - zb[1]))
+            g = geom.bounds; zb = (g[0] - 4, g[1] - 4, g[2] + 4, g[3] + 4); zp = min(28.0, 560 / max(zb[2] - zb[0], zb[3] - zb[1]))
             zooms.append(label(live(F, zb, zp, so, org, stops), "stitches", f"{col} · {zb[2]-zb[0]:.0f} mm wide"))
-        # landscape (round 3): the sleeve file is tall (45 x 92 mm), so a stacked sheet came out portrait and G4 shrank it
-        # to a small block. Mockup + preview left, zooms 2 x 2 + gate table right -> same aspect as the other G pages.
-        z = vcat([hcat(zooms[k:k + 2], 24) for k in range(0, len(zooms), 2)], 24)
-        out = hcat([top, vcat([z, gate_table(G, z.size[0])])], 40)
+        z = hcat(zooms, 24)
+        info = Image.new("RGB", (z.size[0], 48), "white"); ImageDraw.Draw(info).text((6, 6), "DST read-back: " + sub, fill=(20, 20, 20), font=FSB)
+        out = hcat([left, vcat([z, info, gate_table(G, z.size[0], FSB)])], 40)
     out.save(f"out/compare_{F}.png"); return out
 
 def jacquard_sheet():

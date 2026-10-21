@@ -2,7 +2,7 @@
 import os, shutil, subprocess, json, glob
 from pypdf import PdfReader, PdfWriter
 
-STYLE = "HK-FL-PIXSKY"; REV = "RevD"; OUT = "out"
+STYLE = "HK-FL-PIXSKY"; REV = "RevE"; OUT = "out"
 src = f"{OUT}/HAKI_{STYLE}_TECHPACK_{REV}.pdf"; dst = f"{OUT}/HAKI_{STYLE}_TECHPACK_{REV}_small.pdf"
 w = PdfWriter(clone_from=src)
 for page in w.pages:

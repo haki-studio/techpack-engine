@@ -9,7 +9,7 @@ from sheet import t, doc, INK, MUTED, RED, GREEN, ORANGE, SW, SH, embed
 import factory, tech, readback
 import fleece as FL, pattern as PT, pattern_draw as PD
 
-STYLE = "HK-FL-PIXSKY"; REV = "Rev D"; DATE = "21 Oct 2026"; NAME = "Pixel Sky sherpa fleece jacket"
+STYLE = "HK-FL-PIXSKY"; REV = "Rev E"; DATE = "21 Oct 2026"; NAME = "Pixel Sky sherpa fleece jacket"
 SHT.FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · {REV} · {DATE}"
 PROP = "#8A5A00"; ALT = "#F5F2EC"
 OUT = "out"; PG = f"{OUT}/pages"; os.makedirs(PG, exist_ok=True)
