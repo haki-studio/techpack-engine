@@ -1,0 +1,2889 @@
+{
+ "_doc": "Pro reference profile (engine/proprofile.py, docs/PRO_REFERENCE.md). Derived numbers only: the 10 licensed designs are read from PRO_REF_DIR, never committed. PROVISIONAL: 10 designs, one digitiser; re-run when the reference set reaches ~50 files.",
+ "method": {
+  "cell_mm": 0.5,
+  "turn_deg": 60.0,
+  "anti_deg": 30.0,
+  "gap": [
+   0.08,
+   3.0
+  ],
+  "connector_mm": 0.6,
+  "min_rows": 3,
+  "satin_spr": 1.35,
+  "open_spacing": 0.9,
+  "under_frac": 0.8
+ },
+ "pro_files": [
+  "A-0661",
+  "A-0698",
+  "C-3078",
+  "D-4015",
+  "D-4058",
+  "D-4063",
+  "E-4816",
+  "E-5045",
+  "E-5056",
+  "F-5643"
+ ],
+ "summary": {
+  "stitches / cm2 covered": {
+   "unit": "st/cm2",
+   "n": 10,
+   "median": 482.6,
+   "p10": 365.84,
+   "p90": 512.02,
+   "min": 356.3,
+   "max": 639.1
+  },
+  "stitches / cm2 of bounding box": {
+   "unit": "st/cm2",
+   "n": 10,
+   "median": 307.5,
+   "p10": 191.76,
+   "p90": 367.0,
+   "min": 181.5,
+   "max": 416.5
+  },
+  "covered / bounding box": {
+   "unit": "",
+   "n": 10,
+   "median": 0.649,
+   "p10": 0.532,
+   "p90": 0.761,
+   "min": 0.495,
+   "max": 0.848
+  },
+  "thread mm per mm2 covered": {
+   "unit": "mm/mm2",
+   "n": 10,
+   "median": 9.519,
+   "p10": 8.063,
+   "p90": 11.626,
+   "min": 7.226,
+   "max": 12.776
+  },
+  "D mean layer depth (all objects)": {
+   "unit": "layers",
+   "n": 10,
+   "median": 3.571,
+   "p10": 2.899,
+   "p90": 4.082,
+   "min": 2.453,
+   "max": 4.409
+  },
+  "rho thread per layer area": {
+   "unit": "mm/mm2",
+   "n": 10,
+   "median": 2.804,
+   "p10": 2.559,
+   "p90": 3.048,
+   "min": 2.211,
+   "max": 3.185
+  },
+  "L mean stitch length": {
+   "unit": "mm",
+   "n": 10,
+   "median": 2.104,
+   "p10": 1.918,
+   "p90": 2.331,
+   "min": 1.856,
+   "max": 2.385
+  },
+  "area 1 layer deep (all objects)": {
+   "unit": "share",
+   "n": 10,
+   "median": 0.079,
+   "p10": 0.049,
+   "p90": 0.216,
+   "min": 0.045,
+   "max": 0.243
+  },
+  "area 3+ layers deep (all objects)": {
+   "unit": "share",
+   "n": 10,
+   "median": 0.713,
+   "p10": 0.566,
+   "p90": 0.83,
+   "min": 0.408,
+   "max": 0.832
+  },
+  "mean depth of dense top layers": {
+   "unit": "layers",
+   "n": 10,
+   "median": 2.251,
+   "p10": 1.827,
+   "p90": 2.857,
+   "min": 1.69,
+   "max": 3.02
+  },
+  "dense top 2+ deep": {
+   "unit": "share",
+   "n": 10,
+   "median": 0.739,
+   "p10": 0.562,
+   "p90": 0.83,
+   "min": 0.533,
+   "max": 0.917
+  },
+  "satin share of stitches": {
+   "unit": "share",
+   "n": 10,
+   "median": 0.293,
+   "p10": 0.21,
+   "p90": 0.375,
+   "min": 0.186,
+   "max": 0.454
+  },
+  "fill share of stitches": {
+   "unit": "share",
+   "n": 10,
+   "median": 0.45,
+   "p10": 0.382,
+   "p90": 0.513,
+   "min": 0.309,
+   "max": 0.568
+  },
+  "run share of stitches": {
+   "unit": "share",
+   "n": 10,
+   "median": 0.103,
+   "p10": 0.047,
+   "p90": 0.209,
+   "min": 0.036,
+   "max": 0.278
+  },
+  "underlay share of stitches": {
+   "unit": "share",
+   "n": 10,
+   "median": 0.121,
+   "p10": 0.105,
+   "p90": 0.188,
+   "min": 0.102,
+   "max": 0.188
+  },
+  "fill row spacing (median)": {
+   "unit": "mm",
+   "n": 10,
+   "median": 0.215,
+   "p10": 0.198,
+   "p90": 0.247,
+   "min": 0.198,
+   "max": 0.25
+  },
+  "fill stitch length (median)": {
+   "unit": "mm",
+   "n": 10,
+   "median": 2.621,
+   "p10": 2.256,
+   "p90": 3.21,
+   "min": 2.214,
+   "max": 3.302
+  },
+  "satin width (median)": {
+   "unit": "mm",
+   "n": 10,
+   "median": 1.65,
+   "p10": 1.341,
+   "p90": 2.001,
+   "min": 1.17,
+   "max": 2.088
+  },
+  "satin row step (median)": {
+   "unit": "mm",
+   "n": 10,
+   "median": 0.229,
+   "p10": 0.192,
+   "p90": 0.249,
+   "min": 0.179,
+   "max": 0.259
+  },
+  "satin same-side spacing (median)": {
+   "unit": "mm",
+   "n": 10,
+   "median": 0.458,
+   "p10": 0.383,
+   "p90": 0.498,
+   "min": 0.359,
+   "max": 0.517
+  },
+  "run stitch length (median)": {
+   "unit": "mm",
+   "n": 10,
+   "median": 1.237,
+   "p10": 1.116,
+   "p90": 1.421,
+   "min": 1.005,
+   "max": 1.531
+  },
+  "max stitch": {
+   "unit": "mm",
+   "n": 10,
+   "median": 7.615,
+   "p10": 5.708,
+   "p90": 8.69,
+   "min": 5.6,
+   "max": 10.4
+  },
+  "satin width p5 (smallest columns)": {
+   "unit": "mm",
+   "n": 10,
+   "median": 0.98,
+   "p10": 0.849,
+   "p90": 1.186,
+   "min": 0.75,
+   "max": 1.33
+  },
+  "smallest dense object": {
+   "unit": "mm2",
+   "n": 10,
+   "median": 1.0,
+   "p10": 0.5,
+   "p90": 1.25,
+   "min": 0.5,
+   "max": 1.25
+  },
+  "satin-on-fill overlap (median)": {
+   "unit": "mm",
+   "n": 10,
+   "median": 1.188,
+   "p10": 1.038,
+   "p90": 1.375,
+   "min": 1.0,
+   "max": 1.379
+  },
+  "fill-on-fill overlap (median)": {
+   "unit": "mm",
+   "n": 10,
+   "median": 1.31,
+   "p10": 1.069,
+   "p90": 2.165,
+   "min": 1.0,
+   "max": 2.367
+  },
+  "trims / 100 cm2 covered": {
+   "unit": "",
+   "n": 10,
+   "median": 31.45,
+   "p10": 6.09,
+   "p90": 52.52,
+   "min": 5.1,
+   "max": 69.8
+  },
+  "objects / cm2 covered": {
+   "unit": "",
+   "n": 10,
+   "median": 11.79,
+   "p10": 9.799,
+   "p90": 19.424,
+   "min": 6.73,
+   "max": 24.68
+  },
+  "stitches per colour block (median)": {
+   "unit": "st",
+   "n": 10,
+   "median": 1044.25,
+   "p10": 506.6,
+   "p90": 2084.85,
+   "min": 440.0,
+   "max": 4014.0
+  },
+  "classifier confidence": {
+   "unit": "",
+   "n": 10,
+   "median": 0.903,
+   "p10": 0.837,
+   "p90": 0.931,
+   "min": 0.833,
+   "max": 0.958
+  }
+ },
+ "pro": {
+  "A-0661": {
+   "name": "A-0661",
+   "stitches": 14657,
+   "stitches_file": 14714,
+   "size_mm": [
+    76.6,
+    63.0
+   ],
+   "covered_cm2": 30.07,
+   "bbox_cm2": 48.26,
+   "cover_of_bbox": 0.623,
+   "st_per_cm2_covered": 487.5,
+   "st_per_cm2_bbox": 303.7,
+   "thread_m": 34.1,
+   "thread_mm_per_mm2": 11.331,
+   "decomposition": {
+    "D_mean_depth": 3.558,
+    "rho_thread_per_layer_mm2": 3.185,
+    "L_mean_stitch_mm": 2.325,
+    "check": 487.5
+   },
+   "depth_by_class": {
+    "satin": 1.373,
+    "fill": 1.032,
+    "run": 0.15,
+    "underlay": 1.002
+   },
+   "stitch_len_by_class": {
+    "satin": 2.43,
+    "fill": 2.63,
+    "run": 1.42,
+    "underlay": 1.8
+   },
+   "open_fill_share": 0.0,
+   "depth_all": {
+    "1": 0.0614,
+    "2": 0.1784,
+    "3": 0.2794,
+    "4+": 0.4808
+   },
+   "depth_top": {
+    "1": 0.1793,
+    "2": 0.4088,
+    "3+": 0.4119
+   },
+   "mean_depth_top": 2.411,
+   "class_share": {
+    "satin": 0.454,
+    "fill": 0.3095,
+    "run": 0.0484,
+    "underlay": 0.1881
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 6654,
+     "area_cm2": 21.63,
+     "st_per_cm2": 307.7
+    },
+    "fill": {
+     "stitches": 4536,
+     "area_cm2": 19.46,
+     "st_per_cm2": 233.1
+    },
+    "run": {
+     "stitches": 710,
+     "area_cm2": 4.27,
+     "st_per_cm2": 166.2
+    },
+    "underlay": {
+     "stitches": 2757,
+     "area_cm2": 21.68,
+     "st_per_cm2": 127.2
+    }
+   },
+   "classifier_conf": 0.909,
+   "fill_spacing": {
+    "n": 44,
+    "median": 0.198,
+    "p10": 0.186,
+    "p90": 0.445
+   },
+   "fill_stitch_len": {
+    "n": 44,
+    "median": 3.036,
+    "p10": 1.9,
+    "p90": 3.992
+   },
+   "fill_angle_count": 9,
+   "satin_width": {
+    "n": 254,
+    "median": 2.088,
+    "p10": 1.4,
+    "p90": 3.63
+   },
+   "satin_spacing": {
+    "n": 254,
+    "median": 0.179,
+    "p10": 0.158,
+    "p90": 0.288
+   },
+   "satin_same_side": {
+    "n": 254,
+    "median": 0.359,
+    "p10": 0.315,
+    "p90": 0.576
+   },
+   "run_stitch_len": {
+    "n": 59,
+    "median": 1.409,
+    "p10": 0.815,
+    "p90": 1.598
+   },
+   "stitch_len": {
+    "n": 14657,
+    "median": 2.012,
+    "p10": 0.985,
+    "p90": 3.992,
+    "min": 0.283,
+    "max": 8.5
+   },
+   "max_stitch": 8.5,
+   "underlay_share": 0.1881,
+   "smallest": {
+    "satin_width_p5": 1.33,
+    "satin_width_min": 1.03,
+    "fill_area_min_mm2": 2.2,
+    "fill_area_p10_mm2": 7.2,
+    "element_min_mm2": 1.25
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 183,
+     "median": 1.267,
+     "p10": 1.0,
+     "p90": 2.107,
+     "min": 1.0,
+     "max": 4.702
+    },
+    "fill_on_fill": {
+     "n": 31,
+     "median": 1.182,
+     "p10": 1.0,
+     "p90": 3.962,
+     "min": 1.0,
+     "max": 7.408
+    }
+   },
+   "trims": 21,
+   "jumps": 95,
+   "colour_blocks": 8,
+   "colours_distinct": 4,
+   "trims_per_100cm2": 69.8,
+   "stitches_per_block": {
+    "n": 8,
+    "median": 1461.0,
+    "p10": 99.9,
+    "p90": 3725.4,
+    "min": 81.0,
+    "max": 5411.0
+   },
+   "objects": 528,
+   "objects_per_cm2": 11.87,
+   "sequencing": {
+    "biggest_block_index": 0,
+    "blocks": 8,
+    "area_vs_order_rho": -0.52,
+    "centre_out_rho_median": -0.29,
+    "last_block_satin_run_share": 0.99,
+    "last_block_area_share": 0.007
+   },
+   "sha256_16": "da8aed5cb910663d"
+  },
+  "A-0698": {
+   "name": "A-0698",
+   "stitches": 36191,
+   "stitches_file": 36304,
+   "size_mm": [
+    88.6,
+    113.0
+   ],
+   "covered_cm2": 84.94,
+   "bbox_cm2": 100.12,
+   "cover_of_bbox": 0.848,
+   "st_per_cm2_covered": 426.1,
+   "st_per_cm2_bbox": 361.5,
+   "thread_m": 82.7,
+   "thread_mm_per_mm2": 9.742,
+   "decomposition": {
+    "D_mean_depth": 3.75,
+    "rho_thread_per_layer_mm2": 2.598,
+    "L_mean_stitch_mm": 2.286,
+    "check": 426.1
+   },
+   "depth_by_class": {
+    "satin": 0.549,
+    "fill": 2.292,
+    "run": 0.106,
+    "underlay": 0.804
+   },
+   "stitch_len_by_class": {
+    "satin": 1.8,
+    "fill": 2.67,
+    "run": 1.3,
+    "underlay": 1.88
+   },
+   "open_fill_share": 0.0,
+   "depth_all": {
+    "1": 0.2135,
+    "2": 0.1215,
+    "3": 0.0998,
+    "4+": 0.5651
+   },
+   "depth_top": {
+    "1": 0.2224,
+    "2": 0.193,
+    "3+": 0.5846
+   },
+   "mean_depth_top": 2.839,
+   "class_share": {
+    "satin": 0.259,
+    "fill": 0.5682,
+    "run": 0.036,
+    "underlay": 0.1367
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 9374,
+     "area_cm2": 34.41,
+     "st_per_cm2": 272.4
+    },
+    "fill": {
+     "stitches": 20565,
+     "area_cm2": 84.68,
+     "st_per_cm2": 242.9
+    },
+    "run": {
+     "stitches": 1304,
+     "area_cm2": 7.92,
+     "st_per_cm2": 164.6
+    },
+    "underlay": {
+     "stitches": 4948,
+     "area_cm2": 48.47,
+     "st_per_cm2": 102.1
+    }
+   },
+   "classifier_conf": 0.958,
+   "fill_spacing": {
+    "n": 129,
+    "median": 0.198,
+    "p10": 0.187,
+    "p90": 0.649
+   },
+   "fill_stitch_len": {
+    "n": 129,
+    "median": 2.47,
+    "p10": 2.11,
+    "p90": 3.956
+   },
+   "fill_angle_count": 11,
+   "satin_width": {
+    "n": 316,
+    "median": 1.6,
+    "p10": 1.118,
+    "p90": 2.458
+   },
+   "satin_spacing": {
+    "n": 316,
+    "median": 0.206,
+    "p10": 0.188,
+    "p90": 0.239
+   },
+   "satin_same_side": {
+    "n": 316,
+    "median": 0.412,
+    "p10": 0.375,
+    "p90": 0.477
+   },
+   "run_stitch_len": {
+    "n": 127,
+    "median": 1.345,
+    "p10": 0.671,
+    "p90": 2.025
+   },
+   "stitch_len": {
+    "n": 36191,
+    "median": 2.119,
+    "p10": 0.894,
+    "p90": 4.0,
+    "min": 0.283,
+    "max": 8.078
+   },
+   "max_stitch": 8.08,
+   "underlay_share": 0.1367,
+   "smallest": {
+    "satin_width_p5": 0.86,
+    "satin_width_min": 0.77,
+    "fill_area_min_mm2": 2.8,
+    "fill_area_p10_mm2": 7.9,
+    "element_min_mm2": 1.0
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 331,
+     "median": 1.3,
+     "p10": 1.0,
+     "p90": 2.066,
+     "min": 1.0,
+     "max": 5.778
+    },
+    "fill_on_fill": {
+     "n": 171,
+     "median": 2.143,
+     "p10": 1.0,
+     "p90": 4.852,
+     "min": 1.0,
+     "max": 20.0
+    }
+   },
+   "trims": 43,
+   "jumps": 241,
+   "colour_blocks": 15,
+   "colours_distinct": 13,
+   "trims_per_100cm2": 50.6,
+   "stitches_per_block": {
+    "n": 15,
+    "median": 1309.0,
+    "p10": 487.0,
+    "p90": 5439.4,
+    "min": 66.0,
+    "max": 6176.0
+   },
+   "objects": 875,
+   "objects_per_cm2": 6.73,
+   "sequencing": {
+    "biggest_block_index": 0,
+    "blocks": 15,
+    "area_vs_order_rho": 0.0,
+    "centre_out_rho_median": 0.13,
+    "last_block_satin_run_share": 0.82,
+    "last_block_area_share": 0.059
+   },
+   "sha256_16": "8522b8d39a6f375c"
+  },
+  "C-3078": {
+   "name": "C-3078",
+   "stitches": 7009,
+   "stitches_file": 7029,
+   "size_mm": [
+    47.2,
+    77.0
+   ],
+   "covered_cm2": 19.67,
+   "bbox_cm2": 36.34,
+   "cover_of_bbox": 0.541,
+   "st_per_cm2_covered": 356.3,
+   "st_per_cm2_bbox": 192.9,
+   "thread_m": 16.0,
+   "thread_mm_per_mm2": 8.156,
+   "decomposition": {
+    "D_mean_depth": 2.949,
+    "rho_thread_per_layer_mm2": 2.766,
+    "L_mean_stitch_mm": 2.289,
+    "check": 356.3
+   },
+   "depth_by_class": {
+    "satin": 0.739,
+    "fill": 1.204,
+    "run": 0.57,
+    "underlay": 0.435
+   },
+   "stitch_len_by_class": {
+    "satin": 2.2,
+    "fill": 2.84,
+    "run": 1.54,
+    "underlay": 1.91
+   },
+   "open_fill_share": 0.0108,
+   "depth_all": {
+    "1": 0.1064,
+    "2": 0.3103,
+    "3": 0.2849,
+    "4+": 0.2984
+   },
+   "depth_top": {
+    "1": 0.3355,
+    "2": 0.4561,
+    "3+": 0.2083
+   },
+   "mean_depth_top": 1.922,
+   "class_share": {
+    "satin": 0.2969,
+    "fill": 0.3942,
+    "run": 0.2019,
+    "underlay": 0.107
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 2081,
+     "area_cm2": 11.12,
+     "st_per_cm2": 187.1
+    },
+    "fill": {
+     "stitches": 2763,
+     "area_cm2": 14.64,
+     "st_per_cm2": 188.7
+    },
+    "run": {
+     "stitches": 1415,
+     "area_cm2": 8.93,
+     "st_per_cm2": 158.5
+    },
+    "underlay": {
+     "stitches": 750,
+     "area_cm2": 7.66,
+     "st_per_cm2": 98.0
+    }
+   },
+   "classifier_conf": 0.833,
+   "fill_spacing": {
+    "n": 41,
+    "median": 0.2,
+    "p10": 0.187,
+    "p90": 0.521
+   },
+   "fill_stitch_len": {
+    "n": 41,
+    "median": 3.2,
+    "p10": 1.783,
+    "p90": 4.201
+   },
+   "fill_angle_count": 9,
+   "satin_width": {
+    "n": 116,
+    "median": 1.879,
+    "p10": 1.17,
+    "p90": 3.741
+   },
+   "satin_spacing": {
+    "n": 116,
+    "median": 0.248,
+    "p10": 0.223,
+    "p90": 0.294
+   },
+   "satin_same_side": {
+    "n": 116,
+    "median": 0.496,
+    "p10": 0.446,
+    "p90": 0.587
+   },
+   "run_stitch_len": {
+    "n": 55,
+    "median": 1.364,
+    "p10": 0.922,
+    "p90": 2.163
+   },
+   "stitch_len": {
+    "n": 7009,
+    "median": 1.942,
+    "p10": 0.922,
+    "p90": 4.3,
+    "min": 0.361,
+    "max": 5.604
+   },
+   "max_stitch": 5.6,
+   "underlay_share": 0.107,
+   "smallest": {
+    "satin_width_p5": 1.05,
+    "satin_width_min": 0.71,
+    "fill_area_min_mm2": 3.5,
+    "fill_area_p10_mm2": 8.5,
+    "element_min_mm2": 1.0
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 78,
+     "median": 1.05,
+     "p10": 1.0,
+     "p90": 1.476,
+     "min": 1.0,
+     "max": 2.053
+    },
+    "fill_on_fill": {
+     "n": 22,
+     "median": 2.027,
+     "p10": 1.0,
+     "p90": 3.132,
+     "min": 1.0,
+     "max": 3.646
+    }
+   },
+   "trims": 1,
+   "jumps": 20,
+   "colour_blocks": 11,
+   "colours_distinct": 4,
+   "trims_per_100cm2": 5.1,
+   "stitches_per_block": {
+    "n": 11,
+    "median": 520.0,
+    "p10": 218.0,
+    "p90": 1317.0,
+    "min": 207.0,
+    "max": 1515.0
+   },
+   "objects": 300,
+   "objects_per_cm2": 11.03,
+   "sequencing": {
+    "biggest_block_index": 8,
+    "blocks": 11,
+    "area_vs_order_rho": 0.31,
+    "centre_out_rho_median": -0.08,
+    "last_block_satin_run_share": 0.82,
+    "last_block_area_share": 0.14
+   },
+   "sha256_16": "7a860d3d409b3772"
+  },
+  "D-4015": {
+   "name": "D-4015",
+   "stitches": 13616,
+   "stitches_file": 13656,
+   "size_mm": [
+    100.6,
+    42.6
+   ],
+   "covered_cm2": 28.19,
+   "bbox_cm2": 42.86,
+   "cover_of_bbox": 0.658,
+   "st_per_cm2_covered": 483.0,
+   "st_per_cm2_bbox": 317.7,
+   "thread_m": 26.2,
+   "thread_mm_per_mm2": 9.296,
+   "decomposition": {
+    "D_mean_depth": 3.066,
+    "rho_thread_per_layer_mm2": 3.033,
+    "L_mean_stitch_mm": 1.925,
+    "check": 483.0
+   },
+   "depth_by_class": {
+    "satin": 0.424,
+    "fill": 1.417,
+    "run": 0.227,
+    "underlay": 0.998
+   },
+   "stitch_len_by_class": {
+    "satin": 1.38,
+    "fill": 2.37,
+    "run": 1.18,
+    "underlay": 1.76
+   },
+   "open_fill_share": 0.0,
+   "depth_all": {
+    "1": 0.0809,
+    "2": 0.3331,
+    "3": 0.2804,
+    "4+": 0.3056
+   },
+   "depth_top": {
+    "1": 0.4353,
+    "2": 0.3586,
+    "3+": 0.2061
+   },
+   "mean_depth_top": 1.842,
+   "class_share": {
+    "satin": 0.2131,
+    "fill": 0.5068,
+    "run": 0.1051,
+    "underlay": 0.1751
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 2901,
+     "area_cm2": 9.84,
+     "st_per_cm2": 294.8
+    },
+    "fill": {
+     "stitches": 6900,
+     "area_cm2": 26.68,
+     "st_per_cm2": 258.6
+    },
+    "run": {
+     "stitches": 1431,
+     "area_cm2": 5.62,
+     "st_per_cm2": 254.4
+    },
+    "underlay": {
+     "stitches": 2384,
+     "area_cm2": 20.62,
+     "st_per_cm2": 115.6
+    }
+   },
+   "classifier_conf": 0.922,
+   "fill_spacing": {
+    "n": 107,
+    "median": 0.202,
+    "p10": 0.177,
+    "p90": 0.229
+   },
+   "fill_stitch_len": {
+    "n": 107,
+    "median": 2.555,
+    "p10": 1.7,
+    "p90": 3.992
+   },
+   "fill_angle_count": 12,
+   "satin_width": {
+    "n": 159,
+    "median": 1.17,
+    "p10": 0.847,
+    "p90": 2.503
+   },
+   "satin_spacing": {
+    "n": 159,
+    "median": 0.193,
+    "p10": 0.17,
+    "p90": 0.2
+   },
+   "satin_same_side": {
+    "n": 159,
+    "median": 0.386,
+    "p10": 0.339,
+    "p90": 0.4
+   },
+   "run_stitch_len": {
+    "n": 64,
+    "median": 1.304,
+    "p10": 0.721,
+    "p90": 1.393
+   },
+   "stitch_len": {
+    "n": 13616,
+    "median": 1.487,
+    "p10": 0.64,
+    "p90": 3.992,
+    "min": 0.316,
+    "max": 5.722
+   },
+   "max_stitch": 5.72,
+   "underlay_share": 0.1751,
+   "smallest": {
+    "satin_width_p5": 0.75,
+    "satin_width_min": 0.61,
+    "fill_area_min_mm2": 3.0,
+    "fill_area_p10_mm2": 4.5,
+    "element_min_mm2": 0.5
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 146,
+     "median": 1.042,
+     "p10": 1.0,
+     "p90": 1.563,
+     "min": 1.0,
+     "max": 2.798
+    },
+    "fill_on_fill": {
+     "n": 76,
+     "median": 1.0,
+     "p10": 1.0,
+     "p90": 1.581,
+     "min": 1.0,
+     "max": 2.484
+    }
+   },
+   "trims": 12,
+   "jumps": 105,
+   "colour_blocks": 8,
+   "colours_distinct": 4,
+   "trims_per_100cm2": 42.6,
+   "stitches_per_block": {
+    "n": 8,
+    "median": 1415.5,
+    "p10": 432.8,
+    "p90": 3277.6,
+    "min": 227.0,
+    "max": 5302.0
+   },
+   "objects": 517,
+   "objects_per_cm2": 11.71,
+   "sequencing": {
+    "biggest_block_index": 2,
+    "blocks": 8,
+    "area_vs_order_rho": -0.6,
+    "centre_out_rho_median": -0.34,
+    "last_block_satin_run_share": 0.83,
+    "last_block_area_share": 0.026
+   },
+   "sha256_16": "9010250d53a82b4a"
+  },
+  "D-4058": {
+   "name": "D-4058",
+   "stitches": 8710,
+   "stitches_file": 8754,
+   "size_mm": [
+    76.4,
+    62.8
+   ],
+   "covered_cm2": 23.74,
+   "bbox_cm2": 47.98,
+   "cover_of_bbox": 0.495,
+   "st_per_cm2_covered": 366.9,
+   "st_per_cm2_bbox": 181.5,
+   "thread_m": 17.2,
+   "thread_mm_per_mm2": 7.226,
+   "decomposition": {
+    "D_mean_depth": 2.453,
+    "rho_thread_per_layer_mm2": 2.946,
+    "L_mean_stitch_mm": 1.969,
+    "check": 366.9
+   },
+   "depth_by_class": {
+    "satin": 0.71,
+    "fill": 0.993,
+    "run": 0.31,
+    "underlay": 0.439
+   },
+   "stitch_len_by_class": {
+    "satin": 1.79,
+    "fill": 2.43,
+    "run": 1.25,
+    "underlay": 1.62
+   },
+   "open_fill_share": 0.0088,
+   "depth_all": {
+    "1": 0.2432,
+    "2": 0.3488,
+    "3": 0.2301,
+    "4+": 0.1779
+   },
+   "depth_top": {
+    "1": 0.4665,
+    "2": 0.4095,
+    "3+": 0.1239
+   },
+   "mean_depth_top": 1.69,
+   "class_share": {
+    "satin": 0.3202,
+    "fill": 0.424,
+    "run": 0.1371,
+    "underlay": 0.1187
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 2789,
+     "area_cm2": 12.08,
+     "st_per_cm2": 230.8
+    },
+    "fill": {
+     "stitches": 3693,
+     "area_cm2": 17.95,
+     "st_per_cm2": 205.7
+    },
+    "run": {
+     "stitches": 1194,
+     "area_cm2": 5.69,
+     "st_per_cm2": 209.7
+    },
+    "underlay": {
+     "stitches": 1034,
+     "area_cm2": 9.23,
+     "st_per_cm2": 112.1
+    }
+   },
+   "classifier_conf": 0.873,
+   "fill_spacing": {
+    "n": 48,
+    "median": 0.216,
+    "p10": 0.198,
+    "p90": 0.249
+   },
+   "fill_stitch_len": {
+    "n": 48,
+    "median": 2.485,
+    "p10": 1.616,
+    "p90": 3.13
+   },
+   "fill_angle_count": 11,
+   "satin_width": {
+    "n": 170,
+    "median": 1.699,
+    "p10": 1.063,
+    "p90": 2.476
+   },
+   "satin_spacing": {
+    "n": 170,
+    "median": 0.246,
+    "p10": 0.2,
+    "p90": 0.34
+   },
+   "satin_same_side": {
+    "n": 170,
+    "median": 0.492,
+    "p10": 0.4,
+    "p90": 0.681
+   },
+   "run_stitch_len": {
+    "n": 75,
+    "median": 1.128,
+    "p10": 0.906,
+    "p90": 1.769
+   },
+   "stitch_len": {
+    "n": 8710,
+    "median": 1.628,
+    "p10": 0.906,
+    "p90": 3.754,
+    "min": 0.2,
+    "max": 7.106
+   },
+   "max_stitch": 7.11,
+   "underlay_share": 0.1187,
+   "smallest": {
+    "satin_width_p5": 0.92,
+    "satin_width_min": 0.72,
+    "fill_area_min_mm2": 2.5,
+    "fill_area_p10_mm2": 5.7,
+    "element_min_mm2": 1.0
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 131,
+     "median": 1.0,
+     "p10": 1.0,
+     "p90": 1.357,
+     "min": 1.0,
+     "max": 2.368
+    },
+    "fill_on_fill": {
+     "n": 30,
+     "median": 1.142,
+     "p10": 1.0,
+     "p90": 2.353,
+     "min": 1.0,
+     "max": 6.441
+    }
+   },
+   "trims": 6,
+   "jumps": 67,
+   "colour_blocks": 18,
+   "colours_distinct": 15,
+   "trims_per_100cm2": 25.3,
+   "stitches_per_block": {
+    "n": 18,
+    "median": 440.0,
+    "p10": 134.3,
+    "p90": 924.4,
+    "min": 30.0,
+    "max": 1379.0
+   },
+   "objects": 406,
+   "objects_per_cm2": 12.39,
+   "sequencing": {
+    "biggest_block_index": 15,
+    "blocks": 18,
+    "area_vs_order_rho": 0.02,
+    "centre_out_rho_median": 0.17,
+    "last_block_satin_run_share": 0.94,
+    "last_block_area_share": 0.03
+   },
+   "sha256_16": "b085ecfa05841644"
+  },
+  "D-4063": {
+   "name": "D-4063",
+   "stitches": 36634,
+   "stitches_file": 36711,
+   "size_mm": [
+    113.6,
+    103.6
+   ],
+   "covered_cm2": 75.98,
+   "bbox_cm2": 117.69,
+   "cover_of_bbox": 0.646,
+   "st_per_cm2_covered": 482.2,
+   "st_per_cm2_bbox": 311.3,
+   "thread_m": 87.4,
+   "thread_mm_per_mm2": 11.498,
+   "decomposition": {
+    "D_mean_depth": 4.046,
+    "rho_thread_per_layer_mm2": 2.842,
+    "L_mean_stitch_mm": 2.385,
+    "check": 482.2
+   },
+   "depth_by_class": {
+    "satin": 1.128,
+    "fill": 1.891,
+    "run": 0.253,
+    "underlay": 0.774
+   },
+   "stitch_len_by_class": {
+    "satin": 2.25,
+    "fill": 2.69,
+    "run": 1.58,
+    "underlay": 1.98
+   },
+   "open_fill_share": 0.0,
+   "depth_all": {
+    "1": 0.0452,
+    "2": 0.1253,
+    "3": 0.212,
+    "4+": 0.6175
+   },
+   "depth_top": {
+    "1": 0.0834,
+    "2": 0.2535,
+    "3+": 0.6631
+   },
+   "mean_depth_top": 3.02,
+   "class_share": {
+    "satin": 0.3664,
+    "fill": 0.4687,
+    "run": 0.0631,
+    "underlay": 0.1018
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 13421,
+     "area_cm2": 53.96,
+     "st_per_cm2": 248.7
+    },
+    "fill": {
+     "stitches": 17169,
+     "area_cm2": 67.15,
+     "st_per_cm2": 255.7
+    },
+    "run": {
+     "stitches": 2313,
+     "area_cm2": 17.16,
+     "st_per_cm2": 134.8
+    },
+    "underlay": {
+     "stitches": 3731,
+     "area_cm2": 44.91,
+     "st_per_cm2": 83.1
+    }
+   },
+   "classifier_conf": 0.928,
+   "fill_spacing": {
+    "n": 127,
+    "median": 0.25,
+    "p10": 0.21,
+    "p90": 0.411
+   },
+   "fill_stitch_len": {
+    "n": 127,
+    "median": 3.302,
+    "p10": 1.834,
+    "p90": 4.0
+   },
+   "fill_angle_count": 12,
+   "satin_width": {
+    "n": 464,
+    "median": 1.991,
+    "p10": 1.111,
+    "p90": 3.662
+   },
+   "satin_spacing": {
+    "n": 464,
+    "median": 0.228,
+    "p10": 0.2,
+    "p90": 0.326
+   },
+   "satin_same_side": {
+    "n": 464,
+    "median": 0.456,
+    "p10": 0.399,
+    "p90": 0.652
+   },
+   "run_stitch_len": {
+    "n": 187,
+    "median": 1.152,
+    "p10": 0.827,
+    "p90": 3.912
+   },
+   "stitch_len": {
+    "n": 36634,
+    "median": 2.088,
+    "p10": 0.854,
+    "p90": 4.005,
+    "min": 0.3,
+    "max": 10.404
+   },
+   "max_stitch": 10.4,
+   "underlay_share": 0.1018,
+   "smallest": {
+    "satin_width_p5": 0.89,
+    "satin_width_min": 0.67,
+    "fill_area_min_mm2": 1.5,
+    "fill_area_p10_mm2": 10.0,
+    "element_min_mm2": 1.0
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 379,
+     "median": 1.375,
+     "p10": 1.0,
+     "p90": 2.59,
+     "min": 1.0,
+     "max": 5.692
+    },
+    "fill_on_fill": {
+     "n": 82,
+     "median": 2.367,
+     "p10": 1.0,
+     "p90": 5.489,
+     "min": 1.0,
+     "max": 9.341
+    }
+   },
+   "trims": 27,
+   "jumps": 186,
+   "colour_blocks": 12,
+   "colours_distinct": 9,
+   "trims_per_100cm2": 35.5,
+   "stitches_per_block": {
+    "n": 12,
+    "median": 1870.5,
+    "p10": 230.0,
+    "p90": 6796.6,
+    "min": 20.0,
+    "max": 10360.0
+   },
+   "objects": 1152,
+   "objects_per_cm2": 10.24,
+   "sequencing": {
+    "biggest_block_index": 0,
+    "blocks": 12,
+    "area_vs_order_rho": 0.0,
+    "centre_out_rho_median": 0.21,
+    "last_block_satin_run_share": 0.92,
+    "last_block_area_share": 0.003
+   },
+   "sha256_16": "5466361933ed27b7"
+  },
+  "E-4816": {
+   "name": "E-4816",
+   "stitches": 12146,
+   "stitches_file": 12165,
+   "size_mm": [
+    56.4,
+    76.6
+   ],
+   "covered_cm2": 32.45,
+   "bbox_cm2": 43.2,
+   "cover_of_bbox": 0.751,
+   "st_per_cm2_covered": 374.3,
+   "st_per_cm2_bbox": 281.1,
+   "thread_m": 26.8,
+   "thread_mm_per_mm2": 8.27,
+   "decomposition": {
+    "D_mean_depth": 3.74,
+    "rho_thread_per_layer_mm2": 2.211,
+    "L_mean_stitch_mm": 2.209,
+    "check": 374.3
+   },
+   "depth_by_class": {
+    "satin": 0.74,
+    "fill": 2.283,
+    "run": 0.258,
+    "underlay": 0.458
+   },
+   "stitch_len_by_class": {
+    "satin": 2.13,
+    "fill": 2.45,
+    "run": 1.62,
+    "underlay": 1.83
+   },
+   "open_fill_share": 0.0525,
+   "depth_all": {
+    "1": 0.0778,
+    "2": 0.1398,
+    "3": 0.2285,
+    "4+": 0.5539
+   },
+   "depth_top": {
+    "1": 0.3991,
+    "2": 0.4099,
+    "3+": 0.1911
+   },
+   "mean_depth_top": 1.854,
+   "class_share": {
+    "satin": 0.2901,
+    "fill": 0.5026,
+    "run": 0.1018,
+    "underlay": 0.1055
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 3523,
+     "area_cm2": 16.14,
+     "st_per_cm2": 218.3
+    },
+    "fill": {
+     "stitches": 6104,
+     "area_cm2": 23.81,
+     "st_per_cm2": 256.3
+    },
+    "run": {
+     "stitches": 1237,
+     "area_cm2": 6.67,
+     "st_per_cm2": 185.5
+    },
+    "underlay": {
+     "stitches": 1282,
+     "area_cm2": 13.21,
+     "st_per_cm2": 97.1
+    }
+   },
+   "classifier_conf": 0.924,
+   "fill_spacing": {
+    "n": 85,
+    "median": 0.247,
+    "p10": 0.209,
+    "p90": 0.435
+   },
+   "fill_stitch_len": {
+    "n": 85,
+    "median": 2.214,
+    "p10": 1.565,
+    "p90": 3.147
+   },
+   "fill_angle_count": 10,
+   "satin_width": {
+    "n": 153,
+    "median": 1.926,
+    "p10": 1.393,
+    "p90": 3.716
+   },
+   "satin_spacing": {
+    "n": 153,
+    "median": 0.244,
+    "p10": 0.209,
+    "p90": 0.378
+   },
+   "satin_same_side": {
+    "n": 153,
+    "median": 0.488,
+    "p10": 0.419,
+    "p90": 0.755
+   },
+   "run_stitch_len": {
+    "n": 87,
+    "median": 1.531,
+    "p10": 1.074,
+    "p90": 2.319
+   },
+   "stitch_len": {
+    "n": 12146,
+    "median": 1.873,
+    "p10": 0.922,
+    "p90": 4.123,
+    "min": 0.2,
+    "max": 8.016
+   },
+   "max_stitch": 8.02,
+   "underlay_share": 0.1055,
+   "smallest": {
+    "satin_width_p5": 1.17,
+    "satin_width_min": 1.0,
+    "fill_area_min_mm2": 2.8,
+    "fill_area_p10_mm2": 3.5,
+    "element_min_mm2": 1.25
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 81,
+     "median": 1.074,
+     "p10": 1.0,
+     "p90": 1.565,
+     "min": 1.0,
+     "max": 2.474
+    },
+    "fill_on_fill": {
+     "n": 57,
+     "median": 1.647,
+     "p10": 1.0,
+     "p90": 2.475,
+     "min": 1.0,
+     "max": 2.984
+    }
+   },
+   "trims": 2,
+   "jumps": 33,
+   "colour_blocks": 8,
+   "colours_distinct": 7,
+   "trims_per_100cm2": 6.2,
+   "stitches_per_block": {
+    "n": 8,
+    "median": 779.5,
+    "p10": 457.0,
+    "p90": 3732.5,
+    "min": 429.0,
+    "max": 4016.0
+   },
+   "objects": 462,
+   "objects_per_cm2": 10.14,
+   "sequencing": {
+    "biggest_block_index": 4,
+    "blocks": 8,
+    "area_vs_order_rho": -0.67,
+    "centre_out_rho_median": 0.06,
+    "last_block_satin_run_share": 0.8,
+    "last_block_area_share": 0.019
+   },
+   "sha256_16": "14503bac37d37a82"
+  },
+  "E-5045": {
+   "name": "E-5045",
+   "stitches": 12674,
+   "stitches_file": 12713,
+   "size_mm": [
+    57.0,
+    63.6
+   ],
+   "covered_cm2": 26.06,
+   "bbox_cm2": 36.25,
+   "cover_of_bbox": 0.719,
+   "st_per_cm2_covered": 486.3,
+   "st_per_cm2_bbox": 349.6,
+   "thread_m": 23.5,
+   "thread_mm_per_mm2": 9.026,
+   "decomposition": {
+    "D_mean_depth": 3.337,
+    "rho_thread_per_layer_mm2": 2.705,
+    "L_mean_stitch_mm": 1.856,
+    "check": 486.3
+   },
+   "depth_by_class": {
+    "satin": 0.859,
+    "fill": 1.424,
+    "run": 0.5,
+    "underlay": 0.555
+   },
+   "stitch_len_by_class": {
+    "satin": 1.51,
+    "fill": 2.46,
+    "run": 1.31,
+    "underlay": 1.55
+   },
+   "open_fill_share": 0.0043,
+   "depth_all": {
+    "1": 0.123,
+    "2": 0.2164,
+    "3": 0.2477,
+    "4+": 0.4129
+   },
+   "depth_top": {
+    "1": 0.2584,
+    "2": 0.364,
+    "3+": 0.3776
+   },
+   "mean_depth_top": 2.277,
+   "class_share": {
+    "satin": 0.3448,
+    "fill": 0.3896,
+    "run": 0.1421,
+    "underlay": 0.1235
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 4370,
+     "area_cm2": 15.15,
+     "st_per_cm2": 288.4
+    },
+    "fill": {
+     "stitches": 4938,
+     "area_cm2": 22.12,
+     "st_per_cm2": 223.2
+    },
+    "run": {
+     "stitches": 1801,
+     "area_cm2": 9.65,
+     "st_per_cm2": 186.6
+    },
+    "underlay": {
+     "stitches": 1565,
+     "area_cm2": 11.82,
+     "st_per_cm2": 132.4
+    }
+   },
+   "classifier_conf": 0.884,
+   "fill_spacing": {
+    "n": 108,
+    "median": 0.23,
+    "p10": 0.202,
+    "p90": 0.501
+   },
+   "fill_stitch_len": {
+    "n": 108,
+    "median": 2.261,
+    "p10": 1.5,
+    "p90": 3.243
+   },
+   "fill_angle_count": 12,
+   "satin_width": {
+    "n": 254,
+    "median": 1.389,
+    "p10": 1.07,
+    "p90": 2.28
+   },
+   "satin_spacing": {
+    "n": 254,
+    "median": 0.223,
+    "p10": 0.196,
+    "p90": 0.294
+   },
+   "satin_same_side": {
+    "n": 254,
+    "median": 0.446,
+    "p10": 0.391,
+    "p90": 0.588
+   },
+   "run_stitch_len": {
+    "n": 124,
+    "median": 1.153,
+    "p10": 0.906,
+    "p90": 1.746
+   },
+   "stitch_len": {
+    "n": 12674,
+    "median": 1.442,
+    "p10": 0.86,
+    "p90": 3.454,
+    "min": 0.1,
+    "max": 8.298
+   },
+   "max_stitch": 8.3,
+   "underlay_share": 0.1235,
+   "smallest": {
+    "satin_width_p5": 0.91,
+    "satin_width_min": 0.78,
+    "fill_area_min_mm2": 3.8,
+    "fill_area_p10_mm2": 7.8,
+    "element_min_mm2": 0.5
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 222,
+     "median": 1.108,
+     "p10": 1.0,
+     "p90": 1.524,
+     "min": 1.0,
+     "max": 2.0
+    },
+    "fill_on_fill": {
+     "n": 101,
+     "median": 1.136,
+     "p10": 1.0,
+     "p90": 1.964,
+     "min": 1.0,
+     "max": 3.51
+    }
+   },
+   "trims": 7,
+   "jumps": 66,
+   "colour_blocks": 14,
+   "colours_distinct": 14,
+   "trims_per_100cm2": 26.9,
+   "stitches_per_block": {
+    "n": 14,
+    "median": 517.5,
+    "p10": 197.4,
+    "p90": 1925.1,
+    "min": 58.0,
+    "max": 4396.0
+   },
+   "objects": 643,
+   "objects_per_cm2": 18.84,
+   "sequencing": {
+    "biggest_block_index": 13,
+    "blocks": 14,
+    "area_vs_order_rho": -0.17,
+    "centre_out_rho_median": -0.24,
+    "last_block_satin_run_share": 0.71,
+    "last_block_area_share": 0.247
+   },
+   "sha256_16": "2c9b895e828ebf56"
+  },
+  "E-5056": {
+   "name": "E-5056",
+   "stitches": 12866,
+   "stitches_file": 12916,
+   "size_mm": [
+    62.8,
+    76.8
+   ],
+   "covered_cm2": 25.84,
+   "bbox_cm2": 48.23,
+   "cover_of_bbox": 0.536,
+   "st_per_cm2_covered": 497.9,
+   "st_per_cm2_bbox": 266.8,
+   "thread_m": 25.3,
+   "thread_mm_per_mm2": 9.794,
+   "decomposition": {
+    "D_mean_depth": 3.585,
+    "rho_thread_per_layer_mm2": 2.732,
+    "L_mean_stitch_mm": 1.967,
+    "check": 497.9
+   },
+   "depth_by_class": {
+    "satin": 0.605,
+    "fill": 1.632,
+    "run": 0.162,
+    "underlay": 1.186
+   },
+   "stitch_len_by_class": {
+    "satin": 1.52,
+    "fill": 2.4,
+    "run": 1.12,
+    "underlay": 1.67
+   },
+   "open_fill_share": 0.0036,
+   "depth_all": {
+    "1": 0.0545,
+    "2": 0.1741,
+    "3": 0.2931,
+    "4+": 0.4784
+   },
+   "depth_top": {
+    "1": 0.2644,
+    "2": 0.3758,
+    "3+": 0.3599
+   },
+   "mean_depth_top": 2.225,
+   "class_share": {
+    "satin": 0.247,
+    "fill": 0.5044,
+    "run": 0.0608,
+    "underlay": 0.1879
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 3178,
+     "area_cm2": 13.2,
+     "st_per_cm2": 240.7
+    },
+    "fill": {
+     "stitches": 6489,
+     "area_cm2": 25.4,
+     "st_per_cm2": 255.4
+    },
+    "run": {
+     "stitches": 782,
+     "area_cm2": 3.94,
+     "st_per_cm2": 198.7
+    },
+    "underlay": {
+     "stitches": 2417,
+     "area_cm2": 21.08,
+     "st_per_cm2": 114.7
+    }
+   },
+   "classifier_conf": 0.896,
+   "fill_spacing": {
+    "n": 55,
+    "median": 0.223,
+    "p10": 0.2,
+    "p90": 0.413
+   },
+   "fill_stitch_len": {
+    "n": 55,
+    "median": 3.0,
+    "p10": 1.17,
+    "p90": 4.1
+   },
+   "fill_angle_count": 12,
+   "satin_width": {
+    "n": 255,
+    "median": 1.5,
+    "p10": 1.14,
+    "p90": 2.154
+   },
+   "satin_spacing": {
+    "n": 255,
+    "median": 0.229,
+    "p10": 0.18,
+    "p90": 0.28
+   },
+   "satin_same_side": {
+    "n": 255,
+    "median": 0.459,
+    "p10": 0.36,
+    "p90": 0.56
+   },
+   "run_stitch_len": {
+    "n": 85,
+    "median": 1.005,
+    "p10": 0.728,
+    "p90": 1.421
+   },
+   "stitch_len": {
+    "n": 12866,
+    "median": 1.5,
+    "p10": 0.721,
+    "p90": 4.0,
+    "min": 0.1,
+    "max": 6.083
+   },
+   "max_stitch": 6.08,
+   "underlay_share": 0.1879,
+   "smallest": {
+    "satin_width_p5": 1.04,
+    "satin_width_min": 0.7,
+    "fill_area_min_mm2": 3.0,
+    "fill_area_p10_mm2": 4.6,
+    "element_min_mm2": 1.0
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 253,
+     "median": 1.379,
+     "p10": 1.0,
+     "p90": 1.862,
+     "min": 1.0,
+     "max": 2.846
+    },
+    "fill_on_fill": {
+     "n": 43,
+     "median": 1.077,
+     "p10": 1.0,
+     "p90": 2.182,
+     "min": 1.0,
+     "max": 5.932
+    }
+   },
+   "trims": 9,
+   "jumps": 73,
+   "colour_blocks": 17,
+   "colours_distinct": 9,
+   "trims_per_100cm2": 34.8,
+   "stitches_per_block": {
+    "n": 17,
+    "median": 514.0,
+    "p10": 60.4,
+    "p90": 2183.4,
+    "min": 45.0,
+    "max": 2423.0
+   },
+   "objects": 601,
+   "objects_per_cm2": 15.36,
+   "sequencing": {
+    "biggest_block_index": 2,
+    "blocks": 17,
+    "area_vs_order_rho": -0.47,
+    "centre_out_rho_median": 0.62,
+    "last_block_satin_run_share": 0.8,
+    "last_block_area_share": 0.014
+   },
+   "sha256_16": "7ffad9891677288f"
+  },
+  "F-5643": {
+   "name": "F-5643",
+   "stitches": 40963,
+   "stitches_file": 41023,
+   "size_mm": [
+    96.8,
+    101.6
+   ],
+   "covered_cm2": 64.1,
+   "bbox_cm2": 98.35,
+   "cover_of_bbox": 0.652,
+   "st_per_cm2_covered": 639.1,
+   "st_per_cm2_bbox": 416.5,
+   "thread_m": 81.9,
+   "thread_mm_per_mm2": 12.776,
+   "decomposition": {
+    "D_mean_depth": 4.409,
+    "rho_thread_per_layer_mm2": 2.898,
+    "L_mean_stitch_mm": 1.999,
+    "check": 639.1
+   },
+   "depth_by_class": {
+    "satin": 0.761,
+    "fill": 1.831,
+    "run": 1.083,
+    "underlay": 0.734
+   },
+   "stitch_len_by_class": {
+    "satin": 1.57,
+    "fill": 2.6,
+    "run": 1.53,
+    "underlay": 1.57
+   },
+   "open_fill_share": 0.007,
+   "depth_all": {
+    "1": 0.0499,
+    "2": 0.1182,
+    "3": 0.1642,
+    "4+": 0.6678
+   },
+   "depth_top": {
+    "1": 0.1902,
+    "2": 0.2932,
+    "3+": 0.5166
+   },
+   "mean_depth_top": 2.555,
+   "class_share": {
+    "satin": 0.1863,
+    "fill": 0.4304,
+    "run": 0.2775,
+    "underlay": 0.1058
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 7631,
+     "area_cm2": 34.3,
+     "st_per_cm2": 222.5
+    },
+    "fill": {
+     "stitches": 17631,
+     "area_cm2": 63.9,
+     "st_per_cm2": 275.9
+    },
+    "run": {
+     "stitches": 11367,
+     "area_cm2": 43.38,
+     "st_per_cm2": 262.1
+    },
+    "underlay": {
+     "stitches": 4334,
+     "area_cm2": 37.51,
+     "st_per_cm2": 115.5
+    }
+   },
+   "classifier_conf": 0.837,
+   "fill_spacing": {
+    "n": 155,
+    "median": 0.214,
+    "p10": 0.178,
+    "p90": 0.349
+   },
+   "fill_stitch_len": {
+    "n": 155,
+    "median": 2.687,
+    "p10": 1.786,
+    "p90": 3.107
+   },
+   "fill_angle_count": 12,
+   "satin_width": {
+    "n": 1129,
+    "median": 1.36,
+    "p10": 1.135,
+    "p90": 2.501
+   },
+   "satin_spacing": {
+    "n": 1129,
+    "median": 0.259,
+    "p10": 0.207,
+    "p90": 0.4
+   },
+   "satin_same_side": {
+    "n": 1129,
+    "median": 0.517,
+    "p10": 0.412,
+    "p90": 0.8
+   },
+   "run_stitch_len": {
+    "n": 284,
+    "median": 1.17,
+    "p10": 0.681,
+    "p90": 2.759
+   },
+   "stitch_len": {
+    "n": 40963,
+    "median": 1.53,
+    "p10": 0.671,
+    "p90": 3.92,
+    "min": 0.1,
+    "max": 7.212
+   },
+   "max_stitch": 7.21,
+   "underlay_share": 0.1058,
+   "smallest": {
+    "satin_width_p5": 1.08,
+    "satin_width_min": 0.67,
+    "fill_area_min_mm2": 2.5,
+    "fill_area_p10_mm2": 6.0,
+    "element_min_mm2": 0.5
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 1118,
+     "median": 1.286,
+     "p10": 1.0,
+     "p90": 1.741,
+     "min": 1.0,
+     "max": 4.016
+    },
+    "fill_on_fill": {
+     "n": 168,
+     "median": 1.438,
+     "p10": 1.0,
+     "p90": 3.688,
+     "min": 1.0,
+     "max": 6.54
+    }
+   },
+   "trims": 18,
+   "jumps": 136,
+   "colour_blocks": 10,
+   "colours_distinct": 7,
+   "trims_per_100cm2": 28.1,
+   "stitches_per_block": {
+    "n": 10,
+    "median": 4014.0,
+    "p10": 977.0,
+    "p90": 7408.1,
+    "min": 383.0,
+    "max": 10487.0
+   },
+   "objects": 2280,
+   "objects_per_cm2": 24.68,
+   "sequencing": {
+    "biggest_block_index": 5,
+    "blocks": 10,
+    "area_vs_order_rho": -0.3,
+    "centre_out_rho_median": -0.1,
+    "last_block_satin_run_share": 0.91,
+    "last_block_area_share": 0.085
+   },
+   "sha256_16": "8d99ea9d051d8d05"
+  }
+ },
+ "ours": {
+  "castle_crop": {
+   "name": "castle_crop",
+   "stitches": 115964,
+   "stitches_file": 125086,
+   "size_mm": [
+    200.4,
+    200.4
+   ],
+   "covered_cm2": 401.41,
+   "bbox_cm2": 401.6,
+   "cover_of_bbox": 1.0,
+   "st_per_cm2_covered": 288.9,
+   "st_per_cm2_bbox": 288.8,
+   "thread_m": 215.1,
+   "thread_mm_per_mm2": 5.357,
+   "decomposition": {
+    "D_mean_depth": 2.657,
+    "rho_thread_per_layer_mm2": 2.017,
+    "L_mean_stitch_mm": 1.854,
+    "check": 288.9
+   },
+   "depth_by_class": {
+    "satin": 0.08,
+    "fill": 1.54,
+    "run": 0.355,
+    "underlay": 0.682
+   },
+   "stitch_len_by_class": {
+    "satin": 1.74,
+    "fill": 1.87,
+    "run": 1.96,
+    "underlay": 1.76
+   },
+   "open_fill_share": 0.0021,
+   "depth_all": {
+    "1": 0.2038,
+    "2": 0.3252,
+    "3": 0.2314,
+    "4+": 0.2396
+   },
+   "depth_top": {
+    "1": 0.5182,
+    "2": 0.3579,
+    "3+": 0.124
+   },
+   "mean_depth_top": 1.629,
+   "class_share": {
+    "satin": 0.0518,
+    "fill": 0.6285,
+    "run": 0.114,
+    "underlay": 0.2057
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 6007,
+     "area_cm2": 29.52,
+     "st_per_cm2": 203.5
+    },
+    "fill": {
+     "stitches": 72888,
+     "area_cm2": 394.34,
+     "st_per_cm2": 184.8
+    },
+    "run": {
+     "stitches": 13218,
+     "area_cm2": 115.64,
+     "st_per_cm2": 114.3
+    },
+    "underlay": {
+     "stitches": 23851,
+     "area_cm2": 208.0,
+     "st_per_cm2": 114.7
+    }
+   },
+   "classifier_conf": 0.825,
+   "fill_spacing": {
+    "n": 1747,
+    "median": 0.414,
+    "p10": 0.275,
+    "p90": 0.463
+   },
+   "fill_stitch_len": {
+    "n": 1747,
+    "median": 2.201,
+    "p10": 1.118,
+    "p90": 3.5
+   },
+   "fill_angle_count": 12,
+   "satin_width": {
+    "n": 455,
+    "median": 1.612,
+    "p10": 1.292,
+    "p90": 2.608
+   },
+   "satin_spacing": {
+    "n": 455,
+    "median": 0.199,
+    "p10": 0.178,
+    "p90": 0.336
+   },
+   "satin_same_side": {
+    "n": 455,
+    "median": 0.397,
+    "p10": 0.336,
+    "p90": 0.616
+   },
+   "run_stitch_len": {
+    "n": 814,
+    "median": 1.423,
+    "p10": 0.697,
+    "p90": 2.612
+   },
+   "stitch_len": {
+    "n": 115964,
+    "median": 1.414,
+    "p10": 0.5,
+    "p90": 3.536,
+    "min": 0.1,
+    "max": 7.071
+   },
+   "max_stitch": 7.07,
+   "underlay_share": 0.2057,
+   "smallest": {
+    "satin_width_p5": 1.26,
+    "satin_width_min": 0.71,
+    "fill_area_min_mm2": 1.2,
+    "fill_area_p10_mm2": 5.2,
+    "element_min_mm2": 1.0
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 192,
+     "median": 1.143,
+     "p10": 1.0,
+     "p90": 1.962,
+     "min": 1.0,
+     "max": 2.568
+    },
+    "fill_on_fill": {
+     "n": 1987,
+     "median": 1.077,
+     "p10": 1.0,
+     "p90": 1.636,
+     "min": 1.0,
+     "max": 3.341
+    }
+   },
+   "trims": 151,
+   "jumps": 584,
+   "colour_blocks": 32,
+   "colours_distinct": 12,
+   "trims_per_100cm2": 37.6,
+   "stitches_per_block": {
+    "n": 32,
+    "median": 2348.5,
+    "p10": 185.6,
+    "p90": 8093.2,
+    "min": 69.0,
+    "max": 15169.0
+   },
+   "objects": 4554,
+   "objects_per_cm2": 7.54,
+   "sequencing": {
+    "biggest_block_index": 16,
+    "blocks": 32,
+    "area_vs_order_rho": -0.09,
+    "centre_out_rho_median": 0.27,
+    "last_block_satin_run_share": 0.07,
+    "last_block_area_share": 0.059
+   },
+   "label": "Castle back crop, digitize engine on main (200 x 200 mm)",
+   "path": "projects/castle-falls-jacket/out/digitize/BK_M_crop/BK_M_crop.dst",
+   "sha256_16": "1963d24fc2d3d862"
+  },
+  "castle_revB_back": {
+   "name": "castle_revB_back",
+   "stitches": 837715,
+   "stitches_file": 919206,
+   "size_mm": [
+    584.4,
+    489.1
+   ],
+   "covered_cm2": 2514.07,
+   "bbox_cm2": 2858.3,
+   "cover_of_bbox": 0.88,
+   "st_per_cm2_covered": 333.2,
+   "st_per_cm2_bbox": 293.1,
+   "thread_m": 1387.2,
+   "thread_mm_per_mm2": 5.518,
+   "decomposition": {
+    "D_mean_depth": 2.645,
+    "rho_thread_per_layer_mm2": 2.086,
+    "L_mean_stitch_mm": 1.656,
+    "check": 333.2
+   },
+   "depth_by_class": {
+    "satin": 0.575,
+    "fill": 1.049,
+    "run": 0.522,
+    "underlay": 0.5
+   },
+   "stitch_len_by_class": {
+    "satin": 1.35,
+    "fill": 1.82,
+    "run": 1.81,
+    "underlay": 1.56
+   },
+   "open_fill_share": 0.0038,
+   "depth_all": {
+    "1": 0.1666,
+    "2": 0.3469,
+    "3": 0.2761,
+    "4+": 0.2105
+   },
+   "depth_top": {
+    "1": 0.5145,
+    "2": 0.3521,
+    "3+": 0.1334
+   },
+   "mean_depth_top": 1.65,
+   "class_share": {
+    "satin": 0.2547,
+    "fill": 0.385,
+    "run": 0.1997,
+    "underlay": 0.1606
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 213371,
+     "area_cm2": 1134.48,
+     "st_per_cm2": 188.1
+    },
+    "fill": {
+     "stitches": 322547,
+     "area_cm2": 1978.35,
+     "st_per_cm2": 163.0
+    },
+    "run": {
+     "stitches": 167260,
+     "area_cm2": 988.05,
+     "st_per_cm2": 169.3
+    },
+    "underlay": {
+     "stitches": 134537,
+     "area_cm2": 1032.66,
+     "st_per_cm2": 130.3
+    }
+   },
+   "classifier_conf": 0.816,
+   "fill_spacing": {
+    "n": 13842,
+    "median": 0.388,
+    "p10": 0.262,
+    "p90": 0.491
+   },
+   "fill_stitch_len": {
+    "n": 13842,
+    "median": 2.0,
+    "p10": 1.082,
+    "p90": 3.453
+   },
+   "fill_angle_count": 12,
+   "satin_width": {
+    "n": 11458,
+    "median": 1.961,
+    "p10": 1.304,
+    "p90": 2.879
+   },
+   "satin_spacing": {
+    "n": 11458,
+    "median": 0.442,
+    "p10": 0.398,
+    "p90": 0.582
+   },
+   "satin_same_side": {
+    "n": 11458,
+    "median": 0.458,
+    "p10": 0.405,
+    "p90": 1.157
+   },
+   "run_stitch_len": {
+    "n": 11052,
+    "median": 1.208,
+    "p10": 0.685,
+    "p90": 2.408
+   },
+   "stitch_len": {
+    "n": 837715,
+    "median": 1.304,
+    "p10": 0.447,
+    "p90": 3.506,
+    "min": 0.1,
+    "max": 7.354
+   },
+   "max_stitch": 7.35,
+   "underlay_share": 0.1606,
+   "smallest": {
+    "satin_width_p5": 1.08,
+    "satin_width_min": 0.6,
+    "fill_area_min_mm2": 0.8,
+    "fill_area_p10_mm2": 3.5,
+    "element_min_mm2": 0.5
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 9483,
+     "median": 1.0,
+     "p10": 1.0,
+     "p90": 1.526,
+     "min": 1.0,
+     "max": 3.333
+    },
+    "fill_on_fill": {
+     "n": 9748,
+     "median": 1.0,
+     "p10": 1.0,
+     "p90": 1.364,
+     "min": 1.0,
+     "max": 4.0
+    }
+   },
+   "trims": 2242,
+   "jumps": 6946,
+   "colour_blocks": 26,
+   "colours_distinct": 12,
+   "trims_per_100cm2": 89.2,
+   "stitches_per_block": {
+    "n": 26,
+    "median": 30836.5,
+    "p10": 2035.0,
+    "p90": 55460.0,
+    "min": 11.0,
+    "max": 119287.0
+   },
+   "objects": 49419,
+   "objects_per_cm2": 14.56,
+   "sequencing": {
+    "biggest_block_index": 1,
+    "blocks": 26,
+    "area_vs_order_rho": -0.83,
+    "centre_out_rho_median": 0.27,
+    "last_block_satin_run_share": 0.61,
+    "last_block_area_share": 0.0
+   },
+   "label": "Castle Rev B full back, shipped (dst2)",
+   "path": "projects/castle-falls-jacket/out/01_back-scene/M/HAKI_CSFL_01_back-scene_BK_M.dst",
+   "sha256_16": "b8dd2fcf852983f3"
+  },
+  "kcos_FR": {
+   "name": "kcos_FR",
+   "stitches": 56421,
+   "stitches_file": 58220,
+   "size_mm": [
+    266.9,
+    512.1
+   ],
+   "covered_cm2": 162.38,
+   "bbox_cm2": 1366.79,
+   "cover_of_bbox": 0.119,
+   "st_per_cm2_covered": 347.5,
+   "st_per_cm2_bbox": 41.3,
+   "thread_m": 67.5,
+   "thread_mm_per_mm2": 4.155,
+   "decomposition": {
+    "D_mean_depth": 1.483,
+    "rho_thread_per_layer_mm2": 2.802,
+    "L_mean_stitch_mm": 1.196,
+    "check": 347.5
+   },
+   "depth_by_class": {
+    "satin": 0.631,
+    "fill": 0.159,
+    "run": 0.631,
+    "underlay": 0.061
+   },
+   "stitch_len_by_class": {
+    "satin": 1.71,
+    "fill": 3.31,
+    "run": 0.58,
+    "underlay": 0.92
+   },
+   "open_fill_share": 0.0066,
+   "depth_all": {
+    "1": 0.6525,
+    "2": 0.2529,
+    "3": 0.0669,
+    "4+": 0.0277
+   },
+   "depth_top": {
+    "1": 0.6529,
+    "2": 0.3078,
+    "3+": 0.0393
+   },
+   "mean_depth_top": 1.394,
+   "class_share": {
+    "satin": 0.3948,
+    "fill": 0.0577,
+    "run": 0.5098,
+    "underlay": 0.0378
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 22275,
+     "area_cm2": 73.14,
+     "st_per_cm2": 304.5
+    },
+    "fill": {
+     "stitches": 3253,
+     "area_cm2": 25.81,
+     "st_per_cm2": 126.0
+    },
+    "run": {
+     "stitches": 28762,
+     "area_cm2": 91.72,
+     "st_per_cm2": 313.6
+    },
+    "underlay": {
+     "stitches": 2131,
+     "area_cm2": 9.32,
+     "st_per_cm2": 228.5
+    }
+   },
+   "classifier_conf": 0.753,
+   "fill_spacing": {
+    "n": 84,
+    "median": 0.201,
+    "p10": 0.197,
+    "p90": 0.645
+   },
+   "fill_stitch_len": {
+    "n": 84,
+    "median": 4.623,
+    "p10": 0.754,
+    "p90": 4.987
+   },
+   "fill_angle_count": 12,
+   "satin_width": {
+    "n": 579,
+    "median": 1.612,
+    "p10": 1.166,
+    "p90": 2.731
+   },
+   "satin_spacing": {
+    "n": 579,
+    "median": 0.203,
+    "p10": 0.18,
+    "p90": 0.253
+   },
+   "satin_same_side": {
+    "n": 579,
+    "median": 0.401,
+    "p10": 0.358,
+    "p90": 0.5
+   },
+   "run_stitch_len": {
+    "n": 323,
+    "median": 0.412,
+    "p10": 0.406,
+    "p90": 0.721
+   },
+   "stitch_len": {
+    "n": 56421,
+    "median": 1.0,
+    "p10": 0.316,
+    "p90": 2.571,
+    "min": 0.1,
+    "max": 7.072
+   },
+   "max_stitch": 7.07,
+   "underlay_share": 0.0378,
+   "smallest": {
+    "satin_width_p5": 1.13,
+    "satin_width_min": 0.71,
+    "fill_area_min_mm2": 1.0,
+    "fill_area_p10_mm2": 2.3,
+    "element_min_mm2": 1.0
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 60,
+     "median": 1.0,
+     "p10": 1.0,
+     "p90": 1.046,
+     "min": 1.0,
+     "max": 1.273
+    },
+    "fill_on_fill": null
+   },
+   "trims": 301,
+   "jumps": 1058,
+   "colour_blocks": 15,
+   "colours_distinct": 12,
+   "trims_per_100cm2": 185.4,
+   "stitches_per_block": {
+    "n": 15,
+    "median": 1428.0,
+    "p10": 275.2,
+    "p90": 6547.8,
+    "min": 45.0,
+    "max": 25914.0
+   },
+   "objects": 1442,
+   "objects_per_cm2": 6.24,
+   "sequencing": {
+    "biggest_block_index": 0,
+    "blocks": 15,
+    "area_vs_order_rho": -0.19,
+    "centre_out_rho_median": 0.41,
+    "last_block_satin_run_share": 0.95,
+    "last_block_area_share": 0.119
+   },
+   "label": "Keep Clean Our Space FR M, shipped",
+   "path": "projects/keep-clean-our-space-hoodie/out/stitch/M/HAKI_KCOS_FR_M.dst",
+   "sha256_16": "b06557e90a58f01e"
+  },
+  "wave_FR": {
+   "name": "wave_FR",
+   "stitches": 95488,
+   "stitches_file": 101371,
+   "size_mm": [
+    281.2,
+    369.1
+   ],
+   "covered_cm2": 420.28,
+   "bbox_cm2": 1037.91,
+   "cover_of_bbox": 0.405,
+   "st_per_cm2_covered": 227.2,
+   "st_per_cm2_bbox": 92.0,
+   "thread_m": 177.0,
+   "thread_mm_per_mm2": 4.211,
+   "decomposition": {
+    "D_mean_depth": 2.116,
+    "rho_thread_per_layer_mm2": 1.99,
+    "L_mean_stitch_mm": 1.854,
+    "check": 227.2
+   },
+   "depth_by_class": {
+    "satin": 0.189,
+    "fill": 1.219,
+    "run": 0.256,
+    "underlay": 0.453
+   },
+   "stitch_len_by_class": {
+    "satin": 1.24,
+    "fill": 1.88,
+    "run": 2.55,
+    "underlay": 1.98
+   },
+   "open_fill_share": 0.0027,
+   "depth_all": {
+    "1": 0.2791,
+    "2": 0.436,
+    "3": 0.2002,
+    "4+": 0.0847
+   },
+   "depth_top": {
+    "1": 0.6604,
+    "2": 0.2833,
+    "3+": 0.0563
+   },
+   "mean_depth_top": 1.403,
+   "class_share": {
+    "satin": 0.1458,
+    "fill": 0.6345,
+    "run": 0.0737,
+    "underlay": 0.146
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 13923,
+     "area_cm2": 70.49,
+     "st_per_cm2": 197.5
+    },
+    "fill": {
+     "stitches": 60584,
+     "area_cm2": 386.54,
+     "st_per_cm2": 156.7
+    },
+    "run": {
+     "stitches": 7040,
+     "area_cm2": 94.04,
+     "st_per_cm2": 74.9
+    },
+    "underlay": {
+     "stitches": 13941,
+     "area_cm2": 169.51,
+     "st_per_cm2": 82.2
+    }
+   },
+   "classifier_conf": 0.884,
+   "fill_spacing": {
+    "n": 1382,
+    "median": 0.443,
+    "p10": 0.323,
+    "p90": 0.461
+   },
+   "fill_stitch_len": {
+    "n": 1382,
+    "median": 2.302,
+    "p10": 1.414,
+    "p90": 3.178
+   },
+   "fill_angle_count": 12,
+   "satin_width": {
+    "n": 394,
+    "median": 1.562,
+    "p10": 1.105,
+    "p90": 3.132
+   },
+   "satin_spacing": {
+    "n": 394,
+    "median": 0.426,
+    "p10": 0.4,
+    "p90": 0.448
+   },
+   "satin_same_side": {
+    "n": 394,
+    "median": 0.426,
+    "p10": 0.403,
+    "p90": 0.45
+   },
+   "run_stitch_len": {
+    "n": 613,
+    "median": 1.78,
+    "p10": 0.671,
+    "p90": 4.383
+   },
+   "stitch_len": {
+    "n": 95488,
+    "median": 1.404,
+    "p10": 0.447,
+    "p90": 3.547,
+    "min": 0.1,
+    "max": 7.409
+   },
+   "max_stitch": 7.41,
+   "underlay_share": 0.146,
+   "smallest": {
+    "satin_width_p5": 0.83,
+    "satin_width_min": 0.63,
+    "fill_area_min_mm2": 2.0,
+    "fill_area_p10_mm2": 7.0,
+    "element_min_mm2": 1.25
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 353,
+     "median": 1.0,
+     "p10": 1.0,
+     "p90": 1.229,
+     "min": 1.0,
+     "max": 2.68
+    },
+    "fill_on_fill": {
+     "n": 1342,
+     "median": 1.0,
+     "p10": 1.0,
+     "p90": 1.125,
+     "min": 1.0,
+     "max": 2.4
+    }
+   },
+   "trims": 167,
+   "jumps": 916,
+   "colour_blocks": 10,
+   "colours_distinct": 9,
+   "trims_per_100cm2": 39.7,
+   "stitches_per_block": {
+    "n": 10,
+    "median": 7839.5,
+    "p10": 3925.6,
+    "p90": 15803.5,
+    "min": 3886.0,
+    "max": 24943.0
+   },
+   "objects": 3555,
+   "objects_per_cm2": 5.72,
+   "sequencing": {
+    "biggest_block_index": 9,
+    "blocks": 10,
+    "area_vs_order_rho": 0.44,
+    "centre_out_rho_median": -0.02,
+    "last_block_satin_run_share": 0.07,
+    "last_block_area_share": 0.258
+   },
+   "label": "Wave jacket FR M (flat thread)",
+   "path": "projects/wave-jacket/out/01_wave/M/HAKI_WAVE_01_wave_FR_M.dst",
+   "sha256_16": "bf8ef09c28bcb06d"
+  },
+  "konpeito_coin": {
+   "name": "konpeito_coin",
+   "stitches": 9972,
+   "stitches_file": 10540,
+   "size_mm": [
+    76.4,
+    56.4
+   ],
+   "covered_cm2": 43.16,
+   "bbox_cm2": 43.09,
+   "cover_of_bbox": 1.002,
+   "st_per_cm2_covered": 231.1,
+   "st_per_cm2_bbox": 231.4,
+   "thread_m": 21.0,
+   "thread_mm_per_mm2": 4.86,
+   "decomposition": {
+    "D_mean_depth": 1.961,
+    "rho_thread_per_layer_mm2": 2.478,
+    "L_mean_stitch_mm": 2.103,
+    "check": 231.1
+   },
+   "depth_by_class": {
+    "satin": 0.29,
+    "fill": 1.248,
+    "run": 0.05,
+    "underlay": 0.373
+   },
+   "stitch_len_by_class": {
+    "satin": 1.94,
+    "fill": 2.21,
+    "run": 2.54,
+    "underlay": 1.98
+   },
+   "open_fill_share": 0.0,
+   "depth_all": {
+    "1": 0.4246,
+    "2": 0.3169,
+    "3": 0.1693,
+    "4+": 0.0892
+   },
+   "depth_top": {
+    "1": 0.5875,
+    "2": 0.3139,
+    "3+": 0.0986
+   },
+   "mean_depth_top": 1.539,
+   "class_share": {
+    "satin": 0.2731,
+    "fill": 0.5482,
+    "run": 0.0175,
+    "underlay": 0.1612
+   },
+   "class_rate": {
+    "satin": {
+     "stitches": 2723,
+     "area_cm2": 11.32,
+     "st_per_cm2": 240.5
+    },
+    "fill": {
+     "stitches": 5467,
+     "area_cm2": 41.84,
+     "st_per_cm2": 130.7
+    },
+    "run": {
+     "stitches": 175,
+     "area_cm2": 1.93,
+     "st_per_cm2": 90.7
+    },
+    "underlay": {
+     "stitches": 1607,
+     "area_cm2": 14.46,
+     "st_per_cm2": 111.1
+    }
+   },
+   "classifier_conf": 0.962,
+   "fill_spacing": {
+    "n": 103,
+    "median": 0.4,
+    "p10": 0.227,
+    "p90": 0.45
+   },
+   "fill_stitch_len": {
+    "n": 103,
+    "median": 2.55,
+    "p10": 1.14,
+    "p90": 3.5
+   },
+   "fill_angle_count": 12,
+   "satin_width": {
+    "n": 74,
+    "median": 2.408,
+    "p10": 1.655,
+    "p90": 3.518
+   },
+   "satin_spacing": {
+    "n": 74,
+    "median": 0.199,
+    "p10": 0.199,
+    "p90": 0.304
+   },
+   "satin_same_side": {
+    "n": 74,
+    "median": 0.399,
+    "p10": 0.301,
+    "p90": 0.4
+   },
+   "run_stitch_len": {
+    "n": 22,
+    "median": 2.302,
+    "p10": 0.681,
+    "p90": 6.501
+   },
+   "stitch_len": {
+    "n": 9972,
+    "median": 2.3,
+    "p10": 0.4,
+    "p90": 3.5,
+    "min": 0.1,
+    "max": 6.903
+   },
+   "max_stitch": 6.9,
+   "underlay_share": 0.1612,
+   "smallest": {
+    "satin_width_p5": 0.78,
+    "satin_width_min": 0.78,
+    "fill_area_min_mm2": 2.2,
+    "fill_area_p10_mm2": 2.5,
+    "element_min_mm2": 1.0
+   },
+   "overlap": {
+    "satin_on_fill": {
+     "n": 74,
+     "median": 1.839,
+     "p10": 1.215,
+     "p90": 2.834,
+     "min": 1.0,
+     "max": 3.333
+    },
+    "fill_on_fill": {
+     "n": 97,
+     "median": 1.273,
+     "p10": 1.111,
+     "p90": 2.213,
+     "min": 1.0,
+     "max": 3.258
+    }
+   },
+   "trims": 82,
+   "jumps": 119,
+   "colour_blocks": 11,
+   "colours_distinct": 9,
+   "trims_per_100cm2": 190.0,
+   "stitches_per_block": {
+    "n": 11,
+    "median": 318.0,
+    "p10": 158.0,
+    "p90": 2403.0,
+    "min": 80.0,
+    "max": 2447.0
+   },
+   "objects": 333,
+   "objects_per_cm2": 4.61,
+   "sequencing": {
+    "biggest_block_index": 1,
+    "blocks": 11,
+    "area_vs_order_rho": -0.59,
+    "centre_out_rho_median": -0.26,
+    "last_block_satin_run_share": 0.88,
+    "last_block_area_share": 0.137
+   },
+   "label": "Konpeito coin-pocket patch (founder SVG)",
+   "path": "projects/konpeito-jeans/out/stitch/HAKI_KJ_01_coin-pocket-patch.dst",
+   "sha256_16": "651724164ee0acda"
+  }
+ },
+ "ours_missing": []
+}
