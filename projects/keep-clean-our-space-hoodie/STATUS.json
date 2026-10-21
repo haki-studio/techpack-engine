@@ -2,11 +2,6 @@
  "slug": "keep-clean-our-space-hoodie",
  "log": [
   [
-   "2026-10-17T00:12:46",
-   "documents",
-   "embroidery pack 15 pp (G1-G6, E01-E05, S1-S2, R1, F1), merged + shrunk 4.0 MB, zip 29.9 MB"
-  ],
-  [
    "2026-10-17T00:13:12",
    "delivered",
    "Rev A embroidery pack delivered (15 pp, 112 stitch files incl. splits). M: FR 23,604 st/172 trims, FL 21,459/114, SR 2,619/118, SL 2,274/104. Pattern + T pages waiting for hood block sync + welt override"
@@ -200,17 +195,22 @@
    "2026-10-21T13:20:10",
    "stitch",
    "Rev I: puff glyph bits merged into the puff stop (EN 7, CN 31, JP 1), 5 sliver specks -> dots at M; frag gate red on Rev H FL M (8 = the founder's spots); building M fronts"
+  ],
+  [
+   "2026-10-21T13:49:35",
+   "review",
+   "PR #38 Rev I"
   ]
  ],
  "questions": [
   "Back stars (06, Rev H): the back layout is seeded from the front field logic (248 stars at M, density + spacing of the front field, copies of the front stars) - confirm, or send a back view to place them from. [PROPOSED]",
   "Factory (Mandy, F1/F2): can the thin 3D puff strokes 2.5-3.0 mm wide (JP / CN text, list on G4) puff cleanly? Confirm on the strike-off; any that do not are sewn flat."
  ],
- "stage": "stitch",
- "stage_index": 4,
+ "stage": "review",
+ "stage_index": 8,
  "blocked": false,
- "updated": "2026-10-21T13:20:10",
- "preview": "out/pages/prev_G1.png",
+ "updated": "2026-10-21T13:49:35",
+ "preview": "out/zoom/M_FL_badge02.png",
  "answers": [
   {
    "date": "2026-10-21",
