@@ -24,3 +24,11 @@
 - C3 cuts on blank rows above the footer; T2 2nd front loop visible + light seams/topstitch; G3 white = bead dots (PASS); gates_log removed.
 - Deliverables: out/HAKI_konpeito-jeans_TECHPACK_RevB2.pdf (23 pages) + .zip, copied to Desktop/konpeito-RevB (Rev B files replaced).
 - PR #29 was merged by the founder before this round; Rev B2 goes in a new PR.
+
+## Rev B3 (20 Oct, late) — PR #30 review (4 should-fix + nits); PR #30 was already merged -> branch tp-konpeito-jeans-b3, new PR
+- Item 1 (L/R): NOT a defect — on a back view the viewer stands behind, image right = wearer's right; the mockup has 03 + pink
+  konpeito on the image right = wearer's right, as written. Added explicit orientation notes (T2, T8, G4, G5, G6) instead of flipping.
+- Item 2: border flowers (18 / 20) + border dots (20 / 20) gated per motif from SVG layer 03; band / field / edge A15 areas. All pass.
+- Item 3: 04-07 position vs independent centres (max 0.05 mm) + A15 per file (100 %, 0 blobs); C6 + G pages show it.
+- Item 4: tests/test_konpeito_gates.py (4 tests), proven red by source mutation.
+- Nits: legacy puffy_star / candy2 deleted from kjart (border_flower, kjart.spill marked LEGACY); G6/T8 "moved N mm" computed.

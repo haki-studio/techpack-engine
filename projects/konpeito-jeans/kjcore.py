@@ -54,7 +54,7 @@ COL_SP = {"TXC": 0.20, "EDGE": 0.18, "LINE": 0.18, "FL": 0.30, "FL-hi": 0.30, "K
 
 STYLE = "HK-JN-KONPEITO-BK"
 NAME = "Konpeito Jeans — Washed Black"
-REV = "Rev B2"; DATE = "20 Oct 2026"
+REV = "Rev B3"; DATE = "20 Oct 2026"
 SIZES = ["26", "28", "29", "30", "31", "32", "33", "34", "36", "38", "40"]     # founder 20 Oct (size labels); Rev A had 24-40 evens
 sheet.FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · {REV} · {DATE}"
 PROPOSED = "[proposed — confirm]"

@@ -98,3 +98,25 @@ Engine runs: `bench/run_{wb,coin,spill,starP,starY}_svg.yaml` -> `out/engine_m5/
 22. **Flat line colours**: construction lines + topstitch in near-black on dark denim are invisible (PR #29 item 7). On
    dark garments draw seams light grey (#D2D3D7) and topstitch mid grey, with a "drawing only" note. Proposed: flat
    palette chosen by garment luminance in the engine's flat helper.
+
+## Rev B3 (20 Oct 2026, PR #30 review)
+23. **Round dots cannot be judged by IoU on a thread-width coverage mask** (border dots Ø1.5: the DST mask drawn at
+   0.35 mm line width reads Ø1.9-2.0, IoU 0.63, "fail" on a correct dot). Project fix: `kjcompare.dot_rows` measures
+   each SVG circle against its DST needle RUN (stitches between jumps/trims): span vs art Ø (-0.1/+0.35 mm) and centre
+   <= 0.3 mm. Red test: a dot 0.6 mm off first PASSED with a fixed search window (window clipped it) -> runs fixed it.
+   Proposed: `qa.dot_match(svg_circles, dst, stops)` in the engine for every `dot`/bead technique. Check:
+   tests/test_konpeito_gates.py::test_dot_rows_red_green.
+24. **A15 must cover the base areas, not only the motif layers** (band / field / edge of a patch were never gated).
+   Project fix: `kjsvg.border_refs` + `kjcompare.area_gates`: coverage % by the area's own stop + no bare blob >= 1 mm2;
+   the outer 0.15 mm (the heat-cut line itself) is excluded. Proposed: svgart gates every filled layer as an area.
+   Check: test_area_gates_red_green (2 x 2 mm bare square in the band fails).
+25. **Placement gates must use an independent centre** (04-06 took the reference centre from the DST-side regions:
+   circular). Project fix: `kjcompare.indep_centres` (T8 point = file centre for 05/06; 04 pink offset from the mockup
+   pixels; 07 = C5 map) + `candy_position` (unclipped bbox centre of the body stops). Proposed: `qa.position_match(ref_xy,
+   dst, stops)`. Check: test_candy_position_red_green (2 mm shift fails).
+26. **Red tests must fail ONLY on the guard under test**: the first synthetic star failed on IoU, so deleting the
+   outline clause left the test green (prove-the-guard). The star is now tuned so IoU + extents pass and only the
+   outline fails; a source mutation (outline clause removed) turns the test red.
+27. **Reviewer orientation check**: a back view is seen from behind, so image right = wearer's right (PR #30 review
+   item 1 read it the other way). Pages now say so explicitly on T2 / T8 / G4-G6. Proposed: the reviewer prompt states
+   the convention (CLAUDE.md "back = x from CB, + = wearer's right on a back view").
