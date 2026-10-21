@@ -36,3 +36,13 @@
   re-running at pull 0.20 → 0). svgrun `gates.exposed` override crashes → ENGINE_NOTES 1.
 - Open (founder/factory): fit choice, back design, mill capability + 3rd colour, bird IP, bird side (brief vs mockup),
   embroidery-on-sherpa set-up, trim colours.
+
+## Fix round 1 (PR #28 review: 1 blocker + 3 should-fix) — Rev B
+| Review item | Fix |
+|---|---|
+| BLOCKER R1 PASS for gates never run | `gates_fl.py` now runs qa.uncovered (A15), qa.angle_coherence on visible stitches per part (A16), chaos half of qa.direction_match (A16/A17; "vs reference" NOT RUN, no close-up), plus a colour row per motif. R1 + G pages + compare sheets read gates_fl.json. `gates_selftest.py` proves each guard goes red on a planted defect. |
+| E2 gold sparkle sewn yellow | colour from core pixels (blue<110, red>195, g/r<0.93 = gold); E2 now 4 gold / 6 yellow; colour gate added |
+| Small sparkles simplified, wing pair merged | touching pair split by core colour (+1 px opening); sparkles < 16 mm drawn as the family's sparkle fitted with a blur model (`star_fit.py`); 21 sparkles (E1 7, E2 10, E3 4) |
+| Jacquard simplified | trace per 2.5 mm cell (band 91.8 → 94.4 %, sleeves 97.7 %), mirror-fill under zip/pockets (no stripes), sky under sparkle rims, view slivers fixed, J3 diff map + list |
+Dead end: IoU-based fits (hard or soft) on the blurred render always prefer blobs/diamonds; only comparing blurred-candidate vs render (forward model) recovers 4-arm shapes.
+Open: wingtip sparkle above the bird still comes out a diamond (render too blurred); founder items unchanged (bird IP, bird side, back design).
