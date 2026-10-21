@@ -58,3 +58,24 @@ Problem: tracing in 2 x 2 cell blocks with one global phase lost the checker edg
 Fix: trace per 2.5 mm cell (band 94.4 %, sleeves 97.7 %), mirror-fill cells under garment details row by row, and force
 sky under embroidered motifs (+3 px rim). J3 shows a per-pixel diff map.
 Check: agreement.json band >= 94 % and a diff-map image on J3.
+
+## 9. Big pixel sprites: fit the sprite's tiers, not a fine staircase (PR #28 round 2)
+Problem: big sparkles (16-40 mm, drawn on a ~6 mm pixel unit) traced as a 2.5 mm staircase came out as stepped
+diamonds (each square arm step became a run of 1-cell stairs); a uniform coarse grid does not fit either (the AI render's
+pixel unit drifts). The resampled family exemplar then made the small ones round blobs.
+Fix (project `star_fit.fit_tiers`): a 4-arm sprite = 1-3 concentric D4 crosses (half-width w, half-length L per tier),
+fitted by coordinate descent on the blur forward model (blurred mask vs soft motif map, rmse); fewest tiers within
+0.004 rmse; big ones may then free each rect edge (>= 10 % rmse gain, e.g. sleeve drape); edges snapped together
+(< 1.25 mm) so no slivers; outer tier must be arms (w <= 0.5 L, sticks out >= 25 % past inner tiers). Small (< 16 mm):
+one tier = plain plus.
+Proposal: `digitize.extract.pixelart.fit_tiered_cross(blob, psf)` next to fit_family (note 6).
+Check: synthetic 5-unit stepped plus (unit 6 mm) blurred at sigma 0.8 px/0.6 mm -> 2 tiers back, arm width within 0.5 mm.
+
+## 10. Checker fringes: detect with a 2-D checker filter, redraw as a lattice (PR #28 round 2)
+Problem: a ~6.5 mm 2-colour checker on an irregular render grid traced per 2.5 mm cell gives scattered single cells;
+label/connected-square detection fails (anti-aliasing joins the squares at their corners).
+Fix (project `jacquard.checker_px` + `regularise_checker`): blueness filtered with a windowed checker kernel (square
+8-12 px, 4 quadrature phases) -> response > 0.5, eroded 6 / grown 3 px = checker areas; cells there get a regular
+lattice of q cells (q by agreement, 3 here) with the phase chosen per cell in +- 2 squares and majority-smoothed.
+Proposal: `jacquard.regularise(cmap, centre_px, img)` engine helper for any knit/pixel pattern with dither fringes.
+Check: synthetic checker with a drifting grid -> lattice with <= 3 phase patches and >= 90 % agreement.

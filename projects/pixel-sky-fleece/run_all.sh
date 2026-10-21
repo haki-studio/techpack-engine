@@ -8,4 +8,6 @@ python3 emb_art.py
 cd ../..; for F in E1 E2 E3 E1B; do scripts/heavy.sh python3 -m digitize.run projects/pixel-sky-fleece/bench/run_$F.yaml --no-api; done
 cd projects/pixel-sky-fleece
 python3 gates_fl.py; python3 gates_selftest.py; python3 emb_place.py; ../../scripts/heavy.sh python3 pattern_fl.py dxf pdf png
-python3 fflat.py; python3 compare.py; ../../scripts/heavy.sh python3 pack.py; python3 finish.py
+python3 fflat.py; python3 compare.py
+# pack twice: R1 (D2) reads the recompressed PDF that finish.py writes in the first pass
+for pass in 1 2; do ../../scripts/heavy.sh python3 pack.py; python3 finish.py; done

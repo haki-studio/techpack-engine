@@ -1,0 +1,111 @@
+XS done
+S done
+M done
+L done
+XL done
+XXL done
+3XL done
+{
+ "checker": {
+  "regions": 33,
+  "cells": 3629,
+  "q": 3,
+  "q_by_region": [
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3
+  ],
+  "agree": 0.734,
+  "note": "checker areas from the render's 2-D checker filter, redrawn as a regular lattice (phase fitted locally); agree = share of those cells keeping their traced colour"
+ },
+ "cell_mm": 2.5,
+ "cloud_mm": 2.5,
+ "phase": {
+  "purity": 0.9646,
+  "ox": 0.0,
+  "oy": 1.25
+ },
+ "bird": {
+  "purity": 0.9821,
+  "ox": 0.8333333333333334,
+  "oy": 0.8333333333333334,
+  "shift_mm": [
+   -0.83,
+   -0.83
+  ],
+  "n": 857
+ }
+}
+front_L_M {'piece': 'F01', 'size': 'M', 'cols': 142, 'rows': 279, 'width_mm': 355.0, 'height_mm': 697.5, 'cells': 35742, 'sky': 22992, 'cream': 12750, 'black': 0, 'traced': 19663, 'filled': 4577, 'generated': 11502}
+front_R_M_birdA {'piece': 'F02', 'size': 'M', 'cols': 142, 'rows': 279, 'width_mm': 355.0, 'height_mm': 697.5, 'cells': 35742, 'sky': 22143, 'cream': 12742, 'black': 857, 'traced': 19578, 'filled': 4523, 'generated': 11641}
+front_R_M_birdB {'piece': 'F02', 'size': 'M', 'cols': 142, 'rows': 279, 'width_mm': 355.0, 'height_mm': 697.5, 'cells': 35742, 'sky': 23000, 'cream': 12742, 'black': 0, 'traced': 19578, 'filled': 4523, 'generated': 11641}
+back_M {'piece': 'B01', 'size': 'M', 'cols': 266, 'rows': 286, 'width_mm': 665.0, 'height_mm': 715.0, 'cells': 70112, 'sky': 46273, 'cream': 23839, 'black': 0, 'traced': 0, 'filled': 0, 'generated': 70112}
+sleeve_R_M {'piece': 'S01', 'size': 'M', 'cols': 232, 'rows': 281, 'width_mm': 580.0, 'height_mm': 702.5, 'cells': 51981, 'sky': 36902, 'cream': 15079, 'black': 0, 'traced': 11134, 'filled': 0, 'generated': 40847}
+sleeve_L_M {'piece': 'S02', 'size': 'M', 'cols': 232, 'rows': 281, 'width_mm': 580.0, 'height_mm': 702.5, 'cells': 51981, 'sky': 38347, 'cream': 13634, 'black': 0, 'traced': 10932, 'filled': 0, 'generated': 41049}
+XS PASS {'E1': (18.8, 'CF / zip'), 'E2': (17.0, 'CF / zip'), 'E3': (102.0, 'underarm front')}
+S PASS {'E1': (18.8, 'CF / zip'), 'E2': (17.0, 'CF / zip'), 'E3': (109.2, 'underarm front')}
+M PASS {'E1': (18.8, 'CF / zip'), 'E2': (17.0, 'CF / zip'), 'E3': (116.4, 'underarm front')}
+L PASS {'E1': (18.8, 'CF / zip'), 'E2': (17.0, 'CF / zip'), 'E3': (123.6, 'underarm front')}
+XL PASS {'E1': (18.8, 'CF / zip'), 'E2': (17.0, 'CF / zip'), 'E3': (130.6, 'underarm front')}
+XXL PASS {'E1': (18.8, 'CF / zip'), 'E2': (17.0, 'CF / zip'), 'E3': (137.7, 'underarm front')}
+3XL PASS {'E1': (18.8, 'CF / zip'), 'E2': (17.0, 'CF / zip'), 'E3': (144.6, 'underarm front')}
+ALL PASS
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+Drawing units ($INSUNITS) are not exported for DXF R12.
+dxf ok, emb marks True
+pdf ok
+png ok
+ok
+E1 ok
+E2 ok
+E3 ok
+E1B ok
+jacquard agreement (0.9683846234894596, 0.9242969336757875, 0.9520062746038407)
+pages 17 out/HAKI_HK-FL-PIXSKY_TECHPACK_RevC.pdf 30.8 MB
+/mnt/c/Users/devin/Desktop/HakiCode/techpack-engine/.claude/worktrees/tp-pixel-sky-fleece/projects/pixel-sky-fleece/finish.py:13: DeprecationWarning: remove_identicals is deprecated and will be removed in pypdf 7.0.0. Use remove_duplicates instead.
+  w.compress_identical_objects(remove_identicals=True, remove_orphans=True); w.write(dst)
+/mnt/c/Users/devin/Desktop/HakiCode/techpack-engine/.claude/worktrees/tp-pixel-sky-fleece/projects/pixel-sky-fleece/finish.py:13: DeprecationWarning: remove_orphans is deprecated and will be removed in pypdf 7.0.0. Use remove_unreferenced instead.
+  w.compress_identical_objects(remove_identicals=True, remove_orphans=True); w.write(dst)
+out/HAKI_HK-FL-PIXSKY_TECHPACK_RevC_small.pdf 3.4 MB; out/HAKI_HK-FL-PIXSKY_RevC_files.zip 12.7 MB
+pages 17 out/HAKI_HK-FL-PIXSKY_TECHPACK_RevC.pdf 30.8 MB
+/mnt/c/Users/devin/Desktop/HakiCode/techpack-engine/.claude/worktrees/tp-pixel-sky-fleece/projects/pixel-sky-fleece/finish.py:13: DeprecationWarning: remove_identicals is deprecated and will be removed in pypdf 7.0.0. Use remove_duplicates instead.
+  w.compress_identical_objects(remove_identicals=True, remove_orphans=True); w.write(dst)
+/mnt/c/Users/devin/Desktop/HakiCode/techpack-engine/.claude/worktrees/tp-pixel-sky-fleece/projects/pixel-sky-fleece/finish.py:13: DeprecationWarning: remove_orphans is deprecated and will be removed in pypdf 7.0.0. Use remove_unreferenced instead.
+  w.compress_identical_objects(remove_identicals=True, remove_orphans=True); w.write(dst)
+out/HAKI_HK-FL-PIXSKY_TECHPACK_RevC_small.pdf 3.4 MB; out/HAKI_HK-FL-PIXSKY_RevC_files.zip 12.7 MB

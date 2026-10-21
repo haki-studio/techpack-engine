@@ -118,7 +118,7 @@ def jacquard_sheet():
     for bpx in ((330, 880, 730, 1140), (745, 880, 1130, 1140), (430, 600, 700, 830), (10, 860, 350, 1300)):
         w = bpx[2] - bpx[0]; k = 560 / w
         zs.append(vcat([a.crop(bpx).resize((560, int((bpx[3] - bpx[1]) * k))), v.crop(bpx).resize((560, int((bpx[3] - bpx[1]) * k)), Image.NEAREST)], 6))
-    out = vcat([full, label(hcat(zs, 18), "ZOOMS (top: mockup, bottom: cell map) — left band, right band, bird, right sleeve", "2.5 mm cells, traced per cell")])
+    out = vcat([full, label(hcat(zs, 18), "ZOOMS (top: mockup, bottom: cell map) — left band, right band, bird, right sleeve", "2.5 mm cells, traced per cell; checker fringes redrawn as a regular 7.5 mm lattice")])
     out.save("out/compare_jacquard.png")
     json.dump(dict(agree_front=round(agree, 4), agree_band=round(agree_band, 4), agree_sleeve=round(agree_sleeve, 4),
                    diff_sky_as_cream=round(float(bad_sc.sum() / judged.sum()), 4), diff_cream_as_sky=round(float(bad_cs.sum() / judged.sum()), 4)),

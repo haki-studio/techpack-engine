@@ -9,7 +9,7 @@ from sheet import t, doc, INK, MUTED, RED, GREEN, ORANGE, SW, SH, embed
 import factory, tech, readback
 import fleece as FL, pattern as PT, pattern_draw as PD
 
-STYLE = "HK-FL-PIXSKY"; REV = "Rev B"; DATE = "20 Oct 2026"; NAME = "Pixel Sky sherpa fleece jacket"
+STYLE = "HK-FL-PIXSKY"; REV = "Rev C"; DATE = "21 Oct 2026"; NAME = "Pixel Sky sherpa fleece jacket"
 SHT.FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · {REV} · {DATE}"
 PROP = "#8A5A00"; ALT = "#F5F2EC"
 OUT = "out"; PG = f"{OUT}/pages"; os.makedirs(PG, exist_ok=True)
@@ -17,6 +17,10 @@ SIZES = FL.SIZES
 GATES = json.load(open(f"{OUT}/stitch/gates_fl.json")); JQS = json.load(open(f"{OUT}/jacquard/jacquard_stats.json"))
 PLACE = json.load(open(f"{OUT}/art/placements.json")); CLR = json.load(open(f"{OUT}/clearances.json"))
 AGREE = json.load(open(f"{OUT}/jacquard/agreement.json"))
+CHK = JQS["checker"]; CHKQ = CHK["q"]                                      # checker lattice (jacquard.regularise_checker)
+_small = f"{OUT}/HAKI_{STYLE}_TECHPACK_{REV.replace(' ', '')}_small.pdf"       # finish.py output (run_all runs pack twice)
+SMALL_OK = os.path.exists(_small) and os.path.getsize(_small) < 0.6 * os.path.getsize(_small.replace("_small", "")) if os.path.exists(_small) else False
+SMALL_EV = (f"{os.path.basename(_small)} {os.path.getsize(_small) / 1e6:.1f} MB vs {os.path.getsize(_small.replace('_small', '')) / 1e6:.1f} MB" if os.path.exists(_small) else "small PDF not built yet (finish.py)")
 SELFTEST = json.load(open(f"{OUT}/stitch/gates_selftest.json")) if os.path.exists(f"{OUT}/stitch/gates_selftest.json") else None
 PROF = factory.load(); FRAME = factory.largest_frame(PROF)
 TH = {"yellow": "#F6E23A", "gold": "#D9A521", "black": "#231F1E"}
@@ -204,7 +208,7 @@ def p_j1():
              f"[proposed — confirm]. Trace vs mockup: {AGREE['agree_front']*100:.1f} % pixel agreement over the visible front, {AGREE['agree_band']*100:.1f} % in the cloud band, {AGREE['agree_sleeve']*100:.1f} % on the visible sleeves (J3).", 140, 1.5, MUTED)
     y += 2; o.append(t(12, y, "FOR THE MILL — please answer (also on F2)", 2.0, 700, RED)); y += 4
     for q in ["Can you knit an ENGINEERED (placed per panel) pile jacquard sherpa from these maps? Machine gauge, cell → stitch/course conversion, pile height?",
-              "Minimum motif / cell size you can hold on pile (the bird and the cloud checker use single 2.5 mm cells; the render's checker squares are ~5.5 mm)? A 3rd colour (black) in the bird area only?",
+              f"Minimum motif / cell size you can hold on pile (the bird uses single 2.5 mm cells; the cloud checker is drawn in squares of {CHKQ} cells = {CHKQ * 2.5:.1f} mm [proposed]; the render's checker squares measure ~6–7 mm)? A 3rd colour (black) in the bird area only?",
               "MOQ, lead time, strike-off / knit-down price; file format you want (BMP indexed is ready; we can export others)."]:
         y = para(o, 14, y, "•  " + q, 140, 1.6, RED) + 0.6
     return o
@@ -225,12 +229,15 @@ def p_j3():
     img_fit(o, f"{OUT}/compare_jacquard.png", 12, 29, 118, 168)
     tx = 136; y = 34; o.append(t(tx, y, "WHAT DIFFERS FROM THE MOCKUP, AND WHY", 2.2, 700)); y += 5
     ds, dc = AGREE["diff_sky_as_cream"] * 100, AGREE["diff_cream_as_sky"] * 100
-    items = [("Traced per 2.5 mm cell (Rev B).", f"Rev A traced the clouds in 5 mm blocks on one global phase; the render's ~5.5 mm checker sits on an irregular grid, so its edges and the cream cut-outs were lost. Every cell is now decided on its own: band agreement {AGREE['agree_band']*100:.1f} % (Rev A 91.8 %).", INK),
-             ("Cell edges (diff map, left).", f"Red = render sky / map cream ({ds:.1f} % of judged pixels), orange = render cream / map sky ({dc:.1f} %). They lie on the cloud outlines: a 2.5 mm cell cannot follow a 0.6 mm render pixel edge. No cloud, cut-out or checker group is missing.", INK),
+    items = [("Traced per 2.5 mm cell (Rev B).", f"Rev A traced the clouds in 5 mm blocks on one global phase; the render's ~6–7 mm checker sits on an irregular grid, so its edges and the cream cut-outs were lost. Every cell is now decided on its own (Rev B band 94.4 %); with the regular checker lattice below the band agrees {AGREE['agree_band']*100:.1f} % pixel for pixel (Rev A 91.8 %): the lattice trades a few pixels for the mockup's regular look.", INK),
+             ("Checker fringe regularised (Rev C).", f"The render's 2-colour checker along the cloud edges (~6–7 mm squares on an irregular AI grid) traced per cell as scattered single cells. "
+              f"Checker areas are found by a 2-D checker filter on the render (both colours alternating along both axes), then drawn as a REGULAR lattice of {CHKQ} × {CHKQ} cell squares "
+              f"({CHKQ * 2.5:.1f} mm [proposed]), phase fitted locally (± 2 squares) to the traced cells: {CHK['cells']:,} cells in {CHK['regions']} areas, {CHK['agree'] * 100:.0f} % of them keep their traced colour.", PROP),
+             ("Cell edges (diff map, left).", f"Red = render sky / map cream ({ds:.1f} % of judged pixels), orange = render cream / map sky ({dc:.1f} %). They lie on the cloud outlines: a 2.5 mm cell cannot follow a 0.6 mm render pixel edge. No cloud, cut-out or checker group is missing; part of the difference is the checker lattice (above).", INK),
              ("FILLED (zip, pocket zips + pulls).", "Cells under the CF zip and the pocket zips are mirrored from the traced cells across the detail's edge, row by row (Rev A grew a majority inward and left horizontal stripes).", PROP),
              ("GENERATED (not in the mockup).", "Body sides under the sleeves (reflected from the traced columns), the whole back (front mirrored at the side seams), sleeve back halves (front half mirrored) — lighter cells on J2.", PROP),
              ("Sparkles.", "Cells under the embroidered sparkles (and their 3 px render rim) are sky: the sparkles sew on top.", INK),
-             ("Low-res source.", "Redrawn from a low-res mockup (~0.6 mm per render pixel; no close-ups). A designer may touch up the PNG maps directly (1 px = 1 cell).", PROP)]
+             ("Low-res source.", "Redrawn from a low-res mockup (~0.6 mm per render pixel; no close-ups yet: prompts in inputs/closeup_request.md, Q1). A designer may touch up the PNG maps directly (1 px = 1 cell).", PROP)]
     for h, body, col in items:
         o.append(t(tx, y, h, 1.75, 700, col)); y += 3.3; y = para(o, tx + 2, y, body, 92, 1.6, col, 2.9) + 1.8
     return o
@@ -304,9 +311,10 @@ def p_gfile(F, nm, use, page):
     sp = [q for q in PLACE["sparkles"] if q["file"] == F]
     how = sorted({q["drawn_as"].split(" (")[0].replace("family drawing", "family drawing N×N") if "family" in q["drawn_as"] else q["drawn_as"] for q in sp})
     para(o, 206, 140, "ART: traced from the low-res mockup (inputs/front.png, 0.6 mm/px, no close-ups). Counts, sizes, positions and colours are the mockup's. "
-         "Sparkles ≥ 16 mm: the render's own pixels redrawn as a staircase on their own fitted grid (2.5 / 2.0 / 1.67 mm). Smaller sparkles are blurred past "
-         "their pixel steps, so each is drawn as the family's sparkle (the well-resolved sparkles made 4-fold symmetric) scaled to the cell count that best "
-         "explains its blurred pixels; touching sparkles (bird wing pair) are split by colour first. "
+         "Every sparkle is redrawn as its own pixel sprite: a stack of 1-3 concentric 4-arm crosses (arms, shoulder steps, centre block) whose widths and "
+         "lengths are fitted to the render by a blur model (the blurred drawing must reproduce the blurred render pixels). Sparkles ≥ 16 mm may keep one "
+         "arm longer when the render shows it; smaller ones are drawn as a plain 4-arm plus (the render is too blurred for their inner steps). "
+         "Touching sparkles (bird wing pair) are split by colour first. "
          + ("Sleeve: shapes true size; each motif's position mapped from the hanging sleeve onto the sleeve pattern. " if F == "E3" else "")
          + ("Bird = the jacquard bird cells (same drawing as option A). IP check pending (Q1)." if F == "E1B" else ""), 46, 1.5, MUTED, 2.8)
     return o
@@ -345,6 +353,8 @@ def p_q1():
               "Back + sleeve backs not shown: cloud band continued at the same height above the hem; back = front mirrored at the side seams; no back motif.",
               "Art scale 0.601 mm per render px (CF neck → hem = 565 mm at M). The render is slimmer than the block: art keeps the mockup's motif sizes; hidden body sides are generated.",
               "Brief said the bird is on the wearer's LEFT chest; the mockup shows it on the wearer's RIGHT front (viewer's left). Built as the mockup shows.",
+              f"Cloud checker fringe drawn as a regular lattice of {CHKQ * 2.5:.1f} mm squares ({CHKQ} cells); the render's are ~6–7 mm on an irregular grid.",
+              "Close-ups not generated yet: prompts per panel in inputs/closeup_request.md. When they land, the sparkles, bird and checker are re-traced from them and direction vs reference is judged.",
               "Jacquard cell 2.5 mm (clouds + bird traced per cell) and yarn colours; option A/B for the bird. Threads: catalogue matches, ΔE listed on F1.",
               "Embroidery on sherpa: water-soluble topping + cutaway; tatami 0.40, pull 0.30 (to be tuned at the strike-off). Trims + colours per T5."]:
         y = para(o, 14, y, "•  " + a, 160, 1.65, PROP) + 1.0
@@ -353,10 +363,11 @@ def p_q1():
 def p_r1():
     o = H("R1 · LESSONS CHECKS — before delivery", "Every check from LESSONS.md that applies to this product, with its result. Numbers from the generated files.", "R1")
     allA = all(GATES[F]["motifs_pass"] == GATES[F]["motifs_n"] for F in GATES)
-    rows = [("A2/A11/A14", "Motif counts + silhouettes vs the mockup", f"{len(PLACE['sparkles'])} sparkles + bird; A14 motif_match {sum(GATES[F]['motifs_pass'] for F in GATES)}/{sum(GATES[F]['motifs_n'] for F in GATES)} (refs = render pixels)", allA),
+    nE1 = GATES["E1"]["motifs_n"]; distinct = sum(GATES[F]["motifs_n"] for F in GATES) - nE1      # E1B repeats E1's sparkles
+    rows = [("A2/A11/A14", "Motif counts + silhouettes vs the mockup", f"{len(PLACE['sparkles'])} sparkles + bird = {distinct} motifs; A14 " + ", ".join(f"{F} {GATES[F]['motifs_pass']}/{GATES[F]['motifs_n']}" for F in GATES) + " (E1B repeats E1's)", allA),
             ("A3/C8", "Keep-outs on every size (pattern pieces)", "clearances.json XS–3XL", all(r["ok"] for rows in CLR.values() for r in rows)),
             ("A7", "IP: copyrighted character?", "bird resembles a game sprite — question open (Q1); built as traced", None),
-            ("A10", "Low-res source stated on the spec pages", "G2–G5, J3", True),
+            ("A10", "Low-res source stated; close-ups requested", "G2–G5, J3; inputs/closeup_request.md " + ("written" if os.path.exists("inputs/closeup_request.md") else "MISSING"), "DONE" if os.path.exists("inputs/closeup_request.md") else False),
             ("A14+", "Colour per motif (render core hue vs sewn stop)", ", ".join(f"{F} {sum(c['ok'] for c in GATES[F]['colour'])}/{len(GATES[F]['colour'])}" for F in GATES), all(GATES[F]["colour_ok"] for F in GATES)),
             ("A15", "Details masked; qa.uncovered on every file", "details masked, mirror-filled (J3); gaps ≥ 25 mm²: " + ", ".join(f"{F} {len(GATES[F]['uncovered'])}" for F in GATES), all(not GATES[F]["uncovered"] for F in GATES)),
             ("A16", "qa.angle_coherence (visible stitches per part)", ", ".join(f"{F} {len(GATES[F]['coherence'])} fails/{GATES[F]['coherence_parts']}" for F in GATES), all(not GATES[F]["coherence"] for F in GATES)),
@@ -364,21 +375,23 @@ def p_r1():
             ("guards", "New gates red on a planted defect (gates_selftest.py)", ("colour " + str(SELFTEST["colour_red"]) + " / A15 " + str(SELFTEST["a15_red"]) + " / A16 " + str(SELFTEST["a16_red"]) + " rows red; 0 on the shipped E2") if SELFTEST else "not run", bool(SELFTEST and SELFTEST["ok"])),
             ("B5", f"≤ {PROF['needles']} threads per file (PES)", ", ".join(f"{F} {GATES[F]['threads']}" for F in GATES), all(GATES[F]["threads"] <= PROF["needles"] for F in GATES)),
             ("B7/B17", "Max stitch ≤ 7.5 mm (DST)", ", ".join(f"{F} {GATES[F]['max_stitch']}" for F in GATES), all(GATES[F]["max_stitch"] <= 7.5 for F in GATES)),
-            ("B8/B20", "Trims + stitches from the DST read-back", "gates_fl.json via readback.dst", True),
+            ("B8/B20", "Trims + stitches from the DST read-back", "gates_fl.json via readback.dst (process)", "DONE"),
             ("B27", "Exposed stitches on the exact geometry", "0 on every file at halo 0.35 (pull 0.30) — ENGINE_NOTES 2", all(not GATES[F]["exposed_035"] for F in GATES)),
             ("C1–C3", "Pattern shape checks (neck scoop, SA)", "all sizes", all(SHAPE.values())),
             ("C2", "Half measures converted", "chart vs pattern all sizes", all(CHECK.values())),
-            ("C6/C7", "Proposed values marked; drafted not fitted", "amber everywhere; fit sample required", True),
-            ("C9", "Derived block with explicit delta list", "fleece.py EASE_CM; Drum chart untouched", True),
-            ("D1", "Every page rendered + looked at", "prev_*.png", True), ("D2", "PDF recompressed", "shrink", True),
-            ("E7", "F1 factory requests page", "F1 + F2", True)]
+            ("C6/C7", "Proposed values marked; drafted not fitted", "amber everywhere; fit sample required (process)", "DONE"),
+            ("C9", "Derived block with explicit delta list", "fleece.py EASE_CM; Drum chart untouched (process)", "DONE"),
+            ("D1", "Every page rendered + looked at", "prev_*.png (process)", "DONE"), ("D2", "PDF recompressed", SMALL_EV, SMALL_OK),
+            ("E7", "F1 factory requests page", "F1 + F2 in this pack", True)]
     y = 34
     for x_, h_ in zip([12, 34, 112, 250], ["Lesson", "Check", "Evidence", "Result"]): o.append(t(x_, y, h_, 1.8, 700, MUTED))
     for i, (a, b_, c, ok) in enumerate(rows):
         y += 5.2
         if i % 2 == 0: o.append(f'<rect x="11" y="{y - 3.4}" width="{SW - 22}" height="5.2" fill="{ALT}"/>')
         o.append(t(12, y, a, 1.65, 700)); o.append(t(34, y, b_, 1.6)); o.append(t(112, y, c[:95], 1.5, 400, MUTED))
-        o.append(t(250, y, "PASS" if ok else ("OPEN" if ok is None else "FAIL"), 1.7, 700, GREEN if ok else (ORANGE if ok is None else RED)))
+        lab_, col_ = ("DONE", MUTED) if ok == "DONE" else (("PASS", GREEN) if ok else (("OPEN", ORANGE) if ok is None else ("FAIL", RED)))
+        o.append(t(250, y, lab_, 1.7, 700, col_))
+    y += 7; o.append(t(12, y, "PASS / FAIL = measured from the generated files. DONE = a process step (no file to measure); OPEN = founder question.", 1.5, 400, MUTED))
     return o
 
 def build():

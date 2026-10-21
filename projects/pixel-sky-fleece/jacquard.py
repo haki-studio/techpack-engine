@@ -70,6 +70,91 @@ def front_phase(c=CLOUD):
             if best is None or s > best[0]: best = (s, float(ox), float(oy))
     return best
 
+# ---------------------------------------------------------------- checker fringe (PR #28 round 2)
+CHK_S_PX = (8, 9, 10, 11, 12)  # candidate checker squares in render px (4.8-7.2 mm; measured ~6-7 mm)
+CHK_T = 0.5            # normalised checker-filter response above this = checker
+CHK_ERODE = 6          # px: the filter window spills ~half a square past the checker; erode, then grow back 3
+CHK_WIN = 2            # local phase window: +- 2 lattice squares
+CHK_Q = (3,)           # lattice square in cells = 7.5 mm: the render measures ~6-7 mm, and 33 of 38 areas chose 3 over 2 by
+                       # agreement (round 2); one size for the whole garment, as in the mockup
+
+_CHK = None
+def checker_px():
+    """render-px mask of the checker fringes. Each pixel's blueness (b - r, sky +1 / cream -1) is filtered with a
+    windowed 2-D checker kernel (square s px, 4 quadrature phases, s in CHK_S_PX); the response is high only where
+    the two colours alternate along BOTH axes (a plain cloud edge or solid area scores ~0). Labels / connected squares
+    do not work here: the render's anti-aliasing joins checker squares at their corners."""
+    global _CHK
+    if _CHK is not None: return _CHK
+    from scipy import ndimage as ndi
+    from scipy.signal import fftconvolve
+    a = MM.img().astype(float); L = lab()
+    B = np.clip(((a[..., 2] - a[..., 0]) - 60) / 60.0, -1, 1); B[L > 1] = 0
+    best = np.zeros(B.shape)
+    for sq in CHK_S_PX:
+        n = 3 * sq; x = np.arange(-n, n + 1); win = np.exp(-(x / (1.2 * sq)) ** 2); R2 = 0
+        for fx in (np.cos, np.sin):
+            for fy in (np.cos, np.sin):
+                K = np.outer(win * fy(np.pi * x / sq), win * fx(np.pi * x / sq)); K -= K.mean(); K /= np.abs(K).sum()
+                R2 = R2 + fftconvolve(B, K, mode="same") ** 2
+        best = np.maximum(best, 2 * np.sqrt(R2))
+    m = ndi.binary_erosion(best > CHK_T, iterations=CHK_ERODE)
+    _CHK = ndi.binary_dilation(m, iterations=CHK_ERODE - 3)
+    return _CHK
+
+def regularise_checker(cmap, centre_px):
+    """cells whose centre falls in a render checker region -> a REGULAR 2-colour lattice (square q cells, phase and
+    colour order fitted per region to the traced cells; q from CHK_Q by agreement). The 2.5 mm per-cell trace of a
+    ~6.5 mm checker on an irregular render grid gave scattered single cells (PR #28 round 2).
+    cmap {(i, j): (code, flag)} is changed in place; returns the set of regularised cells."""
+    from scipy import ndimage as ndi
+    C = checker_px(); H, W = C.shape; inr = {}
+    for k, v in cmap.items():
+        if v is None or v[0] not in (SKY, CREAM): continue
+        p = centre_px(*k)
+        if p is None: continue
+        px, py = int(round(p[0])), int(round(p[1]))
+        if 0 <= px < W and 0 <= py < H and C[py, px]: inr[k] = v
+    if not inr: return set()
+    I0 = min(i for i, _ in inr); J0 = min(j for _, j in inr); I1 = max(i for i, _ in inr); J1 = max(j for _, j in inr)
+    G = np.zeros((J1 - J0 + 1, I1 - I0 + 1), bool)
+    for (i, j) in inr: G[j - J0, i - I0] = True
+    rl, rn = ndi.label(G, structure=np.ones((3, 3)))
+    done = set()
+    for r in range(1, rn + 1):
+        cells = [(i, j) for (i, j) in inr if rl[j - J0, i - I0] == r]
+        if len(cells) < 6: continue
+        best = None
+        for q in CHK_Q:
+            for oi in range(q):
+                for oj in range(q):
+                    for par in (0, 1):
+                        lat = lambda i, j: SKY if ((((i + oi) // q) + ((j + oj) // q) + par) % 2 == 0) else CREAM
+                        agree = sum(lat(i, j) == inr[(i, j)][0] for i, j in cells)
+                        if best is None or agree > best[0]: best = (agree, q, oi, oj, par)
+        _, q = best[0], best[1]
+        # the render's grid drifts (irregular AI pixels): one phase per big region fits ~55 %. Each cell takes the lattice
+        # phase that best fits the traced cells within +- CHK_WIN squares; phases are then smoothed (majority in the
+        # same window) so a phase change happens along a lattice line, not cell by cell.
+        cs = set(cells); val = {k: inr[k][0] for k in cells}; R_ = CHK_WIN * q
+        phases = [(oi, oj, par) for oi in range(q) for oj in range(q) for par in (0, 1)]
+        latv = lambda i, j, ph: SKY if ((((i + ph[0]) // q) + ((j + ph[1]) // q) + ph[2]) % 2 == 0) else CREAM
+        loc = {}
+        for (i, j) in cells:
+            nb = [(a, b) for a in range(i - R_, i + R_ + 1) for b in range(j - R_, j + R_ + 1) if (a, b) in cs]
+            loc[(i, j)] = max(phases, key=lambda ph: sum(latv(a, b, ph) == val[(a, b)] for a, b in nb))
+        ph_of = {}
+        for (i, j) in cells:
+            nb = [loc[(a, b)] for a in range(i - R_, i + R_ + 1) for b in range(j - R_, j + R_ + 1) if (a, b) in cs]
+            ph_of[(i, j)] = max(set(nb), key=nb.count)
+        agree = 0
+        for (i, j) in cells:
+            v = latv(i, j, ph_of[(i, j)]); agree += v == val[(i, j)]
+            cmap[(i, j)] = (v, cmap[(i, j)][1]); done.add((i, j))
+        CHK_STATS.append(dict(cells=len(cells), q=q, agree=round(agree / len(cells), 3), phases=len(set(ph_of.values()))))
+    return done
+CHK_STATS = []
+
 def trace_front_M(phase):
     """dict (i, j) -> (code, flag) on the cloud grid. i: column from CF (x = i*CLOUD .. +CLOUD), j: row up from the hem
     edge (y = hem - (j+1)*CLOUD .. hem - j*CLOUD); traced where visible, else None"""
@@ -86,6 +171,10 @@ def trace_front_M(phase):
             if spark_near(sx, sy, sx + CLOUD, sy + CLOUD): out[(i, j)] = (SKY, TRACED); continue   # sparkle rim -> sky
             # sparkles (embroidered on top) and the bird sit on sky: any sparkle / bird pixel in the cell -> sky
             out[(i, j)] = (SKY if (f[2] + f[3] + f[4] > 0.12 or f[0] >= f[1]) else CREAM, TRACED)
+    def centre(i, j):
+        x0 = i * CLOUD; y0 = hem - (j + 1) * CLOUD
+        return MM.Pinv(x0 + ox - round(ox / CLOUD) * CLOUD + CLOUD / 2, y0 + oy - round(oy / CLOUD) * CLOUD + CLOUD / 2)
+    regularise_checker(out, centre)
     return out
 
 def fill_front(tr):
@@ -206,6 +295,8 @@ def grid_fn(cmap):
         return v[0], (GENERATED if (g1 or g2) else v[1])
     return f
 
+SLV_EDGE_PX = 22         # px (~13 mm): the sleeve outline overlaps the body side by 15-20 px at the inner edge (work/r2/sl.png)
+
 def sleeve_trace(side, size="M"):
     """{(i, j): (code, flag)} on the CLOUD grid of the sleeve (i from the sleeve centre line, j up from the cuff edge),
     sampled through mockmap.sleeve_to_img; back half = front half mirrored (GENERATED)"""
@@ -213,26 +304,53 @@ def sleeve_trace(side, size="M"):
     Lu = mt["Lu"]; L = lab(); x0, y0, x1, y1 = A.bounds; out = {}
     sg = 1 if side == "R" else -1
     k = np.linspace(0.12, 0.88, 4)
+    # sample only inside the sleeve outline shrunk by SLV_EDGE_PX: at the outline the samples catch the body's side and
+    # the fold shadow, which read sky in the cream (round 2: a column of orphan cells at the right sleeve's seam edge)
+    from PIL import Image, ImageDraw
+    from scipy import ndimage as ndi
+    im = Image.new("L", (L.shape[1], L.shape[0]), 0)
+    ImageDraw.Draw(im).polygon([tuple(p) for p in MM.sleeve_poly(side).exterior.coords], fill=1)
+    inner = ndi.binary_erosion(np.array(im, bool), iterations=SLV_EDGE_PX)
     for j in range(0, int((Lu - y0) / CLOUD) + 2):
         for i in range(math.floor(x0 / CLOUD) - 1, math.ceil(x1 / CLOUD) + 1):
             xs = (i + k) * CLOUD; ys = Lu - (j + 1 - k) * CLOUD
             X, Y = np.meshgrid(xs, ys); px, py, front = MM.sleeve_to_img(side, X, Y, mt)
             h = mt["cap_h"]; t_ok = (Y >= -h) & (Y <= Lu)
             pxi = np.clip(np.round(px).astype(int), 0, L.shape[1] - 1); pyi = np.clip(np.round(py).astype(int), 0, L.shape[0] - 1)
+            t_ok = t_ok & inner[pyi, pxi]                  # off the silhouette edge (body side / fold shading reads sky)
             cl = L[pyi, pxi][t_ok]
             cl = cl[cl < 5]
             if cl.size < 6: out[(i, j)] = None; continue
             sky = np.isin(cl, [0, 2, 3, 4]).sum(); cr = (cl == 1).sum()
             fl = TRACED if np.sign((i + 0.5)) == sg else GENERATED
             out[(i, j)] = (SKY if sky >= cr else CREAM, fl)
-    # unresolved cells: nearest resolved cell in the row, else by height
+    def centre(i, j):
+        px, py, _ = MM.sleeve_to_img(side, np.array([(i + 0.5) * CLOUD]), np.array([Lu - (j + 0.5) * CLOUD]), mt)
+        return (float(px[0]), float(py[0])) if np.isfinite(px[0]) and np.sign(i + 0.5) == sg else None
+    # the outermost traced cell of every row samples the silhouette's anti-aliased rim: drop it (it gave a 1-cell column of
+    # orphan cells at the seam edge, round 2) and let the mirror fill below replace it
+    byrow = {}
+    for (i, j), v in out.items():
+        if v is not None: byrow.setdefault(j, []).append(i)
+    for j, ks in byrow.items():
+        if len(ks) > 6:
+            for i in (min(ks), max(ks)): out[(i, j)] = None
+    regularise_checker(out, centre)
+    # unresolved cells: mirrored from the traced run of the row, else by height
     rows = {}
     for (i, j), v in out.items(): rows.setdefault(j, {})[i] = v
     res = {}
     for (i, j), v in out.items():
         if v is not None: res[(i, j)] = v; continue
         known = {q: w for q, w in rows[j].items() if w is not None}
-        if known: q = min(known, key=lambda q: abs(q - i)); res[(i, j)] = (known[q][0], GENERATED)
+        if known:                                     # MIRROR across the traced run's edge (nearest-in-row smeared the
+            ks = sorted(known)                        # edge cell into horizontal stripes, round 2)
+            if i < ks[0]: src = 2 * ks[0] - i
+            elif i > ks[-1]: src = 2 * ks[-1] - i
+            else:                                     # a gap (e.g. both sides of the sleeve fold): mirror from the nearer side
+                a_ = max(q for q in ks if q < i); b_ = min(q for q in ks if q > i)
+                src = 2 * a_ - i if i - a_ <= b_ - i else 2 * b_ - i
+            q = min(ks, key=lambda q: abs(q - src)); res[(i, j)] = (known[q][0], GENERATED)
         else: res[(i, j)] = (CREAM if j * CLOUD < 120 else SKY, GENERATED)
     return res
 
@@ -271,7 +389,12 @@ def build(sizes=None, verbose=True):
     ph = front_phase(); tr = trace_front_M(ph); fm = fill_front(tr); ffront = grid_fn(fm)
     bird, binfo = bird_cells()
     sR, sL = sleeve_trace("R"), sleeve_trace("L"); fR, fL = grid_fn(sR), grid_fn(sL)
-    stats = dict(cell_mm=CELL, cloud_mm=CLOUD, phase=dict(purity=round(ph[0], 4), ox=ph[1], oy=ph[2]), bird=binfo, panels={})
+    from collections import Counter
+    n_ = sum(c["cells"] for c in CHK_STATS)
+    chk = dict(regions=len(CHK_STATS), cells=n_, q=Counter(c["q"] for c in CHK_STATS for _ in range(c["cells"])).most_common(1)[0][0] if CHK_STATS else None,
+               q_by_region=[c["q"] for c in CHK_STATS], agree=round(sum(c["agree"] * c["cells"] for c in CHK_STATS) / max(n_, 1), 3),
+               note="checker areas from the render's 2-D checker filter, redrawn as a regular lattice (phase fitted locally); agree = share of those cells keeping their traced colour")
+    stats = dict(checker=chk, cell_mm=CELL, cloud_mm=CLOUD, phase=dict(purity=round(ph[0], 4), ox=ph[1], oy=ph[2]), bird=binfo, panels={})
     json.dump({"front_M": {f"{i},{j}": v for (i, j), v in fm.items()}, "sleeve_R": {f"{i},{j}": v for (i, j), v in sR.items()},
                "sleeve_L": {f"{i},{j}": v for (i, j), v in sL.items()}, "bird": sorted(bird)}, open(f"{OUT}/design_cloudgrid.json", "w"))
     for size in sizes:

@@ -123,25 +123,32 @@ def sleeve_xy(px, py, mt, side="L", n=500):
     return float(X[ok][k]), float(Y[ok][k])
 
 def family_exemplars(comps):
-    """the well-resolved sparkles (>= star_fit.SMALL_MM): their staircases made D4-symmetric = the family's drawings"""
+    """the well-resolved sparkles (>= star_fit.SMALL_MM): their tiered drawings (fit_tiers) on a 1 mm matrix, made
+    D4-symmetric = the family's drawings for the small sparkles"""
     import star_fit as SF
     exs = []
     for c in comps:
         if (c["xs"].max() - c["xs"].min() + 1) * MM.S < SF.SMALL_MM: continue
-        g, iou, pix, cell = stair_cells(c["xs"], c["ys"]); X = SF.exemplar(g, cell)
+        g = SF.fit_tiers(c["xs"], c["ys"])[0]; X = SF.exemplar(g, EX_CELL)
         if not any(x.shape == X.shape and (x == X).all() for x in exs): exs.append(X)
     return exs
 
-def fit_motif(c, exs):
-    """big sparkle: its own staircase (stair_cells). Small sparkle (< SMALL_MM, blurred past its own pixel steps): the
-    family drawing (exemplar scaled to N cells) that best explains the BLURRED render pixels (star_fit.fit_forward)."""
+EX_CELL = 1.0       # mm, matrix cell of a family exemplar (resampled to N cells for a small sparkle)
+
+SMALL_KMAX = 1      # small sparkles (< star_fit.SMALL_MM): one cross = the plain 4-arm plus. A 2nd tier fitted on a
+                    # blur this wide rounds them into stepped octagons/blobs (round 2 check, work/r2)
+
+def fit_motif(c, exs=None):
+    """every sparkle = its own tiered pixel sprite (star_fit.fit_tiers: k concentric crosses with blunt square arms,
+    widths/lengths by the blur forward model vs the render). PR #28 round 2: a 2.5 mm staircase drew the big sparkles
+    as stepped diamonds, and the resampled family exemplar drew the small ones as round blobs. Big sparkles may use
+    free edges (sleeve drape, one arm longer) when that explains the render >= 10 % better; small ones stay 4-fold."""
     import star_fit as SF
-    if (c["xs"].max() - c["xs"].min() + 1) * MM.S >= SF.SMALL_MM:
-        g, iou, pix, cell = stair_cells(c["xs"], c["ys"]); return g, iou, pix, cell, "own staircase"
     _, _, pix = stair(c["xs"], c["ys"], 2.5, search=1, sym=False)
-    g, err, cell, N = SF.fit_forward(c["xs"], c["ys"], exs)
+    big = (c["xs"].max() - c["xs"].min() + 1) * MM.S >= SF.SMALL_MM
+    g, err, k, r, tab = SF.fit_tiers(c["xs"], c["ys"], kmax=3 if big else SMALL_KMAX, free_edges=big)
     iou = g.intersection(pix).area / g.union(pix).area
-    return g, iou, pix, cell, f"family drawing {N}x{N} cells (blur-model rmse {err:.3f})"
+    return g, iou, pix, None, f"own sprite, {k} tier{'s' if k > 1 else ''} ({tab['kind']}, blur-model rmse {err:.3f})"
 
 def ref_pixels(c, level=0.5):
     """A14 reference of a sparkle = its render pixels that are at least half motif colour (star_fit.soft_map >= level).
@@ -156,7 +163,7 @@ def ref_pixels(c, level=0.5):
     return unary_union([box(x - MM.S / 2, y - MM.S / 2, x + MM.S / 2, y + MM.S / 2) for x, y in zip(gx, gy)]).buffer(0)
 
 def build():
-    comps = components(); g, mt = FL.draft("M"); exs = family_exemplars(comps)
+    comps = components(); g, mt = FL.draft("M"); exs = None
     files = {"E1": dict(piece="F02", desc="Sparkles, wearer's right front (beside the bird)", parts=[]),
              "E2": dict(piece="F01", desc="Sparkles, wearer's left front", parts=[]),
              "E3": dict(piece="S02", desc="Sparkles, wearer's left sleeve", parts=[])}
