@@ -1,2 +1,3 @@
-M FR primary {'stitches': 116468, 'trims': 438, 'stops': 11, 'size_mm': (281.2, 369.1), 'max_stitch': 7.4} chenille plan {'paths': 293, 'needle_points': 3299, 'length_m': 6.9}
+M FR primary {'stitches': 120133, 'trims': 533, 'stops': 12, 'size_mm': (281.1, 369.4), 'max_stitch': 7.36} chenille plan {'paths': 375, 'needle_points': 3634, 'length_m': 7.5}
 DONE M ['FR']
+DONE

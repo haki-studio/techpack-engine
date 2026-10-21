@@ -1,0 +1,18 @@
+BK: stripe patches merged into their band 350 (513 -> 163 WV regions); bare pockets filled 3326 (1955 mm2)
+FR: stripe patches merged into their band 131 (229 -> 98 WV regions); bare pockets filled 1383 (923 mm2)
+FL: stripe patches merged into their band 184 (295 -> 111 WV regions); bare pockets filled 2203 (1459 mm2)
+SR: stripe patches merged into their band 287 (429 -> 142 WV regions); bare pockets filled 2727 (1818 mm2)
+SL: stripe patches merged into their band 154 (269 -> 115 WV regions); bare pockets filled 1964 (1250 mm2)
+CF zip           lead FL -> FR: recoloured 2, kept (big) 0, same 0; stripe tone agrees 34 -> 91 %
+side L           lead BK -> FL: recoloured 3, kept (big) 0, same 3; stripe tone agrees 61 -> 97 %
+side R           lead BK -> FR: recoloured 6, kept (big) 0, same 4; stripe tone agrees 51 -> 71 %
+shoulder L       lead BK -> FL: recoloured 1, kept (big) 0, same 3; stripe tone agrees 88 -> 100 %
+shoulder R       lead BK -> FR: recoloured 0, kept (big) 0, same 0; stripe tone agrees None -> None %
+armhole back L   lead BK -> SL: recoloured 4, kept (big) 0, same 5; stripe tone agrees 61 -> 79 %
+armhole front L  lead FL -> SL: recoloured 5, kept (big) 0, same 5; stripe tone agrees 63 -> 91 %
+armhole back R   lead BK -> SR: recoloured 0, kept (big) 0, same 0; stripe tone agrees None -> None %
+armhole front R  lead FR -> SR: recoloured 0, kept (big) 0, same 1; stripe tone agrees 57 -> 57 %
+underarm L       lead SL -> SL: recoloured 3, kept (big) 0, same 1; stripe tone agrees 27 -> 84 %
+underarm R       lead SR -> SR: recoloured 13, kept (big) 0, same 4; stripe tone agrees 30 -> 84 %
+sleeve centre L  lead SL -> SL: recoloured 0, kept (big) 0, same 6; stripe tone agrees 100 -> 100 %
+sleeve centre R  lead SR -> SR: recoloured 1, kept (big) 0, same 6; stripe tone agrees 93 -> 100 %

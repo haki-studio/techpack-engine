@@ -14,7 +14,7 @@ IoU / width / height test of qa.motif_match is applied after it. Coverage gaps >
 present within the shift found for that area); anything else is UNEXPLAINED and blocks delivery.
 usage: ./py.sh gates.py [--art]  ->  gates_M.json + printed tables"""
 import wavecore as WC
-import sys, json, pickle
+import sys, json, pickle, os
 import numpy as np
 from scipy import ndimage as ndi
 from PIL import Image, ImageDraw
@@ -26,8 +26,9 @@ SIZE = "M"; PPM = 4.0; ART = "--art" in sys.argv
 D = pickle.load(open(f"art_{SIZE}.pkl", "rb"))
 FAM_TONES = {"curls": WT.CREAM + WT.GREY, "drops": WT.CREAM, "stripes": WT.BLUES}
 FAM_LABEL = {"curls": "curls (crests)", "drops": "drops", "stripes": "wave masses (stripes + crests)"}
-FAM_THREADS = {"curls": ["w1", "w3", "g1"], "drops": ["w1"], "stripes": ["b0", "b1", "b2", "b3", "b4", "b5"]}
+FAM_THREADS = {"curls": ["w1", "w3", "g1"], "drops": ["w1", "w3", "g1"], "stripes": ["b0", "b1", "b2", "b3", "b4", "b5"]}
 DROP_MAX = 100.0; SHIFT = 40.0
+PULL_DR = float(WC.WV_RULES["DR"][6])          # pull compensation of the drop satins (wavecore rules)
 
 _LAB = {}
 def labels(view):
@@ -85,6 +86,7 @@ def ref_classes(P):
         img = np.asarray(MM.image(view)).astype(np.float32).mean(-1)
         GREY.setdefault(P, np.full(XX.shape, np.nan, np.float32))
         GREY[P] = np.where(ok, _mc(img, [py, px], order=1, mode="nearest"), GREY[P])
+        PXY.setdefault(P, {})[view] = (np.where(ok, px, np.nan).astype(np.float32), np.where(ok, py, np.nan).astype(np.float32))
     clip = PC.clip_for(SIZE, P)
     out = np.where(shapely.contains_xy(clip, XX0, YY0), out, -1)                      # A15: keep-outs are bare by spec
     return out, bb
@@ -108,6 +110,7 @@ def rigid_ref(P, fam, bb, shape):
     import trace as TR
     im = Image.new("L", shape[::-1], 0); d = ImageDraw.Draw(im); maps = WA.piece_maps(SIZE)
     mvim = Image.new("L", shape[::-1], 0); dm = ImageDraw.Draw(mvim)
+    uim = Image.new("I", shape[::-1], 0); du = ImageDraw.Draw(uim)
     ids = [WT.NAMES.index(n) for n in FAM_TONES["curls"]]
     for view in ("back", "front"):
         if P not in WA.VIEW_PIECES[view]: continue
@@ -136,14 +139,63 @@ def rigid_ref(P, fam, bb, shape):
             for q in WR.polys_of(g):
                 d.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in q.exterior.coords], fill=255)
                 dm.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in q.exterior.coords], fill=int(min(250, round(float(np.hypot(*mv))))) + 1)
+                du.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in q.exterior.coords], fill=unit_id(f"{view}{i}"))
                 for h in q.interiors: d.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in h.coords], fill=0)
     r = np.asarray(im) > 0
     MOVE_RASTER[0] = np.asarray(mvim).astype(np.int32) - 1
+    UNIT_RASTER[0] = np.asarray(uim).astype(np.int32)
     clipm = shapely.contains_xy(PC.clip_for(SIZE, P).buffer(-0.4), *grid(P)[1:])
     return r & clipm
 
 from shapely import affinity
-MOVES = {}; MOVE_RASTER = [None]; GREY = {}
+MOVES = {}; MOVE_RASTER = [None]; GREY = {}; PXY = {}; UNIT_RASTER = [None]; _UID = {}
+def unit_id(u):
+    """stable int id of a rigid motif unit (under-collar copies '~uc' count as the same motif)"""
+    u = str(u).split("~")[0]
+    return _UID.setdefault(u, len(_UID) + 1)
+
+def art_unit_raster(P, bb, shape):
+    """id of the art's rigid motif (unit) at each grid px, top layer wins; 0 = stripes / rope / filler (no unit)"""
+    im = Image.new("I", shape[::-1], 0); d = ImageDraw.Draw(im)
+    for r in sorted(D[P], key=lambda r: r.get("layer", 0)):
+        if r["grp"] in ("FM-loop",): continue
+        f = unit_id(r["unit"]) if r.get("unit") else 0
+        for q in WR.polys_of(r["geom"]):
+            d.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in q.exterior.coords], fill=f)
+    return np.asarray(im).astype(np.int32)
+
+def drops_by_unit(P, bb, al, Aid, ref_units):
+    """LESSONS A21 for spray drops: a drop that touches a crest is sewn in the same cream / grey threads, so a family mask
+    merges it into the crest. Each reference drop (input pixels, its own traced outline) is compared with the visible DST
+    stitches of ITS motif only: every visible segment of the drop threads is attributed to the art motif under its
+    midpoint (art_unit_raster). The reference stays input pixels; a drop sewn in the wrong place or shape still fails."""
+    shape = al.shape; ua = art_unit_raster(P, bb, shape)
+    vis, vcol = _PAT[P]; want = set(FAM_THREADS["drops"])
+    from collections import defaultdict
+    segs_u = defaultdict(list)
+    for (x0, y0, x1, y1), c in zip(vis, vcol):
+        if c not in want: continue
+        cx, cy = int((x0 + x1) / 2 * PPM), int((y0 + y1) / 2 * PPM)
+        if 0 <= cy < shape[0] and 0 <= cx < shape[1] and ua[cy, cx]: segs_u[int(ua[cy, cx])].append((x0, y0, x1, y1))
+    lw = max(1, int(round(0.6 * PPM))); rows = []
+    lab, n = ndi.label(al)
+    for k, sl in enumerate(ndi.find_objects(lab), 1):
+        comp = lab == k
+        us = ref_units[comp]; us = us[us > 0]
+        u = int(np.bincount(us).argmax()) if len(us) else 0
+        im = Image.new("L", shape[::-1], 0); d = ImageDraw.Draw(im)
+        for x0, y0, x1, y1 in segs_u.get(u, []):
+            # the fabric pulls each stitch in by about the pull compensation the build added (that is what the compensation
+            # is for), so the sewn drop is drawn with every stitch shortened by PULL_DR at both ends (as qa.centreline_match
+            # subtracts 2 x pull from a stroke's width)
+            L = float(np.hypot(x1 - x0, y1 - y0)); k_ = min(0.45, PULL_DR / L) if L > 0 else 0.0
+            dx, dy = (x1 - x0) * k_, (y1 - y0) * k_
+            d.line([((x0 + dx) * PPM, (y0 + dy) * PPM), ((x1 - dx) * PPM, (y1 - dy) * PPM)], fill=255, width=lw)
+        o = ndi.binary_closing(np.asarray(im) > 0, iterations=2)
+        rr = qa.motif_match(comp, o, PPM, min_mm2=4.0)
+        for r_ in rr: r_["unit"] = u
+        rows += rr
+    return rows
 for _P in WC.PIECES:
     for _r in D[_P]:
         if _r.get("unit") and (_P, _r["unit"]) not in MOVES: MOVES[(_P, _r["unit"])] = tuple(_r.get("mv", (0.0, 0.0)))
@@ -161,23 +213,41 @@ def dst_family(P, bb, fam):
                 for h in q.interiors: d.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in h.coords], fill=0)
         return np.asarray(im) > 0
     if P not in _PAT:
+        # LESSONS A17: the motif gate reads the VISIBLE top layer of the written DST (qa.visible_segments, z-buffer in sew
+        # order at 12 ppm), i.e. what the eye sees on the sewn piece. Hidden travel runs under later fills (up to 58 mm long
+        # on FL, sewn in cream before the crests covering them) no longer join neighbouring crests into one blob (A21).
         r = json.load(open(f"out/01_wave/{SIZE}/result_{P}.json"))["full"]
-        _PAT[P] = (pe.read(r["file"] + ".dst"), [s["col"] for s in r["per_stop"]], r["origin"])
-    p, cols, (ox, oy) = _PAT[P]
-    im = Image.new("L", shape[::-1], 0); d = ImageDraw.Draw(im); lw = max(1, int(round(0.6 * PPM))); ci = 0; prev = None
+        p = pe.read(r["file"] + ".dst"); cols = [s["col"] for s in r["per_stop"]]; ox, oy = r["origin"]
+        segs, sc, prev, ci = [], [], None, 0
+        for x, y, cmd in p.stitches:
+            k = cmd & pe.COMMAND_MASK; q = (x / 10 + ox - bb[0], y / 10 + oy - bb[1])
+            if k == pe.STITCH:
+                if prev is not None and prev != q: segs.append((prev[0], prev[1], q[0], q[1])); sc.append(cols[min(ci, len(cols) - 1)])
+                prev = q
+            else:
+                prev = None
+                if k == pe.COLOR_CHANGE: ci += 1
+        vis, ix = qa.visible_segments(segs, (0.0, 0.0, bb[2] - bb[0], bb[3] - bb[1]), ppm=12.0, return_index=True)
+        _PAT[P] = (vis, [sc[i] for i in ix])
+    vis, vcol = _PAT[P]
+    im = Image.new("L", shape[::-1], 0); d = ImageDraw.Draw(im); lw = max(1, int(round(0.6 * PPM)))
     want = set(FAM_THREADS[fam])
-    for x, y, cmd in p.stitches:
-        k = cmd & pe.COMMAND_MASK; q = ((x / 10 + ox - bb[0]) * PPM, (y / 10 + oy - bb[1]) * PPM)
-        if k == pe.STITCH:
-            if prev is not None and cols[min(ci, len(cols) - 1)] in want: d.line([prev, q], fill=255, width=lw)
-            prev = q
-        elif k == pe.COLOR_CHANGE: ci += 1; prev = None
-        else: prev = None
+    for (x0, y0, x1, y1), c in zip(vis, vcol):
+        if c in want: d.line([(x0 * PPM, y0 * PPM), (x1 * PPM, y1 * PPM)], fill=255, width=lw)
     if fam == "curls":
         import live
         rec = json.load(open(f"out/01_wave/{SIZE}/result_{P}.json"))["full"].get("chenille")
         if rec: live.draw_chenille(im, rec, bb, PPM, flat={"w1": 255, "w3": 255, "w1e": 255})
     return ndi.binary_closing(np.asarray(im) > 0, iterations=2)
+
+def object_raster(P, bb, shape):
+    """index (1-based) of the art object on top at each grid px (sew-layer order), 0 = none"""
+    im = Image.new("I", shape[::-1], 0); d = ImageDraw.Draw(im)
+    for i, r in sorted(enumerate(D[P], 1), key=lambda t: t[1].get("layer", 0)):
+        if r["grp"] in ("FM-loop",): continue
+        for q in WR.polys_of(r["geom"]):
+            d.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in q.exterior.coords], fill=i)
+    return np.asarray(im).astype(np.int32)
 
 def family_raster(P, bb, shape):
     """1 = stripes + rope cords, 2 = foam (crests, shades, hollows, curl cords), 3 = drops - from the art (what each area IS)"""
@@ -208,6 +278,52 @@ def align(ref, out, max_mm=SHIFT):
         shifts[k] = round(float(np.hypot(dx, dy)) / PPM, 1)
     return A, Aid, shifts
 
+def explain_gaps(P, gaps, bb):
+    """A15: a gap >= 25 mm2 is explained only as 'keep-out edge' (inside 6 mm of the art limit, < 400 mm2) or 'moved by the
+    wrap' (inside 45 mm of a seam the wrap edited, art within SHIFT); anything else is UNEXPLAINED (gapfill.py fills those).
+    gaps: qa.uncovered rows in grid px-mm (from bb[0], bb[1]); converted to piece mm in place."""
+    clipb = PC.clip_for(SIZE, P).boundary
+    seams = [WR.SeamSide(SIZE, sm, w_).line for sm in WR.seams(SIZE) for w_ in ("A", "B") if sm[w_][0] == P]
+    from shapely.geometry import box as _box
+    for g in gaps:
+        x, y = g["x_mm"] + bb[0], g["y_mm"] + bb[1]; g["x_mm"], g["y_mm"] = round(x, 1), round(y, 1)
+        gb = _box(x - g["w_mm"] / 2, y - g["h_mm"] / 2, x + g["w_mm"] / 2, y + g["h_mm"] / 2)
+        art_near = any(r["geom"].intersects(gb.buffer(SHIFT)) for r in D[P])
+        if gb.distance(clipb) < 6.0 and g["area_mm2"] < 400: g["why"] = "keep-out edge"
+        elif seams and min(s.distance(gb) for s in seams) < 45.0 and art_near: g["why"] = "moved by the wrap"
+        else: g["why"] = "UNEXPLAINED"
+    return gaps
+
+_CUIMG = {}
+def closeup_grey12(P, shape12, up):
+    """A16 reference at 12 ppm from the founder close-ups (register_closeups.py, cu_regs.json): the piece grid's render-px
+    coordinates (same map + seam warp as the A14 reference) are upsampled x`up` and each point inside a close-up footprint
+    samples the CLOSE-UP (4-10 px/mm, the thread grain is resolved); weight 1 there, 0 elsewhere (render only: the
+    direction gate masks those tiles instead of judging blur). Artefact pixels of the sleeve composite count as no data."""
+    from scipy.ndimage import zoom as _zoom, map_coordinates as _mc
+    import wavetrace as _WT
+    from shapely.geometry import Polygon as _Poly
+    g = np.full(shape12, np.nan, np.float32); w = np.zeros(shape12, np.float32)
+    regs = json.load(open("cu_regs.json")) if os.path.exists("cu_regs.json") else []
+    for view, (px, py) in PXY.get(P, {}).items():
+        X = _zoom(np.nan_to_num(px, nan=-1e4), up, order=1)[:shape12[0], :shape12[1]]
+        Y = _zoom(np.nan_to_num(py, nan=-1e4), up, order=1)[:shape12[0], :shape12[1]]
+        okv = _zoom(np.isfinite(px).astype(np.float32), up, order=0)[:shape12[0], :shape12[1]] > 0.5
+        for c in regs:
+            if c["view"] != view or not c["ok"]: continue
+            foot = _Poly(c["footprint_render_px"]).buffer(-2.0)
+            ins = okv & shapely.contains_xy(foot, X, Y) & (w == 0)
+            if not ins.any(): continue
+            if c["name"] not in _CUIMG:
+                a, valid = _WT.closeup_pixels(c); _CUIMG[c["name"]] = (a.mean(-1), valid)
+            a, valid = _CUIMG[c["name"]]; Hi = np.linalg.inv(np.array(c["H"]))
+            q = Hi @ np.stack([X[ins], Y[ins], np.ones(ins.sum())]); u, v = q[0] / q[2], q[1] / q[2]
+            good = _mc(valid.astype(np.float32), [v, u], order=0) > 0.5
+            vals = _mc(a, [v, u], order=1)
+            iy, ix = np.nonzero(ins)
+            g[iy, ix] = vals; w[iy[good], ix[good]] = 1.0
+    return g, w
+
 def gate_piece(P):
     cls, bb = ref_classes(P); res = {}
     allart = [WT.NAMES.index(n) for n in WT.CREAM + WT.GREY + WT.BLUES]
@@ -227,7 +343,18 @@ def gate_piece(P):
             if fam == "curls":                                     # crests: the art's lobes merge into crests, compare crest by crest
                 ref = ndi.binary_closing(ref, iterations=2)
             al, Aid, sh = align(ref, out, max_mm=4.0)               # residual registration only: the wrap's own moves are applied above
-            rows = qa.motif_match(al, out, PPM, min_mm2=4.0)
+            # A21: each motif is compared with the family's stitches within near_mm of IT (touching crests / a drop sewn
+            # against a crest no longer merge into one blob); 1.5 mm for crests, 1.0 mm for drops
+            if fam == "drops" and not ART:
+                # each drop vs its OWN stitches (A21); ref_units moved with the residual shift
+                ru = np.zeros(al.shape, np.int32); lab_r, _ = ndi.label(ref)
+                for kk, sl_ in enumerate(ndi.find_objects(lab_r), 1):
+                    m_ = lab_r[sl_] == kk; uu = UNIT_RASTER[0][sl_][m_]; uu = uu[uu > 0]
+                    if not len(uu): continue
+                    ys_, xs_ = np.nonzero(Aid == kk); ru[ys_, xs_] = int(np.bincount(uu).argmax())
+                rows = drops_by_unit(P, bb, al, Aid, ru)
+            else:
+                rows = qa.motif_match(al, out, PPM, min_mm2=4.0, near_mm=1.5 if fam == "curls" else 1.0)
         for r_ in rows:
             if Aid is not None:
                 cy, cx = int(r_["y_mm"] * PPM), int(r_["x_mm"] * PPM); w = int(2 * PPM)
@@ -262,7 +389,7 @@ def gate_piece(P):
         res[fam] = dict(n=len(rows), passed=ok, rows=rows, shifts=sh, dst_count=dst_count)
     # stitch direction (A16): DST stitch angles vs the render's grain (input pixels, same map + seam warp), 8 mm tiles
     g = GREY.get(P)
-    if g is not None and not ART:
+    if g is not None and not ART and "--nodir" not in sys.argv:
         g = np.where(np.isfinite(g), g, np.nanmean(g))
         r = json.load(open(f"out/01_wave/{SIZE}/result_{P}.json"))["full"]
         segs = qa.dst_segments(r["file"] + ".dst", origin=(r["origin"][0] - bb[0], r["origin"][1] - bb[1]))
@@ -273,7 +400,9 @@ def gate_piece(P):
         from scipy.ndimage import zoom as _zoom
         UP = 3; P12 = PPM * UP
         g12 = _zoom(g, UP, order=1)
-        dm = qa.direction_match(g12, P12, segs, tile_mm=8.0)
+        cg, cw = closeup_grey12(P, g12.shape, UP)
+        g12 = np.where(cw > 0, cg, g12); W12 = cw
+        dm = qa.direction_match(g12, P12, segs, tile_mm=8.0, weight=W12)
         # per motif family (A16 sets the direction per family; WIP patch 19 Oct): stripes + rope cords on 8 mm tiles, foam
         # curls and drops turn within a few mm -> 4 mm tiles. Family of a stitch = the art region under its midpoint.
         fam_of = family_raster(P, bb, g.shape)
@@ -282,11 +411,21 @@ def gate_piece(P):
         for q in vis:
             cx, cy = int((q[0] + q[2]) / 2 * PPM), int((q[1] + q[3]) / 2 * PPM)
             if 0 <= cy < fam_of.shape[0] and 0 <= cx < fam_of.shape[1] and fam_of[cy, cx] in by: by[fam_of[cy, cx]].append(q)
+        # per OBJECT (konpeito ENGINE_NOTES 14, qa.direction_match groups): a tile on the border of two stripes (or a stripe
+        # and a rope cord) holds two deliberate directions; it is judged on the object with the most visible thread in it
+        obj = object_raster(P, bb, g.shape)
+        grp_of = {}
+        for k in by:
+            gl = []
+            for q in by[k]:
+                cx, cy = int((q[0] + q[2]) / 2 * PPM), int((q[1] + q[3]) / 2 * PPM)
+                gl.append(int(obj[cy, cx]) if 0 <= cy < obj.shape[0] and 0 <= cx < obj.shape[1] else 0)
+            grp_of[k] = gl
         fams = {}
         for k, nm, tm, ms in ((1, "stripes", 8.0, 12), (2, "foam", 4.0, 6), (3, "drops", 4.0, 4)):
-            f_ = qa.direction_match(g12, P12, by[k], tile_mm=tm, min_stitches=ms, visible=False)
-            fams[nm] = dict(tile_mm=tm, tiles=f_["tiles"], pct_ok=f_["pct_ok"], fail_dev=len(f_["fail_dev"]), fail_chaos=len(f_["fail_chaos"]))
-        dm["by_family"] = fams; dm["ref_ppm"] = P12; dm["source_px_per_mm"] = 0.7
+            f_ = qa.direction_match(g12, P12, by[k], tile_mm=tm, min_stitches=ms, visible=False, weight=W12, groups=grp_of[k])
+            fams[nm] = dict(tile_mm=tm, tiles=f_["tiles"], pct_ok=f_["pct_ok"], fail_dev=len(f_["fail_dev"]), fail_chaos=len(f_["fail_chaos"]), masked=f_.get("masked", 0))
+        dm["by_family"] = fams; dm["ref_ppm"] = P12; dm["source"] = "founder close-ups (4-10 px/mm) inside their footprints; render-only tiles masked"; dm["closeup_share"] = round(float((W12 > 0).mean()), 3)
         for k in ("fail_dev", "fail_chaos"):
             for t_ in dm[k]: t_["at_mm"] = [round(t_["at_mm"][0] + bb[0], 1), round(t_["at_mm"][1] + bb[1], 1)]
         dm["tile_mm"] = 8.0; res["direction"] = dm
@@ -294,17 +433,7 @@ def gate_piece(P):
     ref_any = np.isin(cls, [WT.NAMES.index(n) for n in WT.CREAM + WT.GREY + WT.BLUES]); ref_any = ndi.binary_opening(ref_any, iterations=1)
     out_any = dst_family(P, bb, "curls") | dst_family(P, bb, "stripes") | dst_family(P, bb, "drops")
     out_any = ndi.binary_dilation(out_any, iterations=int(1.0 * PPM))
-    gaps = qa.uncovered(ref_any, out_any, PPM)
-    clipb = PC.clip_for(SIZE, P).boundary
-    seams = [WR.SeamSide(SIZE, sm, w_).line for sm in WR.seams(SIZE) for w_ in ("A", "B") if sm[w_][0] == P]
-    from shapely.geometry import box as _box
-    for g in gaps:
-        x, y = g["x_mm"] + bb[0], g["y_mm"] + bb[1]; g["x_mm"], g["y_mm"] = round(x, 1), round(y, 1)
-        gb = _box(x - g["w_mm"] / 2, y - g["h_mm"] / 2, x + g["w_mm"] / 2, y + g["h_mm"] / 2)
-        art_near = any(r["geom"].intersects(gb.buffer(SHIFT)) for r in D[P])
-        if gb.distance(clipb) < 6.0 and g["area_mm2"] < 400: g["why"] = "keep-out edge"
-        elif seams and min(s.distance(gb) for s in seams) < 45.0 and art_near: g["why"] = "moved by the wrap"
-        else: g["why"] = "UNEXPLAINED"
+    gaps = explain_gaps(P, qa.uncovered(ref_any, out_any, PPM), bb)
     res["uncovered"] = gaps
     return res
 

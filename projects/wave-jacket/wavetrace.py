@@ -45,6 +45,8 @@ def classify(view):
     lab, up = TR.label_map(img, b, TONES, up=UP, sigma=0.45, majority=5, mask=mask)
     if view == "front" and os.path.exists("cu_reg.json"):
         lab = closeup_labels(lab, up, b)
+    if os.path.exists("cu_regs.json"):
+        lab = closeups_labels(view, lab, up, b)
     # grey + washed fabric look alike: grey only counts inside / next to foam (within 2 px of cream)
     cream = np.isin(lab, ids(CREAM))
     near_c = ndi.binary_dilation(cream, iterations=2 * up)
@@ -80,6 +82,52 @@ def closeup_labels(lab, up, b, inset=3.0):
     oh = np.stack([ndi.uniform_filter((new == i).astype(np.float32), 5) for i in range(len(TONES))], -1)
     sm = oh.argmax(-1); new = np.where(ins, sm, lab)
     return new
+
+CU_ARTEFACT = (29, 43, 67)       # the sleeve composite's separator / masking colour (founder: blotches are not design)
+CU_STATS = {}
+
+def closeup_pixels(c):
+    """(rgb float array of the close-up crop, valid mask) - artefact pixels (exact separator colour, +2 px) are invalid"""
+    a = np.asarray(Image.open(c["file"]).convert("RGB"))
+    if c.get("crop"): x0, y0, x1, y1 = c["crop"]; a = a[y0:y1, x0:x1]
+    bad = (a == np.array(CU_ARTEFACT, np.uint8)).all(-1)
+    bad = ndi.binary_dilation(bad, iterations=2)
+    return a.astype(np.float32), ~bad
+
+def closeups_labels(view, lab, up, b, inset=2.0):
+    """Founder close-ups (20 Oct, register_closeups.py -> cu_regs.json): inside each footprint the classes come from the
+    close-up pixels (6-14 close-up px per render px), outside from the render. The close-ups are pixel-aligned
+    super-resolutions of the same render, so placement and motif counts stay the mockup's (founder rule); artefact pixels
+    keep the render's class."""
+    import json
+    from shapely.geometry import Polygon
+    from shapely import contains_xy
+    Pt = TR.lab_img(np.array([t[1] for t in TONES], float)[None])[0]
+    Hh, Ww = lab.shape
+    yy, xx = np.mgrid[0:Hh, 0:Ww]; X = xx / up + b[0] + 0.5 / up; Y = yy / up + b[1] + 0.5 / up
+    new = lab.copy(); done = np.zeros(lab.shape, bool)
+    for c in json.load(open("cu_regs.json")):
+        if c["view"] != view or not c["ok"]: continue
+        foot = Polygon(c["footprint_render_px"]).buffer(-inset)
+        ins = contains_xy(foot, X, Y) & (lab >= 0) & ~done
+        if not ins.any(): continue
+        cu, valid = closeup_pixels(c); H = np.array(c["H"])
+        Hi = np.linalg.inv(H); P = np.stack([X[ins], Y[ins], np.ones(ins.sum())]); q = Hi @ P; u, v = q[0] / q[2], q[1] / q[2]
+        k = c["cu_px_per_render_px"] / up               # close-up px per label px: blur to that footprint
+        ok = ndi.map_coordinates(valid.astype(np.float32), [v, u], order=0) > 0.5
+        rgb = np.stack([ndi.map_coordinates(ndi.gaussian_filter(cu[..., j], 0.4 * k), [v, u], order=1) for j in range(3)], -1)
+        L = TR.lab_img(rgb[None])[0]
+        cl = np.empty(len(L), np.int32)
+        for s0 in range(0, len(L), 200000):
+            d = ((L[s0:s0 + 200000, None, :] - Pt[None]) ** 2).sum(-1); cl[s0:s0 + 200000] = d.argmin(1)
+        iy, ix = np.nonzero(ins); iy, ix = iy[ok], ix[ok]
+        before = lab[iy, ix]; new[iy, ix] = cl[ok]; done[iy, ix] = True
+        art = ids(CREAM + GREY + BLUES)
+        CU_STATS[c["name"]] = dict(px=int(ok.sum()), same_class=round(float((before == cl[ok]).mean()), 3),
+                                   art_render=int(np.isin(before, art).sum()), art_closeup=int(np.isin(cl[ok], art).sum()))
+    oh = np.stack([ndi.uniform_filter((new == i).astype(np.float32), 3) for i in range(len(TONES))], -1)
+    sm = oh.argmax(-1)
+    return np.where(done, sm, lab)
 
 def trace_view(view):
     lab, up, b = classify(view)

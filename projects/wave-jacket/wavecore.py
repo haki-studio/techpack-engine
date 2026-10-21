@@ -10,7 +10,7 @@ import motifs, motifs2, tech, sheet
 
 # ---------------------------------------------------------------- thread palette (9 threads, read off the render by k-means — PROPOSED)
 WV_PAL = {   # key: (hex, name, use)
-    "w1": ("#F0EDEA", "Foam white",   "foam crests + curls (raised), rope lines, spray drops"),
+    "w1": ("#D3CAC1", "Foam ecru",    "foam crests + curls (raised), rope lines, spray drops"),   # founder 20 Oct: ECRU first (render white #F0EDEA = alternate)
     "w3": ("#C2BDBA", "Foam shade",   "curl undersides, curl lines + loop texture on the foam"),
     "g1": ("#A09FA0", "Curl grey",    "curl hollows / shadow inside the crests"),
     "b0": ("#B1C7D8", "Pale blue",    "palest wave stripes, drop undersides"),
@@ -21,6 +21,7 @@ WV_PAL = {   # key: (hex, name, use)
     "b5": ("#032870", "Ultramarine",  "deepest wave stripes"),
 }
 WV_KEYS = list(WV_PAL)
+FOAM_WHITE_ALT = ("#F0EDEA", "Foam white (alternate, the render colour)")
 FABRIC = "#272F43"          # washed navy duck (render sample) — PROPOSED, lab dip
 for k, v in WV_PAL.items():
     motifs2.PAL[k] = v; motifs2.HEX[k] = v[0]; motifs.HEX[k] = v[0]
@@ -91,7 +92,7 @@ def stitch_cover(blocks, geom, ppm=10, thread=0.6):
 # The close-up's stripes are twisted cords: the stitch rows of each stripe run at a slant to the stripe, not along it.
 # Tatami rows of a WV stripe are laid at the local stripe direction + CORD_TWIST (alternating sign from tone to tone, so
 # neighbouring cords twist opposite ways, as in the close-up). Everything else is the engine's along-the-stripe sections.
-CORD_TWIST = 15.0          # LESSONS A16: rows ALONG the stripe; a 15 deg twist keeps the cord look inside the 25 deg grain tolerance
+CORD_TWIST = 8.0           # LESSONS A16: rows ALONG the stripe; fix round 2 (PR #27 review 3): 15 -> 8 deg, the close-ups show the rows running along the band; 8 deg keeps a hint of the cord twist well inside the 25 deg grain tolerance
 _CUR = {"r": None}
 def cord_sections(p, line, step=6.0, across=False):
     import dst2

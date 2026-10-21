@@ -147,3 +147,43 @@ Problem → proposed fix → check. Worked around in project code only.
 - **Proposed engine fix:** `direction_match(..., source_ppm=)` that marks tiles whose source resolution is below a thread
   pitch as "no evidence" (neither OK nor fail), so a low-res mockup cannot fail or pass the gate; then the A24 rule
   (independent tiles >= 50 %) decides whether the verdict can be given at all.
+
+## 18. Motif gate merged crests through HIDDEN travel runs (fix round 2, 20 Oct 2026)
+- **Problem:** `gates.dst_family` drew EVERY stitch of the family's threads. Cream travel runs sewn before a crest and buried
+  under it (up to 58 mm on FL) joined neighbouring crests into one DST blob, so the FL big curl (6,361 mm2) read IoU 0.50
+  although the art was right (art-mode IoU 0.96). Same class as A21, but the bridge was invisible thread, not a touching motif.
+- **Fix (project, gates.py):** the motif gate reads the VISIBLE top layer of the written DST (`qa.visible_segments`, 12 ppm,
+  sew order) + `near_mm` (1.5 crests, 1.0 drops). Curls: 39 -> 0-1 failing rows per piece with the same DSTs.
+- **Proposed engine fix:** `qa.dst_family_mask(dst, threads, visible=True)` as the one way a motif gate rasterises a file.
+- **Check:** test: two squares of one thread joined by a run sewn BEFORE a third fill that covers the run -> two components.
+
+## 19. Drop reference vs stitched threads did not match (fix round 2)
+- **Problem:** the drop REFERENCE was cream + grey pixels (CREAM + GREY classes) but the stitched side was the w1 thread only,
+  so a drop the render shades grey (traced as w3 / g1) read "MISSING" (IoU 0) with the drop sewn in place.
+- **Fix:** drops compare cream + shade + grey threads, and each drop only with the visible stitches attributed to ITS motif
+  (unit id of the art object under each visible segment's midpoint) - the reference is still input pixels only (A14).
+  The sewn drop is drawn with each stitch shortened by the drop pull compensation at both ends (the fabric pull-in that
+  compensation exists for; same principle as `qa.centreline_match` subtracting 2 x pull).
+- **Proposed engine fix:** `motif_match(..., out_by_motif={id: mask})` + a `pull_mm` argument for the file rasteriser.
+- **Check:** red-then-green: a drop sewn 1 mm off its reference still fails; a drop sewn against a crest in the same
+  thread passes only when its own stitches match.
+
+## 20. Close-ups that are super-resolved crops of the mockup (fix round 2)
+- **Finding:** the founder's close-ups register onto the mockup views as pure scale + shift (SIFT + RANSAC, 92-98 %
+  inliers): they are upscaled crops of the same render (6-14 close-up px per render px), so placement and motif counts are
+  the mockup's by construction and their pixels can replace the render's inside each footprint (classes for the trace and
+  the A14/A15 reference, grain for A16). A 2x2 composite (sleeves) is split at its separator rows / columns; its masking
+  artefacts (exact separator colour, here #1D2B43) count as no data.
+- **Proposed engine fix:** `digitize.extract.register.auto_register(closeup, view)` (SIFT + RANSAC, accept >= 100 inliers and
+  >= 80 % of matches, overlay PNG) writing the registration JSON the engine already reads; composite splitting by
+  uniform separator lines. Needs OpenCV in the engine env (the project ran it on the system python).
+- **Check:** test: a crop of a fixture render upscaled x8 with noise registers back to its box within 0.5 render px.
+
+## 21. Bare areas explained as "moved by the wrap" (fix round 2)
+- **Problem:** A15's explanation "moved by the wrap" (inside 45 mm of a seam, art within 40 mm) accepted 3,000-5,800 mm2 of
+  bare navy per sleeve that the mockup shows embroidered (review: "real bare navy inside the SL art").
+- **Fix (project, gapfill.py):** every gap except a keep-out edge is filled from the mockup / close-up tones there, merged
+  into the touching stripe / crest (small fills take the neighbour's thread), foam fills get the curl structure (rows along
+  the curl + loop spiral). Art level: 18 unexplained -> 1.
+- **Proposed LESSON (A15 addendum):** "moved by the wrap" is not an explanation unless the gap's reference content is found
+  stitched within the reported shift (3 mm check); otherwise fill it.

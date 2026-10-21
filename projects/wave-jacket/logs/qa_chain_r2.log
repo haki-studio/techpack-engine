@@ -1,0 +1,55 @@
+make_current ok
+ALL SIZES PASS
+COVERAGE PASS
+{'piece': 'BK', 'family': 'curls', 'motifs': 37, 'passed': 37, 'failed': 0, 'moved': 6, 'max_move': 19.0, 'iou_median': 0.93}
+{'piece': 'BK', 'family': 'drops', 'motifs': 42, 'passed': 28, 'failed': 14, 'moved': 3, 'max_move': 14.0, 'iou_median': 0.75}
+{'piece': 'BK', 'family': 'stripes', 'motifs': 11, 'passed': 9, 'failed': 2, 'moved': 0, 'max_move': 0.0, 'iou_median': 0.91}
+{'piece': 'FR', 'family': 'curls', 'motifs': 14, 'passed': 14, 'failed': 0, 'moved': 0, 'max_move': 0.0, 'iou_median': 0.93}
+{'piece': 'FR', 'family': 'drops', 'motifs': 25, 'passed': 15, 'failed': 10, 'moved': 1, 'max_move': 5.0, 'iou_median': 0.75}
+{'piece': 'FR', 'family': 'stripes', 'motifs': 6, 'passed': 5, 'failed': 1, 'moved': 0, 'max_move': 0.0, 'iou_median': 0.88}
+{'piece': 'FL', 'family': 'curls', 'motifs': 10, 'passed': 10, 'failed': 0, 'moved': 2, 'max_move': 10.0, 'iou_median': 0.94}
+{'piece': 'FL', 'family': 'drops', 'motifs': 14, 'passed': 8, 'failed': 6, 'moved': 2, 'max_move': 26.0, 'iou_median': 0.75}
+{'piece': 'FL', 'family': 'stripes', 'motifs': 3, 'passed': 3, 'failed': 0, 'moved': 0, 'max_move': 0.0, 'iou_median': 0.89}
+{'piece': 'SR', 'family': 'curls', 'motifs': 26, 'passed': 26, 'failed': 0, 'moved': 17, 'max_move': 33.0, 'iou_median': 0.92}
+{'piece': 'SR', 'family': 'drops', 'motifs': 28, 'passed': 14, 'failed': 14, 'moved': 22, 'max_move': 47.0, 'iou_median': 0.7}
+{'piece': 'SR', 'family': 'stripes', 'motifs': 3, 'passed': 2, 'failed': 1, 'moved': 0, 'max_move': 0.0, 'iou_median': 0.84}
+{'piece': 'SL', 'family': 'curls', 'motifs': 16, 'passed': 16, 'failed': 0, 'moved': 9, 'max_move': 28.0, 'iou_median': 0.92}
+{'piece': 'SL', 'family': 'drops', 'motifs': 17, 'passed': 13, 'failed': 4, 'moved': 11, 'max_move': 22.0, 'iou_median': 0.78}
+{'piece': 'SL', 'family': 'stripes', 'motifs': 6, 'passed': 5, 'failed': 1, 'moved': 0, 'max_move': 0.0, 'iou_median': 0.83}
+BK direction 44.9 % OK of 1974 tiles; off-grain 293 chaotic 794 | by family {'stripes': {'tile_mm': 8.0, 'tiles': 1215, 'pct_ok': 75.8, 'fail_dev': 262, 'fail_chaos': 32, 'masked': 6}, 'foam': {'tile_mm': 4.0, 'tiles': 2865, 'pct_ok': 23.1, 'fail_dev': 1181, 'fail_chaos': 1022, 'masked': 3}, 'drops': {'tile_mm': 4.0, 'tiles': 104, 'pct_ok': 15.4, 'fail_dev': 88, 'fail_chaos': 0, 'masked': 5}}
+FR direction 44.0 % OK of 791 tiles; off-grain 127 chaotic 316 | by family {'stripes': {'tile_mm': 8.0, 'tiles': 481, 'pct_ok': 72.6, 'fail_dev': 100, 'fail_chaos': 32, 'masked': 9}, 'foam': {'tile_mm': 4.0, 'tiles': 1119, 'pct_ok': 23.4, 'fail_dev': 449, 'fail_chaos': 408, 'masked': 10}, 'drops': {'tile_mm': 4.0, 'tiles': 64, 'pct_ok': 14.1, 'fail_dev': 53, 'fail_chaos': 2, 'masked': 1}}
+FL direction 36.6 % OK of 863 tiles; off-grain 142 chaotic 405 | by family {'stripes': {'tile_mm': 8.0, 'tiles': 483, 'pct_ok': 63.6, 'fail_dev': 138, 'fail_chaos': 38, 'masked': 57}, 'foam': {'tile_mm': 4.0, 'tiles': 1531, 'pct_ok': 25.3, 'fail_dev': 637, 'fail_chaos': 507, 'masked': 647}, 'drops': {'tile_mm': 4.0, 'tiles': 43, 'pct_ok': 18.6, 'fail_dev': 35, 'fail_chaos': 0, 'masked': 5}}
+SR direction 42.4 % OK of 1186 tiles; off-grain 285 chaotic 398 | by family {'stripes': {'tile_mm': 8.0, 'tiles': 816, 'pct_ok': 61.4, 'fail_dev': 268, 'fail_chaos': 47, 'masked': 194}, 'foam': {'tile_mm': 4.0, 'tiles': 1581, 'pct_ok': 21.8, 'fail_dev': 744, 'fail_chaos': 493, 'masked': 626}, 'drops': {'tile_mm': 4.0, 'tiles': 50, 'pct_ok': 12.0, 'fail_dev': 42, 'fail_chaos': 2, 'masked': 10}}
+SL direction 32.7 % OK of 882 tiles; off-grain 267 chaotic 327 | by family {'stripes': {'tile_mm': 8.0, 'tiles': 498, 'pct_ok': 58.6, 'fail_dev': 184, 'fail_chaos': 22, 'masked': 120}, 'foam': {'tile_mm': 4.0, 'tiles': 1534, 'pct_ok': 18.1, 'fail_dev': 802, 'fail_chaos': 455, 'masked': 394}, 'drops': {'tile_mm': 4.0, 'tiles': 37, 'pct_ok': 21.6, 'fail_dev': 29, 'fail_chaos': 0, 'masked': 13}}
+BK uncovered 6 unexplained 0 []
+    BK drops MISSING [(-96.0, 157.1, 23.6, 0.58), (-108.6, 331.4, 6.9, 0.48), (-174.4, 372.4, 6.8, 0.61), (192.1, 385.1, 5.8, 0.59), (-41.5, 415.9, 9.7, 0.01), (-49.1, 453.9, 5.0, 0.6)]
+    BK stripes MISSING [(153.4, 370.6, 410.6, 0.83)]
+FR uncovered 1 unexplained 0 []
+    FR drops MISSING [(-142.1, 209.6, 10.3, 0.68), (-264.5, 220.1, 7.4, 0.67), (-76.3, 295.1, 4.3, 0.59), (-157.3, 394.0, 6.9, 0.0), (-35.6, 471.6, 4.9, 0.67)]
+    FR stripes MISSING [(-101.6, 412.1, 487.2, 0.67)]
+FL uncovered 1 unexplained 0 []
+    FL drops MISSING [(138.8, 191.1, 6.9, 0.74), (28.2, 208.5, 5.6, 0.73), (175.1, 306.4, 5.5, 0.0)]
+SR uncovered 1 unexplained 0 []
+    SR drops MISSING [(21.5, 156.6, 10.5, 0.62), (39.8, 315.4, 7.2, 0.7)]
+    SR stripes MISSING [(53.9, 140.3, 665.6, 0.34)]
+SL uncovered 3 unexplained 0 []
+straight cut lines (>= 12 mm) per seam side: {'armhole back L A (BK)': 19, 'armhole back L B (SL)': 8, 'armhole front L A (FL)': 2, 'armhole front L B (SL)': 6, 'side L A (BK)': 4, 'armhole back R B (SR)': 6, 'armhole front R B (SR)': 5, 'side R A (BK)': 9, 'side R B (FR)': 14, 'underarm R B (SR)': 8, 'sleeve centre R A (SR)': 1} total 82
+edges probed 718, jumping > 1 mm 86 (12.0 %), flagged probes 15: [('armhole back L A (BK)', 15), ('armhole back L A (BK)', 25), ('armhole back L A (BK)', 40), ('armhole back L A (BK)', 80), ('armhole back L A (BK)', 100), ('armhole back L A (BK)', 120), ('armhole back L B (SL)', 25), ('side R A (BK)', 15), ('side R A (BK)', 25), ('side R A (BK)', 40), ('side R A (BK)', 60), ('side R A (BK)', 100)]
+(1170, 3990)
+CF zip             {'art_mm': 69, 'meet': 54, 'tone': 46}
+armhole back L     {'art_mm': 196, 'meet': 92, 'tone': 82}
+armhole front L    {'art_mm': 244, 'meet': 95, 'tone': 63}
+side L             {'art_mm': 57, 'meet': 54, 'tone': 42}
+shoulder L         {'art_mm': 75, 'meet': 20, 'tone': 23}
+underarm L         {'art_mm': 66, 'meet': 70, 'tone': 64}
+sleeve centre L    {'art_mm': 214, 'meet': 53, 'tone': 47}
+armhole back R     {'art_mm': 4, 'meet': 0, 'tone': 0}
+armhole front R    {'art_mm': 17, 'meet': 59, 'tone': 41}
+side R             {'art_mm': 176, 'meet': 72, 'tone': 71}
+shoulder R         {'art_mm': 0, 'meet': None, 'tone': None}
+underarm R         {'art_mm': 341, 'meet': 66, 'tone': 55}
+sleeve centre R    {'art_mm': 121, 'meet': 58, 'tone': 44}
+sheet (2280, 9610)
+Drawing units ($INSUNITS) are not exported for DXF R12.
+placement out/placement/HK-JK-WAVE-NV_ART-PLACEMENT_M_1to1.pdf out/placement/HK-JK-WAVE-NV_ART-PLACEMENT_M_ALL.dxf match marks 97 on 10 seams, tone agrees on both sides 43/97
+QA_CHAIN_DONE

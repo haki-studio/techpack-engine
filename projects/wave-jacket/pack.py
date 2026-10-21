@@ -444,7 +444,10 @@ def treatment_page():
     rows = [("edges probed", nb, na), ("edges jumping > 1 mm", f"{jb} ({100*jb/max(nb,1):.1f} %)", f"{ja} ({100*ja/max(na,1):.1f} %)"),
             ("straight cut lines along a seam (≥ 12 mm, constant depth)", pb, pa)]
     for i, (a, b, c) in enumerate(rows):
-        y = 35 + i * 3.4; o.append(t(12, y, a, 1.6)); o.append(t(110, y, f"{b}", 1.6, 600)); o.append(t(150, y, f"{c}", 1.6, 700, GREEN if i == 2 and pa < pb else INK))
+        # PR #27 review 4: the rule is "no straight cut line may run along a seam", so any cut line left is RED and listed (never green
+        # for being fewer than before); jumping edges above the 8 % noise floor are orange
+        cc = (RED if pa else GREEN) if i == 2 else ((ORANGE if ja / max(na, 1) > 0.08 else GREEN) if i == 1 else INK)
+        y = 35 + i * 3.4; o.append(t(12, y, a, 1.6)); o.append(t(110, y, f"{b}", 1.6, 600)); o.append(t(150, y, f"{c}" + ("  OPEN - listed below" if i == 2 and pa else ""), 1.6, 700, cc))
     o.append(t(12, 46, "Noise floor: the trace's own tone boundaries wobble (flecks, tone steps), so ~5-10 % of edges 'jump' > 1 mm everywhere, also 100 mm+ from any seam; a cut line shows as a straight", 1.4, 400, MUTED))
     o.append(t(12, 49, "edge at constant depth (the old band ends) - see the crops: magenta = straight cut lines, red rings = edge jumps > 1 mm, per seam in out/discont_<seam>_<side>.png.", 1.4, 400, MUTED))
     from PIL import Image
@@ -465,10 +468,11 @@ def f1_pages():
     pcs = [dict(piece=f"01 {p} {PC.NAME[p]}", w=CUR[p]["size_mm"][0], h=CUR[p]["size_mm"][1], hoopings=CUR[p]["hoopings"]) for p in PS]
     pages = FA.requests_page(WC.NAME, so, th, pcs, page="F1", prof=PROF)
     # Rev B additions appended to F1 (right column)
-    lines = [("6  Foam: lockstitch now, chenille when you can (see 5)", 1), ("The files sew the foam lockstitch (padded tatami + loops).", 0),
-             ("For chenille we send a PATH PLAN per piece (chenille_plan/:", 0), ("json in piece mm + preview). We then write the chenille file.", 0), ("", 0),
+    lines = [("6  Foam: CHENILLE in ECRU first (founder 20 Oct)", 1), ("Sample the foam as chenille, ecru thread (Isacord 0184 Pearl).", 0),
+             ("Tell us your chenille machine + file format (see 5): we send", 0), ("a PATH PLAN per piece now (chenille_plan/: json in piece mm", 0),
+             ("+ preview) and write the chenille file once we know it.", 0), ("ALTERNATE: the lockstitch files here (padded tatami + loops).", 0), ("", 0),
              ("7  Foam swatch - sew first", 1), (f"{os.path.basename(SWT['file'])}.dst ({SWT['stitches']:,} st, 1 hooping): padded", 0),
-             ("vs moss look, Foam white vs ecru - helps choose the cream.", 0), ("", 0),
+             ("vs moss look, ecru vs white - confirm the ecru on the shell.", 0), ("", 0),
              ("8  Hoopings (your answer 19 Oct)", 1), ("Fronts: ONE hooping each (340 x 505 confirmed). Back: 2.", 0),
              ("Sleeves: 2 each for 400 x 450 - can a sleeve go in ONE", 0), ("hooping on your 750 mm field? Which frame holds 340 x 505?", 0), ("The full files are REFERENCE only - price + sew the hoopings.", 0), ("", 0),
              ("9  Thread colour book", 1), ("Please send your supplier's book (brand?): we give Isacord +", 0),
