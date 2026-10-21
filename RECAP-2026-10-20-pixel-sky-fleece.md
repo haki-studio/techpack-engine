@@ -56,3 +56,14 @@ Open: wingtip sparkle above the bird still comes out a diamond (render too blurr
 | Minor | R1: distinct motifs = 22 (E1B repeats E1), process rows print DONE not PASS, D2 reads the small PDF size; Rev C. |
 Dead ends: a uniform coarse grid (2.5-9 mm) for the big sprites - the fine cell always wins on rmse (render unit drifts); free-edge fits on small sparkles overfit into lopsided shapes; label-based checker detection fails (squares joined at corners by anti-aliasing).
 Repo root has a stray symlink `*` -> `inputs/*` (made by `source scripts/env.sh .`); safety check blocked removing it - not committed.
+
+## Fix round 3 (PR #28 round-3 review: 4 should-fix + 1 nit) — Rev D
+| Review item | Fix |
+|---|---|
+| Stray cream specks in the sky around sparkles (F01, mirrored to B01) | Root cause: the sparkle rim alternates cream/blue, so the checker filter regularised it into lattice cells. Sparkle/bird footprint (pixels dilated 9 px; bird = largest black component, not zip tape) is never checker and its cream islands go sky (`foot`, `sky_rims`). |
+| <=2-cell fragments in generated areas; sleeve "butterfly" | `despeckle` in `raster_panel` (islands <= 4 cells, bird protected). Sleeves: hidden half = traced half mirrored about the centre line (Rev C used sleeve_to_img samples, unregularised); hidden strips of the traced half mirrored about ONE fixed column (A_IN/A_OUT, >= 80 % coverage) - per-row axes caused the shear. Checker squares snapped to whole squares (418 cells completed, 601 dropped). Gate `gates_jq.py`: 0 islands in 42 maps, 2/2 planted caught; R1 row J-isl, J3 text. |
+| 41 MB scratch in work/ | `git rm --cached`, `projects/pixel-sky-fleece/.gitignore` = work/ (history keeps it; squash merge drops it). |
+| G4 small/unreadable | compare_E3 landscape (mockup + preview left, 2x2 zooms + one-column gate table right). |
+| Nit E1 45x59 vs 45x60 | placement line reads the DST size (gates_fl.json) like the G1 table. |
+Numbers: band agreement 92.2 % (Rev C 92.4), front 96.8 %, sleeves 94.5 %. Stitch files unchanged (E1 1,019 / E2 3,729 / E3 1,953 / E1B 7,872). 274 tests pass. ENGINE_NOTES 11.
+Dead end: 2-D majority growth for the sleeve's centre gap -> horizontal stripes (same failure as row-nearest fill).
