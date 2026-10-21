@@ -136,3 +136,13 @@ Engine runs: `bench/run_{wb,coin,spill,starP,starY}_svg.yaml` -> `out/engine_m5/
    motif underneath that fall under a later motif's body must be dropped (`kjfront.section_vis`). Proposed: dst2 /
    stop planner drops covered top-layer details generically.
 31. **Page date typed by hand went stale** (stamp said 20 Oct, the build ran 21 Oct): DATE = build date (kjcore).
+
+## Rev B5 (21 Oct 2026, PR #34 round 2)
+32. **Motifs clipped by the garment edge on a mockup were dropped by the size floor** (07: 3 candies run off the side
+   seam and show only as 2-9 px slivers on the cut edge; the 6 px / saturation 0.45 floor kept 1 of the 3, so the map
+   was inconsistent). Project fix: `kjfront.edge_slivers` searches a +-3 px band along the traced side seam with a lower
+   saturation floor (0.12, >= 3 px), skips slivers already covered by a main blob, and flags every edge motif
+   `clipped`; clipped motifs are moved in to the keep-out and counted separately on G7/C5 ("14 whole + 3 clipped").
+   Proposed: the engine's motif tracer runs an edge pass on every silhouette and reports whole vs clipped counts.
+   Check: tests/test_konpeito_gates.py::test_clipped_side_seam_candies_mapped (green: all 3 found; red: without the
+   edge pass only 1; mutation EDGE_MIN_PX=99 turns it red).

@@ -736,7 +736,7 @@ def G7():
     o.append(t(120, SH - 16, "Amber area on the flat = konpeito area: below the front pocket opening to ~830 mm below the WB top, within ~120 mm of the side seam.", 1.8, 500, AMBER))
     rows = [[d["id"], d["col"], f"{d['x_from_side_mm']:.0f}", f"{d['y_from_waist_mm']:.0f}",
              ("—" if d["below_opening_mm"] is None else f"{d['below_opening_mm']:.0f}"),
-             (f"moved {d['moved_in_mm']:.0f} mm in (side-seam keep-out)" if d["moved_in_mm"] else ""),
+             ((f"clipped at side seam; moved {d['moved_in_mm']:.0f} mm in" if d.get("clipped") else f"moved {d['moved_in_mm']:.0f} mm in (keep-out)") if d["moved_in_mm"] else ""),
              "07a" if d["id"] in FRONT["sections"][0] else "07b"] for d in FRONT["stars"]]
     o.append(t(120, 48, "PROPOSED konpeito map — 10 mm konpeito, the 02 shape (same on every location), size 32", 2.2, 700, AMBER))
     tb, y = table(120, 53, [("Konp.", 11), ("Colour", 14), ("x from side seam", 25), ("y from WB top", 22), ("gap below pocket opening", 36), ("Note", 46), ("File", 10)], rows, 1.8, 3.8)
@@ -749,13 +749,32 @@ def G7():
                "Konpeito over the area where the front pocket bag hangs behind the panel are embroidered on the flat front panel BEFORE the",
                "pocket bag is attached, so the bag is never stitched shut.",
                "Positions are size 32; grade with the leg (keep the gap to the pocket opening and the distance to the side seam).",
-               "S06 yellow + S07 pink overlap (one soot sprite, as on the mockup): the pink is sewn on top; the yellow's white speck under the pink is left out."]:
+               "S06 yellow + S07 pink overlap (one soot sprite, as on the mockup): the pink is sewn on top; the yellow's white speck under the pink is left out.",
+               *clipped_note()]:
         o.append(t(120, y, ln, 1.75, 400, AMBER if ("PROPOSED" in ln) else INK)); y += 3.3
     fn = (f"PROPOSED stitch files: 07a ({RB['front1']['stitches']:,} st, {RB['front1']['trims']} trims, {RB['front1']['size_mm'][0]:.0f} × {RB['front1']['size_mm'][1]:.0f} mm) and 07b ({RB['front2']['stitches']:,} st, "
           f"{RB['front2']['trims']} trims, {RB['front2']['size_mm'][0]:.0f} × {RB['front2']['size_mm'][1]:.0f} mm), konpeito only, one hooping each on the {factory.largest_frame()[0]:.0f} × {factory.largest_frame()[1]:.0f} mm frame.")
     for ln in wrap(fn, 128):                      # one amber note (PR #34 nit: it broke into a black + an amber line)
         o.append(t(120, y, ln, 1.75, 400, AMBER)); y += 3.3
     return o
+
+def clipped_note():
+    """PR #34 round 2: the mockup count, split into whole konpeito and konpeito clipped by the side seam, read from the map."""
+    cl = [d for d in FRONT["stars"] if d.get("clipped")]
+    n, nw = len(FRONT["stars"]), len(FRONT["stars"]) - len(cl)
+    ids = ", ".join(f"{d['id']} {d['col']}" for d in cl)
+    out = [f"Count = the mockup: {nw} whole konpeito + {len(cl)} clipped by the side seam ({ids}) = {n}, all kept. A clipped konpeito shows on the mockup",
+           f"only as a sliver on the garment edge (it wraps round the seam); it is mapped at its sliver's height and moved in to the {kjfront_SIDE_KO():.0f} mm side-seam keep-out,",
+           "so it is sewn whole on the front panel (a konpeito cannot be sewn across the side seam). PROPOSED."]
+    pairs = [(a, b) for i, a in enumerate(cl) for b in cl[i + 1:] if math.dist((a["x_from_side_mm"], a["y_from_waist_mm"]), (b["x_from_side_mm"], b["y_from_waist_mm"])) < 10.0]
+    for a, b in pairs:
+        top, und = (a, b) if a["col"] == "blue" else (b, a)
+        out.append(f"{a['id']} + {b['id']} sit {abs(a['y_from_waist_mm'] - b['y_from_waist_mm']):.0f} mm apart on the seam, so their tips touch after the move: {top['id']} {top['col']} is sewn on top, as for S06/S07.")
+    return out
+
+def kjfront_SIDE_KO():
+    import kjfront
+    return kjfront.SIDE_KO
 
 def revA_pairs(ra, stars, tol=15.0):
     """Rev A star -> current star of the same colour, nearest first (greedy, <= tol mm); unmatched current stars are new."""
@@ -772,14 +791,19 @@ def C5():
     der = FRONT["derivation"]
     o = hdr("C5 · CHECK — 07 konpeito map vs the garment mockup (overlay)", "Haki placement check (not a sewing instruction): the corrected konpeito map drawn back onto the mockup and onto the flat, with the maths. Sewing positions are on G7.", "C5")
     im = Image.open("out/check_07_mockup.png")
-    tag, h = img(im.crop((0, 0, im.width, int(im.height * 0.42))), 12, 32, h=118); o.append(tag)
+    # split the tall overlay between two stars (PR #34 round 2: the 0.42 cut went through S13): midpoint of the star gap
+    # nearest 42 % of the height (overlay crop origin y 20 px, scale 3 — kjfront.overlay)
+    ys = sorted((d["px"][1] - 20) * 3 for d in FRONT["stars"])
+    mids = [(a + b) / 2 for a, b in zip(ys, ys[1:]) if b - a > 90]
+    cut = int(min(mids, key=lambda m: abs(m - im.height * 0.42))) if mids else int(im.height * 0.42)
+    tag, h = img(im.crop((0, 0, im.width, cut)), 12, 32, h=118); o.append(tag)
     o.append(t(12, 30.5, "A · MOCKUP with the map (front view, wearer's right leg; 3x)", 2.0, 700))
-    w = 118 * im.width / int(im.height * 0.42)
-    tag2, h2 = img(im.crop((0, int(im.height * 0.42), im.width, im.height)), 12 + w + 4, 32, h=118); o.append(tag2)
+    w = 118 * im.width / cut
+    tag2, h2 = img(im.crop((0, cut, im.width, im.height)), 12 + w + 4, 32, h=118); o.append(tag2)
     o.append(t(12 + w + 4, 30.5, "lower leg", 2.0, 700))
     # B: flat with the same stars + the opening
     s = 0.1
-    bx = 12 + w + 4 + 118 * im.width / (im.height - int(im.height * 0.42)) + 8
+    bx = 12 + w + 4 + 118 * im.width / (im.height - cut) + 8
     o.append(t(bx, 30.5, "B · FLAT (T2) with the same map", 2.0, 700))
     o.append(f'<g transform="translate({f(bx - FB[0] * s)} 34) scale({s})">{FRONT_SVG}{emb_front()}</g>')
     op = [((x - 760) * MMPX, y * MMPX) for x, y in FL.OPENING_PX]
@@ -800,8 +824,10 @@ def C5():
              f"4. Result: {len(der['stars_inside_opening'])} of {len(FRONT['stars'])} stars inside the opening; the top stars S01 / S02 sit {FRONT['stars'][0]['below_opening_mm']:.0f} / {FRONT['stars'][1]['below_opening_mm']:.0f} mm below it, on the front leg panel, as on the mockup.",
              "5. Rev A cause: the flat's scoop line was drawn ~50 mm too low (reaching the side seam ~185 mm below the WB top instead of ~125 mm), so the stars looked",
              f"   as if they were inside the pocket. Rev B redraws the scoop from the traced opening. With the new scale + origin the stars moved up {mv[0]:.0f}-{mv[1]:.0f} mm (sideways <= {mv[2]:.1f} mm); 07a / 07b rebuilt.",
-             f"6. Rev B4 (PR #34 review): {len(FRONT['stars'])} konpeito, as on the mockup. The 4th soot sprite carries a pink AND a yellow konpeito that touch; Rev A-B3 traced them as one",
-             f"   blob ({', '.join(new)} was missing). The trace now labels each colour separately, and any blob over {kjfront.MERGE_RATIO} x the median size stops the build (possible merge). The pink is sewn on top of the yellow."]
+             "6. Rev B4 (PR #34 review): the 4th soot sprite carries a pink AND a yellow konpeito that touch; Rev A-B3 traced them as one",
+             f"   blob. The trace now labels each colour separately, and any blob over {kjfront.MERGE_RATIO} x the median size stops the build (possible merge). The pink is sewn on top of the yellow.",
+             f"7. Rev B5 (PR #34 round 2): the side-seam edge is searched for clipped candies (+-{kjfront.EDGE_PX} px band, saturation > {kjfront.EDGE_SAT}, >= {kjfront.EDGE_MIN_PX} px); the 6 px floor dropped 2 of the 3.",
+             f"   Mockup count {len(FRONT['stars'])} = {sum(1 for d in FRONT['stars'] if not d.get('clipped'))} whole + {sum(1 for d in FRONT['stars'] if d.get('clipped'))} clipped ({', '.join(d['id'] for d in FRONT['stars'] if d.get('clipped'))}), all kept, moved in to the side-seam keep-out. New vs Rev A: {', '.join(new)}."]
     for ln in lines: o.append(t(x0, y, ln, 1.8, 400, INK)); y += 3.5
     return o
 

@@ -100,3 +100,6 @@ black (not "as HI"); waistband 2 pieces joined at CB; back pockets = "2 back pat
 
 - Rev B4 (21 Oct, PR #34 review): the 07 front-leg map has 15 konpeito (the 4th soot sprite carries a pink AND a yellow
   konpeito, overlapping; the pink is sewn on top). Size 24 is dropped (item 18 above); T3 and F1 say so.
+- Rev B5 (21 Oct, PR #34 round 2): 3 candies at the side seam are clipped by the garment edge on the mockup (blue
+  + 2 yellow slivers; Rev B4 mapped 1, dropped 2). All 3 are kept (PROPOSED): mapped at their sliver height and moved in to the 12 mm side-seam keep-out.
+  The 07 map is 17 = 14 whole + 3 clipped.

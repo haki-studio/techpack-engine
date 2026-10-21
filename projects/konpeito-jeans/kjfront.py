@@ -61,6 +61,36 @@ def check_merges(blobs, ratio=MERGE_RATIO):
         raise ValueError(f"possible merged stars (size > {ratio} x median {med:.0f} px): {big}")
     return med
 
+EDGE_PX = 3          # band either side of the traced side-seam edge searched for clipped candies (PR #34 round 2)
+EDGE_SAT = 0.12      # a clipped sliver is 1-3 px wide and anti-aliased into the background: lower saturation floor
+EDGE_MIN_PX = 3      # >= 3 px: the faint blue sliver at the side seam is 5 px; single-pixel colour noise on the edge is dropped
+
+def edge_slivers(G, h, s, v, blobs):
+    """PR #34 round 2: candies that run off the side seam on the mockup show as 1-3 px slivers on the cut edge, below
+    the main trace's 6 px / saturation floor. Search a +-EDGE_PX band along the traced side seam with a lower
+    saturation floor; slivers already covered by a main blob are skipped."""
+    H, W = s.shape
+    band = np.zeros((H, W), bool)
+    for y in range(int(G["wb_top"]) + 5, H):
+        try: ex = side_x(G["sil"], y + 0.5)
+        except Exception: continue
+        if not np.isfinite(ex): continue
+        e = int(round(ex)); band[y, max(e - EDGE_PX, 0):e + EDGE_PX + 1] = True
+    band[60:186, 893:992] = False
+    sv = (s > EDGE_SAT) & (v > 0.3) & band
+    masks = {"pink": sv & ((h > 300) | (h < 15)), "blue": sv & (h > 160) & (h < 230), "yellow": sv & (h > 35) & (h < 65)}
+    out = []
+    for col, m in masks.items():
+        lab, n = ndi.label(m, structure=np.ones((3, 3)))
+        for i, sl in enumerate(ndi.find_objects(lab), 1):
+            mm = lab[sl] == i
+            if mm.sum() < EDGE_MIN_PX: continue
+            cy, cx = (sl[0].start + sl[0].stop) / 2, (sl[1].start + sl[1].stop) / 2
+            if any(b[1][0].start - 2 <= cy <= b[1][0].stop + 2 and b[1][1].start - 2 <= cx <= b[1][1].stop + 2 for b in blobs):
+                continue
+            out.append((col, sl, mm, True))
+    return out
+
 def trace(G):
     a = np.asarray(Image.open(SRC).convert("RGB")).astype(float)
     h, s, v = CL.hsv(a)
@@ -78,9 +108,10 @@ def trace(G):
             if mm.sum() < 6: continue
             blobs.append((col, sl, mm))
     check_merges(blobs)
+    blobs = [(c, sl, mm, False) for c, sl, mm in blobs] + edge_slivers(G, h, s, v, blobs)
     mmpx = G["mmpx"]; oy = G["wb_top"]
     stars = []
-    for col, sl, mm in blobs:
+    for col, sl, mm, sliver in blobs:
         ys, xs = np.nonzero(mm); cy, cx = ys.mean() + sl[0].start, xs.mean() + sl[1].start
         ex = side_x(G["sil"], cy)
         x_side = (cx - ex) * mmpx; y_wb = (cy - oy) * mmpx
@@ -90,7 +121,9 @@ def trace(G):
             moved = round(SIDE_KO + STAR_D / 2 - x_side, 1); x_side = SIDE_KO + STAR_D / 2
         oyp = opening_y(cx)
         gap = None if oyp is None else round((cy - oyp) * mmpx - STAR_D / 2, 1)    # star top edge below the opening, mm
+        clipped = bool(sliver or sl[1].start <= ex + EDGE_PX)        # the candy runs off the garment edge on the mockup
         stars.append(dict(col=col, px=(round(cx, 1), round(cy, 1)), size_px=int(sl[1].stop - sl[1].start), side_px=round(ex, 1),
+                          clipped=clipped, sliver_px=(int(mm.sum()) if sliver else None),
                           x_mockup_mm=round(x_mock, 1), x_from_side_mm=round(x_side, 1), y_from_waist_mm=round(y_wb, 1),
                           moved_in_mm=moved, below_opening_mm=gap,
                           inside_opening=bool(oyp is not None and cy < oyp)))
