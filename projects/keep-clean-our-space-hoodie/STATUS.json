@@ -2,21 +2,6 @@
  "slug": "keep-clean-our-space-hoodie",
  "log": [
   [
-   "2026-10-16T21:02:54",
-   "intake",
-   "projects created from inbox"
-  ],
-  [
-   "2026-10-16T21:13:00",
-   "inventory",
-   "5 elements: 01 JP badge (FR upper), 02 EN badge (FL upper), 03 CN badge (FR lower), 04 KR oval (FL lower), 05 star field (fronts + sleeves); back + hood plain (proposed). Body = Drum Island, hood pattern waits for engine PR"
-  ],
-  [
-   "2026-10-16T21:40:35",
-   "art",
-   "4 badges + star field composed on Drum Island M; all 7 sizes fit keep-outs (EN badge nudged 6-9 mm)"
-  ],
-  [
    "2026-10-16T22:14:27",
    "stitch",
    "M fronts built (FR 23k st/127 trims, FL 22k/87, foam pause marked); all sizes + splits building"
@@ -185,15 +170,57 @@
    "2026-10-21T06:58:44",
    "review",
    "PR #38 (Rev G fix round 3)"
+  ],
+  [
+   "2026-10-21T06:59:36",
+   "review",
+   "PR #38 Rev G pushed; re-review blocked: old reviewer session 0000c1c8 still alive (idle) - stop it, then dispatch.sh review keep-clean-our-space-hoodie 38"
+  ],
+  [
+   "2026-10-21T11:30:54",
+   "art",
+   "Rev H started: founder answers 21 Oct - back = stars only (front style), no glow/haze, puff 2.5-3.0 kept as factory question, CN 800 kept"
+  ],
+  [
+   "2026-10-21T11:40:19",
+   "stitch",
+   "Rev H: all 7 sizes x 5 pieces (FR FL SR SL + BK back stars) + splits built; M: FR 29,127 st/279 trims, FL 27,473/226, SR 2,756/97, SL 2,771/97, BK 5,352/187 (248 stars); glow+haze gone, 10 threads"
+  ],
+  [
+   "2026-10-21T11:52:59",
+   "qa",
+   "Rev H gates: 147 files pass (max stitch < 7.5, <= 10 colours, sections fit 400x450, foam isolation, keep-outs incl. back), glyph gate + A14/A15 BLOCKING 0, pattern QA pass; page fixes in progress"
+  ],
+  [
+   "2026-10-21T12:07:04",
+   "documents",
+   "Rev H pack: 27 pp (T1-T9 + G1-G6, E01-E06, S1-S3, R1, F1-F2), 4.4 MB; zip 30.5 MB; tests 275 pass"
+  ],
+  [
+   "2026-10-21T12:07:04",
+   "delivered",
+   "Rev H delivered to Desktop/keep-clean-RevH: back stars (248, PROPOSED layout), glow+haze dropped, puff question on F1/F2, CN 800 kept; M total 67,479 st / 886 trims"
   ]
  ],
  "questions": [
-  "Back + hood: a back design is planned - send the back view; back + hood = artwork to follow [MISSING] in Rev D.",
-  "Star haze (soft glow round the badges + under the big sparkles): pending - kept as in Rev C. Keep, change or drop?"
+  "Back stars (06, Rev H): the back layout is seeded from the front field logic (248 stars at M, density + spacing of the front field, copies of the front stars) - confirm, or send a back view to place them from. [PROPOSED]",
+  "Factory (Mandy, F1/F2): can the thin 3D puff strokes 2.5-3.0 mm wide (JP / CN text, list on G4) puff cleanly? Confirm on the strike-off; any that do not are sewn flat."
  ],
- "stage": "review",
- "stage_index": 8,
+ "stage": "delivered",
+ "stage_index": 7,
  "blocked": false,
- "updated": "2026-10-21T06:58:44",
- "preview": "out/pages/prev_G1.png"
+ "updated": "2026-10-21T12:07:04",
+ "preview": "out/pages/prev_G1.png",
+ "answers": [
+  {
+   "date": "2026-10-21",
+   "source": "founder",
+   "items": [
+    "Back: embroidered stars only, same star style as the front; no badges or text; hood plain. Back/hood MISSING removed.",
+    "Star haze / glow: dropped entirely (stipple haze + glow halo round badges and sparkles).",
+    "Puff: kept on the 28 strokes 2.5-3.0 mm; factory question on F1/F2 for Mandy (confirm on the strike-off).",
+    "CN text weight 800: keep."
+   ]
+  }
+ ]
 }

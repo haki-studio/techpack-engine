@@ -17,7 +17,7 @@ from motifs2 import HEX, PAL
 import tech, stitchrender as SR, qa
 import specbase as SB
 from specbase import img_tag
-import front as F, sleeve as SV, factory as FA, mockmap as MM
+import front as F, sleeve as SV, back as BKM, factory as FA, mockmap as MM
 import kcdoc as KD
 import tofu
 import dstview as DV
@@ -35,14 +35,25 @@ TOT = sum(CUR[p]["stitches"] for p in P4); TRIMS = sum(CUR[p]["trims"] for p in 
 MH = sum(mh(CUR[p]) for p in P4)
 MH_SPLIT = sum(mh(s) for p in P4 for s in CUR[p]["splits"]["sections"].values()) if all(CUR[p]["splits"]["sections"] for p in P4) else MH
 HOOP = {p: max(1, len(CUR[p]["splits"]["sections"])) for p in P4}
-ELN = {"01": "JP badge", "02": "EN badge", "03": "CN badge", "04": "KR oval", "05": "Star field"}
+ELN = {"01": "JP badge", "02": "EN badge", "03": "CN badge", "04": "KR oval", "05": "Star field", "06": "Back stars"}
 def hdr(title, sub, page): return SB.header(title, sub, page)
 def fv(x): return glob.glob(x)
 
 def stripe(o, y, h, x0=11, w=None):
     o.append(f'<rect x="{x0}" y="{f(y)}" width="{SW - 22 if w is None else w}" height="{f(h)}" fill="#F5F2EC"/>')
 
-def garment_view(ppm=2.0, show=P4, fade=None):
+def back_view(ppm=2.0):
+    """Rev H: size-M back B01 (back view: x from CB, + = wearer's right = viewer's right), the BK DST read back on the piece"""
+    from PIL import ImageDraw
+    pc = BKM.piece("M").sew_poly(); b = pc.bounds; bb = (b[0] - 8, b[1] - 8, b[2] + 8, b[3] + 8)
+    im = DV.image([f"out/stitch/M/HAKI_{kccore.SHORT}_BK_M"], bb, ppm)
+    W, H = im.size; T = lambda cs: [((x - bb[0])*ppm, (y - bb[1])*ppm) for x, y in cs]
+    mask = Image.new("L", (W, H), 0); ImageDraw.Draw(mask).polygon(T(pc.exterior.coords), fill=255)
+    out = Image.new("RGB", (W, H), (255, 255, 255)); out.paste(im, (0, 0), mask)
+    ImageDraw.Draw(out).line(T(pc.exterior.coords), fill=(90, 90, 90), width=2)
+    return out, bb
+
+def garment_view(ppm=2.0, show=("FR", "FL", "SR", "SL"), fade=None):
     """size-M fronts in place + both sleeves beside them, stitch render on drawn pieces. Returns (image, bbox, offsets)."""
     from PIL import ImageDraw
     OFF = {"SR": (-600, 110), "SL": (600, 110), "FR": (0, 0), "FL": (0, 0)}
@@ -69,14 +80,22 @@ def cover(index):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>']
     o.append(t(14, 24, "HAKI STUDIOS", 3.0, 700, MUTED))
     o.append(t(14, 36, "Keep Clean Our Space hooded jacket · washed black — embroidery", 6.6, 700))
-    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island body (hooded), size M base · 5 elements on 4 pieces · {len(kccore.KC_KEYS)} threads · mm", 2.6, 400, MUTED))
+    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island body (hooded), size M base · {len(kccore.ELEMENTS)} elements on {len(P4)} pieces · {len(kccore.KC_KEYS)} threads · mm", 2.6, 400, MUTED))
     o.append(f'<line x1="14" y1="48" x2="{SW-14}" y2="48" stroke="{INK}" stroke-width="0.4"/>')
     im, bb, OFF = garment_view(1.6)
     tag, h = img_tag(im, 14, 54, 178); o.append(tag)
-    o.append(t(14, 54 + h + 3.5, "FRONTS + SLEEVES, size M — the written DST files read back (sleeves laid flat beside the body). Back + hood: artwork to follow [MISSING] (founder, 20 Oct).", 2.0, 700))
+    o.append(t(14, 54 + h + 3.5, "FRONTS + SLEEVES, size M — the written DST files read back (sleeves laid flat beside the body).", 2.0, 700))
+    bim, _ = back_view(1.2); tagb, hb = img_tag(bim, 14, 54 + h + 7, 58); o.append(tagb)
+    bx = 76; by = 54 + h + 10
+    for i, (l, c, w_) in enumerate([("BACK (B01), size M — stars only (E06), DST read back.", INK, 700),
+                                    ("Founder 21 Oct: back = stars in the front's style, nothing else;", INK, 400),
+                                    ("hood plain. Layout seeded from the front field [proposed — confirm].", ORANGE, 400),
+                                    ("Glow halo + star haze dropped (founder 21 Oct).", INK, 400),
+                                    ("Art traced from the garment mockup (source of truth, ~1 px/mm;", ORANGE, 400),
+                                    ("no close-ups). Text wording from the founder's source frame.", ORANGE, 400)]):
+        o.append(t(bx, by + i*3.6, l, 1.9, w_, c))
     # KD.auto: CJK runs as font outlines (the sheet font falls back to Liberation Sans for 污 -> tofu, review PR #38)
-    o.append(t(14, 54 + h + 7, "Art traced from the garment mockup (source of truth, ~1 px/mm; no close-ups used). Text wording from the founder's source frame, set from fonts.", 1.9, 400, ORANGE))
-    o.append(KD.auto(14, 54 + h + 10.3, "Founder answers 20 Oct: puff on every sign, CN 污 (G4).", 1.9, ORANGE))   # short run: the Latin width estimate stays tight
+    o.append(KD.auto(bx, by + 6*3.6, "Founder answers 20 Oct: puff on every sign, CN 污 (G4).", 1.9, ORANGE))   # short run: the Latin width estimate stays tight
     ix = 200
     o.append(t(ix, 58, "CONTENTS", 2.8, 700)); y = 64
     for name, pg in index:
@@ -84,9 +103,9 @@ def cover(index):
     y += 3
     o.append(t(ix, y, "TOTALS, SIZE M (read from the DST files)", 2.3, 700)); y += 4.6
     for a, b in [("Stitches per jacket", f"{TOT:,}"), ("Trims per jacket", f"{TRIMS:,}"),
-                 ("Hoopings per jacket", f"{sum(HOOP.values())} on {FR_S} (fronts {HOOP['FR']}+{HOOP['FL']}, sleeves {HOOP['SR']}+{HOOP['SL']})"),
+                 ("Hoopings per jacket", f"{sum(HOOP.values())} on {FR_S} (fronts {HOOP['FR']}+{HOOP['FL']}, sleeves {HOOP['SR']}+{HOOP['SL']}, back {HOOP['BK']})"),
                  ("Machine time / jacket", f"{MH_SPLIT:.1f} h split files, {MH:.1f} h full files"), ("Threads", f"{len(kccore.KC_KEYS)} (40wt polyester), max {FA.max_threads(PROF)} per file"),
-                 ("3D puff", "all four badges (not the field stars), 3 mm foam; < %.1f mm strokes flat (G4)" % kccore.PUFF_MIN_MM)]:
+                 ("3D puff", "all four badges (not the field stars), 3 mm foam; < %.1f mm strokes flat (G4)" % kccore.PUFF_MIN_MM), ("Back", f"{META['counts']['BK_field']} stars (E06), no badges or text; hood plain")]:
         o.append(t(ix, y, a, 1.9, 400, MUTED)); o.append(t(SW - 14, y, b, 1.8, 600, INK, "end")); y += 3.8
     o.append(t(SW - 14, SH - 8, SB.FOOT, 1.9, 400, MUTED, "end"))
     return o
@@ -94,7 +113,7 @@ def cover(index):
 # ================================================================ G2 placement overview
 def overview():
     o = hdr("G2 · PLACEMENT OVERVIEW — four badges + the star field on the garment",
-            "Fronts: x from CF (+ = wearer's left), y down from the CF neck seam. Sleeves: pattern coords (x across, 0 = sleeve centre line; y down from the underarm line). Tolerance ±2, rotation ±2°.", "G2")
+            "Fronts: x from CF (+ = wearer's left), y down from the CF neck seam. Sleeves: x across from the centre line, y down from the underarm line. Back: x from CB, y from the CB neck seam. Tol. ±2, rot. ±2°.", "G2")
     im, bb, OFF = garment_view(1.8)
     w = 180; s = w / (bb[2] - bb[0]); ax, ay = 12, 30
     tag, h = img_tag(im, ax, ay, w); o.append(tag)
@@ -106,6 +125,16 @@ def overview():
     for p in ("SR", "SL"):
         b_ = BB[p]; o.append(f'<circle cx="{f(X((b_[0]+b_[2])/2, p))}" cy="{f(Y(b_[1] - 12, p))}" r="2.4" fill="{RED}"/>' + t(X((b_[0]+b_[2])/2, p), Y(b_[1] - 12, p) + 0.8, "05", 1.7, 700, "#FFFFFF", "middle"))
     o.append(t(ax, ay + h + 3.5, f"Size M ({s:.2f}:1). Red = element boxes. 05 star field covers FR, FL, SR (right sleeve), SL (left sleeve). Grey = welt pockets, gold = zip.", 1.8, 700))
+    bim, bbb = back_view(1.4); tagb, hb = img_tag(bim, ax, ay + h + 7, 74); o.append(tagb)
+    sb = 74 / (bbb[2] - bbb[0]); bxx = ax + 78; byy = ay + h + 11
+    cb = META["counts"]
+    for i, (l, c) in enumerate([("06 BACK STARS — back B01, size M (back view: x from CB, + = wearer's right)", INK),
+                                (f"{cb['BK_field']} stars, front field style (each a copy of a front field star); no badges, no text.", INK),
+                                (f"Seeded at the front density {cb['BK_density_per_dm2']:.1f} / dm2, min gap {cb['BK_nn_min_mm']:.1f} mm " + PROP, ORANGE),
+                                ("Keep-outs: hood neck seam 10, shoulders + armholes 15, side seams 15, hem-band seam 10.", INK),
+                                ("Positions follow the back panel per size (width + length ratio); star size constant.", INK),
+                                ("Hood: plain (founder 21 Oct). With the hood down it covers the upper back stars.", INK)]):
+        o.append(t(bxx, byy + i*3.6, l, 1.65, 700 if i == 0 else 400, c))
     tx = 198; ty = 30
     o.append(t(tx, ty, "BADGE POSITION PER SIZE (box centre x, y; mm)", 2.1, 700))
     hd = ["Size", "Gr.", "01 JP (FR)", "03 CN (FR)", "02 EN (FL)", "04 KR (FL)"]; cx = [tx, tx + 9, tx + 16, tx + 34, tx + 52, tx + 70]
@@ -123,9 +152,9 @@ def overview():
     o.append(t(tx, ky, "KEEP-OUTS (all sizes, from the drafted pieces)", 2.1, 700))
     ko = [f"CF zip {F.KEEP_CF:.0f} · side, armhole, shoulder seams {F.KEEP_SEAM:.0f}", f"Hem-band seam {F.KEEP_HEM:.0f} · neck (hood) seam {F.KEEP_NECK:.0f} " + PROP,
           f"Welt pocket box {F.KEEP_WELT:.0f}", "Sleeves: cap seam 15 · underarm seam 15 · cuff seam 10",
-          "Self-fabric hem band, cuffs, hood, back: no embroidery " + PROP]
+          "Back: hood neck 10 · shoulder, armhole, side 15 · hem-band seam 10 (E06)", "Self-fabric hem band, cuffs, hood: no embroidery (hood plain, founder 21 Oct)"]
     for i, k in enumerate(ko): o.append(t(tx, ky + 4 + i*3.3, k, 1.6, 400, ORANGE if PROP in k else INK))
-    my = ky + 4 + 5*3.3 + 3
+    my = ky + 4 + len(ko)*3.3 + 3
     o.append(t(tx, my, "CLEARANCE CHECK (min distance, every size)", 2.1, 700))
     import emb_place as EP
     worst = EP.worst()
@@ -139,7 +168,7 @@ def threads():
     use = {k: {} for k in kccore.KC_KEYS}
     for p in P4:
         for c in CUR[p]["colours"]: use[c][p] = use[c].get(p, 0) + 1
-    hd = ["", "Thread", "Hex", "Isacord", "ΔE", "Madeira Polyneon", "ΔE", "Wt", "Used for", "Stops FR / FL / SR / SL"]
+    hd = ["", "Thread", "Hex", "Isacord", "ΔE", "Madeira Polyneon", "ΔE", "Wt", "Used for", "Stops FR / FL / SR / SL / BK"]
     cx = [12, 18, 44, 58, 88, 96, 130, 138, 146, 240]
     for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.75, 700, MUTED))
     TH = SB.TH; rh = 5.2
@@ -169,7 +198,7 @@ def threads():
           ("3D puff foam", "3 mm embroidery foam, BLACK, one sheet per puff hooping: laid at the STOP before the first puff stop, torn away after the last stop of that file (per file: S1, F2) " + PROP),
           ("Topping", "none (duck surface is firm; foam acts as topping under the puff satin)"), ("Needles", "75/11 sharp (duck); 80/12 for the puff stops"),
           ("Bobbin", "60wt black polyester pre-wound"),
-          ("Frames", f"{FR_S} (factory.json{'' if PROF['frames_confirmed'] else ', PROPOSED'}): fronts {HOOP['FR']} + {HOOP['FL']} hoopings, sleeves {HOOP['SR']} + {HOOP['SL']} (split files, G5/G6)"),
+          ("Frames", f"{FR_S} (factory.json{'' if PROF['frames_confirmed'] else ', PROPOSED'}): fronts {HOOP['FR']} + {HOOP['FL']} hoopings, sleeves {HOOP['SR']} + {HOOP['SL']}, back {HOOP['BK']} (split files, G5/G6)"),
           ("Patches / labels", "none — all artwork is direct embroidery on the cut pieces")]
     for i, (a, b) in enumerate(tr):
         o.append(t(12, yb + 14.5 + i*3.6, a, 1.85, 600)); o.append(t(42, yb + 14.5 + i*3.6, b, 1.8, 400, ORANGE if PROP in b else INK))
@@ -209,7 +238,7 @@ def summary():
         o.append(t(cx[6], y, f"{r['stops']}", 1.8)); o.append(t(cx[7], y, f"{r['threads']}", 1.8))
         o.append(t(cx[8], y, f"{r['max_stitch']:.2f} mm", 1.8, 600, GREEN if r["max_stitch"] <= 7.5 else RED))
         o.append(t(cx[9], y, f"{HOOP[p]}", 1.8)); o.append(t(cx[10], y, f"{mh(r)*60:.0f} min full file" + (f" (+ foam pause)" if r.get("foam_pause_before_stop") else ""), 1.8))
-    y = 36 + 4*4.6 + 1
+    y = 36 + len(P4)*4.6 + 1
     o.append(t(cx[2], y, "TOTAL", 1.9, 700)); o.append(t(cx[3], y, f"{TOT:,}", 1.9, 700)); o.append(t(cx[4], y, f"{TRIMS:,}", 1.9, 700))
     o.append(t(cx[10], y, f"{MH:.1f} h full · {MH_SPLIT:.1f} h split", 1.9, 700))
     bad = {k: v for k, v in WC.items() if v >= 1.0}
@@ -217,16 +246,17 @@ def summary():
                ("all codes < 1 %" if not bad else ", ".join(f"{k} {v:.1f} %" for k, v in sorted(bad.items(), key=lambda kv: -kv[1]))) +
                " — tips of stars / sparkles taper to 0.8 by design.", 1.7, 400, GREEN if not bad else ORANGE))
     o.append(t(12, y + 8.4, f"Run time = factory.machine_hours: {PROF['spm']} spm + 6 s per trim + 4 s per colour change, one hooping; puff pause (lay foam ~2 min) and tear-away not included.", 1.7, 400, MUTED))
-    o.append(t(12, y + 11.8, "Fidelity first: every badge part, star and glow of the mockup is built; trims (mostly one per star speckle — each is an island on bare fabric) are reported, not cut.", 1.7, 400, MUTED))
+    o.append(t(12, y + 11.8, "Fidelity first: every badge part and star of the mockup is built (glow + haze dropped by the founder, 21 Oct); trims (mostly one per star speckle — each is an island on bare fabric) are reported, not cut.", 1.7, 400, MUTED))
     fo = [CUR[p].get("foam", {}) for p in ("FR", "FL")]
     fok = all(f_.get("foam_stop_ok") and f_.get("base_under_puff_ok") for f_ in fo)
     o.append(t(12, y + 15.2, f"3D puff on every sign part (founder 20 Oct) · foam on its own stop (puff stops never merged with a flat stop) · rule 6: no flat stitch inside the foam beyond the {kccore.CUT_KEEP_MM:.0f} mm edge band "
                f"(read from the DST: {'0 needle points FR + FL' if fok else 'CHECK'}) · split for the factory's {FR_S} frame.", 1.7, 600, GREEN if fok else RED))
     qy = y + 21
     o.append(t(12, qy, "OPEN QUESTIONS — founder", 2.6, 700))
-    qs = [("1. Back + hood: a back design is planned (founder will generate a back view). Back + hood = artwork to follow [MISSING]; nothing is stitched there in this revision.", True),
-          ("2. Star HAZE (the soft glow round the badges and under the big sparkles): pending the founder — kept as in Rev C.", True),
-          ("Standing proposals (no answer = they stand): the Rev C 12-colour thread plan (FR 12 = factory max) · welts at the mockup's 58° slash · badge grade A 92 / B 100 / C 106 % · thread board approved on the factory's card (G3, F1).", False),
+    qs = [(f"1. Back stars (E06): layout seeded from the front field ({META['counts']['BK_field']} stars) — confirm, or send a back view to place them from. [proposed — confirm]", True),
+          (f"2. Factory (Mandy, F1/F2): can the {N_THIN} puff strokes {kccore.PUFF_MIN_MM:.1f}–{kccore.PUFF_HOUSE_MIN_MM:.1f} mm wide puff cleanly? Confirm on the strike-off; else they sew flat.", True),
+          ("Answered 21 Oct (founder): back = stars only, same style as the front (no badges / text), hood plain · glow halo + star haze DROPPED · puff kept on the thin strokes (factory to confirm) · CN text weight 800 kept.", False),
+          (f"Standing proposals (no answer = they stand): the {len(kccore.KC_KEYS)}-thread plan (max {max(CUR[p]['threads'] for p in P4)} per file, factory max 12) · welts at the mockup's 58° slash · badge grade A 92 / B 100 / C 106 % · thread board approved on the factory's card (G3, F1).", False),
           ("Closed 20 Oct (founder): puff on all signs, CN ring dots puff, CN text 不要世界污染 (Simplified 污), KR 우리들 소중한 우주! approved, 'WE WANT NO DIRTY COSMOS' left out. Closed 19 Oct: zip-hoodie block + slash-welt override; frames, 12 colours, puff (factory).", False)]
     for i, (q, pr) in enumerate(qs): o.append(KD.auto(12, qy + 5 + i*3.9, q, 1.75, ORANGE if pr else INK))
     # Rev D puff decisions, every sign part (founder: where a stroke is too thin to puff, keep it flat and say which)
@@ -237,6 +267,8 @@ def summary():
         o.append(KD.auto(12, zy + 4 + row_i * 3.3, row, 1.6, INK))
     return o
 
+# puffed TEXT strokes between PUFF_MIN_MM and the house minimum (the 2.6 mm JP dot is a part, not a stroke: listed on G4)
+N_THIN = sum(r["below_house"] for r in META.get("puff", []) if r.get("ch") not in ("dot", "ring"))
 def puff_rows():
     """one line per element from scene META['puff'] (widths are measured on the art, full stroke width in mm)"""
     import collections
@@ -291,10 +323,10 @@ def files_page():
             y += 2.95
     y += 2.5
     o.append(t(12, y, "WHAT IS DIGITIZED", 2.0, 700)); y += 4
-    notes = [("Order", "per file: glow halo (stipple run) → star haze → white stars → flat parts (KR text, thin strokes / bars) → STOP: lay 3 mm foam → puff cores → lighter rims → tear the foam away → flat parts sewn on top (S1, F2)."),
+    notes = [("Order", "per file: white stars → flat parts (KR text, thin strokes / bars) → STOP: lay 3 mm foam → puff cores → lighter rims → tear the foam away → flat parts sewn on top (S1, F2). No glow / haze (founder 21 Oct)."),
              ("Foam", f"puff stops are their own machine stops after every flat stop; flat work under the puff is cut back to a {kccore.CUT_KEEP_MM:.0f} mm band under the puff edge (house rule 6), checked on every written file (S1)."),
              ("Text", "set from fonts (E01–E04), one satin COLUMN per stroke along its centreline (no skipped rows, no fans); puff 0.20 zz + 0.85 lighter rim (JP, EN; CN no rim); strokes < 2.5 mm flat 0.25 zz + centre run."),
-             ("Stars", "concave 4-point sparkles (two tapered columns, haze under ≥ 5 mm) + satin dots Ø 1.45–2.0 — each speckle is an island on bare fabric = one trim (reported)."),
+             ("Stars", "concave 4-point sparkles (two tapered columns) + satin dots Ø 1.45–2.0 — each speckle is an island on bare fabric = one trim (reported). Back (BK): same stars, E06."),
              ("Splits", f"objects < 70 mm go whole to one section; fills crossing a split overlap 1.2 mm; registration crosses sew in stop 1's thread. Every section fits: {'yes' if allfit else 'CHECK'}.")]
     for a, b_ in notes:
         o.append(t(12, y, a, 1.6, 700)); o.append(t(26, y, b_, 1.5)); y += 3.2
@@ -303,7 +335,7 @@ def files_page():
 # ================================================================ G6 hooping
 def hooping_page():
     o = hdr("G6 · HOOPING TABLE — split lines + needle start per file, every size",
-            f"Frame {FR_S} (factory.json{'' if PROF['frames_confirmed'] else ', PROPOSED'}). Front coords: x from CF, y from the CF neck seam. Sleeve coords: x from the sleeve centre line, y from the underarm line.", "G6")
+            f"Frame {FR_S} (factory.json{'' if PROF['frames_confirmed'] else ', PROPOSED'}). Fronts: x from CF, y from the CF neck seam. Sleeves: x from the centre line, y from the underarm line. Back: x from CB, y from the CB neck seam.", "G6")
     hd = ["Size", "Piece", "Split x", "Split y", "Sections: needle start (x, y) + file mm", "Full file start", "Badge crossed by a split", "Fit"]
     cx = [12, 22, 32, 44, 56, 206, 232, 272]
     for x_, h in zip(cx, hd): o.append(t(x_, 31, h, 1.5, 700, MUTED))
@@ -335,8 +367,8 @@ def hooping_page():
             ok = bool(secs) and all(v["fits"] for v in secs.values()); o.append(t(cx[7], y, "yes" if ok else "NO", 1.45, 700, GREEN if ok else RED))
             y += 2.95
     y += 2
-    for i, l in enumerate(["Split lines are searched where they cut the least art (fronts 15–85 % of the height, sleeves 25–75 % / 15–85 %); whole motifs < 70 mm (stars, dots, bars, glyph strokes)",
-                           "never split. 'spans' = the badge lies across the split line but every part sews whole in one hooping (the glow run is cut with 1.2 overlap): check registration on the strike-off. Needle start = centre of each file (DST origin):",
+    for i, l in enumerate(["Split lines are searched where they cut the least art (fronts 15–85 % of the height, sleeves + back 25–75 % / 15–85 %); whole motifs < 70 mm (stars, dots, bars, glyph strokes)",
+                           "never split. 'spans' = the badge lies across the split line but every part sews whole in one hooping: check registration on the strike-off. Needle start = centre of each file (DST origin):",
                            "mark it on the cut piece from the pattern. Registration crosses: stop 1 thread, long 4 mm stitches on bare fabric outside the art; the next section re-registers on them; pick out after."]):
         o.append(t(12, y + i*3.2, l, 1.55, 400, MUTED))
     return o
@@ -357,7 +389,7 @@ def badge_page(el):
     X = lambda x: ax + (x - bb[0])*sc; Y = lambda y: ay + (y - bb[1])*sc
     o.append(dim_h(X(u[0]), X(u[2]), ay - 1.5, f"{u[2]-u[0]:.0f}", 1.9))
     o.append(dim_v(Y(u[1]), Y(u[3]), ax + (bb[2]-bb[0])*sc + 3, f"{u[3]-u[1]:.0f}", 1.9, side=1))
-    o.append(t(ax, ay + h + 4, f"Size M DST read back, shown {sc:.2f}:1. Art box {u[2]-u[0]:.0f} × {u[3]-u[1]:.0f} without the halo (badge only; field stars belong to E05).", 1.75, 400, MUTED))
+    o.append(t(ax, ay + h + 4, f"Size M DST read back, shown {sc:.2f}:1. Art box {u[2]-u[0]:.0f} × {u[3]-u[1]:.0f} (badge only; field stars belong to E05; no glow halo, founder 21 Oct).", 1.75, 400, MUTED))
     rx = 172; y = 33
     o.append(t(rx, y, "TEXT — exact characters, set from the font (do not re-type or trace)", 2.1, 700)); y += 3
     key = {"01": "jp", "02": "en", "03": "cn", "04": "kr"}[el]
@@ -372,7 +404,7 @@ def badge_page(el):
             ("Em height (M)", f"{b['em']:.1f} mm" + (f" · line pitch {b['pitch']:.0f} (measured) · line 2 length {b['line2_len']:.0f}" if el == "02" else "")),
             ("Angle", ang), ("Process", {"01": "3D puff text + parts, lighter rims, 3 mm black foam (thin strokes flat, G4)", "02": "3D puff text + faceted stars, 3 mm black foam (thin strokes flat, G4)",
                                          "03": "3D puff text (no rim) + puff ring dots with lighter rims, 3 mm black foam (thin strokes flat, G4)", "04": "3D puff oval ring; text flat (strokes 0.9–2.6 mm, median 1.4, too thin to puff, G4)"}[el])]
-    if el == "03": rows.append(("Ring", f"{b['dots']} domed dots Ø 12.4 (1.3 lighter rim) alternating blue / mint, soft halo, sparkles inside"))
+    if el == "03": rows.append(("Ring", f"{b['dots']} domed dots Ø 12.4 (1.3 lighter rim) alternating blue / mint, sparkles inside (no halo)"))
     if el == "04":
         rw_ = META.get("traced", {}).get("04", {}).get("oval ring width", [b['axes'][2], b['axes'][2]])
         rows.append(("Oval ring", f"traced from the mockup: ring {rw_[0]:.1f}–{rw_[1]:.1f} gold (one closed column, width table) + 1.1 lemon line"))
@@ -420,18 +452,18 @@ def text_big(x, y, txt, key, h):
 
 CHANGES = {
  "01": ["WHAT CHANGED vs MOCKUP", "Text re-set from Zen Maru Gothic Bold on the mockup's CURVED", "  baseline; 17 spark bars, 2 hearts, 4 stars, 1 dot from the mockup.",
-        "Domed puff: lighter rim on text / bars / hearts / dot, faceted stars;", "  top star: dark pit, thin white ring, white glint streak; red star one", "  red, star-shaped pit. Glow = soft halo round the letters.", "!Reference: mockup (layout, traced) + source frame (text, lettering)."],
+        "Domed puff: lighter rim on text / bars / hearts / dot, faceted stars;", "  top star: dark pit, thin white ring, white glint streak; red star one", "  red, star-shaped pit. Glow halo dropped (founder 21 Oct).", "!Reference: mockup (layout, traced) + source frame (text, lettering)."],
  "02": ["WHAT CHANGED vs MOCKUP", "18 gold stars counted + placed (2 hidden behind 'N' not added),", "  faceted, lighter top facets. Nunito 1000 em 23 (heavier, as the",
-        "  mockup), line pitch 28 + line length 138 measured. Soft halo.", "Badge moved 9 toward CF (M): clears the 15 armhole keep-out.", "!Reference: mockup (layout, traced) + source frame (text, lettering)."],
+        "  mockup), line pitch 28 + line length 138 measured. No halo.", "Badge moved 9 toward CF (M): clears the 15 armhole keep-out.", "!Reference: mockup (layout, traced) + source frame (text, lettering)."],
  "03": ["WHAT CHANGED vs MOCKUP", "Text from the founder's source frame: 不要世界污染 (the render's", "  7 glyphs were garbled), Simplified 污 (founder, 20 Oct).",
-        "Text 3D puff, Noto Sans SC 800 (strokes ≥ 2.5 puff, G4).", "{dots} domed ring dots + {cnsp} sparkles, traced; soft halo round the dots.", "!Reference: mockup (layout) + source frame (text)."],
+        "Text 3D puff, Noto Sans SC 800 (strokes ≥ 2.5 puff, G4).", "{dots} domed ring dots + {cnsp} sparkles, traced; no halo (21 Oct).", "!Reference: mockup (layout) + source frame (text)."],
  "04": ["WHAT CHANGED vs MOCKUP", "Text from the source frame, read upright (drawn rotated 180°):", "  우리들 소중한 우주! — the render's marks were the rotated '!'.",
         "Set as 소중한 (founder approved, 20 Oct).", "Oval ring traced (4.5–5.0 wide), 3D puff + 1.1 lemon line.", "!Reference: mockup (layout) + source frame (text)."],
 }
 
 def star_page():
     o = hdr("E05 · STAR FIELD — white speckles on both fronts and all round both sleeves",
-            "Direct embroidery on the cut pieces · concave 4-point sparkles (+ soft haze) and satin dots · positions from the mockup, star size constant over sizes", "E05")
+            "Direct embroidery on the cut pieces · concave 4-point sparkles and satin dots (no haze, founder 21 Oct) · positions from the mockup, star size constant over sizes · back: E06", "E05")
     hd = ["Size", "FR", "FL", "SR", "SL", "Fronts: nudged ≤ 8", "relocated", "dropped", "Sleeves: nudged / reloc. / dropped"]
     cx = [14, 26, 38, 50, 62, 76, 104, 122, 140]
     for x_, h in zip(cx, hd): o.append(t(x_, 32, h, 1.55, 700, MUTED))
@@ -440,7 +472,7 @@ def star_page():
         A = pickle.load(open(f"art_{sz}.pkl", "rb")); y = 36.5 + i*3.6; I = A["info"]
         if i % 2 == 0: stripe(o, y - 2.6, 3.6, 13, 176)
         o.append(t(cx[0], y, sz, 1.6, 700))
-        for j, p in enumerate(P4): o.append(t(cx[1 + j], y, f"{I[p]['stars']}", 1.6))
+        for j, p in enumerate(("FR", "FL", "SR", "SL")): o.append(t(cx[1 + j], y, f"{I[p]['stars']}", 1.6))
         fr = [sum(I[p].get(k, 0) for p in ("FR", "FL")) for k in ("stars_nudged", "stars_relocated", "stars_dropped")]
         sv = [sum(I[p].get(k, 0) for p in ("SR", "SL")) for k in ("stars_nudged", "stars_relocated", "stars_dropped")]
         o.append(t(cx[5], y, f"{fr[0]}", 1.6)); o.append(t(cx[6], y, f"{fr[1]}", 1.6)); o.append(t(cx[7], y, f"{fr[2]}", 1.6, 700, GREEN if fr[2] == 0 else RED))
@@ -456,7 +488,7 @@ def star_page():
     lines = [f"Mockup speckles detected: {c['specks_detected']} = fronts {c['FR_field']} + {c['FL_field']} + sleeves (front half) {c['SR_front_mapped']} + {c['SL_front_mapped']} + CN ring {c['cn_sparkles']} (E03)",
              f"  Front stars stitched: FR {c['FR_field']} + FL {c['FL_field']} = {c['FR_field'] + c['FL_field']} field stars + {c['cn_sparkles']} CN ring sparkles = {c['FR_field'] + c['FL_field'] + c['cn_sparkles']} "
              "(the '190' in the 19 Oct 13:57 status log was counted before the seam / cuff glints were excluded, commit 5bc5364, 15:48).",
-             f"  + not field stars: {c['excluded_in_badge']} inside badge zones, {c['excluded_hood']} on the hood (hood: artwork to follow [MISSING]), {c['excluded_zip']} on the zip, {c['excluded_big_glint']} large glints;",
+             f"  + not field stars: {c['excluded_in_badge']} inside badge zones, {c['excluded_hood']} on the hood (hood plain, founder 21 Oct), {c['excluded_zip']} on the zip, {c['excluded_big_glint']} large glints;",
              "  removed before counting (seam glints checked on x4 crops, not stars): " + ", ".join(f"{v} {k}" for k, v in c.get("glints", {}).items()) + ".",
              f"Fronts: every detected star is placed on every size (dropped = 0, review item 8). A star in a keep-out moves to the nearest free spot (≤ 8 = nudged);",
              "  if none, ≤ 45 mm (relocated: the render's drop-shoulder strip, x ≈ ±305 at M, lies on the Drum Island sleeve cap, so those stars spread onto the front edge).",
@@ -464,7 +496,7 @@ def star_page():
              (lambda T: f"Sizes + shapes traced (A14): every front star is fitted to its own mockup silhouette (kctrace) — {T.get('sparkles', [0, 0])[1]} sparkles + {T.get('dots', [0, 0])[1]} dots snapped, "
                         f"{T.get('traced silhouettes', [0, 0])[1]} tiny stars stitched as their traced outline; gate table on compare_front_M (A14/A15).")(META.get("traced", {}).get("05", {})),
              f"Star size is constant over sizes (positions follow the panel), so sleeve files are near-identical across sizes: {sl_txt} — intended (review item 11).",
-             "Each speckle is an island on bare fabric: 1–2 trims each (haze + sparkle in two threads). Trims are reported, not reduced (fidelity first)."]
+             "Each speckle is an island on bare fabric: one trim each (one thread, no haze since Rev H). Trims are reported, not reduced (fidelity first)."]
     for i, l in enumerate(lines): o.append(t(14, y + i*3.3, l, 1.6, 400, ORANGE if PROP in l else INK))
     y += len(lines)*3.3 + 3
     rs = sorted([r for r in D["FL"] if r["el"] == "05" and r["grp"] == "SPK"], key=lambda r: -r["geom"].area)
@@ -473,7 +505,6 @@ def star_page():
         c0 = rs[0]["geom"].centroid; zb = (c0.x - 6, c0.y - 6, c0.x + 6, c0.y + 6)
         im = DV.image([BASE], zb, 30); tag, h = img_tag(im, 14, y, 36); o.append(tag)
         o.append(t(14, y + h + 3, "Sparkle, DST read back 3:1: two tapered columns", 1.55, 400, MUTED))
-        o.append(t(14, y + h + 6, "over an open haze disc (Star haze thread)", 1.55, 400, MUTED))
         dz = [r for r in D["FL"] if r["el"] == "05" and r["grp"] == "DOT"]
         if dz:
             c1 = dz[0]["geom"].centroid; zb2 = (c1.x - 6, c1.y - 6, c1.x + 6, c1.y + 6)
@@ -483,6 +514,45 @@ def star_page():
     o.append(t(196, 32 + h + 3, "Sleeves: mockup | SR | SL — DST read back (size M)", 1.6, 400, MUTED))
     fr = Image.open("out/compare_front_M.png"); tag, h = img_tag(fr, 100, y, 90); o.append(tag)
     o.append(t(100, y + h + 3, "Fronts: mockup (mapped) | DST read back (size M)", 1.6, 400, MUTED))
+    return o
+
+# ================================================================ E06 back stars (Rev H)
+def back_page():
+    c = META["counts"]
+    o = hdr("E06 · BACK STARS — white star field on the back (B01), nothing else",
+            "Founder 21 Oct 2026: back = embroidered stars only, same style as the front (no badges, no text); hood plain · direct embroidery on the cut back · picture = size-M DST read back", "E06")
+    bim, bb = back_view(2.0); tag, h = img_tag(bim, 14, 32, 120); o.append(tag)
+    sc = 120 / (bb[2] - bb[0])
+    o.append(t(14, 32 + h + 4, f"Size M back DST read back, shown {sc:.2f}:1 (back view: x from CB, + = wearer's right = viewer's right).", 1.7, 400, MUTED))
+    rx = 142; y = 34
+    o.append(t(rx, y, "LAYOUT — PROPOSED (no back view of the design exists)", 2.2, 700, ORANGE)); y += 5
+    for l, col in [(f"Star field logic of the fronts: {c['front_field_stars']} field stars on {c['front_free_area_cm2']:.0f} cm2 of free front area (badges excluded)", INK),
+                   (f"= {c['BK_density_per_dm2']:.1f} stars per dm2 → {c['BK_field']} stars on the {c['BK_free_area_cm2']:.0f} cm2 free back area (size M).", INK),
+                   (f"Spacing: seeded at random, no two stars closer than {c['BK_nn_min_mm']:.1f} mm (fronts' 10th-percentile gap; front median {c['BK_front_nn_median_mm']:.1f}).", INK),
+                   (f"Style: every back star is a COPY of a front field star (same primitive, thread, size and traced shape), drawn", INK),
+                   (f"from the {c['BK_library']} front field stars in turn, so the size + shape mix is the front's (2 hem-corner blobs > 20 mm2 left out).", INK),
+                   ("Thread: Star white only. Flat satin (no puff, no haze). Each star is an island = one trim (reported, not reduced).", INK),
+                   ("Keep-outs (mm from the sew line): hood neck seam 10, shoulders 15, armholes 15, side seams 15, hem-band seam 10.", INK),
+                   ("Grading: positions follow the back panel (width x, neck → hem y); star size constant; a star in a keep-out is nudged.", INK),
+                   ("Hood down covers the upper back: those stars show with the hood up. [proposed — confirm]", ORANGE),
+                   ("Founder: confirm the seeded layout, or send a back view to place the stars from (G4 question 1).", ORANGE)]:
+        o.append(t(rx, y, l, 1.6, 400, col)); y += 3.5
+    y += 3
+    o.append(t(rx, y, "PER SIZE (art + written DST read back)", 2.1, 700)); y += 4
+    hd = ["Size", "Stars", "Nudged", "Reloc.", "Dropped", "Stitches", "Trims", "Hoopings", "File mm"]; cx = [rx, rx + 12, rx + 24, rx + 37, rx + 49, rx + 63, rx + 81, rx + 94, rx + 110]
+    for x_, hh in zip(cx, hd): o.append(t(x_, y, hh, 1.5, 700, MUTED))
+    y += 3.6
+    for i, sz in enumerate(kccore.SIZES):
+        A = pickle.load(open(f"art_{sz}.pkl", "rb")); I = A["info"]["BK"]; r = ALL.get(sz, {}).get("BK", {})
+        if i % 2 == 0: stripe(o, y - 2.6, 3.5, rx - 1, SW - rx - 11)
+        fu = r.get("full", {}); ns = len(r.get("splits", {}).get("sections", {})) or 1
+        vals = [sz, I["stars"], I["stars_nudged"], I["stars_relocated"], I["stars_dropped"], f"{fu.get('stitches', 0):,}", fu.get("trims", "—"), ns,
+                f"{fu['size_mm'][0]:.0f} × {fu['size_mm'][1]:.0f}" if fu else "—"]
+        for j, (x_, v) in enumerate(zip(cx, vals)): o.append(t(x_, y, str(v), 1.55, 700 if j == 0 else 400, RED if (j == 4 and v) else INK))
+        y += 3.5
+    y += 4
+    cmp_ = Image.open("out/compare_06_back.png"); tag2, h2 = img_tag(cmp_, rx, y, SW - rx - 12); o.append(tag2)
+    o.append(t(rx, y + h2 + 3, "compare_06_back: mockup front field | front DST | back DST (same 4 px/mm scale) | whole back DST.", 1.55, 400, MUTED))
     return o
 
 # ================================================================ stop tables (read back)
@@ -562,8 +632,11 @@ def f1_pages():
     def _drop(svg):
         for key in ("4  Quote basis", "How do you price embroidery", "Total stitches and trims per piece are on the embroidery pages"):
             svg = re.sub(r"<text[^>]*>[^<]*" + re.escape(key) + r"[^<]*</text>", "", svg)
-        return svg.replace("(d) actual run time per hooping and your price for it.", "(d) actual run time per hooping.")
+        # Rev H (founder 21 Oct, Q3): the thin-puff question for Mandy goes on F1 too (detail on F2 section 7)
+        return svg.replace("(d) actual run time per hooping and your price for it.",
+                           f"(d) actual run time per hooping; (e) 3D PUFF: do our {N_THIN} puff strokes {kccore.PUFF_MIN_MM:.1f}–{kccore.PUFF_HOUSE_MIN_MM:.1f} mm wide dome + cut cleanly? (F2 §7)")
     svgs = [_drop(v) for v in svgs]
+    assert any("3D PUFF: do our" in v for v in svgs), "F1 puff question not placed (engine page text changed?)"
     assert not any("Quote basis" in v for v in svgs), "F1 quote-basis filter failed (engine page text changed?)"
     # hoopings on the confirmed frames (the engine page lists them only while frames are unconfirmed)
     one = PROF.get("single_hooping_confirmed_mm", {}).get("front")
@@ -575,7 +648,7 @@ def f1_pages():
     big = {sz: {p: ALL[sz][p]["full"]["size_mm"] for p in ("FR", "FL")} for sz in ("XS", "3XL") if sz in ALL}
     lines.append(("Which frame takes a whole front in ONE hooping (XS " + " / ".join(f"{p} {v[0]:.0f}×{v[1]:.0f}" for p, v in big.get("XS", {}).items())
                   + ", 3XL " + " / ".join(f"{p} {v[0]:.0f}×{v[1]:.0f}" for p, v in big.get("3XL", {}).items()) + " mm), and a sleeve (M " +
-                  f"{CUR['SR']['size_mm'][0]:.0f} × {CUR['SR']['size_mm'][1]:.0f})? Full single-hooping files are in the package next to the splits.", ORANGE))
+                  f"{CUR['SR']['size_mm'][0]:.0f} × {CUR['SR']['size_mm'][1]:.0f}), and the back (M {CUR['BK']['size_mm'][0]:.0f} × {CUR['BK']['size_mm'][1]:.0f})? Full single-hooping files are in the package next to the splits.", ORANGE))
     # the engine page is full (sections 1-5): hoopings + puff go on a second page, F2
     o = hdr("F2 · Factory requests (cont.) — hoopings + 3D puff", f"{kccore.NAME} · what we need from the embroidery factory", "F2")
     # sleeves turned 90 deg: the narrow side against the frame's 450 side (usable 450 - 16), two hoopings along the length
@@ -593,16 +666,17 @@ def f1_pages():
             o.append(t(16, yy, f"{os.path.basename(r['file'])}.dst ({p} {nm}): " + (fs["line"] if fs else "no puff in this hooping — no foam."), 2.1, 400, INK)); yy += 3.8
     o += [t(16, yy + 1, f"Other sizes: the same steps; the stop numbers per file are printed in the README. Puff stops never share a stop with flat work; no flat stitch lies inside the foam beyond a {kccore.CUT_KEEP_MM:.0f} mm band under the puff edge (S1).", 2.1, 400, INK),
           t(16, yy + 5.2, "Which foam do you stock (3 mm, black)? Puff columns are capped at 7 mm (no split stitch inside the foam): can your Brother heads sew longer satins over foam?", 2.3, 400, ORANGE),
-          t(16, yy + 9.4, f"Strike-off: some puff strokes are {kccore.PUFF_MIN_MM:.1f}–{kccore.PUFF_HOUSE_MIN_MM:.1f} mm wide (JP / CN text, list on G4). Do they dome and cut cleanly on your foam? If not, we sew them flat.", 2.3, 400, ORANGE)]
+          t(16, yy + 9.4, f"QUESTION FOR MANDY (founder, 21 Oct): we keep 3D puff on {N_THIN} thin strokes {kccore.PUFF_MIN_MM:.1f}–{kccore.PUFF_HOUSE_MIN_MM:.1f} mm wide (JP / CN text, list on G4; below the usual 3 mm).", 2.3, 700, ORANGE),
+          t(16, yy + 13.4, "Can these thin strokes puff cleanly on your foam (dome, foam cut at the ends, no foam showing)? Please confirm on the strike-off; any that do not, we sew flat.", 2.3, 400, ORANGE)]
     return svgs + [doc(o)]
 
 def build():
     pages = [("G1", None), ("G2", overview()), ("G3", threads()), ("G4", summary()), ("G5", files_page()), ("G6", hooping_page()),
-             ("E01", badge_page("01")), ("E02", badge_page("02")), ("E03", badge_page("03")), ("E04", badge_page("04")), ("E05", star_page()),
-             ("S1", stops_page(["FR", "FL"], "S1")), ("S2", stops_page(["SR", "SL"], "S2")), ("R1", region_page())]
+             ("E01", badge_page("01")), ("E02", badge_page("02")), ("E03", badge_page("03")), ("E04", badge_page("04")), ("E05", star_page()), ("E06", back_page()),
+             ("S1", stops_page(["FR", "FL"], "S1")), ("S2", stops_page(["SR", "SL"], "S2")), ("S3", stops_page(["BK"], "S3")), ("R1", region_page())]
     names = {"G1": "Cover + contents", "G2": "Placement overview", "G3": "Thread + trim summary", "G4": "Stitch summary + open questions",
              "G5": "Production stitch files + hoop splits", "G6": "Hooping table", "E01": "JP badge (FR chest)", "E02": "EN badge (FL chest)",
-             "E03": "CN badge (FR lower)", "E04": "KR oval (FL lower)", "E05": "Star field (fronts + sleeves)", "S1": "Stop sequence FR + FL", "S2": "Stop sequence SR + SL", "R1": "Region stitch table"}
+             "E03": "CN badge (FR lower)", "E04": "KR oval (FL lower)", "E05": "Star field (fronts + sleeves)", "E06": "Back stars (B01)", "S1": "Stop sequence FR + FL", "S2": "Stop sequence SR + SL", "S3": "Stop sequence BK (back)", "R1": "Region stitch table"}
     index = [(f"{k} {names[k]}", i + 1) for i, (k, _) in enumerate(pages)] + [("F1 Factory requests", len(pages) + 1), ("F2 Factory requests (cont.)", len(pages) + 2)]
     pages[0] = ("G1", cover(index))
     w = PdfWriter(); os.makedirs("out/pages", exist_ok=True)

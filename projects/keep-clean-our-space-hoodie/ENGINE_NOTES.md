@@ -251,3 +251,26 @@ Chinese phrase, upside-down mirrored Hangul)." Check: the spec page prints the s
   `tofu.py`, called on every G/E/S/R/F/T page before svg2pdf).
 - Check: red then green done here - `tofu.check('<text>CN 污</text>')` raises, outline-set text passes; the Rev G
   pack builds with the guard on every page.
+
+## 28. A star field for a panel no view shows (Rev H, founder 21 Oct: back = front-style stars only)
+- Problem: the founder wants stars on the back "from the front's star-field logic", but no back view exists. The
+  project seeds it in `scene.py`: front field density (stars / free front area, badges excluded), a minimum gap at the
+  fronts' 10th-percentile nearest-neighbour distance, rejection sampling on the back's keep-out clip, and every back
+  star a translated COPY of a front field star (same primitive, thread, traced size) taken from the front stars in turn
+  (outliers > 20 mm² left out). The sleeve back halves (Rev A) already did a cruder version (fixed 9 mm gap, size table).
+- Proposed engine fix: `motifs.seed_field(source_units, source_area, target_clip, gap="p10", seed=...)` returning moved
+  copies + a stats dict (density, gap, library size) for the spec page, used for sleeve backs and unseen panels alike.
+- Check: a test that the seeded density on a synthetic target is within 5 % of the source density, no pair closer than
+  the gap, and the size histogram of the copies matches the source (KS distance < 0.1).
+
+## 29. Dropped decorative layers leave threads + fixtures behind (Rev H: glow + haze removed)
+- Problem: removing the glow / haze layers removed two threads from the jacket, but `tests/test_kcos_gates.py` builds
+  synthetic stops in `kc_glow`, and `dst2.write` crashed on the unknown hex (PES thread colour None). Fixed in the
+  project by keeping the two hexes registered (`kccore.LEGACY_PAL`) outside the thread list (`KC_KEYS`).
+- Proposed engine fix: test fixtures use engine test colours (e.g. `test_a`, `test_b` in motifs2.PAL), never a
+  product's palette keys; `dst2.write` raises a clear `UnknownThread(key)` instead of a pyembroidery TypeError.
+- Check: `pytest tests/test_kcos_gates.py` green with LEGACY_PAL deleted once the fixtures are moved.
+- Also found: `specbase.TH` is built once at import from the palette, so when another test imports specbase first, a
+  project key added later has no thread row and `dst2.write` raises `KeyError`. Project fix: kccore tops up `specbase.TH`
+  if specbase is already loaded. Engine fix: `specbase.th(key)` computed lazily. Check: full `pytest tests` (275 pass;
+  the KCOS foam test was red in the full suite, green alone, before the top-up).
