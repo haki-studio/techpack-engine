@@ -100,7 +100,7 @@ def p_cover(index):
          f'<line x1="14" y1="45" x2="{SW-14}" y2="45" stroke="{INK}" stroke-width="0.4"/>']
     fr, _ = flat_png(False); bk, _ = flat_png(True, art=False)
     tag, h = img_tag(fr, 14, 50, 100); o.append(tag); o.append(t(14, 50 + h + 4, "FRONT — badges 01–04 + 05 star field (DST read back, size M)", 2.0, 700))
-    tag, h2 = img_tag(bk, 118, 50, 80); o.append(tag); o.append(t(118, 50 + h2 + 4, "BACK + HOOD — plain (sleeve backs carry stars: E05, not drawn here)", 2.0, 700)); o.append(prop(118, 50 + h2 + 7.5, "no embroidery on back + hood", 1.7))
+    tag, h2 = img_tag(bk, 118, 50, 80); o.append(tag); o.append(t(118, 50 + h2 + 4, "BACK + HOOD — artwork to follow [MISSING] (sleeve backs carry stars: E05)", 2.0, 700)); o.append(prop(118, 50 + h2 + 7.5, "back design planned: founder will generate a back view", 1.7))
     ix = 206; o.append(t(ix, 56, "CONTENTS", 2.8, 700)); y = 62
     for name, pg in index: o.append(t(ix, y, name, 1.85)); o.append(t(SW - 14, y, str(pg), 1.85, 600, MUTED, "end")); y += 3.7
     y += 3; o.append(t(ix, y, "KEY SPECS", 2.4, 700)); y += 4.6
@@ -123,7 +123,7 @@ NOTES = [("1", "Hood: 3 panels — side pair + 10 cm centre panel. Washed black 
          ("4", f"Welt pockets at the mockup's steep slash position ({F_.WELT['cx']/10:.1f} cm from CF, {F_.WELT['cy']/10:.1f} cm below the neck, {F_.WELT['angle']:.0f}°, size M), Drum Island welt 1.4 × 13; embroidery keeps {F_.KEEP_WELT:.0f} mm clear (DST-checked, T7).", True),
          ("5", f"Hem band: self fabric, {HD.hcm('S','M')/10:.1f} cm finished, folded; {HD.EL_HEM_W/10:.0f} cm elastic, flat {HD.FLAT/10:.0f} cm each side of the zip. Not embroidered.", True),
          ("6", f"Cuff band: self fabric, {HD.hcm('T','M')/10:.1f} cm finished, folded, closed into a loop. Not embroidered (stars stop 10 mm above the cuff seam).", True),
-         ("7", "Embroidery: 01 JP + 03 CN badges (FR), 02 EN + 04 KR badges (FL), 05 star field (FR, FL, both full sleeves): direct embroidery on the cut panels before any seam; 3D puff on 01 / 02 / 03 dots (G pages).", False),
+         ("7", "Embroidery: 01 JP + 03 CN badges (FR), 02 EN + 04 KR badges (FL), 05 star field (FR, FL, both full sleeves): direct embroidery on the cut panels before any seam; 3D puff on all four badges, field stars flat (G pages); back + hood artwork to follow [MISSING].", False),
          ("8", "Lining: cotton flannel body (plaid, as mockup), polyester taffeta sleeves; hood fully lined in sherpa. Labels on the back neck facing.", True)]
 
 def p_flats():
@@ -279,7 +279,7 @@ def p_bom():
             ("Elastic — hem", f"{HD.EL_HEM_W/10:.0f} cm woven elastic, {mM['el_hem']/10:.1f} cm (M)", "1", True),
             ("Elastic — cuff", f"{HD.EL_CUFF_W/10:.1f} cm woven elastic, {(mM['el_cuff']+15)/10:.1f} cm (M)", "2", True),
             ("Embroidery thread", f"40wt polyester, {len(cols)} colours over the jacket, ≤ 12 per file (G3) — FR + FL + SR + SL", f"{sum(CUR[p]['stitches'] for p in CUR):,} stitches (M)", True),
-            ("3D puff foam", "3 mm embroidery foam, black: FR one sheet (01 + 03 dot ring), FL one sheet (02)", "2 sheets", True),
+            ("3D puff foam", "3 mm embroidery foam, black: FR one sheet (01 + 03), FL one sheet (02 + 04 ring)", "2 sheets", True),
             ("Embroidery backing", f"2.5 oz cutaway, black, 100 cm wide — {hoops} hoopings per jacket (G6), each split file + 30 per side", f"{BACKING:.2f} m", True),
             ("Thread — seams", "Coats Epic 120 (Tex 27), black — estimate from the block, factory to confirm", "~ 450 m", True), ("Thread — topstitch", "Coats Gral 40 (Tex 60), tonal charcoal — estimate from the block", "~ 140 m", True),
             ("Labels", "Main + size on back neck facing; care label left side seam lining", "1 set", False)]
@@ -341,14 +341,14 @@ def p_fit():
     for c in checks:
         o.append(f'<rect x="12" y="{f(y - 2.2)}" width="2.6" height="2.6" fill="none" stroke="{INK}" stroke-width="0.25"/>'); o.append(t(16.5, y, c, 1.7)); y += 4.2
     y += 4; o.append(t(12, y, "OPEN QUESTIONS — confirm before the sample", 2.4, 700)); y += 6
-    qs = ["1. Text from the founder's source frame: 宇宙をきれいに · KEEP CLEAN OUR SPACE · 不要世界汚染 (汚 as drawn; Simplified 污?) · 우리들 소중한 우주! (source reads 소중함 — confirm).",
-          "2. Back + hood plain; star field on both fronts + all round both sleeves. Confirm, or add back / hood stars.",
+    qs = ["1. Back + hood: artwork to follow [MISSING] — the founder will generate a back view; nothing is embroidered there in this revision.",
+          "2. Star haze (soft glow round the badges / big sparkles): pending the founder, kept as in Rev C (G4).",
           "3. Hood size 36 × 26 cm (M) incl. sherpa allowance, no drawcord; hem / cuff bands 5.5 / 5 cm with elastic (zip-hoodie block, proposed).",
           "4. Zip: 2-way separating YKK #5 metal, antique brass (mockup shows two pullers).",
           "5. Shell: 12 oz washed black duck, pre-washed before embroidery; lining: plaid flannel (body), taffeta (sleeves), cream sherpa (hood).",
           f"6. Welts at the mockup's slash position ({F_.WELT['cx']/10:.1f} cm from CF, {F_.WELT['cy']/10:.1f} cm below the neck, {F_.WELT['angle']:.0f}°) via the block's welt override.",
           "7. Sample size M first (the blank fit of the hoodie block is still pending); then the size set.",
-          "8. Embroidery choices (puff, tint threads, CN 汚 vs 污, KR 소중한 vs 소중함, optional extra text): see G4, built as proposed.",
+          "Closed 20 Oct (founder): text 宇宙をきれいに · KEEP CLEAN OUR SPACE · 不要世界污染 (Simplified 污) · 우리들 소중한 우주!; puff on all signs; 12-colour plan stands; no extra text.",
           "Closed 19 Oct: hood block = zip-hoodie block (engine/hoodie.py, elastic hem + cuff bands) — founder decision; welt override in the engine."]
     for q in qs: o.append(KD.auto(12, y, q, 1.7, PROP)); y += 4.2          # CJK runs as font outlines
     return o
@@ -360,9 +360,12 @@ def p_revisions():
             ("Rev B", "19 Oct 2026", "Independent review fixes: stroke-column satin text, stipple glow halo, domed puff rims in tint threads + faceted stars, curved JP baseline, "
                             "solid red star, CN + KR text from the founder's source frame, motifs traced + A14/A15 gates, every mockup star placed (seam glints removed), heavier EN; compare sheets drawn from the DST files. "
                             "Garment: zip-hoodie block (founder decision 19 Oct) with this mockup's slash welts (engine welt override); pattern XS–3XL, DXF + 1:1 plot, T pages."),
-            ("Rev C", DATE, f"Factory answers (19 Oct): hoop splits for the {KD.FR_S} frame (factory.json) instead of the assumed 360 × 360, F1 updated; 3D puff: foam on its own "
+            ("Rev C", "20 Oct 2026", f"Factory answers (19 Oct): hoop splits for the {KD.FR_S} frame (factory.json) instead of the assumed 360 × 360, F1 updated; 3D puff: foam on its own "
                             f"machine stop, flat glow cut back under the puff to a {kccore.CUT_KEEP_MM:.0f} mm edge band (house rule 6, checked on every DST); every file rebuilt from the "
-                            "current art (the Rev B files predated the last sparkle fix); glow + haze stipple no longer bridge long hops with straight lines (up to 57 mm in Rev B; trims reported); page checks (sleeve flat front half, CJK text as outlines, thread estimates flagged).")]
+                            "current art (the Rev B files predated the last sparkle fix); glow + haze stipple no longer bridge long hops with straight lines (up to 57 mm in Rev B; trims reported); page checks (sleeve flat front half, CJK text as outlines, thread estimates flagged)."),
+            ("Rev D", DATE, f"Founder answers (20 Oct): 3D puff on every sign part that is not a background star (CN text in Noto Sans SC 800, KR oval ring, JP dot); strokes / parts under {kccore.PUFF_MIN_MM:.1f} mm stay flat "
+                            "and are listed with their measured width (G4: KR text, a few thin strokes, 1 JP bar, the JP 4-point sparkle); CN text 不要世界污染 (Simplified 污); KR text approved; "
+                            "back + hood = artwork to follow [MISSING]; answered questions removed; every stitch file, gate and page rebuilt.")]
     y = 36
     for rv, dt, ch in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(36, y, dt, 1.7))

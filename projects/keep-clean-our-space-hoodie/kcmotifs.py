@@ -185,18 +185,41 @@ def gap_fillers(P, sts, min_mm2=2.0):
         out.append(dict(cl=[tuple(c - u * h), tuple(c + u * h)], w=w, caps=("round", "round"), closed=False, filler=True))
     return out
 
-def text_columns(glyphs, col, code, cap, unit, rim=False, rim_code="PF-RIM", **kw):
-    """font glyphs -> stroke columns (core) [+ lighter rim columns round the stroke outline, puff dome look]."""
+PUFF_LOG = []          # Rev D: one row per glyph / part whose puff was decided by width (scene META["puff"])
+
+def text_columns(glyphs, col, code, cap, unit, rim=False, rim_code="PF-RIM", flat_code="TXC", puff_min=None, **kw):
+    """font glyphs -> stroke columns (core) [+ lighter rim columns round the stroke outline, puff dome look].
+    Rev D: with puff_min (mm) and a puff `code`, a stroke narrower than puff_min stays FLAT (flat_code, full width, no rim),
+    and a glyph whose wide-enough strokes are < kccore.PUFF_GLYPH_SHARE of its stroke length is flat as a whole. Widths
+    are the full stroke widths (before the rim split). Every decision is logged in PUFF_LOG."""
+    import kccore
     core, rims = [], []
     for ch, g in glyphs:
-        for P in polys(g):
+        allst = []; PS = polys(g)
+        for pi, P in enumerate(PS):
             sts = KS.glyph_columns(P, cap); sts = sts + gap_fillers(P, sts)
-            if not sts: continue
+            allst += [(pi, s) for s in sts]
+        if not allst: continue
+        decide = puff_min is not None and code.startswith("PF-")
+        wide = lambda s: (not decide) or s["w"] >= puff_min
+        L = [max(KS.poly_len(s["cl"]), 0.1) for _, s in allst]
+        share = sum(l for l, (_, s) in zip(L, allst) if wide(s)) / sum(L)
+        glyph_puff = code.startswith("PF-") and ((not decide) or share >= kccore.PUFF_GLYPH_SHARE)
+        if decide:
+            ws = [s["w"] for _, s in allst]; fl = [s["w"] for _, s in allst if not (glyph_puff and wide(s))]
+            PUFF_LOG.append(dict(unit=unit, ch=ch, strokes=len(allst), puff=len(allst) - len(fl), flat=len(fl), share=round(share, 3),
+                                 w_min=round(min(ws), 2), w_med=round(float(np.median(ws)), 2), w_max=round(max(ws), 2),
+                                 flat_w_max=round(max(fl), 2) if fl else None,
+                                 below_house=sum(1 for _, s in allst if glyph_puff and wide(s) and s["w"] < kccore.PUFF_HOUSE_MIN_MM)))
+        for pi in range(len(PS)):
+            sts = [s for P_, s in allst if P_ == pi]
+            pst = [s for s in sts if glyph_puff and wide(s)]
             for s in sts:
-                w = _core_w(s["w"]) if rim else s["w"]
-                core.append(KS.column_region(col, code, s["cl"], w, s["caps"], s.get("closed", False), unit=unit, ch=ch, **kw))
-            if rim:
-                shape = KS.strokes_geom(sts)
+                pf = glyph_puff and wide(s)
+                w = _core_w(s["w"]) if (rim and pf) else s["w"]
+                core.append(KS.column_region(col, code if pf else flat_code, s["cl"], w, s["caps"], s.get("closed", False), unit=unit, ch=ch, **kw))
+            if rim and pst:
+                shape = KS.strokes_geom(pst)
                 for p in polys(shape):
                     for s in KS.ring_columns(p, RIM_W):
                         rims.append(KS.column_region(RIM_COL[col], rim_code, s["cl"], RIM_W, s["caps"], s.get("closed", False), unit=unit, ch=ch, rim=True, **kw))
@@ -207,6 +230,10 @@ def bar_rc(cx, cy, L, w, ang, col, unit, code="PF-BAR"):
     a = math.radians(ang); dx, dy = math.cos(a) * L / 2, math.sin(a) * L / 2
     cl = [(cx - dx, cy - dy), (cx + dx, cy + dy)]
     cap = KS.column_geom(cl, w)
+    import kccore
+    if code.startswith("PF-") and w < kccore.PUFF_MIN_MM:         # Rev D: too narrow to puff -> flat bar, no rim
+        PUFF_LOG.append(dict(unit=unit, ch="bar", strokes=1, puff=0, flat=1, share=0.0, w_min=round(w, 2), w_med=round(w, 2), w_max=round(w, 2), flat_w_max=round(w, 2), below_house=0))
+        return [KS.column_region(col, "BAR", cl, w, unit=unit)], []
     core = [KS.column_region(col, code, cl, _core_w(w), unit=unit)]
     rim = [KS.column_region(RIM_COL[col], "PF-RIM", s["cl"], RIM_W, s["caps"], s.get("closed", False), unit=unit, rim=True)
            for p in polys(cap) for s in KS.ring_columns(p, RIM_W)]

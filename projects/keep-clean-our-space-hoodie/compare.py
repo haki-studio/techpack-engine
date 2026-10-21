@@ -67,7 +67,7 @@ ZOOMS = {
         ("top star: dark pit + white centre, bars", dict(unit="01-star1", h=15)), ("bottom red star: solid, star pit", dict(unit="01-star3", h=13))],
  "02": [("KEEP (puff, rim)", dict(unit="02-text", ch="K", h=17)), ("CLEAN (lemon, lemon-tint rim)", dict(unit="02-text", ch="L", h=17)),
         ("SPACE + halo", dict(unit="02-text", ch="S", h=17)), ("faceted border stars", dict(unit="02-star5", h=12))],
- "03": [("要 (flat column satin)", dict(unit="03-text", ch="要", h=17)), ("世 界", dict(unit="03-text", ch="界", h=17)),
+ "03": [("要 (3D puff column satin)", dict(unit="03-text", ch="要", h=17)), ("世 界", dict(unit="03-text", ch="界", h=17)),
         ("domed ring dots + halo", dict(unit="03-dots", h=14, pick=lambda rs: [min(rs, key=lambda r: r["geom"].bounds[1])])), ("inner sparkles", dict(unit="03-sp9", h=10))],
  "04": [("우리들 (light satin columns)", dict(unit="04-text", ch="들", h=16)), ("소중한", dict(unit="04-text", ch="중", h=16)),
         ("우주! (the '!' the render showed rotated)", dict(unit="04-text", ch="!", h=14)), ("oval ring + highlight", dict(unit="04-oval", h=14, pick=lambda rs: rs))],

@@ -60,6 +60,8 @@ KC_RULES = {
  "PF-TXC": ("Text stroke column, puff",   "Satin column over foam", "across the stroke",    "0.20 zz",  "—",    "none (foam)",           "0.30", "core under the rim"),
  "PF-RIM": ("Puff rim (lighter thread)",  "Satin column over foam", "across the rim",       "0.20 zz",  "—",    "none (foam)",           "0.15", "0.85 wide, on the edge"),
  "PF-DOT": ("Domed dot core, puff",       "Satin column (disc)", "parallel, 35°",           "0.20 zz",  "—",    "none (foam)",           "0.25", "staggered splits"),
+ "PF-OVAL":("Oval ring, 3D puff",        "Satin column over foam, closed", "across the ring", "0.20 zz", "—",   "none (foam)",           "0.30", "5.0 wide, Rev D"),
+ "PF-OVHL":("Oval highlight, puff",        "Satin column over foam, closed", "across the ring", "0.20 zz", "—",   "none (foam)",           "0.10", "1.1 wide, on top of the ring"),
  "ORN":    ("Ornament (KR mark, accents)", "Satin column",      "across the stroke",        "0.25 zz",  "—",    "none",                  "0.10", "1.0–1.2 wide"),
 }
 tech.RULES.update(KC_RULES)
@@ -70,7 +72,7 @@ sheet.FONT = "Liberation Sans"
 
 # column satin is a true zig-zag (each stitch crosses once): same-edge needle points are 2 x sp apart, so these are about
 # half the row spacing of the engine satin (which hits both edges every row) for the same coverage
-COL_SP = {"PF-TXC": 0.20, "PF-RIM": 0.20, "PF-BAR": 0.20, "PF-DOT": 0.20, "TXC": 0.25, "ORN": 0.25, "SPK": 0.24, "OVAL": 0.28, "OVAL-hl": 0.28}
+COL_SP = {"PF-TXC": 0.20, "PF-RIM": 0.20, "PF-BAR": 0.20, "PF-DOT": 0.20, "TXC": 0.25, "ORN": 0.25, "SPK": 0.24, "OVAL": 0.28, "OVAL-hl": 0.28, "PF-OVAL": 0.20, "PF-OVHL": 0.20}
 OPEN_TAT = {"GLOW-D": (0.60, 2.5), "GLOW-S": (1.30, 2.5), "HAZE": (1.10, 2.2)}
 HALF_THREAD = 0.21      # 40wt polyester lies ~0.42 wide: needle points sit this far inside the art outline
 PUFF_SP = 0.30          # puff satin row spacing (dense, cuts the foam at the column ends)
@@ -280,13 +282,19 @@ PIECE_CODE = {"FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
 ELEMENTS = {   # id -> (slug, title, piece)
     "01": ("jp-badge", "宇宙をきれいに badge (JP)", "FR"),
     "02": ("en-badge", "KEEP CLEAN OUR SPACE badge (EN)", "FL"),
-    "03": ("cn-badge", "不要世界汚染 badge (CN)", "FR"),
+    "03": ("cn-badge", "不要世界污染 badge (CN)", "FR"),
     "04": ("kr-oval", "우리들 소중한 우주! oval (KR)", "FL"),
     "05": ("star-field", "Star speckle field", "FR FL SR SL"),
 }
-# Text from the founder's source frame (inputs/reference.png, 19 Oct 2026), glyph for glyph: CN uses the reference's
-# Japanese-form 汚 (Simplified would be 污 — PROPOSED alternative); KR is the reference read upright (it is drawn rotated
-# 180°), in the grammatical form 소중한 (the reference glyph reads 소중함 — confirm).
-TEXT = {"01": "宇宙をきれいに", "02": ("KEEP", "CLEAN", "OUR SPACE"), "03": "不要世界汚染", "04": "우리들 소중한 우주!"}
-REV_EMB = "Rev C"; REV_GAR = "Rev C"; DATE = "20 Oct 2026"
+# Text from the founder's source frame (inputs/reference.png, 19 Oct 2026). Rev D (founder answers, 20 Oct 2026): CN uses
+# the Simplified Chinese 污 (不要世界污染, not the source's 汚); KR 우리들 소중한 우주! approved.
+TEXT = {"01": "宇宙をきれいに", "02": ("KEEP", "CLEAN", "OUR SPACE"), "03": "不要世界污染", "04": "우리들 소중한 우주!"}
+REV_EMB = "Rev D"; REV_GAR = "Rev D"; DATE = "20 Oct 2026"
+# Rev D (founder 20 Oct): 3D puff on every sign part that is not a background star. A stroke / part narrower than
+# PUFF_MIN_MM stays FLAT (too thin for the foam to dome and be cut cleanly); a glyph puffs only if >= PUFF_GLYPH_SHARE of
+# its stroke length is wide enough (no isolated puff bits). House rules/house.yaml puff min_w is 3.0: strokes 2.5-3.0 are
+# puffed as PROPOSED and listed for the strike-off (F2). The decision table is written to scene META["puff"].
+PUFF_MIN_MM = 2.5
+PUFF_HOUSE_MIN_MM = 3.0
+PUFF_GLYPH_SHARE = 0.5
 CUT_KEEP_MM = 1.0      # house rule 6 (docs/DIGITIZING_PRINCIPLES.md, engine/digitize/rules/house.yaml cut_keep_mm): flat work under puff keeps 1 mm under the edge
