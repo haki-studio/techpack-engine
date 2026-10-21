@@ -3,7 +3,7 @@ scipy
 scikit-image
 shapely>=2.0
 pyembroidery
-cairosvg
+cairosvg>=2.7.1   # >=2.7: unsafe=False blocks external fetches (CVE-2023-27586); svg2dst worker relies on it
 cairocffi
 pillow
 pypdf
