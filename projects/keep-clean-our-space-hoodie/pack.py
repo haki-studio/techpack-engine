@@ -417,7 +417,7 @@ def text_big(x, y, txt, key, h):
 
 CHANGES = {
  "01": ["WHAT CHANGED vs MOCKUP", "Text re-set from Zen Maru Gothic Bold on the mockup's CURVED", "  baseline; 17 spark bars, 2 hearts, 4 stars, 1 dot from the mockup.",
-        "Domed puff: lighter rim on text / bars / hearts / dot, faceted stars;", "  top star slender with a dark pit + white centre; red star solid with", "  a star-shaped pit. Glow = soft halo round the letters.", "!Reference: mockup (layout, traced) + source frame (text, lettering)."],
+        "Domed puff: lighter rim on text / bars / hearts / dot, faceted stars;", "  top star: dark pit in a white ring + white glint (Rev E); red star one", "  red, star-shaped pit (Rev E). Glow = soft halo round the letters.", "!Reference: mockup (layout, traced) + source frame (text, lettering)."],
  "02": ["WHAT CHANGED vs MOCKUP", "18 gold stars counted + placed (2 hidden behind 'N' not added),", "  faceted, lighter top facets. Nunito 1000 em 23 (heavier, as the",
         "  mockup), line pitch 28 + line length 138 measured. Soft halo.", "Badge moved 9 toward CF (M): clears the 15 armhole keep-out.", "!Reference: mockup (layout, traced) + source frame (text, lettering)."],
  "03": ["WHAT CHANGED vs MOCKUP", "Text from the founder's source frame: 不要世界污染 (the render's", "  7 glyphs were garbled), Simplified 污 (founder, 20 Oct).",

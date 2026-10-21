@@ -212,9 +212,20 @@ add("FR", best_star(lambda k: [dict(r, geom=r["geom"].difference(eyes).buffer(0)
 c = TR.snap("yellow", 460.0, 391.3); tr_log("01", "stars", c)
 sz1, rot1 = star_from(c, 6) if c else (14.4, 6)
 sx1, sy1 = J(*((c["cx"], c["cy"]) if c else (460.0, 391.3)))
-fs, _ = KM.star_facets(sx1, sy1, sz1, "kc_gold", "01-star1", rot=rot1, k=0.30, pit=0.32, round_=0.12)
-fs = best_star(lambda kp: KM.star_facets(sx1, sy1, sz1, "kc_gold", "01-star1", rot=rot1, k=kp[0], pit=kp[1], round_=0.12)[0] + KM.dot(sx1, sy1, 1.4, "kc_white", "01-star1", grp="FACE"),
-               [(k, p) for k in (0.28, 0.32, 0.38) for p in (0.12, 0.18, 0.24, 0.30)], ref_fn_for(J0, JC, "yellow"), "01", "star (top)")
+# Rev E (review PR #31 item 1): the mockup's centre is a small dark pit (fabric, r 0.6) inside a WHITE ring (satin column
+# r 0.6..1.9), and the upper facet of the upper-left arm carries the white glint. Star facets end at the ring (pit = 1.9 mm).
+_TOP_PIT_R, _TOP_RING_W = 0.6, 1.3
+def _top_star(kp):
+    regs = KM.star_facets(sx1, sy1, sz1, "kc_gold", "01-star1", rot=rot1, k=kp, pit=(_TOP_PIT_R + _TOP_RING_W) / (sz1 / 2), round_=0.12)[0]
+    out = []
+    for r in regs:
+        c = r["geom"].centroid; a = math.degrees(math.atan2(c.y - sy1, c.x - sx1))
+        # glint: the upper (light) facet of the upper-left arm (centroid ~ -150 deg, y down)
+        out.append(dict(r, col="kc_white", grp="FACE") if (-158 <= a <= -125 and r["col"] != "kc_gold") else r)
+    rc = _TOP_PIT_R + _TOP_RING_W / 2
+    ring = [(sx1 + rc * math.cos(math.radians(t)), sy1 + rc * math.sin(math.radians(t))) for t in range(0, 360, 15)]
+    return out + [KS.column_region("kc_white", "FACE", ring, _TOP_RING_W, ("flat", "flat"), True, unit="01-star1")]
+fs = best_star(_top_star, (0.20, 0.23, 0.26, 0.30, 0.34, 0.38), ref_fn_for(J0, JC, "yellow"), "01", "star (top)")
 add("FR", [r for r in fs if r["grp"] != "FACE"], 30, "01", unit="01-star1"); add("FR", [r for r in fs if r["grp"] == "FACE"], 33, "01", unit="01-star1")
 # small top-right star: a 4-point sparkle in star gold (mockup)
 c = TR.snap("yellow", 482.5, 415.0); tr_log("01", "stars", c)
@@ -228,9 +239,10 @@ add("FR", _s2, 22, "01", unit="01-star2")
 # bottom red star (review item 5): SOLID red, faceted, with a small dark star pit (fabric) in the middle
 c = TR.snap("red", 406.3, 563.8); tr_log("01", "stars", c)
 sz3, rot3 = star_from(c, 10) if c else (15.0, 10)
-fs, _ = KM.star_facets(*J(*((c["cx"], c["cy"]) if c else (406.3, 563.8))), sz3, "kc_red", "01-star3", rot=rot3, pit=0.30, pit_shape="star")
 _p3 = J(*((c["cx"], c["cy"]) if c else (406.3, 563.8)))
-add("FR", best_star(lambda k: KM.star_facets(*_p3, sz3, "kc_red", "01-star3", rot=rot3, k=k, pit=0.30, pit_shape="star")[0], [0.40, 0.46, 0.52, 0.58],
+# Rev E (review PR #31 item 1): mockup red star = ONE saturated red (no light facets) with a dark star-shaped pit
+# measured ~0.43 of the star radius; pit star sharper (k 0.42) so its points read at that size
+add("FR", best_star(lambda k: KM.star_facets(*_p3, sz3, "kc_red", "01-star3", rot=rot3, k=k, light="kc_red", pit=0.45, pit_shape="star", pit_k=0.42)[0], [0.40, 0.46, 0.52, 0.58],
                     ref_fn_for(J0, JC, "red"), "01", "star (red)"), 30, "01", unit="01-star3")
 put("FR", (jcore, jrim), 31, "01", "01-text")
 

@@ -289,7 +289,7 @@ ELEMENTS = {   # id -> (slug, title, piece)
 # Text from the founder's source frame (inputs/reference.png, 19 Oct 2026). Rev D (founder answers, 20 Oct 2026): CN uses
 # the Simplified Chinese 污 (不要世界污染, not the source's 汚); KR 우리들 소중한 우주! approved.
 TEXT = {"01": "宇宙をきれいに", "02": ("KEEP", "CLEAN", "OUR SPACE"), "03": "不要世界污染", "04": "우리들 소중한 우주!"}
-REV_EMB = "Rev D"; REV_GAR = "Rev D"; DATE = "20 Oct 2026"
+REV_EMB = "Rev E"; REV_GAR = "Rev E"; DATE = "21 Oct 2026"
 # Rev D (founder 20 Oct): 3D puff on every sign part that is not a background star. A stroke / part narrower than
 # PUFF_MIN_MM stays FLAT (too thin for the foam to dome and be cut cleanly); a glyph puffs only if >= PUFF_GLYPH_SHARE of
 # its stroke length is wide enough (no isolated puff bits). House rules/house.yaml puff min_w is 3.0: strokes 2.5-3.0 are

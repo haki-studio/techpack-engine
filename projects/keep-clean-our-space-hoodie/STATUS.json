@@ -125,15 +125,30 @@
    "2026-10-20T21:02:04",
    "delivered",
    "Rev D delivered: 25-page PDF + zip (C:/Users/devin/Desktop/keep-clean-RevD/). M: FR 59,273/542, FL 47,730/385, SR 6,735/204, SL 6,944/200. Puff on all signs (<2.5 mm flat, G4), CN \u6c61; open: back view, star haze"
+  ],
+  [
+   "2026-10-20T21:04:53",
+   "review",
+   "PR #31"
+  ],
+  [
+   "2026-10-21T00:14:45",
+   "art",
+   "fix round PR #31: JP top star white ring + dark pit, red star solid red + star pit; rebuilding"
+  ],
+  [
+   "2026-10-21T01:06:22",
+   "documents",
+   "Rev E: JP stars fixed (white ring + pit, solid red star pit), T9 tracker filled; 25 pp rebuilt"
   ]
  ],
  "questions": [
   "Back + hood: a back design is planned - send the back view; back + hood = artwork to follow [MISSING] in Rev D.",
   "Star haze (soft glow round the badges + under the big sparkles): pending - kept as in Rev C. Keep, change or drop?"
  ],
- "stage": "delivered",
- "stage_index": 7,
+ "stage": "documents",
+ "stage_index": 6,
  "blocked": false,
- "updated": "2026-10-20T21:02:04",
- "preview": "out/compare_03_cn-badge.png"
+ "updated": "2026-10-21T01:06:22",
+ "preview": "out/compare_01_jp-badge.png"
 }

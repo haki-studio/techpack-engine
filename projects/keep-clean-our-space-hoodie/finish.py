@@ -44,6 +44,7 @@ Rev D (founder answers 20 Oct): 3D puff on every sign part (not the field stars)
 CN text 不要世界污染 (Simplified). Back + hood: artwork to follow [MISSING]. Foam on its own machine stop, no flat stitches
 inside the foam beyond a 1 mm edge band (checked on every file, S1), all files rebuilt from the current art. Compare sheets in
 elements/art are drawn from the DST files; the art is traced from the garment mockup (source of truth).
+Rev E (review fix 21 Oct): JP top star dark pit inside a white ring + white glint; JP red star solid red with a star-shaped pit.
 """ + FOAM + """
 Files are production-intent drafts: the factory digitizer checks
 density, pull and puff on the washed duck, edits if needed, and sews out size M before bulk. Every value marked

@@ -264,7 +264,7 @@ def heart_rc(cx, cy, size, col, unit, rot=0.0, code="PF-HRT"):
            for s_ in KS.ring_columns(g, RIM_W, corner=40.0)]
     return core, rim, g
 
-def star_facets(cx, cy, size, col, unit, rot=0.0, k=0.48, code="PF-STR", light=None, pit=0.0, pit_shape="circle", round_=0.35):
+def star_facets(cx, cy, size, col, unit, rot=0.0, k=0.48, code="PF-STR", light=None, pit=0.0, pit_shape="circle", round_=0.35, pit_k=0.5):
     """faceted 5-point star: every arm = two facets (centre-tip-valley triangles), each its own satin direction; the
     facet that faces up (light from above) sews in the lighter thread. pit: knocked-out centre (fabric shows):
     radius as a share of R, a circle or a small star."""
@@ -272,7 +272,7 @@ def star_facets(cx, cy, size, col, unit, rot=0.0, k=0.48, code="PF-STR", light=N
     g = star5_geom(cx, cy, R_, rot, k=k, round_=round_)
     hole = Polygon()
     if pit:
-        hole = Point(cx, cy).buffer(R_ * pit, quad_segs=12) if pit_shape == "circle" else star5_geom(cx, cy, R_ * pit, rot, k=0.5, round_=0.0)
+        hole = Point(cx, cy).buffer(R_ * pit, quad_segs=12) if pit_shape == "circle" else star5_geom(cx, cy, R_ * pit, rot, k=pit_k, round_=0.0)
     out = []
     for i in range(5):
         ta = math.radians(-90 + rot + 72 * i)

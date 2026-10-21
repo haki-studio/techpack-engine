@@ -363,9 +363,11 @@ def p_revisions():
             ("Rev C", "20 Oct 2026", f"Factory answers (19 Oct): hoop splits for the {KD.FR_S} frame (factory.json) instead of the assumed 360 × 360, F1 updated; 3D puff: foam on its own "
                             f"machine stop, flat glow cut back under the puff to a {kccore.CUT_KEEP_MM:.0f} mm edge band (house rule 6, checked on every DST); every file rebuilt from the "
                             "current art (the Rev B files predated the last sparkle fix); glow + haze stipple no longer bridge long hops with straight lines (up to 57 mm in Rev B; trims reported); page checks (sleeve flat front half, CJK text as outlines, thread estimates flagged)."),
-            ("Rev D", DATE, f"Founder answers (20 Oct): 3D puff on every sign part that is not a background star (CN text in Noto Sans SC 800, KR oval ring, JP dot); strokes / parts under {kccore.PUFF_MIN_MM:.1f} mm stay flat "
-                            "and are listed with their measured width (G4: KR text, a few thin strokes, 1 JP bar, the JP 4-point sparkle); CN text 不要世界污染 (Simplified 污); KR text approved; "
-                            "back + hood = artwork to follow [MISSING]; answered questions removed; every stitch file, gate and page rebuilt.")]
+            ("Rev D", "20 Oct 2026", f"Founder answers (20 Oct): 3D puff on every sign part that is not a background star (CN text in Noto Sans SC 800, KR oval ring, JP dot); strokes / parts under {kccore.PUFF_MIN_MM:.1f} mm stay flat "
+                            "and are listed with their measured width (G4: KR text, a few thin strokes, 1 JP bar, the JP 4-point sparkle); CN text with the Simplified form of the 4th glyph (wording on E03); KR text approved; "
+                            "back + hood = artwork to follow [MISSING]; answered questions removed; every stitch file, gate and page rebuilt."),
+            ("Rev E", DATE, "Review fix (PR #31): JP top star = dark centre pit inside a white satin ring + white glint on the upper-left arm (mockup); "
+                            "JP bottom star = one saturated red (no light facets) with a sharper star-shaped pit at the measured 0.45 R; sample tracker filled; files + pages rebuilt.")]
     y = 36
     for rv, dt, ch in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(36, y, dt, 1.7))
@@ -377,10 +379,20 @@ def p_revisions():
         for j, l in enumerate(lines): o.append(t(60, y + j * 3.2, l, 1.7))
         y += 3.2 * len(lines) + 4
     y += 4; o.append(t(12, y, "SAMPLE TRACKER", 2.4, 700)); y += 5
-    for i, sname in enumerate(["Embroidery strike-off, size M (F1)", "First sample, size M (hoodie block fit + embroidery)", "Size set", "Approved for bulk"]):
+    # columns: what is sampled | files / basis | sent | received | result | next step  (dates + result filled in as samples move)
+    cols = [(13, "STAGE"), (70, "FILES / BASIS"), (150, "SENT"), (172, "RECEIVED"), (196, "RESULT"), (222, "NEXT STEP")]
+    for x, h in cols: o.append(t(x, y, h, 1.6, 700))
+    y += 4
+    rows = [("Embroidery strike-off, size M (F1)", f"FR / FL / SR / SL size M, {kccore.REV_EMB} (DST + PES)", "not sent", "—", "pending",
+             "Factory sews M on the washed duck; answers F1"),
+            ("First sample, size M", "Hoodie block M (T3/T4) + embroidery M", "not sent", "—", "pending", "After strike-off approval; fit + puff check (T8)"),
+            ("Size set", "XS–3XL pattern + per-size stitch files", "not sent", "—", "pending", "After first-sample comments"),
+            ("Approved for bulk", "Signed-off sample + this pack revision", "—", "—", "pending", "Founder sign-off")]
+    for i, row in enumerate(rows):
         yy = y + i * 9
         o.append(f'<rect x="11" y="{f(yy - 4)}" width="{SW - 22}" height="9" fill="{ALT if i % 2 == 0 else "#FFFFFF"}" stroke="#DDD" stroke-width="0.2"/>')
-        o.append(t(13, yy + 1, sname, 1.8, 600))
+        for (x, _), v in zip(cols, row):
+            o.append(t(x, yy + 1, v, 1.6 if x > 13 else 1.8, 600 if x == 13 else 400))
     return o
 
 PAGES = ["T1 Cover", "T2 Flats + construction", "T3 Size chart + measurement check", "T4 Pattern pieces + cut list", "T5 Hood + bands detail",
