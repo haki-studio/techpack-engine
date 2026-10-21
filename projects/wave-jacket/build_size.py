@@ -70,16 +70,31 @@ def merge_tiny(stops, clear=0.4):
             k = cand[0]; stops[k] = dict(stops[k], regions=stops[k]["regions"] + s["regions"]); del stops[j]; changed = True; break
     return stops
 
+def tiny_why(stops, j, clear=0.4):
+    """PR #27 review (round 4, item 5): why a tiny stop (< TINY_MM2) could not be merged - the other-colour stops sewn
+    between it and every same-colour stop that touch its regions (moving it would put it under / over them)"""
+    s = stops[j]
+    if sum(r["geom"].area for r in s["regions"]) >= TINY_MM2: return None
+    U = unary_union([r["geom"] for r in s["regions"]]).buffer(clear)
+    same = [i for i in range(len(stops)) if i != j and stops[i]["col"] == s["col"]]
+    if not same: return "only stop of this thread"
+    out = []
+    for i in same:
+        a, b = (i + 1, j) if i < j else (j + 1, i)
+        blk = sorted({k + 1 for k in range(a, b) if stops[k]["col"] != s["col"] and any(r["geom"].intersects(U) for r in stops[k]["regions"])})
+        out.append(f"to stop {i + 1}: touches stop{'s' if len(blk) > 1 else ''} " + ",".join(map(str, blk)) + " sewn between")
+    return "kept: merging would change what lies on top (" + "; ".join(out[:2]) + ")"
+
 def stops_for(vis):
     st = tech.stops(vis); n0 = len(st); return merge_tiny(dst2.merge_stops(st)), n0
 
 def sews(stops, basting=False):
     """what each colour stop sews: region codes + stitch types (underlay/edge runs are part of every fill object)"""
     out = []
-    for s in stops:
+    for j, s in enumerate(stops):
         codes = sorted({tech.rule_for(r["grp"]) for r in s["regions"]})
         types = sorted({r["st"] for r in s["regions"]})
-        out.append(dict(col=s["col"], codes=codes, types=types, objects=len(s["regions"])))
+        out.append(dict(col=s["col"], codes=codes, types=types, objects=len(s["regions"]), tiny_why=tiny_why(stops, j)))
     if basting and out: out[0]["codes"] = ["REG crosses"] + out[0]["codes"]
     return out
 

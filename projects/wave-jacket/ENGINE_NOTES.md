@@ -296,3 +296,20 @@ Problem → proposed fix → check. Worked around in project code only.
 - **Proposed engine fix:** an art-chain runner that stamps each stage's input hash into `info` and refuses a "pre" file
   whose hash is not the current upstream output.
 - **Check:** after a chain re-run, `info['gapfill']` in art_M.pkl equals the gapfill log of that run.
+
+## 33. Two independently drawn mockup views cannot meet at a seam - redraw the ART, not the stitches (Rev C, 21 Oct 2026)
+- **Problem:** four fix rounds tuned warps, tone handovers and stitch settings for the wrap seams; meet / tone stayed
+  34-71 % on the DSTs because the traced ART already failed (continuity --art: CF zip 63/37, side L 58/57, sleeve centre
+  R 70/32). The front and back AI views show different waves at the same seam: no stitch setting can join them.
+- **Fix (project, seamredraw.py, founder 'Do A'):** per wrap seam, both sides unrolled by seam length; two candidate
+  pictures of the joined band (each side continued across by a glide map: stripes at their own angle, matched at the
+  stitch edge = pivot; rigid motifs moved whole); ONE min-mismatch cut path (DP, image-quilting style) that never comes
+  closer than keep-out + 8 mm to the seam, may switch side at a cost, prefers outlines, penalises deleting art and
+  one-sided runs at a keep-out corner; foam continued into bare fabric ends in lobes. Art seams 93-100 %, stitched 95-100 %.
+- **Lesson (proposed LESSONS A33):** before tuning stitches for a cross-piece match, measure the ART on the same metric
+  (`continuity.py --art`); if the art fails, redraw the art in a band (founder-approved design change, shown before /
+  after) - never redefine the metric.
+- **Proposed engine fix:** `engine/seamband.py` (from this file: Side unroll, glide_cols, cut_path, foam_lobes, apply_zone)
+  driven by the pattern's seam walks, for every garment with a wrap; the gates name rows inside redraw zones (still open).
+- **Check:** `test_seamredraw.py` (glide continues a slanted stripe straight and meets at the pivot; m=0 mutation red;
+  the cut never enters the DMIN band; a one-sided corner run is deleted, not kept).

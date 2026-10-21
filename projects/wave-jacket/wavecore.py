@@ -235,7 +235,7 @@ SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
 import datetime as _dt
 # PR #27 review of b448e33: the pack printed "20 Oct" after a 21 Oct rebuild - the date is the BUILD date, never typed
-REV_EMB = "Rev B"; REV_GAR = "Rev A"; DATE = _dt.date.today().strftime("%-d %b %Y")
+REV_EMB = "Rev C"; REV_GAR = "Rev A"; DATE = _dt.date.today().strftime("%-d %b %Y")
 # EMBROIDERY SAMPLING package (founder, 19 Oct): size-M strike-off only; other sizes are rebuilt after the sew-out and the
 # garment pages (T1-T16, pattern) follow once the jacket body revision is done.
 DOC_SIZES = ["M"]

@@ -12,11 +12,18 @@ ign = shutil.ignore_patterns("summary.json", "result_*.json")
 shutil.copytree("out/01_wave/M", f"{PKG}/elements/01_wave/M", ignore=ign)
 for f_ in glob.glob("out/01_wave/*_SPEC_*.pdf") + glob.glob("out/01_wave/*_M_ART*.svg"): shutil.copy(f_, f"{PKG}/elements/01_wave/")
 os.makedirs(f"{PKG}/compare", exist_ok=True)
-for c in glob.glob("out/compare_*.png") + ["out/continuity_M.png", "out/crops_before_after.png", "gates_M.json", "discont_M.json", "continuity_M.json"]: shutil.copy(c, f"{PKG}/compare/")
+for c in glob.glob("out/compare_*.png") + ["out/continuity_M.png", "out/crops_before_after.png", "gates_M.json", "discont_M.json", "continuity_M.json", "out/a14_rows.png", "a14_rows.json"]: shutil.copy(c, f"{PKG}/compare/")
 os.makedirs(f"{PKG}/compare/seams", exist_ok=True)
 for c in glob.glob("out/continuity_*.png") + glob.glob("out/discont_*.png"):
     if "_art" in c or "_before" in c or c.endswith("continuity_M.png"): continue
     shutil.copy(c, f"{PKG}/compare/seams/")
+# Rev C: the art of every wrap seam BEFORE (Rev B trace) and AFTER (redraw) - G7 points here
+os.makedirs(f"{PKG}/compare/seams/before_after", exist_ok=True)
+for c in glob.glob("revc/before/continuity_*_art.png"): shutil.copy(c, f"{PKG}/compare/seams/before_after/" + os.path.basename(c).replace("_art.png", "_art_BEFORE.png"))
+for c in glob.glob("out/continuity_*_art.png"):
+    if not c.endswith("continuity_M_art.png"): shutil.copy(c, f"{PKG}/compare/seams/before_after/" + os.path.basename(c).replace("_art.png", "_art_AFTER.png"))
+for c in ["continuity_M_art.json", "seamredraw_M.json", "revc/continuity_M_art_before.json"]:
+    if os.path.exists(c): shutil.copy(c, f"{PKG}/compare/seams/before_after/")
 shutil.copytree("out/placement", f"{PKG}/placement", ignore=shutil.ignore_patterns("*.png"))
 big = f"out/HAKI_WAVE_EMBROIDERY-PACK_{WC.REV_EMB.replace(' ', '')}.pdf"; emb = big.replace(".pdf", "_small.pdf")
 # PR #27 review 3 blocker 1: the zip carried a _small.pdf shrunk from the PREVIOUS pack (the shrink ran by hand after this
@@ -51,13 +58,16 @@ placement/                             ART PLACEMENT ONLY (garment pattern to fo
                                        art outline, split lines, crosses, needle starts, MATCH MARKS (notch both pieces).
 elements/01_wave/*_SPEC_*.pdf          element spec; *_M_ART*.svg = size-M region art with digitizing attributes per piece.
 compare/                               render vs the shipped DST (live view, every stitch) per piece + zooms + gate tables;
-                                       continuity_M.png + seams/ = every seam closed up (from the DSTs) + the cut-line check.
+                                       continuity_M.png + seams/ = every seam closed up (from the DSTs) + the cut-line check;
+                                       seams/before_after/ = Rev C: the ART of every wrap seam before (Rev B trace) and after
+                                       the redraw (the wave now carries across every wrap seam; shoulders are not wrapped).
 
 Size M (read from the DST):
 {lines}
     total {tot:,} stitches, {trm:,} trims, {hp} hoopings
 
-max {FA.max_threads(FA.load())} thread colours per file (factory limit, incl. registration); this jacket uses 9 (+ the ecru candidate in the swatch). The files are
+max {FA.max_threads(FA.load())} thread colours per file (factory limit, incl. registration); this jacket uses 9 (+ the white alternate in the swatch).
+Foam ecru = Isacord 0184 Pearl (CONFIRMED 21 Oct); the other threads stay proposed until the shell colour is fixed. The files are
 production-intent drafts: the factory digitizer opens them, checks density + pull on 12 oz duck, edits if needed, and
 sews out size M before anything else. Every value marked [proposed - confirm] in the PDF is still open.
 Other sizes (XS-3XL) are rebuilt from the same art after the strike-off.

@@ -48,9 +48,12 @@ M_MAX = 1.2                  # |slope| cap (stripes within ~50 deg of the seam n
 LAMBDA = 0.002               # per px row: prefer a cut close to the seam (keep the traced mockup)
 DEL = 0.03                   # per px of art deleted (replaced by bare fabric) between the seam and the cut
 EDGE = 0.35                  # cost factor of a mismatch on an outline pixel
+CORNER = 10.0                # per column: a picture that the other side cannot continue at the stitch edge
 SWITCH = 4.0                 # extra cost when the cut jumps across the seam (leader switches side)
 # founder W4 (21 Oct 2026): the shoulders are not wrap seams - the front wave ends at the shoulder seam
-WRAP_SEAMS = ["CF zip", "side L", "side R", "armhole front L", "armhole back L", "armhole front R", "armhole back R",
+# order: a seam redrawn first locks its matched band; the short right armholes go before side R so the underarm corner
+# (where the sleeve's underarm keep-out leaves no room) is settled on the armhole first
+WRAP_SEAMS = ["CF zip", "armhole front R", "armhole back R", "side L", "side R", "armhole front L", "armhole back L",
               "underarm L", "underarm R", "sleeve centre L", "sleeve centre R"]
 OVERLAY = ("FM-loop",)       # thread drawn ON the foam (not part of the partition)
 FAM = {"w1": "foam", "w2": "foam", "w3": "foam", "g1": "foam", "b0": "light", "b1": "light", "b2": "light",
@@ -297,6 +300,12 @@ def redraw_seam(D, sm, log):
     delB = ((PA < 0) & (PB >= 0))[R:]                                    # B side, seam -> deep
     cost[:R] += DEL * np.cumsum(delA, 0)[::-1]; cost[R:] += DEL * np.cumsum(delB, 0)
     dmin = d0 + dmin_of(sm)
+    # where one side has art at the stitch edge but the other side cannot hold art there (its keep-out corner), continuing
+    # that side's picture leaves a one-sided run at the seam: that choice costs CORNER per column (the other choice -
+    # taking the bare picture - pays the deletion cost instead)
+    rp = int(round((d0 + PIVOT) * PPM))
+    badA = (cA[rp] >= 0) & ~inB[rp]; badB = (cB[rp] >= 0) & ~inA[rp]
+    cost[R:, :] += CORNER * badA[None, :]; cost[:R, :] += CORNER * badB[None, :]
     cost[np.abs(t_mm) < dmin] += 1e3
     cut = cut_path(cost, mis, R, dmin)
     tcut = t_mm[cut]                                                    # > 0: B gets A's art from the seam to the cut
@@ -330,6 +339,7 @@ def redraw_seam(D, sm, log):
         lk = S.band_poly(-1.0, d0 + dmin_of(sm) + 2.0).intersection(S.region.buffer(0.01))
         LOCK[S.P] = lk if LOCK.get(S.P) is None else clean(unary_union([LOCK[S.P], lk]))
     if os.environ.get("RD_DEBUG"):
+        print("  DEBUG tcut tail", tcut[-24:].round(1).tolist(), "badA", badA[-24:].astype(int).tolist(), "inB", inB[rp][-24:].astype(int).tolist(), "cA", cA[rp][-24:].tolist())
         r2 = int((d0 + 2.0) * PPM)
         for S, rowsel in ((A, R - 1 - r2), (B, R + r2)):
             X = S.base[None, :, 0] + S.d[:, None] * S.nrm[None, :, 0]; Y = S.base[None, :, 1] + S.d[:, None] * S.nrm[None, :, 1]

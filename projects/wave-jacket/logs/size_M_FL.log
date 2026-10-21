@@ -1,2 +1,4 @@
-M FL primary {'stitches': 227372, 'trims': 801, 'stops': 19, 'size_mm': (281.0, 440.6), 'max_stitch': 7.3} chenille plan {'paths': 654, 'needle_points': 6940, 'length_m': 14.4}
+M FL primary {'stitches': 234584, 'trims': 839, 'stops': 19, 'size_mm': (281.0, 580.3), 'max_stitch': 7.32} chenille plan {'paths': 691, 'needle_points': 7178, 'length_m': 14.9}
+M FL primary S1_top {'stitches': 223078, 'trims': 789, 'stops': 19, 'size_mm': (300.8, 373.1), 'fits': True}
+M FL primary S2_bottom {'stitches': 11770, 'trims': 61, 'stops': 8, 'size_mm': (300.8, 220.7), 'fits': True}
 DONE M ['FL']

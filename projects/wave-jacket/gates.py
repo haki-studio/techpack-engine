@@ -285,6 +285,18 @@ def align(ref, out, max_mm=SHIFT):
         shifts[k] = round(float(np.hypot(dx, dy)) / PPM, 1)
     return A, Aid, shifts
 
+# Rev C (founder 21 Oct 'Do A'): the art is REDRAWN in a band at every wrap seam (seamredraw.py), so the mockup there is
+# replaced by design. The reference stays the mockup and nothing passes because of this: a failing row / gap that touches
+# a redrawn zone is only NAMED (counted as open on G8, listed separately).
+RD_WHY = "inside a redrawn seam band (founder 'Do A', generated)"
+def _rd_zones():
+    import shapely as _shp
+    z = {}
+    for r in D.get("redraw", []):
+        g = _shp.from_wkb(r["zone"]); z[r["P"]] = g if r["P"] not in z else z[r["P"]].union(g)
+    return z
+RD_ZONES = _rd_zones()
+
 def explain_gaps(P, gaps, bb):
     """A15: a gap >= 25 mm2 is explained only as 'keep-out edge' (inside 6 mm of the art limit, < 400 mm2) or 'moved by the
     wrap' (inside 45 mm of a seam the wrap edited, art within SHIFT); anything else is UNEXPLAINED (gapfill.py fills those).
@@ -301,7 +313,8 @@ def explain_gaps(P, gaps, bb):
         # fix round 4 (PR #27 review of b448e33, item 1): the reference is already clipped to the art limit, so a gap near
         # the limit is mockup art INSIDE the allowed area (SL 228.9/117.0: a crest the rigid curl move left 10-15 mm short of
         # the sleeve edge). Only a sliver along the limit (< 2 mm across) is excused; gapfill.py fills the rest.
-        if gb.distance(clipb) < 2.0 and min(g["w_mm"], g["h_mm"]) < 2.0: g["why"] = "keep-out edge"
+        if RD_ZONES.get(P) is not None and gb.intersects(RD_ZONES[P]): g["why"] = RD_WHY           # still counted as open on G8
+        elif gb.distance(clipb) < 2.0 and min(g["w_mm"], g["h_mm"]) < 2.0: g["why"] = "keep-out edge"
         else: g["why"] = "UNEXPLAINED"
     return gaps
 
@@ -436,7 +449,8 @@ def gate_piece(P):
         for r_ in rows:
             if r_["ok"]: continue
             c = _Pt(r_["x_mm"], r_["y_mm"]); rad = np.sqrt(r_["area_mm2"] / np.pi)
-            if c.distance(clipb) < rad + 3.0: r_["why"] = "keep-out edge (cut by the spec'd art limit)"
+            if RD_ZONES.get(P) is not None and c.buffer(rad).intersects(RD_ZONES[P]): r_["why"] = RD_WHY
+            elif c.distance(clipb) < rad + 3.0: r_["why"] = "keep-out edge (cut by the spec'd art limit)"
             elif P in ("SR", "SL") and abs(r_["x_mm"]) < 8.0 and r_["area_mm2"] < 30: r_["why"] = "render's sleeve-fold highlight (not art)"
             elif fam == "drops" and ftree is not None and len(ftree.query(c.buffer(rad + 1.0), predicate="intersects")): r_["why"] = "drop merged into a crest"
             elif r_["iou"] >= 0.4 and any(r.get("gen") == "under collar" and r["geom"].distance(c) < rad + 2 for r in D[P]): r_["why"] = "crest continued under the collar fall (generated)"

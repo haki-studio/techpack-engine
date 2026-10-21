@@ -1,6 +1,6 @@
-M BK worst fill/satin code WV/satin {'mm2': 5400, 'cov': np.float64(99.6)} PASS
-M FR worst fill/satin code WV/tatami {'mm2': 20103, 'cov': np.float64(99.6)} PASS
+M BK worst fill/satin code WV/satin {'mm2': 5183, 'cov': np.float64(99.7)} PASS
+M FR worst fill/satin code RP/tatami {'mm2': 1730, 'cov': np.float64(99.7)} PASS
 M FL worst fill/satin code FM-in/satin {'mm2': 27, 'cov': np.float64(99.8)} PASS
-M SR worst fill/satin code WV/tatami {'mm2': 46738, 'cov': np.float64(99.8)} PASS
-M SL worst fill/satin code DR-b/satin {'mm2': 77, 'cov': np.float64(99.6)} PASS
+M SR worst fill/satin code FM-in/tatami {'mm2': 26, 'cov': np.float64(99.5)} PASS
+M SL worst fill/satin code RP/tatami {'mm2': 1264, 'cov': np.float64(99.8)} PASS
 COVERAGE PASS

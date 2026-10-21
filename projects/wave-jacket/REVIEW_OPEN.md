@@ -66,3 +66,31 @@ Founder context: the body shape (shoulders, armholes, sleeves) is UNCHANGED, so 
 | 4 should-fix: paths | DONE | G7 / G8 / G9 / G6 point to zip paths (compare/…, compare/seams/…, placement/…); gates_M.json, discont_M.json and continuity_M.json are now in the zip. |
 | 4 should-fix: counts | DONE | G8 says per piece + family how many reference motifs were sewn merged with a neighbour and how many DST blobs touch no reference motif (gates.py `ref_merged`, `dst_extra`). |
 | 4 should-fix: date | DONE | wavecore.DATE = the build date (never typed). |
+
+## Rev C — ART round (founder 21 Oct 2026, 'Do A' + W3 + W4) — numbers from continuity_M_art.json (art), continuity_M.json (shipped DSTs), gates_M.json
+Founder: stop tuning stitches; redraw the ART in a band at every wrap seam (seamredraw.py); shoulders are not wrap seams
+(W4); ecru = Isacord 0184 Pearl (W3, confirmed); shell / hardware / rib colour (W2) still open -> other threads PROPOSED.
+
+| Wrap seam | Rev B art meet/tone | Rev C art | Rev C STITCHED | Gate (>= 85 and within 5 of art) |
+|---|---|---|---|---|
+| CF zip | 63 / 54 | 100 / 100 | 100 / 100 | PASS |
+| side L | 54 / 42 | 95 / 95 | 97 / 97 | PASS |
+| side R | 67 / 53 | 100 / 100 | 99 / 100 | PASS |
+| armhole front L | 95 / 69 | 99 / 99 | 99 / 98 | PASS |
+| armhole back L | 95 / 91 | 99 / 100 | 99 / 100 | PASS |
+| armhole front R | 59 / 47 | 100 / 86 | 93 / 87 | meet 7 points under the art = ONE 1 mm column of 15 mm (underarm corner) - shown as FAIL on G7, not redefined |
+| underarm L | 52 / 40 | 97 / 94 | 96 / 95 | PASS |
+| underarm R | 69 / 44 | 100 / 100 | 100 / 100 | PASS |
+| sleeve centre L | 54 / 44 | 98 / 100 | 98 / 99 | PASS |
+| sleeve centre R | 57 / 36 | 100 / 100 | 99 / 100 | PASS |
+| armhole back R | 4 mm of art | — | — | not graded (< 10 mm) |
+| shoulder L / R | — | — | — | not a wrap seam (W4) |
+
+| Review round 4 item | Status |
+|---|---|
+| 1 seams | DONE by redraw (table above); G7 shows art vs stitches per seam + BEFORE / AFTER art per seam; the cut-line detector is unchanged (G9 still lists its count) |
+| 2 A14 rows | 19 failing (14 before): 4 inside a redrawn band (named, still counted), 12 'drop merged into a crest', 3 misshapen 4-7 mm² drops/fragment. Every row shown as a crop (reference vs DST): G8 + compare/a14_rows.png |
+| 3 SR curl definition | not addressed this round (art round scope) |
+| 4 A16 | pooled figure restored as the G8 headline (BK 74.7, FR 69.9, FL 65.1, SR 72.9, SL 72.0 % - all under 85); per object beside it; independent check still OPEN |
+| 5 tiny stops | 25 kept, each with its reason printed on G5 (moving it changes what lies on top: the stops touching it sewn between) |
+| 6 element-spec style | not addressed |

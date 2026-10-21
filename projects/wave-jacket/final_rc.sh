@@ -12,4 +12,4 @@ $H ./py.sh compare.py M > logs/docs_compare.log 2>&1
 $H ./py.sh build_all.py > logs/docs_pack.log 2>&1
 ./py.sh finish.py > logs/docs_finish.log 2>&1
 tail -2 logs/docs_finish.log
-echo FINAL_R4_DONE
+echo FINAL_RC_DONE

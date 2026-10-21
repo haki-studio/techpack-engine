@@ -335,7 +335,7 @@ def summary():
     qs = [f"Hoopings per the factory (19 Oct): fronts ONE hooping each (340 x 505), back TWO, sleeves split for {FR_S} - can a sleeve ({CUR['SR']['size_mm'][0]:.0f} x {CUR['SR']['size_mm'][1]:.0f}) go in one hooping on the 750 mm field?",
           "Foam: CHENILLE in ECRU is the look to sample first (founder 20 Oct). Name your chenille machine + file format: we send a path plan per piece now (chenille_plan/) and write the chenille file once known. The lockstitch files (padded tatami + loops) are the ALTERNATE and sew today.",
           "Threads: the factory uses its supplier's colour book (brand?) - please send it; G3 gives Isacord + Polyneon + hex. SHELL + hardware colour change: re-check every thread on the new shell.",
-          "Seamless wave (Rev B): stripes continue across every seam, art 3 mm short of each seam, match notches on both pieces (G7, 1:1 placement plot). No armhole topstitch.",
+          "Seamless wave (Rev C): the art is REDRAWN in a band at every wrap seam so the wave carries across (G7 before / after); the shoulders are not wrap seams (founder W4). Art 3 mm short of each seam, match notches on both pieces (G7, 1:1 placement plot). No armhole topstitch.",
           "Body: Drum Island block, unchanged (founder). Cuff / hem rib probably change - re-check the hem (10) + cuff (10) keep-outs on the new rib [proposed].",
           "Grading (after the sample): A 92 % (XS-S) · B 100 % (M-XL) · C 108 % (XXL-3XL), one file per size per piece, re-clipped to each size's keep-outs. OK?",
           "Shell dye: piece-dyed + pre-washed shell assumed. If garment-washed after embroidery, wash-test the sew-out (cream foam!).",
@@ -378,11 +378,20 @@ def files_page():
     notes = [("Stripes", f"tatami rows ALONG the stripe (one flow field per piece from the stripe edges + rope cords), {WC.CORD_TWIST:.0f}° cord twist alternating per tone; narrow stripes too (no across-satin). Render patches < 150 mm² merged into their band = one continuous cord each."),
              ("Rope lines", "continuous 2.4 mm cream cords (traced fragments joined), turning satin."),
              ("Foam", "CHENILLE first (path plan, chenille_plan/); lockstitch alternate in these files: padded tatami, rows parallel to the crest outline, spiral curl cord + loop spiral, grey hollows = thin ridges."),
-             ("Seams", "one smooth warp per piece side lines the stripes up across every seam; 3 mm short; art under the collar fall (G7)."),
+             ("Seams", "Rev C: the art is REDRAWN in a band at every wrap seam so the wave carries across (same thread both sides); 3 mm short; shoulders not wrapped (W4); art under the collar fall (G7)."),
              ("Ties", f"3-stitch tie-on/off at every trim + colour change; max sewn stitch ≤ 7.5 mm; ≤ {FA.max_threads(PROF)} colours per file incl. registration.")]
     for a, l_ in notes:
         o.append(t(bx, y2, a, NOTE, 700)); y2 += NOTE * 1.6
         y2 = para(o, bx, y2, l_, 2.3, width=bw) + 1.4
+    # PR #27 review round 4 item 5: tiny colour stops - each one either merged at build time or kept with its reason
+    tiny = [(p, i + 1, ps_) for p in PS for i, ps_ in enumerate(CUR[p].get("full", CUR[p]).get("per_stop", [])) if ps_.get("tiny_why")]
+    pg.y = max(pg.y, y + 8, y2 + 4)
+    pg.sec(f"TINY COLOUR STOPS (< 120 mm² of art; build_size.merge_tiny moves every one it can) - {len(tiny)} kept, each with its reason", size=2.6)
+    if tiny:
+        table(pg, [12, 26, 40, 66, 84], ["Piece", "Stop", "Thread", "Stitches", "Why it is kept (fidelity: moving it changes what lies on top)"],
+              [[(p, 700, INK), f"{k}", PAL.get(ps_.get("col"), ("", ps_.get("col", "?")))[1], f"{ps_.get('stitches', 0):,}", (ps_["tiny_why"], 400, INK, RM - 84)] for p, k, ps_ in tiny], size=2.2, pitch=3.6)
+    else:
+        pg.para(12, "None: every tiny stop was merged into a same-colour stop.", 2.4, 700, GREEN)
     return pg.done()
 
 # ---------------------------------------------------------------- G6
@@ -592,7 +601,12 @@ def gates_page():
         pg.para(12, l_, 2.3, gap=0.4)
     ok = not n_open and not tot_un
     pg.y += 2.5
+    RDW = "inside a redrawn seam band"
+    n_rd = sum(1 for P in PS for fam in ("curls", "drops", "stripes") for x in GATES["pieces"].get(P, {}).get(fam, {}).get("rows", []) if not x.get("ok", True) and str(x.get("why", "")).startswith(RDW))
+    u_rd = sum(1 for P in PS for u in GATES["pieces"].get(P, {}).get("uncovered", []) if str(u.get("why", "")).startswith(RDW))
     pg.para(12, f"Result: {n_open} failing motif rows (open), {tot_un} unexplained bare areas — " + ("PASS" if ok else "OPEN: see the rows below (positions on the compare sheets)"), SEC, 700, GREEN if ok else RED, gap=1.0)
+    pg.para(12, f"Of these, {n_rd} failing rows and {u_rd} bare areas lie in a seam band the founder had REDRAWN (21 Oct, 'Do A': the art there no longer follows the mockup by decision, G7). "
+                f"They are still counted above (the reference stays the mockup; nothing passes because of the redraw); the other {n_open - n_rd} rows / {tot_un - u_rd} areas are open fidelity work.", 2.4, 600, ORANGE, gap=1.0)
     pg.sec("FAILING MOTIF ROWS per piece + family (every failing row is open)", size=2.6)
     rows3 = []
     for P in PS:
@@ -604,19 +618,27 @@ def gates_page():
         rows3.append([(P, 700, INK)] + [(f"{cnt[k]}", 700, RED if cnt[k] else GREEN) for k in ("curls", "drops", "stripes")] + [f"{ke}",
                      (" · ".join(f"{k} {v}" for k, v in sorted(why.items(), key=lambda kv: -kv[1])) or "—", 400, INK, RM - 112)])
     table(pg, [12, 28, 44, 60, 82, 112], ["Piece", "Curls", "Drops", "Stripes", "Bare: keep-out\nedge (allowed)", "Reasons (gates_M.json 'why')"], rows3, size=2.3, pitch=3.8)
+    if os.path.exists("out/a14_rows.png"):                         # review round 4 item 2: every failing row as a crop
+        from PIL import Image
+        pg.new(); pg.sec("EVERY FAILING A14 ROW AS A CROP - reference (mockup / close-up classes the gate reads) | shipped DST live view; red ring = the reference motif", size=2.6)
+        im = Image.open("out/a14_rows.png"); im = im.crop((0, 30, im.width, im.height))
+        w = RM - 12; h = im.height * w / im.width
+        if h > BOT - pg.y - 4: w = w * (BOT - pg.y - 4) / h
+        tag, hh = img_tag(im, 12, pg.y, w); pg.o.append(tag); pg.y += hh + 3
+        para(pg.o, 12, BOT + 1, "Full size in the zip: compare/a14_rows.png (+ a14_rows.json). 'drop merged into a crest' = the drop is sewn against / inside its crest in the same cream thread (the family mask merges them); the crop shows it.", TXT, 400, MUTED)
     pg.para(12, "Per-piece tables with the position of every failing / uncovered row: compare/compare_<piece>.png in the zip (under the side-by-side) and compare/gates_M.json.", TXT, 400, MUTED)
     ds = [GATES["pieces"][P].get("direction") for P in PS if GATES["pieces"].get(P, {}).get("direction")]
     ppm = next((d.get("ref_ppm") for d in ds if d.get("ref_ppm")), None)
     pg.new()                                                          # direction gets its own page (legibility)
     pg.sec(f"STITCH DIRECTION (A16/A17) vs the CLOSE-UP grain ({ppm or 12:g} ppm); tiles with no close-up are masked, not judged; target ≥ 85 % OK per family", size=2.8)
     fams = [("stripes", "Stripes"), ("foam", "Foam (alt.)"), ("drops", "Drops")]
-    hd2 = ["Piece", "All visible / pooled"] + [x for _, n in fams for x in (n + " % OK", "masked")] + ["Close-up share", "Heat-map"]
+    hd2 = ["Piece", "POOLED (gate)\n/ per object"] + [x for _, n in fams for x in (n + " % OK", "masked")] + ["Close-up share", "Heat-map"]
     cx2 = [12, 26, 54, 80, 96, 122, 138, 160, 176, 206]
     rows2 = []
     for P in PS:
         dr = GATES["pieces"].get(P, {}).get("direction")
         if not dr: continue
-        bf = dr.get("by_family", {}); row = [(P, 700, INK), (f"{dr.get('pct_ok', '-')} %" + (f" / {dr['pct_ok_pooled']} %" if "pct_ok_pooled" in dr else ""), 700, GREEN if dr.get("pct_ok", 0) >= 85 else RED)]
+        bf = dr.get("by_family", {}); pool = dr.get("pct_ok_pooled", dr.get("pct_ok", 0)); row = [(P, 700, INK), (f"{pool} %" + (f" / {dr['pct_ok']} %" if "pct_ok_pooled" in dr else ""), 700, GREEN if pool >= 85 else RED)]
         for k, _ in fams:
             v = bf.get(k)
             if not v or not v.get("tiles"): row += [("—", 400, MUTED), ""]; continue
@@ -624,8 +646,9 @@ def gates_page():
         cs = dr.get("closeup_share"); row += [f"{cs*100:.0f} %" if isinstance(cs, (int, float)) else "—", (f"compare/compare_{P}.png", 400, MUTED)]
         rows2.append(row)
     table(pg, cx2, hd2, rows2, size=2.3, pitch=3.8)
-    pg.para(12, "All visible = every 8 mm tile judged on the object with the most visible thread in it (qa.direction_match groups, as the family columns). "
-                "'pooled' = every object in a tile pooled: a tile on the border of a crest and a stripe holds two deliberate directions and reads as chaos by construction, so the pooled figure is information, not the gate.", 2.3, 400, MUTED, gap=1.0)
+    pg.para(12, "POOLED = every visible stitch in an 8 mm tile judged together: this is the A16 gate headline (as before round 4; the PR #27 review asked to keep it). "
+                "Per object = each tile judged on the object with the most visible thread in it (as the family columns), printed beside it for information only. "
+                "The foam + stripe angles are read from the same close-up the gate grades (self-derived, A24): an independent check (render direction held out of the angle derivation) is still OPEN.", 2.3, 600, INK, gap=1.0)
     pg.para(12, "Foam (fix round 4): the padded foam, its shade / hollow details and the loop texture on top now follow the close-up's visible grain where a close-up covers the crest "
                 "(4 mm cells, foamcord.py cords along the grain instead of scalloped rings); elsewhere the rows run along the curl. These angles are READ from the same close-up the gate grades "
                 "(self-derived, LESSONS A24), as the stripe grain since round 3. The files sew the lockstitch ALTERNATE; the primary foam look is chenille (path plan, B33).", 2.4, 600, ORANGE, gap=1.5)

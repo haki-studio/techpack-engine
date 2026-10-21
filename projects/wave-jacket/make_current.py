@@ -7,7 +7,7 @@ import readback
 def fresh(r):
     rb = readback.dst(r["file"] + ".dst")
     for ps, old in zip(rb["per_stop"], r.get("per_stop", [])):
-        for k in ("col", "codes", "types", "objects"):
+        for k in ("col", "codes", "types", "objects", "tiny_why"):
             if k in old: ps[k] = old[k]
     r.update(rb); r["colours"] = [ps.get("col") for ps in rb["per_stop"]]
     for k in ("trims_cmd", "trims_dst", "size"): r.pop(k, None)
