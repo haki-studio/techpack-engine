@@ -1,7 +1,7 @@
 # RECAP 2026-10-20 — Konpeito jeans Rev B (tech pack, due tonight)
 
 ## What changed (founder review of Rev A, 15 items + coordinator overrides)
-- T2/T4/T6/T8/G4: no back yoke, no knee seam (one-piece legs), 2-pc waistband joined at CB, "2 back patch pockets (sewn on the outside)", construction in plain words as HI.
+- T2/T4/T6/T8/G4: no back yoke, no knee seam (one-piece legs), 2-pc waistband joined at CB, "2 back patch pockets" (no explanation, founder later), construction in plain words as HI.
 - Wash: target described from the mockup pixels (mean ~#2B2A2A, highs ~#444343-#555353, where lighter/darker), factory to match the mockup (override: not "as HI"). MISSING box removed.
 - 07 front leg: "artwork to follow [MISSING]"; licensed-lookalike notes removed. Star map re-derived (kjfront.py): scale from the front waistband (436.8 px = 420.4 mm), origin WB top at side seam, pocket opening traced. Root cause of "stars inside the pocket": the flat's scoop line was guessed ~60 mm too low; now traced. 0/14 stars inside the opening; stars moved up 5-12 mm; 07a/07b DSTs rebuilt (2,962 st / 17 trims; 810 st / 1 trim). New page C5 = overlay check with the maths.
 - Labels: size LOOP labels recreated (kjlabels.py, Neue Metana ExtraBold outlined, 11 sizes, SVG+PDF 1:1 in zip labels/), shown on T7b; hang tag hangs from the size label; main label sewn on all 4 sides; main/care art = reference, new art [MISSING].
