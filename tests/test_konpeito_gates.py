@@ -147,7 +147,7 @@ def test_front_trace_splits_the_touching_pair_and_guard_catches_the_old_way():
     G = kjfront.geometry(); st = kjfront.trace(G)
     near = [d for d in st if math.dist(d["px"], (897, 279)) < 8]
     assert sorted(d["col"] for d in near) == ["pink", "yellow"], near
-    assert len(st) == 15
+    assert len([d for d in st if not d['clipped']]) == 14 and len(st) == 17
     a = np.asarray(Image.open(kjfront.SRC).convert("RGB")).astype(float); h, s, v = CL.hsv(a)
     m = (s > 0.45) & (v > 0.5) & (((h > 300) | (h < 15)) | ((h > 180) & (h < 215)) | ((h > 35) & (h < 65)))
     m[:, :770] = False; m[:, 1000:] = False; m[60:186, 893:992] = False
@@ -155,3 +155,24 @@ def test_front_trace_splits_the_touching_pair_and_guard_catches_the_old_way():
     blobs = [("x", sl, lab[sl] == i) for i, sl in enumerate(ndi.find_objects(lab), 1) if (lab[sl] == i).sum() >= 6]
     with pytest.raises(ValueError, match="merged"):
         kjfront.check_merges(blobs)
+
+
+# ---- PR #34 round 2: candies clipped by the side seam on the mockup (1-3 px slivers) were under the 6 px floor ---------
+CLIPPED_MOCKUP = [("blue", (831, 343)), ("yellow", (830, 352)), ("yellow", (824, 400))]   # reviewer's zoom, mockup px
+
+
+def _clipped_found(st):
+    return [c for c, xy in CLIPPED_MOCKUP if any(d["col"] == c and d["clipped"] and math.dist(d["px"], xy) < 4 for d in st)]
+
+
+def test_clipped_side_seam_candies_mapped(monkeypatch):
+    """green: all 3 clipped candies on the side-seam edge are on the map, moved in to the keep-out.
+    red: without the edge-sliver pass (the Rev B4 trace) two of the three go missing."""
+    import kjfront
+    G = kjfront.geometry(); st = kjfront.trace(G)
+    assert _clipped_found(st) == [c for c, _ in CLIPPED_MOCKUP]
+    for d in st:
+        if d["clipped"]:
+            assert d["moved_in_mm"] and d["x_from_side_mm"] >= kjfront.SIDE_KO + kjfront.STAR_D / 2 - 0.01
+    monkeypatch.setattr(kjfront, "edge_slivers", lambda *a, **k: [])
+    assert len(_clipped_found(kjfront.trace(G))) == 1                 # only the old S10 survives: the Rev B4 bug
