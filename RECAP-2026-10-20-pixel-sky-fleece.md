@@ -77,3 +77,15 @@ Dead end: 2-D majority growth for the sleeve's centre gap -> horizontal stripes 
   - The DST line and the gate table use 30 px text, which prints at about 2.3 mm. That is larger than G5's.
 - Stitch files and gates are unchanged. Rev E small PDF: 17 pages, 3.3 MB. Zip: 12.0 MB.
 - pytest has to run in the `scripts/env.sh` venv (`~/.venvs/techpack-grand-line`); system python3 has no shapely, which explains the reviewer's 20 collection errors.
+
+## Rev F (2026-10-21) — founder answers, one rebuild on PR #28
+| Answer | Change |
+|---|---|
+| Fit CONFIRMED (Drum Island + pile ease, bound hem) | T3 ease rows black "confirmed 21 Oct"; fit sample line red/mandatory; cover Block row black |
+| Back CONFIRMED (band continued, no motif) | cover/T2 back labels + J1/J3 GENERATED text black |
+| Mill + factory OPEN | F2 unchanged; still on Q1 |
+| Bird IP CLEARED | R1 A7 DONE; G5 note; question closed |
+| Collar outer SKY BLUE matched to the sherpa (taslan kept) | fleece.py C01 material, T2 note 1, T5 BOM, F2 trims, flats collar colour = JQ.COL[0]; new Q1 line "taslan or the sky sherpa itself? [proposed: taslan]" |
+| Bird position = wearer's RIGHT | brief wording fixed; Q1 assumption removed |
+| Close-ups NOT NEEDED | Q1 + R1 A10 + J3 text; closeup_request.md kept with a "NOT NEEDED" header |
+STATUS.json now has `answered` (closed questions with the answer + date); Q1 prints them in green under "ANSWERED". Binding/tape navy + zips stay PROPOSED.
