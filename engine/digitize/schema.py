@@ -21,7 +21,8 @@ from shapely.geometry.base import BaseGeometry
 DIR_MODES = ("fixed", "field", "contour", "radial")   # fixed angle (M1); "field": rows follow part.meta["field"] (guided fill, M2),
                                             # "radial" (M3b): rays from part.meta["centre"] (face-on florets, rule 4);
                                             # angle = the field's mean + offset; "contour": rows follow the outline (M2)
-DIR_SOURCES = ("rule", "field-mean", "splitter", "answer", "field", "depth", "outline")   # digitize.audit re-derives each
+DIR_SOURCES = ("rule", "field-mean", "splitter", "answer", "field", "depth", "outline", "label")   # digitize.audit re-derives each
+# --- G1 --- "label": the labeller's deliberate angle (parts.labels.json intent "angle"), audited from meta label_angle
 
 
 class PlanError(ValueError):
