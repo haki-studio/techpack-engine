@@ -144,6 +144,40 @@ def straight_cuts(U, ds):
         mg.append(o)
     return mg
 
+FLOW_COH, FLOW_DEV = 0.4, 20.0
+def flow_check(U, ds, c, win_mm=6.0, skip_mm=1.5):
+    """fix round 4 (PR #27 review of b448e33, item 3): is a straight edge a CUT or a stripe edge running WITH its
+    neighbours? A cut (pasted band end, row-stretch step, hoop edge) crosses the design: the tone edges beside it run some
+    other way and end on it. A stripe that crosses the seam at ~90 deg has straight, constant-position edges by design,
+    and all its neighbouring edges run the same way. Measured on the DST class image itself: the structure tensor of the
+    tone-edge map in a window of +-win_mm beside the line (the line's own +-skip_mm band left out). Returns
+    (is_cut, coherence, deviation deg)."""
+    V = U >= 0
+    E = np.zeros(U.shape, np.float32)
+    E[:-1] += (U[:-1] != U[1:]) & V[:-1] & V[1:]; E[:, :-1] += (U[:, :-1] != U[:, 1:]) & V[:, :-1] & V[:, 1:]
+    E = ndi.gaussian_filter(np.minimum(E, 1), 1.0)
+    gy, gx = np.gradient(E)
+    k = lambda mm: int(round((mm - ds[0]) * PPM))
+    if c[0] == "across":
+        x = int(round(c[2] * PPM)); r0, r1 = max(0, k(c[1] - 2)), min(U.shape[0], k(c[1] + CUT_MM + 2))
+        w, sk = int(win_mm * PPM), int(skip_mm * PPM)
+        m = np.zeros(U.shape, bool); m[r0:r1, max(0, x - w):x + w + 1] = True; m[r0:r1, max(0, x - sk):x + sk + 1] = False
+        line_ang = 90.0                         # along the rows axis (depth)
+    else:
+        r = k(c[1]); s0, s1 = int(c[2] * PPM), int(c[3] * PPM)
+        w, sk = int(win_mm * PPM), int(skip_mm * PPM)
+        m = np.zeros(U.shape, bool); m[max(0, r - w):r + w + 1, max(0, s0 - 8):s1 + 8] = True; m[max(0, r - sk):r + sk + 1, :] = False
+        line_ang = 0.0
+    m &= V
+    if m.sum() < 20: return True, 0.0, 90.0
+    jxx, jyy, jxy = (gx[m] ** 2).sum(), (gy[m] ** 2).sum(), (gx[m] * gy[m]).sum()
+    tr = jxx + jyy
+    if tr < 1e-9: return True, 0.0, 90.0
+    coh = float(np.sqrt((jxx - jyy) ** 2 + 4 * jxy ** 2) / tr)
+    ang = (np.degrees(0.5 * np.arctan2(2 * jxy, jxx - jyy)) + 90.0) % 180.0      # edge direction = across the gradient
+    dev = float(abs((ang - line_ang + 90.0) % 180.0 - 90.0))
+    return not (coh >= FLOW_COH and dev <= FLOW_DEV), round(coh, 2), round(dev, 1)
+
 def run():
     res = {}; sheets = []
     for sm in WR.seams(SIZE):
@@ -159,7 +193,10 @@ def run():
                                  p95=round(float(np.percentile(vals, 95)), 2) if vals else 0.0, flag=bool(len(J) >= 10 and len(big) / len(J) > 0.08),
                                  at_mm=[round(x / PPM, 1) for x in big][:40])
             cuts = [c for c in straight_cuts(U, ds) if c[1] > (WR.GAP + 1.0 if sm["kind"] != "internal" else 1.0)]
-            rows["straight_cuts"] = dict(n=len(cuts), lines=cuts[:30])
+            chk = [(c, flow_check(U, ds, c)) for c in cuts]
+            flow = [list(c) + [k[1], k[2]] for c, k in chk if not k[0]]
+            cuts = [c for c, k in chk if k[0]]
+            rows["straight_cuts"] = dict(n=len(cuts), lines=cuts[:30], with_flow=len(flow), with_flow_lines=flow[:40])
             res[f"{sm['name']} {which} ({side.P})"] = rows
             sheets.append((sm, which, side, U, ds, rows))
     json.dump(res, open(f"discont_{SIZE}{TAG}.json", "w"), indent=1)
@@ -184,7 +221,8 @@ def run():
     tot = sum(r["jump_gt1"] for v in res.values() for d, r in v.items() if d != "straight_cuts"); n = sum(r["edges"] for v in res.values() for d, r in v.items() if d != "straight_cuts")
     fl = [(k, d) for k, v in res.items() for d, r in v.items() if d != "straight_cuts" and r["flag"]]
     sc = {k: v["straight_cuts"]["n"] for k, v in res.items() if v["straight_cuts"]["n"]}
-    print("straight cut lines (>= 12 mm) per seam side:", sc, "total", sum(sc.values()))
+    print("straight cut lines (>= 12 mm) per seam side:", sc, "total", sum(sc.values()),
+          "| straight stripe edges running with the flow (not cuts):", sum(v["straight_cuts"]["with_flow"] for v in res.values()))
     print(f"edges probed {n}, jumping > 1 mm {tot} ({100 * tot / max(1, n):.1f} %), flagged probes {len(fl)}: {fl[:12]}")
     return res
 

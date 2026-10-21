@@ -1,4 +1,4 @@
-M SL primary {'stitches': 173177, 'trims': 706, 'stops': 18, 'size_mm': (499.4, 357.1), 'max_stitch': 7.46} chenille plan {'paths': 494, 'needle_points': 5873, 'length_m': 12.6}
-M SL primary S1_left {'stitches': 20627, 'trims': 88, 'stops': 15, 'size_mm': (205.8, 377.0), 'fits': True}
-M SL primary S2_right {'stitches': 152823, 'trims': 619, 'stops': 15, 'size_mm': (310.1, 377.0), 'fits': True}
+M SL primary {'stitches': 217052, 'trims': 677, 'stops': 18, 'size_mm': (499.4, 357.1), 'max_stitch': 7.25} chenille plan {'paths': 518, 'needle_points': 6057, 'length_m': 12.9}
+M SL primary S1_left {'stitches': 25020, 'trims': 81, 'stops': 15, 'size_mm': (205.8, 377.0), 'fits': True}
+M SL primary S2_right {'stitches': 192242, 'trims': 596, 'stops': 18, 'size_mm': (310.1, 377.0), 'fits': True}
 DONE M ['SL']

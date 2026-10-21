@@ -298,7 +298,10 @@ def explain_gaps(P, gaps, bb):
         art_near = any(r["geom"].intersects(gb.buffer(SHIFT)) for r in D[P])
         # PR #27 review 2: 'moved by the wrap' (within 45 mm of a seam, art within 40 mm) excused real bare navy; it is no
         # longer an explanation - gapfill.py fills those areas from the mockup tones. Only the spec'd art limit may stay bare.
-        if gb.distance(clipb) < 6.0 and g["area_mm2"] < 400: g["why"] = "keep-out edge"
+        # fix round 4 (PR #27 review of b448e33, item 1): the reference is already clipped to the art limit, so a gap near
+        # the limit is mockup art INSIDE the allowed area (SL 228.9/117.0: a crest the rigid curl move left 10-15 mm short of
+        # the sleeve edge). Only a sliver along the limit (< 2 mm across) is excused; gapfill.py fills the rest.
+        if gb.distance(clipb) < 2.0 and min(g["w_mm"], g["h_mm"]) < 2.0: g["why"] = "keep-out edge"
         else: g["why"] = "UNEXPLAINED"
     return gaps
 
@@ -448,7 +451,18 @@ def gate_piece(P):
         lab_o, n_o = ndi.label(out); ar = ndi.sum(out, lab_o, range(1, n_o + 1)) / PPM**2 if n_o else []
         lo, hi = {"curls": (DROP_MAX, 1e9), "drops": (4.0, DROP_MAX), "stripes": (400.0, 1e9)}[fam]
         dst_count = int(sum(1 for a in ar if lo <= a < hi))
-        res[fam] = dict(n=len(rows), passed=ok, rows=rows, shifts=sh, dst_count=dst_count)
+        # PR #27 review of b448e33 (should-fix): WHY the render and DST counts differ. A DST blob in the band that touches
+        # no reference motif of the family is 'extra' (a crest tip cut off by a stripe, a gap fill, a lobe at a seam edge);
+        # reference motifs that share one sewn blob were 'merged' (touching crests sew as one mass).
+        refd = ndi.binary_dilation(al if fam != "stripes" else ref, iterations=int(1.0 * PPM)); lab_r, n_r = ndi.label(al if fam != "stripes" else ref)
+        extra = merged = 0; seen_r = {}
+        for k_, a_ in enumerate(ar, 1):
+            if not (lo <= a_ < hi): continue
+            m_ = lab_o == k_
+            if not (m_ & refd).any(): extra += 1; continue
+            ids = np.unique(lab_r[ndi.binary_dilation(m_, iterations=int(1.0 * PPM))]); ids = ids[ids > 0]
+            if len(ids) > 1: merged += len(ids) - 1
+        res[fam] = dict(n=len(rows), passed=ok, rows=rows, shifts=sh, dst_count=dst_count, dst_extra=extra, ref_merged=merged)
     # stitch direction (A16): DST stitch angles vs the render's grain (input pixels, same map + seam warp), 8 mm tiles
     g = GREY.get(P)
     if g is not None and not ART and "--nodir" not in sys.argv:
@@ -464,7 +478,7 @@ def gate_piece(P):
         g12 = _zoom(g, UP, order=1)
         cg, cw = closeup_grey12(P, g12.shape, UP)
         g12 = np.where(cw > 0, cg, g12); W12 = cw
-        dm = qa.direction_match(g12, P12, segs, tile_mm=8.0, weight=W12)
+        dm_plain = qa.direction_match(g12, P12, segs, tile_mm=8.0, weight=W12)     # every 8 mm tile pools every object in it
         # per motif family (A16 sets the direction per family; WIP patch 19 Oct): stripes + rope cords on 8 mm tiles, foam
         # curls and drops turn within a few mm -> 4 mm tiles. Family of a stitch = the art region under its midpoint.
         fam_of = family_raster(P, bb, g.shape)
@@ -489,6 +503,13 @@ def gate_piece(P):
             fams[nm] = dict(tile_mm=tm, tiles=f_["tiles"], pct_ok=f_["pct_ok"], fail_dev=len(f_["fail_dev"]), fail_chaos=len(f_["fail_chaos"]), masked=f_.get("masked", 0),
                             dev_tiles=[dict(t_, at_mm=[round(t_["at_mm"][0] + bb[0], 1), round(t_["at_mm"][1] + bb[1], 1)]) for t_ in f_["fail_dev"]][:400],
                             chaos_tiles=[dict(t_, at_mm=[round(t_["at_mm"][0] + bb[0], 1), round(t_["at_mm"][1] + bb[1], 1)]) for t_ in f_["fail_chaos"]][:400])
+        # fix round 4: the all-visible headline is judged PER OBJECT as the families are (qa.direction_match groups,
+        # konpeito ENGINE_NOTES 14): an 8 mm tile on the border of a foam crest and a stripe holds two deliberate
+        # directions and read as "chaos" by construction. The pooled figure is kept as pct_ok_pooled (reported on G8).
+        allv = by[1] + by[2] + by[3]; allg = grp_of[1] + grp_of[2] + grp_of[3]
+        dm = qa.direction_match(g12, P12, allv, tile_mm=8.0, visible=False, weight=W12, groups=allg)
+        dm["pct_ok_pooled"] = dm_plain["pct_ok"]; dm["pooled_tiles"] = dm_plain["tiles"]
+        dm["pooled_chaos"] = len(dm_plain["fail_chaos"]); dm["pooled_dev"] = len(dm_plain["fail_dev"])
         dm["by_family"] = fams; dm["ref_ppm"] = P12; dm["source"] = "founder close-ups (4-10 px/mm) inside their footprints; render-only tiles masked"; dm["closeup_share"] = round(float((W12 > 0).mean()), 3)
         for k in ("fail_dev", "fail_chaos"):
             for t_ in dm[k]: t_["at_mm"] = [round(t_["at_mm"][0] + bb[0], 1), round(t_["at_mm"][1] + bb[1], 1)]

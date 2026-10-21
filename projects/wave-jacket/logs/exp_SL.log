@@ -1,0 +1,4 @@
+M SL primary {'stitches': 212488, 'trims': 660, 'stops': 18, 'size_mm': (499.4, 357.1), 'max_stitch': 7.25} chenille plan {'paths': 494, 'needle_points': 5873, 'length_m': 12.6}
+M SL primary S1_left {'stitches': 23442, 'trims': 73, 'stops': 15, 'size_mm': (205.8, 377.0), 'fits': True}
+M SL primary S2_right {'stitches': 189265, 'trims': 588, 'stops': 15, 'size_mm': (310.1, 377.0), 'fits': True}
+DONE M ['SL']

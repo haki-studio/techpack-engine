@@ -1,0 +1,4 @@
+shoulder L B (FL) {'runs': [[15, 31], [49, 59], [77, 85], [114, 139]], 'mm': 63, 'items': 15}
+underarm L A (SL) {'runs': [[69, 131]], 'mm': 63, 'items': 11}
+side R A (BK) {'runs': [[143, 172], [216, 224]], 'mm': 39, 'items': 7}
+underarm R A (SR) {'runs': [[202, 207]], 'mm': 6, 'items': 2}

@@ -110,6 +110,30 @@ def wv_parts(p, twist):
         else: out.append((q, field_angle(*c) + twist))
     return out
 
+def lattice_cells(p, size):
+    """cells of p on the piece's own lattice (origin = the grain grid origin), so neighbouring foam regions share cell
+    borders instead of each starting a grid at its own bounding box"""
+    g = _G.get("cur")
+    if g is None: return cells(p, size)
+    b = p.bounds; x0, y0 = g["x0"], g["y0"]; out = []
+    for x in np.arange(x0 + math.floor((b[0] - x0) / size) * size, b[2], size):
+        for y in np.arange(y0 + math.floor((b[1] - y0) / size) * size, b[3], size):
+            q = p.intersection(box(x, y, x + size, y + size))
+            for gg in (q.geoms if hasattr(q, "geoms") else [q]):
+                if gg.geom_type == "Polygon" and gg.area > 0.05: out.append(gg)
+    return out
+
+def fm_grain_parts(p, fallback):
+    """fix round 4 (PR #27 review of b448e33, item 2): padded foam rows follow the close-up's visible grain (4 mm field,
+    grainfield.py ang4) where a close-up covers the crest and its grain is clear, as the stripes do since round 3; elsewhere
+    the curl tangent of the sector (waveart.curl_direction). Angle source per cell is logged (self-derived where grain)."""
+    out = []
+    for q in lattice_cells(p, CELL_FM):
+        c = q.representative_point().coords[0]; a = grain_at(*c, coh_min=0.25, fine=True)     # 0.25 = the gate's own clear-grain bar
+        if a is not None: LOG["fm_grain"] = LOG.get("fm_grain", 0) + 1; out.append((q, a))
+        else: LOG["fm_tangent"] = LOG.get("fm_tangent", 0) + 1; out.append((q, fallback))
+    return out
+
 def fm_parts(p):
     return [(q, outline_angle(p, q.representative_point())) for q in cells(p, CELL_FM)]
 

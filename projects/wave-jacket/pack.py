@@ -422,7 +422,7 @@ def hooping_page():
         pg.para(14, f"{P}: " + "  →  ".join(parts), NOTE)
     pg.y += 1.5
     pg.sec("HOOPING A CUT PANEL + BACKING [proposed - the strike-off confirms]")
-    for l_ in ["• Chalk CF / CB, the split lines, the needle starts and the match notches on the cut piece from the 1:1 placement plot (out/placement, art placement only).",
+    for l_ in ["• Chalk CF / CB, the split lines, the needle starts and the match notches on the cut piece from the 1:1 placement plot (placement/ in the zip, art placement only).",
                "• Hoop the BACKING only (adhesive-backed cutaway, or cutaway + temporary spray) and float the cut panel on it, aligned on the chalk marks; pin only inside the seam allowance.",
                "• Section 2+ : never clamp the hoop ring over foam that is already sewn (it crushes the padding) - float again on a freshly hooped backing, or use a magnetic frame.",
                "• Align each new hooping on the registration crosses its file shares with the previous one (above): the machine sews the crosses first - check they land on the sewn ones.",
@@ -492,7 +492,7 @@ def seams_page():
                 i += 1
         pg.y = y0 + p + per * p + 2
         if i < len(rows): pg.new()
-    pg.para(12, f"{len(rows)} match marks, all from out/placement/match_marks_M.json; notch them on both pieces (1:1 placement plot).", TXT, 400, MUTED)
+    pg.para(12, f"{len(rows)} match marks, all from placement/match_marks_M.json; notch them on both pieces (1:1 placement plot).", TXT, 400, MUTED)
     # seam strips: own page, one sheet per seam (out/continuity_<seam>.png, side A above, side B below), one scale for all
     from PIL import Image
     pg.new(); pg.sec("SEAM STRIPS — every seam rendered from the shipped DSTs (side A above, side B below, seam closed up; red ticks = match marks; one scale)", size=2.6)
@@ -519,7 +519,7 @@ def seams_page():
         mt, tn = c.get("meet"), c.get("tone")
         pg.o.append(t(x, yy + TXT, f"{nm}" + (f"  ·  meet {mt} %  ·  same tone {tn} %" if mt is not None else "  ·  no art on this seam"), TXT, 700))
         tag, _ = img_tag(im, x, yy + cap, im.width * sc); pg.o.append(tag)
-    para(pg.o, 12, BOT + 1, f"Scale {sc * 1000:.0f} mm per 1000 px of the sheets; each sheet at full size: out/continuity_<seam>.png (+ _art.png = the art before stitching).", TXT, 400, MUTED)
+    para(pg.o, 12, BOT + 1, f"Scale {sc * 1000:.0f} mm per 1000 px of the sheets; each sheet at full size in the zip: compare/seams/continuity_<seam>.png.", TXT, 400, MUTED)
     return pg.done()
 
 # ---------------------------------------------------------------- G8
@@ -543,8 +543,12 @@ def gates_page():
     ppm_d = next((x.get("gate_ppm") for P in PS for x in GATES["pieces"].get(P, {}).get("drops", {}).get("rows", []) if x.get("gate_ppm")), None)
     for l_ in ["• Motif gate (A14, qa.motif_match) reads the VISIBLE top layer of the written DST: hidden travel runs no longer merge crests. Pass = IoU ≥ 0.70 and width + height each ≥ 80 % of the reference motif (a stand-in of the right size but the wrong silhouette fails).",
                f"• Drops are graded at {ppm_d or 12:g} ppm against their traced silhouette (close-up resolution where covered) : the sewn drop = the z-buffer of every stitch (a pixel counts when its TOP thread is that drop's), fabric pull-in modelled (fix round 3: the re-centred visible segments used before left false holes in satin). Each drop is ONE satin at one declared angle (the close-up grain on the drop where clear, else its long axis), pull compensation at the stitch ends only.",
-               "• Uncovered (A15, qa.uncovered) = mockup-embroidered areas ≥ 25 mm² the DST leaves bare. The art fills every gap from the mockup / close-up tones (gapfill.py): only a 'keep-out edge' may stay bare - anything else is UNEXPLAINED (red).",
+               "• Uncovered (A15, qa.uncovered) = mockup-embroidered areas ≥ 25 mm² the DST leaves bare. The art fills every gap from the mockup / close-up tones (gapfill.py), since fix round 4 also gaps next to the art limit and spray tails (>= 6 mm2, >= 1 mm wide) off a motif traced short: only a sliver < 2 mm across along the art limit may stay bare - anything else is UNEXPLAINED (red).",
                "• Every motif (crest, drop, wave mass) is compared with the stitches within 1-1.5 mm of IT (LESSONS A21), so a thin sewn bridge to a neighbour no longer scores the neighbour against it (wave masses since fix round 3).",
+               "• Ref. vs DST motif counts (A2) differ by construction: the DST column counts the connected sewn blobs in the family's size band. "
+               + "; ".join(f"{P} {fam}: {GATES['pieces'][P][fam].get('ref_merged', 0)} reference motifs sewn merged with a neighbour, {GATES['pieces'][P][fam].get('dst_extra', 0)} DST blobs touching no reference motif"
+                          for P in PS for fam in ("curls", "drops") if GATES['pieces'].get(P, {}).get(fam, {}).get('dst_count', 0) != GATES['pieces'].get(P, {}).get(fam, {}).get('n', 0))
+               + ". Extra blobs are cream pieces in the drop size band that are not drops (crest tips cut by a stripe, gap fills from the mockup, foam lobes at a seam edge); merged ones are touching crests or a drop sewn against its crest. Every reference motif is still graded on its own (A21): the pass column is the gate, the count columns are information.",
                "• CURLS = cream + grey crests ≥ 100 mm² (one row per crest), DROPS = cream motifs 4-100 mm², STRIPES = the blue band regions. Moved: the Rev B wrap moves art near seams on purpose; each motif is matched at its best local shift within ±40 mm and the shift is reported."]:
         pg.para(12, l_, 2.3, gap=0.4)
     ok = not n_open and not tot_un
@@ -561,27 +565,31 @@ def gates_page():
         rows3.append([(P, 700, INK)] + [(f"{cnt[k]}", 700, RED if cnt[k] else GREEN) for k in ("curls", "drops", "stripes")] + [f"{ke}",
                      (" · ".join(f"{k} {v}" for k, v in sorted(why.items(), key=lambda kv: -kv[1])) or "—", 400, INK, RM - 112)])
     table(pg, [12, 28, 44, 60, 82, 112], ["Piece", "Curls", "Drops", "Stripes", "Bare: keep-out\nedge (allowed)", "Reasons (gates_M.json 'why')"], rows3, size=2.3, pitch=3.8)
-    pg.para(12, "Per-piece tables with the position of every failing / uncovered row: out/compare_<piece>.png (under the side-by-side) and gates_M.json.", TXT, 400, MUTED)
+    pg.para(12, "Per-piece tables with the position of every failing / uncovered row: compare/compare_<piece>.png in the zip (under the side-by-side) and compare/gates_M.json.", TXT, 400, MUTED)
     ds = [GATES["pieces"][P].get("direction") for P in PS if GATES["pieces"].get(P, {}).get("direction")]
     ppm = next((d.get("ref_ppm") for d in ds if d.get("ref_ppm")), None)
     pg.new()                                                          # direction gets its own page (legibility)
     pg.sec(f"STITCH DIRECTION (A16/A17) vs the CLOSE-UP grain ({ppm or 12:g} ppm); tiles with no close-up are masked, not judged; target ≥ 85 % OK per family", size=2.8)
     fams = [("stripes", "Stripes"), ("foam", "Foam (alt.)"), ("drops", "Drops")]
-    hd2 = ["Piece", "All visible"] + [x for _, n in fams for x in (n + " % OK", "masked")] + ["Close-up share", "Heat-map"]
+    hd2 = ["Piece", "All visible / pooled"] + [x for _, n in fams for x in (n + " % OK", "masked")] + ["Close-up share", "Heat-map"]
     cx2 = [12, 26, 54, 80, 96, 122, 138, 160, 176, 206]
     rows2 = []
     for P in PS:
         dr = GATES["pieces"].get(P, {}).get("direction")
         if not dr: continue
-        bf = dr.get("by_family", {}); row = [(P, 700, INK), f"{dr.get('pct_ok', '-')} % of {dr.get('tiles', '-')}"]
+        bf = dr.get("by_family", {}); row = [(P, 700, INK), (f"{dr.get('pct_ok', '-')} %" + (f" / {dr['pct_ok_pooled']} %" if "pct_ok_pooled" in dr else ""), 700, GREEN if dr.get("pct_ok", 0) >= 85 else RED)]
         for k, _ in fams:
             v = bf.get(k)
             if not v or not v.get("tiles"): row += [("—", 400, MUTED), ""]; continue
             row += [(f"{v['pct_ok']} %", 700, GREEN if v["pct_ok"] >= 85 else RED), f"{v.get('masked', 0)}"]
-        cs = dr.get("closeup_share"); row += [f"{cs*100:.0f} %" if isinstance(cs, (int, float)) else "—", (f"out/compare_{P}.png", 400, MUTED)]
+        cs = dr.get("closeup_share"); row += [f"{cs*100:.0f} %" if isinstance(cs, (int, float)) else "—", (f"compare/compare_{P}.png", 400, MUTED)]
         rows2.append(row)
     table(pg, cx2, hd2, rows2, size=2.3, pitch=3.8)
-    pg.para(12, "Foam: the files sew the lockstitch ALTERNATE; the primary look is chenille (path plan), so the foam row grades the alternate only.", 2.4, 600, ORANGE, gap=1.5)
+    pg.para(12, "All visible = every 8 mm tile judged on the object with the most visible thread in it (qa.direction_match groups, as the family columns). "
+                "'pooled' = every object in a tile pooled: a tile on the border of a crest and a stripe holds two deliberate directions and reads as chaos by construction, so the pooled figure is information, not the gate.", 2.3, 400, MUTED, gap=1.0)
+    pg.para(12, "Foam (fix round 4): the padded foam, its shade / hollow details and the loop texture on top now follow the close-up's visible grain where a close-up covers the crest "
+                "(4 mm cells, foamcord.py cords along the grain instead of scalloped rings); elsewhere the rows run along the curl. These angles are READ from the same close-up the gate grades "
+                "(self-derived, LESSONS A24), as the stripe grain since round 3. The files sew the lockstitch ALTERNATE; the primary foam look is chenille (path plan, B33).", 2.4, 600, ORANGE, gap=1.5)
     return pg.done()
 
 # ---------------------------------------------------------------- G9
@@ -604,7 +612,12 @@ def treatment_page():
         tr.append([a, (f"{b}", 600, INK), (f"{c}" + ("  OPEN - listed below" if i == 2 and pa else ""), 700, cc)])
     table(pg, [12, 130, 190], ["Stripe edges followed across probe lines (all seams, DST)", "Before (seamfill band)", "After (smooth warp)"], tr, size=2.5, pitch=4.2)
     pg.para(12, "Noise floor: the trace's own tone boundaries wobble (flecks, tone steps), so ~5-10 % of edges 'jump' > 1 mm everywhere, also 100 mm+ from any seam; a cut line shows as a straight edge at constant depth (the old band ends). "
-                "Per seam in out/discont_<seam>_<side>.png: magenta = straight cut lines, red rings = edge jumps > 1 mm. Before / after crops: next page.", TXT, 400, MUTED, gap=2.0)
+                "Per seam in the zip, compare/seams/discont_<seam>_<side>.png: magenta = straight cut lines, red rings = edge jumps > 1 mm. Before / after crops: next page.", TXT, 400, MUTED, gap=2.0)
+    nflow = sum(v["straight_cuts"].get("with_flow", 0) for v in A.values())
+    if nflow:
+        pg.para(12, f"Fix round 4: {nflow} straight edges are stripe edges running WITH their neighbours (a stripe that crosses the seam square has straight, constant-position edges by design). "
+                    "discont.flow_check reads the tone edges beside each line (+-6 mm): coherent and within 20 deg of the line = a stripe edge, not a cut; edges that cross or end on the line = a cut (test_discont_flow.py). "
+                    "Those stripe edges are no longer listed; every real cut still is.", TXT, 600, ORANGE, gap=1.5)
     cut = {k: v["straight_cuts"] for k, v in A.items() if v["straight_cuts"]["lines"]}
     ntot = sum(v.get("n", len(v["lines"])) for v in cut.values())
     pg.sec(f"STRAIGHT CUT LINES STILL OPEN (after) — {pa} along a seam (parallel, the table row) + {ntot - pa} across it, on {len(cut)} seam sides (discont_M.json)", RED if cut else GREEN, size=2.8)

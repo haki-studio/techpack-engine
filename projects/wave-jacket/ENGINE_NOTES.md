@@ -246,3 +246,53 @@ Problem → proposed fix → check. Worked around in project code only.
   (z just under its cream body, sewn in the drop layers).
 - **Check:** test: fixed_satin on a 2 x 4 mm ellipse at 0.15 pull -> sewn width (z-buffer, pull-in modelled) within
   +/- 5 % of 2 mm.
+
+## 28. Foam loop texture read as chaos on the direction gate (fix round 4, 21 Oct 2026)
+- **Problem:** the padded foam's loop texture (scalloped contour rings, 2.1 mm apart, w3 run on top) points every which way
+  inside a 4 mm tile, so the foam family scored 20-26 % OK (half the failing tiles chaotic), and the live view read as flat
+  hatching. Padded rows at the curl tangent deviated from the close-up grain in the other half.
+- **Fix (project):** `flowdir.fm_grain_parts` (padded foam + its shade / hollow / inner-blue details, 4 mm cells on the
+  piece lattice, angle = close-up grain `ang4` where weight >= 0.6 and coherence >= 0.25, else the old angle) and
+  `foamcord.py` (texture = streamlines of the same grain, seeded 2.1 mm, >= 1.6 mm apart; rings stay where no clear grain).
+  SL foam 19.7 -> 77.7 % on the first experiment.
+- **Caveat (A24):** these angles are read from the close-up the gate grades: self-derived, not independent. Reported so.
+- **Proposed engine fix:** a `texture` primitive in digitize for raised / looped fills: grain streamlines (field from the
+  close-up) as the top texture instead of contour rings; rings only when no grain is readable.
+- **Check:** direction gate foam family on the wave pieces; a unit test that streamlines stay inside the region, keep the
+  min gap and follow the field within 10 deg.
+
+## 29. "keep-out edge" excused real gaps; thin tails never filled (fix round 4)
+- **Problem:** A15 excused any gap < 400 mm2 within 6 mm of the art limit. The reference is already clipped to the limit,
+  so such a gap is mockup art INSIDE the allowed area (SL: a crest 10-15 mm short of the sleeve edge after the rigid curl
+  move: the SL wave-mass row with h 0.38). Separately, spray tails 1-2 mm wide off a crest were under the 25 mm2 / 1 mm
+  opening, so a traced-short mass never got them (BK mass w 0.79).
+- **Fix (project):** explain_gaps excuses only slivers (< 2 mm across, < 2 mm from the limit); gapfill.py fills the rest and
+  also TAILS (>= 6 mm2, >= 1 mm wide, touching the art, reaching >= 2 mm beyond it; rims inside 2 mm are not filled).
+- **Proposed engine fix:** `qa.uncovered` gets `limit=` and reports near-limit gaps as gaps; a `qa.tails()` helper.
+- **Check:** gates A15 table: 'keep-out edge' rows only for slivers; mass rows near the limit pass.
+
+## 30. Straight-cut detector flagged stripes that cross a seam at 90 deg (fix round 4)
+- **Problem:** discont.straight_cuts flags any tone edge at constant position for >= 12 mm. A stripe that crosses a seam
+  square has exactly such edges BY DESIGN (armhole back L A: 26 'across' lines, all stripe edges running with their
+  neighbours), so the in-panel count (88) mixed real cuts with stripes.
+- **Fix (project):** `discont.flow_check`: structure tensor of the tone-edge map beside the line (+-6 mm, the line's own
+  +-1.5 mm left out); coherent (>= 0.4) and within 20 deg of the line = a stripe edge running with the flow, reported as
+  `with_flow`, not a cut. A pasted band end (edges crossing it) stays a cut.
+- **Check:** `test_discont_flow.py` (red-then-green: the old detector flags the 90-deg stripes; a shifted band and a
+  vertical cut through slanted stripes stay cuts).
+
+## 31. Direction headline pooled every object in a tile (fix round 4)
+- **Problem:** the all-visible A16 headline pooled every stitch in an 8 mm tile, so every tile on a crest / stripe border
+  read chaotic; the per-family rows already judged each tile on its dominant object (konpeito ENGINE_NOTES 14).
+- **Fix (project, gates.py):** headline per object (groups = art object under each visible stitch), pooled kept as
+  `pct_ok_pooled` and printed beside it on G8.
+- **Proposed engine fix:** `qa.direction_match(groups=...)` as the default for any multi-object piece; the bench prints both.
+
+## 32. Art-chain steps restore from stale "pre" files (fix round 4)
+- **Problem:** tonematch.py always restarts from art_M_pretone.pkl when it exists, and gapfill.py restored art_M_pregap.pkl
+  at IMPORT time. A partial re-run (from gapfill on) silently dropped the new gap fills, and importing gapfill for a
+  diagnosis rewrote the shipped art. Both happened in this round; the rebuilt files were identical to the previous ones.
+- **Fix (project):** gapfill restores only under `__main__`; the chain scripts delete art_M_pretone.pkl before tonematch.
+- **Proposed engine fix:** an art-chain runner that stamps each stage's input hash into `info` and refuses a "pre" file
+  whose hash is not the current upstream output.
+- **Check:** after a chain re-run, `info['gapfill']` in art_M.pkl equals the gapfill log of that run.

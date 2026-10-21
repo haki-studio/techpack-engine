@@ -117,9 +117,15 @@ def flow_build_object(r):
     import dst2, flowdir as FD
     if FD._F["tree"] is None: return None
     g = r["grp"]; st = r["st"]
-    # foam keeps waveart.curl_direction (rows along the curl around its eye): the outline-parallel cells scored worse on
-    # the close-up grain (SR foam 22 -> 13 % OK, more chaos under the loop spiral), so only the stripes use the flow field
-    if not (g == "WV" and st in ("tatami", "satin")): return None
+    # fix round 4 (PR #27 review of b448e33, item 2): padded foam AND the foam details (shade, hollow, inner blue, small foam
+    # bits) sew in 4 mm cells along the close-up's grain where it is clear (flowdir.fm_grain_parts), else at their old
+    # angle (curl tangent / auto). Stroke-like details (aspect >= 2.5 and < 1.5 mm wide) stay satin columns (A16).
+    # (Round 3 had tried outline-parallel cells for the foam: worse, 22 -> 13 % on SR; the grain is read, not guessed.)
+    on = os.environ.get("WAVE_FOAM_GRAIN", "1") == "1" and FD._G.get("cur") is not None
+    fm_grain = on and g == "FM" and st == "padded"
+    if on and g in ("FM-sh", "FM-gr", "FM-in", "FM") and st in ("satin", "tatami") and not r.get("dot"):
+        return detail_grain_object(r)
+    if not ((g == "WV" and st in ("tatami", "satin")) or fm_grain): return None
     pull = dst2.pull_for(tech.rule_for(g)); blocks = []
     for p in dst2.polys(r["geom"]):
         if p.area < 0.06: continue
@@ -128,7 +134,8 @@ def flow_build_object(r):
             sg = 1 if WV_KEYS.index(r["col"]) % 2 == 0 else -1
             parts = FD.wv_parts(p, sg * CORD_TWIST); FD.LOG["wv_cells"] += len(parts); sp, L = dst2.SP_TAT, 3.5
         else:
-            parts = FD.fm_parts(p); FD.LOG["fm_cells"] += len(parts); sp, L = dst2.SP_PAD, 5.0
+            fb = r["ang"] if isinstance(r.get("ang"), (int, float)) else dst2.SR.auto_angle(p) - 90
+            parts = FD.fm_grain_parts(p, fb); FD.LOG["fm_cells"] += len(parts); sp, L = dst2.SP_PAD, 5.0
         w = dst2.width_of(p)
         for q, a in parts:
             if g == "WV" and q.area > dst2.LATTICE_MIN:
@@ -137,6 +144,26 @@ def flow_build_object(r):
                 blocks += dst2.join_rows(dst2.tatami_rows(q.buffer(-0.5), a + 90, 0.8 if dst2.PAD_LAYERS > 1 else 1.0, 4.0))
                 if dst2.PAD_LAYERS > 1: blocks += dst2.join_rows(dst2.tatami_rows(q.buffer(-0.5), a + 45, 0.8, 4.0))
             blocks += dst2.join_rows(dst2.tatami_rows(q.buffer(pull * 0.5) if pull else q, a, sp, L))
+    return [b for b in blocks if len(b) > 1]
+
+def detail_grain_object(r):
+    """foam details (fix round 4): tatami cells along the close-up grain; None (engine build) when the region is a stroke
+    or no cell of it has a clear grain"""
+    import dst2, flowdir as FD, math
+    code = tech.rule_for(r["grp"]); pull = dst2.pull_for(code); blocks = []; any_grain = False
+    for p in dst2.polys(r["geom"]):
+        if p.area < 0.06: continue
+        mrr = p.minimum_rotated_rectangle; cs = list(mrr.exterior.coords) if mrr.geom_type == "Polygon" else []
+        asp = (max(math.dist(cs[0], cs[1]), math.dist(cs[1], cs[2])) / max(1e-6, min(math.dist(cs[0], cs[1]), math.dist(cs[1], cs[2])))) if cs else 1.0
+        if dst2.width_of(p) < 1.5 and asp >= 2.5: return None
+        fb = r["ang"] if isinstance(r.get("ang"), (int, float)) else dst2.SR.auto_angle(p) - 90
+        n0 = FD.LOG.get("fm_grain", 0)
+        parts = FD.fm_grain_parts(p, fb); any_grain |= FD.LOG.get("fm_grain", 0) > n0
+        if p.area > 6: blocks += dst2.edge_run(p, 0.6)
+        for q, a in parts:
+            blocks += dst2.join_rows(dst2.tatami_rows(q.buffer(pull * 0.5) if pull else q, a, dst2.SP_TAT, 3.5))
+    if not any_grain: return None
+    FD.LOG["detail_grain"] = FD.LOG.get("detail_grain", 0) + 1
     return [b for b in blocks if len(b) > 1]
 
 def ends_satin(p, ang, pull, sp=None):
@@ -206,7 +233,9 @@ PIECE_NAME = {"BK": "back", "FR": "wearer's right front", "FL": "wearer's left f
 PIECE_CODE = {"BK": "B01", "FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
-REV_EMB = "Rev B"; REV_GAR = "Rev A"; DATE = "20 Oct 2026"
+import datetime as _dt
+# PR #27 review of b448e33: the pack printed "20 Oct" after a 21 Oct rebuild - the date is the BUILD date, never typed
+REV_EMB = "Rev B"; REV_GAR = "Rev A"; DATE = _dt.date.today().strftime("%-d %b %Y")
 # EMBROIDERY SAMPLING package (founder, 19 Oct): size-M strike-off only; other sizes are rebuilt after the sew-out and the
 # garment pages (T1-T16, pattern) follow once the jacket body revision is done.
 DOC_SIZES = ["M"]

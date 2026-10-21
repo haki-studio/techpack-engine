@@ -12,7 +12,7 @@ ign = shutil.ignore_patterns("summary.json", "result_*.json")
 shutil.copytree("out/01_wave/M", f"{PKG}/elements/01_wave/M", ignore=ign)
 for f_ in glob.glob("out/01_wave/*_SPEC_*.pdf") + glob.glob("out/01_wave/*_M_ART*.svg"): shutil.copy(f_, f"{PKG}/elements/01_wave/")
 os.makedirs(f"{PKG}/compare", exist_ok=True)
-for c in glob.glob("out/compare_*.png") + ["out/continuity_M.png", "out/crops_before_after.png"]: shutil.copy(c, f"{PKG}/compare/")
+for c in glob.glob("out/compare_*.png") + ["out/continuity_M.png", "out/crops_before_after.png", "gates_M.json", "discont_M.json", "continuity_M.json"]: shutil.copy(c, f"{PKG}/compare/")
 os.makedirs(f"{PKG}/compare/seams", exist_ok=True)
 for c in glob.glob("out/continuity_*.png") + glob.glob("out/discont_*.png"):
     if "_art" in c or "_before" in c or c.endswith("continuity_M.png"): continue

@@ -1,7 +1,8 @@
 """A15 gap fill (PR #27 review, blocker 2): every area >= 25 mm2 that the MOCKUP shows embroidered but the art leaves bare
 is filled from the mockup's own pixels there - the same tone classes the gate reads (gates.ref_classes: the render's
-tone labels through the art's piece map + seam warp, garment details and keep-outs masked out). Only a gap inside 6 mm of
-the spec'd art limit (keep-out edge, < 400 mm2) stays bare.
+tone labels through the art's piece map + seam warp, garment details and keep-outs masked out). Only a sliver along the
+spec'd art limit (< 2 mm across, gates.explain_gaps) stays bare; since fix round 4 a gap NEAR the limit is filled too
+(the reference is clipped to the limit, so that art is inside the allowed area).
 
 Per gap (component of ref_any & ~art, opened 1 mm, as qa.uncovered sees it): the gap is grown 1 mm into the art around
 it (so the fill overlaps its neighbours and leaves no slit), the tone labels inside are cleaned with a 3x3 majority
@@ -18,7 +19,8 @@ size = next((a for a in sys.argv[1:] if not a.startswith("-")), "M")
 sys.argv = [sys.argv[0], "--art"]                      # gates in ART mode: compare against the art, not a DST
 import json, os, pickle, shutil
 # repeatable: a second run starts again from the pre-gap art (tonematch output), never fills on top of its own fills
-if os.path.exists(f"art_{size}_pregap.pkl") and pickle.load(open(f"art_{size}.pkl", "rb"))["info"].get("gapfill"):
+# (only when run as the script: importing gapfill for a diagnosis must never rewrite the art - fix round 4)
+if __name__ == "__main__" and os.path.exists(f"art_{size}_pregap.pkl") and pickle.load(open(f"art_{size}.pkl", "rb"))["info"].get("gapfill"):
     shutil.copy(f"art_{size}_pregap.pkl", f"art_{size}.pkl")
 import numpy as np
 from scipy import ndimage as ndi
@@ -64,6 +66,7 @@ def fill_piece(P):
         v = v[v >= 0].astype(int)
         return np.bincount(v).argmax() if len(v) else -1
     added, filled = [], []
+    comps = []
     for g in rows:
         if g["why"] == "keep-out edge": continue
         cx, cy = int((g["x_mm"] - bb[0]) * PPM), int((g["y_mm"] - bb[1]) * PPM)
@@ -72,7 +75,26 @@ def fill_piece(P):
         if not len(ids): continue
         # the component(s) of this gap row: the biggest label in its box
         k = max(ids, key=lambda i: (win == i).sum())
-        m = lab == k
+        comps.append((g, lab == k))
+    # fix round 4 (PR #27 review of b448e33, item 1: BK wave mass 153/371 w 0.79): TAILS. A motif traced short of the
+    # mockup's extent (a spray streak off a crest, 1-2 mm wide) is below the 25 mm2 / 1 mm-opening A15 gap size, but it is
+    # what makes the mass the wrong shape. A tail = mockup art >= 1 mm wide (0.5 mm opening), >= TAIL_MM2, within 2.5 mm of the art,
+    # reaching >= 2 mm beyond it (a render halo / rim round a motif stays inside 1.5 mm and is NOT filled).
+    TAIL_MM2 = 6.0
+    near = ndi.binary_dilation(cov, iterations=int(0.5 * PPM)); rim = ndi.binary_dilation(cov, iterations=int(2.0 * PPM))
+    done = np.zeros_like(near)
+    for _, m_ in comps: done |= m_                       # only areas already filled as gap rows (a < 25 mm2 gap component is NOT one)
+    tm = ndi.binary_opening(ref_any & ~near & ~done, structure=qa.disk(0.5, PPM))
+    tl, tn = ndi.label(tm); n_tail = 0
+    for k, sl in enumerate(ndi.find_objects(tl), 1):
+        m = tl == k; a = m.sum() / PPM**2
+        if a < TAIL_MM2 or not (m & ~rim).any(): continue
+        # within 2.5 mm of the art: the thin neck between a traced-short motif and its tail is < 1 mm wide and is removed by
+        # the 0.5 mm opening (BK 165/369: the spray tail starts 1.5 mm past the art's end); farther = a loose speck
+        if not (ndi.binary_dilation(m, iterations=int(2.5 * PPM)) & cov).any(): continue
+        ys, xs = np.nonzero(m)
+        comps.append((dict(x_mm=round(bb[0] + xs.mean() / PPM, 1), y_mm=round(bb[1] + ys.mean() / PPM, 1), area_mm2=round(float(a), 1), why="tail"), m)); n_tail += 1
+    for g, m in comps:
         grow = ndi.binary_dilation(m, iterations=int(1.0 * PPM)) & ref_any         # 1 mm into the neighbours: no slit
         ys, xs = np.nonzero(grow); y0, y1, x0, x1 = ys.min() - 2, ys.max() + 3, xs.min() - 2, xs.max() + 3
         y0, x0 = max(0, y0), max(0, x0)
@@ -132,14 +154,14 @@ def fill_piece(P):
         keep = rest + foam + loops
         for a in keep: a["layer"] = WA.layer_of(a)
     G.D[P] += keep
-    return dict(piece=P, gaps=len(rows), filled=len(filled), regions_added=len(added), merged_into_stripes=n_merged, regions_kept=len(keep),
+    return dict(piece=P, gaps=len(rows), tails=n_tail, filled=len(filled), regions_added=len(added), merged_into_stripes=n_merged, regions_kept=len(keep),
                 kept_bare=[(g["x_mm"], g["y_mm"], g["area_mm2"]) for g in rows if g["why"] == "keep-out edge"], detail=filled)
 
 if __name__ == "__main__":
     src, bak = f"art_{size}.pkl", f"art_{size}_pregap.pkl"
     shutil.copy(src, bak)
     log = [fill_piece(P) for P in WC.PIECES]
-    for l in log: print(l["piece"], {k: l[k] for k in ("gaps", "filled", "regions_added", "merged_into_stripes")}, flush=True)
+    for l in log: print(l["piece"], {k: l[k] for k in ("gaps", "tails", "filled", "regions_added", "merged_into_stripes")}, flush=True)
     G.D["info"]["gapfill"] = [{k: l[k] for k in ("piece", "gaps", "filled", "regions_added", "merged_into_stripes")} for l in log]
     pickle.dump(G.D, open(src, "wb"))
     json.dump(log, open(f"gapfill_{size}.json", "w"), indent=1, default=float)
