@@ -122,7 +122,9 @@ def run(size):
         print(f"{P}: stripe patches merged into their band {lg[0]} ({n0} -> {sum(1 for r in D[P] if r['grp'] == 'WV')} WV regions); bare pockets filled {lg[1][0]} ({lg[1][1]} mm2)", flush=True)
         log.append(dict(piece=P, band_clean_merged=lg[0], wv_before=n0, wv_after=sum(1 for r in D[P] if r["grp"] == "WV"), pockets_filled=lg[1][0], pockets_mm2=lg[1][1]))
     seams = {sm["name"]: sm for sm in WR.seams(size)}
-    for name in ORDER:
+    # Rev C (founder 21 Oct 'Do A'): the wrap seams are REDRAWN in a band (seamredraw.py); whole-region recolouring would
+    # change stripes far from the seam, so with --no-recolour only the structure passes above run
+    for name in ([] if "--no-recolour" in sys.argv else ORDER):
         sm = seams.get(name)
         if sm is None: continue
         A, B = WR.SeamSide(size, sm, "A"), WR.SeamSide(size, sm, "B"); d0 = d0_of(sm)

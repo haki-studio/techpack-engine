@@ -303,12 +303,10 @@ def threads():
     ec = HEX["w1"]; mi, mp = tech.match(ec, "isacord"), tech.match(ec, "polyneon")
     sug = {b: next((r for r in tech.TH[b] if r[0] == c), None) for b, c in (("isacord", "0151"), ("polyneon", "1801"))}
     sh = lambda r: ("#%02X%02X%02X" % tuple(r[2])) if r else "?"
-    pg.para(12, "ΔE2000 vs target: green < 3, amber 3-5.5, red > 5.5 - amber / red rows must be picked from the physical card (F1). All targets PROPOSED (read from the low-res render + close-ups).", TXT, 400, MUTED, gap=1.0)
+    pg.para(12, "ΔE2000 vs target: green < 3, amber 3-5.5, red > 5.5 - amber / red rows must be picked from the physical card (F1). Targets read from the low-res render + close-ups: PROPOSED, except the ecru (confirmed, below).", TXT, 400, MUTED, gap=1.0)
     pg.para(12, f"Foam = {PAL['w1'][1].upper()} {ec} - founder decision 20 Oct: sample ECRU foam + CHENILLE first. The ecru is matched to the nearest thread in each book: "
                 f"Isacord {mi[0]} {mi[1]} {mi[2]} (ΔE {mi[3]:.1f}) · Polyneon {mp[0]} {mp[1]} {mp[2]} (ΔE {mp[3]:.1f}). The render's white {ALT[0]} is the ALTERNATE row (orange).", NOTE, 600, INK, gap=1.0)
-    si, sp = sug["isacord"], sug["polyneon"]
-    pg.para(12, f"QUESTION: the founder's suggested Isacord 0151 is '{si[1] if si else '?'}' ({sh(si)}, much darker than the ecru) and Polyneon 1801 is '{sp[1] if sp else '?'}' ({sh(sp)}, a blue-white): "
-                "neither is an ecru - which colour was meant? Until answered, the nearest book match above is used.", NOTE, 600, ORANGE, gap=1.0)
+    pg.para(12, f"CONFIRMED (founder W3, 21 Oct 2026): ecru foam thread = Isacord 0184 Pearl (book hex {SB.TH['w1']['isacord'][2]}). The other 8 threads stay PROPOSED until the shell / hardware / rib colour is fixed (W2, open).", NOTE, 700, GREEN, gap=1.0)
     pg.para(12, "The SHELL COLOUR + hardware colour (and probably the rib) change from the render: every blue + the ecru must be re-checked on the NEW shell before bulk.", NOTE, 700, RED, gap=2.0)
     pg.sec("TRIMS + CONSUMABLES (per jacket)")
     tr = [("Backing", "[proposed] 3.0 oz cutaway (navy / charcoal) + a 1.5 oz tearaway under the padded foam areas (or a 2nd cutaway layer), cut 30 larger than each hooping; trim to 5"),
@@ -436,38 +434,79 @@ def hooping_page():
     return pg.done()
 
 # ---------------------------------------------------------------- G7
+CONT_ART = json.load(open("continuity_M_art.json")) if os.path.exists("continuity_M_art.json") else {}
+CONT_REVB = json.load(open("revc/continuity_M_art_before.json")) if os.path.exists("revc/continuity_M_art_before.json") else {}
+RD = [r for r in (json.load(open("seamredraw_M.json")) if os.path.exists("seamredraw_M.json") else []) if "seam" in r]
+NOT_WRAP = {"shoulder L": "founder W4 (21 Oct): the front wave ENDS at the shoulder seam; the back keeps its own art",
+            "shoulder R": "founder W4 (21 Oct): not a wrap seam (no art on it)"}
+GATE_PTS = 5          # stitched within this many points of the art ...
+GATE_MIN = 85         # ... and >= this
+
+
+def seam_gate(nm):
+    """Rev C gate (founder 21 Oct): each WRAP seam's stitched meet / tone >= 85 and within a few points of its new art"""
+    if nm in NOT_WRAP: return "n/a"
+    a, c = CONT_ART.get(nm, {}), CONT.get(nm, {})
+    if a.get("art_mm", 0) < 10 or a.get("meet") is None or c.get("meet") is None: return "not graded"
+    ok = all(c[k] >= GATE_MIN and c[k] >= a[k] - GATE_PTS for k in ("meet", "tone"))
+    return "PASS" if ok else "FAIL"
+
+
 def seams_page():
-    pg = Pager("G7", "SEAM CONTINUITY + MATCH MARKS — the seamless wave (Rev B)",
-               "Measured on the shipped DSTs (continuity.py): along every seam, art 1-3 mm inside each side's keep-out; meet = the other side also has art there (±2 mm), tone = same thread group (±4 mm).")
+    pg = Pager("G7", "SEAM CONTINUITY — Rev C: art REDRAWN in a band at every wrap seam, art vs stitches per seam",
+               "Measured by continuity.py (unchanged since Rev B): along every seam, art 1-3 mm inside each side's keep-out; meet = the other side also has art there (±2 mm), tone = same thread group (±4 mm). ART = the art file, STITCHED = the shipped DSTs.")
     import wrap as WR
-    hd = ["Seam", "Pieces (A / B)", "Length A / B mm", "Art on seam", "Meet", "Same tone", "Match marks", "Tone agrees"]
-    cx = [12, 48, 90, 124, 150, 170, 196, 222]
+    hd = ["Seam", "Pieces (A / B)", "Art on seam", "Rev B art\nmeet / tone", "Rev C art\nmeet / tone", "Rev C STITCHED\nmeet / tone", "Gate", "Redrawn zone (mm², max depth)"]
+    cx = [12, 42, 74, 96, 124, 152, 184, 200]
     col = (lambda v: MUTED if v is None else (GREEN if v >= 85 else (ORANGE if v >= 70 else RED)))
+    def mt(d, k): return d.get(k) if d.get("art_mm", 0) >= 10 else None
+    def pair(d): return ("—" if mt(d, "meet") is None else f"{d['meet']} / {d['tone']}", 700, col(None if mt(d, "meet") is None else min(d["meet"], d["tone"])))
     rows = []
+    rdz = {r["seam"]: r for r in RD}
     for sm in WR.seams("M"):
-        nm = sm["name"]; c = CONT.get(nm, {}); m = MMK.get(nm); mt = c.get("meet"); tn = c.get("tone")
-        if c.get("art_mm", 0) < 10: mt = tn = None                  # < 10 mm of art on the seam: not graded (named below)
-        rows.append([(nm, 700, INK), f"{sm['A'][0]} / {sm['B'][0]}" + (" (no seam)" if sm["kind"] == "internal" else ""), f"{sm['len_A']:.0f} / {sm['len_B']:.0f}", f"{c.get('art_mm', 0)} mm",
-                     ("—" if mt is None else f"{mt} %", 700, col(mt)), ("—" if tn is None else f"{tn} %", 700, col(tn)),
-                     f"{len(m['marks'])}" if m else "—", f"{m['agree']}/{len(m['marks'])}" if m else "—"])
-    table(pg, cx, hd, rows, size=2.3, pitch=3.9, x1=250)
-    pg.para(12, "Meet / same tone: green ≥ 85 %, amber ≥ 70 %, red below; — = under 10 mm of art on the seam (not graded).", TXT, 400, MUTED, gap=1.0)
-    small = [(nm, v["art_mm"]) for nm, v in CONT.items() if 0 < v.get("art_mm", 0) < 10]
-    for nm, a_ in small:
-        pg.para(12, f"{nm}: {a_} mm of art on the whole seam - one spray drop at the underarm corner; the back render is bare along this armhole, so there is nothing to continue (checked on the render, not a mapping fault).", 2.3, 400, INK, gap=0.4)
-    SE = json.load(open("seamedge_M.json")) if os.path.exists("seamedge_M.json") else {}
-    if SE:
-        pg.para(12, "ONE-SIDED runs (the partner piece is bare in the mockup, e.g. shoulder L: the front wave runs over the shoulder, the back render shows bare fabric there): nothing is invented on the bare piece; "
-                    "the foam now ENDS IN LOBES there (seamedge.py, generated) instead of a straight cut along the seam: " + "; ".join(f"{k} {v['mm']} mm" for k, v in SE.items()) +
-                    ". Meet / tone on those seams stay low BY DESIGN of the mockup - founder: say if the back should carry the wave over the shoulder instead.", 2.3, 600, ORANGE, gap=1.2)
-    pg.sec("How the wave crosses a seam (wrap.py + seamwarp.py, from each size's own pattern seams)", size=2.7)
-    for l_ in ["• both sides are compared along the seam by SEAM LENGTH (the eased cap fraction to fraction); art stops 3 mm short of the sew line on both pieces;",
-               "• each piece side is moved by ONE smooth displacement field (thin-plate spline, fading to zero ~100 mm in, fixed on armhole / CF / hem / neck / cuff): first so its art reaches the seam, then along the seam so its stripes line up with the other piece's (matched tone runs) - no band is pasted, nothing is cut;",
-               "• a stripe that meets bare fabric on the other piece continues and tapers to a point there; curls + drops move whole (never sliced);",
-               "• TONE handover (tonematch.py, Rev B fix round): the leader side keeps its threads (body over sleeve; CF zip / underarm / sleeve centre: more stripe on the seam), every follower stripe that meets it takes the leader's thread, whole region (no tone step inside a stripe): " + TM_TXT + ";",
-               "• the sleeve centre line is not a seam: the back-view half and the front-view half are joined into one continuous trace (no fold line)."]:
-        pg.para(14, l_, 2.4, gap=0.5)
-    pg.para(12, "Seam alignment + tapers + the art under the collar fall are GENERATED (no reference shows them), not traced - G9 shows the check + before / after.", 2.4, 700, ORANGE)
+        nm = sm["name"]; g = seam_gate(nm); z = rdz.get(nm, {}).get("zones", {})
+        zt = ", ".join(f"{k} {v['area_mm2']:,} ({v['depth_max_mm']:.0f} mm)" for k, v in z.items()) or ("not redrawn (W4)" if nm in NOT_WRAP else "—")
+        rows.append([(nm, 700, INK), f"{sm['A'][0]} / {sm['B'][0]}" + (" (no seam)" if sm["kind"] == "internal" else ""), f"{CONT_ART.get(nm, {}).get('art_mm', 0)} mm",
+                     pair(CONT_REVB.get(nm, {})), pair(CONT_ART.get(nm, {})), pair(CONT.get(nm, {})),
+                     (g, 700, GREEN if g == "PASS" else (RED if g == "FAIL" else MUTED)), (zt, 400, INK, RM - cx[7])])
+    table(pg, cx, hd, rows, size=2.2, pitch=4.4, x1=RM)
+    graded = [sm["name"] for sm in WR.seams("M") if seam_gate(sm["name"]) in ("PASS", "FAIL")]
+    npass = sum(seam_gate(n) == "PASS" for n in graded)
+    pg.para(12, f"GATE (founder 21 Oct): every wrap seam's STITCHED meet and tone >= {GATE_MIN} % and within {GATE_PTS} points of its Rev C ART score: {npass} of {len(graded)} graded wrap seams pass"
+                + ("." if npass == len(graded) else " - the failing ones are shown red above and on the strips (next pages); nothing in the measure was changed to make a seam pass."), 2.5, 700, GREEN if npass == len(graded) else RED, gap=0.8)
+    pg.para(12, "Colours: green ≥ 85 %, amber ≥ 70 %, red below. — = under 10 mm of art on the seam (not graded: one spray drop at an underarm corner). n/a = not a wrap seam.", TXT, 400, MUTED, gap=0.6)
+    for nm, why in NOT_WRAP.items():
+        pg.para(12, f"{nm}: removed from the wrap-seam gate - {why}. Its numbers stay in the table for the record; the front art stops at the shoulder keep-out (foam ends in lobes, G9).", 2.3, 600, INK, gap=0.4)
+    pg.sec("How the wave crosses a seam in Rev C (seamredraw.py, on each size's own pattern seams)", size=2.7)
+    for l_ in ["• WHY: the Rev B art itself failed the seams (front and back mockup views were drawn independently) - stitches cannot beat the art. Founder 21 Oct ('Do A'): redraw the art in a band at every wrap seam, keep the rest as traced.",
+               "• Both sides are unrolled along the seam by SEAM LENGTH (the pattern's seam walk: the eased cap / armhole fraction to fraction, the match marks below). One cut path is found through the joined band (min. mismatch): between the seam and the cut, one side's art CONTINUES across the seam onto the other piece - stripes at their own angle (they meet themselves at the stitch edge and run on), foam masses mirrored, curls + drops moved whole (never sheared). Same thread on both sides by construction.",
+               f"• The band: at least {RD[0]['dmin_mm'] if RD else 8:.0f} mm beyond the keep-out on both sides (4 mm on the sleeve centre line, which is not a seam), at most {RD[0]['band_mm'] if RD else 42:.0f} mm (20 mm on the centre line); the cut prefers to run along existing outlines; continued foam that meets bare fabric ends in LOBES, not a straight edge. Outside the band the art is the Rev B trace, unchanged.",
+               "• Everything in the zones is GENERATED (mapped from the other side), not traced: listed per seam above (area + depth) and shown BEFORE / AFTER on the next pages. The fidelity gates (G8) still grade it against the mockup; rows inside a redrawn zone are named there.",
+               "• The sleeve centre line is not a seam: the back-view half and the front-view half are joined with a short continuation only, to avoid a mirror look."]:
+        pg.para(14, l_, 2.3, gap=0.5)
+    # BEFORE / AFTER per wrap seam (art), one strip pair per seam
+    from PIL import Image
+    pg.new(); pg.sec("BEFORE / AFTER per wrap seam — the ART (Rev B trace above, Rev C redraw below each name; side A over side B, seam closed up)", size=2.6)
+    items = []
+    for sm in WR.seams("M"):
+        if sm["name"] in NOT_WRAP: continue
+        fb = f"revc/before/continuity_{sm['name'].replace(' ', '_')}_art.png"; fa = f"out/continuity_{sm['name'].replace(' ', '_')}_art.png"
+        if os.path.exists(fb) and os.path.exists(fa):
+            ib, ia = Image.open(fb), Image.open(fa); items.append((sm["name"], ib.crop((0, 28, ib.width, ib.height)), ia.crop((0, 28, ia.width, ia.height))))
+    mw = max(max(b.width, a.width) for _, b, a in items) if items else 1
+    gap = 6.0; cw = (RM - 12 - gap) / 2; sc = cw / mw; cap = TXT * 1.5
+    y = pg.y; colx = [12, 12 + cw + gap]; ci = 0
+    for nm, ib, ia in items:
+        h = cap + (ib.height + ia.height) * sc + 4.0
+        if y + h > BOT - 4:
+            ci += 1; y = pg.y
+            if ci > 1: pg.new(); pg.sec("BEFORE / AFTER per wrap seam (cont.)", size=2.6); y = pg.y; ci = 0
+        x = colx[ci]; b_, a_ = CONT_REVB.get(nm, {}), CONT_ART.get(nm, {})
+        pg.o.append(t(x, y + TXT, f"{nm}  ·  art meet / tone: Rev B {b_.get('meet')} / {b_.get('tone')} %  →  Rev C {a_.get('meet')} / {a_.get('tone')} %", TXT, 700))
+        tag, _ = img_tag(ib, x, y + cap, ib.width * sc); pg.o.append(tag)
+        tag, _ = img_tag(ia, x, y + cap + ib.height * sc + 1.0, ia.width * sc); pg.o.append(tag)
+        y += h
+    para(pg.o, 12, BOT + 1, "Art renders (thread colours, no sheen). Full size in the zip: compare/seams/before_after/. The stitched strips follow the match marks.", TXT, 400, MUTED)
     # match marks: own page, four column groups
     pg.new(); pg.sec("MATCH MARKS (notch on both pieces, mm along the seam from its top end; orange = the two sides differ in tone)", size=2.8)
     rows = [mk for nm, s_ in MMK.items() for mk in s_["marks"]]
@@ -676,7 +715,7 @@ def f1_pages():
     pcs = [dict(piece=f"01 {p} {PC.NAME[p]}", w=CUR[p]["size_mm"][0], h=CUR[p]["size_mm"][1], hoopings=CUR[p]["hoopings"]) for p in PS]
     pages = FA.requests_page(WC.NAME, so, th, pcs, page="F1", prof=PROF)
     # Rev B additions appended to F1 (right column)
-    lines = [("6  Foam: CHENILLE in ECRU first (founder 20 Oct)", 1), ("Sample the foam as chenille, ecru thread (Isacord 0184 Pearl).", 0),
+    lines = [("6  Foam: CHENILLE in ECRU first (founder 20 Oct)", 1), ("Sample the foam as chenille, ecru = Isacord 0184 Pearl (CONFIRMED).", 0),
              ("Tell us your chenille machine + file format (see 5): we send", 0), ("a PATH PLAN per piece now (chenille_plan/: json in piece mm", 0),
              ("+ preview) and write the chenille file once we know it.", 0), ("ALTERNATE: the lockstitch files here (padded tatami + loops).", 0), ("", 0),
              ("7  Foam swatch - sew first", 1), (f"{os.path.basename(SWT['file'])}.dst ({SWT['stitches']:,} st, 1 hooping): padded", 0),

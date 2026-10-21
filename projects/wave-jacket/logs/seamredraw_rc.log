@@ -1,0 +1,13 @@
+CF zip {'art_mm': 61, 'meet': 61, 'tone': 56} -> {'art_mm': 57, 'meet': 100, 'tone': 100}
+side L {'art_mm': 58, 'meet': 53, 'tone': 36} -> {'art_mm': 58, 'meet': 100, 'tone': 100}
+side R {'art_mm': 219, 'meet': 64, 'tone': 48} -> {'art_mm': 208, 'meet': 100, 'tone': 100}
+armhole front L {'art_mm': 254, 'meet': 95, 'tone': 59} -> {'art_mm': 246, 'meet': 99, 'tone': 99}
+armhole back L {'art_mm': 197, 'meet': 95, 'tone': 91} -> {'art_mm': 191, 'meet': 99, 'tone': 100}
+armhole front R {'art_mm': 18, 'meet': 56, 'tone': 44} -> {'art_mm': 18, 'meet': 89, 'tone': 72}
+armhole back R {'art_mm': 5, 'meet': 0, 'tone': 0} -> {'art_mm': 5, 'meet': 60, 'tone': 60}
+underarm L {'art_mm': 118, 'meet': 31, 'tone': 16} -> {'art_mm': 119, 'meet': 97, 'tone': 94}
+underarm R {'art_mm': 345, 'meet': 72, 'tone': 35} -> {'art_mm': 322, 'meet': 100, 'tone': 100}
+sleeve centre L {'art_mm': 201, 'meet': 54, 'tone': 41} -> {'art_mm': 198, 'meet': 98, 'tone': 99}
+sleeve centre R {'art_mm': 124, 'meet': 56, 'tone': 35} -> {'art_mm': 112, 'meet': 100, 'tone': 100}
+final {'CF zip': {'art_mm': 57, 'meet': 100, 'tone': 100}, 'side L': {'art_mm': 58, 'meet': 100, 'tone': 100}, 'side R': {'art_mm': 208, 'meet': 100, 'tone': 100}, 'armhole front L': {'art_mm': 246, 'meet': 99, 'tone': 99}, 'armhole back L': {'art_mm': 191, 'meet': 99, 'tone': 100}, 'armhole front R': {'art_mm': 18, 'meet': 89, 'tone': 72}, 'armhole back R': {'art_mm': 5, 'meet': 60, 'tone': 60}, 'underarm L': {'art_mm': 119, 'meet': 97, 'tone': 94}, 'underarm R': {'art_mm': 322, 'meet': 100, 'tone': 100}, 'sleeve centre L': {'art_mm': 198, 'meet': 98, 'tone': 99}, 'sleeve centre R': {'art_mm': 112, 'meet': 100, 'tone': 100}}
+grain cells remapped {'FL': 10891, 'FR': 9088, 'BK': 10443, 'SL': 18569, 'SR': 14681}

@@ -1,0 +1,67 @@
+{
+ "CF zip": {
+  "art_mm": 59,
+  "meet": 63,
+  "tone": 54
+ },
+ "armhole back L": {
+  "art_mm": 196,
+  "meet": 95,
+  "tone": 91
+ },
+ "armhole front L": {
+  "art_mm": 242,
+  "meet": 95,
+  "tone": 69
+ },
+ "side L": {
+  "art_mm": 57,
+  "meet": 54,
+  "tone": 42
+ },
+ "shoulder L": {
+  "art_mm": 102,
+  "meet": 22,
+  "tone": 13
+ },
+ "underarm L": {
+  "art_mm": 104,
+  "meet": 52,
+  "tone": 40
+ },
+ "sleeve centre L": {
+  "art_mm": 210,
+  "meet": 54,
+  "tone": 44
+ },
+ "armhole back R": {
+  "art_mm": 4,
+  "meet": 0,
+  "tone": 0
+ },
+ "armhole front R": {
+  "art_mm": 17,
+  "meet": 59,
+  "tone": 47
+ },
+ "side R": {
+  "art_mm": 212,
+  "meet": 67,
+  "tone": 53
+ },
+ "shoulder R": {
+  "art_mm": 0,
+  "meet": null,
+  "tone": null
+ },
+ "underarm R": {
+  "art_mm": 347,
+  "meet": 69,
+  "tone": 44
+ },
+ "sleeve centre R": {
+  "art_mm": 125,
+  "meet": 57,
+  "tone": 36
+ }
+}
