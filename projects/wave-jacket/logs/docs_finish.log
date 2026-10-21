@@ -3,4 +3,4 @@
 /mnt/c/Users/devin/Desktop/HakiCode/techpack-engine/.claude/worktrees/tp-wave-jacket/projects/wave-jacket/shrink.py:11: DeprecationWarning: remove_orphans is deprecated and will be removed in pypdf 7.0.0. Use remove_unreferenced instead.
   w.compress_identical_objects(remove_identicals=True, remove_orphans=True)
 zip MB 76.2 out/HAKI_WAVE_EMB-SAMPLING_RevB_M.zip
-ZIP A2 OK {'BK': (317813, 1264), 'FR': (124399, 557), 'FL': (190035, 807), 'SR': (238434, 777), 'SL': (172699, 710)} total 1,043,380 trims 4,115 missing in pdf [] pages 20
+ZIP A2 OK {'BK': (318135, 1276), 'FR': (124535, 560), 'FL': (190153, 817), 'SR': (239064, 775), 'SL': (173177, 706)} total 1,045,064 trims 4,134 missing in pdf [] pages 20

@@ -235,3 +235,14 @@ Problem → proposed fix → check. Worked around in project code only.
 - **Fix (project, seamedge.py):** along each one-sided run >= 6 mm the foam edge is scalloped into lobes (r 2.6 mm, notch
   2.4 mm), as the mockup's crests end; nothing is invented on the bare partner. Items tagged gen='seam lobes'.
 - **Check:** discont.py parallel straight cuts on those runs -> 0.
+
+## 27. Satin pull compensation as an all-round buffer + drop parts under the crests (fix round 3)
+- **Problem 1:** `dst2.fixed_satin(p, ang, pull)` hatches `p.buffer(pull)`: the buffer also adds rows along the SIDES, so a
+  2 mm drop sews 2.3 mm wide (A14 width / height 1.2-1.3 on 4-8 mm2 drops).
+- **Fix (project, wavecore.ends_satin):** hatch the shape itself, lengthen each stitch by `pull` at both ends only.
+- **Proposed engine fix:** same change inside `fixed_satin` (and `radial_satin`); pull comp acts along the stitch.
+- **Problem 2:** a drop's shade / grey parts sat on the foam-detail layer (under the crests), so a drop traced mostly grey
+  was knocked out whole by an overlapping crest (SL: IoU 0.01). **Fix:** every part of a drop motif sits with the drop
+  (z just under its cream body, sewn in the drop layers).
+- **Check:** test: fixed_satin on a 2 x 4 mm ellipse at 0.15 pull -> sewn width (z-buffer, pull-in modelled) within
+  +/- 5 % of 2 mm.

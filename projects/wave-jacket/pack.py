@@ -446,11 +446,20 @@ def seams_page():
     rows = []
     for sm in WR.seams("M"):
         nm = sm["name"]; c = CONT.get(nm, {}); m = MMK.get(nm); mt = c.get("meet"); tn = c.get("tone")
+        if c.get("art_mm", 0) < 10: mt = tn = None                  # < 10 mm of art on the seam: not graded (named below)
         rows.append([(nm, 700, INK), f"{sm['A'][0]} / {sm['B'][0]}" + (" (no seam)" if sm["kind"] == "internal" else ""), f"{sm['len_A']:.0f} / {sm['len_B']:.0f}", f"{c.get('art_mm', 0)} mm",
                      ("—" if mt is None else f"{mt} %", 700, col(mt)), ("—" if tn is None else f"{tn} %", 700, col(tn)),
                      f"{len(m['marks'])}" if m else "—", f"{m['agree']}/{len(m['marks'])}" if m else "—"])
     table(pg, cx, hd, rows, size=2.3, pitch=3.9, x1=250)
-    pg.para(12, "Meet / same tone: green ≥ 85 %, amber ≥ 70 %, red below.", TXT, 400, MUTED, gap=1.5)
+    pg.para(12, "Meet / same tone: green ≥ 85 %, amber ≥ 70 %, red below; — = under 10 mm of art on the seam (not graded).", TXT, 400, MUTED, gap=1.0)
+    small = [(nm, v["art_mm"]) for nm, v in CONT.items() if 0 < v.get("art_mm", 0) < 10]
+    for nm, a_ in small:
+        pg.para(12, f"{nm}: {a_} mm of art on the whole seam - one spray drop at the underarm corner; the back render is bare along this armhole, so there is nothing to continue (checked on the render, not a mapping fault).", 2.3, 400, INK, gap=0.4)
+    SE = json.load(open("seamedge_M.json")) if os.path.exists("seamedge_M.json") else {}
+    if SE:
+        pg.para(12, "ONE-SIDED runs (the partner piece is bare in the mockup, e.g. shoulder L: the front wave runs over the shoulder, the back render shows bare fabric there): nothing is invented on the bare piece; "
+                    "the foam now ENDS IN LOBES there (seamedge.py, generated) instead of a straight cut along the seam: " + "; ".join(f"{k} {v['mm']} mm" for k, v in SE.items()) +
+                    ". Meet / tone on those seams stay low BY DESIGN of the mockup - founder: say if the back should carry the wave over the shoulder instead.", 2.3, 600, ORANGE, gap=1.2)
     pg.sec("How the wave crosses a seam (wrap.py + seamwarp.py, from each size's own pattern seams)", size=2.7)
     for l_ in ["• both sides are compared along the seam by SEAM LENGTH (the eased cap fraction to fraction); art stops 3 mm short of the sew line on both pieces;",
                "• each piece side is moved by ONE smooth displacement field (thin-plate spline, fading to zero ~100 mm in, fixed on armhole / CF / hem / neck / cuff): first so its art reaches the seam, then along the seam so its stripes line up with the other piece's (matched tone runs) - no band is pasted, nothing is cut;",
@@ -533,8 +542,9 @@ def gates_page():
     table(pg, cx, hd, rows, size=2.3, pitch=3.8)
     ppm_d = next((x.get("gate_ppm") for P in PS for x in GATES["pieces"].get(P, {}).get("drops", {}).get("rows", []) if x.get("gate_ppm")), None)
     for l_ in ["• Motif gate (A14, qa.motif_match) reads the VISIBLE top layer of the written DST: hidden travel runs no longer merge crests. Pass = IoU ≥ 0.70 and width + height each ≥ 80 % of the reference motif (a stand-in of the right size but the wrong silhouette fails).",
-               f"• Drops are graded at {ppm_d or 12:g} ppm against their traced silhouette (close-up resolution where covered) with ONLY their own stitches (unit attribution) and the fabric pull-in modelled.",
+               f"• Drops are graded at {ppm_d or 12:g} ppm against their traced silhouette (close-up resolution where covered) : the sewn drop = the z-buffer of every stitch (a pixel counts when its TOP thread is that drop's), fabric pull-in modelled (fix round 3: the re-centred visible segments used before left false holes in satin). Each drop is ONE satin at one declared angle (the close-up grain on the drop where clear, else its long axis), pull compensation at the stitch ends only.",
                "• Uncovered (A15, qa.uncovered) = mockup-embroidered areas ≥ 25 mm² the DST leaves bare. The art fills every gap from the mockup / close-up tones (gapfill.py): only a 'keep-out edge' may stay bare - anything else is UNEXPLAINED (red).",
+               "• Every motif (crest, drop, wave mass) is compared with the stitches within 1-1.5 mm of IT (LESSONS A21), so a thin sewn bridge to a neighbour no longer scores the neighbour against it (wave masses since fix round 3).",
                "• CURLS = cream + grey crests ≥ 100 mm² (one row per crest), DROPS = cream motifs 4-100 mm², STRIPES = the blue band regions. Moved: the Rev B wrap moves art near seams on purpose; each motif is matched at its best local shift within ±40 mm and the shift is reported."]:
         pg.para(12, l_, 2.3, gap=0.4)
     ok = not n_open and not tot_un

@@ -391,7 +391,10 @@ def gate_piece(P):
             ref = keep[lab_]
             out = ndi.binary_closing(dst_family(P, bb, "stripes") | dst_family(P, bb, "curls"), iterations=4)
             al, Aid, sh = ref, None, {}
-            rows = qa.motif_match(ref, out, PPM, min_mm2=400.0)
+            # A21 (fix round 3): each wave mass vs the stitches within 1.5 mm of IT, as for crests and drops. Without it a
+            # thin sewn bridge to a neighbouring mass made motif_match score the WHOLE neighbour against the band (SR 54/140:
+            # a 2,490 mm2 band scored against 3,100 mm2 of stitches, IoU 0.34, although the band itself is sewn).
+            rows = qa.motif_match(ref, out, PPM, min_mm2=400.0, near_mm=1.5)
         else:
             ref = rigid_ref(P, fam, bb, cls.shape); out = dst_family(P, bb, fam)
             if fam == "curls":                                     # crests: the art's lobes merge into crests, compare crest by crest

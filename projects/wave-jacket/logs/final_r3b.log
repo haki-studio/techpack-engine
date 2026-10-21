@@ -1,0 +1,9 @@
+M BK primary {'stitches': 318130, 'trims': 1281, 'stops': 13, 'size_mm': (592.6, 577.8), 'max_stitch': 7.41} chenille plan {'paths': 829, 'needle_points': 9409,
+M FL primary {'stitches': 190110, 'trims': 816, 'stops': 17, 'size_mm': (281.0, 439.2), 'max_stitch': 7.41} chenille plan {'paths': 642, 'needle_points': 6862, 
+M FR primary {'stitches': 124424, 'trims': 554, 'stops': 12, 'size_mm': (281.0, 369.4), 'max_stitch': 7.17} chenille plan {'paths': 334, 'needle_points': 3566, 
+M SL primary {'stitches': 173087, 'trims': 709, 'stops': 16, 'size_mm': (499.4, 357.1), 'max_stitch': 7.46} chenille plan {'paths': 494, 'needle_points': 5874, 
+M SR primary {'stitches': 238971, 'trims': 776, 'stops': 13, 'size_mm': (499.0, 387.9), 'max_stitch': 7.41} chenille plan {'paths': 520, 'needle_points': 6376, 
+zip MB 76.2 out/HAKI_WAVE_EMB-SAMPLING_RevB_M.zip
+ZIP A2 OK {'BK': (318130, 1281), 'FR': (124424, 554), 'FL': (190110, 816), 'SR': (238971, 776), 'SL': (173087, 709)} total 1,044,722 trims 4,136 missing in pdf [] pages 20
+FINAL_R3_DONE
+EXIT 0

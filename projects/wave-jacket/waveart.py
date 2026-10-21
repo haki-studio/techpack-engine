@@ -182,14 +182,20 @@ def items_for(size, P):
             if A is None or not all(map(math.isfinite, a_mm)): continue
             unit = f"{view}{i}"
             dz = 0.0001 * i
+            # fix round 3: a spray drop is ONE motif lying on top - its shade / grey / inner parts sit just under its cream
+            # body (drop layer), not on the foam-detail layer under the crests: a drop traced mostly grey (SL back132:
+            # 31 of 35 px grey) was knocked out whole by an overlapping crest (A14 IoU 0.01)
+            zd = (Z["dropb"] + 0.5) if lb["kind"] == "dot" else Z["fdet"]
             for t, g in lb["inner"].items():
                 code = "FM-in" if t in WT.BLUES else ("FM-gr" if t == "g1" else "FM-sh")
-                add(t if t != "w2" else "w3", rigid(g, a, A, a_mm), "satin", "auto", code, Z["fdet"] + dz, unit)
+                add(t if t != "w2" else "w3", rigid(g, a, A, a_mm), "satin", "auto", code, zd + dz, unit)
             for t in ("w3", "g1"):
-                add(t, rigid(lb["parts"][t], a, A, a_mm), "satin", "auto", CODE_OF[t], Z["fdet"] + dz, unit)
+                add(t, rigid(lb["parts"][t], a, A, a_mm), "satin", "auto", CODE_OF[t], zd + dz, unit)
             if lb["kind"] == "dot":
                 for t, g in lb["blue"].items(): add(t, rigid(g, a, A, a_mm), "satin", "auto", "DR-b", Z["dropb"] + dz, unit)
                 add("w1", rigid(lb["parts"]["w1"], a, A, a_mm), "satin", "auto", "DR", Z["drop"] + dz, unit)
+                for r_ in its:
+                    if r_.get("unit") == unit: r_["dot"] = True          # sewn with the drops (layer_of), after the crests
             else:
                 g = rigid(lb["parts"]["w1"], a, A, a_mm)
                 for p in polys(g):
@@ -443,6 +449,7 @@ def curl_direction(vis):
     return out
 
 def layer_of(r):
+    if r.get("dot") and r["grp"] in ("FM-sh", "FM-gr", "FM-in"): return WC.L_DROPB      # a drop's own shade / grey: with the drop
     return {"RP": WC.L_ROPE, "WV": WC.L_BAND, "FM-sh": WC.L_FDET, "FM-gr": WC.L_FDET, "FM-in": WC.L_FDET, "FM": WC.L_FOAM,
             "FM-loop": WC.L_LOOP, "FM-curl": WC.L_LOOP, "DR-b": WC.L_DROPB, "DR": WC.L_DROP}[r["grp"]]
 
