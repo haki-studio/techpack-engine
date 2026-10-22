@@ -2,6 +2,8 @@
 
   out/<slug>/<slug>_techpack_<rev>.pdf   merged + recompressed (LESSONS D2)
   out/<slug>/pages/<code>[_n].png        every page rendered (look at them — LESSONS D1)
+  with td=<event>.json (TD rows, engine/td): pages named in the rows carry the "TD: ..." notes, and
+  out/<slug>/<slug>_td_comment_sheet_<td rev>.pdf + pages/C1*.png is the factory comment sheet
 """
 import io, os, sys
 import cairosvg
@@ -60,14 +62,36 @@ def shrink(src, dst, maxpx=3000, q=82):
     w.write(dst)
 
 
-def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=None):
+def write_pdf(svgs, path):
+    w = PdfWriter()
+    for svg in svgs:
+        buf = io.BytesIO(); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=buf)
+        w.append(PdfReader(io.BytesIO(buf.getvalue())))
+    with open(path, "wb") as fh: w.write(fh)
+    return path
+
+
+def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=None, td=None):
     fdir = family_dir or family_dir_of(variant_path)
     spec = Spec(fdir, variant_path, fam_override=fam_override)
     revs = rev_gate(spec)                                # rev log must agree with the chart before any page is drawn
     out = os.path.join(out_root or os.path.join(fdir, "out"), spec.slug)
     os.makedirs(os.path.join(out, "pages"), exist_ok=True)
+    tdi = None
+    if td:
+        from td import schema as TDS, render as TDR
+        tdi = TDS.load(td) if isinstance(td, str) else TDS.parse(td)
     w = PdfWriter(); listing = []
-    for code, title, svgs in page_set(spec):
+    pset = page_set(spec)
+    if tdi:
+        codes = {c for c, _, _ in pset}
+        stray = sorted({r.page for r in tdi.rows if r.page and r.page not in codes})
+        if stray: raise SpecError(f"TD rows name pages this pack does not have: {', '.join(stray)} (pages: {', '.join(sorted(codes))})")
+        pset = [(c, ttl, [TDR.annotate(s, tdi.page_rows(c)) for s in svgs]) for c, ttl, svgs in pset]
+        from td import trace as TDT                      # numeral-trace gate: fails the build, before anything is written
+        td_sheet_svgs = TDR.comment_sheet(tdi)
+        td_trace = TDT.enforce(tdi, td_sheet_svgs + [s for c, _, svgs in pset if tdi.page_rows(c) for s in svgs])
+    for code, title, svgs in pset:
         for i, svg in enumerate(svgs):
             name = code if len(svgs) == 1 else f"{code}_{i + 1}"
             buf = io.BytesIO(); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=buf)
@@ -82,7 +106,13 @@ def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=N
     raw = os.path.join(out, f"{spec.slug}_techpack_{rev}_raw.pdf"); final = os.path.join(out, f"{spec.slug}_techpack_{rev}.pdf")
     with open(raw, "wb") as fh: w.write(fh)
     shrink(raw, final); os.remove(raw)
-    return dict(spec=spec, pdf=final, pages=listing, out=out, rev_gate=revs)
+    res = dict(spec=spec, pdf=final, pages=listing, out=out, rev_gate=revs)
+    if tdi:
+        sheet = td_sheet_svgs; res["td_trace"] = td_trace
+        res["td_sheet"] = write_pdf(sheet, os.path.join(out, f"{spec.slug}_td_comment_sheet_Rev{tdi.rev}.pdf"))
+        for i, svg in enumerate(sheet):
+            if png: cairosvg.svg2png(bytestring=svg.encode(), write_to=os.path.join(out, "pages", f"C1{'' if i == 0 else f'_{i + 1}'}.png"), output_width=2400)
+    return res
 
 
 def main(argv=None):
@@ -92,16 +122,18 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="family_build.py", description="variant yaml -> full tech pack PDF + page PNGs")
     ap.add_argument("--family", help="family folder (holds family.yaml), e.g. families/tee — needed for a variant kept elsewhere")
     ap.add_argument("--out", help="output root (default families/<family>/out)")
+    ap.add_argument("--td", help="TD rows json (engine/td): notes on the pages they name + the factory comment sheet")
     ap.add_argument("variants", nargs="+")
     a = ap.parse_args(sys.argv[1:] if argv is None else argv)
     fdir = os.path.abspath(a.family) if a.family else None
     for v in a.variants:
         try:
-            r = build(v, out_root=a.out, family_dir=fdir)
-        except SpecError as e:
+            r = build(v, out_root=a.out, family_dir=fdir, td=a.td and os.path.abspath(a.td))
+        except (SpecError, ValueError) as e:
             print(f"ERROR in {v}:\n  {e}"); return 1
         n = len(r["spec"].proposed())
         print(f"{r['spec'].name}: {len(r['pages'])} pages -> {r['pdf']} ({os.path.getsize(r['pdf']) / 1e6:.1f} MB)")
         for g in r["rev_gate"]: print(f"  {g.summary()}")
         print(f"  page PNGs: {os.path.join(r['out'], 'pages')}  ·  {n} values still [proposed — confirm] (page F1)")
+        if r.get("td_sheet"): print(f"  TD comment sheet: {r['td_sheet']}\n  {r['td_trace'].summary()}")
     return 0
