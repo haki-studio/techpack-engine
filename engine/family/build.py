@@ -101,10 +101,11 @@ def main(argv=None):
     ap.add_argument("variants", nargs="+")
     a = ap.parse_args(sys.argv[1:] if argv is None else argv)
     fdir = os.path.abspath(a.family) if a.family else None
+    from td.schema import TDInputError
     for v in a.variants:
         try:
             r = build(v, out_root=a.out, family_dir=fdir, td=a.td and os.path.abspath(a.td))
-        except (SpecError, ValueError) as e:
+        except (SpecError, TDInputError) as e:          # input mistakes get a plain message; real bugs keep their traceback
             print(f"ERROR in {v}:\n  {e}"); return 1
         n = len(r["spec"].proposed())
         print(f"{r['spec'].name}: {len(r['pages'])} pages -> {r['pdf']} ({os.path.getsize(r['pdf']) / 1e6:.1f} MB)")

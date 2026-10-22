@@ -190,3 +190,26 @@ def test_family_pack_carries_td_notes_and_the_comment_sheet(tmp_path):
     assert "TD (" not in pdf.pages[codes.index("T5")].extract_text()
     with pytest.raises(SpecError, match="pages this pack does not have: T99"):
         build(ala, out_root=str(tmp_path), png=False, td=tee_td("T99"))
+
+
+def test_bad_td_sheet_stops_the_build_before_any_pack_file_is_written(tmp_path):
+    from family.build import build
+    ala = os.path.join(ROOT, "families", "tee", "variants", "alabasta.yaml")
+    d = raw(); d["product"] = "alabasta"
+    for r in d["rows"]: r.pop("page", None)
+    d["rows"] = [r for r in d["rows"] if not r.get("hold")]                  # PATTERN change, no HOLD list
+    with pytest.raises(TDInputError, match="no HOLD list"):
+        build(ala, out_root=str(tmp_path), png=False, td=d)
+    assert not any(f.endswith(".pdf") for _, _, fs in os.walk(str(tmp_path)) for f in fs)
+
+
+def test_cli_keeps_tracebacks_for_real_bugs(monkeypatch, tmp_path):
+    from family import build as B
+    ala = os.path.join(ROOT, "families", "tee", "variants", "alabasta.yaml")
+    def boom(*a, **k): raise ValueError("a bug, not an input mistake")
+    monkeypatch.setattr(B, "build", boom)
+    with pytest.raises(ValueError, match="a bug"):
+        B.main([ala, "--out", str(tmp_path)])
+    def bad_input(*a, **k): raise TDInputError("rows[0]: missing 'lens'")
+    monkeypatch.setattr(B, "build", bad_input)
+    assert B.main([ala, "--out", str(tmp_path)]) == 1
