@@ -46,5 +46,6 @@ All stitch files: <= 12 thread colours per file (factory limit, incl. outline + 
 on 12 oz duck, edits if needed, and sews out before bulk.
 """)
 for z in glob.glob("out/*.zip"): os.remove(z)
+if os.path.isdir("out/labels"): shutil.copytree("out/labels", f"{PKG}/labels")   # Haki standard main + care label files (gtp.build, LESSONS D7)
 subprocess.run(f"cd {PKG} && zip -qr ../HAKI_FB_Forestball_{fbcore.REV_GAR.replace(' ', '')}_files.zip .", shell=True)
 z = glob.glob("out/*.zip")[0]; print("zip", z, os.path.getsize(z) // 1_000_000, "MB")

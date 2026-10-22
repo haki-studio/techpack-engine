@@ -13,9 +13,11 @@ from render import f
 import drum, techflat as TF
 import specbase as SB
 from specbase import img_tag
+import labelsheet as LS
 
 REV = fbcore.REV_GAR; DATE = fbcore.DATE; STYLE = fbcore.STYLE; NAME = "Forestball Jacket — washed forest green"
 FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · GARMENT TECH PACK · {REV} · {DATE}"
+SHELL_MAT = "12 oz (407 g/m²) 100% cotton duck canvas, 150 cm"          # shell composition as on the BOM; picks the Haki care label (LESSONS D7)
 PROP = "#8A5A00"        # colour for 'proposed — confirm' text
 
 def header(title, sub, page):
@@ -239,7 +241,7 @@ def p_bom():
     cx = [12, 18, 48, 124, 168, 222, 258]
     for x, h in zip(cx, hd): o.append(t(x, 31, h, 1.8, 700, MUTED))
     rows = [
-        ("Shell", "12 oz (407 g/m²) 100% cotton duck canvas, 150 cm", "washed forest green ≈ #3A463C — lab dip", "body, sleeves, welts, facing", "TBC", f"{C['Shell']:.2f} m", False),
+        ("Shell", SHELL_MAT, "washed forest green ≈ #3A463C — lab dip", "body, sleeves, welts, facing", "TBC", f"{C['Shell']:.2f} m", False),
         ("Collar", "14-wale cotton corduroy, 8 oz", "black", "upper + under collar", "TBC", f"{C['Collar']:.2f} m", True),
         ("Hem rib", "1×1 rib, 95/5 cotton/elastane, 400 g/m²", "black", "hem band", "TBC", f"{C['Hem rib']/1000:.2f} m (1 × {C['Hem rib']/10:.0f} cm cut)", True),
         ("Cuff rib", "1×1 rib, 95/5 cotton/elastane, 400 g/m²", "black", "cuffs ×2", "TBC", f"{C['Cuff rib']/1000:.2f} m", True),
@@ -252,9 +254,9 @@ def p_bom():
         ("Thread — topstitch", "Coats Gral 40 (Tex 60) poly", "tonal to shell", "topstitch, bartacks", "Coats", "~ 120 m", True),
         ("Embroidery thread", "Madeira Polyneon 40 (12 colours, see G3)", "per embroidery spec", "01–02", "Madeira", "per spec", False),
         ("Embroidery backing", "2.5 oz cutaway", "white", "behind each element", "TBC", "3 pieces", False),
-        ("Main label", "woven damask, HAKI logo, 7 × 2 cm, folded", "black / cream", "CB neck facing", "TBC", "1", True),
+        ("Main label", LS.main_bom(), "white / black", "CB neck facing", "Haki file", "1", False),
         ("Size label", "woven, 2 × 1.5 cm", "black / cream", "under main label", "TBC", "1", True),
-        ("Care / content label", "printed satin, multi-page", "white", "wearer's left inside side seam", "TBC", "1", True),
+        ("Care / content label", LS.care_bom(SHELL_MAT), "white / black", "wearer's left inside side seam", "Haki file", "1", LS.care_fibre(SHELL_MAT) is None),
         ("Hangtag + string", "350 gsm board, cotton string, brass-tone barb", "cream / black", "through main label loop", "TBC", "1", True),
         ("Polybag", "LDPE 40 µm, self-seal, suffocation warning", "clear", "packing", "TBC", "1", True),
     ]
@@ -313,20 +315,21 @@ def p_construction():
     return o
 
 def p_labels():
-    o = header("LABELS, TRIM PLACEMENT + PACKAGING", "Label artwork supplied separately by Haki. Positions measured on the finished garment.", "T8")
-    rows = [("Main label", "CB neck facing, 1.0 below the collar seam, centred; sewn on 2 short ends"),
+    o = header("LABELS, TRIM PLACEMENT + PACKAGING", "Main + care label = the Haki standard labels (founder 22 Oct 2026), artwork right at 1 : 1, files in the zip labels/. Positions measured on the finished garment.", "T8")
+    rows = [("Main label", "CB neck facing, 1.0 below the collar seam, centred; flat, sewn down on all 4 sides"),
             ("Size label", "folded, centred under the main label, caught in the bottom seam of the main label"),
             ("Hanger loop", "6 cm self-fabric loop at CB neck, above the main label"),
             ("Care / content", "wearer's left inside side seam, 10 cm above the hem-rib seam, caught in the lining seam"),
             ("Hangtag", "through the main-label hanger loop with cotton string + barb; never through the embroidery")]
     for i, (a, b) in enumerate(rows):
         o.append(t(14, 34 + i*4.2, a, 1.9, 600)); o.append(t(46, 34 + i*4.2, b, 1.9))
-    o.append(t(14, 60, "CARE / CONTENT LABEL TEXT", 2.4, 700))
-    care = ["Shell: 100% cotton · Collar: 100% cotton · Rib: 95% cotton 5% elastane · Lining: 100% cotton / sleeve lining 100% polyester",
-            "Embroidery: 100% polyester · Made in [country] · Style HK-JK-DRUM-FB · Size [ ]",
-            "Machine wash cold, inside out, gentle · Do not bleach · Tumble dry low · Cool iron on reverse, never on embroidery · Do not dry clean",
-            "Care symbols (ISO 3758): wash 30 °C gentle · no bleach · tumble low · iron 1 dot · no dry clean"]
-    for i, c in enumerate(care): o.append(prop(14, 65 + i*3.7, c, 1.8) if i < 2 else t(14, 65 + i*3.7, c, 1.85))
+    o.append(t(14, 60, "CARE / CONTENT LABEL", 2.4, 700))
+    care = [("Haki standard care label (artwork right): fibre in 9 languages, care text + symbols are printed on it — do not write your own.", False),
+            ("Rib (95/5 cotton/elastane), linings and embroidery thread are not on the standard label: Haki confirms if they must be listed", True),
+            ("Size: on the size label.", False)]
+    for i, (c, pp) in enumerate(care): o.append(prop(14, 65 + i*3.7, c, 1.8) if pp else t(14, 65 + i*3.7, c, 1.85))
+    o += LS.panel(200, 30, 85, SHELL_MAT, "Position: CB neck facing, 1.0 below the collar seam, centred.",
+                  "Position: wearer's left inside side seam, 10 cm above the hem-rib seam, caught in the lining seam.")[0]
     o.append(t(14, 86, "PACKAGING", 2.4, 700))
     pk = ["Fold: zip closed, sleeves folded back across the body, folded once at the waist — embroidery (01) inside, facing the tissue.",
           "Acid-free tissue sheet between the back embroidery and the fold to stop thread abrasion.",
@@ -380,6 +383,7 @@ PAGES = ["T1 Cover + contents", "T2 Technical flats", "T3 Construction details",
          "T13 Pattern — embroidery placement per size", "T14 Inside view", "T15 Operations + time estimate", "T16 Revision log + sample tracker"]
 
 def build(emb_pdf, emb_pages, out_pdf):
+    LS.export("out/labels", SHELL_MAT)                 # Haki standard label files for the zip labels/
     F = TF.Flat("M")
     index = [(n, i + 1) for i, n in enumerate(PAGES)] + [("EMBROIDERY SECTION (G1–G5 + elements 01–02)", len(PAGES) + 1)] + emb_pages
     import gtp_pattern as GP
