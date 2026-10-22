@@ -231,8 +231,10 @@ def ref_fish_mask():
         _RF.update(mask=lab == k, im=im)
     return _RF
 
-def fish_ref(P, ppm=PPM):
-    """list of (pose, bool mask on the piece grid): the reference tetra at each mockup fish pose, 0.82 x length"""
+def fish_ref(P, ppm=PPM, sample=False):
+    """list of (pose, bool mask on the piece grid): the reference tetra at each mockup fish pose, 0.82 x length.
+    sample=True (G4, make_tetra_refs.py) adds pose["rgb"] (the photo's colours, float32, 0 off the fish) and pose["t"]
+    (0 at the template snout .. 1 at its tail tip, -1 off the fish)."""
     rf = ref_fish_mask(); XX, YY = grid(P, ppm); out = []
     sn, tt = np.array(RF_SNOUT), np.array(RF_TAILTIP); Lr = np.hypot(*(sn - tt)); er = (sn - tt) / Lr
     nr = np.array([-er[1], er[0]])
@@ -253,7 +255,13 @@ def fish_ref(P, ppm=PPM):
         lum[mm] = map_coordinates(Lim, [cy[mm], cx[mm]], order=1)
         q = np.quantile(lum[mm], [0.25, 0.5, 0.75]) if mm.any() else [0, 0, 0]
         tone = np.where(mm, np.digitize(lum, q), -1)
-        out.append((dict(pose, L_ref=L, tone=tone), mm))
+        extra = {}
+        if sample:
+            rgb = np.zeros(XX.shape + (3,), np.float32)
+            for ch in range(3): rgb[mm, ch] = map_coordinates(rf["im"][..., ch], [cy[mm], cx[mm]], order=1)
+            t = np.full(XX.shape, -1.0, np.float32); t[mm] = ((cx[mm] - sn[0]) * -er[0] + (cy[mm] - sn[1]) * -er[1]) / Lr
+            extra = dict(rgb=rgb, t=t)
+        out.append((dict(pose, L_ref=L, tone=tone, **extra), mm))
     return out
 
 if __name__ == "__main__":

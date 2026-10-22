@@ -31,12 +31,19 @@ draws geometry: a part's outline is traced from the input pixels inside its hint
          "rest": false,                       # true: takes every pixel nobody else claimed (one per file)
          "reference": {...}}                  # optional (G3): this part is graded as its own unit (below)
       ],
-      "reference": {"image": "refs/x.png", "box": [x0, y0, x1, y1]}}]}
+      "reference": {"image": "refs/x.png", "box": [x0, y0, x1, y1], "governs": ["silhouette", "colour"]}}]}
                                               # optional (G3): the picture motif_match grades this motif against
                                               # instead of the mockup crop (default = the mockup). image: a path
                                               # relative to the labels file (opaque / non-background pixels = the
-                                              # motif); box: where it sits, garment mm. Grading only: it never
-                                              # changes what is extracted (digitize.labels.refgrade).
+                                              # motif); box: where it sits, garment mm (the labeller places it, so
+                                              # position, heading, size and count stay the mockup's: A30).
+                                              # governs (G4, default []): what the picture ALSO decides for the
+                                              # SEWING. [] = grading only (digitize.labels.refgrade). "silhouette":
+                                              # outside the picture's pixels the motif's windows read as bare shell.
+                                              # "colour": inside them the picture's colours replace the mockup's,
+                                              # and the grade checks the sewn colours too. Both are composited into
+                                              # the extraction source (digitize.labels.refsource), never into the
+                                              # gate reference.
 
 PRIMITIVES and the direction intents each accepts (first = default when "direction" is omitted):
   stroke  1-7 mm strokes (lettering, stems, fins, rails)    across            satin column across the stroke
@@ -68,7 +75,8 @@ PRIMITIVES = {
 INTENTS = ("along", "across", "angle", "grain", "outline", "radial", "none")
 PART_KEYS = {"id", "primitive", "hint", "tones", "z", "direction", "colour", "confidence", "question", "alternatives", "params",
              "rest", "what", "reference"}
-REFERENCE_KEYS = {"image", "box"}
+REFERENCE_KEYS = {"image", "box", "governs"}
+GOVERNS = ("silhouette", "colour")
 REVIEW_BELOW = 0.6
 
 
@@ -108,7 +116,15 @@ def _reference_errs(where, r):
     if not (isinstance(b, (list, tuple)) and len(b) == 4 and all(isinstance(v, (int, float)) and not isinstance(v, bool)
                                                                  and math.isfinite(v) for v in b) and b[2] > b[0] and b[3] > b[1]):
         errs.append(f"{where}: reference.box must be [x0, y0, x1, y1] garment mm with x1 > x0, y1 > y0, got {b!r}")
+    g = r.get("governs", [])
+    if not isinstance(g, list) or any(v not in GOVERNS for v in g) or len(set(g)) != len(g):
+        errs.append(f"{where}: reference.governs must be a list of distinct {GOVERNS}, got {g!r}")
     return errs
+
+
+def governs(r):
+    """what a reference decides for the sewing (G4): a subset of GOVERNS; [] = grading only"""
+    return list((r or {}).get("governs") or [])
 
 
 def validate(d, palette=None):
