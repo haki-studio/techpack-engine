@@ -1,0 +1,15 @@
+{
+ "why": "Orphan-fragment ratchet (gates_orphan.ratchet, lead 22 Oct 2026). Per product: the most orphans its production PES may hold, summed over full files and hoop splits (gates_orphan.product_files). Measured 22 Oct 2026 on the main checkout's projects/*/out with ORPHAN_DEFAULTS. A product missing here, or at 0, fails on any orphan. Lower a number in the same PR that lowers the count (scripts/orphan_fragments.py --products --update-baseline); never raise one without a review.",
+ "products": {
+  "castle-falls-jacket": 2291,
+  "comet-city-hoodie": 0,
+  "forestball": 610,
+  "grand-line-jacket": 828,
+  "keep-clean-our-space-hoodie": 0,
+  "koi-blossom-hoodie": 537,
+  "konpeito-jeans": 20,
+  "moon": 0,
+  "red-beast-hoodie": 0,
+  "wave-jacket": 15945
+ }
+}

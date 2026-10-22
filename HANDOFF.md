@@ -36,6 +36,9 @@ close other teams' idle sessions. `tp-fix-wave-jacket` shows "busy" forever (kno
   Line/Forestball/Red Beast/Koi/Comet; Wave flags hundreds per file (partly intentional layering? check with zooms).
   Make it a prod gate for every product with a red-then-green test on the Rev H FL file. Why: the bug lived in project code
   (kcsatin/kcmotifs) also copied to konpeito kjsatin and engine/digitize/techniques/column.py: project fixes don't reach copies.
+  **Done on branch engine-orphan-gate (22 Oct): `engine/digitize/gates_orphan.py` + ratchet baseline. The '0 on Konpeito/Grand
+  Line/Forestball/Koi' above was a truncated list: they hold 20 / 828 / 610 / 537 (Comet, Red Beast, Moon, KCOS Rev I 0).
+  Per-product counts + crops: RECAP-2026-10-22-engine-orphan-gate.md. Fixes queue when packs resume.**
 
 # HANDOFF — /techpack batch (updated 2026-10-19 ~17:30, coordinator session d3fafdf9)
 
