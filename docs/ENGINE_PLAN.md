@@ -42,6 +42,10 @@ apply. Stitch count is reported, never a limit.
   orphans 0 (26), trims 40/100 cm2 (108), identity unchanged. Open: the upper lily sews as flat slabs (one lobe window over a soft
   mockup area; needs per-petal label windows); fish gate reference (founder tetra vs mockup fish) is a founder question.
 - **G3** design-type-aware targets + the review/question loop surfaced for the founder (then the PLM page uses it).
+  *Status 2026-10-22 (branch engine-g3, PR base engine-g2):* labels `hint.each` (per-piece windows) + `reference: {image, box}`
+  grading + rule-3 ANGLE_EPS. Koi upper lily now 5 petals round a dark heart (angle bins 4 vs 3, top bin 29 % vs 38 %); fish vs
+  tetra via labels_FR_tetra.json (image 3/5 IoU 0.69, DST identical). Chaos 5.1 % (G2 4.0) = ~1 tile over 5 % at the petal/heart
+  junctions, so the bench verdict is 1/8 vs G2 2/8. Default labels stay on the mockup until founder card techpack-koi-fish-reference.
 - **P1 image → DST in PLM (founder 2026-10-20: next after G2):** a small PLM window, image in → DST/PES + stitch preview +
   gate table + questions out. The vision step becomes one API call writing the same labels file (`--no-api` mocks; cost per
   image measured before launch). Not a tech pack, one element. Ships only once G2 shows the image route is good enough.

@@ -131,6 +131,9 @@ scripts/status.py`, `claude agents`). Closing a session never stops them.
   travel_on_fill gates; verdict x/11). Castle crop on main: 2/11 (old 9: 1/9); BENCH_m4s.md quotes pre-#14 numbers — stale, fix in G1.
 - **G2 (2026-10-22, branch engine-g2, PR open, founder judges):** Koi FR via session labels, zero subject code; fish 5/5 vs the
   mockup, orphans 0, identity unchanged. Open: upper lily = flat slabs (needs per-petal label windows); tetra-vs-mockup gate question.
+- **G3 (2026-10-22, branch engine-g3, PR base engine-g2):** per-petal label windows (`hint.each`), motif reference images
+  (`reference`), ANGLE_EPS. Lily reads as 5 petals; chaos 5.1 % (1 tile over) so verdict 1/8 vs G2 2/8; Castle crop moves on purpose
+  (e5b64b20, foliage.306). Tetra grading = bench/labels_FR_tetra.json; default stays mockup pending founder card.
 - **Next engine work = docs/ENGINE_PLAN.md RE-PLAN (G1 → G2 → G3)**: generic primitives + vision step done by the SESSION (no API).
   Open engine follow-ups: dst2/compile block-join defect (LESSONS B39) with a unit test; turn on `unsewn_only` hidden travel for the
   crop (travel_on_fill fails 5.8 m); retire-or-keep decision on the strict run-based stack gate (founder; recommend keep both).

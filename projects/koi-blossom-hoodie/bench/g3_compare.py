@@ -8,6 +8,7 @@ SAME gates as g2_compare (imported, unchanged), plus:
 
   PYTHONPATH=engine python3 projects/koi-blossom-hoodie/bench/g3_compare.py [--labels bench/labels_FR_tetra.json]
 Reads only written files + input pixels. Writes bench/g3_gates.json, bench/g3_side_by_side.png, bench/g3_zoom_lily.png
+(with --labels: g3_gates_<suffix>.json + g3_table_<suffix>.md, suffix from labels_FR_<suffix>.json; the pictures are the same files)
 (no Anthropic API calls)."""
 import argparse, json, math, os, sys
 HERE = os.path.dirname(os.path.abspath(__file__)); PROJ = os.path.dirname(HERE)
@@ -44,7 +45,8 @@ def lily_read(dst, origin, labels):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--labels", default="bench/labels_FR.json"); a = ap.parse_args()
     cfg = config.load(os.path.join(HERE, "run_fr_labels.yaml")); T = cfg["threads"]
-    lpth = os.path.join(PROJ, a.labels); labels = LS.load(lpth, palette=T["palette"])
+    lpth = os.path.join(PROJ, a.labels); stem = os.path.splitext(os.path.basename(a.labels))[0]
+    sfx = "" if stem == "labels_FR" else "_" + stem.replace("labels_FR_", ""); labels = LS.load(lpth, palette=T["palette"])
     reg_mock = register.load(os.path.join(PROJ, G.CFG["registration"]))
     ev = evidence.build(register.reference(reg_mock, "F", G.CROP, ppm=float(G.CFG["ppm"])), T["palette"], **cfg["evidence"])
     P, flora, fishes, fish_mock = G.refmasks(reg_mock)
@@ -66,8 +68,8 @@ def main():
     pj = json.load(open(os.path.join(G.ENG_DIR, "parts.json")))
     res["engine_lily_parts"] = [dict(id=q["id"], kind=q["kind"], thread=q["thread"], area_mm2=q["area_mm2"], piece=q["meta"].get("label_piece"))
                                 for q in pj["parts"] if q["meta"].get("motif") == LILY]
-    json.dump(res, open(os.path.join(HERE, "g3_gates.json"), "w"), indent=1, default=float)
-    tables(res)
+    json.dump(res, open(os.path.join(HERE, f"g3_gates{sfx}.json"), "w"), indent=1, default=float)
+    tables(res, sfx)
     if a.labels == "bench/labels_FR.json":
         G.sheet(G.views(G.CROP, 4.0, reg_mock), os.path.join(HERE, "g3_side_by_side.png"),
                 f"Koi Blossom FR size M, crop x {G.CROP[0]}..{G.CROP[2]}, y {G.CROP[1]}..{G.CROP[3]} mm, 4 px/mm - Rev B | G2 run 3 | G3 per-petal windows")
@@ -76,7 +78,7 @@ def main():
                 f"zoom (upper lily): x {box[0]}..{box[2]}, y {box[1]}..{box[3]} mm, 10 px/mm - Rev B | G2 run 3 (one window) | G3 (one window per petal)")
 
 
-def tables(res):
+def tables(res, sfx=""):
     F = res["files"]; ks = list(G.FILES)
     def c(fn): return " | ".join(fn(F[k]) for k in ks)
     lines = [f"| gate | {' | '.join(G.NAMES[k] for k in ks)} |", "|---" * (len(ks) + 1) + "|"]
@@ -98,7 +100,7 @@ def tables(res):
     ]:
         try: lines.append(f"| {name} | {c(fn)} |")
         except Exception as e: lines.append(f"| {name} | (n/a: {type(e).__name__} {e}) |")
-    t = "\n".join(lines); open(os.path.join(HERE, "g3_table.md"), "w").write(t + "\n"); print(t)
+    t = "\n".join(lines); open(os.path.join(HERE, f"g3_table{sfx}.md"), "w").write(t + "\n"); print(t)
 
 
 if __name__ == "__main__":

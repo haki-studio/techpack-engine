@@ -18,7 +18,7 @@ draws geometry: a part's outline is traced from the input pixels inside its hint
                                               # points the part's pixels must connect to (components without a seed are
                                               # given back); except = other parts' windows cut out of this one
                                               # "each": true (G3) = every window is its OWN piece, listed back
-                                              # to front (one window per petal / panel): pieces claim front first,
+                                              # to front (one window per piece): pieces claim front first,
                                               # sew back first, each takes its own direction; one question / answer
          "tones": ["cf_white", "cf_cream"] | "all",   # palette tones that belong to the part (evidence classes)
          "z": 3.0,                            # sew depth: lower sews first; claims run from the highest z down

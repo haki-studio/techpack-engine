@@ -53,7 +53,28 @@ Looked at bench/g3_side_by_side.png + g3_zoom_lily.png myself: the lily now read
 flat tatami without the mockup's soft shading; the heart is a bit boxy.
 G2 run 3 baseline = te-g2 out (labels sha db80930968d88a92 = commit 1c12c05), copied to out/g2run3 (git-ignored).
 
-## HANDOFF: next builder, exact next steps
+## Done by the next builder (session 49a881a8, same branch)
+1. **Tetra wiring (D2, Koi side):** `bench/make_tetra_refs.py` writes `bench/refs/tetra_fish{1..5}.png` (RGBA, alpha = the
+   refmask.fish_ref mask cropped to its bbox, 5 px/mm) + `refs/tetra_refs.json` (box = pixel edges in garment mm). Six poses on
+   FR; pose 5 (y 403, below the crop) overlaps no fish window and is skipped. `labels_FR_src.py --fish-ref tetra` →
+   `labels_FR_tetra.json` (reference on the 5 fish motifs). `labels_FR.json` is byte-identical (stays on the mockup until
+   founder card techpack-koi-fish-reference). `g3_compare.py --labels bench/labels_FR_tetra.json` → `g3_table_tetra.md` /
+   `g3_gates_tetra.json` (suffixed, so the mockup table is never overwritten): G3 fish vs tetra image 3/5 IoU 0.69 (old tetra
+   column 0.68), G2 3/5 0.69, Rev B 4/5 0.71.
+   **DST proof:** `bench/run_fr_labels_tetra.yaml` (labels = tetra, out_dir `..._tetra`) and a fresh `run_fr_labels.yaml` run
+   both give DST sha256 `54643085e60aa153...`, the same as the earlier G3 run. A labels reference changes the grade, not the sewing.
+2. **Mutation proofs** (tests/test_digitize_g3.py, 18): drop `each` expansion → 3 red; drop `piece > 1` in questions() → 1 red;
+   grade ignores `ref` → 2 red; no ANGLE_EPS in separation_report → 1 red; no ANGLE_EPS in separate() clash → 1 red. All restored.
+   Subject-word grep `git diff origin/engine-g2 -- engine | grep -iE "koi|fish|tetra|lily|petal|flower"` = 0 (one comment in
+   labels/schema.py said "per petal / panel", now "per piece").
+3. **Full suite** 404 passed. **identity_check:** probe 84ff50ea/1ecd8f65 and wb 449c14f6 unchanged; **Castle crop moved on
+   purpose** 91197899 → e5b64b20 (126,219 → 126,230 stitches, same 154 trims, same verdict lines, same separation 25 close).
+   Cause proven: with ANGLE_EPS = 0 the crop is back to 91197899. Diff of parts.json: one part, foliage.306 (lit side of
+   clump foliage.229) — the exact 15.00 deg candidate from foliage.305 read back as 14.99999 and was rejected, so it turned
+   +10.3 deg; now it takes the nearest legal turn, +5.3 deg. scripts/identity_check.sh expected hash updated.
+4. LESSONS A34, docs/ENGINE_PLAN.md G3 status, HANDOFF.md G3 line.
+
+## HANDOFF (superseded: steps 1-4 done above)
 State: branch engine-g3 @ 73053ef pushed. Rev B + G2 run 3 DSTs are in projects/koi-blossom-hoodie/out/{revB,g2run3}
 (git-ignored; copy from ~/te-g2/projects/koi-blossom-hoodie/out if missing). Re-run:
 `cd ~/te-g3 && PYTHONPATH=engine:projects/koi-blossom-hoodie scripts/heavy.sh ~/.venvs/techpack/bin/python -m digitize.run projects/koi-blossom-hoodie/bench/run_fr_labels.yaml --stages extract,review,plan,compile,gates,panel --no-api`

@@ -1,6 +1,10 @@
 # Source of bench/labels_FR.json (the session wrote the labels as this script so the windows stay editable):
 #   python3 projects/koi-blossom-hoodie/bench/labels_FR_src.py projects/koi-blossom-hoodie/bench/labels_FR.json
-import json, sys
+# G3: --fish-ref tetra writes the variant whose fish motifs name the founder's tetra as their reference (bench/refs/,
+# made by make_tetra_refs.py); grading only, the sewing is unchanged. The default file stays on the mockup until the
+# founder answers card techpack-koi-fish-reference.
+#   python3 projects/koi-blossom-hoodie/bench/labels_FR_src.py projects/koi-blossom-hoodie/bench/labels_FR_tetra.json --fish-ref tetra
+import json, os, sys
 LIGHT = ["kb_white", "kb_lav", "kb_ice", "kb_sky"]
 def sq(x, y, r=2.2): return [[x - r, y - r], [x + r, y - r], [x + r, y + r], [x - r, y + r]]
 def fish(mid, what, tail_win, root, body_win, body_seed, red_win, eye, conf=0.85):
@@ -82,4 +86,9 @@ d = {"schema": "techpack.labels/1",
                 "image": "the run's vision sheet (digitize.labels.sheet on run_fr_labels.yaml: mockup + informing close-up), 3 and 5 px/mm"},
      "_doc": "ENGINE_PLAN G2: written by the session looking at the vision sheet once (no API). Each fish = radial tail (a fan from its root seed) + lobe body + band stripe + dot eye; flora = lobes / cord. Geometry is traced from the input pixels inside each window (A14).",
      "review_below": 0.6, "motifs": M}
+if "--fish-ref" in sys.argv and sys.argv[sys.argv.index("--fish-ref") + 1] == "tetra":
+    refs = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "refs/tetra_refs.json")))
+    for m in M:
+        if m["id"] in refs: m["reference"] = refs[m["id"]]
+    d["source"]["reference"] = "fish motifs: the founder's tetra at each mockup fish pose, 0.82 x length (bench/make_tetra_refs.py)"
 json.dump(d, open(sys.argv[1], "w"), indent=1)
