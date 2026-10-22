@@ -54,14 +54,18 @@ class SplitSatin(Technique):
     def plan(self, part):
         st = part.stitch; P = st.params; mode = P.get("mode", "fixed"); out = []
         piece = st.stitch_len; stg = P.get("stagger", 0.25)
-        for p in polys(part.geom):
+        pieces = polys(part.geom)
+        if mode == "column" and part.meta.get("cl") and pieces:      # G1: a DECLARED centreline is one column: sewn once,
+            pieces = [max(pieces, key=lambda q: q.area)]              # not once per piece of a part sequencing cut in two
+        for p in pieces:
             if p.area < 0.3: continue
             cl = part.meta.get("cl") if mode == "column" else None
             line = None
             if cl is None:
                 line = dst2.centreline(p)
                 if line is not None: cl = list(line.coords)
-            if "centre_run" in st.underlay and cl is not None and len(cl) >= 2:
+            narrow = mode == "column" and float(part.meta.get("w") or 1e9) < float(P.get("centre_run_min_w", 0.0))   # G1: as column_satin
+            if "centre_run" in st.underlay and cl is not None and len(cl) >= 2 and not narrow:
                 out.append(Block(part.id, "underlay", dst2.path_resample([tuple(c) for c in cl], 2.0)))
             if mode == "column":
                 if cl is None: continue

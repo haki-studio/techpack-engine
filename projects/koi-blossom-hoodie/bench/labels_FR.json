@@ -1,0 +1,1682 @@
+{
+ "schema": "techpack.labels/1",
+ "source": {
+  "view": "F",
+  "crop": [
+   -220,
+   30,
+   -50,
+   300
+  ],
+  "by": "session f5e7f669 (builder-techpack-engine-g2); upper lily petal windows: session dc908122 (G3)",
+  "date": "2026-10-22",
+  "image": "the run's vision sheet (digitize.labels.sheet on run_fr_labels.yaml: mockup + informing close-up), 3 and 5 px/mm"
+ },
+ "_doc": "ENGINE_PLAN G2: written by the session looking at the vision sheet once (no API). Each fish = radial tail (a fan from its root seed) + lobe body + band stripe + dot eye; flora = lobes / cord. Geometry is traced from the input pixels inside each window (A14).",
+ "review_below": 0.6,
+ "motifs": [
+  {
+   "id": "fish1",
+   "what": "fish, top (head lower right)",
+   "confidence": 0.85,
+   "parts": [
+    {
+     "id": "tail",
+     "what": "tail fin: a fan from the root",
+     "primitive": "radial",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -187,
+         34
+        ],
+        [
+         -174,
+         39
+        ],
+        [
+         -166,
+         43
+        ],
+        [
+         -166,
+         50
+        ],
+        [
+         -176,
+         53
+        ],
+        [
+         -188,
+         51
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -167.5,
+        46.8
+       ]
+      ]
+     },
+     "tones": [
+      "kb_white",
+      "kb_lav",
+      "kb_ice",
+      "kb_sky"
+     ],
+     "z": 7.0,
+     "direction": {
+      "intent": "radial"
+     },
+     "colour": "auto",
+     "confidence": 0.85,
+     "alternatives": [
+      "lobe"
+     ],
+     "params": {
+      "shape": "traced",
+      "centres": "seeds",
+      "bead": false,
+      "min_mass_mm2": 6.0
+     }
+    },
+    {
+     "id": "body",
+     "what": "body (fins inside it)",
+     "primitive": "lobe",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -167,
+         41
+        ],
+        [
+         -154,
+         43
+        ],
+        [
+         -140,
+         47
+        ],
+        [
+         -128,
+         57
+        ],
+        [
+         -121,
+         66
+        ],
+        [
+         -123,
+         73
+        ],
+        [
+         -140,
+         72
+        ],
+        [
+         -156,
+         68
+        ],
+        [
+         -167,
+         56
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -137,
+        66
+       ]
+      ],
+      "except": [
+       "fish1.tail"
+      ]
+     },
+     "tones": [
+      "kb_white",
+      "kb_lav",
+      "kb_ice",
+      "kb_sky"
+     ],
+     "z": 7.2,
+     "direction": {
+      "intent": "outline"
+     },
+     "colour": "kb_white",
+     "confidence": 0.85,
+     "params": {
+      "lobe_sep_mm": 60,
+      "min_lobe_mm2": 10,
+      "min_mass_mm2": 8,
+      "tone": "lit"
+     }
+    },
+    {
+     "id": "stripe",
+     "what": "red stripe along the back",
+     "primitive": "band",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -168,
+         45
+        ],
+        [
+         -158,
+         45
+        ],
+        [
+         -136,
+         54
+        ],
+        [
+         -127,
+         63
+        ],
+        [
+         -137,
+         67
+        ],
+        [
+         -160,
+         59
+        ],
+        [
+         -168,
+         53
+        ]
+       ]
+      ]
+     },
+     "tones": [
+      "kb_red"
+     ],
+     "z": 7.4,
+     "direction": {
+      "intent": "along"
+     },
+     "colour": "kb_red",
+     "confidence": 0.85,
+     "params": {
+      "min_part_mm2": 6,
+      "min_mass_mm2": 6,
+      "min_band_mm": 2
+     }
+    },
+    {
+     "id": "eye",
+     "what": "eye",
+     "primitive": "dot",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -134.39999999999998,
+         64.2
+        ],
+        [
+         -130.0,
+         64.2
+        ],
+        [
+         -130.0,
+         68.60000000000001
+        ],
+        [
+         -134.39999999999998,
+         68.60000000000001
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -132.2,
+        66.4
+       ]
+      ]
+     },
+     "tones": [
+      "kb_black",
+      "kb_duck",
+      "kb_duck_lt",
+      "kb_navy"
+     ],
+     "z": 7.6,
+     "direction": {
+      "intent": "none"
+     },
+     "colour": "kb_black",
+     "confidence": 0.85,
+     "params": {
+      "min_mm2": 0.2,
+      "max_mm2": 6
+     }
+    }
+   ]
+  },
+  {
+   "id": "fish2",
+   "what": "fish, second",
+   "confidence": 0.85,
+   "parts": [
+    {
+     "id": "tail",
+     "what": "tail fin: a fan from the root",
+     "primitive": "radial",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -143,
+         86
+        ],
+        [
+         -133,
+         91
+        ],
+        [
+         -124,
+         97
+        ],
+        [
+         -124,
+         104
+        ],
+        [
+         -133,
+         105
+        ],
+        [
+         -143,
+         104
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -125.3,
+        101.2
+       ]
+      ]
+     },
+     "tones": [
+      "kb_white",
+      "kb_lav",
+      "kb_ice",
+      "kb_sky"
+     ],
+     "z": 7.0,
+     "direction": {
+      "intent": "radial"
+     },
+     "colour": "auto",
+     "confidence": 0.85,
+     "alternatives": [
+      "lobe"
+     ],
+     "params": {
+      "shape": "traced",
+      "centres": "seeds",
+      "bead": false,
+      "min_mass_mm2": 6.0
+     }
+    },
+    {
+     "id": "body",
+     "what": "body (fins inside it)",
+     "primitive": "lobe",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -125,
+         96
+        ],
+        [
+         -112,
+         99
+        ],
+        [
+         -100,
+         107
+        ],
+        [
+         -91,
+         116
+        ],
+        [
+         -86,
+         124
+        ],
+        [
+         -89,
+         131
+        ],
+        [
+         -100,
+         129
+        ],
+        [
+         -113,
+         123
+        ],
+        [
+         -125,
+         107
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -97,
+        124
+       ]
+      ],
+      "except": [
+       "fish2.tail"
+      ]
+     },
+     "tones": [
+      "kb_white",
+      "kb_lav",
+      "kb_ice",
+      "kb_sky"
+     ],
+     "z": 7.2,
+     "direction": {
+      "intent": "outline"
+     },
+     "colour": "kb_white",
+     "confidence": 0.85,
+     "params": {
+      "lobe_sep_mm": 60,
+      "min_lobe_mm2": 10,
+      "min_mass_mm2": 8,
+      "tone": "lit"
+     }
+    },
+    {
+     "id": "stripe",
+     "what": "red stripe along the back",
+     "primitive": "band",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -126,
+         99
+        ],
+        [
+         -112,
+         100
+        ],
+        [
+         -97,
+         112
+        ],
+        [
+         -93,
+         120
+        ],
+        [
+         -100,
+         122
+        ],
+        [
+         -115,
+         116
+        ],
+        [
+         -126,
+         106
+        ]
+       ]
+      ]
+     },
+     "tones": [
+      "kb_red"
+     ],
+     "z": 7.4,
+     "direction": {
+      "intent": "along"
+     },
+     "colour": "kb_red",
+     "confidence": 0.85,
+     "params": {
+      "min_part_mm2": 6,
+      "min_mass_mm2": 6,
+      "min_band_mm": 2
+     }
+    },
+    {
+     "id": "eye",
+     "what": "eye",
+     "primitive": "dot",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -98.2,
+         120.0
+        ],
+        [
+         -93.8,
+         120.0
+        ],
+        [
+         -93.8,
+         124.4
+        ],
+        [
+         -98.2,
+         124.4
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -96.0,
+        122.2
+       ]
+      ]
+     },
+     "tones": [
+      "kb_black",
+      "kb_duck",
+      "kb_duck_lt",
+      "kb_navy"
+     ],
+     "z": 7.6,
+     "direction": {
+      "intent": "none"
+     },
+     "colour": "kb_black",
+     "confidence": 0.85,
+     "params": {
+      "min_mm2": 0.2,
+      "max_mm2": 6
+     }
+    }
+   ]
+  },
+  {
+   "id": "fish3",
+   "what": "fish, middle (tail reaches the upper flower)",
+   "confidence": 0.85,
+   "parts": [
+    {
+     "id": "tail",
+     "what": "tail fin: a fan from the root",
+     "primitive": "radial",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -178,
+         166
+        ],
+        [
+         -170,
+         159
+        ],
+        [
+         -158,
+         156
+        ],
+        [
+         -146,
+         163
+        ],
+        [
+         -144,
+         170
+        ],
+        [
+         -147,
+         177
+        ],
+        [
+         -162,
+         181
+        ],
+        [
+         -178,
+         181
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -145.2,
+        171.5
+       ]
+      ]
+     },
+     "tones": [
+      "kb_white",
+      "kb_lav",
+      "kb_ice",
+      "kb_sky"
+     ],
+     "z": 7.0,
+     "direction": {
+      "intent": "radial"
+     },
+     "colour": "auto",
+     "confidence": 0.85,
+     "alternatives": [
+      "lobe"
+     ],
+     "params": {
+      "shape": "traced",
+      "centres": "seeds",
+      "bead": false,
+      "min_mass_mm2": 6.0
+     }
+    },
+    {
+     "id": "body",
+     "what": "body (fins inside it)",
+     "primitive": "lobe",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -146,
+         164
+        ],
+        [
+         -130,
+         164
+        ],
+        [
+         -114,
+         173
+        ],
+        [
+         -100,
+         182
+        ],
+        [
+         -89,
+         191
+        ],
+        [
+         -88,
+         201
+        ],
+        [
+         -100,
+         204
+        ],
+        [
+         -121,
+         199
+        ],
+        [
+         -140,
+         191
+        ],
+        [
+         -146,
+         180
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -100,
+        197
+       ]
+      ],
+      "except": [
+       "fish3.tail"
+      ]
+     },
+     "tones": [
+      "kb_white",
+      "kb_lav",
+      "kb_ice",
+      "kb_sky"
+     ],
+     "z": 7.2,
+     "direction": {
+      "intent": "outline"
+     },
+     "colour": "kb_white",
+     "confidence": 0.85,
+     "params": {
+      "lobe_sep_mm": 60,
+      "min_lobe_mm2": 10,
+      "min_mass_mm2": 8,
+      "tone": "lit"
+     }
+    },
+    {
+     "id": "stripe",
+     "what": "red stripe along the back",
+     "primitive": "band",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -146,
+         167
+        ],
+        [
+         -130,
+         168
+        ],
+        [
+         -108,
+         179
+        ],
+        [
+         -102,
+         186
+        ],
+        [
+         -108,
+         190
+        ],
+        [
+         -128,
+         185
+        ],
+        [
+         -146,
+         176
+        ]
+       ]
+      ]
+     },
+     "tones": [
+      "kb_red"
+     ],
+     "z": 7.4,
+     "direction": {
+      "intent": "along"
+     },
+     "colour": "kb_red",
+     "confidence": 0.85,
+     "params": {
+      "min_part_mm2": 6,
+      "min_mass_mm2": 6,
+      "min_band_mm": 2
+     }
+    },
+    {
+     "id": "eye",
+     "what": "eye",
+     "primitive": "dot",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -100.60000000000001,
+         193.20000000000002
+        ],
+        [
+         -96.2,
+         193.20000000000002
+        ],
+        [
+         -96.2,
+         197.6
+        ],
+        [
+         -100.60000000000001,
+         197.6
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -98.4,
+        195.4
+       ]
+      ]
+     },
+     "tones": [
+      "kb_black",
+      "kb_duck",
+      "kb_duck_lt",
+      "kb_navy"
+     ],
+     "z": 7.6,
+     "direction": {
+      "intent": "none"
+     },
+     "colour": "kb_black",
+     "confidence": 0.85,
+     "params": {
+      "min_mm2": 0.2,
+      "max_mm2": 6
+     }
+    }
+   ]
+  },
+  {
+   "id": "fish4",
+   "what": "fish, right edge (head outside the crop)",
+   "confidence": 0.85,
+   "parts": [
+    {
+     "id": "tail",
+     "what": "tail fin: a fan from the root",
+     "primitive": "radial",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -81,
+         145
+        ],
+        [
+         -70,
+         148
+        ],
+        [
+         -63,
+         155
+        ],
+        [
+         -63,
+         163
+        ],
+        [
+         -72,
+         164
+        ],
+        [
+         -81,
+         158
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -64.0,
+        160.5
+       ]
+      ]
+     },
+     "tones": [
+      "kb_white",
+      "kb_lav",
+      "kb_ice",
+      "kb_sky"
+     ],
+     "z": 7.0,
+     "direction": {
+      "intent": "radial"
+     },
+     "colour": "auto",
+     "confidence": 0.85,
+     "alternatives": [
+      "lobe"
+     ],
+     "params": {
+      "shape": "traced",
+      "centres": "seeds",
+      "bead": false,
+      "min_mass_mm2": 6.0
+     }
+    },
+    {
+     "id": "body",
+     "what": "body (fins inside it)",
+     "primitive": "lobe",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -66,
+         154
+        ],
+        [
+         -50,
+         158
+        ],
+        [
+         -50,
+         183
+        ],
+        [
+         -61,
+         181
+        ],
+        [
+         -67,
+         170
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -55,
+        176
+       ]
+      ],
+      "except": [
+       "fish4.tail"
+      ]
+     },
+     "tones": [
+      "kb_white",
+      "kb_lav",
+      "kb_ice",
+      "kb_sky"
+     ],
+     "z": 7.2,
+     "direction": {
+      "intent": "outline"
+     },
+     "colour": "kb_white",
+     "confidence": 0.85,
+     "params": {
+      "lobe_sep_mm": 60,
+      "min_lobe_mm2": 10,
+      "min_mass_mm2": 8,
+      "tone": "lit"
+     }
+    },
+    {
+     "id": "stripe",
+     "what": "red stripe along the back",
+     "primitive": "band",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -66,
+         158
+        ],
+        [
+         -50,
+         161
+        ],
+        [
+         -50,
+         175
+        ],
+        [
+         -58,
+         172
+        ],
+        [
+         -66,
+         166
+        ]
+       ]
+      ]
+     },
+     "tones": [
+      "kb_red"
+     ],
+     "z": 7.4,
+     "direction": {
+      "intent": "along"
+     },
+     "colour": "kb_red",
+     "confidence": 0.85,
+     "params": {
+      "min_part_mm2": 6,
+      "min_mass_mm2": 6,
+      "min_band_mm": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fish5",
+   "what": "fish, bottom right",
+   "confidence": 0.85,
+   "parts": [
+    {
+     "id": "tail",
+     "what": "tail fin: a fan from the root",
+     "primitive": "radial",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -109,
+         223
+        ],
+        [
+         -101,
+         212
+        ],
+        [
+         -93,
+         208
+        ],
+        [
+         -87,
+         227
+        ],
+        [
+         -87,
+         238
+        ],
+        [
+         -96,
+         239
+        ],
+        [
+         -109,
+         231
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -89.5,
+        234.5
+       ]
+      ]
+     },
+     "tones": [
+      "kb_white",
+      "kb_lav",
+      "kb_ice",
+      "kb_sky"
+     ],
+     "z": 7.0,
+     "direction": {
+      "intent": "radial"
+     },
+     "colour": "auto",
+     "confidence": 0.85,
+     "alternatives": [
+      "lobe"
+     ],
+     "params": {
+      "shape": "traced",
+      "centres": "seeds",
+      "bead": false,
+      "min_mass_mm2": 6.0
+     }
+    },
+    {
+     "id": "body",
+     "what": "body (fins inside it)",
+     "primitive": "lobe",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -90,
+         227
+        ],
+        [
+         -78,
+         229
+        ],
+        [
+         -64,
+         241
+        ],
+        [
+         -51,
+         256
+        ],
+        [
+         -46,
+         265
+        ],
+        [
+         -49,
+         274
+        ],
+        [
+         -62,
+         273
+        ],
+        [
+         -82,
+         264
+        ],
+        [
+         -90,
+         241
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -58,
+        268
+       ]
+      ],
+      "except": [
+       "fish5.tail"
+      ]
+     },
+     "tones": [
+      "kb_white",
+      "kb_lav",
+      "kb_ice",
+      "kb_sky"
+     ],
+     "z": 7.2,
+     "direction": {
+      "intent": "outline"
+     },
+     "colour": "kb_white",
+     "confidence": 0.85,
+     "params": {
+      "lobe_sep_mm": 60,
+      "min_lobe_mm2": 10,
+      "min_mass_mm2": 8,
+      "tone": "lit"
+     }
+    },
+    {
+     "id": "stripe",
+     "what": "red stripe along the back",
+     "primitive": "band",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -91,
+         230
+        ],
+        [
+         -78,
+         232
+        ],
+        [
+         -62,
+         248
+        ],
+        [
+         -55,
+         257
+        ],
+        [
+         -60,
+         260
+        ],
+        [
+         -77,
+         252
+        ],
+        [
+         -91,
+         240
+        ]
+       ]
+      ]
+     },
+     "tones": [
+      "kb_red"
+     ],
+     "z": 7.4,
+     "direction": {
+      "intent": "along"
+     },
+     "colour": "kb_red",
+     "confidence": 0.85,
+     "params": {
+      "min_part_mm2": 6,
+      "min_mass_mm2": 6,
+      "min_band_mm": 2
+     }
+    },
+    {
+     "id": "eye",
+     "what": "eye",
+     "primitive": "dot",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -55.2,
+         265.2
+        ],
+        [
+         -50.8,
+         265.2
+        ],
+        [
+         -50.8,
+         269.59999999999997
+        ],
+        [
+         -55.2,
+         269.59999999999997
+        ]
+       ]
+      ],
+      "seeds": [
+       [
+        -53.0,
+        267.4
+       ]
+      ]
+     },
+     "tones": [
+      "kb_black",
+      "kb_duck",
+      "kb_duck_lt",
+      "kb_navy"
+     ],
+     "z": 7.6,
+     "direction": {
+      "intent": "none"
+     },
+     "colour": "kb_black",
+     "confidence": 0.85,
+     "params": {
+      "min_mm2": 0.2,
+      "max_mm2": 6
+     }
+    }
+   ]
+  },
+  {
+   "id": "flower_upper",
+   "what": "the pale upper lily: five petals round a dark heart",
+   "confidence": 0.75,
+   "parts": [
+    {
+     "id": "petals",
+     "primitive": "lobe",
+     "hint": {
+      "each": true,
+      "polygons": [
+       [
+        [
+         -202,
+         102
+        ],
+        [
+         -196,
+         103.5
+        ],
+        [
+         -189,
+         109
+        ],
+        [
+         -186,
+         119
+        ],
+        [
+         -186.5,
+         128
+        ],
+        [
+         -190,
+         133
+        ],
+        [
+         -205,
+         135
+        ],
+        [
+         -212,
+         130
+        ],
+        [
+         -212.5,
+         118
+        ],
+        [
+         -209,
+         108
+        ]
+       ],
+       [
+        [
+         -185,
+         124
+        ],
+        [
+         -178,
+         118
+        ],
+        [
+         -168,
+         114.5
+        ],
+        [
+         -158,
+         113.5
+        ],
+        [
+         -150,
+         115
+        ],
+        [
+         -154,
+         119.5
+        ],
+        [
+         -162,
+         126
+        ],
+        [
+         -170,
+         133
+        ],
+        [
+         -179,
+         138
+        ],
+        [
+         -186,
+         139
+        ]
+       ],
+       [
+        [
+         -208,
+         133
+        ],
+        [
+         -207,
+         146
+        ],
+        [
+         -214,
+         150.5
+        ],
+        [
+         -222,
+         150.5
+        ],
+        [
+         -226,
+         146
+        ],
+        [
+         -226,
+         138
+        ],
+        [
+         -220,
+         133
+        ],
+        [
+         -213,
+         130.5
+        ]
+       ],
+       [
+        [
+         -195,
+         147
+        ],
+        [
+         -193,
+         154
+        ],
+        [
+         -196,
+         162
+        ],
+        [
+         -203,
+         170
+        ],
+        [
+         -211,
+         176
+        ],
+        [
+         -218,
+         182
+        ],
+        [
+         -224,
+         182
+        ],
+        [
+         -224,
+         165
+        ],
+        [
+         -221,
+         156
+        ],
+        [
+         -213,
+         150
+        ],
+        [
+         -206,
+         147.5
+        ]
+       ],
+       [
+        [
+         -194,
+         145
+        ],
+        [
+         -184,
+         141.5
+        ],
+        [
+         -174,
+         140.5
+        ],
+        [
+         -166,
+         143.5
+        ],
+        [
+         -160.5,
+         151
+        ],
+        [
+         -160.5,
+         158
+        ],
+        [
+         -163.5,
+         163.5
+        ],
+        [
+         -170,
+         160.5
+        ],
+        [
+         -179,
+         158
+        ],
+        [
+         -188,
+         157
+        ],
+        [
+         -195,
+         154
+        ]
+       ]
+      ]
+     },
+     "tones": [
+      "kb_navy",
+      "kb_cobalt",
+      "kb_royal",
+      "kb_corn",
+      "kb_sky",
+      "kb_ice",
+      "kb_white",
+      "kb_lav"
+     ],
+     "z": 6.0,
+     "direction": {
+      "intent": "outline"
+     },
+     "colour": "auto",
+     "confidence": 0.75,
+     "params": {
+      "layers": "none",
+      "lobe_sep_mm": 60,
+      "min_lobe_mm2": 20,
+      "min_mass_mm2": 8,
+      "tone": "lit"
+     }
+    },
+    {
+     "id": "heart",
+     "what": "the dark heart; its pale cup tips sewn first at the heart's angle",
+     "primitive": "lobe",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -205,
+         131
+        ],
+        [
+         -193,
+         131
+        ],
+        [
+         -188,
+         136
+        ],
+        [
+         -189,
+         143
+        ],
+        [
+         -194,
+         147.5
+        ],
+        [
+         -204,
+         148
+        ],
+        [
+         -209,
+         143
+        ],
+        [
+         -209,
+         136
+        ]
+       ]
+      ]
+     },
+     "tones": [
+      "kb_navy",
+      "kb_cobalt",
+      "kb_royal",
+      "kb_corn",
+      "kb_sky",
+      "kb_ice",
+      "kb_white",
+      "kb_lav"
+     ],
+     "z": 6.5,
+     "direction": {
+      "intent": "outline"
+     },
+     "colour": "auto",
+     "confidence": 0.7,
+     "params": {
+      "layers": "lit",
+      "lobe_sep_mm": 60,
+      "min_lobe_mm2": 10,
+      "min_mass_mm2": 6,
+      "tone": "dominant",
+      "min_layer_mm2": 15
+     }
+    }
+   ]
+  },
+  {
+   "id": "flower_lower",
+   "what": "the dark lower flower",
+   "confidence": 0.6,
+   "parts": [
+    {
+     "id": "petals",
+     "primitive": "lobe",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -214,
+         182
+        ],
+        [
+         -176,
+         174
+        ],
+        [
+         -140,
+         188
+        ],
+        [
+         -134,
+         222
+        ],
+        [
+         -166,
+         241
+        ],
+        [
+         -200,
+         239
+        ],
+        [
+         -216,
+         214
+        ]
+       ]
+      ],
+      "except": [
+       "fish3.tail",
+       "fish3.body",
+       "flower_upper.petals"
+      ]
+     },
+     "tones": [
+      "kb_navy",
+      "kb_cobalt",
+      "kb_royal",
+      "kb_corn",
+      "kb_sky",
+      "kb_ice",
+      "kb_white",
+      "kb_lav"
+     ],
+     "z": 5.0,
+     "direction": {
+      "intent": "grain"
+     },
+     "colour": "auto",
+     "confidence": 0.6,
+     "question": "dark petals or leaves? the mockup is soft here",
+     "alternatives": [
+      "band"
+     ],
+     "params": {
+      "layers": "none",
+      "lobe_sep_mm": 6,
+      "min_lobe_mm2": 40
+     }
+    }
+   ]
+  },
+  {
+   "id": "stems",
+   "what": "stems rising from the lower left",
+   "confidence": 0.55,
+   "parts": [
+    {
+     "id": "stems",
+     "primitive": "cord",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -222,
+         240
+        ],
+        [
+         -178,
+         240
+        ],
+        [
+         -178,
+         300
+        ],
+        [
+         -222,
+         300
+        ]
+       ]
+      ]
+     },
+     "tones": [
+      "kb_navy",
+      "kb_cobalt",
+      "kb_royal"
+     ],
+     "z": 4.0,
+     "direction": {
+      "intent": "along"
+     },
+     "colour": "auto",
+     "confidence": 0.55,
+     "question": "stems or the edge of a leaf?",
+     "alternatives": [
+      "lobe",
+      "stroke"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leaves_petals",
+   "what": "leaves and the floating petals",
+   "confidence": 0.8,
+   "parts": [
+    {
+     "id": "lobes",
+     "primitive": "lobe",
+     "hint": {
+      "polygons": [
+       [
+        [
+         -220,
+         30
+        ],
+        [
+         -50,
+         30
+        ],
+        [
+         -50,
+         300
+        ],
+        [
+         -220,
+         300
+        ]
+       ]
+      ]
+     },
+     "tones": [
+      "kb_navy",
+      "kb_cobalt",
+      "kb_royal",
+      "kb_corn",
+      "kb_sky",
+      "kb_ice",
+      "kb_white",
+      "kb_lav"
+     ],
+     "z": 3.0,
+     "direction": {
+      "intent": "outline"
+     },
+     "colour": "auto",
+     "confidence": 0.8,
+     "params": {
+      "lobe_sep_mm": 5,
+      "min_lobe_mm2": 15,
+      "min_mass_mm2": 6,
+      "tone": "dominant"
+     }
+    }
+   ]
+  }
+ ]
+}

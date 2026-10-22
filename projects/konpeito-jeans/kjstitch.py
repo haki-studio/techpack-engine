@@ -20,14 +20,15 @@ FILES = {   # element -> (file stem, stop plan [(colour, region codes)])
               ("kj_pink", {"FL", "TXC"}), ("kj_yellow", {"FL"}), ("kj_blue", {"FL", "TXC"}), ("kj_white", {"KNOT"}),
               ("kj_rose", {"DOT"}), ("kj_black", {"TXC", "LINE"}), ("kj_red", {"TXC", "DOT"}), ("kj_red", {"EDGE"})]),
     "haki":  ("HAKI_KJ_04_back-pocket-L-haki", [("kj_yellow", {"STAR"}), ("kj_yellow_hi", {"STAR-hi"}), ("kj_blue_hi", {"TXC"}),
-              ("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"})]),
-    "starY": ("HAKI_KJ_06_back-pocket-L-lower-star-yellow", [("kj_yellow", {"STAR"}), ("kj_yellow_hi", {"STAR-hi"})]),
-    "starP": ("HAKI_KJ_05_back-pocket-R-star-pink", [("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"})]),
+              ("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"}), ("kj_white", {"KNOT"})]),
+    "starY": ("HAKI_KJ_06_back-pocket-L-lower-star-yellow", [("kj_yellow", {"STAR"}), ("kj_yellow_hi", {"STAR-hi"}), ("kj_white", {"KNOT"})]),
+    "starP": ("HAKI_KJ_05_back-pocket-R-star-pink", [("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"}), ("kj_white", {"KNOT"})]),
 }
-_FRONT_PLAN = [("kj_yellow", {"STAR"}), ("kj_yellow_hi", {"STAR-hi"}), ("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"}),
-               ("kj_blue", {"STAR"}), ("kj_blue_hi", {"STAR-hi"})]
-FILES["front1"] = ("HAKI_KJ_07a_front-leg-stars-upper_PROPOSED", _FRONT_PLAN)
-FILES["front2"] = ("HAKI_KJ_07b_front-leg-stars-lower_PROPOSED", _FRONT_PLAN)
+_FRONT_PLAN = [("kj_soot", {"SOOT", "FUR", "LEG"}), ("kj_yellow", {"STAR"}), ("kj_yellow_hi", {"STAR-hi"}), ("kj_pink", {"STAR"}), ("kj_pink_hi", {"STAR-hi"}),
+               ("kj_blue", {"STAR"}), ("kj_blue_hi", {"STAR-hi"}), ("kj_white", {"KNOT", "EYE"}), ("kj_soot", {"PUPIL"})]
+# Rev B6 (founder 21 Oct, J5): the soot sprites are kept -> 07 = the mockup trail (konpeito + soot sprites), no longer a placeholder
+FILES["front1"] = ("HAKI_KJ_07a_front-leg-trail-upper", _FRONT_PLAN)
+FILES["front2"] = ("HAKI_KJ_07b_front-leg-trail-lower", _FRONT_PLAN)
 OUT = "out/stitch"
 
 def stops_for(vis, plan):
@@ -136,7 +137,7 @@ def build(name):
     stem, plan = FILES[name]
     if name.startswith("front"):
         import kjfront
-        F = json.load(open("out/front_stars.json")); byid = {d["id"]: d for d in F["stars"]}
+        F = json.load(open("out/front_stars.json")); byid = {d["id"]: d for d in F["stars"] + F.get("soot", [])}
         vis = kjfront.section_vis([byid[i] for i in F["sections"][int(name[-1]) - 1]])
     else:
         vis = A[name]["vis"]

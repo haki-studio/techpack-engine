@@ -7,7 +7,6 @@ from scipy import ndimage as ndi
 import kjcore
 import pyembroidery as pe
 import qa
-import kjstitch as K
 
 PPM = 20
 FONT = "inputs/fonts/ZenMaruGothic-Bold.ttf"
@@ -70,12 +69,59 @@ def gate(ref, out, ppm, near_mm=1.5, **kw):
     return rows
 
 import kjletter as KL
+
+TINT = {"kj_pink": "kj_pink_hi", "kj_yellow": "kj_yellow_hi", "kj_blue": "kj_blue_hi"}
+KP_CODES = ["KP", "KP-hi", "KPB", "KPB-hi", "STAR", "STAR-hi", "KNOT"]
+def outline_p90(r, o, ppm=PPM):
+    """p90 distance (mm) from the reference outline to the DST outline and back. IoU alone passes a 5-point star
+    against a konpeito (0.85, red test 20 Oct); the outline does not (star 1.3-1.5 mm vs konpeito 0.4 mm)."""
+    edge = lambda m: m & ~ndi.binary_erosion(m)
+    o = ndi.binary_fill_holes(ndi.binary_opening(o, iterations=2))
+    if not o.any(): return 99.0, 99.0
+    dt_o = ndi.distance_transform_edt(~edge(o)) / ppm; dt_r = ndi.distance_transform_edt(~edge(r)) / ppm
+    return round(float(np.percentile(dt_o[edge(r)], 90)), 2), round(float(np.percentile(dt_r[edge(o)], 90)), 2)
+OUTLINE_MAX = 0.7
+
+def candy_metrics(m, o, ppm=PPM, iou_min=0.70, ratio_min=0.80):
+    """one konpeito: reference mask m vs DST mask o -> (IoU, width ratio, height ratio, outline p90 mm, ok).
+    ok needs IoU, both extents AND the outline (tests/test_konpeito_gates.py: a 5-point star passes IoU, fails outline)."""
+    iou = (m & o).sum() / max((m | o).sum(), 1)
+    def ext(q, ax):
+        idx = np.nonzero(q.any(axis=ax))[0]; return (idx[-1] - idx[0] + 1) / ppm if len(idx) else 0.0
+    wr, hr = ext(o, 0) / max(ext(m, 0), 1e-9), ext(o, 1) / max(ext(m, 1), 1e-9)
+    p90 = max(outline_p90(m, o, ppm))
+    ok = bool(iou >= iou_min and min(wr, 1 / max(wr, 1e-9)) >= ratio_min and min(hr, 1 / max(hr, 1e-9)) >= ratio_min
+              and p90 <= OUTLINE_MAX)
+    return float(iou), float(wr), float(hr), p90, ok
+
+def candy_gate(cands, M, rj, ppm=PPM, near_mm=0.3, iou_min=0.70, ratio_min=0.80):
+    """A14 per konpeito (reviewer PR #29 item 6 / LESSONS A21): one row per candy, never per merged blob.
+    cands: [(label, full mask, body thread)] on the DST grid. Each candy is digitised as its FULL SVG shape (back-row
+    candies are sewn whole, the front row lands on top), so the reference is the candy's own full cairosvg mask and the
+    DST side is only that candy's own stops (back row: KPB codes; front: KP / STAR + its white specks) within near_mm of
+    it. visible_mm2 reports how much of it stays visible after the candies sewn later."""
+    rows = []; it = max(1, int(round(near_mm * ppm)))
+    for i, (label, m, col) in enumerate(cands):
+        later = [c[1] for c in cands[i + 1:]]
+        vis = m & ~np.any(later, axis=0) if later else m
+        back = "back row" in label
+        codes = ["KPB", "KPB-hi"] if back else ["KP", "KP-hi", "STAR", "STAR-hi"]
+        st = stops_of(rj, col, codes) + stops_of(rj, TINT[col], codes) + ([] if back else stops_of(rj, "kj_white", ["KNOT"]))
+        o = S_(M, *sorted(set(st)))
+        o = (o if o is not None else np.zeros_like(m)) & ndi.binary_dilation(m, iterations=it)
+        iou, wr, hr, p90, ok = candy_metrics(m, o, ppm, iou_min, ratio_min)
+        ys, xs = np.nonzero(m)
+        rows.append(dict(family=label, motifs=1, passed=int(ok), min_iou=round(float(iou), 2), mean_iou=round(float(iou), 2),
+                         x_mm=round(float(xs.mean()) / ppm, 1), y_mm=round(float(ys.mean()) / ppm, 1),
+                         visible_mm2=round(float(vis.sum()) / ppm ** 2, 1), w_ratio=round(float(wr), 2), h_ratio=round(float(hr), 2), outline_p90=p90, ok=ok))
+    return rows
 def stops_of(rj, col, codes):
     """1-based stop numbers that sew colour col with any of codes (from the read-back json)."""
     return [i + 1 for i, st in enumerate(rj["per_stop"]) if st.get("col") == col and set(st.get("codes", [])) & set(codes)]
 
 def exposed_for(name, path, rj):
     """exposed stitch floats in the shipped DST (kjletter.exposed_stitches) for one element."""
+    import kjstitch as K          # lazy: kjstitch patches the engine at import (inspect.getsource), not needed by the gates/tests
     A = pickle.load(open("out/art.pkl", "rb"))
     vis = [r for r in A[name]["vis"] if not r["geom"].is_empty]
     stops = K.stops_for(vis, K.FILES[name][1])
@@ -111,7 +157,7 @@ def summarise(name, fam_rows):
                       mean_iou=round(float(np.mean([r["iou"] for r in rows])), 2) if rows else None))
     return S
 
-def zoom_sheet(name, ref_img, prev_img, zooms, table, unc, title, notes, cl=None, exposed=None, prev_hi=None, hs=2, live=None, dirm=None):
+def zoom_sheet(name, ref_img, prev_img, zooms, table, unc, title, notes, cl=None, exposed=None, prev_hi=None, hs=2, live=None, dirm=None, areas=None):
     """ref_img/prev_img: PIL at the same px/mm. zooms: [(x0,y0,x1,y1) px]."""
     W = 2400; pad = 30
     s = (W - 3 * pad) / 2 / ref_img.width
@@ -119,7 +165,7 @@ def zoom_sheet(name, ref_img, prev_img, zooms, table, unc, title, notes, cl=None
     b = prev_img.resize(a.size)
     zh = 360
     lv = live.resize((W - 2 * pad, int(live.height * (W - 2 * pad) / live.width)), Image.LANCZOS) if live is not None else None
-    H = 120 + a.height + 2 * pad + (int(zh * 1.25) + 90) * len(zooms) + 60 + ((lv.height + 80) if lv is not None else 0) + 40 + 34 * (len(table) + 6 + len(unc)) + 34 * (len(cl or []) + 4) + 32 * len(notes) + 60
+    H = 120 + a.height + 2 * pad + (int(zh * 1.25) + 90) * len(zooms) + 60 + ((lv.height + 80) if lv is not None else 0) + 40 + 34 * (len(table) + 6 + len(unc)) + 34 * (len(cl or []) + 4) + 34 * (len(areas or []) + 2) + 32 * len(notes) + 60
     im = Image.new("RGB", (W, int(H)), "white"); d = ImageDraw.Draw(im)
     d.text((pad, 20), title, fill=(20, 20, 20), font=font(40))
     d.text((pad, 72), "LEFT: art reference (same scale)   RIGHT: stitch preview drawn from the shipped DST, same scale", fill=(90, 90, 90), font=font(26))
@@ -156,16 +202,23 @@ def zoom_sheet(name, ref_img, prev_img, zooms, table, unc, title, notes, cl=None
             for (h_, xo), v in zip(hdr2, vals): d.text((pad + xo, y), str(v), fill=okc if h_ == "result" else (20, 20, 20), font=font(26))
             y += 34
         y += 16
-    d.text((pad, y), "A14 motif_match per family (IoU >= 0.70, width + height >= 80 %)", fill=(20, 20, 20), font=font(30)); y += 42
+    d.text((pad, y), "A14 motif_match per family (IoU >= 0.70, width + height >= 80 %; round border dots: needle span vs art Ø -0.1/+0.35 mm, centre <= 0.3 mm)", fill=(20, 20, 20), font=font(30)); y += 42
     hdr = ["family", "motifs", "pass", "min IoU", "mean IoU"]
-    for j, h_ in enumerate(hdr): d.text((pad + j * 300, y), h_, fill=(90, 90, 90), font=font(26))
+    XO = [0, 560, 800, 1040, 1280]          # family names like "konpeito 01 pink (back row)" need the wide first column
+    for j, h_ in enumerate(hdr): d.text((pad + XO[j], y), h_, fill=(90, 90, 90), font=font(26))
     y += 34
     for r in table:
         okc = (30, 140, 60) if r["motifs"] and r["passed"] == r["motifs"] else (180, 40, 30)
         for j, k in enumerate(["family", "motifs", "passed", "min_iou", "mean_iou"]):
-            d.text((pad + j * 300, y), str(r[k]), fill=okc if j == 2 else (20, 20, 20), font=font(26))
+            d.text((pad + XO[j], y), str(r[k]), fill=okc if j == 2 else (20, 20, 20), font=font(26))
         y += 34
     y += 10
+    if areas:
+        d.text((pad, y), f"A15 per area (founder's SVG layers 01 / 02): coverage by its own stop >= {AREA_MIN_PCT:.0f} % and no bare blob >= {AREA_BLOB_MM2:.0f} mm2", fill=(20, 20, 20), font=font(28)); y += 38
+        for a in areas:
+            d.text((pad + 20, y), f"{a['area']}: {a['ref_mm2']} mm2 in the art, {a['covered_pct']} % sewn, {a['uncovered']} bare blobs — {'PASS' if a['ok'] else 'FAIL'}",
+                   fill=(30, 140, 60) if a["ok"] else (180, 40, 30), font=font(26)); y += 34
+        y += 6
     d.text((pad, y), "A15 uncovered areas >= 25 mm2 (design says embroidered, DST bare): " + ("none" if not unc else ""), fill=(20, 20, 20), font=font(28)); y += 38
     for u in unc:
         d.text((pad + 20, y), f"x {u['x_mm']} y {u['y_mm']} mm, {u['w_mm']} x {u['h_mm']} mm, {u['area_mm2']} mm2 — {u.get('why', '')}", fill=(20, 20, 20), font=font(24)); y += 34
@@ -189,11 +242,81 @@ FAM = {   # family -> (colour(s), codes, kind, thread, pull)
            "元気でね / また会おうね (black)": (["kj_black"], ["TXC"], "cl", "60wt", 0.10), "ちひろ (red)": (["kj_red"], ["TXC"], "cl", "40wt", 0.10),
            "理砂 (blue)": (["kj_blue"], ["TXC"], "cl", "40wt", 0.10), "accent dots (red)": (["kj_red"], ["DOT"], "iou", None, 0)},
     "coin": {"こんぺいとう (red)": (["kj_red"], ["TXC"], "cl", "40wt", 0.10),
-             "konpeito (lobes + tint + specks)": (["kj_pink", "kj_pink_hi", "kj_yellow", "kj_yellow_hi", "kj_blue", "kj_blue_hi", "kj_white"], ["KP", "KP-hi", "KNOT"], "iou", None, 0),
              "accent dots (red)": (["kj_red"], ["DOT"], "iou", None, 0)},
-    "spill": {"konpeito (all)": (["kj_pink", "kj_pink_hi", "kj_yellow", "kj_yellow_hi", "kj_blue", "kj_blue_hi", "kj_white"], ["KP", "KP-hi", "KPB", "KPB-hi", "KNOT"], "iou", None, 0)},
+    "spill": {},
 }
 STEM = {"wb": "HAKI_KJ_03_waistband-patch", "coin": "HAKI_KJ_01_coin-pocket-patch", "spill": "HAKI_KJ_02_coin-spill-facing"}
+
+def motif_rows(label, masks, out, ppm=PPM, near_mm=0.3, **kw):
+    """qa.motif_match on each reference motif mask in `masks` (one mask = one motif), DST side limited to the
+    stitches within near_mm of that motif. Returns per-motif rows (family=label)."""
+    rows = []
+    if out is None: out = np.zeros_like(masks[0])
+    it = max(1, int(round(near_mm * ppm)))
+    for k, m in enumerate(masks, 1):
+        r = qa.motif_match(m, out & ndi.binary_dilation(m, iterations=it), ppm, min_mm2=0.3, **kw)
+        for q in r: q["motif"] = k
+        rows += r
+    return rows
+
+AREA_MIN_PCT, AREA_BLOB_MM2 = 97.0, 1.0
+DOT_SPAN_TOL = (-0.1, 0.35)     # needle span vs art Ø (mm): satin pull compensation widens the span ~0.1-0.2 mm
+DOT_OFF_MAX = 0.3
+def dot_rows(path_dst, rj, path_svg, stops, layer="03_border_motifs_WHITE", fill="#FBF8F1"):
+    """A14 per round dot, measured on the needle points (a coverage mask drawn at thread width inflates a Ø1.5 dot by
+    ~0.4 mm, so IoU cannot judge it): every white circle of the SVG layer vs the DST needle RUN (stitches between
+    jumps / trims of its stops) whose centre is nearest to it (<= 1.5 mm). Passes when the needle span is art Ø
+    -0.1/+0.35 mm and the run centre is within 0.3 mm. A dot with no run near it fails (span 0)."""
+    import kjsvg
+    ox, oy = rj["origin_mm"]; p = pe.read(path_dst); ci = 0; runs = [[]]; st = set(stops)
+    for x, y, c in p.stitches:
+        k = c & pe.COMMAND_MASK
+        if k == pe.COLOR_CHANGE: ci += 1; runs.append([])
+        elif k in (pe.JUMP, pe.TRIM): runs.append([]) if runs[-1] else None
+        elif k == pe.STITCH and ci + 1 in st: runs[-1].append((x / 10 + ox, y / 10 + oy))
+        elif k == pe.END: break
+    runs = [np.array(r) for r in runs if len(r) >= 3]
+    parts = runs                 # a run that sews several motifs without a jump reads as one big span -> fails (honest)
+    cen = np.array([[(q[:, 0].min() + q[:, 0].max()) / 2, (q[:, 1].min() + q[:, 1].max()) / 2] for q in parts]) if parts else np.zeros((0, 2))
+    rows = []
+    for k, e in enumerate([e for e in dict(kjsvg.layers(path_svg))[layer] if e["tag"] == "circle" and e["fill"] == fill], 1):
+        r = float(e["a"]["r"]); cx, cy = float(e["a"]["cx"]), float(e["a"]["cy"])
+        d = np.hypot(cen[:, 0] - cx, cen[:, 1] - cy) if len(cen) else np.zeros(0)
+        if len(d) and d.min() <= 1.5:
+            q = parts[int(np.argmin(d))]; span = float(max(np.ptp(q[:, 0]), np.ptp(q[:, 1]))); off = float(d.min())
+        else:
+            span, off = 0.0, 99.0
+        ok = bool(DOT_SPAN_TOL[0] <= span - 2 * r <= DOT_SPAN_TOL[1] and off <= DOT_OFF_MAX)
+        rows.append(dict(motif=k, x_mm=round(cx, 1), y_mm=round(cy, 1), d_art=round(2 * r, 2), span=round(span, 2), off=round(off, 2),
+                         iou=round(min(span, 2 * r) / max(span, 2 * r, 1e-9), 2), w_ratio=round(span / (2 * r), 2), h_ratio=round(span / (2 * r), 2), ok=ok))
+    return rows
+
+def area_gates(B, M, rj, ppm=PPM):
+    """A15 per border area: B = kjsvg.border_refs masks, M = DST masks per stop (0-based int keys)."""
+    area_out = {"red band": S_(M, *stops_of(rj, "kj_red", ["BAND"])),
+                "cream field": S_(M, *stops_of(rj, "kj_cream", ["FIELD"])),
+                "heat-cut edge (red)": S_(M, *stops_of(rj, "kj_red", ["EDGE", "BAND"]))}   # the band runs 1.4 mm under the edge
+    area_ref = {"red band": B["band"], "cream field": B["field"], "heat-cut edge (red)": B["edge"]}
+    areas, unc = [], []
+    for a, ref in area_ref.items():
+        o = area_out[a] if area_out[a] is not None else np.zeros_like(ref)
+        pct = round(100.0 * (ref & o).sum() / max(ref.sum(), 1), 1)
+        u = qa.uncovered(ref, o, ppm, min_mm2=AREA_BLOB_MM2, open_mm=0.3)
+        for q in u: q["why"] = f"{a}: bare in its own stop"
+        unc += u
+        areas.append(dict(area=a, ref_mm2=round(float(ref.sum()) / ppm ** 2, 1), covered_pct=float(pct), uncovered=len(u), ok=bool(pct >= AREA_MIN_PCT and not u)))
+    return areas, unc
+
+def border_gates(path_svg, W, H, M, rj, ppm=PPM, path_dst=None):
+    """PR #30 review item 2: the house border on 01 / 03 gated per motif (A14: every white flower and dot, from the
+    founder's SVG layer 03) and per area (A15: red band, cream field, heat-cut edge = coverage % + uncovered blobs)."""
+    import kjsvg
+    B = kjsvg.border_refs(path_svg, W, H, ppm)
+    wst = stops_of(rj, "kj_white", ["BFL", "BDOT"]); ow = S_(M, *wst)
+    fam = {"border flowers (white)": motif_rows("border flowers (white)", B["flowers"], ow, ppm),
+           "border dots (white)": dot_rows(path_dst, rj, path_svg, wst)}
+    areas, unc = area_gates(B, M, rj, ppm)
+    return fam, areas, unc
 
 def svg_gates(name, A):
     """reference = the founder's SVG rendered per layer by cairosvg (kjsvg.layer_mask); DST masks per stop."""
@@ -215,10 +338,23 @@ def svg_gates(name, A):
         else:
             om = KL.dst_mask(seq, None, shape, lambda x, y: ((x + ox - dx) * PPM, (y + oy - dy) * PPM), {s - 1 for s in st}, KL.THREAD_D[thread])
             cl.append(KL.cl_gate(f"{fam} {thread}", ref[fam], om, pull=pull))
+    areas = []; bunc = []
+    if name in ("wb", "coin"):
+        W_, H_ = A[name]["wh"]
+        bfam, areas, bunc = border_gates(A[name]["src"], W_, H_, M, rj, path_dst=path)
+        iou.update(bfam)
+    fams = summarise(name, iou)
+    kp = {"coin": ("05_konpeito",), "spill": ("F",)}.get(name)
+    krows = []
+    if kp:
+        import kjsvg
+        W_, H_ = A[name]["wh"]
+        krows = candy_gate([(l, m, c) for l, m, c, _ in kjsvg.candy_masks(A[name]["src"], W_, H_, kp)], M, rj)
+        fams += krows
     allout = np.any([m for k_, m in M.items() if isinstance(k_, str)], axis=0)
     design = np.any(list(ref.values()), axis=0)
-    unc = qa.uncovered(ndi.binary_fill_holes(design), allout, PPM)
-    return dict(families=summarise(name, iou), rows=iou, uncovered=unc, centreline=cl,
+    unc = qa.uncovered(ndi.binary_fill_holes(design), allout, PPM) + bunc
+    return dict(families=fams, rows=iou, konpeito=krows, uncovered=unc, centreline=cl, areas=areas,
                 exposed=exposed_for(name, path, rj)), rj, path, shape, to_px
 
 def run():
@@ -246,7 +382,7 @@ def run():
                  "Lettering, face lines, frame, hearts: satin columns on the centrelines of the SVG outlines, ONE width per layer (art width - 0.15 mm); small rings radial.",
                  "Flowers / konpeito: one satin per petal / lobe along its axis; tint centres on top; white specks, centres, cheeks and dots = round bead satin dots."]
         if name == "spill": notes.append(f"Placement: SVG centred on the coin pocket, art bottom {kjsvg.SPILL_UNDER} mm under the pocket's top edge (hidden by the patch) [proposed — confirm].")
-        zoom_sheet(sheet, art, prev, zooms, g["families"], g["uncovered"], title, notes, cl=g["centreline"], exposed=g["exposed"], prev_hi=hi, live=live)
+        zoom_sheet(sheet, art, prev, zooms, g["families"], g["uncovered"], title, notes, cl=g["centreline"], exposed=g["exposed"], prev_hi=hi, live=live, areas=g.get("areas"))
     # ---------------- haki group (upscaled crop grid)
     rj = json.load(open("out/stitch/HAKI_KJ_04_back-pocket-L-haki.json")); ref = A["haki"]["ref"]; k = ref["k"]
     shape = ref["blue"].shape
@@ -262,11 +398,121 @@ def run():
                ["Mockup shown at the upscaled crop; the DST is drawn on it at the same scale (group scaled up per the founder).",
                 "Stars: the founder's vector star (inputs/svg/HAKI_back-pocket-stars_ART.svg), 10 mm, at the traced centres. 'haki' is not in the SVGs: traced from inputs/back_pocket_haki.png."],
                live=__import__("dstlive").render("out/stitch/HAKI_KJ_04_back-pocket-L-haki.dst", colours=[t.hex_color() for t in pe.read("out/stitch/HAKI_KJ_04_back-pocket-L-haki.pes").threadlist], ppm=30, shell="#1f1f22"))
+    kg, tiles = konpeito_gates(A); konpeito_sheet(tiles, kg)
+    for k_, v in kg.items():
+        if k_ == "haki":
+            G["haki"]["families"] += v["families"]; G["haki"]["konpeito"] = v["konpeito"]
+            G["haki"]["uncovered"] += v["uncovered"]; G["haki"]["a15"] = v["a15"]; G["haki"]["placements"] = v["placements"]
+        else: G[k_] = v
     json.dump(G, open("out/gates.json", "w"), indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o))
     for e, g in G.items():
         for r in g["families"]: print(e, r)
         print(e, "uncovered", g["uncovered"])
     return G
+
+KSTEM = {"haki": "HAKI_KJ_04_back-pocket-L-haki", "starP": "HAKI_KJ_05_back-pocket-R-star-pink", "starY": "HAKI_KJ_06_back-pocket-L-lower-star-yellow",
+         "front1": "HAKI_KJ_07a_front-leg-trail-upper", "front2": "HAKI_KJ_07b_front-leg-trail-lower"}
+KNO = {"haki": "04", "starP": "05", "starY": "06", "front1": "07a", "front2": "07b"}
+POS_MAX = 0.5        # mm: DST konpeito centre vs its independent placement centre
+def indep_centres(key, A):
+    """konpeito centres for 04 / 05 / 06 from data that is NOT the DST or its regions (PR #30 review item 3):
+    05 / 06 = the T8 / G6 placement point, which the factory hoops on the FILE CENTRE (DST 0,0), so the candy must sit
+    at the DST centre; 04 = the yellow konpeito at the T8 point (design origin) and the pink one at the offset traced
+    from the back-pocket mockup pixels (kjart.haki_group ref masks), scaled like the group."""
+    import kjart as KA
+    if key in ("starP", "starY"):
+        rj = json.load(open(f"out/stitch/{KSTEM[key]}.json")); ox, oy = rj["origin_mm"]
+        return [dict(id="K1", col=KA.STARS[key[-1]][0], cx=ox, cy=oy, src="T8 point = file centre")]
+    ref = A["haki"]["ref"]; k = ref["k"]; out = []
+    for m, col, lab in ((ref["yel"], "kj_yellow", "T8 point (yellow centre)"), (ref["pnk"], "kj_pink", "mockup trace (pink vs yellow)")):
+        lb, n = ndi.label(m); big = max(range(1, n + 1), key=lambda i: (lb == i).sum())
+        ys, xs = np.nonzero(lb == big)
+        out.append(dict(col=col, cx=((xs.min() + xs.max()) / 2 - ref["ox"]) * k, cy=((ys.min() + ys.max()) / 2 - ref["oy"]) * k, src=lab))
+    out.sort(key=lambda p: p["cx"])
+    for i, p in enumerate(out, 1): p["id"] = f"K{i}"
+    return out
+
+def candy_position(M, rj, p, to_px, near=6.0):
+    """mm between the expected centre p (cx, cy) and the bbox centre of the DST body stops (KP / STAR codes of p's
+    colour) nearest to it, unclipped (a candy sewn 2 mm off reads 2 mm, not a lower IoU)."""
+    st = stops_of(rj, p["col"], ["KP", "KPB", "STAR"]); o = S_(M, *st)
+    if o is None: return 99.0
+    lb, n = ndi.label(ndi.binary_closing(o, iterations=3)); cx, cy = to_px(p["cx"], p["cy"]); best = 99.0
+    for i, sl in enumerate(ndi.find_objects(lb), 1):
+        bx = (sl[1].start + sl[1].stop - 1) / 2; by = (sl[0].start + sl[0].stop - 1) / 2
+        d = math.hypot(bx - cx, by - cy) / PPM
+        if d < near and (sl[1].stop - sl[1].start) / PPM > 5: best = min(best, d)
+    return round(best, 2)
+
+def konpeito_gates(A):
+    """founder change 20 Oct: every konpeito on 04-07 = the 02 facing konpeito. Reference per candy = the founder's own
+    02 candy paths (inputs/svg/HAKI_facing_konpeito_ART.svg), placed + recoloured, rendered by cairosvg; DST per candy
+    from the shipped file. Returns {key: gate dict}, and tiles for the compare sheet."""
+    import kjsvg
+    from shapely.ops import unary_union
+    out, tiles = {}, []
+    for key, stem in KSTEM.items():
+        rj = json.load(open(f"out/stitch/{stem}.json")); path = f"out/stitch/{stem}.dst"
+        if key.startswith("front"):
+            import kjfront
+            F = json.load(open("out/front_stars.json")); byid = {d["id"]: d for d in F["stars"]}
+            sec = [byid[i] for i in F["sections"][int(key[-1]) - 1] if i in byid]          # konpeito only (K.. = soot sprites, own gate)
+            pl = [dict(id=d["id"], col=kjfront.COLS[d["col"]][0], cx=d["x_from_side_mm"], cy=d["y_from_waist_mm"], src="C5 map (mockup trace)") for d in sec]
+        else:
+            pl = indep_centres(key, A)
+        xs = [p["cx"] for p in pl]; ys = [p["cy"] for p in pl]
+        x0, y0 = min(xs) - 8, min(ys) - 8; W, H = max(xs) - min(xs) + 16, max(ys) - min(ys) + 16
+        svg = kjsvg.konpeito_ref_svg(pl, W, H, x0, y0)
+        to_px = lambda x, y, x0=x0, y0=y0: ((x - x0) * PPM, (y - y0) * PPM)
+        shape = (int(round(H * PPM)), int(round(W * PPM)))
+        M = dst_masks_on(path, rj["origin_mm"], shape, to_px)
+        cands = [(f"{KNO[key]} {p['id']} {p['col'][3:]}", kjsvg.svg_string_mask(svg, W, H, keep_id=p["id"]), p["col"]) for p in pl]
+        rows = candy_gate(cands, M, rj)
+        # PR #30 review item 3: position vs the independent centre (T8 point / mockup trace / C5 map) + A15 per file
+        for p, r in zip(pl, rows):
+            e = candy_position(M, rj, p, to_px)
+            r.update(pos_src=p["src"], pos_err_mm=e, pos_ok=bool(e <= POS_MAX), ok=bool(r["ok"] and e <= POS_MAX))
+            r["passed"] = int(r["ok"])
+        allout = np.any([m for k_, m in M.items() if isinstance(k_, str)], axis=0)
+        refu = np.any([c[1] for c in cands], axis=0)
+        unc = qa.uncovered(ndi.binary_fill_holes(refu), allout, PPM, min_mm2=1.0, open_mm=0.3)
+        ref_img = kjsvg.svg_string_render(svg, W, H, PPM * 2, bg="#2A2A2E")
+        prev = render_on(path, rj["origin_mm"], shape, to_px, bg=(42, 42, 46), sc=2)
+        for p, r in zip(pl, rows):
+            cx, cy = (p["cx"] - x0) * PPM * 2, (p["cy"] - y0) * PPM * 2; h = 7 * PPM * 2
+            box_ = (int(cx - h), int(cy - h), int(cx + h), int(cy + h))
+            tiles.append((r, ref_img.crop(box_), prev.crop(box_)))
+        out[key] = dict(families=rows, konpeito=rows, uncovered=unc, placements=pl,
+                        a15=dict(ref_mm2=round(float(refu.sum()) / PPM ** 2, 1), covered_pct=round(100.0 * float((refu & allout).sum()) / max(refu.sum(), 1), 1), blobs=len(unc)))
+    return out, tiles
+
+def konpeito_sheet(tiles, kg=None):
+    """compare_konpeito.png: the 02 source candy, then every konpeito of 04-07: founder's 02 paths placed (left) vs DST (right)."""
+    import kjsvg
+    T = 300; pad = 24; per = 4; W = pad + per * (2 * T + 3 * pad)
+    rowsN = math.ceil(len(tiles) / per)
+    H = 230 + T + 120 + rowsN * (T + 80) + 60 + 3 * 34
+    im = Image.new("RGB", (W, H), "white"); d = ImageDraw.Draw(im)
+    d.text((pad, 20), "Compare — every konpeito on 04 / 05 / 06 / 07a / 07b vs the 02 facing konpeito (founder change 20 Oct)", fill=(20, 20, 20), font=font(40))
+    d.text((pad, 72), "LEFT of each pair: the founder's 02 candy paths (inputs/svg/HAKI_facing_konpeito_ART.svg) placed + recoloured at 10 mm, rendered by cairosvg.", fill=(90, 90, 90), font=font(26))
+    d.text((pad, 106), "RIGHT: stitch preview drawn from the shipped DST, same scale (14 x 14 mm tiles). Same digitising as 02: one satin per lobe, tint lobes on top, 3 white bead specks.", fill=(90, 90, 90), font=font(26))
+    src = Image.open("out/svg_spill.png") if __import__("os").path.exists("out/svg_spill.png") else None
+    sp = Image.open("out/stitch/HAKI_KJ_02_coin-spill-facing_preview.png")
+    y = 160
+    d.text((pad, y), "Source: 02 on the facing (DST preview) — every konpeito below uses its front-row candy shape", fill=(20, 20, 20), font=font(28)); y += 40
+    s_ = T / sp.height; im.paste(sp.resize((int(sp.width * s_), T)), (pad, y)); y += T + 60
+    for k, (r, a, b) in enumerate(tiles):
+        cx = pad + (k % per) * (2 * T + 3 * pad); cy = y + (k // per) * (T + 80)
+        im.paste(a.resize((T, T)), (cx, cy + 34)); im.paste(b.resize((T, T)), (cx + T + 8, cy + 34))
+        okc = (30, 140, 60) if r["ok"] else (180, 40, 30)
+        d.text((cx, cy), f"{r['family']}  IoU {r['min_iou']}  outline {r['outline_p90']}  pos {r.get('pos_err_mm', '-')} mm  {'PASS' if r['ok'] else 'FAIL'}", fill=okc, font=font(22))
+    y2 = y + rowsN * (T + 80) + 10
+    a15 = ", ".join(f"{KNO[k]} {v['a15']['covered_pct']} % covered, {v['a15']['blobs']} blobs" for k, v in (kg or {}).items())
+    for ln in ["pos = mm between the DST konpeito centre and its INDEPENDENT placement centre (<= 0.5 mm): 04 yellow = the T8 point, 04 pink = offset traced from the",
+               "back-pocket mockup pixels; 05 / 06 = the T8 point, hooped on the file centre; 07 = the C5 map traced from the garment mockup (front_stars.json).",
+               "A15 per file: union of the reference konpeito vs every DST stop, bare blobs >= 1 mm2 — " + a15 + "."]:
+        d.text((pad, y2), ln, fill=(90, 90, 90), font=font(24)); y2 += 34
+    im.save("out/compare_konpeito.png")
 
 def render_on(path, origin, shape, to_px, bg=(52, 52, 56), wmm=None, sc=1):
     p = pe.read(path); cols = [t.hex_color() for t in pe.read(path[:-4] + ".pes").threadlist]

@@ -1,3 +1,45 @@
+# HANDOFF — tech pack coordinator (latest: session 9487d766, 2026-10-21 ~14:00) — START HERE
+
+Older sections below are history. The previous coordinator's notes are in the Obsidian session notes
+`Claude/Sessions/2026-10-21/techpack-engine - coordinator pickup after crash (f8cacc7c).md` and `... (9487d766).md`.
+
+## State at 14:00, 21 Oct
+| product | state | next |
+|---|---|---|
+| Keep Clean Our Space | Rev I built (PR #38). Fix for founder-reported flat slivers next to puff letters (gap fillers < 2.5 mm went flat, sewn after foam: FL M 8, FR M 21 on Rev H) + min-size filter on star specks | review queued; founder: OK the generated back star layout (compare_06_back.png). Do NOT send Rev H |
+| Konpeito jeans | Rev B6 built (PR #34), Desktop/konpeito-RevB6 | review queued; founder: size run 26-40 (no 24, 29/31/33 halfway) + soot sprites on the sew-out |
+| Pixel Sky fleece | Rev F built (PR #28) with founder answers (fit, back, bird IP cleared, bird on wearer's right, collar = sky-blue taslan matched to sherpa, no close-ups) | review queued; Mandy mill + sherpa questions (founder sending); TD pilot (sampling-strategist) reviewing Rev F |
+| Wave jacket | Rev C art round built (PR #27) | review queued; founder: shell colour, wave over shoulder onto back yoke; Mandy: chenille |
+| paused since 19 Oct | castle, grand-line, forestball, moon, comet, red-beast, koi | founder go per product |
+
+**Queue is stalled:** 4 reviews queued (~/.techpack/queue), but 22 background sessions are live machine-wide (other teams) vs
+HAKI_MAX_SESSIONS 6, so `dispatch.sh --drain` starts nothing. Not ours to stop; tell the founder / ask him to raise the cap or
+close other teams' idle sessions. `tp-fix-wave-jacket` shows "busy" forever (known stale-busy bug, fix in dispatch.sh still to do).
+
+## Founder decisions pending (asked in session 9487d766)
+1. Order of the next engine/infra jobs. Recommended: S1 (SVG → DST drop-in; PLM page plm#1860 + worker #32 already built, worker
+   not deployed; plm#1860 needs migration 1131 approval) → PLM tech-pack review flow → the 4 TD builds (below).
+2. PLM tech-pack review flow (founder's idea, 21 Oct; I said yes, good idea): phase 1 = pack revision uploaded to the product's
+   files (pipeline.product_files, file_type tech_pack) + email with a deep link + page viewer with box comments + "Request
+   revision"; phase 2 = request → local bridge dispatches a fix round with the comments as the brief → new Rev + reply per
+   comment; phase 3 = start packs from PLM. Builds stay on this laptop for now. Waiting: go + who on the team gets emails/comments.
+3. TD builds for lead-product-sampling-strategist (missions/sampling-strategist/td-team-design.md v2.3), agreed conditions:
+   (1) TD input JSON + renderer + MEDIA.md per project; (2) numeral-trace gate scoped to measurement/count tables + callouts
+   with an exempt list; (4) rev-log / chart / callout agreement gate; (3) pattern_diff tested on our own DXF with a planted
+   3 mm rise error; (5) per-supplier colour-count gate (factory.json supplier max colours; Emmie max 9) + special-trim BOM
+   flags. Founder merges. The strategist waits for the founder's priority answer: tell it (SendMessage
+   lead-product-sampling-strategist).
+
+## Engine follow-up already agreed (do regardless of the order)
+- `scripts/orphan_fragments.py` (added in this commit, no test yet): reads written PES files and flags tiny blocks sewn in a
+  different pass from a bigger touching block of the same thread. RED on KCOS Rev H (FL 8, FR 21), 0 on Konpeito/Grand
+  Line/Forestball/Red Beast/Koi/Comet; Wave flags hundreds per file (partly intentional layering? check with zooms).
+  Make it a prod gate for every product with a red-then-green test on the Rev H FL file. Why: the bug lived in project code
+  (kcsatin/kcmotifs) also copied to konpeito kjsatin and engine/digitize/techniques/column.py: project fixes don't reach copies.
+  **Done on branch engine-orphan-gate (22 Oct): `engine/digitize/gates_orphan.py` + ratchet baseline. The '0 on Konpeito/Grand
+  Line/Forestball/Koi' above was a truncated list: they hold 20 / 828 / 610 / 537 (Comet, Red Beast, Moon, KCOS Rev I 0).
+  Per-product counts + crops: RECAP-2026-10-22-engine-orphan-gate.md. Fixes queue when packs resume.**
+
 # HANDOFF — /techpack batch (updated 2026-10-19 ~17:30, coordinator session d3fafdf9)
 
 Read `LESSONS.md` first, especially A11–A15. A14/A15 are new today: trace every motif, and mask garment details. The gates are `qa.motif_match` and `qa.uncovered`, tested in `tests/test_fidelity_gates.py`. Then read this file and `RECAP-2026-10-19-techpack-batch-coordinator.md` (the decision log).
@@ -65,6 +107,21 @@ PAUSED (work committed; restart with a FRESH builder per product, short brief + 
 - koi: Rev C started (refmask, floratrace).
 Factory answered (factory.json): Brother, 750 mm field, frames 300×300 + 400×450, front single hooping, back 2, chenille/puff/sherpa yes.
 
+## NOW — 2026-10-20 evening (session 093e980c) — START HERE
+Workers run as their own background sessions now (LESSONS E10, scripts/dispatch.sh, board ~/.techpack/board, `python3
+scripts/status.py`, `claude agents`). Closing a session never stops them.
+- **Running:** `tp-build-engine-g1` (G1, branch engine-g1, opens its own PR + reviewer); `tp-build-wave-jacket` (Wave Rev B M,
+  DUE TONIGHT, branch tp-wave-jacket holds the rescued Rev B WIP; copies the final PDF+zip to Desktop/wave-RevB);
+  `tp-build-pixel-sky-fleece` (intake → proposed pack, both bird versions).
+- **Due tonight, founder-blocked:** Konpeito front leg (soot sprites: keep / replace / ship as MISSING; the outside Rev E
+  07a/07b files are NOT sewable — half-filled bodies, ~80 trims, 411 mm single file); KCOS Rev C ready pending the 7 answers.
+- **Next to start when a slot frees** (6/6 background sessions were live): S1 SVG drop-in (docs/ENGINE_PLAN.md SVG → DST track),
+  then S2 the PLM window. P1 image → DST in PLM after G2.
+- **API cost probe:** mock path works (scratch probe, --no-api); the real call (< $1, Opus 5.5) waits for the founder to pick a key
+  (no techpack-engine key exists). Estimate until measured: $0.25–1 per image.
+- **Tee packer** is a local command (scripts/family_build.py, ~1 min, 12 pages); no PLM page yet; art photos missing.
+- **Founder yes/no pending:** company rules (long jobs as background sessions; drop "wait for running helpers" from the hand-off hook).
+
 ## FINAL STATE of coordinator session 19b9021e (2026-10-21) — START HERE
 - **Keep Clean Our Space Rev C: APPROVED, ready for the factory** (PR #20 kcos-revc; deliverables copied to C:\Users\devin\Desktop\keep-clean-RevC\).
   Founder still to answer the 7 G4 questions (back/hood plain; puff JP+EN; FR 12 colours; CN ring dots puff; 汚/污; 소중한/소중함;
@@ -72,6 +129,11 @@ Factory answered (factory.json): Brother, 750 mm field, frames 300×300 + 400×4
 - Merged today: #5 #6 #7 #8 #9 #10 (engine M5, M2, M6, M4g, M3a, M3b), #11 #12 #16 #18 (docs, re-plan), #13 (Koi trial) then #19
   (Koi-specific code removed, mockup-governs generic parts kept), #14 (M4c chaos/crowns), #15 #17 (tee family), #21 (M4s stack_parts +
   travel_on_fill gates; verdict x/11). Castle crop on main: 2/11 (old 9: 1/9); BENCH_m4s.md quotes pre-#14 numbers — stale, fix in G1.
+- **G2 (2026-10-22, branch engine-g2, PR open, founder judges):** Koi FR via session labels, zero subject code; fish 5/5 vs the
+  mockup, orphans 0, identity unchanged. Open: upper lily = flat slabs (needs per-petal label windows); tetra-vs-mockup gate question.
+- **G3 (2026-10-22, branch engine-g3, PR base engine-g2):** per-petal label windows (`hint.each`), motif reference images
+  (`reference`), ANGLE_EPS. Lily reads as 5 petals; chaos 5.1 % (1 tile over) so verdict 1/8 vs G2 2/8; Castle crop moves on purpose
+  (e5b64b20, foliage.306). Tetra grading = bench/labels_FR_tetra.json; default stays mockup pending founder card.
 - **Next engine work = docs/ENGINE_PLAN.md RE-PLAN (G1 → G2 → G3)**: generic primitives + vision step done by the SESSION (no API).
   Open engine follow-ups: dst2/compile block-join defect (LESSONS B39) with a unit test; turn on `unsewn_only` hidden travel for the
   crop (travel_on_fill fails 5.8 m); retire-or-keep decision on the strict run-based stack gate (founder; recommend keep both).

@@ -53,7 +53,7 @@ def auto(x, y, s, size=2.2, fill="#1A1A1A", w=400):
         else: parts.append((seg, None))
     return mixed(x, y, parts, size, fill, w)[0]
 
-FOAM_WHERE = {"01": "badge 01 (JP)", "02": "badge 02 (EN)", "03": "the 03 CN dot ring"}
+FOAM_WHERE = {"01": "badge 01 (JP)", "02": "badge 02 (EN)", "03": "badge 03 (CN text + dot ring)", "04": "the 04 KR oval ring"}
 def foam_steps(r):
     """THE foam procedure of one written file (full or split section), read from its own stop list (review of PR #20:
     every page and the README print this, nothing else). Returns None for a file without puff, else dict(lay, tear,
@@ -72,4 +72,4 @@ def load():
     D = pickle.load(open("art_M.pkl", "rb"))
     return CUR, ALL, META, D
 
-FONT_NAME = {"jp": "Zen Maru Gothic Bold", "en": "Nunito Black (wght 1000)", "cn": "Noto Sans SC (wght 600)", "kr": "Noto Sans KR (wght 450)"}
+FONT_NAME = {"jp": "Zen Maru Gothic Bold", "en": "Nunito Black (wght 1000)", "cn": "Noto Sans SC (wght 800)", "kr": "Noto Sans KR (wght 450)"}

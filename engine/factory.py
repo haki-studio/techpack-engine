@@ -30,12 +30,13 @@ def max_threads(prof=None):
     return int((prof or load())["needles"])
 
 
-def check_threads(pes_path, prof=None):
-    """distinct thread colours in a written file (PES thread list); raises if over the factory limit (LESSONS B5)"""
+def check_threads(pes_path, prof=None, raise_over=True):
+    """distinct thread colours in a written file (PES thread list); raises if over the factory limit (LESSONS B5).
+    raise_over=False (S1 svg2dst, threads.allow_over): return the count, the threads gate fails instead of a crash."""
     import pyembroidery as pe
     n = len({t.hex_color() for t in pe.read(pes_path).threadlist})
     lim = max_threads(prof)
-    if n > lim: raise ValueError(f"{pes_path}: {n} thread colours > factory limit {lim} (factory.json needles)")
+    if n > lim and raise_over: raise ValueError(f"{pes_path}: {n} thread colours > factory limit {lim} (factory.json needles)")
     return n
 
 

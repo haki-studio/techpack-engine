@@ -95,6 +95,15 @@ class Run:
               f"({', '.join(q for q, _ in rep['defaulted'][:6])}{' ...' if len(rep['defaulted']) > 6 else ''}), "
               f"{len(rep['unknown'])} unknown {rep['unknown'][:6]}, {len(rep['pending'])} pending a person")
 
+    # ------------------------------------------------------------ G1: labels or zones
+    def _claims(self):
+        """the claims the thread planner weighs motifs by: the zones file, or the labelled parts as zone-like dicts"""
+        if not self.cfg.get("labels"): return ZN.load(config.path(self.cfg, self.cfg["zones"]))
+        from digitize.labels import schema as LS, compile as LC
+        self.labels = LS.load(config.path(self.cfg, self.cfg["labels"]), palette=self.cfg["threads"]["palette"])
+        R = LC.resolve(self.labels, (self.cfg.get("review") or {}).get("labels"))
+        return dict(zones=[dict(id=r["zone"], tones=r["tones"], geoms=r["geoms"], **({"rest": True} if r["rest"] else {})) for r in R])
+
     def ref(self):
         if self._ref is None:
             reg = register.load(config.path(self.cfg, self.cfg.get("registration") or self.cfg_b["registration"]))   # --- mockup-governs --- run.yaml
@@ -110,13 +119,19 @@ class Run:
         w = np.bincount(ev.tone.ravel(), minlength=len(ev.keys)) / ev.ppm ** 2
         w = zero_bare(w, ev.keys, T.get("bare"))           # --- mockup-governs --- bare-shell tones: evidence only, never a thread
         # M4g: thread planner with the trade-off as options (threads.choice / answers.json), salience per tone
-        zs0 = ZN.load(config.path(cfg, cfg["zones"]))
+        zs0 = self._claims()                                # --- G1 --- zones, or the labelled parts (parts.labels.json)
         zm = {z["id"]: (np.ones((ev.H, ev.W), bool) if z.get("rest") else ev.mask(ZN.window(z))) &
                        (np.isin(ev.tone, [ev.keys.index(k) for k in z["tones"] if k in ev.keys]) if z.get("tones", "all") != "all" else True)
               for z in zs0["zones"]}                       # a motif = a zone whose OWN tones include the tone
         tp = TH.plan_from_config(dict(zip(ev.keys, w.tolist())), T, config.needles(cfg), sal=TH.salience(ev.tone, ev.keys, T["palette"], ev.ppm, zm))
         ctx = Ctx(ev, self.rb, cfg, tp["map"], T["protected"])
-        zs = ZN.load(config.path(cfg, cfg["zones"]))
+        label_q = None
+        if cfg.get("labels"):                               # --- G1 --- labels -> generic primitives (no subject splitters)
+            from digitize.labels import compile as LC
+            parts, log, label_q = LC.extract(ctx, ev, self.labels, answers=(cfg.get("review") or {}).get("labels"))
+            zs = zs0
+        else:
+            zs = ZN.load(config.path(cfg, cfg["zones"]))
         def z_of(z):
             if "z" in z: return float(z["z"])
             return self.rb.z(SPLIT_KIND[z["splitter"]])
@@ -132,7 +147,7 @@ class Run:
             if k == "building":                                    # M3a: building template fitter
                 from digitize.extract.splitters import building; return building.split(ctx, z, zz, m)
             raise ValueError(f"zone {z['id']}: unknown splitter {k!r}")
-        parts, log = ZN.claim_and_split(zs, ev, z_of, split)
+        if not cfg.get("labels"): parts, log = ZN.claim_and_split(zs, ev, z_of, split)
         parts, left_out = RV.apply_extract(self.cfg, parts)                                    # M4g: answers
         if left_out: print(f"    answers: {len(left_out)} parts of zones answered 'leave out' are not sewn")
         n_traced = len(parts); sk = cfg.get("specks", {}) or {}
@@ -150,6 +165,12 @@ class Run:
                                                            specks_merged=[list(m) for m in merged], thread_tradeoff=tp.get("tradeoff"),
                                                            review_answers=self.cfg.get("_answers_report"),
                                                            splitter_stats=getattr(ctx, "stats", {}), hint_repairs=[list(h) for h in hint_fix]))   # M3b: florets / clumps / trunks
+        if cfg.get("labels"):                               # --- G1 ---
+            import hashlib
+            lpth = config.path(cfg, cfg["labels"])
+            plan.meta.update(labels=dict(file=os.path.relpath(lpth, cfg["project"]), sha256=hashlib.sha256(open(lpth, "rb").read()).hexdigest()[:16],
+                                         by=self.labels.get("source", {}).get("by"), parts=sum(1 for _ in __import__("digitize.labels.schema", fromlist=["x"]).iter_parts(self.labels))),
+                             label_questions=label_q)
         if getattr(ctx, "building_report", None):                  # M3a: details under a rule 9 minimum, as SUGGESTIONS
             plan.meta["building_suggest"] = ctx.building_report.get("suggest", [])
         plan.to_json(self.f("parts.json"), with_blocks=False)
@@ -231,7 +252,7 @@ class Run:
     # ------------------------------------------------------------ compile
     def compile(self):
         t0 = time.time(); plan = ObjectPlan.from_json(self.f("plan.json"))
-        res = CP.write(plan, self.base, self.origin)
+        res = CP.write(plan, self.base, self.origin, **(self.cfg.get("compile") or {}))   # G1: run.yaml compile: {exact_travel: {..., unsewn_only: true}}
         if len(res["seg_parts"]) != len(res["segs"]): raise RuntimeError("compile: labels out of step with stitches")
         json.dump(dict(base=os.path.basename(self.base), origin=res["origin"], build=res["build"], readback=res["readback"], stops=res["stops"]),
                   open(self.f("readback.json"), "w"), indent=1)
@@ -301,6 +322,14 @@ class Run:
         row["direction_by_kind"] = {k: dict(tiles=sum(v), ok=v[0], dev=v[1], chaos=v[2], pct_ok=round(100 * v[0] / max(1, sum(v)), 1),
                                             pct_chaos=round(100 * v[2] / max(1, sum(v)), 1)) for k, v in sorted(per.items())}
         row["direction_by_source"] = audit.direction_by_source(dm, part_at, self.rb, plan.parts)   # M3b: one constructed basis
+        if self.cfg.get("labels"):                          # --- G1 --- the label-angle tiles on their own line (counted independent)
+            lab = [0, 0, 0]
+            for k_, tiles in ((0, dm["ok_tiles"]), (1, [r["at_mm"] for r in dm["fail_dev"]]), (2, [r["at_mm"] for r in dm["fail_chaos"]])):
+                for c in tiles:
+                    p_ = part_at(c)
+                    if p_ is not None and p_.dir.source == "label": lab[k_] += 1
+            row["direction_label"] = dict(tiles=sum(lab), ok=lab[0], dev=lab[1], chaos=lab[2], pct_ok=round(100 * lab[0] / max(1, sum(lab)), 1),
+                                          note="tiles whose top part's angle is the labeller's (source label); included in 'independent'")
         # --- M4c --- radial-floret exemption (gates_radial): raw chaos stays in row["direction"]; exempt tiles -> "radial"
         from digitize import gates_radial as GR
         ex = GR.tag_buckets(GR.exempt(dm, vis, [sp[i] for i in idx], plan.parts, GR.config(self.rb), ppm, origin=self.crop[:2]),
@@ -359,6 +388,8 @@ class Run:
         # --- M4s --- part-based stack + travel on sewn fill, on the labelled written file (two new verdict lines)
         from digitize import gates_stack
         gates_stack.run_hook(row, plan, segs, sp, self.crop, self.cfg.get("gates_m4s"))
+        if self.cfg.get("labels"):                          # --- G3 --- motif_match per labelled motif vs the reference the labels name
+            row["motif_reference"] = self.motif_reference(dst)
         row["verdict"] = bench.verdict(row, self.cfg_b["targets"])
         json.dump(row, open(self.f("gates.json"), "w"), indent=1, default=float)
         self._row, self._aux = row, aux
@@ -372,6 +403,24 @@ class Run:
               f" (cap {row['stack_parts']['cap_per_100cm2']})"
               f", travel on sewn fill {row['travel_on_fill']['n_exposed']} stitches / {row['travel_on_fill']['exposed_mm']} mm")
         return row, aux
+
+    def motif_reference(self, dst):
+        """G3: every labelled motif (or part with its own `reference`) graded with qa.motif_match against the mockup
+        (the GATE reference, bench.json's registration) or the picture its labels name (digitize.labels.refgrade).
+        Reported, not a verdict line: which reference governs a motif is the labeller's (founder's) call."""
+        import qa
+        from digitize.labels import schema as LS, refgrade as RG
+        lpth = config.path(self.cfg, self.cfg["labels"]); T = self.cfg["threads"]
+        labels = LS.load(lpth, palette=T["palette"])
+        reg = register.load(os.path.join(self.cfg["project"], self.cfg_b["registration"]))
+        ev = evidence.build(register.reference(reg, self.view, self.crop, ppm=float(self.cfg_b["ppm"])), T["palette"], **self.cfg["evidence"])
+        ms = qa.dst_stop_masks(dst, self.origin, (ev.H, ev.W), ev.ppm, to_mm=lambda x, y: (x - ev.bounds[0], y - ev.bounds[1]))
+        out = np.any(list(ms.values()), axis=0) if ms else np.zeros((ev.H, ev.W), bool)
+        rows = RG.grade(labels, os.path.dirname(lpth), ev, out, bare=tuple(T.get("bare") or ()))
+        res = dict(source="digitize.labels.refgrade: qa.motif_match (near 1.5 mm) per labelled motif; mockup = bench registration",
+                   labels=os.path.relpath(lpth, self.cfg["project"]), summary=RG.summary(rows), rows=rows)
+        print("    motif reference: " + ", ".join(f"{k} {v['ok']}/{v['n']} (IoU {v['mean_iou']})" for k, v in res["summary"].items()))
+        return res
 
     def _gated(self):
         if not hasattr(self, "_row"): self.gates()

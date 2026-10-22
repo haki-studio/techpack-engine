@@ -117,8 +117,9 @@ def anchor(px, py):
     return lambda qx, qy: (ax + (qx - px)*S, ay + (qy - py)*S)
 
 def text_regs(glyphs, col, code, unit, cap, rim=False, layer=31):
-    """Rev B: one satin column per font stroke (kcsatin); puff text gets a lighter rim column round every stroke edge."""
-    core, rims = KM.text_columns(glyphs, col, code, cap, unit, rim=rim)
+    """Rev B: one satin column per font stroke (kcsatin); puff text gets a lighter rim column round every stroke edge.
+    Rev D: puff text strokes narrower than kccore.PUFF_MIN_MM stay flat (KM.text_columns logs every decision)."""
+    core, rims = KM.text_columns(glyphs, col, code, cap, unit, rim=rim, puff_min=kccore.PUFF_MIN_MM if code.startswith("PF-") else None)
     return core, rims
 
 def ref_glyphs(el, piece, glyphs, threads):
@@ -161,7 +162,10 @@ if _dc:
     _c = min(_dc, key=lambda c: math.hypot(c["cx"] - _dp[0], c["cy"] - _dp[1]))
     _x, _y = J(_c["cx"], _c["cy"]); _d = max(1.45, 2 * math.sqrt(_c["area"] * S * S / math.pi))
     _a = math.radians(35.0); _r = _d / 2
-    add("FR", [KS.column_region("kc_mint", "DOT", [(_x - math.cos(_a) * _r, _y - math.sin(_a) * _r), (_x + math.cos(_a) * _r, _y + math.sin(_a) * _r)], _d)],
+    _code = "PF-DOT" if _d >= kccore.PUFF_MIN_MM else "DOT"     # Rev D: sign part -> puff if wide enough
+    KM.PUFF_LOG.append(dict(unit="01-dot2", ch="dot", strokes=1, puff=int(_code != "DOT"), flat=int(_code == "DOT"), share=1.0, w_min=round(_d, 2), w_med=round(_d, 2), w_max=round(_d, 2),
+                            flat_w_max=round(_d, 2) if _code == "DOT" else None, below_house=int(_code != "DOT" and _d < kccore.PUFF_HOUSE_MIN_MM)))
+    add("FR", [KS.column_region("kc_mint", _code, [(_x - math.cos(_a) * _r, _y - math.sin(_a) * _r), (_x + math.cos(_a) * _r, _y + math.sin(_a) * _r)], _d)],
         22, "01", unit="01-dot2")
     META["traced"].setdefault("01", {})["small mint dot"] = dict(x=round(_x, 1), y=round(_y, 1), d=round(_d, 2))
 BARS_JP = [  # mockup px centre, length px, angle deg (y down), colour  (17 bars, counted on the mockup)
@@ -214,7 +218,13 @@ fs = best_star(lambda kp: KM.star_facets(sx1, sy1, sz1, "kc_gold", "01-star1", r
 add("FR", [r for r in fs if r["grp"] != "FACE"], 30, "01", unit="01-star1"); add("FR", [r for r in fs if r["grp"] == "FACE"], 33, "01", unit="01-star1")
 # small top-right star: a 4-point sparkle in star gold (mockup)
 c = TR.snap("yellow", 482.5, 415.0); tr_log("01", "stars", c)
-add("FR", fit(KM.sparkle_cols(*J(*((c["cx"], c["cy"]) if c else (482.5, 415.0))), max(c["ext_w"], c["ext_h"]) * S if c else 6.0, "kc_gold", "01-star2", code="SPK"), ref_fn_for(J0, JC, "yellow"), "01", "sparkle"), 22, "01", unit="01-star2")
+_s2 = fit(KM.sparkle_cols(*J(*((c["cx"], c["cy"]) if c else (482.5, 415.0))), max(c["ext_w"], c["ext_h"]) * S if c else 6.0, "kc_gold", "01-star2", code="SPK"), ref_fn_for(J0, JC, "yellow"), "01", "sparkle")
+# Rev D: the small 4-point sparkle of the JP badge is a sign part, but its arms TAPER to points: the widest point (centre)
+# is the column width, the arms are narrower over most of their length -> flat (logged with the measured width)
+_w2 = max([r.get("col_w") or 0 for r in _s2] or [0])
+KM.PUFF_LOG.append(dict(unit="01-star2", ch="sparkle", strokes=len(_s2), puff=0, flat=len(_s2), share=0.0, w_min=None, w_med=None, w_max=round(_w2, 2), flat_w_max=round(_w2, 2), below_house=0,
+                        note="tapered 4-point arms: %.2f mm at the centre, to a point at the tips" % _w2))
+add("FR", _s2, 22, "01", unit="01-star2")
 # bottom red star (review item 5): SOLID red, faceted, with a small dark star pit (fabric) in the middle
 c = TR.snap("red", 406.3, 563.8); tr_log("01", "stars", c)
 sz3, rot3 = star_from(c, 10) if c else (15.0, 10)
@@ -295,17 +305,26 @@ colm = KL.set_column("cn", kccore.TEXT["03"], em_cn, gap=(math.dist(t0, t1) - 5*
 mid = ((t0[0] + t1[0])/2, (t0[1] + t1[1])/2)
 cn = KL.place(colm, *mid, col_ang)
 META["badges"]["03"].update(em=em_cn, angle=col_ang)
-put("FR", text_regs(cn, "kc_red", "TXC", "03-text", "flat"), 26, "03", "03-text"); ref_glyphs("03", "FR", cn, ["kc_red"])
+# Rev D (founder 20 Oct): CN text 3D puff (Noto Sans SC 800: the mockup's strokes are as heavy; at 600 only 11 % of the
+# stroke length reached the house 3.0 mm puff minimum, at 800 81 %); no lighter rim (the mockup's CN letters show none).
+# Flat strokes of a puff glyph sew after the foam is torn (layer 31 = top), like JP / EN.
+put("FR", text_regs(cn, "kc_red", "PF-TXC", "03-text", "flat"), 31, "03", "03-text"); ref_glyphs("03", "FR", cn, ["kc_red"])
 
 # ================================================================ 04 KR oval  (FL, wearer's left lower front)
 K0 = (723.3, 891.8); K = anchor(*K0); KC = K(*K0); KANG = 6.9
 a_c, b_c, wr = 117.7*S, 30.7*S, 4.0
 _rp, _rw, _rprof, _wmin, _wmax = trace_ring(ref_fn_for(K0, KC, "yellow"), *KC, a_c + wr/2, b_c + wr/2, KANG, wr)
-_oval = [KS.column_region("kc_gold", "OVAL", _rp, _rw, ("flat", "flat"), True, prof=_rprof, unit="04-oval")]
+# Rev D (founder 20 Oct): the KR oval ring is 3D puff (traced width checked against PUFF_MIN_MM below), its lemon
+# highlight sews on top of the puff ring in the same foam block
+_oval = [KS.column_region("kc_gold", "PF-OVAL", _rp, _rw, ("flat", "flat"), True, prof=_rprof, unit="04-oval")]
 # lemon highlight: a 1.1 column just inside the ring centreline (mockup: lighter inner line)
 _hl = [(KC[0] + (x - KC[0]) * (1 - 0.9 / max(1e-6, math.hypot(x - KC[0], y - KC[1]))), KC[1] + (y - KC[1]) * (1 - 0.9 / max(1e-6, math.hypot(x - KC[0], y - KC[1])))) for x, y in _rp]
-_oval.append(KS.column_region("kc_lemon", "OVAL-hl", _hl, 1.1, ("flat", "flat"), True, unit="04-oval", ko=False))
+_oval.append(KS.column_region("kc_lemon", "PF-OVHL", _hl, 1.1, ("flat", "flat"), True, unit="04-oval", ko=False))
 META["traced"].setdefault("04", {})["oval ring width"] = (round(_wmin, 2), round(_wmax, 2))
+if _wmin < kccore.PUFF_MIN_MM:
+    _oval[0]["grp"] = "OVAL"; _oval[1]["grp"] = "OVAL-hl"
+KM.PUFF_LOG.append(dict(unit="04-oval", ch="ring", strokes=1, puff=int(_wmin >= kccore.PUFF_MIN_MM), flat=int(_wmin < kccore.PUFF_MIN_MM), share=1.0,
+                        w_min=round(_wmin, 2), w_med=round((_wmin + _wmax) / 2, 2), w_max=round(_wmax, 2), flat_w_max=None, below_house=int(_wmin < kccore.PUFF_HOUSE_MIN_MM)))
 _oval = fit(_oval, ref_fn_for(K0, KC, "yellow"), "04", "oval ring", aspect=True)
 add("FL", _oval, 25, "04", unit="04-oval")
 add("FL", [], 27, "04")
@@ -316,7 +335,7 @@ while True:
     if unary_union([g for _, g in kr]).distance(_ovg) >= 3.0 or em_kr <= 12: break
     em_kr -= 0.5
 META["badges"]["04"] = dict(anchor_px=K0, centre=KC, angle=KANG, em=em_kr, tracking=trk_kr, text=kccore.TEXT["04"], axes=(a_c + wr/2, b_c + wr/2, wr))
-put("FL", text_regs(kr, "kc_white", "TXC", "04-text", "flat"), 26, "04", "04-text"); ref_glyphs("04", "FL", kr, ["kc_white"])
+put("FL", text_regs(kr, "kc_white", "PF-TXC", "04-text", "flat"), 26, "04", "04-text"); ref_glyphs("04", "FL", kr, ["kc_white"])
 # Review item 7 resolved by the source frame (inputs/reference.png): the render's "i-arrow mark" is the "!" of 우주! drawn
 # rotated 180°, and its accent marks are parts of rotated Hangul — they are now part of the text, no separate ornaments.
 META["badges"]["04"]["ornaments"] = []
@@ -440,5 +459,6 @@ META["counts"]["glints"] = json.load(open("out/ref/specks_glints.json"))
 spans = [SPAN(max(s["w"], s["h"])) for s in SP if 5 <= max(s["w"], s["h"]) <= 9]
 META["counts"]["sparkle_spans"] = dict(n=len(spans), lt5=sum(1 for v in spans if v < 5), s5_8=sum(1 for v in spans if 5 <= v <= 8), gt8=sum(1 for v in spans if v > 8))
 META["S"] = S; META["SX"] = MM.SX; META["SY"] = MM.SY
+META["puff"] = KM.PUFF_LOG
 pickle.dump(dict(items=items, meta=META), open("scene.pkl", "wb"))
 print({P: len(v) for P, v in items.items()}, META["counts"])

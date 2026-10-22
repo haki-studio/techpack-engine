@@ -33,9 +33,9 @@ outline and the grain are not fully separable (its own edges run along the axis 
 elongation: reported as "outline", never as independent."""
 import math
 
-RULES = ("axis", "fan", "between_petals", "radial", "column", "fan_smooth")   # --- M4c --- fan_smooth (crown.py)
+RULES = ("axis", "fan", "between_petals", "radial", "column", "fan_smooth", "long_axis")   # --- M4c --- fan_smooth (crown.py); G1 long_axis
 M3A_RULES = ("course", "down_slope", "across")   # building fitter (extract/building_fit.py), registered behind basis()
-OUTLINE_RULES = ("fan", "fan_smooth")          # angles read off the traced outline's shape: not independent of the reference (A24)
+OUTLINE_RULES = ("fan", "fan_smooth", "long_axis")          # angles read off the traced outline's shape: not independent of the reference (A24)
 DEPTH_RULES = ("course", "down_slope")   # M3a rule 3 depth: a FAR tier's angle (rows along the eave) was chosen where the
                                          # render's grain agreed (BENCH_m3a.md "partly grain-informed"): reported as outline
 
@@ -137,6 +137,8 @@ def _m3b_basis(p, peers=None):
         return 0.0, None
     if r == "fan_smooth":                                             # --- M4c --- crown clumps, a smooth fan
         return _fan_smooth(p, c, peers)
+    if r == "long_axis":                                              # --- G1 --- lobes (primitives/lobe.py)
+        return _long_axis(p, c)
     return None, f"unknown construction rule {r!r} (have {RULES})"
 
 
@@ -175,3 +177,22 @@ def _fan_smooth(p, c, peers=None):
     for a in ax:
         t = math.atan2(a["to"][1] - a["from"][1], a["to"][0] - a["from"][0]); C += a["w"] * math.cos(2 * t); S += a["w"] * math.sin(2 * t)
     return math.degrees(0.5 * math.atan2(S, C)) % 180.0, None
+
+
+def _long_axis(p, c):
+    """G1 rule "long_axis" (primitives lobe, cord stubs): rows along the long mid-line of the minimum rotated rectangle of
+    construct["of"], the TRACED outline recorded at extraction (the lobe itself, or the lobe a lit / shade layer belongs
+    to), else of the part. Sequencing reshapes a part afterwards (speck merges, underlap, cut-under), so the outline is
+    recorded like M3b's fan points; the part must still overlap it by >= 50 % of the smaller area. Read off a traced outline: "outline" bucket (OUTLINE_RULES), never independent (A24)."""
+    from shapely.geometry import Polygon
+    from digitize.techniques.turning import long_axis
+    g = p.geom
+    if c.get("of"):
+        g = Polygon(c["of"]).buffer(0)
+        if g.is_empty: return None, "long_axis `of` outline is empty"
+        if p.geom.intersection(g).area < 0.5 * min(p.geom.area, g.area): return None, "long_axis: the part does not overlap its recorded `of` outline"
+    gp = g if g.geom_type == "Polygon" else max(getattr(g, "geoms", [g]), key=lambda q: q.area)
+    if gp.is_empty or gp.area <= 0: return None, "long_axis on an empty part"
+    a, b = long_axis(gp)
+    if math.dist(a, b) < 1e-6: return None, "long_axis of a degenerate part"
+    return line_angle(a, b), None

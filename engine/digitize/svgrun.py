@@ -41,6 +41,8 @@ class SvgRun:
     def __init__(self, yaml_path, overrides=None):
         self.cfg = config.load(yaml_path, overrides)
         if self.cfg.get("source") != "svg": raise SystemExit(f"{yaml_path}: not an SVG run (source: svg)")
+        from digitize.extract import svg_auto
+        svg_auto.fill_config(self.cfg)                       # S1: no palette in the yaml -> derived from the SVG itself
         self.out = config.path(self.cfg, self.cfg["out_dir"]); os.makedirs(self.out, exist_ok=True)
         self.rb = Rulebook(self.cfg.get("rules"), toggles=self.cfg["techniques"], overrides=self.cfg.get("rule_overrides"))
         self.name = self.cfg["name"]; self.base = os.path.join(self.out, self.name)
@@ -68,10 +70,15 @@ class SvgRun:
     # ------------------------------------------------------------ plan
     def make_plan(self):
         t0 = time.time(); plan = ObjectPlan.from_json(self.f("parts.json")); P = self.rb.principles; issues = []
+        fab = None
+        if self.cfg.get("fabric"):
+            from digitize.extract.svg_auto import fabric_rules
+            fab = fabric_rules(self.cfg["fabric"])
         for p in plan.parts:
             p.technique = self.rb.technique_for(p.kind); p.stitch = self.rb.stitch_spec(p.kind, p.technique)
             p.stitch.params.update(kind_params(self.rb, p.kind))
             if p.technique == "dot" and p.meta.get("min_d"): p.stitch.params["min_d"] = p.meta["min_d"]
+            if fab: apply_fabric(p, fab)
         sq = self.cfg["sequence"]
         if sq.get("cut_under", False): SQ.cut_under(plan.parts, sq["keep_mm"])
         for p in plan.parts: issues += techniques.get(p.technique).check(p, P)
@@ -82,7 +89,9 @@ class SvgRun:
             else: plan.stops.append(dict(thread=p.thread, parts=[p.id], last=True))
         need = config.needles(self.cfg)
         if TH.needles_used(plan.threads) > need:                                                # M4g: <colour>+foam = the same needle
-            raise SystemExit(f"plan uses {TH.needles_used(plan.threads)} threads > {need} needles")
+            if not self.cfg["threads"].get("allow_over"):
+                raise SystemExit(f"plan uses {TH.needles_used(plan.threads)} threads > {need} needles")
+            plan.meta["threads_over"] = TH.needles_used(plan.threads)      # S1 (svg2dst): written, and the thread gate fails
         CP.plan_blocks(plan)
         plan.meta.update(issues=issues)
         plan.to_json(self.f("plan.json")); self.plan = plan
@@ -95,7 +104,7 @@ class SvgRun:
         plan = ObjectPlan.from_json(self.f("plan.json"))
         W, H = plan.meta["svg"]["size_mm"]; b = self.bounds(plan)
         part_map(plan, b, self.f("part_map.png"))
-        qs = []
+        qs = [dict(q) for q in (self.cfg.get("_s1") or {}).get("questions", [])]          # S1: the derived-config questions first
         for k, i in enumerate(plan.meta.get("issues", []), 1):
             qs.append(dict(id=f"q{k:03d}", text=i["text"], part_ids=[i["part"]], options=["accept", "change"], default="accept",
                            topic=i.get("technique"), severity=i.get("severity", "check")))
@@ -111,7 +120,7 @@ class SvgRun:
         import factory
         t0 = time.time(); plan = ObjectPlan.from_json(self.f("plan.json"))
         b = self.bounds(plan); origin = ((b[0] + b[2]) / 2, (b[1] + b[3]) / 2)
-        res = CP.write(plan, self.base, origin, **self.cfg.get("compile", {}))
+        res = CP.write(plan, self.base, origin, **dict(dict(join_guard=False), **self.cfg.get("compile", {})))   # B39 guard opt-in here (G1)
         if len(res["seg_parts"]) != len(res["segs"]): raise RuntimeError("compile: labels out of step with stitches")
         import dst2
         rb = res["readback"]; ex = sorted(dst2.exposed_travel(res["regions"], res["runs"]))
@@ -120,7 +129,7 @@ class SvgRun:
         json.dump(dict(base=os.path.basename(self.base), origin=res["origin"], build=res["build"], readback=rb, stops=res["stops"],
                        exact_trims=res["exact_trims"], exposed_travel_gt1mm=sum(1 for v in ex if v > 1.0),
                        max_exposed_travel=round(ex[-1], 2) if ex else 0.0, machine_min=round(mins, 1),
-                       threads=factory.check_threads(self.base + ".pes")),
+                       threads=factory.check_threads(self.base + ".pes", raise_over=not self.cfg["threads"].get("allow_over"))),
                   open(self.f("readback.json"), "w"), indent=1)
         np.savez_compressed(self.f("stitch_parts.npz"), segs=np.asarray(res["segs"], np.float32), parts=np.asarray([p or "" for p in res["seg_parts"]]))
         print(f"compile: {rb['stitches']} stitches, {rb['trims']} trims, {rb['stops']} stops, max stitch {rb['max_stitch']} mm, "
@@ -176,6 +185,20 @@ class SvgRun:
         print(f"panel: {self.f('panel.png')} + live.png")
 
 
+def apply_fabric(p, fab):
+    """rules/fabrics.yaml deltas on one part's StitchSpec (S1, svg2dst --fabric). twill / denim carry none."""
+    t = p.technique; sp = p.stitch
+    if t in ("tatami", "satin", "split_satin", "column_satin", "turning_satin", "radial") and fab.get("pull_add"):
+        sp.pull_comp = round(sp.pull_comp + float(fab["pull_add"]), 3)
+    if t == "tatami" and fab.get("spacing_mul"): sp.spacing = round(sp.spacing * float(fab["spacing_mul"]), 3)
+    if t == "tatami" and fab.get("lattice_all"):
+        sp.params["lattice_min_mm2"] = 0.0
+        if "lattice_90" not in sp.underlay: sp.underlay = list(sp.underlay) + ["lattice_90"]
+    if t == "column_satin" and fab.get("centre_run_min_w"):
+        sp.params["centre_run_min_w"] = min(float(sp.params.get("centre_run_min_w", 1.4)), float(fab["centre_run_min_w"]))
+        if sp.underlay == [] and p.kind not in ("patch_edge",): sp.underlay = ["centre_run"]
+
+
 # ------------------------------------------------------------------ sequence for patches
 def order_complete(parts, touch=0.5):
     """sequence.order's z-DAG (a part sews after every lower-z part it touches / overlaps), with one change in how the
@@ -228,6 +251,12 @@ def part_map(plan, bounds, path, ppm=8.0):
 
 
 # ------------------------------------------------------------------ gates on the file
+def cut_other_shapes(out, full, ref):
+    """S1 per-shape window: drop the DST pixels that lie on ANOTHER shape's art (a crossing ring, a same-thread fill
+    beside a bar) so one shape's row measures only its own stitches. full = every shape of the layer, ref = this one."""
+    return out & ~(full & ~ref)
+
+
 def gate_file(cfg, plan, dst, rbk, seg_npz=None):
     """every M5 gate on the written DST vs the founder's layers (cairosvg). Families = SVG layers; a family's DST
     stitches = the stops that sew its parts (plan.stops order = file order)."""
@@ -241,21 +270,46 @@ def gate_file(cfg, plan, dst, rbk, seg_npz=None):
     stop_of = {pid: i for i, st in enumerate(plan.stops) for pid in st["parts"]}
     wt = {i: plan.threads[st["thread"]].get("weight", "40wt") for i, st in enumerate(plan.stops)}
     masks = qa.dst_stop_masks(dst, origin, shape, ppm, thread_d={i: TD[w] / s for i, w in wt.items()}, to_mm=to_svg)
-    by_layer = {}
-    for p in plan.parts: by_layer.setdefault(p.meta.get("layer", p.zone), []).append(p)
+    by_layer = {}; fam_els = {}
+    for p in plan.parts:                    # S1: a mixed layer is gated per family (lines | shapes) on its own source shapes
+        lid = p.meta.get("layer", p.zone); key = (lid, p.meta["s1_fam"]) if p.meta.get("s1_fam") else lid
+        by_layer.setdefault(key, []).append(p)
+        if p.meta.get("s1_el"): fam_els.setdefault(key, set()).update(p.meta["s1_el"])
+    fams_of = {}
+    for key in by_layer: fams_of.setdefault(key[0] if isinstance(key, tuple) else key, []).append(key)
     CLc = G.get("centreline", {}); MOc = G.get("motif", {})
     cl_rows, motif_rows, rows_all = [], [], {}
     refs = {}
-    for lid, ps in by_layer.items():
-        ref = svgart.layer_mask(sv["svg"], [lid], W, H, ppm); refs[lid] = ref
+    for key, ps in by_layer.items():
+        lid = key[0] if isinstance(key, tuple) else key
+        els = fam_els.get(key) if isinstance(key, tuple) and len(fams_of[lid]) > 1 else None
+        ref = svgart.layer_mask(sv["svg"], [lid], W, H, ppm, els=els, exact=bool(cfg["svg"].get("auto"))); refs[key] = ref
+        if isinstance(key, tuple) and len(fams_of[lid]) > 1: lid = f"{lid} [{key[1]}s]"
         kinds = {p.kind for p in ps}; stops = sorted({stop_of[p.id] for p in ps if p.id in stop_of})
         if kinds & set(COLUMN_KINDS):
             wts = {p.meta.get("thread_wt", "40wt") for p in ps}; w_ = sorted(wts)[0]
             m = np.any([masks[i] for i in stops if i in masks], axis=0) if stops else np.zeros(shape, bool)
             pull = max(p.stitch.pull_comp for p in ps if p.kind in COLUMN_KINDS)
-            r = qa.centreline_match(ref, m, ppm, name=f"{lid} {w_}", pull=pull / s, near_mm=CLc.get("near_mm", 1.0),
-                                    d_max=CLc.get("d_max", 0.5), w_tol=CLc.get("w_tol", 0.20))
-            r.update(layer=lid, stops=[i + 1 for i in stops]); cl_rows.append(r); continue
+            kw = dict(pull=pull / s, near_mm=CLc.get("near_mm", 1.0), d_max=CLc.get("d_max", 0.5), w_tol=CLc.get("w_tol", 0.20))
+            if not cfg["svg"].get("auto"):
+                r = qa.centreline_match(ref, m, ppm, name=f"{lid} {w_}", **kw)
+                r.update(layer=lid, stops=[i + 1 for i in stops]); cl_rows.append(r); continue
+            # S1: one row PER SOURCE SHAPE against the stops that sew it, thick end gated too: a pooled row let a tapered
+            # crescent sewn at one column width pass on the ring's numbers (2026-10-22)
+            # any OTHER shape's art (a crossing ring, a same-thread fill beside it) is cut out of the window: its stitches
+            # are not this shape's width
+            lk = key[0] if isinstance(key, tuple) else key; els_ = sorted(fam_els.get(key, ())) or [None]
+            eref = {el: ref if el is None else svgart.layer_mask(sv["svg"], [lk], W, H, ppm, els={el}, exact=True) for el in els_}
+            full = svgart.layer_mask(sv["svg"], [lk], W, H, ppm, exact=True)
+            for el in els_:
+                pe = [p for p in ps if el is None or el in (p.meta.get("s1_el") or ())]
+                st = sorted({stop_of[p.id] for p in pe if p.id in stop_of})
+                me = np.any([masks[i] for i in st if i in masks], axis=0) if st else np.zeros(shape, bool)
+                re_ = eref[el]
+                me = cut_other_shapes(me, full, re_)
+                r = qa.centreline_match(re_, me, ppm, name=f"{lid} {el or ''} {w_}".replace("  ", " "), profile=True, **kw)
+                r.update(layer=lid, shape=el, stops=[i + 1 for i in st]); cl_rows.append(r)
+            continue
         if kinds <= set(SKIP_IOU): continue
         near = MOc.get("near_mm_knot", 0.15) if "knot" in kinds else MOc.get("near_mm", 0.3)
         rows = qa.motif_match(ref, masks, ppm, min_mm2=MOc.get("min_mm2", 0.5), near_mm=near, out_stops=stops)
@@ -267,7 +321,13 @@ def gate_file(cfg, plan, dst, rbk, seg_npz=None):
                                house_min=sum(r["house_min"] for r in rows), min_iou=min([r["iou"] for r in rows], default=None),
                                mean_iou=round(float(np.mean([r["iou"] for r in rows])), 2) if rows else None, stops=[i + 1 for i in stops]))
     allout = np.any(list(masks.values()), axis=0) if masks else np.zeros(shape, bool)
-    design = ndi.binary_fill_holes(np.any(list(refs.values()), axis=0))
+    design = np.any(list(refs.values()), axis=0)
+    if cfg["svg"].get("auto"):              # S1: art may enclose bare fabric (a ring logo): fill only pinholes (<= 4 mm2)
+        holes = ndi.binary_fill_holes(design) & ~design; lab, n = ndi.label(holes)
+        if n:
+            sz = ndi.sum(holes, lab, range(1, n + 1)) / ppm ** 2
+            design = design | np.isin(lab, [i + 1 for i, a in enumerate(sz) if a <= 4.0])
+    else: design = ndi.binary_fill_holes(design)
     unc = qa.uncovered(design, allout, ppm)
     stop_geoms = [unary_union([plan.part(pid).geom for pid in st["parts"]]) for st in plan.stops]
     EX = dict(halo=0.25, min_mm=0.5, min_ex=0.3, **G.get("exposed", {}))

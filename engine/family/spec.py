@@ -158,6 +158,10 @@ class Chart:
         self.source = val(base.get("source"), "")
         self.poms = {k: POM(k, v, self.unit, self.sizes, f"{bpath}.poms") for k, v in base["poms"].items()}
         self.base_values = {k: {s: p.raw(s) for s in self.sizes} for k, p in self.poms.items()}
+        import pom_rules                             # LESSONS T1: every rise says incl_waistband, one method per table
+        bad = pom_rules.rise_check([(f"{k} {p.name}", val(base["poms"][k].get("incl_waistband"))) for k, p in self.poms.items()],
+                                   f"{bpath}.poms")
+        if bad: raise SpecError("\n".join(bad))
         self.deltas = []                             # [(code, text, V)] for the delta box on the POM page
         self.delta_source = ""
         if d.get("deltas"): self._apply_deltas(d["deltas"], f"{path}.deltas")
@@ -244,6 +248,12 @@ class Spec:
         self.tree = wrap(merged)
         self.var = wrap(var_raw)
         self.chart = Chart(self.tree["pom_chart"])
+        import pom_rules                             # LESSONS T3: pom_required + waist: elastic -> relaxed AND stretched waist
+        miss = pom_rules.required_missing(list(self.chart.poms) + [p.name for p in self.chart.poms.values()],
+                                          {"pom_required": [val(x) for x in (self.tree.get("pom_required") or [])],
+                                           "waist": val(self.tree.get("waist"))})
+        if miss: raise SpecError(f"pom_chart: missing required POM(s) {', '.join(miss)} (family pom_required / waist: "
+                                 f"{val(self.tree.get('waist'))}) — add them to the chart")
         self.sizes = self.chart.sizes
         self.base = self.chart.base
         from . import methods as MT

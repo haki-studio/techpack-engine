@@ -99,7 +99,7 @@ The founder wants to send this pack as an RFQ to a different factory (one that c
 - `rfq_text_gate`: a regex list scanned over the rendered RFQ PDF text (factory.json, gates, IoU, founder, Rev A–F, .py/.json, Drum Island, IP, PS-ids …).
   - The build fails on any hit in the RFQ copy.
   - It also fails if the same scan finds nothing in the internal copy, which proves the gate is not blind. First run: 154 internal hits, 0 in the RFQ copy.
-  - Result goes to `out/rfq_text_gate.json` and to an R1 row. LESSONS E11 and ENGINE_NOTES 12 propose moving it into the engine.
+  - Result goes to `out/rfq_text_gate.json` and to an R1 row. LESSONS E14 and ENGINE_NOTES 12 propose moving it into the engine.
 
 **What changed, and why**
 

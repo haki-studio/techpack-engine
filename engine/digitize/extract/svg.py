@@ -82,10 +82,36 @@ def frame_of(place, Ls):
 def polys(g): return svgart.polys(g)
 
 
-def stroke_width(G, ppm=40.0):
-    """visible stroke width of outline art: median skeleton width of its strokes (column.glyph_columns at 40 px/mm)"""
-    ws = [s["w"] for p in polys(G) for s in C.glyph_columns(p, ppm=ppm) if C.poly_len(s["cl"]) > 0.8]
-    return float(np.median(ws)) if ws else 2 * G.area / max(G.length, 1e-6)
+def stroke_width(G, ppm=40.0, weighted=False):
+    """visible stroke width of outline art: median skeleton width of its strokes (column.glyph_columns at 40 px/mm).
+    weighted (S1, one source shape): the LENGTH-weighted median, so a glyph's short pieces (the 3 ticks of a ぺ, 0.9 mm)
+    do not out-vote its main stroke (12 mm at 1.65 mm); the pooled per-layer median hid this on the hand runs."""
+    ss = [(s["w"], C.poly_len(s["cl"])) for p in polys(G) for s in C.glyph_columns(p, ppm=ppm) if C.poly_len(s["cl"]) > 0.8]
+    if not ss: return 2 * G.area / max(G.length, 1e-6)
+    if not weighted: return float(np.median([w for w, _ in ss]))
+    ss.sort(); c = np.cumsum([l for _, l in ss])
+    return float(ss[int(np.searchsorted(c, c[-1] / 2))][0])
+
+
+def _taper(P, cl, min_w, n=24, dev=0.25, share=0.25, belly=2.0):
+    """S1 tapered stroke (crescent, brush stroke): local visible width along the centreline (2 x distance to the outline);
+    >= `share` of the samples off the median by > `dev` -> (needle width at the belly, ("table", width multipliers)),
+    else None (one width is right: a round-ended stroke's skeleton stops at the cap centres, so its samples stay flat).
+    A taper narrows at BOTH ends with its belly in the middle half; a glyph stroke that runs into a junction widens at an
+    end instead and keeps one width (konpeito wb: 70 glyph strokes profiled, 2 exposed stitches; lettering fixture: 71).
+    Only a belly >= `belly` mm is profiled: below it the 0.85 mm minimum satin leaves nothing to follow."""
+    from shapely.geometry import LineString
+    line = LineString(cl)
+    if line.length < 1e-6: return None
+    lw = np.array([2 * P.exterior.distance(line.interpolate(f, normalized=True)) for f in np.linspace(0, 1, n)])
+    mid = float(np.median(lw))
+    if mid <= 0 or lw.max() < belly or np.mean(np.abs(lw / mid - 1) > dev) < share: return None
+    if line.length < 3 * lw.max(): return None                     # a dot / square (an i dot) is no taper
+    if np.mean(lw >= 0.9 * lw.max()) >= 0.5: return None          # flat-ended bar (an i stem): full width most of its length
+    k = int(np.argmax(lw)); e = max(1, n // 8)
+    if not (n // 4 <= k <= 3 * n // 4) or max(lw[:e].max(), lw[-e:].max()) > (1 - dev) * mid: return None
+    wmax = max(min_w, float(lw.max()) - ALLOW)
+    return round(wmax, 2), ("table", [round(max(min_w, float(v) - ALLOW) / wmax, 3) for v in lw])
 
 
 def polar_profile(geo, c, n=360):
@@ -137,10 +163,18 @@ class _B:
     def __init__(self, cfg, rb, frame):
         self.cfg, self.rb, self.frame = cfg, rb, frame
         S = cfg["svg"]; T = cfg["threads"]
-        self.palette = T["palette"]; self.weights = T.get("weight", {}); self.max_dE = float(T.get("max_dE", 3.0))
+        self.palette = T.get("palette") or {}; self.weights = T.get("weight", {}); self.max_dE = float(T.get("max_dE", 3.0))
         self.tints = set(T.get("tints", [])); self.parts = []; self.n = {}; self.report = {}; self.thread_dE = {}
+        self.fill_map = T.get("fill_map") or {}; self.src = None; self.fam = None   # S1: fill -> thread decided by svg_auto
+        self.dot_floor = 0.0
+        if cfg.get("fabric"):                                                # S1: pile swallows small dots (rules/fabrics.yaml)
+            from digitize.extract.svg_auto import fabric_rules
+            self.dot_floor = float(fabric_rules(cfg["fabric"]).get("dot_min_d", 0.0))
 
     def thread(self, fill):
+        if fill in self.fill_map:                                            # S1: the derived thread, dE to it reported
+            k = self.fill_map[fill]; _, dE = svgart.thread_of(fill, {k: self.palette[k]})
+            self.thread_dE[fill] = (k, dE); return k
         k, dE = svgart.thread_of(fill, self.palette)
         if dE > self.max_dE:
             raise SvgPartsError(f"SVG fill {fill} has no thread within dE {self.max_dE} (nearest {k}, dE {dE}): add it to "
@@ -152,6 +186,7 @@ class _B:
         pre = layer.split("_")[0] if layer[:2].isdigit() else layer[:6]
         self.n[pre] = self.n.get(pre, 0) + 1
         m = dict(layer=layer, thread_wt=self.weights.get(thread, "40wt"))
+        if self.src: m["s1_el"] = list(self.src); m["s1_fam"] = self.fam   # S1: the SVG shapes this part comes from (gates)
         m.update(meta)
         for key in ("cl", "axis"):                 # point lists follow the frame too
             if key in m and m[key] is not None: m[key] = [self.pt(q) for q in m[key]]
@@ -166,17 +201,19 @@ class _B:
     # -------------------------------------------------------------- roles
     def dot(self, layer, g, thread, z, kind="dot", min_d=1.1, ang=30.0):
         from digitize.techniques.dot import needle_d
+        min_d = max(min_d, self.dot_floor)
         c = g.centroid; art = 2 * math.sqrt(g.area / math.pi); d, hm = needle_d(art, min_d)
         return self.add(layer, kind, Point(c.x, c.y).buffer(d / 2, quad_segs=16), thread, z,
                         DirSpec(ang, source="rule", note="bead dot: satin rows at one angle"),
                         knots=[(c.x, c.y, d, ang)], art_d=round(art, 3), house_min=bool(hm), min_d=min_d)
 
     def column(self, layer, G, thread, z, spec, kind):
-        wv = stroke_width(G); wt = self.weights.get(thread, "40wt")
+        wv = stroke_width(G, weighted=bool(spec.get("per_shape"))); wt = self.weights.get(thread, "40wt")
         min_w = float(spec.get("min_w", 0.85 if wt == "40wt" else 0.45))
         w = max(min_w, round(wv - ALLOW, 2)); self.report[layer] = dict(w_art=round(wv, 2), w_needle=w, thread=wt)
         corner = float(spec.get("corner", C.CORNER)); min_counter = float(spec.get("min_counter", 0.6))
         dots = spec.get("dots", False); k = 0
+        per_shape = bool(spec.get("per_shape"))      # S1 (G = one source shape): a tapered stroke sews on its width profile
         for P in polys(G):
             if P.area < 0.05: continue
             ys = np.array(P.exterior.coords); ext = ys.max(0) - ys.min(0)
@@ -193,14 +230,22 @@ class _B:
                 if L < 0.25: continue
                 if len(sts) > 1 and not closed and L < 1.1 * w: continue        # skeleton spur (cusps, stroke ends)
                 ww = w
+                # S1: each stroke of a glyph at its OWN skeleton width (the bowl of an a swells to 2.5 mm where its
+                # stem is 1.6: one width per glyph sewed the bowl's thick side at 0.73). Hand runs keep one per layer.
+                if per_shape and not closed and s.get("w"): ww = max(min_w, round(float(s["w"]) - ALLOW, 2))
                 if closed: ww = max(0.8 if w >= 0.8 else w, min(w, L / math.pi - (min_counter + 0.2 + ALLOW)))
-                g = C.column_geom(cl, ww, s["caps"], closed)
+                # a width profile only on a shape that IS one open stroke: a glyph's strokes meet at junctions (wider
+                # samples, not a taper) and profiling them sewed the lettering fixture's A thinner (ratio 0.84 -> 0.60)
+                caps = tuple(s["caps"]); prof = _taper(P, cl, min_w) if per_shape and not closed and len(sts) == 1 else None
+                if prof: ww, prof = prof; caps = ("flat", "flat")
+                g = C.column_geom(cl, ww, caps, closed, prof)
                 t = np.array(cl[min(1, len(cl) - 1)]) - np.array(cl[0])
+                ex = dict(prof=prof) if prof else {}
                 self.add(layer, kind, g, thread, z + 0.001 * k, DirSpec(_deg(t) + 90.0, source="rule", note="across the stroke (column)"),
-                         cl=[tuple(q) for q in cl], w=ww, caps=tuple(s["caps"]), closed=bool(closed)); k += 1
+                         cl=[tuple(q) for q in cl], w=ww, caps=caps, closed=bool(closed), **ex); k += 1
 
-    def petals(self, layer, geo, thread, z, spec):
-        kind = "petal_tint" if thread in self.tints else "petal"; j = 0
+    def petals(self, layer, geo, thread, z, spec, kind=None):
+        kind = kind or ("petal_tint" if thread in self.tints else "petal"); j = 0
         for P0 in polys(geo):                       # one shape may hold several flowers / candies
             if P0.area < 1.0: continue
             P = Polygon(P0.exterior); c = P.centroid; c = (c.x, c.y)
@@ -257,9 +302,44 @@ def _compact(e):
     return max(ext) < 2.5 and max(ext) / max(min(ext), 1e-6) < 1.5
 
 
+def _shapes(B, L, z0, spec):
+    """S1 role `shapes` (svg_auto): one decision per shape, keyed '<element>.<polygon>'. Strokes (and the round pieces of an
+    element that holds a stroke: eyes, i-dots) are pooled per element + colour into satin columns, each shape at its own width (a tapered one on its width profile);
+    every other shape is a dot / knot, petals, a star or a fill at its declared long-axis angle."""
+    sh = spec["shapes"]; strokes = {}
+    for i, e in enumerate(L.elements):
+        tag = e.attrib.get("data-s1")
+        for j, P in enumerate(polys(e.geom)):
+            d = sh.get(f"{i}.{j}")
+            if d is None: raise SvgPartsError(f"layer {L.id}: shape {i}.{j} has no decision (the run config is stale: derive it again)")
+            a = d["as"]; z = z0 + i + 0.01 * j
+            if a == "skip": continue
+            th = B.thread(e.fill); B.src = [tag] if tag else None; B.fam = "shape"
+            if a in ("stroke", "stroke_dot"):
+                st = strokes.setdefault((e.fill, i), dict(z=z, P=[], src=set(), dots=False)); st["P"].append(P)
+                if tag: st["src"].add(tag)
+                st["dots"] |= a == "stroke_dot"; st["z"] = min(st["z"], z)
+            elif a in ("dot", "knot"): B.dot(L.id, P, th, z, kind=a, min_d=0.9 if a == "knot" else 1.1)
+            elif a == "petals": B.petals(L.id, P, th, z, dict(n=d.get("n")), kind=d.get("kind"))
+            elif a == "star":
+                c = P.centroid
+                B.add(L.id, d.get("kind", "star"), P, th, z, DirSpec(0.0, source="rule", note="radial from the star centre"), centre=(c.x, c.y))
+            elif a == "fill":
+                B.add(L.id, d.get("kind", "graphic_fill"), P, th, z, DirSpec(float(d["dir"]), source="rule",
+                      note="long axis of the shape (minimum rotated rectangle), declared by svg_auto"))
+            else: raise SvgPartsError(f"layer {L.id}: shape {i}.{j}: unknown decision {a!r}")
+    for (f, _), st in strokes.items():        # per source element: crossing same-colour strokes keep their own widths
+        B.src = sorted(st["src"]) or None; B.fam = "line"
+        B.column(L.id, unary_union(st["P"]), B.thread(f), st["z"], dict(spec.get("column", {}), dots=st["dots"], per_shape=True), "lettering")
+    B.src = None
+
+
 def extract(cfg, rb=None):
-    """-> (parts, info). info: layers (id, order, role, n parts), frame, size, width report, thread dE per fill."""
+    """-> (parts, info). info: layers (id, order, role, n parts), frame, size, width report, thread dE per fill.
+    S1: a run.yaml with no thread palette (or svg.auto: true) gets its palette and layer roles from svg_auto.fill_config."""
     from digitize import config
+    from digitize.extract import svg_auto
+    svg_auto.fill_config(cfg)
     S = cfg["svg"]; path = config.path(cfg, S["file"])
     Ls = svgart.layers(path); W, H, scale = svgart.size_mm(path)
     if abs(scale - 1.0) > 1e-6: raise SvgPartsError(f"{path}: user units are {scale} mm, not 1 mm (export the art true-size in mm)")
@@ -301,6 +381,8 @@ def extract(cfg, rb=None):
                 th = B.thread(e.fill); c = e.geom.centroid
                 B.add(L.id, spec.get("kind", "star"), e.geom, th, z0 + i, DirSpec(0.0, source="rule", note="radial from the star centre"),
                       centre=(c.x, c.y))
+        elif role == "shapes":
+            _shapes(B, L, z0, spec)
         elif role in ("petals", "auto"):
             for i, e in enumerate(L.elements):
                 th = B.thread(e.fill)

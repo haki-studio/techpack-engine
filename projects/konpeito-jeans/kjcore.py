@@ -18,6 +18,7 @@ KJ_PAL = {   # Haki house spec Rev A (Oct 2026), 40wt polyester unless noted
     "kj_blue":     ("#35A6D6", "Blue",         "konpeito, flower, signature 理砂"),
     "kj_blue_hi":  ("#8ED2EE", "Blue tint",    "konpeito highlight"),
     "kj_rose":     ("#E8457A", "Rose",         "cheeks"),
+    "kj_soot":     ("#151414", "Soot black",   "soot-sprite body, fuzz, legs, pupils (front leg 07)"),
 }
 for k, v in KJ_PAL.items():
     motifs2.PAL[k] = v; motifs2.HEX[k] = v[0]; motifs.HEX[k] = v[0]
@@ -41,6 +42,11 @@ KJ_RULES = {  # code -> (name, stitch, angle rule, density, stitch length, under
  "KPB-hi": ("Konpeito tint, back row",    "Satin",            "across each lobe axis",  "0.30", "—", "none",                 "0.10", ""),
  "KP-hi": ("Konpeito lobe highlight",     "Satin, turning",   "across the lobe axis",   "0.30", "—", "none",                 "0.10", "tint, lit side of each lobe"),
  "STAR":  ("Puffy star body",             "Satin, radial",    "radial from star centre", "0.38", "—", "edge run",              "0.15", "direct on denim"),
+ "SOOT":  ("Soot-sprite body",            "Tatami",           "45°",                    "0.42", "3.5", "edge run + 90° tatami", "0.20", "black 40wt, direct on denim; cut away under the candies"),
+ "FUR":   ("Soot-sprite fuzz",            "Satin, radial, random length", "radial from the body centre", "0.42 at the rim", "—", "none", "0.00", "hairs 0.2–1.1 beyond the body over a 1.0 mm overlap"),
+ "LEG":   ("Soot-sprite leg",             "Triple run",       "along the leg",          "—",    "2.0–3.0", "—",              "0.00", "2 legs, 2.8 beyond the body"),
+ "EYE":   ("Soot-sprite eye white",       "Satin",            "0°",                     "0.36", "—", "none",                 "0.10", "0.24 D × 0.31 D oval, sewn after the candies"),
+ "PUPIL": ("Soot-sprite pupil Ø1.2",      "Satin dot",        "crossed 90°",            "0.20", "—", "none",                 "0.00", "black, sewn last"),
  "STAR-hi": ("Puffy star highlight",      "Satin, radial",    "radial",                 "0.38",  "—",  "none",                 "0.10", ""),
 }
 tech.RULES.update(KJ_RULES)
@@ -54,8 +60,10 @@ COL_SP = {"TXC": 0.20, "EDGE": 0.18, "LINE": 0.18, "FL": 0.30, "FL-hi": 0.30, "K
 
 STYLE = "HK-JN-KONPEITO-BK"
 NAME = "Konpeito Jeans — Washed Black"
-REV = "Rev A"; DATE = "19 Oct 2026"
-SIZES = ["24", "26", "28", "30", "32", "34", "36", "38", "40"]
+REV = "Rev B7"
+import datetime as _dt
+DATE = (lambda d: f"{d.day} {d:%b %Y}")(_dt.date.today())     # build date (PR #34 nit: the stamp was typed and went stale)
+SIZES = ["26", "28", "29", "30", "31", "32", "33", "34", "36", "38", "40"]     # founder 20 Oct (size labels); Rev A had 24-40 evens
 sheet.FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · {REV} · {DATE}"
 PROPOSED = "[proposed — confirm]"
 
@@ -68,6 +76,8 @@ def patch_dst2():
     _orig = dst2.build_object
     def build_object(r, earlier_tones):
         code = tech.rule_for(r["grp"])
+        if r.get("ang") == "pre" and r.get("pre"):              # prebuilt blocks (soot-sprite fuzz + legs, kjfront.soot_regions)
+            return [list(b) for b in r["pre"]]
         if r.get("ang") == "knots":                             # knot cluster: one block, touching knots
             import kjletter
             return [kjletter.knot_points(r["knots"])]

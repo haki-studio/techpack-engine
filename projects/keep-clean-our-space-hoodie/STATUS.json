@@ -100,20 +100,40 @@
    "2026-10-20T15:57:46",
    "delivered",
    "Rev C review fixes (PR #20): \u754c/\u8981 glyph fill (nonzero), per-glyph gate (all sizes green), one foam procedure from the stop lists, exact travel, JP mint dot, tests + LESSONS A32/B40/B41/D5. M: FR 58,974/524, FL 46,764/378, SR 6,735/204, SL 6,944/200"
+  ],
+  [
+   "2026-10-20T20:24:45",
+   "art",
+   "Rev D started: founder answers 20 Oct - puff on all signs (CN text Noto Sans SC 800, KR oval ring), CN \u6c61, widths < 2.5 mm stay flat; scene rebuilt"
+  ],
+  [
+   "2026-10-20T20:27:59",
+   "stitch",
+   "Rev D stitch files built: 7 sizes x 4 pieces + splits (puff on all signs, CN \u6c61)"
+  ],
+  [
+   "2026-10-20T21:00:09",
+   "documents",
+   "Rev D built: 25-page PDF (4.0 MB) + zip copied to C:/Users/devin/Desktop/keep-clean-RevD/ (before review)"
+  ],
+  [
+   "2026-10-20T21:02:03",
+   "qa",
+   "Rev D gates: 112 files pass prod_gates (<=12 colours, max 7.11, foam stop + 0 flat points in foam), glyph gate all sizes, A14 blocking 0, keep-outs pass, 275 tests pass"
+  ],
+  [
+   "2026-10-20T21:02:04",
+   "delivered",
+   "Rev D delivered: 25-page PDF + zip (C:/Users/devin/Desktop/keep-clean-RevD/). M: FR 59,273/542, FL 47,730/385, SR 6,735/204, SL 6,944/200. Puff on all signs (<2.5 mm flat, G4), CN \u6c61; open: back view, star haze"
   ]
  ],
  "questions": [
-  "Back and hood: the mockup shows only the front. Proposed: back and hood plain, star field on fronts + both full sleeves. Confirm (or send a back view).",
-  "3D puff: badges look raised. Proposed: puff (3 mm foam) on JP/EN text, JP spark bars + hearts, EN stars; flat satin elsewhere. Can the factory sew puff? Fallback = same files sewn without foam (flat satin).",
-  "Domed puff look: Rev B adds 4 tint threads (mint, blue, red, lemon tints) for the lighter rims + a dim star-haze thread; FR uses 12 colours = the factory maximum. OK, or drop a tint (e.g. lemon tint -> white rim) to keep a spare needle?",
-  "CN ring dots are now 3D puff (mockup shows domed dots) - FR foam sheet covers badge 01 + the 03 dot ring. OK?",
-  "CN text \u4e0d\u8981\u4e16\u754c\u6c5a\u67d3: the source frame draws the Japanese-form \u6c5a; Simplified Chinese is \u6c61. Keep \u6c5a (as the source) or use \u6c61?",
-  "KR text: the source glyph reads \uc18c\uc911\ud568; set as the grammatical \uc6b0\ub9ac\ub4e4 \uc18c\uc911\ud55c \uc6b0\uc8fc!. OK, or keep \uc18c\uc911\ud568 exactly as drawn?",
-  "Optional: add the source frame's small 'WE WANT NO DIRTY COSMOS' text (near the ship)? It is not on the mockup, left out."
+  "Back + hood: a back design is planned - send the back view; back + hood = artwork to follow [MISSING] in Rev D.",
+  "Star haze (soft glow round the badges + under the big sparkles): pending - kept as in Rev C. Keep, change or drop?"
  ],
  "stage": "delivered",
  "stage_index": 7,
  "blocked": false,
- "updated": "2026-10-20T15:57:46",
+ "updated": "2026-10-20T21:02:04",
  "preview": "out/compare_03_cn-badge.png"
 }

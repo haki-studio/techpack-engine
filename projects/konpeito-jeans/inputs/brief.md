@@ -59,3 +59,63 @@ silhouette WITHOUT cargo pockets. Measurements: Hidden Inventory published size 
 - Founder 19 Oct (final): size labels = waist numbers 24–40; MATTE BLACK zip / 28L button / 15L rivets; DTM black thread for
   topstitch Tex 135 and overlock + buttonhole Tex 60; back-pocket top corners BARTACKED (as HI, no rivets); 02 facing
   konpeito placement confirmed as placed. All CONFIRMED.
+
+## Rev B — founder review of Rev A (20 Oct 2026) + coordinator overrides — CONFIRMED unless marked
+Founder items 1–15 (prompt of the Rev B run), with the coordinator's overrides (20 Oct): wash = match the MOCKUP's washed
+black (not "as HI"); waistband 2 pieces joined at CB; back pockets = "2 back patch pockets" (founder, later: no explanation).
+- No knee seam: front + back legs one panel waist to hem. NO back yoke (as HI). Construction as HI, plain words (T4, T6).
+- Front-leg 07: "artwork to follow [MISSING]"; the licensed-lookalike note removed everywhere. Star map re-derived from the
+  mockup (kjfront.py: scale 420.4 mm / 436.8 px front waistband = 0.9623 mm/px, origin = WB top at the side seam, pocket
+  opening traced at 5x on a 10 px grid): 0 of 14 stars inside the opening. Rev A cause: the flat's scoop line was drawn
+  ~60 mm too low. 07a / 07b rebuilt (stars moved up 5–12 mm). Overlay check = page C5.
+- Size labels: waist numbers 26 28 29 30 31 32 33 34 36 38 40 in Neue Metana ExtraBold, white on black, LOOP label; hang
+  tag hangs from the size label; main label sewn down on all 4 sides. Artwork recreated (kjlabels.py, zip labels/).
+- Main + care label: current HI art kept as reference, new artwork to follow [MISSING]. Packing design to follow [MISSING].
+  Barcode per size: HK code from PLM, to follow [MISSING] (Code 128 on the polybag sticker). Nothing created in Shopify/PLM.
+- Patch 03 position CONFIRMED. BOM: one embroidery-threads line; method note (patch vs straight onto the panel) on G1.
+
+## Rev B assumptions (PROPOSED in the documents)
+18. Size run = the founder's label list 26 28 29 30 31 32 33 34 36 38 40 (the Rev A pack had 24–40 evens; the prompt said
+    "use the exact size run already in the pack/T3" — the explicit list wins). 24 dropped; 29 / 31 / 33 are half-way between
+    the neighbouring HI sizes on T3 (amber) until the factory grades them.
+19. Size loop label strip 15 × 60 mm flat (loop 15 × 25 mm, 5 mm seam allowance each end), number max 5 mm high, number
+    on both halves (back half turned 180°).
+20. Hammer loop, snaps and HI flag labels left off (not on the Konpeito mockup).
+21. Waistband interlining as the HI production waistband (the HI BOM lists none).
+
+## Rev B2 (20 Oct 2026, evening) — founder changes + PR #29 review — CONFIRMED unless marked
+- Every konpeito on the jean = the 02 facing konpeito (founder SVG HAKI_facing_konpeito_ART.svg, front-row candy), same
+  digitising as 02 (satin per lobe, tint lobes on top, 3 white Ø0.9 bead specks), colour kept, 10 mm (larger bbox side):
+  04 (2), 05, 06, 07a/07b (14). Files keep their names; a white thread is added to 04/05/06/07a/07b.
+- Size labels: NOT the 15 × 60 mm strips. The HI size label exactly (damask woven, centrefold, 30 × 10 mm: 5 mm seam
+  allowance each end, fold at 15 mm, size on the 15-25 mm face) with our waist numbers in Neue Metana ExtraBold, white on
+  black; hang-tag string through it. Number height 3 mm PROPOSED.
+- F1: chenille + quote basis sections removed (no chenille; prices asked separately); strike-off = size 32.
+- Review fixes: C3 layout, T2 2nd front belt loop + light construction lines, G3 white dots, A14 per konpeito.
+
+## Rev B2 assumptions (PROPOSED)
+19. Size-label number height 3 mm (HI "XS" ~2.5-3 mm).
+20. The canonical konpeito is the first front-row candy of the 02 SVG (all 02 front-row candies are this shape rotated);
+    every placed konpeito is upright (no rotation).
+
+- Rev B4 (21 Oct, PR #34 review): the 07 front-leg map has 15 konpeito (the 4th soot sprite carries a pink AND a yellow
+  konpeito, overlapping; the pink is sewn on top). Size 24 is dropped (item 18 above); T3 and F1 say so.
+- Rev B5 (21 Oct, PR #34 round 2): 3 candies at the side seam are clipped by the garment edge on the mockup (blue
+  + 2 yellow slivers; Rev B4 mapped 1, dropped 2). All 3 are kept (PROPOSED): mapped at their sliver height and moved in to the 12 mm side-seam keep-out.
+  The 07 map is 17 = 14 whole + 3 clipped.
+
+## Founder answers 21 Oct 2026 (Rev B6, PR #34) — CONFIRMED
+- J1: 05 pink konpeito moved 9 mm inward from the mockup position = OK (PROPOSED mark dropped).
+- J2: patch field (01 / 03) = plain straight 0° tatami, no knit texture.
+- J3: hammer loop left off = confirmed.
+- J4: the 3 konpeito clipped by the side seam (Rev B5 S10 blue, S11 / S13 yellow) are DROPPED ("I don't think that's
+  supposed to be there"). The trace still detects them; `kjfront.EXCLUDE_CLIPPED` leaves them off the map. 07 map = 14
+  whole konpeito, renumbered S01–S14.
+- J5: the soot-sprite characters on the front leg are KEPT (founder decision; the licence risk is accepted by the founder;
+  overrides LESSONS A7 for this product, recorded on pack page Q1 + ENGINE_NOTES 34). 07 = the mockup trail: 14 konpeito
+  + 9 soot sprites, no longer "artwork to follow". The front-leg MISSING flag is closed.
+
+## Rev B6 assumptions (PROPOSED)
+22. Soot sprites redrawn from the low-res mockup (~1 mm per px): one body Ø for all (median of the 9 traced bodies,
+    14.2 mm), fuzz = radial satin 0.2–1.1 mm beyond the body, 2 legs (triple run 2.8 mm), eyes 0.24 D × 0.31 D white
+    satin with Ø1.2 black pupils at the traced positions; thread "Soot black" #151414 40wt. Confirm on the sew-out.

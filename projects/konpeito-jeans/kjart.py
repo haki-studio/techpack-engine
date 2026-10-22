@@ -175,6 +175,8 @@ def side_positions(a, b, pitch=PITCH):
     return [a + L * i / n for i in range(n + 1)], L / n
 
 def border_flower(cx, cy, d=FLOWER_D):
+    # LEGACY (Rev A geometry): the shipped border flowers come from the founder's SVG (kjsvg.border); kept only because
+    # border()'s motif list is still built (and discarded by kjsvg). Do not use for new art.
     pl, pw, rr = d * 0.46, d * 0.34, d * 0.27
     petals = []
     for k in range(5):
@@ -458,27 +460,9 @@ def candy(col, m, light, x0=0.0, y0=0.0, clip=None, close=2, sigma=1.2):
                 sparks.append(R("kj_white", p, "satin", "KNOT"))
     return body, hi, sparks
 
-def candy2(col, m, light, close=5, sigma=1.2):
-    """traced candy silhouette -> one satin per lobe along its axis + tint highlight per lobe; white knots at the traced
-    light specks (two-layer knot dots, >= 0.6 mm apart)."""
-    fm = ndi.binary_fill_holes(ndi.binary_closing(m, np.ones((3, 3)), close))
-    geo = mask_geom(fm, sigma=sigma).buffer(0.1).buffer(-0.1)
-    geo = max(polys(geo), key=lambda p: p.area)
-    c = geo.centroid; c = (c.x, c.y)
-    body, hi, n = KL.petal_regions(col, HI[col], geo, c, code="KP", code_hi="KP-hi")
-    sparks = []
-    inner = ndi.binary_erosion(fm, np.ones((3, 3)), 8) & light
-    for k in comps(inner, 3):
-        a = area(k)
-        if 0.02 < a < 1.6:
-            x, y = cen(k)
-            p = Point(x, y).buffer(0.5, quad_segs=12)
-            if geo.buffer(-0.5).contains(p) and all(p.distance(s_["geom"]) > 0.6 for s_ in sparks):
-                sparks.append(KL.knot_cluster("kj_white", x, y, 1.0, 0))
-    return body, hi, sparks
-
 # ------------------------------------------------------------------ 02 konpeito spill (facing, above the coin pocket)
 def spill():
+    # LEGACY (16-19 Oct mockup trace): the shipped 02 is kjsvg.spill() from the founder's SVG; build_all() does not call this.
     lab, img = load("spill")          # canvas y from -22 mm, patch-field frame
     Y0 = -22.0
     # top of the coin pocket's rolled cream edge per column -> the line the patch covers
@@ -529,24 +513,13 @@ def spill():
     return vis, ref
 
 # ------------------------------------------------------------------ 04 back-pocket stars (generated, 10 mm)
-def puffy_star(cx, cy, width=10.0, rot=0.0, inner=0.50, tip=0.75, valley=0.45):
-    Rr = 5.6
-    pts = [((Rr if i % 2 == 0 else Rr * inner) * math.cos(math.radians(-90 + 36 * i)),
-            (Rr if i % 2 == 0 else Rr * inner) * math.sin(math.radians(-90 + 36 * i))) for i in range(10)]
-    g = Polygon(pts).buffer(valley, join_style="round").buffer(-valley, join_style="round")
-    g = g.buffer(-tip, join_style="round").buffer(tip, join_style="round")
-    b = g.bounds; s = width / (b[2] - b[0])
-    g = affinity.scale(g, s, s, origin=(0, 0))
-    hi = affinity.translate(affinity.scale(g, 0.5, 0.5, origin=(0, 0)), -0.45, -0.55)
-    g = affinity.rotate(g, rot, origin=(0, 0)); hi = affinity.rotate(hi, rot, origin=(0, 0))
-    return affinity.translate(g, cx, cy), affinity.translate(hi, cx, cy)
-
 STARS = {"Y": ("kj_yellow", "kj_yellow_hi", -6, "wearer's LEFT back pocket, lower outer corner"),
          "P": ("kj_pink", "kj_pink_hi", 8, "wearer's RIGHT back pocket, upper outer corner below the rivet")}
 def star(sid):
     import kjsvg
     GENERATED["star" + sid] = []
-    return kjsvg.star_regions(sid, 0.0, 0.0, STAR_D)       # founder's vector star (inputs/svg), 10 mm tip to tip
+    # founder change 20 Oct: every konpeito on the jean = the 02 facing konpeito (same shape + digitising), 10 mm
+    return kjsvg.konpeito_regions(STARS[sid][0], 0.0, 0.0, STAR_D)
 
 # ------------------------------------------------------------------ 04 back-pocket "haki" group (inputs/back_pocket_haki.png)
 HAKI_SRC = (175, 405, 310, 460)   # crop of the group in the back-pocket mockup (px)
@@ -578,8 +551,8 @@ def haki_group():
     out = []
     for (cx, cy, w), (base, tint) in zip(star_px, (("kj_yellow", "kj_yellow_hi"), ("kj_pink", "kj_pink_hi"))):
         import kjsvg
-        out += kjsvg.star_regions("Y" if base == "kj_yellow" else "P", (cx - ox) * k, (cy - oy) * k, STAR_D)
-    GENERATED["haki"] = ["stars: the founder's vector star (inputs/svg), 10 mm, at the traced centres (the mockup shows them at 14 px)",
+        out += kjsvg.konpeito_regions(base, (cx - ox) * k, (cy - oy) * k, STAR_D)
+    GENERATED["haki"] = ["konpeito: the 02 facing konpeito (founder SVG, founder change 20 Oct), 10 mm, at the traced star centres (the mockup shows them at 14 px)",
                          "one stroke width (2 mm) for the whole word; the stroke centrelines are traced (x8 upscale only to read them)"]
     ref = dict(blue=bm, k=k, ox=ox, oy=oy, yel=yel, pnk=pnk, scale=STAR_D / (np.mean([w for _, _, w in star_px]) / HAKI_UP) / (10.0 / 30.0))
     return out + regs, ref

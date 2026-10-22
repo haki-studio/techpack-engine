@@ -69,6 +69,10 @@ class Rulebook:
         if technique is not None and technique in k.get("dir_by_technique", {}): d = k["dir_by_technique"][technique]
         elif technique is not None and k.get("dir_by_technique"): d = k.get("alt_dir", d)
         if isinstance(d, (int, float)): return DirSpec(float(d), source="rule")
+        if d == "label":                                   # --- G1 --- the labels compiler declares these (primitives/*)
+            if technique is not None and "alt_dir" in k:
+                return DirSpec(float(k["alt_dir"]), source="rule", note=f"alt_dir: {technique} cannot follow the labelled direction")
+            raise RulebookError(f"kind {kind!r}: its direction comes from parts.labels.json (digitize.labels), not the rulebook")
         if technique is not None and d in ("field", "contour") and technique not in k.get("follows", ("guided_fill", "contour_fill")):
             if "alt_dir" not in k: raise RulebookError(f"kind {kind!r}: technique {technique!r} cannot follow {d!r} and the kind has no alt_dir")
             return DirSpec(float(k["alt_dir"]), source="rule", note=f"alt_dir: {technique} cannot follow the {d}")

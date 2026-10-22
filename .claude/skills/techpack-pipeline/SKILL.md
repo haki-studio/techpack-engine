@@ -57,6 +57,9 @@ Iterate until no mockup detail is missing or simplified (every lobe, crater, lea
 `clean_vis` → `merge_colours` (≤ `factory.max_threads()` = 12 threads) → stops → `merge_stops` → `make_pattern` → write DST + PES → verify.
 Fronts: one file per art grade. Wrap pieces: one file per size (A5). Back > frame: `split_clip` + basting crosses.
 Gates: max stitch ≤ 7.5, trims from DST read-back, stitch count + run time recorded, every preview looked at.
+Orphan fragments (LESSONS B?? orphan gate): `python3 scripts/orphan_fragments.py --products <slug>` on the written PES must
+exit 0 (a product at 0 in `engine/digitize/orphan_baseline.json` fails on any orphan; the rest may not rise above their
+baseline; lower the baseline in the PR that lowers the count, `--update-baseline`).
 Cost: report trims per piece, trims per 10k stitches and machine hours — reported, not a gate (fidelity first). Sew-order
 work that cuts trims without losing detail (LESSONS B1, B2, B14, B15) is always welcome.
 

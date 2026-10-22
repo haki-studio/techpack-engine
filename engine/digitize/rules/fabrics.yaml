@@ -1,0 +1,19 @@
+# S1 (ENGINE_PLAN S1, svg2dst `--fabric`): fabric -> changes to the house numbers (rules/house.yaml), applied per part by
+# digitize.svgrun.make_plan after the rulebook picked the technique. twill / denim are the wovens the house numbers were
+# set on (Konpeito patches, duck jackets): NO change, so every M5 / house run is untouched.
+# Everything else is [proposed - confirm]: common digitizing practice for knits and pile (more underlay to hold a stretchy
+# or lofty ground, more pull compensation, no fine detail into pile), not yet sewn on our factory's machines. svg2dst
+# prints a warning on every run that uses a proposed fabric; a strike-off on the real fabric settles the numbers.
+#
+#   pull_add:      mm added to pull_comp (fills, satins, columns; not run / bean / dot)
+#   spacing_mul:   x row spacing of tatami fills (> 1 = more open: a knit puckers under a dense fill)
+#   lattice_all:   lattice underlay under EVERY fill (house: only fills > 60 mm2)
+#   centre_run_min_w: columns at least this wide get a centre-run underlay (house: 1.4 mm)
+#   dot_min_d:     smallest bead dot (house 1.1; pile swallows smaller)
+#   proposed:      true = numbers not confirmed on a strike-off
+twill:  {proposed: false}
+denim:  {proposed: false}
+jersey: {proposed: true, pull_add: 0.10, spacing_mul: 1.08, lattice_all: true, centre_run_min_w: 1.0}
+pique:  {proposed: true, pull_add: 0.10, spacing_mul: 1.05, lattice_all: true, centre_run_min_w: 1.0}
+fleece: {proposed: true, pull_add: 0.15, spacing_mul: 1.0,  lattice_all: true, centre_run_min_w: 1.0, dot_min_d: 1.4}
+sherpa: {proposed: true, pull_add: 0.20, spacing_mul: 0.95, lattice_all: true, centre_run_min_w: 0.8, dot_min_d: 1.8}

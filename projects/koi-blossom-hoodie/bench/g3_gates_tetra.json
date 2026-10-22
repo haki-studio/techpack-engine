@@ -1,0 +1,1795 @@
+{
+ "crop": [
+  -220,
+  30,
+  -50,
+  300
+ ],
+ "labels": "bench/labels_FR_tetra.json",
+ "files": {
+  "revB": {
+   "dst": "out/revB/HAKI_KOIB_01_front-fish_FR_M.dst",
+   "counts": {
+    "stitches_file": 40325,
+    "threads_file": 11,
+    "stitches_in_crop": 21937
+   },
+   "gates": {
+    "crop": [
+     -220,
+     30,
+     -50,
+     300
+    ],
+    "crop_min_closeup_weight": null,
+    "source_ppm_median": 0.91,
+    "stitches_in_crop": 21937,
+    "direction": {
+     "tiles": 275,
+     "pct_ok": 21.8,
+     "pct_chaos": 20.4,
+     "n_dev": 159,
+     "masked": 0,
+     "n_chaos": 56,
+     "pct_ok_all_stitches": 17.7,
+     "pct_chaos_all_stitches": 45.6
+    },
+    "angle_coherence": {
+     "ok": false,
+     "note": "no regions file: a DST carries no part ids, so angle_coherence cannot pass"
+    },
+    "density": {
+     "covered_cm2": 137.2,
+     "mean": 3.56,
+     "p95": 7.43,
+     "max_smoothed": 26.37,
+     "over_cm2": 4.69,
+     "flags": 19,
+     "threshold": 7.0
+    },
+    "trims": {
+     "trims": 148,
+     "per_100cm2": 107.8,
+     "area_cm2": 137.2
+    },
+    "satin": {
+     "satins": 198,
+     "fans": 10,
+     "blob": 90,
+     "too_wide": 0,
+     "too_narrow": 19
+    },
+    "stack": {
+     "max": 3,
+     "over_cm2": 0.57,
+     "flags": 0,
+     "pct_cells_over": 0.5
+    },
+    "runs_in_crop": 179,
+    "colours": {
+     "stops_in_crop": 28,
+     "threads_in_crop": 11,
+     "threads_in_file": 11,
+     "hex": [
+      "#15181f",
+      "#23396f",
+      "#30569a",
+      "#3fb6e0",
+      "#4a73b0",
+      "#6f93c8",
+      "#97b2d8",
+      "#b9b5cc",
+      "#c7d6ea",
+      "#d8262e",
+      "#f1eef2"
+     ],
+     "red": true,
+     "gold": false
+    },
+    "secs": 7.2
+   },
+   "verdict": {
+    "direction_ok": false,
+    "direction_chaos": false,
+    "angle_coherence": false,
+    "density": false,
+    "trims": false,
+    "satin_shape": false,
+    "stack": false,
+    "colours": true
+   },
+   "fidelity": {
+    "fish": {
+     "n": 5,
+     "ok": 4,
+     "mean_iou": 0.71
+    },
+    "fish_rows": [
+     {
+      "motif": 1,
+      "x_mm": 63.9,
+      "y_mm": 20.9,
+      "area_mm2": 594.6,
+      "iou": 0.79,
+      "w_ratio": 0.96,
+      "h_ratio": 0.93,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 105.3,
+      "y_mm": 76.9,
+      "area_mm2": 427.6,
+      "iou": 0.78,
+      "w_ratio": 0.99,
+      "h_ratio": 0.9,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 155.6,
+      "y_mm": 135.5,
+      "area_mm2": 283.6,
+      "iou": 0.74,
+      "w_ratio": 1.05,
+      "h_ratio": 0.88,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 91.4,
+      "y_mm": 147.8,
+      "area_mm2": 890.4,
+      "iou": 0.42,
+      "w_ratio": 0.88,
+      "h_ratio": 0.88,
+      "ok": false
+     },
+     {
+      "motif": 1,
+      "x_mm": 142.8,
+      "y_mm": 216.2,
+      "area_mm2": 736.0,
+      "iou": 0.8,
+      "w_ratio": 1.0,
+      "h_ratio": 0.92,
+      "ok": true
+     }
+    ],
+    "fish_mockup": {
+     "n": 5,
+     "ok": 0,
+     "mean_iou": 0.54
+    },
+    "fish_mockup_rows": [
+     {
+      "motif": 1,
+      "x_mm": 63.5,
+      "y_mm": 24.0,
+      "area_mm2": 666.4,
+      "iou": 0.59,
+      "w_ratio": 0.78,
+      "h_ratio": 0.82,
+      "ok": false
+     },
+     {
+      "motif": 1,
+      "x_mm": 104.8,
+      "y_mm": 78.1,
+      "area_mm2": 570.9,
+      "iou": 0.57,
+      "w_ratio": 0.8,
+      "h_ratio": 0.77,
+      "ok": false
+     },
+     {
+      "motif": 1,
+      "x_mm": 153.0,
+      "y_mm": 133.9,
+      "area_mm2": 301.6,
+      "iou": 0.58,
+      "w_ratio": 0.89,
+      "h_ratio": 0.89,
+      "ok": false
+     },
+     {
+      "motif": 1,
+      "x_mm": 88.9,
+      "y_mm": 149.2,
+      "area_mm2": 1124.0,
+      "iou": 0.4,
+      "w_ratio": 0.86,
+      "h_ratio": 0.87,
+      "ok": false
+     },
+     {
+      "motif": 1,
+      "x_mm": 140.3,
+      "y_mm": 213.5,
+      "area_mm2": 1134.7,
+      "iou": 0.56,
+      "w_ratio": 0.81,
+      "h_ratio": 0.83,
+      "ok": false
+     }
+    ],
+    "flora": {
+     "n": 34,
+     "ok": 12,
+     "mean_iou": 0.59
+    },
+    "flora_fail": [
+     {
+      "motif": 1,
+      "x_mm": 124.9,
+      "y_mm": 7.2,
+      "area_mm2": 85.6,
+      "iou": 0.68,
+      "w_ratio": 0.85,
+      "h_ratio": 0.74,
+      "ok": false
+     },
+     {
+      "motif": 3,
+      "x_mm": 15.7,
+      "y_mm": 18.7,
+      "area_mm2": 213.8,
+      "iou": 0.82,
+      "w_ratio": 0.78,
+      "h_ratio": 0.82,
+      "ok": false
+     },
+     {
+      "motif": 6,
+      "x_mm": 18.8,
+      "y_mm": 50.5,
+      "area_mm2": 33.9,
+      "iou": 0.53,
+      "w_ratio": 0.52,
+      "h_ratio": 0.84,
+      "ok": false
+     },
+     {
+      "motif": 8,
+      "x_mm": 59.2,
+      "y_mm": 52.3,
+      "area_mm2": 9.4,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 10,
+      "x_mm": 41.8,
+      "y_mm": 72.1,
+      "area_mm2": 213.4,
+      "iou": 0.68,
+      "w_ratio": 0.96,
+      "h_ratio": 1.12,
+      "ok": false
+     },
+     {
+      "motif": 11,
+      "x_mm": 161.7,
+      "y_mm": 74.9,
+      "area_mm2": 93.6,
+      "iou": 0.76,
+      "w_ratio": 0.69,
+      "h_ratio": 0.9,
+      "ok": false
+     },
+     {
+      "motif": 12,
+      "x_mm": 77.6,
+      "y_mm": 100.6,
+      "area_mm2": 33.0,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 17,
+      "x_mm": 99.6,
+      "y_mm": 132.0,
+      "area_mm2": 28.5,
+      "iou": 0.65,
+      "w_ratio": 0.74,
+      "h_ratio": 0.83,
+      "ok": false
+     },
+     {
+      "motif": 18,
+      "x_mm": 74.1,
+      "y_mm": 135.1,
+      "area_mm2": 12.9,
+      "iou": 0.47,
+      "w_ratio": 1.65,
+      "h_ratio": 1.03,
+      "ok": false
+     },
+     {
+      "motif": 19,
+      "x_mm": 37.0,
+      "y_mm": 142.5,
+      "area_mm2": 117.1,
+      "iou": 0.52,
+      "w_ratio": 1.2,
+      "h_ratio": 1.1,
+      "ok": false
+     },
+     {
+      "motif": 20,
+      "x_mm": 65.2,
+      "y_mm": 154.3,
+      "area_mm2": 90.0,
+      "iou": 0.38,
+      "w_ratio": 1.4,
+      "h_ratio": 1.04,
+      "ok": false
+     },
+     {
+      "motif": 21,
+      "x_mm": 52.7,
+      "y_mm": 152.5,
+      "area_mm2": 35.1,
+      "iou": 0.17,
+      "w_ratio": 0.52,
+      "h_ratio": 0.64,
+      "ok": false
+     },
+     {
+      "motif": 23,
+      "x_mm": 29.9,
+      "y_mm": 158.9,
+      "area_mm2": 34.6,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 28,
+      "x_mm": 146.3,
+      "y_mm": 170.1,
+      "area_mm2": 94.9,
+      "iou": 0.73,
+      "w_ratio": 0.92,
+      "h_ratio": 0.71,
+      "ok": false
+     },
+     {
+      "motif": 32,
+      "x_mm": 15.4,
+      "y_mm": 179.0,
+      "area_mm2": 18.5,
+      "iou": 0.59,
+      "w_ratio": 1.5,
+      "h_ratio": 0.84,
+      "ok": false
+     },
+     {
+      "motif": 34,
+      "x_mm": 50.2,
+      "y_mm": 189.4,
+      "area_mm2": 25.5,
+      "iou": 0.3,
+      "w_ratio": 1.73,
+      "h_ratio": 1.19,
+      "ok": false
+     },
+     {
+      "motif": 35,
+      "x_mm": 98.7,
+      "y_mm": 189.3,
+      "area_mm2": 173.0,
+      "iou": 0.51,
+      "w_ratio": 0.59,
+      "h_ratio": 0.66,
+      "ok": false
+     },
+     {
+      "motif": 38,
+      "x_mm": 54.4,
+      "y_mm": 203.8,
+      "area_mm2": 116.4,
+      "iou": 0.73,
+      "w_ratio": 0.77,
+      "h_ratio": 0.8,
+      "ok": false
+     },
+     {
+      "motif": 41,
+      "x_mm": 10.0,
+      "y_mm": 208.3,
+      "area_mm2": 13.4,
+      "iou": 0.34,
+      "w_ratio": 1.23,
+      "h_ratio": 1.31,
+      "ok": false
+     },
+     {
+      "motif": 45,
+      "x_mm": 60.7,
+      "y_mm": 215.2,
+      "area_mm2": 27.4,
+      "iou": 0.59,
+      "w_ratio": 1.17,
+      "h_ratio": 1.25,
+      "ok": false
+     },
+     {
+      "motif": 47,
+      "x_mm": 21.8,
+      "y_mm": 221.7,
+      "area_mm2": 76.6,
+      "iou": 0.62,
+      "w_ratio": 1.02,
+      "h_ratio": 1.14,
+      "ok": false
+     },
+     {
+      "motif": 50,
+      "x_mm": 33.4,
+      "y_mm": 232.1,
+      "area_mm2": 39.1,
+      "iou": 0.39,
+      "w_ratio": 1.44,
+      "h_ratio": 0.9,
+      "ok": false
+     }
+    ],
+    "uncovered": {
+     "n": 9,
+     "mm2": 741.4,
+     "largest": [
+      {
+       "x_mm": 105.9,
+       "y_mm": 154.8,
+       "w_mm": 34.6,
+       "h_mm": 25.6,
+       "area_mm2": 242.6
+      },
+      {
+       "x_mm": 73.8,
+       "y_mm": 138.6,
+       "w_mm": 28.4,
+       "h_mm": 21.2,
+       "area_mm2": 201.0
+      },
+      {
+       "x_mm": 106.2,
+       "y_mm": 188.8,
+       "w_mm": 11.6,
+       "h_mm": 12.0,
+       "area_mm2": 73.4
+      },
+      {
+       "x_mm": 19.4,
+       "y_mm": 265.0,
+       "w_mm": 23.2,
+       "h_mm": 6.4,
+       "area_mm2": 45.2
+      },
+      {
+       "x_mm": 64.6,
+       "y_mm": 156.3,
+       "w_mm": 6.8,
+       "h_mm": 9.8,
+       "area_mm2": 42.5
+      },
+      {
+       "x_mm": 54.3,
+       "y_mm": 130.4,
+       "w_mm": 7.0,
+       "h_mm": 8.8,
+       "area_mm2": 38.5
+      },
+      {
+       "x_mm": 29.9,
+       "y_mm": 158.9,
+       "w_mm": 15.4,
+       "h_mm": 5.8,
+       "area_mm2": 34.4
+      },
+      {
+       "x_mm": 77.6,
+       "y_mm": 100.6,
+       "w_mm": 8.4,
+       "h_mm": 9.6,
+       "area_mm2": 32.9
+      }
+     ]
+    },
+    "ref_mm2": 11383.2,
+    "sewn_mm2": 12625.5,
+    "sewn_off_reference_mm2": 1934.3
+   },
+   "orphans": {
+    "n": 26,
+    "exempt": [],
+    "n_exempt": 0,
+    "blocks": 307,
+    "ok": false,
+    "params": {
+     "max_stitches": 60,
+     "max_extent_mm": 8.0,
+     "ratio": 3.0,
+     "touch_mm": 0.3,
+     "target": 0
+    }
+   },
+   "motif_reference": {
+    "summary": {
+     "image": {
+      "n": 5,
+      "ok": 4,
+      "mean_iou": 0.71
+     },
+     "mockup": {
+      "n": 4,
+      "ok": 3,
+      "mean_iou": 0.77
+     }
+    },
+    "rows": [
+     {
+      "unit": "fish1",
+      "motif": "fish1",
+      "reference": "refs/tetra_fish1.png",
+      "area_mm2": 596.6,
+      "iou": 0.8,
+      "w_ratio": 0.96,
+      "h_ratio": 0.93,
+      "ok": true
+     },
+     {
+      "unit": "fish2",
+      "motif": "fish2",
+      "reference": "refs/tetra_fish2.png",
+      "area_mm2": 435.6,
+      "iou": 0.79,
+      "w_ratio": 0.98,
+      "h_ratio": 0.89,
+      "ok": true
+     },
+     {
+      "unit": "fish3",
+      "motif": "fish3",
+      "reference": "refs/tetra_fish3.png",
+      "area_mm2": 895.9,
+      "iou": 0.43,
+      "w_ratio": 0.88,
+      "h_ratio": 0.88,
+      "ok": false
+     },
+     {
+      "unit": "fish4",
+      "motif": "fish4",
+      "reference": "refs/tetra_fish4.png",
+      "area_mm2": 286.0,
+      "iou": 0.74,
+      "w_ratio": 1.04,
+      "h_ratio": 0.88,
+      "ok": true
+     },
+     {
+      "unit": "fish5",
+      "motif": "fish5",
+      "reference": "refs/tetra_fish5.png",
+      "area_mm2": 740.8,
+      "iou": 0.8,
+      "w_ratio": 1.0,
+      "h_ratio": 0.92,
+      "ok": true
+     },
+     {
+      "unit": "flower_upper",
+      "motif": "flower_upper",
+      "reference": "mockup",
+      "area_mm2": 2677.8,
+      "iou": 0.86,
+      "w_ratio": 0.99,
+      "h_ratio": 1.02,
+      "ok": true
+     },
+     {
+      "unit": "flower_lower",
+      "motif": "flower_lower",
+      "reference": "mockup",
+      "area_mm2": 652.4,
+      "iou": 0.8,
+      "w_ratio": 1.04,
+      "h_ratio": 1.08,
+      "ok": true
+     },
+     {
+      "unit": "stems",
+      "motif": "stems",
+      "reference": "mockup",
+      "area_mm2": 250.8,
+      "iou": 0.6,
+      "w_ratio": 1.08,
+      "h_ratio": 0.97,
+      "ok": false
+     },
+     {
+      "unit": "leaves_petals",
+      "motif": "leaves_petals",
+      "reference": "mockup",
+      "area_mm2": 4447.2,
+      "iou": 0.8,
+      "w_ratio": 0.9,
+      "h_ratio": 1.01,
+      "ok": true
+     }
+    ]
+   },
+   "lily": {
+    "stitches": 3564,
+    "angle_bins_ge8pct": 5,
+    "top_bin_pct": 14.4,
+    "share_by_15deg": [
+     10.6,
+     14.4,
+     10.7,
+     7.7,
+     6.5,
+     7.6,
+     9.4,
+     4.5,
+     6.9,
+     9.0,
+     7.7,
+     5.0
+    ]
+   }
+  },
+  "g2run3": {
+   "dst": "out/g2run3/KOI_FR_M_labels.dst",
+   "counts": {
+    "stitches_file": 18166,
+    "threads_file": 10,
+    "stitches_in_crop": 16764
+   },
+   "gates": {
+    "crop": [
+     -220,
+     30,
+     -50,
+     300
+    ],
+    "crop_min_closeup_weight": null,
+    "source_ppm_median": 0.91,
+    "stitches_in_crop": 16764,
+    "direction": {
+     "tiles": 252,
+     "pct_ok": 69.4,
+     "pct_chaos": 4.0,
+     "n_dev": 67,
+     "masked": 0,
+     "n_chaos": 10,
+     "pct_ok_all_stitches": 69.6,
+     "pct_chaos_all_stitches": 13.1
+    },
+    "angle_coherence": {
+     "ok": false,
+     "note": "no regions file: a DST carries no part ids, so angle_coherence cannot pass"
+    },
+    "density": {
+     "covered_cm2": 123.0,
+     "mean": 3.27,
+     "p95": 6.39,
+     "max_smoothed": 35.88,
+     "over_cm2": 1.16,
+     "flags": 5,
+     "threshold": 7.0
+    },
+    "trims": {
+     "trims": 49,
+     "per_100cm2": 39.8,
+     "area_cm2": 123.0
+    },
+    "satin": {
+     "satins": 21,
+     "fans": 0,
+     "blob": 9,
+     "too_wide": 0,
+     "too_narrow": 4
+    },
+    "stack": {
+     "max": 3,
+     "over_cm2": 0.03,
+     "flags": 0,
+     "pct_cells_over": 0.0
+    },
+    "runs_in_crop": 62,
+    "colours": {
+     "stops_in_crop": 12,
+     "threads_in_crop": 10,
+     "threads_in_file": 10,
+     "hex": [
+      "#15181f",
+      "#23396f",
+      "#30569a",
+      "#4a73b0",
+      "#6f93c8",
+      "#97b2d8",
+      "#b9b5cc",
+      "#c7d6ea",
+      "#d8262e",
+      "#f1eef2"
+     ],
+     "red": true,
+     "gold": false
+    },
+    "secs": 6.8
+   },
+   "verdict": {
+    "direction_ok": false,
+    "direction_chaos": true,
+    "angle_coherence": false,
+    "density": false,
+    "trims": false,
+    "satin_shape": false,
+    "stack": false,
+    "colours": true
+   },
+   "fidelity": {
+    "fish": {
+     "n": 5,
+     "ok": 3,
+     "mean_iou": 0.68
+    },
+    "fish_rows": [
+     {
+      "motif": 1,
+      "x_mm": 63.9,
+      "y_mm": 20.9,
+      "area_mm2": 594.6,
+      "iou": 0.63,
+      "w_ratio": 1.04,
+      "h_ratio": 0.92,
+      "ok": false
+     },
+     {
+      "motif": 1,
+      "x_mm": 105.3,
+      "y_mm": 76.9,
+      "area_mm2": 427.6,
+      "iou": 0.71,
+      "w_ratio": 1.08,
+      "h_ratio": 1.01,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 155.6,
+      "y_mm": 135.5,
+      "area_mm2": 283.6,
+      "iou": 0.6,
+      "w_ratio": 1.03,
+      "h_ratio": 0.89,
+      "ok": false
+     },
+     {
+      "motif": 1,
+      "x_mm": 91.4,
+      "y_mm": 147.8,
+      "area_mm2": 890.4,
+      "iou": 0.73,
+      "w_ratio": 1.05,
+      "h_ratio": 1.06,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 142.8,
+      "y_mm": 216.2,
+      "area_mm2": 736.0,
+      "iou": 0.72,
+      "w_ratio": 0.98,
+      "h_ratio": 1.01,
+      "ok": true
+     }
+    ],
+    "fish_mockup": {
+     "n": 5,
+     "ok": 5,
+     "mean_iou": 0.86
+    },
+    "fish_mockup_rows": [
+     {
+      "motif": 1,
+      "x_mm": 63.5,
+      "y_mm": 24.0,
+      "area_mm2": 666.4,
+      "iou": 0.87,
+      "w_ratio": 0.97,
+      "h_ratio": 0.97,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 104.8,
+      "y_mm": 78.1,
+      "area_mm2": 570.9,
+      "iou": 0.87,
+      "w_ratio": 0.96,
+      "h_ratio": 0.95,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 153.0,
+      "y_mm": 133.9,
+      "area_mm2": 301.6,
+      "iou": 0.78,
+      "w_ratio": 0.91,
+      "h_ratio": 0.93,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 88.9,
+      "y_mm": 149.2,
+      "area_mm2": 1124.0,
+      "iou": 0.89,
+      "w_ratio": 0.98,
+      "h_ratio": 1.03,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 140.3,
+      "y_mm": 213.5,
+      "area_mm2": 1134.7,
+      "iou": 0.89,
+      "w_ratio": 0.98,
+      "h_ratio": 0.97,
+      "ok": true
+     }
+    ],
+    "flora": {
+     "n": 34,
+     "ok": 23,
+     "mean_iou": 0.66
+    },
+    "flora_fail": [
+     {
+      "motif": 8,
+      "x_mm": 59.2,
+      "y_mm": 52.3,
+      "area_mm2": 9.4,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 17,
+      "x_mm": 99.6,
+      "y_mm": 132.0,
+      "area_mm2": 28.5,
+      "iou": 0.67,
+      "w_ratio": 0.85,
+      "h_ratio": 0.79,
+      "ok": false
+     },
+     {
+      "motif": 18,
+      "x_mm": 74.1,
+      "y_mm": 135.1,
+      "area_mm2": 12.9,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 21,
+      "x_mm": 52.7,
+      "y_mm": 152.5,
+      "area_mm2": 35.1,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 23,
+      "x_mm": 29.9,
+      "y_mm": 158.9,
+      "area_mm2": 34.6,
+      "iou": 0.78,
+      "w_ratio": 0.87,
+      "h_ratio": 0.55,
+      "ok": false
+     },
+     {
+      "motif": 32,
+      "x_mm": 15.4,
+      "y_mm": 179.0,
+      "area_mm2": 18.5,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 34,
+      "x_mm": 50.2,
+      "y_mm": 189.4,
+      "area_mm2": 25.5,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 41,
+      "x_mm": 10.0,
+      "y_mm": 208.3,
+      "area_mm2": 13.4,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 45,
+      "x_mm": 60.7,
+      "y_mm": 215.2,
+      "area_mm2": 27.4,
+      "iou": 0.63,
+      "w_ratio": 0.8,
+      "h_ratio": 0.68,
+      "ok": false
+     },
+     {
+      "motif": 47,
+      "x_mm": 21.8,
+      "y_mm": 221.7,
+      "area_mm2": 76.6,
+      "iou": 0.69,
+      "w_ratio": 0.83,
+      "h_ratio": 0.89,
+      "ok": false
+     },
+     {
+      "motif": 50,
+      "x_mm": 33.4,
+      "y_mm": 232.1,
+      "area_mm2": 39.1,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     }
+    ],
+    "uncovered": {
+     "n": 12,
+     "mm2": 467.0,
+     "largest": [
+      {
+       "x_mm": 54.1,
+       "y_mm": 11.8,
+       "w_mm": 31.4,
+       "h_mm": 15.2,
+       "area_mm2": 83.4
+      },
+      {
+       "x_mm": 72.4,
+       "y_mm": 148.7,
+       "w_mm": 21.6,
+       "h_mm": 10.2,
+       "area_mm2": 57.7
+      },
+      {
+       "x_mm": 55.8,
+       "y_mm": 23.3,
+       "w_mm": 10.8,
+       "h_mm": 7.4,
+       "area_mm2": 46.3
+      },
+      {
+       "x_mm": 33.5,
+       "y_mm": 232.1,
+       "w_mm": 7.0,
+       "h_mm": 16.2,
+       "area_mm2": 39.0
+      },
+      {
+       "x_mm": 136.5,
+       "y_mm": 204.1,
+       "w_mm": 14.6,
+       "h_mm": 15.0,
+       "area_mm2": 34.7
+      },
+      {
+       "x_mm": 53.0,
+       "y_mm": 152.4,
+       "w_mm": 17.2,
+       "h_mm": 9.2,
+       "area_mm2": 34.4
+      },
+      {
+       "x_mm": 72.8,
+       "y_mm": 136.5,
+       "w_mm": 10.0,
+       "h_mm": 9.0,
+       "area_mm2": 30.9
+      },
+      {
+       "x_mm": 152.0,
+       "y_mm": 125.0,
+       "w_mm": 12.4,
+       "h_mm": 12.4,
+       "area_mm2": 30.0
+      }
+     ]
+    },
+    "ref_mm2": 11383.2,
+    "sewn_mm2": 11300.6,
+    "sewn_off_reference_mm2": 793.2
+   },
+   "orphans": {
+    "n": 0,
+    "exempt": [],
+    "n_exempt": 0,
+    "blocks": 62,
+    "ok": true,
+    "params": {
+     "max_stitches": 60,
+     "max_extent_mm": 8.0,
+     "ratio": 3.0,
+     "touch_mm": 0.3,
+     "target": 0
+    }
+   },
+   "motif_reference": {
+    "summary": {
+     "image": {
+      "n": 5,
+      "ok": 3,
+      "mean_iou": 0.69
+     },
+     "mockup": {
+      "n": 4,
+      "ok": 3,
+      "mean_iou": 0.85
+     }
+    },
+    "rows": [
+     {
+      "unit": "fish1",
+      "motif": "fish1",
+      "reference": "refs/tetra_fish1.png",
+      "area_mm2": 596.6,
+      "iou": 0.64,
+      "w_ratio": 1.04,
+      "h_ratio": 0.92,
+      "ok": false
+     },
+     {
+      "unit": "fish2",
+      "motif": "fish2",
+      "reference": "refs/tetra_fish2.png",
+      "area_mm2": 435.6,
+      "iou": 0.72,
+      "w_ratio": 1.07,
+      "h_ratio": 1.01,
+      "ok": true
+     },
+     {
+      "unit": "fish3",
+      "motif": "fish3",
+      "reference": "refs/tetra_fish3.png",
+      "area_mm2": 895.9,
+      "iou": 0.74,
+      "w_ratio": 1.05,
+      "h_ratio": 1.06,
+      "ok": true
+     },
+     {
+      "unit": "fish4",
+      "motif": "fish4",
+      "reference": "refs/tetra_fish4.png",
+      "area_mm2": 286.0,
+      "iou": 0.6,
+      "w_ratio": 1.03,
+      "h_ratio": 0.89,
+      "ok": false
+     },
+     {
+      "unit": "fish5",
+      "motif": "fish5",
+      "reference": "refs/tetra_fish5.png",
+      "area_mm2": 740.8,
+      "iou": 0.73,
+      "w_ratio": 0.99,
+      "h_ratio": 1.01,
+      "ok": true
+     },
+     {
+      "unit": "flower_upper",
+      "motif": "flower_upper",
+      "reference": "mockup",
+      "area_mm2": 2677.8,
+      "iou": 0.88,
+      "w_ratio": 1.0,
+      "h_ratio": 1.03,
+      "ok": true
+     },
+     {
+      "unit": "flower_lower",
+      "motif": "flower_lower",
+      "reference": "mockup",
+      "area_mm2": 652.4,
+      "iou": 0.94,
+      "w_ratio": 1.02,
+      "h_ratio": 1.02,
+      "ok": true
+     },
+     {
+      "unit": "stems",
+      "motif": "stems",
+      "reference": "mockup",
+      "area_mm2": 250.8,
+      "iou": 0.66,
+      "w_ratio": 1.08,
+      "h_ratio": 1.01,
+      "ok": false
+     },
+     {
+      "unit": "leaves_petals",
+      "motif": "leaves_petals",
+      "reference": "mockup",
+      "area_mm2": 4447.2,
+      "iou": 0.92,
+      "w_ratio": 1.0,
+      "h_ratio": 0.99,
+      "ok": true
+     }
+    ]
+   },
+   "lily": {
+    "stitches": 2776,
+    "angle_bins_ge8pct": 3,
+    "top_bin_pct": 37.9,
+    "share_by_15deg": [
+     7.6,
+     3.8,
+     6.0,
+     2.0,
+     0.3,
+     8.4,
+     5.9,
+     1.1,
+     26.4,
+     0.6,
+     0.1,
+     37.9
+    ]
+   }
+  },
+  "engine": {
+   "dst": "out/digitize/KOI_FR_M_labels/KOI_FR_M_labels.dst",
+   "counts": {
+    "stitches_file": 19929,
+    "threads_file": 10,
+    "stitches_in_crop": 18257
+   },
+   "gates": {
+    "crop": [
+     -220,
+     30,
+     -50,
+     300
+    ],
+    "crop_min_closeup_weight": null,
+    "source_ppm_median": 0.91,
+    "stitches_in_crop": 18257,
+    "direction": {
+     "tiles": 253,
+     "pct_ok": 75.5,
+     "pct_chaos": 5.1,
+     "n_dev": 49,
+     "masked": 0,
+     "n_chaos": 13,
+     "pct_ok_all_stitches": 75.5,
+     "pct_chaos_all_stitches": 12.4
+    },
+    "angle_coherence": {
+     "ok": false,
+     "note": "no regions file: a DST carries no part ids, so angle_coherence cannot pass"
+    },
+    "density": {
+     "covered_cm2": 122.0,
+     "mean": 3.4,
+     "p95": 6.78,
+     "max_smoothed": 35.87,
+     "over_cm2": 1.24,
+     "flags": 5,
+     "threshold": 7.0
+    },
+    "trims": {
+     "trims": 53,
+     "per_100cm2": 43.4,
+     "area_cm2": 122.0
+    },
+    "satin": {
+     "satins": 21,
+     "fans": 0,
+     "blob": 9,
+     "too_wide": 0,
+     "too_narrow": 4
+    },
+    "stack": {
+     "max": 3,
+     "over_cm2": 0.21,
+     "flags": 0,
+     "pct_cells_over": 0.2
+    },
+    "runs_in_crop": 69,
+    "colours": {
+     "stops_in_crop": 16,
+     "threads_in_crop": 10,
+     "threads_in_file": 10,
+     "hex": [
+      "#15181f",
+      "#23396f",
+      "#30569a",
+      "#4a73b0",
+      "#6f93c8",
+      "#97b2d8",
+      "#b9b5cc",
+      "#c7d6ea",
+      "#d8262e",
+      "#f1eef2"
+     ],
+     "red": true,
+     "gold": false
+    },
+    "secs": 6.8
+   },
+   "verdict": {
+    "direction_ok": false,
+    "direction_chaos": false,
+    "angle_coherence": false,
+    "density": false,
+    "trims": false,
+    "satin_shape": false,
+    "stack": false,
+    "colours": true
+   },
+   "fidelity": {
+    "fish": {
+     "n": 5,
+     "ok": 3,
+     "mean_iou": 0.68
+    },
+    "fish_rows": [
+     {
+      "motif": 1,
+      "x_mm": 63.9,
+      "y_mm": 20.9,
+      "area_mm2": 594.6,
+      "iou": 0.63,
+      "w_ratio": 1.04,
+      "h_ratio": 0.92,
+      "ok": false
+     },
+     {
+      "motif": 1,
+      "x_mm": 105.3,
+      "y_mm": 76.9,
+      "area_mm2": 427.6,
+      "iou": 0.71,
+      "w_ratio": 1.08,
+      "h_ratio": 1.01,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 155.6,
+      "y_mm": 135.5,
+      "area_mm2": 283.6,
+      "iou": 0.6,
+      "w_ratio": 1.03,
+      "h_ratio": 0.89,
+      "ok": false
+     },
+     {
+      "motif": 1,
+      "x_mm": 91.4,
+      "y_mm": 147.8,
+      "area_mm2": 890.4,
+      "iou": 0.73,
+      "w_ratio": 1.05,
+      "h_ratio": 1.06,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 142.8,
+      "y_mm": 216.2,
+      "area_mm2": 736.0,
+      "iou": 0.72,
+      "w_ratio": 0.99,
+      "h_ratio": 1.01,
+      "ok": true
+     }
+    ],
+    "fish_mockup": {
+     "n": 5,
+     "ok": 5,
+     "mean_iou": 0.86
+    },
+    "fish_mockup_rows": [
+     {
+      "motif": 1,
+      "x_mm": 63.5,
+      "y_mm": 24.0,
+      "area_mm2": 666.4,
+      "iou": 0.87,
+      "w_ratio": 0.97,
+      "h_ratio": 0.97,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 104.8,
+      "y_mm": 78.1,
+      "area_mm2": 570.9,
+      "iou": 0.87,
+      "w_ratio": 0.96,
+      "h_ratio": 0.95,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 153.0,
+      "y_mm": 133.9,
+      "area_mm2": 301.6,
+      "iou": 0.78,
+      "w_ratio": 0.91,
+      "h_ratio": 0.93,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 88.9,
+      "y_mm": 149.2,
+      "area_mm2": 1124.0,
+      "iou": 0.89,
+      "w_ratio": 0.98,
+      "h_ratio": 1.03,
+      "ok": true
+     },
+     {
+      "motif": 1,
+      "x_mm": 140.3,
+      "y_mm": 213.5,
+      "area_mm2": 1134.7,
+      "iou": 0.89,
+      "w_ratio": 0.98,
+      "h_ratio": 0.97,
+      "ok": true
+     }
+    ],
+    "flora": {
+     "n": 34,
+     "ok": 22,
+     "mean_iou": 0.67
+    },
+    "flora_fail": [
+     {
+      "motif": 8,
+      "x_mm": 59.2,
+      "y_mm": 52.3,
+      "area_mm2": 9.4,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 12,
+      "x_mm": 77.6,
+      "y_mm": 100.6,
+      "area_mm2": 33.0,
+      "iou": 0.7,
+      "w_ratio": 0.88,
+      "h_ratio": 0.94,
+      "ok": false
+     },
+     {
+      "motif": 17,
+      "x_mm": 99.6,
+      "y_mm": 132.0,
+      "area_mm2": 28.5,
+      "iou": 0.68,
+      "w_ratio": 0.85,
+      "h_ratio": 0.88,
+      "ok": false
+     },
+     {
+      "motif": 18,
+      "x_mm": 74.1,
+      "y_mm": 135.1,
+      "area_mm2": 12.9,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 21,
+      "x_mm": 52.7,
+      "y_mm": 152.5,
+      "area_mm2": 35.1,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 23,
+      "x_mm": 29.9,
+      "y_mm": 158.9,
+      "area_mm2": 34.6,
+      "iou": 0.78,
+      "w_ratio": 0.87,
+      "h_ratio": 0.55,
+      "ok": false
+     },
+     {
+      "motif": 32,
+      "x_mm": 15.4,
+      "y_mm": 179.0,
+      "area_mm2": 18.5,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 34,
+      "x_mm": 50.2,
+      "y_mm": 189.4,
+      "area_mm2": 25.5,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 41,
+      "x_mm": 10.0,
+      "y_mm": 208.3,
+      "area_mm2": 13.4,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     },
+     {
+      "motif": 45,
+      "x_mm": 60.7,
+      "y_mm": 215.2,
+      "area_mm2": 27.4,
+      "iou": 0.63,
+      "w_ratio": 0.8,
+      "h_ratio": 0.68,
+      "ok": false
+     },
+     {
+      "motif": 47,
+      "x_mm": 21.8,
+      "y_mm": 221.7,
+      "area_mm2": 76.6,
+      "iou": 0.69,
+      "w_ratio": 0.83,
+      "h_ratio": 0.89,
+      "ok": false
+     },
+     {
+      "motif": 50,
+      "x_mm": 33.4,
+      "y_mm": 232.1,
+      "area_mm2": 39.1,
+      "iou": 0.0,
+      "w_ratio": 0.0,
+      "h_ratio": 0.0,
+      "ok": false
+     }
+    ],
+    "uncovered": {
+     "n": 11,
+     "mm2": 444.9,
+     "largest": [
+      {
+       "x_mm": 54.1,
+       "y_mm": 11.8,
+       "w_mm": 31.4,
+       "h_mm": 15.2,
+       "area_mm2": 83.4
+      },
+      {
+       "x_mm": 72.4,
+       "y_mm": 148.7,
+       "w_mm": 21.6,
+       "h_mm": 10.2,
+       "area_mm2": 57.7
+      },
+      {
+       "x_mm": 55.8,
+       "y_mm": 23.3,
+       "w_mm": 10.8,
+       "h_mm": 7.4,
+       "area_mm2": 46.0
+      },
+      {
+       "x_mm": 33.5,
+       "y_mm": 232.1,
+       "w_mm": 7.0,
+       "h_mm": 16.2,
+       "area_mm2": 39.0
+      },
+      {
+       "x_mm": 136.5,
+       "y_mm": 204.1,
+       "w_mm": 14.6,
+       "h_mm": 15.0,
+       "area_mm2": 34.6
+      },
+      {
+       "x_mm": 71.6,
+       "y_mm": 136.5,
+       "w_mm": 12.4,
+       "h_mm": 9.0,
+       "area_mm2": 34.5
+      },
+      {
+       "x_mm": 53.0,
+       "y_mm": 152.4,
+       "w_mm": 17.2,
+       "h_mm": 9.2,
+       "area_mm2": 34.4
+      },
+      {
+       "x_mm": 152.0,
+       "y_mm": 125.0,
+       "w_mm": 12.4,
+       "h_mm": 12.4,
+       "area_mm2": 30.0
+      }
+     ]
+    },
+    "ref_mm2": 11383.2,
+    "sewn_mm2": 11186.0,
+    "sewn_off_reference_mm2": 748.9
+   },
+   "orphans": {
+    "n": 0,
+    "exempt": [],
+    "n_exempt": 0,
+    "blocks": 69,
+    "ok": true,
+    "params": {
+     "max_stitches": 60,
+     "max_extent_mm": 8.0,
+     "ratio": 3.0,
+     "touch_mm": 0.3,
+     "target": 0
+    }
+   },
+   "motif_reference": {
+    "summary": {
+     "image": {
+      "n": 5,
+      "ok": 3,
+      "mean_iou": 0.69
+     },
+     "mockup": {
+      "n": 4,
+      "ok": 3,
+      "mean_iou": 0.85
+     }
+    },
+    "rows": [
+     {
+      "unit": "fish1",
+      "motif": "fish1",
+      "reference": "refs/tetra_fish1.png",
+      "area_mm2": 596.6,
+      "iou": 0.64,
+      "w_ratio": 1.04,
+      "h_ratio": 0.92,
+      "ok": false
+     },
+     {
+      "unit": "fish2",
+      "motif": "fish2",
+      "reference": "refs/tetra_fish2.png",
+      "area_mm2": 435.6,
+      "iou": 0.72,
+      "w_ratio": 1.07,
+      "h_ratio": 1.01,
+      "ok": true
+     },
+     {
+      "unit": "fish3",
+      "motif": "fish3",
+      "reference": "refs/tetra_fish3.png",
+      "area_mm2": 895.9,
+      "iou": 0.74,
+      "w_ratio": 1.05,
+      "h_ratio": 1.06,
+      "ok": true
+     },
+     {
+      "unit": "fish4",
+      "motif": "fish4",
+      "reference": "refs/tetra_fish4.png",
+      "area_mm2": 286.0,
+      "iou": 0.6,
+      "w_ratio": 1.03,
+      "h_ratio": 0.89,
+      "ok": false
+     },
+     {
+      "unit": "fish5",
+      "motif": "fish5",
+      "reference": "refs/tetra_fish5.png",
+      "area_mm2": 740.8,
+      "iou": 0.73,
+      "w_ratio": 0.98,
+      "h_ratio": 1.01,
+      "ok": true
+     },
+     {
+      "unit": "flower_upper",
+      "motif": "flower_upper",
+      "reference": "mockup",
+      "area_mm2": 2677.8,
+      "iou": 0.89,
+      "w_ratio": 1.0,
+      "h_ratio": 1.02,
+      "ok": true
+     },
+     {
+      "unit": "flower_lower",
+      "motif": "flower_lower",
+      "reference": "mockup",
+      "area_mm2": 652.4,
+      "iou": 0.94,
+      "w_ratio": 1.02,
+      "h_ratio": 1.03,
+      "ok": true
+     },
+     {
+      "unit": "stems",
+      "motif": "stems",
+      "reference": "mockup",
+      "area_mm2": 250.8,
+      "iou": 0.66,
+      "w_ratio": 1.08,
+      "h_ratio": 1.02,
+      "ok": false
+     },
+     {
+      "unit": "leaves_petals",
+      "motif": "leaves_petals",
+      "reference": "mockup",
+      "area_mm2": 4447.2,
+      "iou": 0.91,
+      "w_ratio": 1.0,
+      "h_ratio": 1.01,
+      "ok": true
+     }
+    ]
+   },
+   "lily": {
+    "stitches": 3874,
+    "angle_bins_ge8pct": 4,
+    "top_bin_pct": 29.0,
+    "share_by_15deg": [
+     21.3,
+     3.8,
+     1.8,
+     5.9,
+     0.8,
+     9.0,
+     17.9,
+     2.6,
+     1.7,
+     29.0,
+     1.5,
+     4.7
+    ]
+   }
+  }
+ },
+ "engine_lily_parts": [
+  {
+   "id": "flower_upper.heart.023",
+   "kind": "lobe",
+   "thread": "kb_white",
+   "area_mm2": 17.91,
+   "piece": null
+  },
+  {
+   "id": "flower_upper.heart.024",
+   "kind": "lobe",
+   "thread": "kb_white",
+   "area_mm2": 25.91,
+   "piece": null
+  },
+  {
+   "id": "flower_upper.heart.025",
+   "kind": "lobe",
+   "thread": "kb_lav",
+   "area_mm2": 16.23,
+   "piece": null
+  },
+  {
+   "id": "flower_upper.heart.026",
+   "kind": "lobe",
+   "thread": "kb_lav",
+   "area_mm2": 17.81,
+   "piece": null
+  },
+  {
+   "id": "flower_upper.heart.027",
+   "kind": "lobe",
+   "thread": "kb_lav",
+   "area_mm2": 17.3,
+   "piece": null
+  },
+  {
+   "id": "flower_upper.heart.022",
+   "kind": "lobe",
+   "thread": "kb_cobalt",
+   "area_mm2": 180.69,
+   "piece": null
+  },
+  {
+   "id": "flower_upper.petals.028",
+   "kind": "lobe",
+   "thread": "kb_lav",
+   "area_mm2": 494.86,
+   "piece": 5
+  },
+  {
+   "id": "flower_upper.petals.029",
+   "kind": "lobe",
+   "thread": "kb_sky",
+   "area_mm2": 588.23,
+   "piece": 4
+  },
+  {
+   "id": "flower_upper.petals.030",
+   "kind": "lobe",
+   "thread": "kb_lav",
+   "area_mm2": 179.78,
+   "piece": 3
+  },
+  {
+   "id": "flower_upper.petals.031",
+   "kind": "lobe",
+   "thread": "kb_corn",
+   "area_mm2": 481.61,
+   "piece": 2
+  },
+  {
+   "id": "flower_upper.petals.032",
+   "kind": "lobe",
+   "thread": "kb_lav",
+   "area_mm2": 624.77,
+   "piece": 1
+  }
+ ]
+}

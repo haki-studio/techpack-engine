@@ -74,3 +74,20 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - Founder ruling 20 Oct: the garment mockup governs motifs, positions, sizes, counts, colours and gate references;
   inputs/reference.png is used for the TEXT wording only. No close-ups exist for this design.
 - The 7 founder questions (STATUS.json) stay open; files are built with the current proposals (G4, amber).
+
+## Rev D (20 Oct 2026) — founder answers to the 7 G4 questions (CLOSED) + builder assumptions
+1. Back + hood: a back design is planned; the founder will generate a back view. Rev D: back + hood = artwork to follow **[MISSING]** (not plain). OPEN.
+2. 3D puff on ALL the signs = everything that is not a background star: JP badge (text, spark bars, hearts, its stars), EN badge (text + ring of
+   stars), CN badge (text + ring dots), KR oval (ring + text). Background sparkle stars stay flat. CLOSED.
+   - Builder rule [PROPOSED]: a stroke / part narrower than 2.5 mm stays flat (the project's puff limit since Rev B; house rules puff min_w is
+     3.0, so puffed strokes 2.5-3.0 are listed for the strike-off, F2); a glyph puffs only if >= 50 % of its stroke length qualifies.
+     Measured (size M art, G4 table): KR text flat (strokes 1.1-2.6 mm, median ~1.4); JP 1 thin stroke, 1 spark bar (2.2 mm) and the small
+     4-point sparkle (tapered arms, 2.98 at the centre) flat; EN 8 thin strokes flat; CN 31 of 97 strokes flat (<= 2.2 mm). Flat strokes of a
+     puff glyph are sewn after the foam is torn.
+   - CN text set in Noto Sans SC 800 (was 600): the mockup's CN strokes are as heavy, and at 600 only 11 % of the stroke length reached 3.0 mm
+     (81 % at 800). No lighter rim on CN (the mockup's CN letters show none). KR oval ring (4.5-5.0 traced) puff, lemon line on top.
+3. Thread count: the Rev C 12-colour plan stands. The star HAZE is pending the founder — kept as in Rev C. OPEN (haze).
+4. CN ring dots puff: yes. CLOSED.
+5. CN text: Simplified 污 — 不要世界污染. CLOSED.
+6. KR text 우리들 소중한 우주!: approved. CLOSED.
+7. 'WE WANT NO DIRTY COSMOS': left out. CLOSED.
