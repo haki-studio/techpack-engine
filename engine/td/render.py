@@ -86,11 +86,13 @@ def annotate(svg, rows):
     k = (SH - band) / SH; ox = (SW - SW * k) / 2
     y0 = SH - band
     o = [f'<g transform="translate({f(ox)} 0) scale({k:.5f})">{m.group(4)}</g>',
+         '<g data-td="notes">',
          f'<rect x="8" y="{f(y0 + 0.4)}" width="{SW - 16}" height="{f(band - 1.4)}" fill="#EEF6FD" stroke="{GUIDE}" stroke-width="0.25"/>',
          t(11, y0 + 3.4, "TD NOTES — recommendations from the technical designers; every number is from the file named", 1.6, 700, GUIDE)]
     y = y0 + 3.4 + BAND_LH
     for l, col in lines: o.append(t(11, y, l, BAND_SIZE, 500, col)); y += BAND_LH
     if extra: o.append(t(11, y, f"+ {extra} more lines — see the TD comment sheet", BAND_SIZE, 700, MUTED))
+    o.append("</g>")
     return m.group(1) + "\n".join(o) + m.group(5)
 
 
