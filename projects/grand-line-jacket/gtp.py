@@ -278,7 +278,7 @@ def p_bom():
         ("Embroidery backing", "2.5 oz cutaway", "black / charcoal", "behind FR + FL", "TBC", "2 pieces", False),
         ("Main label", LS.main_bom(), "white / black", "CB neck facing", "Haki file", "1", False),
         ("Size label", "woven, 2 × 1.5 cm", "black / cream", "under main label", "TBC", "1", True),
-        ("Care / content label", LS.care_bom(SHELL_MAT), "white / black", "wearer's left inside side seam", "Haki file", "1", LS.care_fibre(SHELL_MAT) is None),
+        ("Care / content label", LS.care_bom(SHELL_MAT), "white / black", "wearer's left inside side seam", "Haki file", "1", True),
         ("Hangtag + string", "350 gsm board, cotton string, brass-tone barb", "cream / black", "through main label loop", "TBC", "1", True),
         ("Polybag", "LDPE 40 µm, self-seal, suffocation warning", "clear", "packing", "TBC", "1", True),
     ]
