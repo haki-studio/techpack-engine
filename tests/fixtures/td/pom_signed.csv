@@ -1,2 +1,4 @@
 point,size,target,tol
 front rise,M,26.2,0.5
+back rise,M,36.5,0.5
+thigh,M,33,0.5
