@@ -1,3 +1,42 @@
+# HANDOFF — tech pack coordinator (latest: session 9487d766, 2026-10-21 ~14:00) — START HERE
+
+Older sections below are history. The previous coordinator's notes are in the Obsidian session notes
+`Claude/Sessions/2026-10-21/techpack-engine - coordinator pickup after crash (f8cacc7c).md` and `... (9487d766).md`.
+
+## State at 14:00, 21 Oct
+| product | state | next |
+|---|---|---|
+| Keep Clean Our Space | Rev I built (PR #38). Fix for founder-reported flat slivers next to puff letters (gap fillers < 2.5 mm went flat, sewn after foam: FL M 8, FR M 21 on Rev H) + min-size filter on star specks | review queued; founder: OK the generated back star layout (compare_06_back.png). Do NOT send Rev H |
+| Konpeito jeans | Rev B6 built (PR #34), Desktop/konpeito-RevB6 | review queued; founder: size run 26-40 (no 24, 29/31/33 halfway) + soot sprites on the sew-out |
+| Pixel Sky fleece | Rev F built (PR #28) with founder answers (fit, back, bird IP cleared, bird on wearer's right, collar = sky-blue taslan matched to sherpa, no close-ups) | review queued; Mandy mill + sherpa questions (founder sending); TD pilot (sampling-strategist) reviewing Rev F |
+| Wave jacket | Rev C art round built (PR #27) | review queued; founder: shell colour, wave over shoulder onto back yoke; Mandy: chenille |
+| paused since 19 Oct | castle, grand-line, forestball, moon, comet, red-beast, koi | founder go per product |
+
+**Queue is stalled:** 4 reviews queued (~/.techpack/queue), but 22 background sessions are live machine-wide (other teams) vs
+HAKI_MAX_SESSIONS 6, so `dispatch.sh --drain` starts nothing. Not ours to stop; tell the founder / ask him to raise the cap or
+close other teams' idle sessions. `tp-fix-wave-jacket` shows "busy" forever (known stale-busy bug, fix in dispatch.sh still to do).
+
+## Founder decisions pending (asked in session 9487d766)
+1. Order of the next engine/infra jobs. Recommended: S1 (SVG → DST drop-in; PLM page plm#1860 + worker #32 already built, worker
+   not deployed; plm#1860 needs migration 1131 approval) → PLM tech-pack review flow → the 4 TD builds (below).
+2. PLM tech-pack review flow (founder's idea, 21 Oct; I said yes, good idea): phase 1 = pack revision uploaded to the product's
+   files (pipeline.product_files, file_type tech_pack) + email with a deep link + page viewer with box comments + "Request
+   revision"; phase 2 = request → local bridge dispatches a fix round with the comments as the brief → new Rev + reply per
+   comment; phase 3 = start packs from PLM. Builds stay on this laptop for now. Waiting: go + who on the team gets emails/comments.
+3. TD builds for lead-product-sampling-strategist (missions/sampling-strategist/td-team-design.md v2.3), agreed conditions:
+   (1) TD input JSON + renderer + MEDIA.md per project; (2) numeral-trace gate scoped to measurement/count tables + callouts
+   with an exempt list; (4) rev-log / chart / callout agreement gate; (3) pattern_diff tested on our own DXF with a planted
+   3 mm rise error; (5) per-supplier colour-count gate (factory.json supplier max colours; Emmie max 9) + special-trim BOM
+   flags. Founder merges. The strategist waits for the founder's priority answer: tell it (SendMessage
+   lead-product-sampling-strategist).
+
+## Engine follow-up already agreed (do regardless of the order)
+- `scripts/orphan_fragments.py` (added in this commit, no test yet): reads written PES files and flags tiny blocks sewn in a
+  different pass from a bigger touching block of the same thread. RED on KCOS Rev H (FL 8, FR 21), 0 on Konpeito/Grand
+  Line/Forestball/Red Beast/Koi/Comet; Wave flags hundreds per file (partly intentional layering? check with zooms).
+  Make it a prod gate for every product with a red-then-green test on the Rev H FL file. Why: the bug lived in project code
+  (kcsatin/kcmotifs) also copied to konpeito kjsatin and engine/digitize/techniques/column.py: project fixes don't reach copies.
+
 # HANDOFF — /techpack batch (updated 2026-10-19 ~17:30, coordinator session d3fafdf9)
 
 Read `LESSONS.md` first, especially A11–A15. A14/A15 are new today: trace every motif, and mask garment details. The gates are `qa.motif_match` and `qa.uncovered`, tested in `tests/test_fidelity_gates.py`. Then read this file and `RECAP-2026-10-19-techpack-batch-coordinator.md` (the decision log).
