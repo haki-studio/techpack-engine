@@ -9,10 +9,13 @@ The TD only maps pieces + edges and judges; every number comes from here.
   rep.lines()                                             # "can't diff: need vector PDF or DXF" when the scale fails
 
 Scale check:
-  DXF  the drawing unit must be known: $INSUNITS (mm / cm / in) or a "Units: mm|cm|in" text (AAMA piece text). If a
-       scale box / 100 mm ruler is drawn, it is measured too, on both axes.
-  PDF  a scale box (rectangle, a side of 100 mm) AND a vertical 100 mm ruler, each next to a "100 mm" label, must both
-       measure 100 ± 0.5 mm — a plot printed or exported at 97 % fails here, before any seam is walked.
+  DXF  the drawing unit must be stated ($INSUNITS mm / cm / in, or a "Units:" piece text; both stated and different =
+       refused) AND a horizontal and a vertical 100 mm reference, each next to a "100 mm" label, must be drawn: a file
+       that claims cm but is drawn in mm reads its ruler as 1000 mm and is refused. pattern_out.write_dxf draws them.
+  PDF  a scale box (a side of 100 mm) AND a vertical 100 mm ruler, each next to a "100 mm" label.
+  Both: each axis must measure 100 ± 0.5 mm (a plot at 97 % fails before any seam is walked), candidates on one axis
+  must agree (else "ambiguous"), and inside that band every length is CORRECTED per axis by 100 / measured — a 1.004
+  y-scale would otherwise put 4 mm on a 1000 mm seam, more than the 3 mm fault this tool must catch.
 Edges: each piece's sew line (AAMA layer 14; dashed in a PDF) — else its cut line (layer 1), reported as "cut line
 (includes seam allowance)" — split at corners (turn > 12°; a TD sums edges with a list). Edge 0 starts at the first corner.
 
@@ -115,7 +118,7 @@ def read_dxf(path):
         size = next((t.split(":", 1)[1].strip() for t, _ in g["text"] if t.startswith("Size:")), None)
         cuts = [p for lay, p, c in g["poly"] if c and lay == "1"]
         sews = [p for lay, p, c in g["poly"] if c and lay == "14"]
-        others = [p for lay, p, c in g["poly"] if lay not in ("1", "14")]
+        others = [p for lay, p, c in g["poly"] if lay not in ("1", "14", "7")]     # 7 = grain line, never a ruler
         rulers += [p for p in others]
         if g is loose and not cuts:                       # a plain drawing: every big closed polyline is a piece
             cuts = [p for lay, p, c in g["poly"] if c and Polygon(p).area > MIN_PIECE_MM2]
@@ -123,21 +126,22 @@ def read_dxf(path):
             cp = Polygon(c)
             sew = next((s for s in sews if cp.buffer(0.5).contains(Polygon(s))), None)
             pieces.append(RPiece(label if len(cuts) == 1 else f"{label or 'piece'} #{i + 1}", sew, c, size))
-    if unit is None:
-        u = {m.group(1).lower() for t, _ in texts for m in [re.search(r"Units:\s*(mm|cm|in)\b", t, re.I)] if m}
-        if len(u) == 1: unit = UNIT_MM[u.pop()]; notes.append("units from the piece text")
-        elif len(u) > 1: raise CantDiff(f"{CANT} — the file states more than one unit: {sorted(u)}")
+    u = {m.group(1).lower() for t, _ in texts for m in [re.search(r"Units:\s*(mm|cm|in)\b", t, re.I)] if m}
+    if len(u) > 1: raise CantDiff(f"{CANT} — the file states more than one unit: {sorted(u)}")
+    if u and unit is not None and UNIT_MM[next(iter(u))] != unit:
+        raise CantDiff(f"{CANT} — $INSUNITS says {unit:g} mm per unit but the piece text says 'Units: {next(iter(u))}'")
+    if unit is None and u:
+        unit = UNIT_MM[u.pop()]; notes.append("units from the piece text")
     if unit is None: raise CantDiff(f"{CANT} — {path}: the drawing unit is not stated ($INSUNITS or 'Units:' text)")
     scale = {"x": None, "y": None, "unit_mm": unit}
     for p in pieces:
         p.sew = [(x * unit, y * unit) for x, y in p.sew] if p.sew else None
         p.cut = [(x * unit, y * unit) for x, y in p.cut]
         p.edges = split_edges(p.sew or p.cut)
-    sx, sy = _rulers([[(x * unit, y * unit) for x, y in r] for r in rulers],
-                     [(t, (q[0] * unit, q[1] * unit)) for t, q in texts])
+    sx, sy = _scale([[(x * unit, y * unit) for x, y in r] for r in rulers],
+                    [(t, (q[0] * unit, q[1] * unit)) for t, q in texts], path)
     scale["x"], scale["y"] = sx, sy
-    for ax, v in (("x", sx), ("y", sy)):
-        if v is not None and abs(v - 100) > SCALE_TOL: raise CantDiff(f"{CANT} — the 100 mm ruler measures {v:.1f} mm on {ax}")
+    scale["fx"], scale["fy"] = _correct(pieces, sx, sy)
     return Pattern(path, "dxf", pieces, scale, notes)
 
 
@@ -200,7 +204,7 @@ def read_pdf(path):
         pg.extract_text(visitor_text=vt)
         texts.extend(ptexts)
         def is_scale_box(p):
-            return len(p) == 4 and _rulers([p], ptexts) != (None, None)
+            c = _ruler_candidates([p], ptexts); return len(p) == 4 and bool(c["x"] or c["y"])
         closed = [(p, d) for p, c, d, op in page_paths if op not in ("f", "F", "f*") and (c or math.hypot(p[0][0] - p[-1][0], p[0][1] - p[-1][1]) < 0.2) and len(p) > 2]
         big = [(p, d) for p, d in closed if Polygon(p).buffer(0).area > MIN_PIECE_MM2 and not is_scale_box(p)]
         cuts = [p for p, d in big if not d]; sews = [p for p, d in big if d]
@@ -212,14 +216,9 @@ def read_pdf(path):
             here.append(RPiece(f"page{pno}" + (f".{len(here) + 1}" if here else ""), sew, c))
         pieces += here
         rulers += [p for p, c, d, _ in page_paths if len(p) <= 4]
-    sx, sy = _rulers(rulers, texts)
-    if sx is None or sy is None:
-        raise CantDiff(f"{CANT} — {path}: no scale box + vertical 100 mm ruler found next to a '100 mm' label "
-                       f"(found x: {sx}, y: {sy}); a PDF cannot be trusted without both")
-    for ax, v in (("x", sx), ("y", sy)):
-        if abs(v - 100) > SCALE_TOL:
-            raise CantDiff(f"{CANT} — scale check failed: the 100 mm reference measures {v:.1f} mm on {ax} (printed / exported scaled?)")
-    return Pattern(path, "pdf", pieces, {"x": sx, "y": sy, "unit_mm": 1.0}, [])
+    sx, sy = _scale(rulers, texts, path)
+    fx, fy = _correct(pieces, sx, sy)
+    return Pattern(path, "pdf", pieces, {"x": sx, "y": sy, "fx": fx, "fy": fy, "unit_mm": 1.0}, [])
 
 
 def _seg_dist(q, a, b):
@@ -228,12 +227,12 @@ def _seg_dist(q, a, b):
     return math.hypot(q[0] - a[0] - t * ax, q[1] - a[1] - t * ay)
 
 
-def _rulers(paths, texts, near=15.0):
-    """(x, y) lengths in mm of the scale references: a horizontal side of 100 ± 5 mm (box side or line) and a vertical
-    one, each within `near` mm of a text saying '100 mm' (so a grain line or a piece edge is never taken for a ruler)"""
+def _ruler_candidates(paths, texts, near=15.0):
+    """{'x': [lengths], 'y': [lengths]} in mm: horizontal / vertical segments of 100 ± 5 mm (a box side or a line) within
+    `near` mm of a text saying '100 mm'. Every candidate is kept, so an ambiguous drawing can be refused."""
     labels = [q for t, q in texts if re.search(r"\b100\s*mm\b", t)]
-    if not labels: return None, None
-    best = {"x": None, "y": None}
+    out = {"x": [], "y": []}
+    if not labels: return out
     for p in paths:
         segs = list(zip(p, p[1:] + ([p[0]] if len(p) == 4 else [])))
         for a, b in segs:
@@ -241,8 +240,37 @@ def _rulers(paths, texts, near=15.0):
             if not 95 <= L <= 105: continue
             if not any(_seg_dist(q, a, b) < near for q in labels): continue
             ax = "x" if dy < 0.02 * L else ("y" if dx < 0.02 * L else None)
-            if ax and (best[ax] is None or abs(L - 100) < abs(best[ax] - 100)): best[ax] = L
-    return best["x"], best["y"]
+            if ax: out[ax].append(L)
+    return out
+
+
+def _scale(paths, texts, path):
+    """measure the 100 mm references on BOTH axes; refuse when one is missing, ambiguous or off by more than SCALE_TOL;
+    otherwise return per-axis correction factors (100 / measured) so a residual scale error never reaches a seam"""
+    c = _ruler_candidates(paths, texts)
+    if not c["x"] or not c["y"]:
+        raise CantDiff(f"{CANT} — {path}: need scale check on both axes: a 100 mm reference next to a '100 mm' label "
+                       f"on x AND on y (found x: {len(c['x'])}, y: {len(c['y'])})")
+    res = {}
+    for ax in ("x", "y"):
+        v = c[ax]
+        if max(v) - min(v) > 0.05:
+            raise CantDiff(f"{CANT} — ambiguous scale reference on {ax}: " + " / ".join(f"{x:.2f}" for x in sorted(set(round(x, 2) for x in v)))
+                           + " mm next to a '100 mm' label (a piece edge or grain line beside the ruler?)")
+        m = sum(v) / len(v)
+        if abs(m - 100) > SCALE_TOL:
+            raise CantDiff(f"{CANT} — scale check failed: the 100 mm reference measures {m:.1f} mm on {ax} (printed / exported scaled?)")
+        res[ax] = m
+    return res["x"], res["y"]
+
+
+def _correct(pieces, sx, sy):
+    fx, fy = 100.0 / sx, 100.0 / sy
+    for p in pieces:
+        p.sew = [(x * fx, y * fy) for x, y in p.sew] if p.sew else None
+        p.cut = [(x * fx, y * fy) for x, y in p.cut]
+        p.edges = split_edges(p.sew or p.cut)
+    return fx, fy
 
 
 def read(path):
@@ -296,9 +324,9 @@ class Report:
 
     def lines(self):
         s = self.pat.scale
-        head = [f"pattern_diff {self.pat.path} ({self.pat.kind}, {len(self.pat.pieces)} pieces) — scale: "
-                + (f"x {s['x']:.1f} mm, y {s['y']:.1f} mm on the 100 mm references" if s.get("x") and s.get("y")
-                   else f"units {s['unit_mm']:g} mm per drawing unit")]
+        head = [f"pattern_diff {self.pat.path} ({self.pat.kind}, {len(self.pat.pieces)} pieces) — scale verified on both "
+                f"axes: the 100 mm references measure x {s['x']:.2f} / y {s['y']:.2f} mm -> every length corrected "
+                f"x {s['fx']:.4f} / y {s['fy']:.4f}"]
         return head + self.rows + [f"FLAG {f}" for f in self.flags]
 
 

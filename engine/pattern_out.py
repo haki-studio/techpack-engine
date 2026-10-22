@@ -75,6 +75,11 @@ def write_dxf(sizes, path, pieces=None, blk=None, style=None, emb=True):
             msp.add_blockref(name, (x0 - b[0], y0 + b[3]))      # y flipped: top of piece at y0
             x0 += w + 60; rowh = max(rowh, h)
         msp.add_text(f"{style or STYLE} size {size}", dxfattribs={"layer": "15", "height": 25, "insert": (0, y0 + 60)})
+        # 100 mm references on x AND y next to a "100 mm" label: pattern_diff refuses a DXF without both (scale / unit check)
+        msp.add_line((0, y0 + 120), (100, y0 + 120), dxfattribs={"layer": "8"})
+        msp.add_text("100 mm", dxfattribs={"layer": "15", "height": 6, "insert": (20, y0 + 124)})
+        msp.add_line((-30, y0 + 20), (-30, y0 + 120), dxfattribs={"layer": "8"})
+        msp.add_text("100 mm", dxfattribs={"layer": "15", "height": 6, "insert": (-27, y0 + 70)})
         y0 -= rowh + 200
     doc.saveas(path)
 

@@ -16,8 +16,9 @@ def bez(p0, p1, p2, p3, n=24):
                   for a, b, c, d in zip(p0, p1, p2, p3)) for t in (i / n for i in range(n + 1))]
 
 
-def trouser(rise_plant=0.0):
-    """a small 2-piece trouser block (mm, y down): edges waist, side, hem, inseam, rise. rise_plant raises the CF waist."""
+def trouser(rise_plant=0.0, side_plant=0.0):
+    """a small 2-piece trouser block (mm, y down): edges waist, side, hem, inseam, rise. rise_plant raises the CF waist;
+    side_plant lowers the front side-seam top (front side seam that much shorter)."""
     def piece(code, name, cf_top, side_top, ext, depth, hem_in, hem_out, waist_w):
         cw = (0.0, cf_top); sw = (waist_w, side_top)
         crotch = (-ext, depth)
@@ -26,7 +27,7 @@ def trouser(rise_plant=0.0):
                  PT.Edge("hem", [(waist_w - 15, 1000.0), (hem_in, 1000.0)], 30),
                  PT.Edge("inseam", [(hem_in, 1000.0), crotch], 10), PT.Edge("rise", rise[::-1], 10)]
         return PT.Piece(code, name, 2, "denim", edges, ((waist_w / 2, 300.0), (waist_w / 2, 700.0)))
-    g = {"F01": piece("F01", "FRONT", -rise_plant, 0.0, 55.0, 260.0, 15.0, 0, 240.0),
+    g = {"F01": piece("F01", "FRONT", -rise_plant, side_plant, 55.0, 260.0, 15.0, 0, 240.0),
          "B01": piece("B01", "BACK", -35.0, 0.0, 110.0, 275.0, -15.0, 0, 250.0)}
     return types.SimpleNamespace(draft=lambda size: (g, {}), ORDER=["F01", "B01"])
 
@@ -97,21 +98,112 @@ def test_a_scaled_plot_cant_be_diffed(tmp_path, sx, sy, axis):
         PD.read(dst)
 
 
-def test_no_units_no_ruler_or_a_photo_cant_be_diffed(tmp_path):
-    doc = ezdxf.new("R12"); doc.layers.add("1")
-    doc.modelspace().add_polyline2d([(0, 0), (500, 0), (500, 900), (0, 900)], close=True, dxfattribs={"layer": "1"})
-    p = os.path.join(str(tmp_path), "nounits.dxf"); doc.saveas(p)
-    with pytest.raises(PD.CantDiff, match="the drawing unit is not stated"): PD.read(p)
-    doc.modelspace().add_text("Units: mm", dxfattribs={"insert": (10, 10), "height": 5})
-    doc.modelspace().add_line((0, -50), (97, -50)); doc.modelspace().add_text("100 mm", dxfattribs={"insert": (20, -45), "height": 4})
-    doc.saveas(p)
-    with pytest.raises(PD.CantDiff, match="the 100 mm ruler measures 97.0 mm on x"): PD.read(p)
+def test_a_photo_or_a_pdf_without_rulers_cant_be_diffed(tmp_path):
     with pytest.raises(PD.CantDiff, match="not a DXF or a vector PDF"): PD.read(os.path.join(str(tmp_path), "IMG_2231.jpg"))
     pdf = os.path.join(str(tmp_path), "noruler.pdf")
     import cairosvg
     cairosvg.svg2pdf(bytestring=b'<svg xmlns="http://www.w3.org/2000/svg" width="300mm" height="300mm" viewBox="0 0 300 300">'
                      b'<path d="M10,10 L250,10 L250,280 L10,280 Z" fill="none" stroke="#000"/></svg>', write_to=pdf)
-    with pytest.raises(PD.CantDiff, match="no scale box \\+ vertical 100 mm ruler"): PD.read(pdf)
+    with pytest.raises(PD.CantDiff, match="need scale check on both axes"): PD.read(pdf)
+
+
+def dxf(tmp, name="t.dxf", insunits=None, units_text="Units: mm", xr=100.0, yr=100.0, extra=(), draw=1.0):
+    """one 500 x 900 mm piece (drawn at `draw` units per mm) + optional x / y 100 mm references (None = not drawn)"""
+    doc = ezdxf.new("R2000"); msp = doc.modelspace()
+    doc.header["$INSUNITS"] = 0 if insunits is None else insunits      # ezdxf's R2000 default is 6 (metres)
+    for ln in ("1", "7", "8", "15"): doc.layers.add(ln)
+    msp.add_lwpolyline([(0, 0), (500 * draw, 0), (500 * draw, 900 * draw), (0, 900 * draw)], close=True, dxfattribs={"layer": "1"})
+    if units_text: msp.add_text(units_text, dxfattribs={"insert": (10, 10), "height": 5, "layer": "15"})
+    if xr: msp.add_line((0, -50 * draw), (xr * draw, -50 * draw), dxfattribs={"layer": "8"})
+    msp.add_text("100 mm", dxfattribs={"insert": (20 * draw, -45 * draw), "height": 4, "layer": "15"})
+    if yr: msp.add_line((-40 * draw, -150 * draw), (-40 * draw, (-150 + yr) * draw), dxfattribs={"layer": "8"})
+    msp.add_text("100 mm", dxfattribs={"insert": (-37 * draw, -100 * draw), "height": 4, "layer": "15"})
+    for lay, a, b in extra: msp.add_line(a, b, dxfattribs={"layer": lay})
+    p = os.path.join(tmp, name); doc.saveas(p); return p
+
+
+def test_dxf_needs_units_and_both_axes(tmp_path):
+    t = str(tmp_path)
+    pat = PD.read(dxf(t)); e = pat.pieces[0].edges
+    assert sorted(round(PD.alen(x)) for x in e) == [500, 500, 900, 900] and pat.scale["fx"] == pytest.approx(1.0)
+    with pytest.raises(PD.CantDiff, match="the drawing unit is not stated"): PD.read(dxf(t, units_text=None))
+    with pytest.raises(PD.CantDiff, match="need scale check on both axes.*found x: 1, y: 0"): PD.read(dxf(t, yr=None))
+    with pytest.raises(PD.CantDiff, match="need scale check on both axes.*found x: 0, y: 1"): PD.read(dxf(t, xr=None))
+    with pytest.raises(PD.CantDiff, match="need scale check on both axes.*found x: 0, y: 0"): PD.read(dxf(t, xr=None, yr=None))
+
+
+@pytest.mark.parametrize("axis", ["x", "y"])
+def test_dxf_ruler_off_scale_is_refused_on_either_axis(tmp_path, axis):
+    p = dxf(str(tmp_path), **{axis + "r": 97.0})
+    with pytest.raises(PD.CantDiff, match=f"the 100 mm reference measures 97.0 mm on {axis}"): PD.read(p)
+
+
+def test_dxf_claiming_cm_drawn_in_mm_and_unit_conflicts_are_refused(tmp_path):
+    t = str(tmp_path)
+    with pytest.raises(PD.CantDiff, match="need scale check on both axes"):              # ruler reads 1000 mm
+        PD.read(dxf(t, insunits=5, units_text=None))
+    assert PD.read(dxf(t, insunits=5, units_text=None, draw=0.1)).pieces              # drawn in cm, says cm: fine
+    with pytest.raises(PD.CantDiff, match="\$INSUNITS says 1 mm per unit but the piece text says 'Units: cm'"):
+        PD.read(dxf(t, insunits=4, units_text="Units: cm"))
+
+
+def test_ambiguous_ruler_refused_and_grain_line_ignored(tmp_path):
+    t = str(tmp_path)
+    with pytest.raises(PD.CantDiff, match="ambiguous scale reference on x: 100.00 / 103.00 mm"):
+        PD.read(dxf(t, extra=[("8", (0, -42), (103, -42))]))                           # a ~100 mm edge by the label
+    assert PD.read(dxf(t, extra=[("7", (0, -42), (103, -42))])).pieces                # the same line on the grain layer
+
+
+def test_small_scale_error_is_corrected_not_passed_on(tmp_path):
+    src = write(str(tmp_path), "r1.pdf", trouser(), pdf=True); dst = os.path.join(str(tmp_path), "y1004.pdf")
+    scaled_pdf(src, dst, 1.0, 1.004)                                                   # 0.4 % on y: inside the 0.5 mm band
+    ref = PD.read(src); got = PD.read(dst)
+    assert got.scale["y"] == pytest.approx(100.4, abs=0.01) and got.scale["fy"] == pytest.approx(1 / 1.004, abs=1e-4)
+    side_ref, side_got = PD.alen(ref.pieces[0].edges[1]), PD.alen(got.pieces[0].edges[1])
+    assert side_ref > 990 and abs(side_got - side_ref) < 0.05                          # uncorrected it would be +4 mm
+    assert "corrected x 1.0000 / y 0.9960" in PD.run(got, {"pieces": {}}).lines()[0]
+
+
+def test_rotated_pdf_page_reads_the_same(tmp_path):
+    from pypdf import PdfReader, PdfWriter
+    src = write(str(tmp_path), "r1.pdf", trouser(), pdf=True); dst = os.path.join(str(tmp_path), "rot.pdf")
+    w = PdfWriter()
+    for pg in PdfReader(src).pages: w.add_page(pg).rotate(90)
+    w.write(dst)
+    a, b = PD.read(src), PD.read(dst)
+    assert [round(PD.alen(e), 1) for e in a.pieces[0].edges] == [round(PD.alen(e), 1) for e in b.pieces[0].edges]
+
+
+# ----------------------------------------------------------------------------- seam maths (review #45 finding 1)
+def test_planted_side_seam_error_flags(tmp_path):
+    rep = PD.run(PD.read(write(str(tmp_path), "s.dxf", trouser(side_plant=5.0))), MAP)
+    f = [x for x in rep.flags if x.startswith("seam side seam:")]
+    assert f and "mismatch -5.0 mm (tol ±2)" in f[0]
+    assert PD.run(PD.read(write(str(tmp_path), "ok.dxf", trouser())), MAP).ok
+
+
+def test_ease_is_applied_with_its_sign(tmp_path):
+    pat = PD.read(write(str(tmp_path), "e.dxf", trouser()))
+    la = PD.alen(PD.edge_pts(pat, MAP, "front", 3)[1]); lb = PD.alen(PD.edge_pts(pat, MAP, "back", 3)[1])
+    ease = round(la - lb, 1)                                                           # front inseam longer by this much
+    def one(e, tol):
+        return PD.run(pat, {"pieces": MAP["pieces"], "seams": [{"name": "inseam", "a": ["front", 3], "b": ["back", 3],
+                                                                   "ease_mm": e, "tol_mm": tol}]})
+    assert one(ease, 1).ok                                                             # at the intended ease: no flag
+    r0 = one(0, 2); assert not r0.ok and f"mismatch +{la - lb:.1f} mm" in r0.flags[0]
+    rn = one(-ease, 2); assert not rn.ok and f"mismatch +{la - lb + ease:.1f} mm" in rn.flags[0]   # wrong sign doubles
+
+
+def test_cli_exit_codes(tmp_path, capsys):
+    import json
+    t = str(tmp_path)
+    ok = write(t, "ok.dxf", trouser()); bad = write(t, "bad.dxf", trouser(side_plant=5.0))
+    m = os.path.join(t, "map.json"); json.dump(MAP, open(m, "w"))
+    assert PD.main([ok]) == 0 and "edge 4:" in capsys.readouterr().out                 # no map: the piece table
+    assert PD.main([ok, "--map", m]) == 0
+    assert PD.main([bad, "--map", m]) == 1 and "FLAG seam side seam" in capsys.readouterr().out
+    pdf = write(t, "r1.pdf", trouser(), pdf=True); sc = os.path.join(t, "sc.pdf"); scaled_pdf(pdf, sc, 0.97, 0.97)
+    assert PD.main([sc, "--map", m]) == 2 and "can't diff" in capsys.readouterr().out
 
 
 def test_real_drum_island_pattern_matches_pattern_out_measure(tmp_path):
