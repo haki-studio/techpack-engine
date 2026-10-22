@@ -85,7 +85,7 @@
      "red": true,
      "gold": false
     },
-    "secs": 214.1
+    "secs": 26.7
    },
    "verdict": {
     "direction_ok": false,
@@ -534,23 +534,23 @@
      "h_ratio": 0.93,
      "ok": true,
      "shape_ok": true,
-     "colour_match": 0.948,
+     "colour_match": 0.929,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.714,
-       "recall": 0.972
+       "share": 0.735,
+       "recall": 0.956
       },
       "kb_cyan": {
-       "share": 0.108,
-       "recall": 0.89
+       "share": 0.1,
+       "recall": 0.873
       },
       "kb_red": {
-       "share": 0.166,
-       "recall": 0.936
+       "share": 0.147,
+       "recall": 0.937
       },
       "kb_black": {
-       "share": 0.012,
-       "recall": 0.2
+       "share": 0.018,
+       "recall": 0.115
       }
      },
      "colour_ok": true
@@ -569,23 +569,23 @@
      "h_ratio": 0.89,
      "ok": true,
      "shape_ok": true,
-     "colour_match": 0.951,
+     "colour_match": 0.929,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.707,
-       "recall": 0.976
+       "share": 0.733,
+       "recall": 0.957
       },
       "kb_cyan": {
-       "share": 0.113,
-       "recall": 0.884
+       "share": 0.102,
+       "recall": 0.86
       },
       "kb_red": {
-       "share": 0.167,
-       "recall": 0.937
+       "share": 0.146,
+       "recall": 0.938
       },
       "kb_black": {
-       "share": 0.013,
-       "recall": 0.32
+       "share": 0.019,
+       "recall": 0.179
       }
      },
      "colour_ok": true
@@ -604,23 +604,23 @@
      "h_ratio": 0.88,
      "ok": false,
      "shape_ok": false,
-     "colour_match": 0.473,
+     "colour_match": 0.476,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.715,
-       "recall": 0.653
+       "share": 0.733,
+       "recall": 0.642
       },
       "kb_cyan": {
-       "share": 0.109,
+       "share": 0.1,
        "recall": 0.013
       },
       "kb_red": {
-       "share": 0.163,
-       "recall": 0.028
+       "share": 0.148,
+       "recall": 0.03
       },
       "kb_black": {
-       "share": 0.012,
-       "recall": 0.0
+       "share": 0.019,
+       "recall": 0.004
       }
      },
      "colour_ok": false
@@ -639,22 +639,22 @@
      "h_ratio": 0.88,
      "ok": true,
      "shape_ok": true,
-     "colour_match": 0.927,
+     "colour_match": 0.902,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.625,
-       "recall": 0.956
+       "share": 0.659,
+       "recall": 0.941
       },
       "kb_cyan": {
-       "share": 0.05,
-       "recall": 0.799
+       "share": 0.054,
+       "recall": 0.745
       },
       "kb_red": {
-       "share": 0.311,
-       "recall": 0.93
+       "share": 0.259,
+       "recall": 0.932
       },
       "kb_black": {
-       "share": 0.014,
+       "share": 0.028,
        "recall": 0.0
       }
      },
@@ -674,23 +674,23 @@
      "h_ratio": 0.92,
      "ok": true,
      "shape_ok": true,
-     "colour_match": 0.94,
+     "colour_match": 0.922,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.715,
-       "recall": 0.968
+       "share": 0.736,
+       "recall": 0.952
       },
       "kb_cyan": {
-       "share": 0.109,
-       "recall": 0.889
+       "share": 0.099,
+       "recall": 0.874
       },
       "kb_red": {
-       "share": 0.164,
+       "share": 0.147,
        "recall": 0.917
       },
       "kb_black": {
-       "share": 0.012,
-       "recall": 0.024
+       "share": 0.018,
+       "recall": 0.014
       }
      },
      "colour_ok": true
@@ -864,7 +864,7 @@
      "red": true,
      "gold": false
     },
-    "secs": 263.6
+    "secs": 23.1
    },
    "verdict": {
     "direction_ok": false,
@@ -1213,22 +1213,22 @@
      "h_ratio": 0.92,
      "ok": false,
      "shape_ok": false,
-     "colour_match": 0.661,
+     "colour_match": 0.648,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.714,
-       "recall": 0.784
+       "share": 0.735,
+       "recall": 0.761
       },
       "kb_cyan": {
-       "share": 0.108,
+       "share": 0.1,
        "recall": 0.0
       },
       "kb_red": {
-       "share": 0.166,
-       "recall": 0.614
+       "share": 0.147,
+       "recall": 0.609
       },
       "kb_black": {
-       "share": 0.012,
+       "share": 0.018,
        "recall": 0.0
       }
      },
@@ -1248,22 +1248,22 @@
      "h_ratio": 1.01,
      "ok": false,
      "shape_ok": true,
-     "colour_match": 0.78,
+     "colour_match": 0.767,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.707,
-       "recall": 0.875
+       "share": 0.733,
+       "recall": 0.855
       },
       "kb_cyan": {
-       "share": 0.113,
+       "share": 0.102,
        "recall": 0.0
       },
       "kb_red": {
-       "share": 0.167,
+       "share": 0.146,
        "recall": 0.961
       },
       "kb_black": {
-       "share": 0.013,
+       "share": 0.019,
        "recall": 0.0
       }
      },
@@ -1283,23 +1283,23 @@
      "h_ratio": 1.06,
      "ok": false,
      "shape_ok": true,
-     "colour_match": 0.653,
+     "colour_match": 0.656,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.715,
+       "share": 0.733,
        "recall": 0.758
       },
       "kb_cyan": {
-       "share": 0.109,
+       "share": 0.1,
        "recall": 0.0
       },
       "kb_red": {
-       "share": 0.163,
-       "recall": 0.682
+       "share": 0.148,
+       "recall": 0.681
       },
       "kb_black": {
-       "share": 0.012,
-       "recall": 0.0
+       "share": 0.019,
+       "recall": 0.004
       }
      },
      "colour_ok": false
@@ -1318,22 +1318,22 @@
      "h_ratio": 0.89,
      "ok": false,
      "shape_ok": false,
-     "colour_match": 0.803,
+     "colour_match": 0.75,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.625,
-       "recall": 0.823
+       "share": 0.659,
+       "recall": 0.771
       },
       "kb_cyan": {
-       "share": 0.05,
+       "share": 0.054,
        "recall": 0.0
       },
       "kb_red": {
-       "share": 0.311,
-       "recall": 0.929
+       "share": 0.259,
+       "recall": 0.931
       },
       "kb_black": {
-       "share": 0.014,
+       "share": 0.028,
        "recall": 0.0
       }
      },
@@ -1353,22 +1353,22 @@
      "h_ratio": 1.01,
      "ok": false,
      "shape_ok": true,
-     "colour_match": 0.782,
+     "colour_match": 0.774,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.715,
-       "recall": 0.867
+       "share": 0.736,
+       "recall": 0.854
       },
       "kb_cyan": {
-       "share": 0.109,
+       "share": 0.099,
        "recall": 0.0
       },
       "kb_red": {
-       "share": 0.164,
+       "share": 0.147,
        "recall": 0.988
       },
       "kb_black": {
-       "share": 0.012,
+       "share": 0.018,
        "recall": 0.0
       }
      },
@@ -1529,7 +1529,7 @@
      "red": true,
      "gold": false
     },
-    "secs": 58.8
+    "secs": 28.2
    },
    "verdict": {
     "direction_ok": false,
@@ -1833,23 +1833,23 @@
      "h_ratio": 0.97,
      "ok": true,
      "shape_ok": true,
-     "colour_match": 0.977,
+     "colour_match": 0.961,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.714,
-       "recall": 0.993
+       "share": 0.735,
+       "recall": 0.984
       },
       "kb_cyan": {
-       "share": 0.108,
-       "recall": 0.903
+       "share": 0.1,
+       "recall": 0.873
       },
       "kb_red": {
-       "share": 0.166,
+       "share": 0.147,
        "recall": 1.0
       },
       "kb_black": {
-       "share": 0.012,
-       "recall": 0.38
+       "share": 0.018,
+       "recall": 0.218
       }
      },
      "colour_ok": true
@@ -1868,23 +1868,23 @@
      "h_ratio": 1.01,
      "ok": true,
      "shape_ok": true,
-     "colour_match": 0.98,
+     "colour_match": 0.962,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.707,
-       "recall": 0.998
+       "share": 0.733,
+       "recall": 0.987
       },
       "kb_cyan": {
-       "share": 0.113,
-       "recall": 0.903
+       "share": 0.102,
+       "recall": 0.869
       },
       "kb_red": {
-       "share": 0.167,
+       "share": 0.146,
        "recall": 1.0
       },
       "kb_black": {
-       "share": 0.013,
-       "recall": 0.4
+       "share": 0.019,
+       "recall": 0.224
       }
      },
      "colour_ok": true
@@ -1903,23 +1903,23 @@
      "h_ratio": 0.97,
      "ok": true,
      "shape_ok": true,
-     "colour_match": 0.971,
+     "colour_match": 0.957,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.715,
-       "recall": 0.99
+       "share": 0.733,
+       "recall": 0.982
       },
       "kb_cyan": {
-       "share": 0.109,
-       "recall": 0.868
+       "share": 0.1,
+       "recall": 0.854
       },
       "kb_red": {
-       "share": 0.163,
+       "share": 0.148,
        "recall": 1.0
       },
       "kb_black": {
-       "share": 0.012,
-       "recall": 0.371
+       "share": 0.019,
+       "recall": 0.216
       }
      },
      "colour_ok": true
@@ -1938,22 +1938,22 @@
      "h_ratio": 0.91,
      "ok": true,
      "shape_ok": true,
-     "colour_match": 0.965,
+     "colour_match": 0.934,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.625,
-       "recall": 0.986
+       "share": 0.659,
+       "recall": 0.968
       },
       "kb_cyan": {
-       "share": 0.05,
-       "recall": 0.75
+       "share": 0.054,
+       "recall": 0.683
       },
       "kb_red": {
-       "share": 0.311,
+       "share": 0.259,
        "recall": 1.0
       },
       "kb_black": {
-       "share": 0.014,
+       "share": 0.028,
        "recall": 0.0
       }
      },
@@ -1973,23 +1973,23 @@
      "h_ratio": 0.97,
      "ok": true,
      "shape_ok": true,
-     "colour_match": 0.976,
+     "colour_match": 0.96,
      "groups": {
       "kb_navy+kb_cobalt+kb_royal+kb_corn+kb_sky+kb_ice+kb_white+kb_lav": {
-       "share": 0.715,
-       "recall": 0.994
+       "share": 0.736,
+       "recall": 0.983
       },
       "kb_cyan": {
-       "share": 0.109,
-       "recall": 0.882
+       "share": 0.099,
+       "recall": 0.867
       },
       "kb_red": {
-       "share": 0.164,
+       "share": 0.147,
        "recall": 1.0
       },
       "kb_black": {
-       "share": 0.012,
-       "recall": 0.394
+       "share": 0.018,
+       "recall": 0.234
       }
      },
      "colour_ok": true

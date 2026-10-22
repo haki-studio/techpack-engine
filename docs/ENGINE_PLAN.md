@@ -46,6 +46,11 @@ apply. Stitch count is reported, never a limit.
   grading + rule-3 ANGLE_EPS. Koi upper lily now 5 petals round a dark heart (angle bins 4 vs 3, top bin 29 % vs 38 %); fish vs
   tetra via labels_FR_tetra.json (image 3/5 IoU 0.69, DST identical). Chaos 5.1 % (G2 4.0) = ~1 tile over 5 % at the petal/heart
   junctions, so the bench verdict is 1/8 vs G2 2/8. Default labels stay on the mockup until founder card techpack-koi-fish-reference.
+- **G4 tetra (founder 2026-10-22: "we want the tetra"; branch engine-tetra-ref):** labels `reference.governs` ["silhouette",
+  "colour"]: the picture is composited into the EXTRACTION source (labels/refsource.py) and the grade checks sewn colours per
+  colour group (refgrade.colour_grade). Koi labels_FR.json = the tetra governs the fish (silhouette + colour; the mockup keeps
+  position, heading, count; size 0.82 x mockup length, founder 19 Oct); labels_FR_mockup.json = the G3 koi labels. Fish vs tetra
+  5/5 (G3 0/5), chaos 5.3 %, trims 75/100 cm2 (G3 43: each fish now sews 5-6 colours). Next: chaos < 5 %, fewer trims, shading.
 - **P1 image → DST in PLM (founder 2026-10-20: next after G2):** a small PLM window, image in → DST/PES + stitch preview +
   gate table + questions out. The vision step becomes one API call writing the same labels file (`--no-api` mocks; cost per
   image measured before launch). Not a tech pack, one element. Ships only once G2 shows the image route is good enough.
