@@ -8,7 +8,8 @@
 """
 import re
 
-RISE = re.compile(r"\brise\b", re.I)
+# rise = the CF / CB seam from waist to crotch, whatever the chart calls it
+RISE = re.compile(r"\brise\b|\bcrotch\s+(depth|length)\b|\bC[FB]\s+(seam\s+)?length\b|\b(front|back)\s+crotch\b", re.I)
 WAIST_REQUIRED = {"elastic": ["waist_relaxed", "waist_stretched"]}
 
 

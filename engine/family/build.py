@@ -62,7 +62,7 @@ def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=N
         codes = {c for c, _, _ in pset}
         stray = sorted({r.page for r in tdi.rows if r.page and r.page not in codes})
         if stray: raise SpecError(f"TD rows name pages this pack does not have: {', '.join(stray)} (pages: {', '.join(sorted(codes))})")
-        pset = [(c, ttl, [TDR.annotate(s, tdi.page_rows(c)) for s in svgs]) for c, ttl, svgs in pset]
+        pset = [(c, ttl, [TDR.annotate(s, tdi.page_rows(c), tdi) for s in svgs]) for c, ttl, svgs in pset]
         from td import trace as TDT                      # numeral-trace gate: fails the build, before anything is written
         td_sheet_svgs = TDR.comment_sheet(tdi)
         td_trace = TDT.enforce(tdi, td_sheet_svgs + [s for c, _, svgs in pset if tdi.page_rows(c) for s in svgs])
