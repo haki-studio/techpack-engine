@@ -76,7 +76,7 @@ Next: full suite + identity_check, mutation proofs, LESSONS/ENGINE_PLAN lines, P
   traced-fan branch). Red-then-green: 2 new tests red before, 7/7 after; mutations (always-fan, never-reorder, no traced
   branch) -> 1 / 3 / 3 red. identity_check after: probe 84ff50ea/1ecd8f65, wb 449c14f6, crop 91197899 = main. Koi run
   byte-identical before/after the opt-in (fish tails carry the flag).
-- Full suite 384 passed (before the 2 new tests). LESSONS A33, ENGINE_PLAN G2 status line, HANDOFF line written.
+- Full suite 384 passed (before the 2 new tests). LESSONS A37 (numbered A33 before merging main + S1 lettering), ENGINE_PLAN G2 status line, HANDOFF line written.
 
 ## HANDOFF (superseded by runs 3-4 above; kept for history) — next builder, exact next steps
 State: branch engine-g2 pushed (commit below). Worktree ~/te-g2. Rev B FR M copied to out/revB from the desktop checkout's
