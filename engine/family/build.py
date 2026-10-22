@@ -63,6 +63,9 @@ def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=N
         stray = sorted({r.page for r in tdi.rows if r.page and r.page not in codes})
         if stray: raise SpecError(f"TD rows name pages this pack does not have: {', '.join(stray)} (pages: {', '.join(sorted(codes))})")
         pset = [(c, ttl, [TDR.annotate(s, tdi.page_rows(c)) for s in svgs]) for c, ttl, svgs in pset]
+        from td import trace as TDT                      # numeral-trace gate: fails the build, before anything is written
+        td_sheet_svgs = TDR.comment_sheet(tdi)
+        td_trace = TDT.enforce(tdi, td_sheet_svgs + [s for c, _, svgs in pset if tdi.page_rows(c) for s in svgs])
     for code, title, svgs in pset:
         for i, svg in enumerate(svgs):
             name = code if len(svgs) == 1 else f"{code}_{i + 1}"
@@ -80,7 +83,7 @@ def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=N
     shrink(raw, final); os.remove(raw)
     res = dict(spec=spec, pdf=final, pages=listing, out=out)
     if tdi:
-        sheet = TDR.comment_sheet(tdi)
+        sheet = td_sheet_svgs; res["td_trace"] = td_trace
         res["td_sheet"] = write_pdf(sheet, os.path.join(out, f"{spec.slug}_td_comment_sheet_Rev{tdi.rev}.pdf"))
         for i, svg in enumerate(sheet):
             if png: cairosvg.svg2png(bytestring=svg.encode(), write_to=os.path.join(out, "pages", f"C1{'' if i == 0 else f'_{i + 1}'}.png"), output_width=2400)
@@ -106,5 +109,5 @@ def main(argv=None):
         n = len(r["spec"].proposed())
         print(f"{r['spec'].name}: {len(r['pages'])} pages -> {r['pdf']} ({os.path.getsize(r['pdf']) / 1e6:.1f} MB)")
         print(f"  page PNGs: {os.path.join(r['out'], 'pages')}  ·  {n} values still [proposed — confirm] (page F1)")
-        if r.get("td_sheet"): print(f"  TD comment sheet: {r['td_sheet']}")
+        if r.get("td_sheet"): print(f"  TD comment sheet: {r['td_sheet']}\n  {r['td_trace'].summary()}")
     return 0
