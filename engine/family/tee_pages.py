@@ -612,12 +612,24 @@ def p_factory(spec):
     return pages
 
 
+def pom_change_text(spec, r):
+    """' Chart: A Body length 27 at L; G Bicep -1.5 cm every size' — the values the rev-log gate checks against T3"""
+    out = []
+    for c in r.get("pom_changes") or []:
+        code = val(c["pom"]); p = spec.chart.poms.get(code); nm = p.name if p else code
+        if "to" in c: out.append(f"{code} {nm} {val(c['to'])} {p.unit if p else ''} at {val(c['size'])}")
+        else: out.append(f"{code} {nm} {float(val(c['by'])):+g} {val(c.get('unit'), p.unit if p else '')} every size")
+    return (" · Chart: " + "; ".join(out)) if out else ""
+
+
 def p_revisions(spec):
     o = H(spec, "REVISIONS + APPROVALS", "Every change, newest last. Sample tracker + sign-off.", "R1")
     y = 36
-    revs = [V(f"Family block {val(spec.tree.get('rev'))} · {val(spec.tree.get('date'))} · tee family (families/tee/family.yaml)")]
+    fam_revs = spec.tree.get("revisions") or []
+    revs = [V(f"Family block {val(r['rev'])} · {val(r['date'])} · {val(r['change'])}" + pom_change_text(spec, r)) for r in fam_revs] or \
+           [V(f"Family block {val(spec.tree.get('rev'))} · {val(spec.tree.get('date'))} · tee family (families/tee/family.yaml)")]
     for r in spec.var.get("revisions") or []:
-        revs.append(V(f"{val(r['rev'])} · {val(r['date'])} · {val(r['change'])}"))
+        revs.append(V(f"{val(r['rev'])} · {val(r['date'])} · {val(r['change'])}" + pom_change_text(spec, r)))
     o.append(t(12, y, "REVISIONS", 2.3, 700)); y += 4.6
     for r in revs: y = para(o, 14, y, r.v, 270, 1.75, 3.0) + 1.2
     y += 5; o.append(t(12, y, "SAMPLE TRACKER", 2.3, 700)); y += 5
