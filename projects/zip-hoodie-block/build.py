@@ -7,10 +7,12 @@ import sheet as SHT
 from sheet import t, doc, INK, MUTED, RED, GREEN, SW, SH, dim_h, dim_v
 from render import f
 import drum, pattern as PT, pattern_out as PO, pattern_draw as PD, hoodie as HD, hflat as HF
+import labelsheet as LS
 
 STYLE = "HK-HD-ZIP-BLK"; REV = "Rev A"; DATE = "16 Oct 2026"; NAME = "Boxy Zip Hoodie — block"
 SHT.FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · FIT-SAMPLE TECH PACK · {REV} · {DATE}"
 PROP = "#8A5A00"; ALT = "#F5F2EC"
+SHELL_MAT = "12 oz cotton duck canvas, washed (colour per design)"   # a design sets its own (no fibre % = care label MISSING, LESSONS D7)
 OUT = "out"; os.makedirs(f"{OUT}/pattern", exist_ok=True); os.makedirs(f"{OUT}/pages", exist_ok=True)
 SIZES = HD.SIZES
 
@@ -64,7 +66,7 @@ NOTES = [("1", "Hood: 3 panels — side pair + 10 cm centre panel. Shell outside
          ("5", f"Hem band: self fabric, {HD.hcm('S','M')/10:.1f} cm finished, folded; {HD.EL_HEM_W/10:.0f} cm elastic, flat {HD.FLAT/10:.0f} cm each side of the zip; one piece CF to CF.", True),
          ("6", f"Cuff band: self fabric, {HD.hcm('T','M')/10:.1f} cm finished, folded, closed into a loop; {HD.EL_CUFF_W/10:.1f} cm elastic loop.", True),
          ("7", "Lining: cotton flannel body (plaid), polyester taffeta sleeves; hood fully lined in sherpa.", True),
-         ("8", "Main + size label on the back neck facing, 1 cm below the hood seam.", False)]
+         ("8", "Main + size label on the back neck facing, 1 cm below the hood seam (Haki standard main label, T6b).", False)]
 
 def p_flats():
     o = H("FLATS + CONSTRUCTION", "Size M, front and back. Body and sleeve are the approved Drum Island jacket; numbered notes are the hoodie changes.", "T2")
@@ -206,7 +208,7 @@ def p_bom():
     pock = [c for c in HD.ORDER if gM[c].category == "POCKETING"]; fus = [c for c in HD.ORDER if c.startswith("I")]
     m = lambda codes: area_m2(codes, gM) / (1.5 * 0.8)
     zip_l = gM["F01"].edges[0].length + mM["hem_h"] - 5
-    rows = [("Shell", "12 oz cotton duck canvas, washed (colour per design)", f"{m(shell):.2f} m", True),
+    rows = [("Shell", SHELL_MAT, f"{m(shell):.2f} m", True),
             ("Hood lining", "Sherpa 280 g/m² polyester, cream", f"{m(sher):.2f} m", True),
             ("Body lining", "Cotton flannel, plaid", f"{m(flan):.2f} m", True), ("Sleeve lining", "Polyester taffeta 210T", f"{m(taf):.2f} m", True),
             ("Pocketing", "8 oz cotton twill", f"{m(pock):.2f} m", True), ("Fusing", "Woven fusible 60 g/m² (facings, welts)", f"{m(fus):.2f} m", False),
@@ -214,18 +216,23 @@ def p_bom():
             ("Elastic — hem", f"{HD.EL_HEM_W/10:.0f} cm woven elastic, {mM['el_hem']/10:.1f} cm (M)", "1", True),
             ("Elastic — cuff", f"{HD.EL_CUFF_W/10:.1f} cm woven elastic, {(mM['el_cuff']+15)/10:.1f} cm (M)", "2", True),
             ("Thread — seams", "Coats Epic 120 (Tex 27), tonal", "~ 450 m", False), ("Thread — topstitch", "Coats Gral 40 (Tex 60), tonal", "~ 140 m", False),
-            ("Labels", "Main + size on back neck facing; care label left side seam lining", "1 set", False)]
+            ("Main label", LS.main_bom("T6b") + "; back neck facing", "1", False),
+            ("Care label", LS.care_bom(SHELL_MAT, "T6b") + "; left side seam lining", "1", False)]
     hd = ["Item", "Description", "Qty / consumption"]; cx = [12, 52, 200]
     for x_, h_ in zip(cx, hd): o.append(t(x_, 33, h_, 1.8, 700, MUTED))
     for i, (a, b_, q, p) in enumerate(rows):
         y = 38 + i * 4.6
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y - 3.1)}" width="{SW - 22}" height="4.6" fill="{ALT}"/>')
-        o.append(t(cx[0], y, a, 1.8, 700)); o.append(t(cx[1], y, b_ + ("  [proposed — confirm]" if p else ""), 1.75, 400, PROP if p else INK)); o.append(t(cx[2], y, q, 1.8, 600))
+        o.append(t(cx[0], y, a, 1.8, 700)); o.append(t(cx[1], y, b_ + ("  [proposed — confirm]" if p else ""), 1.75, 400, LS.AMBER if LS.MISSING in b_ else PROP if p else INK)); o.append(t(cx[2], y, q, 1.8, 600))
     y = 38 + len(rows) * 4.6 + 6
     o.append(t(12, y, "ZIP LENGTH PER SIZE (cm, hem-band edge to CF neck − 0.5)", 1.9, 700)); y += 4.4
     for j, sz in enumerate(SIZES):
         g, mt = G[sz]; o.append(t(12 + j * 22, y, f"{sz}  {(g['F01'].edges[0].length + mt['hem_h'] - 5)/10:.0f}", 1.8, 600))
     return o
+
+def p_labels():
+    """T6b: Haki standard main label + the care label for SHELL_MAT (MISSING when it has no fibre %), placement as note 8."""
+    return LS.hoodie_page(H, SHELL_MAT)
 
 def p_fit():
     o = H("FIT SAMPLE — what to check + open questions", "The body is the approved jacket, so the fit session focuses on what is new: hood, bands, zip.", "T7")
@@ -272,7 +279,7 @@ def p_revisions():
     return o
 
 PAGES = ["T1 Cover", "T2 Flats + construction", "T3 Size chart + measurement check", "T4 Pattern pieces + cut list", "T5 Hood + bands detail",
-         "T6 Bill of materials", "T7 Fit sample checks + open questions", "T8 Revision log + sample tracker"]
+         "T6 Bill of materials", "T6b Labels (Haki standard)", "T7 Fit sample checks + open questions", "T8 Revision log + sample tracker"]
 
 def build():
     for sz in SIZES:
@@ -281,7 +288,7 @@ def build():
     PO.write_dxf(SIZES, f"{OUT}/pattern/{STYLE}_pattern_ALL-SIZES.dxf", blk=HD, style=STYLE, emb=False)
     PO.plot_pdf("M", f"{OUT}/pattern/{STYLE}_pattern_M_1to1_PLOT.pdf", blk=HD, style=STYLE, emb=False)
     index = [(n, i + 1) for i, n in enumerate(PAGES)]
-    pages = [p_cover(index), p_flats(), p_pom(), p_pieces(), p_hood(), p_bom(), p_fit(), p_revisions()]
+    pages = [p_cover(index), p_flats(), p_pom(), p_pieces(), p_hood(), p_bom(), p_labels(), p_fit(), p_revisions()]
     w = PdfWriter()
     for i, pg in enumerate(pages, 1):
         svg = doc(pg); pdf = f"{OUT}/pages/T{i}.pdf"
@@ -290,7 +297,7 @@ def build():
         w.append(PdfReader(pdf))
     pdf = f"{OUT}/HAKI_{STYLE}_FIT-SAMPLE-TECHPACK_{REV.replace(' ', '')}.pdf"; w.write(pdf)
     pkg = f"{OUT}/pkg"; shutil.rmtree(pkg, ignore_errors=True); os.makedirs(pkg)
-    shutil.copytree(f"{OUT}/pattern", f"{pkg}/pattern"); shutil.copy(pdf, pkg)
+    shutil.copytree(f"{OUT}/pattern", f"{pkg}/pattern"); shutil.copy(pdf, pkg); LS.export(f"{pkg}/labels", SHELL_MAT)
     open(f"{pkg}/README.txt", "w").write(f"""HAKI STUDIOS - {NAME} ({STYLE}) - {REV} - {DATE}
 Blank fit sample: the approved Drum Island jacket body + sleeve with a 3-panel sherpa-lined hood and self-fabric elastic bands.
 

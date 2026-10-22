@@ -35,6 +35,7 @@ BLK = Block(welt=F.WELT_SPEC)
 
 # ---------------------------------------------------------------- the block module, with this design's data
 BM.STYLE, BM.REV, BM.DATE, BM.NAME = STYLE, REV, DATE, NAME
+BM.SHELL_MAT = "washed black 12 oz cotton duck"        # as recorded (cover): no fibre % -> care label MISSING (LESSONS D7)
 BM.G = {sz: F.pieces(sz) for sz in BM.SIZES}
 BM.gM, BM.mM = BM.G["M"]
 
@@ -201,7 +202,8 @@ def build():
     for sz, r in q.items(): assert r["chart"] and r["walks"] and r["shape"], f"pattern QA failed {sz}: {r}"
     pattern_files()
     index = [(n, i + 1) for i, n in enumerate(PAGES)]
-    pages = [p_cover(index), BM.p_flats(), BM.p_pom(), BM.p_pieces(), BM.p_hood(), BM.p_bom(), p_fit(), p_revisions()]
+    pages = [p_cover(index), BM.p_flats(), BM.p_pom(), BM.p_pieces(), BM.p_hood(), BM.p_bom(), BM.p_labels(), p_fit(), p_revisions()]
+    BM.LS.export("out/labels", BM.SHELL_MAT)                 # Haki standard label files for the zip labels/
     os.makedirs("out/pages", exist_ok=True); w = PdfWriter()
     for i, pg in enumerate(pages, 1):
         svg = doc(pg).replace("⊕ = drill holes", "circles = drill holes"); pdf = f"out/pages/T{i}.pdf"

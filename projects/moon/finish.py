@@ -44,5 +44,6 @@ production-intent drafts: the factory digitizer opens them, checks density + pul
 and sews out before bulk. Thread colours, densities and every [proposed - confirm] item: see T10 + G4.
 """)
 for z in glob.glob("out/*.zip"): os.remove(z)
+if os.path.isdir("out/labels"): shutil.copytree("out/labels", f"{PKG}/labels")   # Haki standard main + care label files (gtp.build, LESSONS D7)
 subprocess.run(f"cd {PKG} && zip -qr ../HAKI_Drum-Island_moon_RevC_files.zip .", shell=True, check=True)
 print("pdf MB", round(os.path.getsize(OUT) / 1e6, 1), "zip MB", round(os.path.getsize("out/HAKI_Drum-Island_moon_RevC_files.zip") / 1e6, 1))
