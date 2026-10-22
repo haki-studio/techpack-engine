@@ -25,6 +25,30 @@ def page_set(spec):
     raise SpecError(f"family '{fam}' has no page set yet (see docs/FAMILIES.md)")
 
 
+def _plain(x):
+    """raw yaml with {proposed: x} / {value: x} leaves read as x"""
+    if isinstance(x, dict):
+        if set(x) & {"proposed", "value"} and set(x) <= {"proposed", "value", "note", "source"}:
+            return _plain(x.get("value", x.get("proposed")))
+        return {k: _plain(v) for k, v in x.items()}
+    if isinstance(x, list): return [_plain(v) for v in x]
+    return x
+
+
+def rev_gate(spec):
+    """rev log <-> chart agreement (engine/revgate.py) for the family block log and the variant log; raises SpecError"""
+    import revgate
+    fam = _plain(spec.raw_family.get("revisions")); var = _plain(spec.raw_variant.get("revisions"))
+    var_named = {c.get("pom") for e in var or [] for c in e.get("pom_changes") or []}
+    reps = [revgate.check(fam, spec.chart, _plain(spec.raw_family.get("rev")), scope="family block (family.yaml revisions)",
+                          also_named=var_named),
+            revgate.check(var, spec.chart, _plain(spec.raw_variant.get("rev")), scope=f"variant {spec.slug} (revisions)",
+                          require_deltas=False)]
+    bad = [r for r in reps if not r.ok]
+    if bad: raise SpecError("\n".join(r.summary() for r in bad))
+    return reps
+
+
 def shrink(src, dst, maxpx=3000, q=82):
     w = PdfWriter(clone_from=src)
     for page in w.pages:
@@ -39,6 +63,7 @@ def shrink(src, dst, maxpx=3000, q=82):
 def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=None):
     fdir = family_dir or family_dir_of(variant_path)
     spec = Spec(fdir, variant_path, fam_override=fam_override)
+    revs = rev_gate(spec)                                # rev log must agree with the chart before any page is drawn
     out = os.path.join(out_root or os.path.join(fdir, "out"), spec.slug)
     os.makedirs(os.path.join(out, "pages"), exist_ok=True)
     w = PdfWriter(); listing = []
@@ -57,7 +82,7 @@ def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=N
     raw = os.path.join(out, f"{spec.slug}_techpack_{rev}_raw.pdf"); final = os.path.join(out, f"{spec.slug}_techpack_{rev}.pdf")
     with open(raw, "wb") as fh: w.write(fh)
     shrink(raw, final); os.remove(raw)
-    return dict(spec=spec, pdf=final, pages=listing, out=out)
+    return dict(spec=spec, pdf=final, pages=listing, out=out, rev_gate=revs)
 
 
 def main(argv=None):
@@ -77,5 +102,6 @@ def main(argv=None):
             print(f"ERROR in {v}:\n  {e}"); return 1
         n = len(r["spec"].proposed())
         print(f"{r['spec'].name}: {len(r['pages'])} pages -> {r['pdf']} ({os.path.getsize(r['pdf']) / 1e6:.1f} MB)")
+        for g in r["rev_gate"]: print(f"  {g.summary()}")
         print(f"  page PNGs: {os.path.join(r['out'], 'pages')}  ·  {n} values still [proposed — confirm] (page F1)")
     return 0
