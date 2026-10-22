@@ -72,7 +72,7 @@ G2 run 3 baseline = te-g2 out (labels sha db80930968d88a92 = commit 1c12c05), co
    Cause proven: with ANGLE_EPS = 0 the crop is back to 91197899. Diff of parts.json: one part, foliage.306 (lit side of
    clump foliage.229) — the exact 15.00 deg candidate from foliage.305 read back as 14.99999 and was rejected, so it turned
    +10.3 deg; now it takes the nearest legal turn, +5.3 deg. scripts/identity_check.sh expected hash updated.
-4. LESSONS A34, docs/ENGINE_PLAN.md G3 status, HANDOFF.md G3 line.
+4. LESSONS A38 (numbered A34 before merging main + S1 lettering), docs/ENGINE_PLAN.md G3 status, HANDOFF.md G3 line.
 
 ## HANDOFF (superseded: steps 1-4 done above)
 State: branch engine-g3 @ 73053ef pushed. Rev B + G2 run 3 DSTs are in projects/koi-blossom-hoodie/out/{revB,g2run3}

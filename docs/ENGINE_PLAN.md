@@ -52,7 +52,8 @@ apply. Stitch count is reported, never a limit.
 - then M7 (full Castle via labels), M8 (Wave), the full PLM tech pack self-serve.
 
 **SVG → DST track (founder 2026-10-20: build now, independent of G1/G2; image → DST stays out of PLM until P1):**
-- **S1 SVG drop-in.** Today `digitize.svgrun` is excellent on the founder's Konpeito SVGs but only with a hand-written run.yaml
+- **S1 SVG drop-in.** BUILT 2026-10-22 (branch engine-s1-svg-dropin): `scripts/svg2dst.py`, parity + findings in
+  `projects/konpeito-jeans/bench/PARITY_S1.md`. Before it, `digitize.svgrun` is excellent on the founder's Konpeito SVGs but only with a hand-written run.yaml
   (thread palette + a role per layer); an SVG with no config crashes in extract/svg.py (empty palette, 20 Oct probe). S1 derives
   the config: palette from the file's fills (nearest house/Isacord thread, ΔE reported), a role per shape from its geometry
   (wide areas → fill at a declared angle, strokes ≤ 7 mm → column, small round shapes → dots, star/floret shapes → radial,
