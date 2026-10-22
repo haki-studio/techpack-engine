@@ -15,7 +15,7 @@ against `out`: the written DST's stitches on the same grid. A reference changes 
   bare     tones that are the bare shell (never part of a reference)
 Rows: unit, motif, reference ("mockup" | the image path as written), governs, area_mm2, iou, w_ratio, h_ratio, ok.
 G4: a reference that governs "colour" is also graded on the sewn COLOURS (colour_grade: colour_match,
-colour_ok, groups; shape_ok keeps the silhouette result and ok = both), so a fish sewn in the wrong colours fails its reference."""
+colour_ok, groups; shape_ok keeps the silhouette result and ok = both), so a motif sewn in the wrong colours fails its reference."""
 import os
 import numpy as np
 from scipy import ndimage as ndi
@@ -26,8 +26,7 @@ from digitize.labels import schema as LS
 NEAR_MM = 1.5
 CLOSE_MM = 1.0
 CORNER_DIST = 40.0
-COLOUR_DE = 12.0      # G4: palette tones within this CIEDE2000 are one colour group (Koi: blues + whites one group; cyan 14 from sky, red, black apart)
-EDGE_MM = 0.5         # G4: the picture's colours are read this far in from its edge (edge pixels blend with the background)
+COLOUR_DE = 12.0      # G4: palette tones within this CIEDE2000 are one colour group (e.g. blues + whites one group; cyan 14 from sky, red, black apart)
 COLOUR_MIN = 0.70     # G4: share of the picture's motif pixels whose tone shows within NEAR_MM
 CLASS_SHARE = 0.03    # G4: a colour group holding >= 3 % of the picture is a colour the sewing must show ...
 CLASS_RECALL = 0.50   # ... on at least half of its pixels
@@ -124,16 +123,14 @@ def tone_groups(palette, bare=()):
 
 
 def colour_grade(ev, ref, base_dir, sil, top, stop_hex, palette, bare=()):
-    """G4: does the sewing show the picture's colours? Picture pixels (its motif pixels, EDGE_MM in from its edge, where
-    the picture blends with its background) and threads are each read as their nearest palette tone, then as that tone's
-    GROUP (tone_groups). A pixel matches when a thread of its group is the top colour within NEAR_MM.
+    """G4: does the sewing show the picture's colours? Picture motif pixels and threads are each read as their nearest
+    palette tone, then as that tone's GROUP (tone_groups). A pixel matches when a thread of its group is the top colour within NEAR_MM.
     -> dict(colour_match, groups {"tone+tone": dict(share, recall)}, colour_ok): colour_match >= COLOUR_MIN and every
     group holding >= CLASS_SHARE of the picture recalled >= CLASS_RECALL (a missing accent stripe fails even when the
     body colour carries the average)."""
     from digitize.extract.evidence import to_lab, hex_rgb, delta_e
     m, pic = place(ref, base_dir, ev.to_px, (ev.H, ev.W))
-    e = int(round(EDGE_MM * ev.ppm))
-    m = (ndi.binary_erosion(m, iterations=e) if e else m) & sil
+    m &= sil
     grp = tone_groups(palette, bare); keys = list(grp)
     lab_p = to_lab(np.array([[hex_rgb(palette[k]) for k in keys]], float))[0]
     def nearest(lab): return np.stack([delta_e(lab, np.broadcast_to(lab_p[i], lab.shape)) for i in range(len(keys))], -1).argmin(-1)
