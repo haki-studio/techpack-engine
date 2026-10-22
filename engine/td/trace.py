@@ -19,7 +19,7 @@ Cell references (ref = "<file>#<cell>", file relative to the repo root, else to 
 NOT yet covered (scope 2026-10-22: tables + callouts = the TD sheet and the TD notes band):
   - the rest of each pack page (the engine's own tables/flats; they are built from the spec, not from TD input);
   - numerals inside raster images, and text drawn as paths;
-  - inch fractions written in free text ("1/2") are split into numerals and fail unless they trace.
+  - free text (point / comment / method / location / knock_on) may carry no digit at all: it fails before tracing.
 
   rep = trace.check(td, svgs, root)          # svgs = comment sheet pages + annotated pages
   rep.ok, rep.failures, rep.summary()
@@ -30,11 +30,12 @@ from .schema import TDInputError
 
 MM_PER = {"in": 25.4, "cm": 10.0, "mm": 1.0}
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-NUMERAL = re.compile(r"\d+(?:\.\d+)?")
+NUMERAL = re.compile(r"(?<![\w.])[-+]?\d+(?:\.\d+)?|\d+(?:\.\d+)?")      # keeps a leading sign: "-0.3" != 0.3
 TEXT = re.compile(r"<text\b[^>]*>(.*?)</text>", re.S)
 NOTES = re.compile(r'<g data-td="notes">(.*?)</g>', re.S)
 OVERFLOW = re.compile(r"\+ \d+ more lines — see the TD comment sheet")      # engine-counted, not a measurement
-PAGE_CODE = re.compile(r"\b[A-Z]\d+(?:_\d+)?\b")
+PAGE_CODE = re.compile(r"^\s*[A-Z]\d+(?:_\d+)?\s*$")      # a whole text element that is a page code
+FREE_TEXT = ("point", "comment", "method", "location", "knock_on")
 
 
 class TraceError(TDInputError):
@@ -127,17 +128,19 @@ def resolve(n, roots):
 
 
 # ----------------------------------------------------------------------------- 2. trace
-def _key(x): return f"{round(abs(float(x)), 4):g}"
+def _key(x): return f"{round(float(x), 4):g}"
 
 
 def _strip_meta(s, td):
-    """remove text that is an identifier, not a measurement: refs, ids, product/round/rev, sizes, page codes"""
+    """remove identifiers, not measurements: refs, ids, product / round / rev, "point size" as printed, a page-code
+    text. A size or page code is removed ONLY where it is printed as one, so size "5" never hides "pocket 5 cm low"."""
+    if PAGE_CODE.match(s): return " "
     s = OVERFLOW.sub(" ", s)
     lits = [r.raw.get("ref") for r in td.rows] + [n.ref for r in td.rows for n in r.nums()] + [r.id for r in td.rows] + \
-           [td.product, td.round, f"Rev {td.rev}", f"Rev {td.supersedes}" if td.supersedes else None]
+           [td.product, td.round, f"Rev {td.rev}", f"Rev {td.supersedes}" if td.supersedes else None] + \
+           [f"{r.point} {r.size}" for r in td.rows if r.size]
     for lit in sorted({str(x) for x in lits if x}, key=len, reverse=True): s = s.replace(lit, " ")
-    for size in {r.size for r in td.rows if r.size}: s = re.sub(rf"(?<![\w.]){re.escape(str(size))}(?![\w.])", " ", s)
-    return PAGE_CODE.sub(" ", s)
+    return s
 
 
 def check(td, svgs, roots=None):
@@ -156,6 +159,13 @@ def check(td, svgs, roots=None):
         if nums and all(resolve(n, roots) is None for n in nums):
             if r.change() is not None: ok.add(_key(r.change()))
             if r.target_value() is not None: ok.add(_key(r.target_value()))
+    for r in td.rows:                                  # a TD never types a number: free text carries no digits at all
+        for f in FREE_TEXT:
+            v = r.raw.get(f)
+            for txt in (v if isinstance(v, list) else [v]):
+                if txt and re.search(r"\d", str(txt)):
+                    rep.failures.append(f"{r.id}.{f}: a number typed into text (\"{txt}\") — give it as a sourced value field, "
+                                        f"or write it without the number")
     for svg in svgs:
         scoped = NOTES.findall(svg) if "data-td=\"notes\"" in svg else [svg]
         if not scoped: continue

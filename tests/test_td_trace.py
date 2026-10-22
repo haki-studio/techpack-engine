@@ -108,3 +108,37 @@ def test_family_build_fails_on_an_untraced_number(tmp_path):
     td["rows"][0]["value"] = 1
     r = build(ala, out_root=str(tmp_path), png=False, td=td)
     assert r["td_trace"].ok and r["td_trace"].pages == 2
+
+
+# ----------------------------------------------------------------------------- review #42: colliding values
+@pytest.mark.parametrize("rid,field,text", [("M1", "comment", "pocket mouth sits 33 cm too low"),   # 33 = thigh HOLD value
+                                            ("F1", "location", "raise 0.5 cm at the CF"),            # 0.5 = the tolerance
+                                            ("F1", "method", "26.5 from the waist seam"),             # 26.5 = the baseline
+                                            ("F2", "point", "back rise 2")])
+def test_typed_number_fails_even_when_it_equals_an_input_value(rid, field, text):
+    d = raw(); row(d, rid)[field] = text
+    rep = run(d)
+    assert any(f.startswith(f"{rid}.{field}: a number typed into text") for f in rep.failures), rep.summary()
+
+
+def test_a_numeric_size_does_not_hide_a_typed_number():
+    d = raw()
+    for r in d["rows"]:
+        if r.get("size"): r["size"] = "5"
+    assert run(d).ok, run(d).summary()                       # "front rise 5" etc. printed as point + size: fine
+    td = schema.parse(d, FIX); pages = R.comment_sheet(td)
+    planted = pages[0].replace("</svg>", '<text x="10" y="10">pocket 5 cm low</text></svg>')
+    assert any(f.startswith("numeral 5 ") for f in T.check(td, [planted]).failures)
+
+
+def test_sign_matters():
+    td = schema.parse(raw(), FIX); pages = R.comment_sheet(td)
+    assert "change -0.3 cm" in "".join(pages)                # the real change traces (signed)
+    planted = pages[0].replace("</svg>", '<text x="10" y="10">front rise M: keep at -26.5 cm</text></svg>')
+    assert any(f.startswith("numeral -26.5 ") for f in T.check(td, [planted]).failures)
+
+
+def test_page_code_stripped_only_as_a_whole_text():
+    td = schema.parse(raw(), FIX); pages = R.comment_sheet(td)
+    planted = pages[0].replace("</svg>", '<text x="10" y="10">move the label to T3 position</text></svg>')
+    assert any(f.startswith("numeral 3 ") for f in T.check(td, [planted]).failures)
