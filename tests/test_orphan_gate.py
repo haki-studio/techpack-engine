@@ -202,7 +202,8 @@ def test_cli_exits_2_when_it_judged_nothing(tmp_path):
     bl = tmp_path / "baseline.json"; bl.write_text(json.dumps({"products": {"comet-city-hoodie": 0}}))
     (tmp_path / "projects" / "comet-city-hoodie" / "out").mkdir(parents=True)                    # out/ with no PES
     r = _cli(tmp_path, "--baseline", str(bl)); assert r.returncode == 2 and "saw nothing" in r.stdout, r.stdout
-    r = _cli(tmp_path, "--baseline", str(bl), "no-such-product"); assert r.returncode == 2, r.stdout
+    assert "ORPHAN GATE UNJUDGED" in r.stdout and "PASS" not in r.stdout, r.stdout                # exit 2 must not print PASS
+    r = _cli(tmp_path, "--baseline", str(bl), "no-such-product"); assert r.returncode == 2 and "PASS" not in r.stdout, r.stdout
     r = _cli(tmp_path / "nowhere", "--baseline", str(bl)); assert r.returncode == 2, r.stdout + r.stderr
     r = _cli(tmp_path, "--baseline", str(bl), "--update-baseline")
     assert r.returncode == 2 and "NOT updated" in r.stdout and json.loads(bl.read_text())["products"] == {"comet-city-hoodie": 0}

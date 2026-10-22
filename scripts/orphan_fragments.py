@@ -54,7 +54,7 @@ if __name__ == "__main__":
         note = {"block": "FAIL (held to 0)", "over": f"FAIL ({-r['below']} over the baseline)", "ok": "ok",
                 "lower": f"ok, {r['below']} below the baseline: lower it (--update-baseline)"}[r["status"]]
         print(f"ORPHAN {s:32s} files {len(by[s]):4d}  orphans {r['count']:6d}  limit {r['limit']:6d}  {note}")
-    print("ORPHAN GATE", "PASS" if rk["ok"] else "FAIL")
+    print("ORPHAN GATE", "FAIL" if not rk["ok"] else "UNJUDGED" if err else "PASS")      # exit 2 never prints PASS
     if "--update-baseline" in a and err:
         print("baseline NOT updated: some files or products could not be judged (an unjudged file is not a 0)")
     elif "--update-baseline" in a:
