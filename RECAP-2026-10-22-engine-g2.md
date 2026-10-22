@@ -65,7 +65,20 @@ Orphans went 5 -> 0 from these label edits alone (handoff step 2 needed no engin
 Direction OK fell 77.9 -> 69.0: the lily now follows its outline instead of the informed grain; chaos halved.
 Next: full suite + identity_check, mutation proofs, LESSONS/ENGINE_PLAN lines, PR, reviewer.
 
-## HANDOFF (session hit the 8 MB size limit after run 1) — next builder, exact next steps
+## Runs 3-4 + identity (session 77918164)
+- Visual check (subagent, one-line verdicts) on run 2: fish fine (pale bodies, fan tails, red patches); upper lily = big flat
+  slabs that overlap fish3. Run 3 (lily layers none, lobe_sep 6, min_lobe 40) and run 4 (lobe defaults, tone dominant): lily
+  still slabs. Conclusion: one lobe window over a soft mockup area cannot split petals by params; it needs per-petal label
+  windows (vision-step work, G3). Kept run 3 labels (verdict 2/8; run 4 = 1/8, chaos 5.1 %). Run 3 numbers = the PR table.
+- identity_check on 8a169c8 MOVED the Castle crop (50fc1411, 125,608 st / 152 trims vs 91197899, 126,219 / 154): `_fan_order`
+  fired on 79 Castle florets whose centre sits near their edge (empty sector > 30 deg). Proof: same run with `_fan_order`
+  disabled = 91197899. Fix: fan order OPT-IN (`radial_satin(fan=)`, technique passes `part.meta["fan"]`, set only by the
+  traced-fan branch). Red-then-green: 2 new tests red before, 7/7 after; mutations (always-fan, never-reorder, no traced
+  branch) -> 1 / 3 / 3 red. identity_check after: probe 84ff50ea/1ecd8f65, wb 449c14f6, crop 91197899 = main. Koi run
+  byte-identical before/after the opt-in (fish tails carry the flag).
+- Full suite 384 passed (before the 2 new tests). LESSONS A33, ENGINE_PLAN G2 status line, HANDOFF line written.
+
+## HANDOFF (superseded by runs 3-4 above; kept for history) — next builder, exact next steps
 State: branch engine-g2 pushed (commit below). Worktree ~/te-g2. Rev B FR M copied to out/revB from the desktop checkout's
 out/HAKI_KOIB_RevB_files.zip (git-ignored; re-extract if missing). Machine: check `~/.claude/company/bin/heavy-jobs` first.
 Run: `cd ~/te-g2 && PYTHONPATH=engine:projects/koi-blossom-hoodie ~/.venvs/techpack/bin/python -m digitize.run projects/koi-blossom-hoodie/bench/run_fr_labels.yaml --stages extract,review,plan,compile,gates,panel --no-api`
