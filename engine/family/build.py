@@ -77,6 +77,11 @@ def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=N
     revs = rev_gate(spec)                                # rev log must agree with the chart before any page is drawn
     out = os.path.join(out_root or os.path.join(fdir, "out"), spec.slug)
     os.makedirs(os.path.join(out, "pages"), exist_ok=True)
+    from . import tee_pages as _TP
+    import supplier_gate as SG
+    sg_rows, sg_flags = _TP.supplier_report(spec)     # a colour count over the supplier's max stops the build
+    bad = [r["text"] for r in sg_rows if r["status"] == SG.FAIL]
+    if bad: raise SpecError("colour count over the supplier's max:\n  " + "\n  ".join(bad))
     tdi = None
     if td:
         from td import schema as TDS, render as TDR
@@ -106,7 +111,7 @@ def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=N
     raw = os.path.join(out, f"{spec.slug}_techpack_{rev}_raw.pdf"); final = os.path.join(out, f"{spec.slug}_techpack_{rev}.pdf")
     with open(raw, "wb") as fh: w.write(fh)
     shrink(raw, final); os.remove(raw)
-    res = dict(spec=spec, pdf=final, pages=listing, out=out, rev_gate=revs)
+    res = dict(spec=spec, pdf=final, pages=listing, out=out, rev_gate=revs, supplier=(sg_rows, sg_flags))
     if tdi:
         sheet = td_sheet_svgs; res["td_trace"] = td_trace
         res["td_sheet"] = write_pdf(sheet, os.path.join(out, f"{spec.slug}_td_comment_sheet_Rev{tdi.rev}.pdf"))
@@ -135,6 +140,9 @@ def main(argv=None):
         n = len(r["spec"].proposed())
         print(f"{r['spec'].name}: {len(r['pages'])} pages -> {r['pdf']} ({os.path.getsize(r['pdf']) / 1e6:.1f} MB)")
         for g in r["rev_gate"]: print(f"  {g.summary()}")
+        print("  " + __import__("supplier_gate").summary(*r["supplier"]))
+        for x in r["supplier"][0] + r["supplier"][1]:
+            if x["status"] != "PASS": print(f"    {x['status']}: {x['text']}")
         print(f"  page PNGs: {os.path.join(r['out'], 'pages')}  ·  {n} values still [proposed — confirm] (page F1)")
         if r.get("td_sheet"): print(f"  TD comment sheet: {r['td_sheet']}\n  {r['td_trace'].summary()}")
     return 0

@@ -579,6 +579,22 @@ def fill_pom(spec, s):
     return POM_REF.sub(sub, str(s))
 
 
+def supplier_report(spec):
+    """colour count vs the supplier's max + special-trim flags (engine/supplier_gate.py) -> (rows, flags)"""
+    import supplier_gate as SG, factory as FAC
+    prof = FAC.load(); sup = val(spec.tree["factory"].get("supplier"))
+    designs = []
+    for d in spec.decorations:
+        cols = None if d.d.get("colours") is None else [{"name": val(c.get("name")), "count": val(c.get("count"))}
+                                                         if isinstance(c, dict) else val(c) for c in d.colours]
+        designs.append(dict(name=f"{d.code} {d.name}", method=d.method, supplier=sup, colours=SG.count_colours(cols)))
+    items = [{"item": val(l.get("item"))} for l in (spec.tree.get("labels") or {}).values() if isinstance(l, dict)]
+    if spec.tree.get("hang_tag"): items.append({"item": val(spec.tree["hang_tag"].get("item"))})
+    for tr in spec.tree.get("trims") or []:
+        items.append({k: val(v) for k, v in tr.items()})
+    return SG.colour_check(designs, prof), SG.trim_flags(items)
+
+
 def p_factory(spec):
     """F1 — open questions for the factory: the top questions + every [proposed — confirm] value. May run to several pages."""
     pages, o, y = [], None, 0
@@ -594,6 +610,13 @@ def p_factory(spec):
         o.append(t(12, y, "FIRST, PLEASE", 2.4, 700)); y += 4.6
         for i, q in enumerate(qs, 1):
             y = para(o, 16, y, f"{i}. {fill_pom(spec, val(q))}", 250, 1.85, 3.0, 700, PROP) + 0.8
+        y += 2
+    rows, flags = supplier_report(spec)
+    ask = [r for r in rows + flags if r["status"] in ("FAIL", "NOT RECORDED", "FLAG")]
+    if ask:
+        o.append(t(12, y, "COLOUR COUNT + SPECIAL TRIMS (engine check against what you told us)", 2.2, 700)); y += 4.6
+        for r in ask:
+            y = para(o, 16, y, f"{r['status']}: {r['text']}", 250, 1.75, 2.9, 700, RED if r["status"] == "FAIL" else PROP) + 0.6
         y += 2
     o.append(t(12, y, "PLEASE CONFIRM OR CORRECT EACH VALUE (we proposed it; it is not recorded)", 2.2, 700)); y += 4.6
     cur = None; k = 0
