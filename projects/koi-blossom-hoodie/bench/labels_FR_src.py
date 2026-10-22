@@ -9,7 +9,7 @@ def fish(mid, what, tail_win, root, body_win, body_seed, red_win, eye, conf=0.85
        "tones": LIGHT, "z": 7.0, "direction": {"intent": "radial"}, "colour": "auto", "confidence": conf,
        "alternatives": ["lobe"], "params": {"shape": "traced", "centres": "seeds", "bead": False, "min_mass_mm2": 6.0}},
       {"id": "body", "what": "body (fins inside it)", "primitive": "lobe", "hint": {"polygons": [body_win], "seeds": [body_seed],
-       "except": [f"{mid}.tail"]}, "tones": LIGHT, "z": 7.2, "direction": {"intent": "outline"}, "colour": "auto",
+       "except": [f"{mid}.tail"]}, "tones": LIGHT, "z": 7.2, "direction": {"intent": "outline"}, "colour": "kb_white",
        "confidence": conf, "params": {"lobe_sep_mm": 60, "min_lobe_mm2": 10, "min_mass_mm2": 8, "tone": "lit"}},
     ]
     if red_win:
@@ -48,14 +48,14 @@ FLORA_T = ["kb_navy", "kb_cobalt", "kb_royal", "kb_corn", "kb_sky", "kb_ice", "k
 M += [
  {"id": "flower_upper", "what": "the pale upper lily: petals with dark shading", "confidence": 0.75, "parts": [
    {"id": "petals", "primitive": "lobe", "hint": {"polygons": [[[-222, 94], [-186, 90], [-150, 108], [-147, 128], [-158, 160], [-196, 182], [-222, 180]]]},
-    "tones": FLORA_T, "z": 6.0, "direction": {"intent": "grain"}, "colour": "auto", "confidence": 0.75,
-    "params": {"layers": "shade", "lobe_sep_mm": 6, "min_lobe_mm2": 40, "tone": "lit"}}]},
+    "tones": FLORA_T, "z": 6.0, "direction": {"intent": "outline"}, "colour": "auto", "confidence": 0.75,
+    "params": {"layers": "none", "lobe_sep_mm": 6, "min_lobe_mm2": 40, "tone": "lit"}}]},
  {"id": "flower_lower", "what": "the dark lower flower", "confidence": 0.6, "parts": [
    {"id": "petals", "primitive": "lobe", "hint": {"polygons": [[[-214, 182], [-176, 174], [-140, 188], [-134, 222], [-166, 241], [-200, 239], [-216, 214]]],
     "except": ["fish3.tail", "fish3.body"]},
     "tones": FLORA_T, "z": 5.0, "direction": {"intent": "grain"}, "colour": "auto", "confidence": 0.6,
     "question": "dark petals or leaves? the mockup is soft here", "alternatives": ["band"],
-    "params": {"layers": "shade", "lobe_sep_mm": 6, "min_lobe_mm2": 40}}]},
+    "params": {"layers": "none", "lobe_sep_mm": 6, "min_lobe_mm2": 40}}]},
  {"id": "stems", "what": "stems rising from the lower left", "confidence": 0.55, "parts": [
    {"id": "stems", "primitive": "cord", "hint": {"polygons": [[[-222, 240], [-178, 240], [-178, 300], [-222, 300]]]},
     "tones": ["kb_navy", "kb_cobalt", "kb_royal"], "z": 4.0, "direction": {"intent": "along"}, "colour": "auto", "confidence": 0.55,

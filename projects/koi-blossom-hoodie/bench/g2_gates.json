@@ -89,7 +89,7 @@
      "red": true,
      "gold": false
     },
-    "secs": 11.9
+    "secs": 8.9
    },
    "verdict": {
     "direction_ok": false,
@@ -541,9 +541,9 @@
     165.0
    ],
    "counts": {
-    "stitches_file": 21803,
+    "stitches_file": 18166,
     "threads_file": 10,
-    "stitches_in_crop": 19438
+    "stitches_in_crop": 16764
    },
    "gates": {
     "crop": [
@@ -554,51 +554,51 @@
     ],
     "crop_min_closeup_weight": null,
     "source_ppm_median": 0.91,
-    "stitches_in_crop": 19438,
+    "stitches_in_crop": 16764,
     "direction": {
-     "tiles": 253,
-     "pct_ok": 77.9,
-     "pct_chaos": 7.9,
-     "n_dev": 36,
+     "tiles": 252,
+     "pct_ok": 69.4,
+     "pct_chaos": 4.0,
+     "n_dev": 67,
      "masked": 0,
-     "n_chaos": 20,
-     "pct_ok_all_stitches": 75.0,
-     "pct_chaos_all_stitches": 16.1
+     "n_chaos": 10,
+     "pct_ok_all_stitches": 69.6,
+     "pct_chaos_all_stitches": 13.1
     },
     "angle_coherence": {
      "ok": false,
      "note": "no regions file: a DST carries no part ids, so angle_coherence cannot pass"
     },
     "density": {
-     "covered_cm2": 122.7,
-     "mean": 3.54,
-     "p95": 6.81,
-     "max_smoothed": 35.87,
-     "over_cm2": 1.83,
-     "flags": 10,
+     "covered_cm2": 123.0,
+     "mean": 3.27,
+     "p95": 6.39,
+     "max_smoothed": 35.88,
+     "over_cm2": 1.16,
+     "flags": 5,
      "threshold": 7.0
     },
     "trims": {
-     "trims": 117,
-     "per_100cm2": 95.4,
-     "area_cm2": 122.7
+     "trims": 49,
+     "per_100cm2": 39.8,
+     "area_cm2": 123.0
     },
     "satin": {
      "satins": 21,
      "fans": 0,
-     "blob": 8,
+     "blob": 9,
      "too_wide": 0,
      "too_narrow": 4
     },
     "stack": {
-     "max": 4,
-     "over_cm2": 0.67,
-     "flags": 5,
-     "pct_cells_over": 0.6
+     "max": 3,
+     "over_cm2": 0.03,
+     "flags": 0,
+     "pct_cells_over": 0.0
     },
-    "runs_in_crop": 137,
+    "runs_in_crop": 62,
     "colours": {
-     "stops_in_crop": 20,
+     "stops_in_crop": 12,
      "threads_in_crop": 10,
      "threads_in_file": 10,
      "hex": [
@@ -616,11 +616,11 @@
      "red": true,
      "gold": false
     },
-    "secs": 11.8
+    "secs": 7.3
    },
    "verdict": {
     "direction_ok": false,
-    "direction_chaos": false,
+    "direction_chaos": true,
     "angle_coherence": false,
     "density": false,
     "trims": false,
@@ -629,8 +629,8 @@
     "colours": true
    },
    "exposed": {
-    "stitches": 167,
-    "bare_mm": 217.6,
+    "stitches": 159,
+    "bare_mm": 223.6,
     "note": "DST-only proxy: >= 1 mm stitches with > 1 mm over 1 mm cells holding < 0.3 mm/mm2 of other thread"
    },
    "fidelity": {
@@ -677,7 +677,7 @@
       "area_mm2": 890.4,
       "iou": 0.73,
       "w_ratio": 1.05,
-      "h_ratio": 1.05,
+      "h_ratio": 1.06,
       "ok": true
      },
      {
@@ -686,7 +686,7 @@
       "y_mm": 216.2,
       "area_mm2": 736.0,
       "iou": 0.72,
-      "w_ratio": 0.99,
+      "w_ratio": 0.98,
       "h_ratio": 1.01,
       "ok": true
      }
@@ -722,8 +722,8 @@
       "x_mm": 153.0,
       "y_mm": 133.9,
       "area_mm2": 301.6,
-      "iou": 0.79,
-      "w_ratio": 0.9,
+      "iou": 0.78,
+      "w_ratio": 0.91,
       "h_ratio": 0.93,
       "ok": true
      },
@@ -769,9 +769,9 @@
       "x_mm": 99.6,
       "y_mm": 132.0,
       "area_mm2": 28.5,
-      "iou": 0.68,
+      "iou": 0.67,
       "w_ratio": 0.85,
-      "h_ratio": 0.88,
+      "h_ratio": 0.79,
       "ok": false
      },
      {
@@ -799,9 +799,9 @@
       "x_mm": 29.9,
       "y_mm": 158.9,
       "area_mm2": 34.6,
-      "iou": 0.73,
-      "w_ratio": 0.86,
-      "h_ratio": 0.59,
+      "iou": 0.78,
+      "w_ratio": 0.87,
+      "h_ratio": 0.55,
       "ok": false
      },
      {
@@ -839,7 +839,7 @@
       "x_mm": 60.7,
       "y_mm": 215.2,
       "area_mm2": 27.4,
-      "iou": 0.58,
+      "iou": 0.63,
       "w_ratio": 0.8,
       "h_ratio": 0.68,
       "ok": false
@@ -867,7 +867,7 @@
     ],
     "uncovered": {
      "n": 12,
-     "mm2": 470.2,
+     "mm2": 467.0,
      "largest": [
       {
        "x_mm": 54.1,
@@ -881,14 +881,14 @@
        "y_mm": 148.7,
        "w_mm": 21.6,
        "h_mm": 10.2,
-       "area_mm2": 57.4
+       "area_mm2": 57.7
       },
       {
        "x_mm": 55.8,
        "y_mm": 23.3,
        "w_mm": 10.8,
        "h_mm": 7.4,
-       "area_mm2": 46.0
+       "area_mm2": 46.3
       },
       {
        "x_mm": 33.5,
@@ -902,14 +902,7 @@
        "y_mm": 204.1,
        "w_mm": 14.6,
        "h_mm": 15.0,
-       "area_mm2": 34.6
-      },
-      {
-       "x_mm": 71.6,
-       "y_mm": 136.5,
-       "w_mm": 12.4,
-       "h_mm": 9.0,
-       "area_mm2": 34.5
+       "area_mm2": 34.7
       },
       {
        "x_mm": 53.0,
@@ -919,24 +912,31 @@
        "area_mm2": 34.4
       },
       {
+       "x_mm": 72.8,
+       "y_mm": 136.5,
+       "w_mm": 10.0,
+       "h_mm": 9.0,
+       "area_mm2": 30.9
+      },
+      {
        "x_mm": 152.0,
        "y_mm": 125.0,
        "w_mm": 12.4,
        "h_mm": 12.4,
-       "area_mm2": 30.2
+       "area_mm2": 30.0
       }
      ]
     },
     "ref_mm2": 11383.2,
-    "sewn_mm2": 11272.0,
-    "sewn_off_reference_mm2": 789.6
+    "sewn_mm2": 11300.6,
+    "sewn_off_reference_mm2": 793.2
    },
    "orphans": {
-    "n": 5,
+    "n": 0,
     "exempt": [],
     "n_exempt": 0,
-    "blocks": 137,
-    "ok": false,
+    "blocks": 62,
+    "ok": true,
     "params": {
      "max_stitches": 60,
      "max_extent_mm": 8.0,
@@ -946,9 +946,9 @@
     }
    },
    "info_direction_vs_informed": {
-    "pct_ok": 80.2,
-    "tiles": 253,
-    "pct_chaos": 7.9
+    "pct_ok": 69.8,
+    "tiles": 252,
+    "pct_chaos": 4.0
    }
   }
  },
@@ -961,76 +961,65 @@
  },
  "engine_plan": {
   "parts": {
-   "n": 108,
-   "pct_under_20mm2": 19.4,
+   "n": 78,
+   "pct_under_20mm2": 14.1,
    "by_kind": {
     "band": 7,
     "bead": 4,
     "cord": 7,
-    "lobe": 35,
-    "lobe_grain": 20,
-    "lobe_shade": 30,
+    "lobe": 44,
+    "lobe_grain": 11,
     "radial": 5
    },
    "undeclared_angles": 0,
    "random_angles": 0,
    "unexplained_angles": [],
-   "sewn_off_angle": 1,
-   "sewn_off": [
-    {
-     "part": "flower_lower.petals.058",
-     "kind": "lobe_shade",
-     "declared": 176.47,
-     "sewn": 153.1,
-     "dev": 23.4,
-     "n": 38
-    }
-   ],
+   "sewn_off_angle": 0,
+   "sewn_off": [],
    "field_adherence": {
-    "parts": 20,
-    "stitches": 3830,
-    "within": 3054,
-    "pct_within": 79.7
+    "parts": 11,
+    "stitches": 1271,
+    "within": 1097,
+    "pct_within": 86.3
    },
    "dir_sources": {
     "rule": 4,
-    "splitter": 54,
-    "field": 20,
-    "field-mean": 30
+    "splitter": 63,
+    "field": 11
    }
   },
   "direction_by_source": {
    "bare": {
-    "tiles": 91,
-    "ok": 70,
-    "dev": 14,
-    "chaos": 7,
-    "pct_ok": 76.9,
-    "pct_chaos": 7.7
+    "tiles": 90,
+    "ok": 69,
+    "dev": 15,
+    "chaos": 6,
+    "pct_ok": 76.7,
+    "pct_chaos": 6.7
    },
    "independent": {
     "tiles": 25,
-    "ok": 17,
+    "ok": 18,
     "dev": 5,
-    "chaos": 3,
-    "pct_ok": 68.0,
-    "pct_chaos": 12.0
+    "chaos": 2,
+    "pct_ok": 72.0,
+    "pct_chaos": 8.0
    },
    "outline": {
-    "tiles": 56,
-    "ok": 46,
-    "dev": 9,
-    "chaos": 1,
-    "pct_ok": 82.1,
-    "pct_chaos": 1.8
+    "tiles": 115,
+    "ok": 67,
+    "dev": 46,
+    "chaos": 2,
+    "pct_ok": 58.3,
+    "pct_chaos": 1.7
    },
    "self-derived": {
-    "tiles": 81,
-    "ok": 64,
-    "dev": 8,
-    "chaos": 9,
-    "pct_ok": 79.0,
-    "pct_chaos": 11.1
+    "tiles": 22,
+    "ok": 21,
+    "dev": 1,
+    "chaos": 0,
+    "pct_ok": 95.5,
+    "pct_chaos": 0.0
    }
   },
   "direction_by_kind": {
@@ -1043,12 +1032,12 @@
     "pct_chaos": 0.0
    },
    "bare": {
-    "tiles": 91,
-    "ok": 70,
-    "dev": 14,
-    "chaos": 7,
-    "pct_ok": 76.9,
-    "pct_chaos": 7.7
+    "tiles": 90,
+    "ok": 69,
+    "dev": 15,
+    "chaos": 6,
+    "pct_ok": 76.7,
+    "pct_chaos": 6.7
    },
    "cord": {
     "tiles": 5,
@@ -1059,77 +1048,48 @@
     "pct_chaos": 40.0
    },
    "lobe": {
-    "tiles": 56,
-    "ok": 46,
-    "dev": 9,
-    "chaos": 1,
-    "pct_ok": 82.1,
-    "pct_chaos": 1.8
+    "tiles": 115,
+    "ok": 67,
+    "dev": 46,
+    "chaos": 2,
+    "pct_ok": 58.3,
+    "pct_chaos": 1.7
    },
    "lobe_grain": {
-    "tiles": 48,
-    "ok": 41,
-    "dev": 5,
-    "chaos": 2,
-    "pct_ok": 85.4,
-    "pct_chaos": 4.2
-   },
-   "lobe_shade": {
-    "tiles": 33,
-    "ok": 23,
-    "dev": 3,
-    "chaos": 7,
-    "pct_ok": 69.7,
-    "pct_chaos": 21.2
+    "tiles": 22,
+    "ok": 21,
+    "dev": 1,
+    "chaos": 0,
+    "pct_ok": 95.5,
+    "pct_chaos": 0.0
    },
    "radial": {
     "tiles": 8,
-    "ok": 6,
+    "ok": 7,
     "dev": 1,
-    "chaos": 1,
-    "pct_ok": 75.0,
-    "pct_chaos": 12.5
+    "chaos": 0,
+    "pct_ok": 87.5,
+    "pct_chaos": 0.0
    }
   },
   "angle_coherence": {
    "ok": false,
-   "parts": 49,
-   "fails": 8,
+   "parts": 58,
+   "fails": 10,
    "kinds": {
     "no-visible-stitches": 1,
-    "angle-spread": 7
+    "angle-spread": 9
    },
    "by_kind": {
     "no-visible-stitches / lobe": 1,
-    "angle-spread / lobe": 6,
+    "angle-spread / lobe": 8,
     "angle-spread / band": 1
    }
   },
   "separation": {
-   "pairs": 20,
-   "close": 4,
-   "examples": [
-    [
-     "flower_upper.petals.026",
-     "flower_upper.petals.031",
-     1.3
-    ],
-    [
-     "flower_upper.petals.035",
-     "flower_upper.petals.040",
-     13.0
-    ],
-    [
-     "flower_upper.petals.040",
-     "flower_upper.petals.047",
-     2.5
-    ],
-    [
-     "flower_lower.petals.054",
-     "leaves_petals.lobes.090",
-     3.5
-    ]
-   ]
+   "pairs": 5,
+   "close": 0,
+   "examples": []
   },
   "stub_area": {
    "mm2": 0,
@@ -1139,14 +1099,14 @@
   },
   "verdict": {
    "direction_ok": false,
-   "direction_chaos": false,
+   "direction_chaos": true,
    "angle_coherence": false,
    "density": false,
    "trims": false,
    "satin_shape": false,
    "stack": false,
    "colours": true,
-   "separation": false,
+   "separation": true,
    "stack_parts": true,
    "travel_on_fill": false
   },
@@ -1154,10 +1114,9 @@
   "area_by_kind_mm2": {
    "bead": 15.3,
    "band": 827.7,
-   "lobe": 3576.5,
+   "lobe": 7341.0,
    "radial": 583.4,
-   "lobe_grain": 5230.3,
-   "lobe_shade": 2261.4,
+   "lobe_grain": 1465.8,
    "cord": 476.5
   }
  },

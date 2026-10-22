@@ -262,11 +262,12 @@ def _fan_order(segs, cx, cy, gap_deg=30.0, min_mm=1.0):
     if g < gap_deg: return segs, False
     return [keep[order[(k + 1 + j) % len(order)]] for j in range(len(order))], True
 
-def radial_satin(p, cx, cy, sp=None, pull=0.15, short=True):
+def radial_satin(p, cx, cy, sp=None, pull=0.15, short=True, fan=False):
     sp = sp or SP_RAD
     pp = p.buffer(pull) if pull else p
     out = []
-    rays, fan = _fan_order(SR.radial(pp, cx, cy, sp), cx, cy)
+    rays = SR.radial(pp, cx, cy, sp)                                    # fan=True only for a traced fan part (G2):
+    if fan: rays, fan = _fan_order(rays, cx, cy)                         # florets keep their ray order (identity)
     for i, s in enumerate(rays):
         cs = list(s.coords)
         if len(cs) < 2: continue

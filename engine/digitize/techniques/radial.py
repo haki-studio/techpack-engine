@@ -26,5 +26,5 @@ class Radial(Technique):
         for p in polys(part.geom):
             if p.area < 0.06: continue
             if "edge_run" in st.underlay and width_of(p) > 2.5: out += [Block(part.id, "underlay", b) for b in dst2.edge_run(p, 0.45)]
-            out.append(Block(part.id, "top", dst2.radial_satin(p, cx, cy, sp=st.spacing, pull=st.pull_comp)))
+            out.append(Block(part.id, "top", dst2.radial_satin(p, cx, cy, sp=st.spacing, pull=st.pull_comp, fan=bool(part.meta.get("fan")))))
         return [b for b in out if len(b.pts) > 1]

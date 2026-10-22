@@ -147,7 +147,7 @@
      "direction": {
       "intent": "outline"
      },
-     "colour": "auto",
+     "colour": "kb_white",
      "confidence": 0.85,
      "params": {
       "lobe_sep_mm": 60,
@@ -392,7 +392,7 @@
      "direction": {
       "intent": "outline"
      },
-     "colour": "auto",
+     "colour": "kb_white",
      "confidence": 0.85,
      "params": {
       "lobe_sep_mm": 60,
@@ -649,7 +649,7 @@
      "direction": {
       "intent": "outline"
      },
-     "colour": "auto",
+     "colour": "kb_white",
      "confidence": 0.85,
      "params": {
       "lobe_sep_mm": 60,
@@ -878,7 +878,7 @@
      "direction": {
       "intent": "outline"
      },
-     "colour": "auto",
+     "colour": "kb_white",
      "confidence": 0.85,
      "params": {
       "lobe_sep_mm": 60,
@@ -1070,7 +1070,7 @@
      "direction": {
       "intent": "outline"
      },
-     "colour": "auto",
+     "colour": "kb_white",
      "confidence": 0.85,
      "params": {
       "lobe_sep_mm": 60,
@@ -1237,12 +1237,12 @@
      ],
      "z": 6.0,
      "direction": {
-      "intent": "grain"
+      "intent": "outline"
      },
      "colour": "auto",
      "confidence": 0.75,
      "params": {
-      "layers": "shade",
+      "layers": "none",
       "lobe_sep_mm": 6,
       "min_lobe_mm2": 40,
       "tone": "lit"
@@ -1317,7 +1317,7 @@
       "band"
      ],
      "params": {
-      "layers": "shade",
+      "layers": "none",
       "lobe_sep_mm": 6,
       "min_lobe_mm2": 40
      }

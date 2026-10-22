@@ -45,7 +45,7 @@ def test_radial_traced_fan_stitches_stay_on_rays_and_short():
     parts, _ = _fan_parts(shape="traced")
     p = next(q for q in parts if q.kind == "radial")
     cx, cy = p.meta["centre"]
-    pts = dst2.radial_satin(p.geom, cx, cy, sp=0.45, pull=0.0)
+    pts = dst2.radial_satin(p.geom, cx, cy, sp=0.45, pull=0.0, fan=p.meta["fan"])
     seg = [(a, b) for a, b in zip(pts, pts[1:]) if math.dist(a, b) > 0.3]
     assert max(math.dist(a, b) for a, b in seg) <= 7.0 + 1e-6    # a 25 mm fan is cut into <= 7 mm stitches (dst2 split)
 
@@ -66,3 +66,20 @@ def test_fan_order_starts_after_the_empty_sector_and_drops_the_stubs_behind_the_
     ang = [math.degrees(math.atan2(r.centroid.y - 30.0, r.centroid.x - 10.5)) for r in rays]
     steps = [abs(b - a) for a, b in zip(ang, ang[1:])]
     assert max(steps) < 10.0                                     # one sweep across the fan, no wrap
+
+
+def test_an_edge_centred_floret_without_the_fan_flag_sews_exactly_as_before(monkeypatch):
+    import dst2
+    from shapely.geometry import Point
+    disc = Point(0, 0).buffer(3.0, 64)                           # centre near the edge: an empty sector > 30 deg
+    assert dst2._fan_order(__import__("stitchrender").radial(disc, 2.6, 0.0, 0.45), 2.6, 0.0)[1] is True
+    now = dst2.radial_satin(disc, 2.6, 0.0, sp=0.45)
+    monkeypatch.setattr(dst2, "_fan_order", lambda segs, cx, cy, **k: (segs, False))
+    assert now == dst2.radial_satin(disc, 2.6, 0.0, sp=0.45)    # Castle's 79 such florets keep their hash (identity_check)
+
+
+def test_the_traced_fan_part_carries_the_fan_flag_to_the_stitcher():
+    parts, _ = _fan_parts(shape="traced")
+    assert next(q for q in parts if q.kind == "radial").meta.get("fan") is True
+    parts, _ = _fan_parts()
+    assert all("fan" not in q.meta for q in parts if q.kind == "radial")

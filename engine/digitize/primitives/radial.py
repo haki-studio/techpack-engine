@@ -99,7 +99,7 @@ def recognise(ctx, lp, z, claim):
                 fl = None
                 if (fan or r >= P["r_min"]) and not fg.is_empty and fg.area >= P["min_mm2"]:
                     fl = part(ctx, lp, "radial", fg, fl_t, z - 0.1, DirSpec(0.0, mode="radial", source="splitter", note="radial from its centre"),
-                              ev.mask(fg), centre=[float(c[0]), float(c[1])], construct=dict(rule="radial"), phase=round(ph, 2),
+                              ev.mask(fg), centre=[float(c[0]), float(c[1])], construct=dict(rule="radial"), phase=round(ph, 2), **({"fan": True} if fan else {}),
                               group=f"{lp['pid']}.m{mi}")
                     parts.append(fl); beads.append(fg)
                 if kd:

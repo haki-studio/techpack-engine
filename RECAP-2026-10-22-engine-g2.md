@@ -42,6 +42,29 @@ origin/main 1f03682. Spec: docs/ENGINE_PLAN.md RE-PLAN G2. Engine proof only: pr
 Looked at the side by side (bench/g2_side_by_side.png): fish read as fish (fan tails, red stripe, body); bodies come out
 partly grey (tone "lit" picked lavender); the upper lily is a cross-hatched mess (lobe grain + shade layer at +20 deg).
 
+## Run 2 (session 77918164, builder replacing f5e7f669) — labels only, no engine change
+Label edits (bench/labels_FR_src.py): fish bodies `colour: kb_white`; upper lily `direction outline`, `layers lit`,
+lobe_sep_mm 10, min_lobe_mm2 60 (no shade cross-hatch); lower flower `layers none`. Rev B re-extracted to out/revB.
+Orphans went 5 -> 0 from these label edits alone (handoff step 2 needed no engine fix).
+
+| gate | Rev B delivered | G2 run 1 | G2 run 2 |
+|---|---|---|---|
+| fish vs founder tetra @0.82 (A14) | 4/5, IoU 0.71 | 3/5, 0.68 | 3/5, 0.68 |
+| fish vs mockup fish (A14) | 0/5, IoU 0.54 | 5/5, 0.86 | 5/5, 0.86 |
+| flora motif_match (A14) | 12/34, 0.59 | 23/34, 0.66 | 22/34, 0.66 |
+| uncovered >= 25 mm2 (A15) | 9 gaps, 741 mm2 | 12, 470 | 11, 442 |
+| sewn off the reference | 1934 mm2 | 790 | 794 |
+| orphan fragments | 26 | 5 | 0 |
+| direction OK / chaos | 21.8 % / 20.4 % | 77.9 / 7.9 | 69.0 / 4.4 |
+| density flags (p95) | 19 (7.43) | 10 (6.81) | 5 (6.50) |
+| trims /100 cm2 | 107.8 | 95.4 | 43.1 |
+| satin blobs | 90 | 8 | 8 |
+| stack max / flags | 3 / 0 | 4 / 5 | 3 / 0 |
+| stitches in crop | 21,937 | 19,438 | 17,393 |
+| bench verdict | 1/8 | 1/8 | 2/8 (colours + chaos) |
+Direction OK fell 77.9 -> 69.0: the lily now follows its outline instead of the informed grain; chaos halved.
+Next: full suite + identity_check, mutation proofs, LESSONS/ENGINE_PLAN lines, PR, reviewer.
+
 ## HANDOFF (session hit the 8 MB size limit after run 1) — next builder, exact next steps
 State: branch engine-g2 pushed (commit below). Worktree ~/te-g2. Rev B FR M copied to out/revB from the desktop checkout's
 out/HAKI_KOIB_RevB_files.zip (git-ignored; re-extract if missing). Machine: check `~/.claude/company/bin/heavy-jobs` first.
