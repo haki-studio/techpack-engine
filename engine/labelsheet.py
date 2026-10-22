@@ -7,6 +7,8 @@ MISSING and name what was recorded. Never the nearest label.
     page:   o, h = panel(x, y, w, shell, main_where, care_where)
     BOM:    main_bom(), care_bom(shell)               -> short cells (≈ 80 characters)
     zip:    files(shell) / export(dir, shell)         -> the pack's labels/
+fibre_confirmed: True only when the shell fibre comes from a supplier / factory spec. Our own proposal (e.g. the jackets'
+"100% cotton duck canvas") still picks the matching care label, but every mention is amber "[proposed — confirm fibre: …]".
 """
 import os, io, base64, shutil, textwrap
 import labels as LB
@@ -28,9 +30,13 @@ def main_desc():
     return "Haki standard main label: woven, flat, 6.5 × 2 cm, white ground, black HAKI STUDIOS logo; sewn down on all 4 sides (labels/" + os.path.basename(LB.MAIN) + ")"
 
 
-def care_desc(shell):
+def unconfirmed(fb):
+    return f"[proposed — confirm fibre: {fb}]"
+
+
+def care_desc(shell, fibre_confirmed=False):
     fb = care_fibre(shell)
-    if fb: return f"Haki standard care label, {fb}: printed satin, 3 × 6.5 cm, printed front + back (labels/{os.path.basename(LB.care_label(shell))})"
+    if fb: return f"Haki standard care label, {fb}{'' if fibre_confirmed else ' ' + unconfirmed(fb)}: printed satin, 3 × 6.5 cm, printed front + back (labels/{os.path.basename(LB.care_label(shell))})"
     return f"Haki standard care label {MISSING}: shell recorded only as '{shell}'"
 
 
@@ -38,9 +44,10 @@ def main_bom(ref="T8"):
     return f"Haki standard: woven, flat, 6.5 × 2 cm, sewn down on all 4 sides ({ref} art)"
 
 
-def care_bom(shell, ref="T8"):
+def care_bom(shell, ref="T8", fibre_confirmed=False):
     fb = care_fibre(shell)
-    return f"Haki standard, {fb}: printed satin, 3 × 6.5 cm, front + back ({ref} art)" if fb else f"{MISSING} — shell has no fibre %"
+    if not fb: return f"{MISSING} — shell has no fibre %"
+    return f"Haki std {fb}, 3 × 6.5 satin ({ref})" + ("" if fibre_confirmed else " " + unconfirmed(fb))
 
 
 def files(shell):
@@ -77,7 +84,7 @@ def _lines(x, y, s, width_mm, size=1.7, w=400, fill=INK):
     return o, y
 
 
-def panel(x, y, w, shell, main_where, care_where, title="HAKI STUDIOS STANDARD LABELS"):
+def panel(x, y, w, shell, main_where, care_where, title="HAKI STUDIOS STANDARD LABELS", fibre_confirmed=False):
     """the Haki standard main + care label artwork at 1:1 (scaled down only if w is too narrow), dimensioned, with the
     placement text; the care label is MISSING (dashed amber box) when care_label(shell) is None. Returns (svg list, height)."""
     o = [f'<rect x="{f(x)}" y="{f(y)}" width="{f(w)}" height="4" fill="#F5F2EC"/>',
@@ -94,7 +101,10 @@ def panel(x, y, w, shell, main_where, care_where, title="HAKI STUDIOS STANDARD L
     yy += 3
     cw, ch = LB.CARE_MM; fb = care_fibre(shell)
     sc = min(1.0, (w - 12) / (2 * cw + 4))
-    o.append(t(x, yy, f"CARE LABEL — {fb if fb else 'fibre not confirmed'} — {'1 : 1' if sc == 1 else f'{sc:.2f} : 1'}, front + back", 1.9, 700, GREEN if fb else AMBER)); yy += 6
+    ok = bool(fb) and fibre_confirmed
+    o.append(t(x, yy, f"CARE LABEL — {fb if fb else 'fibre not confirmed'} — {'1 : 1' if sc == 1 else f'{sc:.2f} : 1'}, front + back", 1.9, 700, GREEN if ok else AMBER)); yy += 6
+    if fb and not fibre_confirmed:
+        s_, yy = _lines(x, yy - 2, unconfirmed(fb) + " — the care label follows the fibre; if the fibre changes, so does the label.", w, 1.7, 600, AMBER); o += s_; yy += 3
     lx0 = x + 6
     if fb:
         path = LB.care_label(shell)
@@ -130,7 +140,7 @@ HOODIE_ROWS = [("Main label", "back neck facing, centred at CB, 1 cm below the h
                ("Care label", "wearer's left side seam of the lining", True)]
 
 
-def hoodie_page(H, shell, page="T6b", rows=HOODIE_ROWS):
+def hoodie_page(H, shell, page="T6b", rows=HOODIE_ROWS, fibre_confirmed=False):
     """a whole labels page for the zip-hoodie family (block, KCOS, Comet City, Red Beast, Koi): placement table, the care-label
     status in words, and the 1:1 panel. H = the pack's header(title, sub, page) function."""
     o = H("LABELS — Haki standard main + care label", "Main + care label = the Haki standard labels (founder 22 Oct 2026), artwork right at 1 : 1, files in the zip labels/. Positions on the finished garment.", page)
@@ -139,12 +149,12 @@ def hoodie_page(H, shell, page="T6b", rows=HOODIE_ROWS):
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y - 3.0)}" width="180" height="4.4" fill="{ALT}"/>')
         o.append(t(12, y, a, 1.75, 700)); o.append(t(36, y, b_ + ("  [proposed — confirm]" if p else ""), 1.6, 400, PROP if p else INK)); y += 4.4
     fb = care_fibre(shell); y += 5
-    o.append(t(12, y, "CARE LABEL — " + (f"Haki standard, {fb}" if fb else MISSING), 2.2, 700, GREEN if fb else AMBER)); y += 5
+    o.append(t(12, y, "CARE LABEL — " + ((f"Haki standard, {fb}" + ("" if fibre_confirmed else " " + unconfirmed(fb))) if fb else MISSING), 2.2, 700, GREEN if fb and fibre_confirmed else AMBER)); y += 5
     for l in ([f"Shell: '{shell}'.", "Linings (flannel, taffeta, sherpa hood) and embroidery thread are not on the standard label: Haki confirms if they must be listed."] if fb else
               [f"The shell is recorded only as '{shell}' — no fibre %.",
                "Haki standard care labels exist for 100 % cotton and 90 % cotton / 10 % polyester only; the right one is picked from the fibre, never the nearest.",
                "Haki confirms the shell fibre content, then sends the matching care label artwork. Do not print a care label until then.",
                "Linings (flannel, taffeta, sherpa hood) and embroidery thread are not on the standard label: Haki confirms if they must be listed."]):
         o.append(t(12, y, l, 1.65, 400, INK)); y += 3.6
-    o += panel(200, 30, 86, shell, "Position: " + rows[0][1].split(";")[0] + ".", "Position: " + rows[2][1] + " [proposed — confirm height].")[0]
+    o += panel(200, 30, 86, shell, "Position: " + rows[0][1].split(";")[0] + ".", "Position: " + rows[2][1] + " [proposed — confirm height].", fibre_confirmed=fibre_confirmed)[0]
     return o
