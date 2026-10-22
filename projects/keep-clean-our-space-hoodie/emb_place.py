@@ -3,7 +3,7 @@ is already in that size's pattern coordinates, so placement = the art itself. us
 import kccore
 import pickle
 from shapely.ops import unary_union
-import front as F, sleeve as SV
+import front as F, sleeve as SV, back as BKM
 
 _C = {}
 def outline(size, P):
@@ -21,10 +21,11 @@ def clearances(size, OL=None):
     out = {}
     for P in kccore.PIECES:
         if P in ("FR", "FL"): out[P] = F.clearances(outline(size, P), size, "R" if P == "FR" else "L")
+        elif P == "BK": out[P] = BKM.clearances(outline(size, P), size)
         else: out[P] = SV.clearances(outline(size, P), size, P)
     return out
 
-def mins(P): return F.MIN if P in ("FR", "FL") else SV.MIN
+def mins(P): return F.MIN if P in ("FR", "FL") else BKM.MIN if P == "BK" else SV.MIN
 
 def worst():
     """[(label, min distance over all sizes, required, ok)] per keep-out kind"""
@@ -32,7 +33,7 @@ def worst():
     for sz in kccore.SIZES:
         for P, d in clearances(sz).items():
             for k, v in d.items():
-                lab = f"{'fronts' if P in ('FR', 'FL') else 'sleeves'}: {k}"
+                lab = f"{'fronts' if P in ('FR', 'FL') else 'back' if P == 'BK' else 'sleeves'}: {BKM.LABEL.get(k, k) if P == 'BK' else k}"
                 if lab not in agg or v < agg[lab][0]: agg[lab] = (v, mins(P)[k])
     return [(k, v, m, v >= m - 0.5) for k, (v, m) in agg.items()]
 

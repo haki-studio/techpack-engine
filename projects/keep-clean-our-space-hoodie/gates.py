@@ -203,7 +203,9 @@ for r in RES["badges"]["02"]["yellow"]["rows"]:
 RES["not_traced"].append("02 border stars at the side / armhole fold of the render (x ~887 px) are cut off by the fold there; stitched whole (rows 'cut by fold in render', A15)")
 RES["not_traced"] += ["01 + 02 text: glyph SHAPES are the fonts' (Zen Maru Gothic Bold, Nunito 1000), each glyph registered to the mockup glyph (position, angle, size); rows marked 'text (font-set)'",
                       "05 field: wash-crackle highlights in the render's fabric (irregular blobs / streaks) are masked from the star reference (A15), counts in wash_highlights_masked",
-                      "05 sleeves: back halves seeded at the mockup density (no reference shows them); front halves mapped through the sleeve u/v model (not gated)"]
+                      "05 sleeves: back halves seeded at the mockup density (no reference shows them); front halves mapped through the sleeve u/v model (not gated)",
+                      "06 back (Rev H, founder 21 Oct): stars only, SEEDED at the front field density + spacing, each a copy of a front field star; no back view exists, so generated, not traced (not gated) [PROPOSED]",
+                      "Rev H: glow halo + star haze dropped (founder 21 Oct); the render's teal glow round the badges stays masked from the references (A15) and is not stitched"]
 
 def summ(d):
     rows = d["rows"]; return dict(n=len(rows), ok=sum(r["state"] == "ok" for r in rows), moved=sum(r["state"] == "moved" for r in rows),
@@ -217,3 +219,9 @@ if not ART_MODE: json.dump(RES, open("gates.json", "w"), indent=1, default=float
 else: json.dump(RES, open("out/ref/gates_art.json", "w"), indent=1, default=float)
 for k, s in RES["summary"].items(): print(f"{k:16s}", s)
 print("not traced:", RES["not_traced"]); print("BLOCKING", RES["blocking"])
+# review PR #31 round 2: a failing gate must stop the pack build (Rev E shipped with BLOCKING 1 because only a line was
+# printed). Binding mode exits 3 and names every failing row; build_all.py runs this with check=True.
+if not ART_MODE and RES["blocking"]:
+    for key, s in RES["summary"].items():
+        if s["fail"] or s["gaps_ge25"]: print("GATE FAIL:", key, s)
+    sys.exit(3)

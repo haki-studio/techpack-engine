@@ -12,7 +12,7 @@ import shapely
 from shapely.geometry import Point, LineString, box, Polygon
 from shapely.ops import unary_union
 from shapely import affinity
-import front as F, sleeve as SV, drum, dst2
+import front as F, sleeve as SV, back as BKM, drum, dst2
 import kcsatin as KS
 kccore.patch_dst2()
 
@@ -133,6 +133,14 @@ def place_sleeve(size, P):
     kept, dropped, nudged, reloc = place_stars(ITEMS[P], clip, None, lambda c: (c.x*kx, top_s + (c.y - top_m)*ky), out, far=14.0)
     return out, clip, dict(stars=kept, stars_dropped=dropped, stars_nudged=nudged, stars_relocated=reloc)
 
+def place_back(size, P="BK"):
+    """Rev H back star field: positions follow the back panel (width + neck -> hem length ratio), star size constant"""
+    clip = BKM.clip_for(size).buffer(-0.4)
+    kx, ky, top_m, top_s = BKM.ratio(size)
+    out = []
+    kept, dropped, nudged, reloc = place_stars(ITEMS[P], clip, None, lambda c: (c.x*kx, top_s + (c.y - top_m)*ky), out, far=14.0)
+    return out, clip, dict(stars=kept, stars_dropped=dropped, stars_nudged=nudged, stars_relocated=reloc)
+
 def clip_runs(vis, clip):
     """stipple runs (glow, haze) carry their own stitch points: cut them at the clip (keep-outs), one region per inside
     piece, geometry = the piece's own footprint (one polygon, so make_pattern emits it once)."""
@@ -196,7 +204,7 @@ def knock_under_puff(vis, keep=None):
 def build(size):
     t0 = time.time(); res = {"info": dict(size=size, grade=kccore.GRADE[size][0], scale=kccore.GRADE[size][1])}
     for P in kccore.PIECES:
-        its, clip, info = (place_front if P in ("FR", "FL") else place_sleeve)(size, P)
+        its, clip, info = (place_front if P in ("FR", "FL") else place_back if P == "BK" else place_sleeve)(size, P)
         vis = visible(its, clip)
         vis = dst2.clean_vis([v for v in vis if not v.get("nok")]) + [v for v in vis if v.get("nok")]
         vis = clip_runs(vis, clip)
@@ -219,8 +227,8 @@ def flat_png(size, res, path, ppm=2.0):
     g, mt = F.pieces(size)
     sl = {P: SV.piece(size, P) for P in ("SR", "SL")}
     # fronts in place; sleeves drawn beside them (their own pattern coords, offset)
-    OFF = {"SR": (-640, 120), "SL": (640, 120)}
-    x0, y0, x1, y1 = -930, -130, 930, 620
+    OFF = {"SR": (-640, 120), "SL": (640, 120), "BK": (0, 760)}
+    x0, y0, x1, y1 = -930, -130, 930, 1380
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{x0} {y0} {x1-x0} {y1-y0}" width="{int((x1-x0)*ppm)}" height="{int((y1-y0)*ppm)}">',
          f'<rect x="{x0}" y="{y0}" width="{x1-x0}" height="{y1-y0}" fill="#FFFFFF"/>']
     for code in ("F01", "F02"):
@@ -232,12 +240,15 @@ def flat_png(size, res, path, ppm=2.0):
         dx, dy = OFF[P]
         o.append(f'<g transform="translate({dx} {dy})"><path d="{geom_to_path(sl[P].sew_poly())}" fill="{kccore.FABRIC}" stroke="#555" stroke-width="0.8"/>'
                  f'<path d="{geom_to_path(SV.clip_for(size, P))}" fill="none" stroke="#FF4040" stroke-width="0.4" stroke-dasharray="2 1.5"/></g>')
+    bk = BKM.piece(size); dx, dy = OFF["BK"]
+    o.append(f'<g transform="translate({dx} {dy})"><path d="{geom_to_path(bk.sew_poly())}" fill="{kccore.FABRIC}" stroke="#555" stroke-width="0.8"/>'
+             f'<path d="{geom_to_path(BKM.clip_for(size))}" fill="none" stroke="#FF4040" stroke-width="0.4" stroke-dasharray="2 1.5"/></g>')
     for P in kccore.PIECES:
         dx, dy = OFF.get(P, (0, 0))
         o.append(f'<g transform="translate({dx} {dy})">')
         for r in res[P]: o.append(f'<path d="{geom_to_path(r["geom"])}" fill="{HEX[r["col"]]}" fill-rule="evenodd"/>')
         o.append('</g>')
-    o.append(f'<text x="{x0+8}" y="{y0+20}" font-size="16" font-family="Liberation Sans" fill="#333">size {size} · grade {res["info"]["grade"]} ({res["info"]["scale"]*100:.0f} %) · sleeves shown beside the fronts (pattern coords; front half toward the body)</text>')
+    o.append(f'<text x="{x0+8}" y="{y0+20}" font-size="16" font-family="Liberation Sans" fill="#333">size {size} · grade {res["info"]["grade"]} ({res["info"]["scale"]*100:.0f} %) · sleeves beside the fronts (pattern coords; front half toward the body), back below (back view, stars only)</text>')
     o.append('</svg>')
     cairosvg.svg2png(bytestring="".join(o).encode(), write_to=path)
 

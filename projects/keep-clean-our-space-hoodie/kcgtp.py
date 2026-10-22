@@ -44,15 +44,28 @@ ART = pickle.load(open("art_M.pkl", "rb"))
 def area_m2(codes, g): return sum(PT.cut_poly(g[c]).area * qty_of(g[c]) for c in codes) / 1e6
 
 # ---------------------------------------------------------------- flats with the stitch render in place
-def _sleeve_affine(Fl, P):
-    """S01/S02 pattern coords -> flat sleeve (front view). Centre line -> outer sleeve edge, underarm front -> inner edge."""
+def _sleeve_affine(Fl, P, back=False):
+    """S01/S02 pattern coords -> flat sleeve (front view; back=True: back view, underarm BACK -> inner edge)."""
     g, _ = F_.pieces("M"); pc = g["S01"].sew_poly(); b = pc.bounds; ycap, ycuff = b[1], b[3]
+    if back: return _sleeve_affine_back(Fl, P, pc, ycap, ycuff)
     s = 1 if P == "SL" else -1                         # flat +x = wearer's left
     sp = np.array([s*Fl.sp[0], Fl.sp[1]]); co = np.array([s*Fl.cs_out[0], Fl.cs_out[1]]); ci = np.array([s*Fl.cs_in[0], Fl.cs_in[1]])
     Wc = float(np.interp(ycuff - 1, *zip(*[(y, pc.intersection(__import__("shapely").geometry.LineString([(0, y), (400, y)])).bounds[2]) for y in np.linspace(0, ycuff - 1, 20)])))
     xs = -1 if P == "SL" else 1                        # front half: SL x < 0, SR x > 0
     src = np.array([[0, ycap], [0, ycuff], [xs*Wc, ycuff]], float); dst = np.array([sp, co, ci])
     A = np.linalg.solve(np.c_[src, np.ones(3)], dst)   # 3x2
+    return [A[0, 0], A[1, 0], A[0, 1], A[1, 1], A[2, 0], A[2, 1]]
+
+def _sleeve_affine_back(Fl, P, pc, ycap, ycuff):
+    """back view (Rev H): flat +x = wearer's RIGHT, so SR sits at +x; the visible half is the sleeve's back half (S01 x < 0,
+    S02 x > 0), its back underarm seam -> the flat's inner edge."""
+    import shapely
+    s = 1 if P == "SR" else -1
+    sp = np.array([s*Fl.sp[0], Fl.sp[1]]); co = np.array([s*Fl.cs_out[0], Fl.cs_out[1]]); ci = np.array([s*Fl.cs_in[0], Fl.cs_in[1]])
+    Wc = float(np.interp(ycuff - 1, *zip(*[(y, -pc.intersection(shapely.geometry.LineString([(0, y), (-400, y)])).bounds[0]) for y in np.linspace(0, ycuff - 1, 20)])))
+    xs = -1 if P == "SR" else 1                        # back half: SR x < 0, SL x > 0
+    src = np.array([[0, ycap], [0, ycuff], [xs*Wc, ycuff]], float); dst = np.array([sp, co, ci])
+    A = np.linalg.solve(np.c_[src, np.ones(3)], dst)
     return [A[0, 0], A[1, 0], A[0, 1], A[1, 1], A[2, 0], A[2, 1]]
 
 def flat_png(back=False, ppm=3.0, art=True):
@@ -62,6 +75,22 @@ def flat_png(back=False, ppm=3.0, art=True):
     svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{b[0]-pad} {b[1]-pad} {W} {Hh}" width="{int(W*ppm)}" height="{int(Hh*ppm)}">'
            f'<rect x="{b[0]-pad}" y="{b[1]-pad}" width="{W}" height="{Hh}" fill="#fff"/>{body}</svg>')
     im = Image.open(io.BytesIO(cairosvg.svg2png(bytestring=svg.encode()))).convert("RGBA")
+    if art and back:
+        # Rev H: the back DST (B01) read back at flat back coords (y + back neck drop) + the sleeves' back halves
+        bbx = (b[0]-pad, b[1]-pad, b[2]+pad, b[3]+pad); emb = Image.new("RGBA", im.size, (0, 0, 0, 0))
+        base = f"out/stitch/M/HAKI_{kccore.SHORT}_BK_M"; o_ = DV.origin_of(base)
+        emb = Image.alpha_composite(emb, DV.image([base], bbx, ppm, origins=[(o_[0], o_[1] + Fl.bnd)], bg=None).resize(im.size))
+        for P in ("SR", "SL"):
+            M = _sleeve_affine(Fl, P, back=True); base = f"out/stitch/M/HAKI_{kccore.SHORT}_{P}_M"
+            g_, _ = F_.pieces("M"); sb = g_[kccore.PIECE_CODE[P]].sew_poly().bounds; sbb = (sb[0]-5, sb[1]-5, sb[2]+5, sb[3]+5); sp_ = ppm * 1.4
+            src = DV.image([base], sbb, sp_, bg=None)
+            sa = np.array(src); xs_ = sbb[0] + (np.arange(sa.shape[1]) + 0.5) / sp_
+            front = (xs_ > 0) if P == "SR" else (xs_ < 0); sa[:, front, 3] = 0; src = Image.fromarray(sa)
+            A = np.array([[M[0], M[1], M[4]], [M[2], M[3], M[5]], [0, 0, 1]]); Ai = np.linalg.inv(A)
+            T1 = np.array([[1/ppm, 0, bbx[0]], [0, 1/ppm, bbx[1]], [0, 0, 1]]); T2 = np.array([[sp_, 0, -sbb[0]*sp_], [0, sp_, -sbb[1]*sp_], [0, 0, 1]])
+            K = T2 @ Ai @ T1
+            emb = Image.alpha_composite(emb, src.transform(im.size, Image.AFFINE, tuple(K[:2].ravel()), resample=Image.BILINEAR))
+        im = Image.alpha_composite(im, emb)
     if art and not back:
         # the written DST files read back (dstview, transparent): fronts shifted to flat coords, sleeves warped onto the
         # flat sleeve with the pattern -> flat affine
@@ -98,16 +127,16 @@ def p_cover(index):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>', t(14, 22, "HAKI STUDIOS", 3.0, 700, MUTED), t(14, 34, NAME, 7.0, 700),
          t(14, 41.5, f"Style {STYLE} · {REV} · {DATE} · sizes XS–3XL · base size M · block zip-hoodie (Drum Island body + hood) · cm unless marked mm", 2.4, 400, MUTED),
          f'<line x1="14" y1="45" x2="{SW-14}" y2="45" stroke="{INK}" stroke-width="0.4"/>']
-    fr, _ = flat_png(False); bk, _ = flat_png(True, art=False)
+    fr, _ = flat_png(False); bk, _ = flat_png(True)
     tag, h = img_tag(fr, 14, 50, 100); o.append(tag); o.append(t(14, 50 + h + 4, "FRONT — badges 01–04 + 05 star field (DST read back, size M)", 2.0, 700))
-    tag, h2 = img_tag(bk, 118, 50, 80); o.append(tag); o.append(t(118, 50 + h2 + 4, "BACK + HOOD — artwork to follow [MISSING] (sleeve backs carry stars: E05)", 2.0, 700)); o.append(prop(118, 50 + h2 + 7.5, "back design planned: founder will generate a back view", 1.7))
+    tag, h2 = img_tag(bk, 118, 50, 80); o.append(tag); o.append(t(118, 50 + h2 + 4, "BACK — star field only (E06) + sleeve backs (E05); hood plain", 2.0, 700)); o.append(prop(118, 50 + h2 + 7.5, "back star layout seeded from the front field (founder 21 Oct)", 1.7))
     ix = 206; o.append(t(ix, 56, "CONTENTS", 2.8, 700)); y = 62
     for name, pg in index: o.append(t(ix, y, name, 1.85)); o.append(t(SW - 14, y, str(pg), 1.85, 600, MUTED, "end")); y += 3.7
     y += 3; o.append(t(ix, y, "KEY SPECS", 2.4, 700)); y += 4.6
     for a, b_, p in [("Body + sleeve", "Drum Island jacket — approved fit, unchanged", False), ("Hood", "3 panels, sherpa-lined (cream), no drawcord", True),
                      ("Hem / cuffs", f"self fabric + elastic ({HD.hcm('S','M')/10:.1f} / {HD.hcm('T','M')/10:.1f} cm)", True), ("Zip", "2-way separating, YKK #5 metal, brass", True),
                      ("Shell", "12 oz cotton duck, washed black", True), ("Lining", "plaid flannel body · taffeta sleeves · sherpa hood", True),
-                     ("Embroidery", f"5 elements, 4 pieces, {len({c for p in CUR for c in CUR[p]['colours']})} threads, 3D puff badges (G pages)", False),
+                     ("Embroidery", f"{len(kccore.ELEMENTS)} elements, {len(kccore.PIECES)} pieces, {len({c for p in CUR for c in CUR[p]['colours']})} threads, 3D puff badges (G pages)", False),
                      ("Pattern", "XS–3XL, DXF (AAMA) + 1:1 plot", False)]:
         o.append(t(ix, y, a, 1.9, 400, MUTED)); o.append(t(ix + 23, y, b_, 1.8, 600, PROP if p else INK)); y += 3.7
     y += 3
@@ -123,7 +152,7 @@ NOTES = [("1", "Hood: 3 panels — side pair + 10 cm centre panel. Washed black 
          ("4", f"Welt pockets at the mockup's steep slash position ({F_.WELT['cx']/10:.1f} cm from CF, {F_.WELT['cy']/10:.1f} cm below the neck, {F_.WELT['angle']:.0f}°, size M), Drum Island welt 1.4 × 13; embroidery keeps {F_.KEEP_WELT:.0f} mm clear (DST-checked, T7).", True),
          ("5", f"Hem band: self fabric, {HD.hcm('S','M')/10:.1f} cm finished, folded; {HD.EL_HEM_W/10:.0f} cm elastic, flat {HD.FLAT/10:.0f} cm each side of the zip. Not embroidered.", True),
          ("6", f"Cuff band: self fabric, {HD.hcm('T','M')/10:.1f} cm finished, folded, closed into a loop. Not embroidered (stars stop 10 mm above the cuff seam).", True),
-         ("7", "Embroidery: 01 JP + 03 CN badges (FR), 02 EN + 04 KR badges (FL), 05 star field (FR, FL, both full sleeves): direct embroidery on the cut panels before any seam; 3D puff on all four badges, field stars flat (G pages); back + hood artwork to follow [MISSING].", False),
+         ("7", "Embroidery: 01 JP + 03 CN badges (FR), 02 EN + 04 KR badges (FL), 05 star field (FR, FL, both full sleeves), 06 back star field (B01, stars only): direct embroidery on the cut panels before any seam; 3D puff on all four badges, all stars flat (G pages); hood plain.", False),
          ("8", "Lining: cotton flannel body (plaid, as mockup), polyester taffeta sleeves; hood fully lined in sherpa. Labels on the back neck facing.", True)]
 
 def p_flats():
@@ -278,7 +307,7 @@ def p_bom():
             ("Zip", f"YKK #5 metal, brass, 2-way separating, {zip_l/10:.0f} cm (M)", "1", True),
             ("Elastic — hem", f"{HD.EL_HEM_W/10:.0f} cm woven elastic, {mM['el_hem']/10:.1f} cm (M)", "1", True),
             ("Elastic — cuff", f"{HD.EL_CUFF_W/10:.1f} cm woven elastic, {(mM['el_cuff']+15)/10:.1f} cm (M)", "2", True),
-            ("Embroidery thread", f"40wt polyester, {len(cols)} colours over the jacket, ≤ 12 per file (G3) — FR + FL + SR + SL", f"{sum(CUR[p]['stitches'] for p in CUR):,} stitches (M)", True),
+            ("Embroidery thread", f"40wt polyester, {len(cols)} colours over the jacket, ≤ 12 per file (G3) — FR + FL + SR + SL + BK", f"{sum(CUR[p]['stitches'] for p in CUR):,} stitches (M)", True),
             ("3D puff foam", "3 mm embroidery foam, black: FR one sheet (01 + 03), FL one sheet (02 + 04 ring)", "2 sheets", True),
             ("Embroidery backing", f"2.5 oz cutaway, black, 100 cm wide — {hoops} hoopings per jacket (G6), each split file + 30 per side", f"{BACKING:.2f} m", True),
             ("Thread — seams", "Coats Epic 120 (Tex 27), black — estimate from the block, factory to confirm", "~ 450 m", True), ("Thread — topstitch", "Coats Gral 40 (Tex 60), tonal charcoal — estimate from the block", "~ 140 m", True),
@@ -298,24 +327,24 @@ def p_bom():
 def p_placement():
     o = H("EMBROIDERY PLACEMENT ON THE PATTERN — every size, every keep-out", "Measured on each size's drafted pattern pieces (sew lines) from the per-size art (emb_place.py). mm. Min = keep-out.", "T7")
     pieces = kccore.PIECES
-    o.append(t(12, 31, "CLEARANCE TO EACH KEEP-OUT (mm) — fronts: CF zip, armhole, shoulder, side, hem band, hood neck, welt; sleeves: cap, underarm front/back, cuff band", 1.8, 700))
-    y = 37; allok = True
+    o.append(t(12, 31, "CLEARANCE TO EACH KEEP-OUT (mm) — fronts: CF zip, armhole, shoulder, side, hem band, hood neck, welt; sleeves: cap, underarm front/back, cuff band; back: hood neck, shoulders, armholes, sides, hem band", 1.8, 700))
+    y = 37; allok = True; rh = 3.2 if len(pieces) <= 4 else 2.75
     for P in pieces:
         mn = EP.mins(P); keys = list(mn)
-        o.append(t(12, y, f"{P} — {kccore.PIECE_NAME[P]} ({kccore.PIECE_CODE[P]})", 1.8, 700)); y += 3.6
+        o.append(t(12, y, f"{P} — {kccore.PIECE_NAME[P]} ({kccore.PIECE_CODE[P]})", 1.8, 700)); y += 3.3
         cx = [12] + [32 + 24*i for i in range(len(keys))]
         o.append(t(cx[0], y, "Size", 1.5, 700, MUTED))
         for i, k in enumerate(keys): o.append(t(cx[i + 1], y, f"{k} (min {mn[k]:.0f})", 1.45, 700, MUTED))
         y += 3.4
         for j, sz in enumerate(SIZES):
             c = EP.clearances(sz)[P]
-            if j % 2 == 0: o.append(f'<rect x="11" y="{f(y - 2.4)}" width="{SW - 22}" height="3.2" fill="{ALT}"/>')
+            if j % 2 == 0: o.append(f'<rect x="11" y="{f(y - 2.2)}" width="{SW - 22}" height="{rh}" fill="{ALT}"/>')
             o.append(t(cx[0], y, sz, 1.45, 700))
             for i, k in enumerate(keys):
                 ok = c[k] >= mn[k] - 0.3; allok &= ok
                 o.append(t(cx[i + 1], y, f"{c[k]:.1f}", 1.45, 600 if not ok else 400, GREEN if ok else RED))
-            y += 3.2
-        y += 2.2
+            y += rh
+        y += 1.6
     o.append(t(12, y + 1, f"Result: {'ALL KEEP-OUTS PASS on every size' if allok else 'KEEP-OUT FAILURE — see red'}.", 2.0, 700, GREEN if allok else RED))
     try:
         wc = json.load(open("welt_check.json")); worst = min(v for sz in wc for v in wc[sz].values())
@@ -335,20 +364,22 @@ def p_fit():
               "Hem band: gathers even, none in the 6 cm next to the zip; stars + KR oval stay ≥ 10 mm above the band seam.",
               "Cuff band: gathers even; sleeve stars end ≥ 10 mm above the cuff seam.",
               "Welts at the slash position (58°): pocket bags clear the CN badge 03 + KR oval 04; no stitch within 6 mm of a welt (T7).",
-              "Embroidery: puff letters + dots domed and clean at the edges (no foam showing), no puckering round the dense badges; glow halo soft.",
+              "Embroidery: puff letters + dots domed and clean at the edges (no foam showing) — incl. the thin 2.5–3.0 mm puff strokes (F2); no puckering round the dense badges.",
+              "Back: stars ≥ 10 mm below the hood seam and above the hem band, ≥ 15 mm from side seams + armholes; even spread (E06).",
               "Same as the jacket (should already pass): chest, shoulder, armhole, sleeve pitch, body length."]
     o.append(t(12, 34, "CHECK ON THE SAMPLE", 2.4, 700)); y = 40
     for c in checks:
         o.append(f'<rect x="12" y="{f(y - 2.2)}" width="2.6" height="2.6" fill="none" stroke="{INK}" stroke-width="0.25"/>'); o.append(t(16.5, y, c, 1.7)); y += 4.2
     y += 4; o.append(t(12, y, "OPEN QUESTIONS — confirm before the sample", 2.4, 700)); y += 6
-    qs = ["1. Back + hood: artwork to follow [MISSING] — the founder will generate a back view; nothing is embroidered there in this revision.",
-          "2. Star haze (soft glow round the badges / big sparkles): pending the founder, kept as in Rev C (G4).",
+    qs = ["1. Back star layout (E06): seeded from the front field logic (density + spacing, front star copies) — confirm, or send a back view.",
+          "2. Factory (Mandy, F1/F2): can the thin puff strokes (2.5–3.0 mm, list G4) puff cleanly? Confirm on the strike-off; else flat.",
           "3. Hood size 36 × 26 cm (M) incl. sherpa allowance, no drawcord; hem / cuff bands 5.5 / 5 cm with elastic (zip-hoodie block, proposed).",
           "4. Zip: 2-way separating YKK #5 metal, antique brass (mockup shows two pullers).",
           "5. Shell: 12 oz washed black duck, pre-washed before embroidery; lining: plaid flannel (body), taffeta (sleeves), cream sherpa (hood).",
           f"6. Welts at the mockup's slash position ({F_.WELT['cx']/10:.1f} cm from CF, {F_.WELT['cy']/10:.1f} cm below the neck, {F_.WELT['angle']:.0f}°) via the block's welt override.",
           "7. Sample size M first (the blank fit of the hoodie block is still pending); then the size set.",
           "Closed 20 Oct (founder): text 宇宙をきれいに · KEEP CLEAN OUR SPACE · 不要世界污染 (Simplified 污) · 우리들 소중한 우주!; puff on all signs; 12-colour plan stands; no extra text.",
+          "Closed 21 Oct (founder): back = stars only in the front's style, hood plain · glow halo + star haze dropped · puff kept on the thin strokes · CN weight 800 kept.",
           "Closed 19 Oct: hood block = zip-hoodie block (engine/hoodie.py, elastic hem + cuff bands) — founder decision; welt override in the engine."]
     for q in qs: o.append(KD.auto(12, y, q, 1.7, PROP)); y += 4.2          # CJK runs as font outlines
     return o
@@ -363,9 +394,19 @@ def p_revisions():
             ("Rev C", "20 Oct 2026", f"Factory answers (19 Oct): hoop splits for the {KD.FR_S} frame (factory.json) instead of the assumed 360 × 360, F1 updated; 3D puff: foam on its own "
                             f"machine stop, flat glow cut back under the puff to a {kccore.CUT_KEEP_MM:.0f} mm edge band (house rule 6, checked on every DST); every file rebuilt from the "
                             "current art (the Rev B files predated the last sparkle fix); glow + haze stipple no longer bridge long hops with straight lines (up to 57 mm in Rev B; trims reported); page checks (sleeve flat front half, CJK text as outlines, thread estimates flagged)."),
-            ("Rev D", DATE, f"Founder answers (20 Oct): 3D puff on every sign part that is not a background star (CN text in Noto Sans SC 800, KR oval ring, JP dot); strokes / parts under {kccore.PUFF_MIN_MM:.1f} mm stay flat "
-                            "and are listed with their measured width (G4: KR text, a few thin strokes, 1 JP bar, the JP 4-point sparkle); CN text 不要世界污染 (Simplified 污); KR text approved; "
-                            "back + hood = artwork to follow [MISSING]; answered questions removed; every stitch file, gate and page rebuilt.")]
+            ("Rev D", "20 Oct 2026", f"Founder answers (20 Oct): 3D puff on every sign part that is not a background star (CN text in Noto Sans SC 800, KR oval ring, JP dot); strokes / parts under {kccore.PUFF_MIN_MM:.1f} mm stay flat "
+                            "and are listed with their measured width (G4: KR text, a few thin strokes, 1 JP bar, the JP 4-point sparkle); CN text with the Simplified form of the 4th glyph (wording on E03); KR text approved; "
+                            "back + hood = artwork to follow [MISSING]; answered questions removed; every stitch file, gate and page rebuilt."),
+            ("Rev E", "21 Oct 2026", "Review fix (PR #31): JP top star = dark centre pit inside a white satin ring + white glint on the upper-left arm (mockup); "
+                            "JP bottom star = one saturated red (no light facets) with a sharper star-shaped pit at the measured 0.45 R; sample tracker filled; files + pages rebuilt."),
+            ("Rev F", DATE, "Review fix 2 (PR #31): JP top star re-traced - all five arms gold (slimmer, sharp tips), dark pit in a thin white ring, white glint as a streak "
+                            "through the centre into the upper-left notch (mockup); the A14 gate passes on the shipped DST (was FAIL in Rev E); the pack build now stops on any failing gate; files + pages rebuilt."),
+            ("Rev G", DATE, "Review fix (PR #38): G1 cover caption set the CN glyph as a missing-glyph box; now drawn as a font outline, and every page build stops on CJK in plain text (tofu guard). "
+                            "Stitch files unchanged from Rev F (same counts); pages, compare sheets and zip rebuilt."),
+            ("Rev H", DATE, "Founder answers (21 Oct): BACK = embroidered stars only in the front's style (06, B01; layout seeded from the front field, proposed), hood plain; "
+                            "glow halo + star haze DROPPED (Glow green + Star haze threads removed); puff kept on the 2.5-3.0 mm strokes, asked of the factory (F1/F2); CN weight 800 kept. Every stitch file, gate and page rebuilt."),
+            ("Rev I", DATE, "Founder defect (21 Oct, EN badge FL M): small flat satins sewn on top after the foam at P, R, S, A, E now sew WITH the puff stroke they join (no flat piece left inside a puff glyph, "
+                            "same for JP / CN); new gate on every DST (frag gate: 0 at every size). Sliver star specks (e.g. right of CLEAN) sew as the house dot. Every stitch file, gate and page rebuilt.")]
     y = 36
     for rv, dt, ch in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(36, y, dt, 1.7))
@@ -377,10 +418,20 @@ def p_revisions():
         for j, l in enumerate(lines): o.append(t(60, y + j * 3.2, l, 1.7))
         y += 3.2 * len(lines) + 4
     y += 4; o.append(t(12, y, "SAMPLE TRACKER", 2.4, 700)); y += 5
-    for i, sname in enumerate(["Embroidery strike-off, size M (F1)", "First sample, size M (hoodie block fit + embroidery)", "Size set", "Approved for bulk"]):
+    # columns: what is sampled | files / basis | sent | received | result | next step  (dates + result filled in as samples move)
+    cols = [(13, "STAGE"), (70, "FILES / BASIS"), (150, "SENT"), (172, "RECEIVED"), (196, "RESULT"), (222, "NEXT STEP")]
+    for x, h in cols: o.append(t(x, y, h, 1.6, 700))
+    y += 4
+    rows = [("Embroidery strike-off, size M (F1)", f"FR / FL / SR / SL / BK size M, {kccore.REV_EMB} (DST + PES)", "not sent", "—", "pending",
+             "Factory sews M on the washed duck; answers F1"),
+            ("First sample, size M", "Hoodie block M (T3/T4) + embroidery M", "not sent", "—", "pending", "After strike-off approval; fit + puff check (T8)"),
+            ("Size set", "XS–3XL pattern + per-size stitch files", "not sent", "—", "pending", "After first-sample comments"),
+            ("Approved for bulk", "Signed-off sample + this pack revision", "—", "—", "pending", "Founder sign-off")]
+    for i, row in enumerate(rows):
         yy = y + i * 9
         o.append(f'<rect x="11" y="{f(yy - 4)}" width="{SW - 22}" height="9" fill="{ALT if i % 2 == 0 else "#FFFFFF"}" stroke="#DDD" stroke-width="0.2"/>')
-        o.append(t(13, yy + 1, sname, 1.8, 600))
+        for (x, _), v in zip(cols, row):
+            o.append(t(x, yy + 1, v, 1.6 if x > 13 else 1.8, 600 if x == 13 else 400))
     return o
 
 PAGES = ["T1 Cover", "T2 Flats + construction", "T3 Size chart + measurement check", "T4 Pattern pieces + cut list", "T5 Hood + bands detail",
@@ -392,7 +443,7 @@ def build(emb_pdf, emb_pages, out_pdf):
     pages = [p_cover(index), p_flats(), p_pom(), p_pieces(), p_hood(), p_bom(), p_placement(), p_fit(), p_revisions()]
     w = PdfWriter(); os.makedirs("out/pages", exist_ok=True)
     for i, pg in enumerate(pages, 1):
-        svg = doc(pg); pdf = f"out/pages/T{i}.pdf"
+        import tofu; svg = tofu.check(doc(pg), f"T{i}"); pdf = f"out/pages/T{i}.pdf"
         cairosvg.svg2pdf(bytestring=svg.encode(), write_to=pdf)
         cairosvg.svg2png(bytestring=svg.encode(), write_to=f"out/pages/prev_T{i}.png", output_width=2400)
         w.append(PdfReader(pdf))

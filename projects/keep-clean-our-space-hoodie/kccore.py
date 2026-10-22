@@ -15,12 +15,10 @@ KC_PAL = {   # key: (hex, name, use)
     "kc_red":   ("#EC3135", "Signal red",    "CN text, JP hearts + red bars + red star"),
     "kc_blue":  ("#1F8DE3", "Electric blue", "JP blue bars, CN blue dots"),
     "kc_white": ("#F1F0EA", "Star white",    "star speckles, KR text, CN ring sparkles"),
-    "kc_glow":  ("#1E5B4F", "Glow green",    "soft neon halo round the JP + EN letters and the CN ring dots"),
     # Rev B (review item 3): lighter rim / facet threads for the domed puff look, haze under big sparkles (item 9)
     "kc_mint_lt": ("#B4F5E6", "Mint tint",    "lighter rim of the mint puff text, bars and dots"),
     "kc_blue_lt": ("#73C4FF", "Blue tint",    "lighter rim of the blue bars and CN blue dots"),
     "kc_red_lt":  ("#FF8C84", "Red tint",     "lighter rim / facets of the red hearts, bars and star"),
-    "kc_haze":    ("#3A4357", "Star haze",    "soft glow under the big sparkles"),
     "kc_lemon_lt": ("#FFF4B8", "Lemon tint",  "lighter rim of the lemon puff letters (CLEAN) and lemon bars"),
 }
 KC_KEYS = list(KC_PAL)
@@ -28,9 +26,23 @@ FABRIC = "#191C24"          # washed black duck (mockup median #13161D, lifted f
 for k, v in KC_PAL.items():
     motifs2.PAL[k] = v; motifs2.HEX[k] = v[0]; motifs.HEX[k] = v[0]
 
+# Rev H: the dropped threads stay REGISTERED (hex + name) so old fixtures / test stops still resolve, but they are not on
+# this jacket's thread list (KC_KEYS) and no region uses them (scene builds no glow / haze: kccore.GLOW False)
+LEGACY_PAL = {"kc_glow": ("#1E5B4F", "Glow green", "Rev A-G only: glow halo (dropped 21 Oct)"),
+              "kc_haze": ("#3A4357", "Star haze", "Rev B-G only: haze under the sparkles (dropped 21 Oct)")}
+for k, v in LEGACY_PAL.items():
+    motifs2.PAL[k] = v; motifs2.HEX[k] = v[0]; motifs.HEX[k] = v[0]
+# specbase builds its thread table (TH) at import from the palette: if it was imported before this module (another test
+# first), add this project's keys, so a written PES can name every thread (ENGINE_NOTES 29)
+_sb = sys.modules.get("specbase")
+if _sb is not None and hasattr(_sb, "TH"):
+    _miss = [k for k in list(KC_PAL) + list(LEGACY_PAL) if k not in _sb.TH]
+    if _miss: _sb.TH.update(tech.thread_table(_miss))
+
 # stop order inside a layer
-KC_ORDER = ["kc_glow", "kc_haze", "kc_white", "kc_blue", "kc_blue_lt", "kc_red", "kc_red_lt", "kc_gold", "kc_lemon", "kc_lemon_lt", "kc_mint", "kc_mint_lt"]
-tech.COLOUR_ORDER = KC_ORDER + [c for c in tech.COLOUR_ORDER if c not in KC_ORDER]
+# Rev H (founder 21 Oct): the glow halo + star haze are dropped -> Glow green + Star haze threads removed (10 threads)
+KC_ORDER = ["kc_white", "kc_blue", "kc_blue_lt", "kc_red", "kc_red_lt", "kc_gold", "kc_lemon", "kc_lemon_lt", "kc_mint", "kc_mint_lt"]
+tech.COLOUR_ORDER = list(LEGACY_PAL) + KC_ORDER + [c for c in tech.COLOUR_ORDER if c not in KC_ORDER and c not in LEGACY_PAL]
 
 # ---------------------------------------------------------------- region codes
 # code -> (name, stitch, angle rule, density, stitch length, underlay, pull comp, notes)
@@ -60,7 +72,7 @@ KC_RULES = {
  "PF-TXC": ("Text stroke column, puff",   "Satin column over foam", "across the stroke",    "0.20 zz",  "—",    "none (foam)",           "0.30", "core under the rim"),
  "PF-RIM": ("Puff rim (lighter thread)",  "Satin column over foam", "across the rim",       "0.20 zz",  "—",    "none (foam)",           "0.15", "0.85 wide, on the edge"),
  "PF-DOT": ("Domed dot core, puff",       "Satin column (disc)", "parallel, 35°",           "0.20 zz",  "—",    "none (foam)",           "0.25", "staggered splits"),
- "PF-OVAL":("Oval ring, 3D puff",        "Satin column over foam, closed", "across the ring", "0.20 zz", "—",   "none (foam)",           "0.30", "5.0 wide, Rev D"),
+ "PF-OVAL":("Oval ring, 3D puff",        "Satin column over foam, closed", "across the ring", "0.20 zz", "—",   "none (foam)",           "0.30", "5.0 wide, founder 20 Oct"),
  "PF-OVHL":("Oval highlight, puff",        "Satin column over foam, closed", "across the ring", "0.20 zz", "—",   "none (foam)",           "0.10", "1.1 wide, on top of the ring"),
  "ORN":    ("Ornament (KR mark, accents)", "Satin column",      "across the stroke",        "0.25 zz",  "—",    "none",                  "0.10", "1.0–1.2 wide"),
 }
@@ -69,6 +81,8 @@ tech.LAYER_NAMES.update({20: "Glow halo", 21: "Star speckles", 22: "Spark bars +
                          25: "Oval ring", 26: "Text (flat)", 27: "Text (puff)", 28: "Faces / highlights"})
 
 sheet.FONT = "Liberation Sans"
+# Rev H (founder 21 Oct): "drop it entirely" - no stipple glow round the badges, no haze under the sparkles
+GLOW = False
 
 # column satin is a true zig-zag (each stitch crosses once): same-edge needle points are 2 x sp apart, so these are about
 # half the row spacing of the engine satin (which hits both edges every row) for the same coverage
@@ -276,20 +290,22 @@ SHORT = "KCOS"
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 # badges keep one size per grade; positions follow each size's panel (art_size.py)
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.06), "3XL": ("C", 1.06)}
-PIECES = ("FR", "FL", "SR", "SL")
-PIECE_NAME = {"FR": "wearer's right front", "FL": "wearer's left front", "SR": "right sleeve", "SL": "left sleeve"}
-PIECE_CODE = {"FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
+# Rev H (founder 21 Oct): the BACK carries stars only, same star style as the fronts; the hood stays plain
+PIECES = ("FR", "FL", "SR", "SL", "BK")
+PIECE_NAME = {"FR": "wearer's right front", "FL": "wearer's left front", "SR": "right sleeve", "SL": "left sleeve", "BK": "back"}
+PIECE_CODE = {"FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02", "BK": "B01"}
 ELEMENTS = {   # id -> (slug, title, piece)
     "01": ("jp-badge", "宇宙をきれいに badge (JP)", "FR"),
     "02": ("en-badge", "KEEP CLEAN OUR SPACE badge (EN)", "FL"),
     "03": ("cn-badge", "不要世界污染 badge (CN)", "FR"),
     "04": ("kr-oval", "우리들 소중한 우주! oval (KR)", "FL"),
     "05": ("star-field", "Star speckle field", "FR FL SR SL"),
+    "06": ("back-stars", "Back star field", "BK"),
 }
 # Text from the founder's source frame (inputs/reference.png, 19 Oct 2026). Rev D (founder answers, 20 Oct 2026): CN uses
 # the Simplified Chinese 污 (不要世界污染, not the source's 汚); KR 우리들 소중한 우주! approved.
 TEXT = {"01": "宇宙をきれいに", "02": ("KEEP", "CLEAN", "OUR SPACE"), "03": "不要世界污染", "04": "우리들 소중한 우주!"}
-REV_EMB = "Rev D"; REV_GAR = "Rev D"; DATE = "20 Oct 2026"
+REV_EMB = "Rev I"; REV_GAR = "Rev I"; DATE = "21 Oct 2026"
 # Rev D (founder 20 Oct): 3D puff on every sign part that is not a background star. A stroke / part narrower than
 # PUFF_MIN_MM stays FLAT (too thin for the foam to dome and be cut cleanly); a glyph puffs only if >= PUFF_GLYPH_SHARE of
 # its stroke length is wide enough (no isolated puff bits). House rules/house.yaml puff min_w is 3.0: strokes 2.5-3.0 are

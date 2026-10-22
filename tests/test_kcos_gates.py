@@ -101,3 +101,59 @@ def test_foam_mask_keeps_flat_travel_out_of_the_foam():
         assert new["base_under_puff_ok"], new                 # GREEN: trimmed / routed round it instead
     finally:
         os.environ.pop("KC_FOAM_MASK", None); os.chdir(cwd)
+
+
+# ---------------------------------------------------------------- Rev I: flat fragments in puff glyphs (founder 21 Oct)
+def _zig(x0, x1, y0, y1, step=0.4):
+    """satin-like zigzag across y0..y1 marching along x"""
+    pts = []; k = 0
+    for x in np.arange(x0, x1 + 1e-6, step):
+        pts.append((float(x), y0 if k % 2 == 0 else y1)); k += 1
+    return pts
+
+GLYPH = unary_union([box(10, 0, 30, 4), box(10, 6, 30, 9)])          # a puff bar + a separate thin bar below it
+PS3 = [dict(stop=1, puff=False, top=False, codes=["DOT"]), dict(stop=2, puff=True, codes=["PF-TXC"]), dict(stop=3, puff=False, top=True, codes=["TXC"])]
+
+def test_flat_fragment_red_on_a_short_flat_bit_touching_the_puff():
+    puff = _zig(10.3, 29.7, 0.3, 3.7)
+    bit = _zig(12, 17, 3.9, 5.0)                                              # 5 mm flat strip sewn on the puff edge (Rev H 'P')
+    g = G.flat_fragments(write_dst([[(60, 0), (61, 0)], puff, bit]), PS3, [("t", GLYPH)], (0, 0))
+    assert g["puff_glyphs"] == 1 and len(g["bad"]) == 1 and g["bad"][0]["touches_puff"] and g["bad"][0]["len_mm"] < 8
+
+def test_flat_fragment_red_on_a_short_free_bit_green_on_a_whole_free_stroke():
+    puff = _zig(10.3, 29.7, 0.3, 3.7)
+    short = _zig(12, 16, 6.5, 8.5)                                            # 4 mm, free of the puff -> still red (< 8 mm)
+    g = G.flat_fragments(write_dst([[(60, 0), (61, 0)], puff, short]), PS3, [("t", GLYPH)], (0, 0))
+    assert len(g["bad"]) == 1 and not g["bad"][0]["touches_puff"]
+    whole = _zig(10.3, 29.7, 6.5, 8.5)                                        # 19 mm whole stroke 2 mm from the puff -> allowed
+    g = G.flat_fragments(write_dst([[(60, 0), (61, 0)], puff, whole]), PS3, [("t", GLYPH)], (0, 0))
+    assert g["puff_glyphs"] == 1 and len(g["fragments"]) == 1 and not g["bad"]
+
+def test_flat_fragment_green_when_the_bit_sews_in_the_puff_stop_and_on_flat_glyphs():
+    puff = _zig(10.3, 29.7, 0.3, 3.7) + _zig(12, 17, 3.9, 5.0)                # the Rev I fix: the bit sews with the puff
+    g = G.flat_fragments(write_dst([[(60, 0), (61, 0)], puff, [(70, 0), (71, 0)]]), PS3, [("t", GLYPH)], (0, 0))
+    assert g["puff_glyphs"] == 1 and not g["bad"]
+    flat_glyph = _zig(10.3, 29.7, 0.3, 3.7)                                   # an all-flat glyph is not checked
+    g = G.flat_fragments(write_dst([[(60, 0), (61, 0)], [(80, 0), (81, 0)], flat_glyph]), PS3, [("t", GLYPH)], (0, 0))
+    assert g["puff_glyphs"] == 0 and not g["bad"]
+
+def test_puff_absorb_takes_fillers_and_bits_touching_the_puff():
+    import kcmotifs as KM
+    wide = lambda s: s["w"] >= 2.5
+    stem = dict(cl=[(0, 0), (0, 20)], w=4.0, caps=("round", "round"))
+    filler = dict(cl=[(2.5, 5), (6, 5)], w=1.2, caps=("round", "round"), filler=True)
+    touching = dict(cl=[(2.0, 12), (14, 12)], w=1.5, caps=("round", "round"))          # 12 mm but touches the stem
+    free_long = dict(cl=[(8, 30), (22, 30)], w=1.5, caps=("round", "round"))           # 14 mm, free -> may stay flat
+    free_short = dict(cl=[(8, 40), (12, 40)], w=1.5, caps=("round", "round"))          # 4 mm, free -> puff
+    ab = KM.puff_absorb([stem, filler, touching, free_long, free_short], wide)
+    assert id(filler) in ab and id(touching) in ab and id(free_short) in ab
+    assert id(free_long) not in ab and id(stem) not in ab
+
+def test_speck_sliver_flags_slivers_not_sparkles_or_dots():
+    import kcmotifs as KM
+    from shapely.geometry import Point
+    assert KM.speck_sliver(box(0, 0, 7.9, 0.75)) is not None                 # Rev H FL M: 0.7 x 7.9 mm traced sliver
+    assert KM.speck_sliver(box(0, 0, 3.2, 0.85)) is not None
+    assert KM.speck_sliver(Point(0, 0).buffer(0.58)) is None                  # 1.16 mm house dot
+    sp = unary_union([g["geom"] for g in KM.sparkle_cols(0, 0, 6.0)])       # concave 4-point sparkle
+    assert KM.speck_sliver(sp) is None

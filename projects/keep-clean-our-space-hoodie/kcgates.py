@@ -106,3 +106,62 @@ def glyph_check(ref_geom, stitched, bb, ppm=8.0, near_mm=1.0, close_mm=0.3, tol_
             if sum(int((s_ & sh[best[1]]).sum()) >= 0.3 * s_.sum() for s_ in fh) == 1: used.add(best[1]); matched += 1
     ok = iou >= GLYPH_IOU and miss_mm2 <= GLYPH_MISS and matched == len(fh)
     return dict(iou=round(iou, 3), miss_mm2=round(miss_mm2, 2), counters=(len(fh), matched), ok=bool(ok))
+
+
+FRAG_MIN_MM, FRAG_TOUCH_MM, FRAG_PUFF_SHARE = 8.0, 0.3, 0.2
+
+def flat_fragments(dst_path, per_stop, glyphs, origin, min_len=FRAG_MIN_MM, touch=FRAG_TOUCH_MM, ppm=8.0, puff_share=FRAG_PUFF_SHARE):
+    """Rev I (founder 21 Oct, EN badge FL M: 8 little satins at P / R / S / A / E sewn on top AFTER the foam was torn,
+    at their own angle): inside a PUFF glyph, no flat-after-foam ('top' stop) fragment may be shorter than min_len mm or
+    touch the glyph's puff stitches (within touch mm). Only a whole stroke group >= min_len standing free of the puff may
+    stay flat. Read from the WRITTEN file: puff stops / top stops from per_stop, stitches as 0.42 mm lines.
+    glyphs: [(label, shapely geom in garment mm)]; a glyph is 'puff' when >= puff_share of its area is under puff-stop
+    stitches. Fragment = connected piece of top-stop stitching within 0.5 mm of the glyph (closed 0.3 mm).
+    Returns dict(glyphs_checked, puff_glyphs, fragments=[{glyph, stop, len_mm, touches_puff, n_stitches}], bad=[...])."""
+    import pyembroidery as pe
+    from PIL import Image, ImageDraw
+    puff = {p["stop"] for p in per_stop if p.get("puff")}; top = {p["stop"] for p in per_stop if p.get("top")}
+    segs = {"puff": [], "top": {}}
+    si = 1; prev = None
+    for x, y, c in pe.read(dst_path).stitches:
+        k = c & pe.COMMAND_MASK; P = (x / 10.0 + origin[0], y / 10.0 + origin[1])
+        if k == pe.COLOR_CHANGE: si += 1; prev = None; continue
+        if k == pe.END: break
+        if k != pe.STITCH: prev = None if k == pe.TRIM else P; continue
+        if prev is not None and prev != P:
+            if si in puff: segs["puff"].append((prev, P))
+            elif si in top: segs["top"].setdefault(si, []).append((prev, P))
+        prev = P
+    out = dict(glyphs_checked=len(glyphs), puff_glyphs=0, fragments=[], bad=[])
+    if not puff: return out
+    def draw(lines, bb):
+        x0, y0, x1, y1 = bb; im = Image.new("L", (int((x1 - x0) * ppm), int((y1 - y0) * ppm)), 0); d = ImageDraw.Draw(im)   # raster()'s grid
+        for a, b in lines:
+            d.line([((a[0] - x0) * ppm, (a[1] - y0) * ppm), ((b[0] - x0) * ppm, (b[1] - y0) * ppm)], fill=255, width=max(1, int(round(0.42 * ppm))))
+        return np.array(im) > 127
+    inb = lambda s, bb: min(s[0][0], s[1][0]) <= bb[2] and max(s[0][0], s[1][0]) >= bb[0] and min(s[0][1], s[1][1]) <= bb[3] and max(s[0][1], s[1][1]) >= bb[1]
+    for label, g in glyphs:
+        b = g.bounds; bb = (b[0] - 3, b[1] - 3, b[2] + 3, b[3] + 3)
+        ref = raster(g, bb, ppm); near = raster(g.buffer(0.5), bb, ppm)
+        pm = draw([s for s in segs["puff"] if inb(s, bb)], bb)
+        if ref.sum() == 0 or (pm & ref).sum() < puff_share * ref.sum(): continue
+        out["puff_glyphs"] += 1
+        pm_t = ndi.binary_dilation(pm, iterations=max(1, int(round(touch * ppm))))
+        for st, ls in segs["top"].items():
+            tm = draw([s for s in ls if inb(s, bb)], bb) & near
+            if not tm.any(): continue
+            tm = ndi.binary_closing(tm, iterations=max(1, int(round(0.3 * ppm)))) & near
+            lab, n = ndi.label(tm, structure=np.ones((3, 3)))
+            for i in range(1, n + 1):
+                m = lab == i
+                if m.sum() < 2: continue
+                ys, xs = np.nonzero(m)
+                from shapely.geometry import MultiPoint
+                rr = MultiPoint(list(zip(xs / ppm, ys / ppm))).minimum_rotated_rectangle
+                cs = list(rr.exterior.coords) if rr.geom_type == "Polygon" else [(0, 0), (0, 0), (0, 0)]
+                L = max(math.dist(cs[0], cs[1]), math.dist(cs[1], cs[2])) + 0.42
+                tp = bool((m & pm_t).any())
+                f = dict(glyph=label, stop=st, len_mm=round(L, 1), touches_puff=tp, at_mm=(round(xs.mean() / ppm + bb[0], 1), round(ys.mean() / ppm + bb[1], 1)))
+                out["fragments"].append(f)
+                if L < min_len or tp: out["bad"].append(f)
+    return out
