@@ -174,3 +174,25 @@ Engine runs: `bench/run_{wb,coin,spill,starP,starY}_svg.yaml` -> `out/engine_m5/
    primitive (radial random-length satin around any closed shape) usable for any furry motif; plus a `prebuilt` region
    kind in dst2.build_object (kjcore patches it with `ang="pre"`). Check: a render test of fuzzy_body + sprite gate red
    (sprite moved 2 mm fails) as in test_soot_sprites_traced_and_gated.
+
+## Rev B8 (22 Oct 2026, founder: "the eyes all look crazy and cracked out; some limbs of the soot sprites are missing")
+37. **A gate that counts blobs does not check the art.** Problem: `kjsoot.py` checked centre, cover and "2 white blobs"
+   per sprite and said 9/9 PASS on Rev B7, while the founder's eye saw wrong eyes (pupils placed per eye from a noisy
+   5 x 5 px window, so the two pupils looked different ways; 0.24 D x 0.31 D whites; satin at 0.36 mm crossings = 0.72
+   same side, open "comb" satin that reads as cracks) and missing limbs (every arm; only 2 fixed stub legs). Fix: the
+   gate now checks the DST against the art itself — limb count + each limb traced, both pupils' offsets agree and match
+   the table gaze, eye white area, eye satin crossing spacing <= 0.30 mm and no split. Check:
+   tests/test_konpeito_gates.py::test_soot_art_gates_red_on_b7_green_on_b8 (red: the shipped B7 DSTs in
+   tests/fixtures/konpeito_b7 fail EVERY new check on all 9 sprites while the old checks still pass; green: B8 9/9;
+   mutations of the table — a limb dropped, one gaze turned — go red). Proposed LESSONS row (coordinator to merge):
+   "A character/motif gate must compare against the art (limbs, gaze, size, stitch density), not count blobs; prove it
+   red on the version the client rejected."
+38. **A low-res reference needs a hand art table, not a tracer.** Problem: the sprites are ~15 px on the mockup (~1 mm
+   per px); the arms are 1-px lines below the tracer's grey < 35 threshold, so no SVG/trace of the sprites ever existed
+   and `trace_soot` only read eye positions + body size, then drew a generic sprite. Fix: `inputs/soot_art.json`, read by
+   eye from 20x NEAREST crops of the original mockup (per sprite: the candies held, visible limbs as polylines in body
+   mm, eye size/tilt/centres, ONE gaze vector; certainty noted per sprite), drafted by `kjsootart.py` from the typed
+   reading; `kjfront.soot_regions` draws from the table (limbs = triple runs; eyes = zigzag satin 0.20 mm crossings +
+   centre-run underlay, no split; pupils Ø2.1 satin dots offset by the shared gaze). The engine dropped the 0.2 mm row
+   connectors of a "rows" satin (gaps every ~1 mm) — generate a true zigzag (needle points alternate sides), no short
+   connectors. Proposed: an engine `art_table` input kind for any motif too small to trace, with the same gate.

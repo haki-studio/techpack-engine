@@ -793,25 +793,27 @@ def G7():
              ("—" if d["below_opening_mm"] is None else f"{d['below_opening_mm']:.0f}"), sec(d["id"])] for d in FRONT["stars"]]
     tb, y = table(x0, y, [("Konp.", 11), ("Colour", 14), ("x side", 13), ("y WB", 12), ("gap opening", 19), ("File", 10)], rows, 1.7, 3.15)
     o.append(tb)
+    import kjfront
     rows = [[q["id"], f"{q['d_mm']:.1f}", f"{q['x_from_side_mm']:.0f}", f"{q['y_from_waist_mm']:.0f}",
-             " / ".join(f"{e[0]:+.1f},{e[1]:+.1f}" for e in q["eyes_mm"]), sec(q["id"])] for q in FRONT["soot"]]
+             " / ".join(f"{e[0]:+.1f},{e[1]:+.1f}" for e in kjfront.soot_art()["sprites"][q["id"]]["eyes"]["centres"]), sec(q["id"])] for q in FRONT["soot"]]
     xs = x0 + 86
-    o.append(t(xs, 34, "Soot sprites — black body + fuzz, 2 eyes, 2 legs", 2.1, 700))
+    o.append(t(xs, 34, "Soot sprites — black body + fuzz, 2 eyes, arms + legs (art table)", 2.1, 700))
     tb, y2 = table(xs, 38.5, [("Sprite", 11), ("Ø body", 12), ("x side", 12), ("y WB", 11), ("eye centres from body centre", 37), ("File", 9)], rows, 1.7, 3.15)
     o.append(tb)
     y = max(y, y2) + 2
     der = FRONT["derivation"]; ex = FRONT["excluded_clipped"]
     import kjfront
+    ART = kjfront.soot_art(); ER = ART["eye_rule"]
     lines = ["x = mm in from the side seam at the motif's height; y = mm down from the top of the waistband at the side seam (origin O, C5). Positions are size 32;",
              "grade with the leg (keep the gap to the pocket opening and the distance to the side seam). Gap = konpeito top edge to the front pocket opening above it.",
              f"Every konpeito + sprite sits on the front leg panel BELOW the pocket opening ({len(der['stars_inside_opening'])} of {len(FRONT['stars'])} konpeito inside it, C5). Embroider the flat front panel BEFORE the pocket bag is attached.",
              "S06 yellow + S07 pink overlap (both on sprite K04, as on the mockup): the pink is sewn on top; the yellow's white speck under the pink is left out.",
              f"Founder 21 Oct (J4): the {len(ex)} konpeito clipped by the side seam on the mockup ({', '.join(d['col'] for d in ex)}) are NOT sewn. The trace still finds them (C5, red X); this product excludes them.",
              f"Founder 21 Oct (J5): the soot-sprite characters are KEPT as on the mockup (licence risk accepted by the founder). Sewn first in Soot black 40wt; the konpeito they hold lie on top;",
-             f"eyes (white satin) + pupils (black Ø{kjfront.SOOT_PUPIL_D} satin dot) are sewn last. Body Ø{FRONT['soot'][0]['d_mm']:.1f} mm = median of the {len(FRONT['soot'])} traced bodies; tatami 45° cut away under the candies;",
-             f"fuzz = radial satin of random length ({kjfront.SOOT_FUR[0]}–{kjfront.SOOT_FUR[1]} mm beyond the body); 2 legs = triple run {kjfront.SOOT_LEG} mm. Redrawn from the low-res mockup (~1 mm per px):",
-             "eye + pupil positions traced per sprite; uniform body size, the fuzz length and the legs  [proposed — confirm on the sew-out].",
-             f"Gates per sprite (C7): centre <= {SG['limits']['pos_mm']} mm, cover >= {SG['limits']['cover']:.0%}, 2 eyes <= {SG['limits']['eye_mm']} mm: {sum(r['ok'] for r in SG['rows'])} of {len(SG['rows'])} PASS. Konpeito A14 + position: C6."]
+             f"eyes (white satin, {ER['w_D']:.2f} D x {ER['h_D']:.2f} D, rows 0.20) + pupils (black Ø{ART['sprites']['K01']['eyes']['pupil']:.1f} satin dot, ONE gaze per sprite) are sewn last. Body Ø{FRONT['soot'][0]['d_mm']:.1f} mm = median of the {len(FRONT['soot'])} traced bodies;",
+             f"tatami 45° cut away under the candies; fuzz = radial satin of random length ({kjfront.SOOT_FUR[0]}–{kjfront.SOOT_FUR[1]} mm beyond the body); arms (to the candy held) + legs = triple runs, {sum(len(v['limbs']) for v in ART['sprites'].values())} limbs in all.",
+             "Rev B8 (founder 22 Oct): limbs, eye size and gaze from a hand-read art table of the low-res mockup (~1 mm per px)  [proposed — confirm on the sew-out].",
+             f"Gates per sprite (C7): centre <= {SG['limits']['pos_mm']} mm, cover >= {SG['limits']['cover']:.0%}, 2 eyes; limbs = art table; pupils agree + match the gaze; eye area; no crack: {sum(r['ok'] for r in SG['rows'])} of {len(SG['rows'])} PASS. Konpeito: C6."]
     for ln in lines:
         o.append(t(x0, y, ln, 1.6, 400, AMBER if "proposed" in ln else INK)); y += 3.05
     fn = (f"Stitch files: 07a ({RB['front1']['stitches']:,} st, {RB['front1']['trims']} trims, {RB['front1']['size_mm'][0]:.0f} × {RB['front1']['size_mm'][1]:.0f} mm, {RB['front1']['machine_min']} min) and 07b ({RB['front2']['stitches']:,} st, "
@@ -893,16 +895,18 @@ def C5():
 
 def Q1():
     """founder decisions 21 Oct (answers to the PR #34 questions J1-J5) + what is still open."""
-    o = hdr("Q1 · FOUNDER DECISIONS + OPEN QUESTIONS", "Answers given by the founder on 21 Oct 2026 to the Rev B5 questions, and what they changed in this revision. Open items are listed at the bottom.", "Q1")
+    o = hdr("Q1 · FOUNDER DECISIONS + OPEN QUESTIONS", "Answers given by the founder (21 Oct 2026 to the Rev B5 questions; 22 Oct on the soot sprites) and the revision each one changed. Open items are listed at the bottom.", "Q1")
     ex = FRONT["excluded_clipped"]
-    rows = [["J1", f"05 pink konpeito moved {STARP_POS[0] - 8:.0f} mm inward from the mockup (clears the outer topstitch)", "OK — CONFIRMED", "G6, T8: PROPOSED mark removed"],
-            ["J2", "Patch field (01 / 03): straight 0° tatami or a knit texture?", "Straight 0° tatami, no knit texture — CONFIRMED", "no change (FIELD = 0° tatami, G2 / G4)"],
-            ["J3", "Hammer loop left off (not on the Konpeito mockup)", "Left off — CONFIRMED", "T4, T6: PROPOSED mark removed"],
+    rows = [["J1", f"05 pink konpeito moved {STARP_POS[0] - 8:.0f} mm inward from the mockup (clears the outer topstitch)", "OK — CONFIRMED", "Rev B6: G6, T8 PROPOSED mark removed"],
+            ["J2", "Patch field (01 / 03): straight 0° tatami or a knit texture?", "Straight 0° tatami, no knit texture — CONFIRMED", "Rev B6: no change (FIELD = 0° tatami, G2 / G4)"],
+            ["J3", "Hammer loop left off (not on the Konpeito mockup)", "Left off — CONFIRMED", "Rev B6: T4, T6 PROPOSED mark removed"],
             ["J4", f"Keep the {len(ex)} konpeito clipped by the side seam on the mockup?", "DROP them ('I don't think that's supposed to be there')",
-             f"07 map {len(FRONT['stars'])} konpeito (was 17); detected + excluded (C5); G7, C5, T8, C6 updated"],
+             f"Rev B6: 07 map {len(FRONT['stars'])} konpeito (was 17); detected + excluded (C5); G7, C5, T8, C6 updated"],
             ["J5", "Soot-sprite characters on the front leg (look like a licensed character, LESSONS A7)", "KEEP them — founder decision, licence risk accepted by the founder",
-             f"{len(FRONT['soot'])} soot sprites digitised into 07a / 07b (G7, C5, C7)"]]
-    tb, y = table(12, 36, [("#", 9), ("Question (Rev B5)", 112), ("Founder answer, 21 Oct", 82), ("What changed in " + REV, 70)], rows, 1.9, 6.0)
+             f"Rev B6: {len(FRONT['soot'])} soot sprites digitised into 07a / 07b (G7, C5, C7)"],
+            ["J6", "Soot sprites (22 Oct): 'the eyes all look crazy and cracked out; some limbs are missing'", "Redraw them like the reference",
+             "Rev B8: arms + legs, bigger eyes, one gaze (G7, C7)"]]
+    tb, y = table(12, 36, [("#", 9), ("Question", 112), ("Founder answer", 82), ("Revision it changed", 70)], rows, 1.9, 6.0)
     o.append(tb)
     y += 4
     for ln in ["J5 licence note: the soot sprites resemble a third-party licensed character. House rule LESSONS A7 is to decline such elements; for this product the founder",
@@ -911,7 +915,7 @@ def Q1():
     y += 5
     o.append(t(12, y, "Still open", 2.6, 700)); y += 5
     for ln in ["Q-a  Size run 26 28 29 30 31 32 33 34 36 38 40 (24 dropped; 29 / 31 / 33 half-way between the HI sizes on T3 until the factory grades them) — correct?  " + PROPOSED,
-               "Q-b  Soot-sprite drawing (redrawn from the low-res mockup): body Ø, fuzz length and the 2 legs — confirm on the 07a / 07b sew-out.  " + PROPOSED,
+               "Q-b  Soot-sprite drawing (redrawn from the low-res mockup, art table): body Ø, fuzz, arms + legs, eye size + gaze — confirm on the 07a / 07b sew-out.  " + PROPOSED,
                "Haki still owes (MISSING on T5 / T7): hang tag art, packing design, barcodes per size. Main + care label = the Haki standard labels (founder 22 Oct, T7b)."]:
         o.append(t(12, y, ln, 2.0, 400, AMBER)); y += 4.2
     return o
