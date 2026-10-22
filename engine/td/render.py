@@ -18,6 +18,7 @@ SEV_ORDER = {"high": 0, "medium": 1, "low": 2}
 STANDING_PATTERN = ("Change the pattern at {points} only. Do NOT grade or scale the whole piece. "
                     "Send the new pattern PDF + a measured sheet BEFORE cutting.")
 STANDING_SA = "Tell us the seam allowance and shrinkage % you used."
+NO_MASTER = "change nothing, wait for the next sheet"
 
 
 def num(x, unit=None):
@@ -44,9 +45,12 @@ def by_sev(rows): return sorted(rows, key=lambda r: SEV_ORDER[r.severity])
 
 
 # ----------------------------------------------------------------------------- annotations
-def note_text(r):
-    """'TD (fit · high): ...' — the line a pack page carries for one row"""
+def note_text(r, td=None):
+    """'TD (fit · high): ...' — the line a pack page carries for one row. A HOLD row shows its number only when it is a
+    cell of the signed master POM (td.signed_master, LESSONS T2) — the pack reaches the factory too."""
     head = f"TD ({r.lens} · {r.severity}): "
+    if r.hold and not (td is not None and td.from_signed_master(r.num)):
+        return head + f"{where(r)} — HOLD: {NO_MASTER}"
     if r.kind == "delta":
         b, tg, ch = r.baseline, r.target_value(), r.change()
         unit = r.nums()[0].unit
@@ -69,7 +73,7 @@ BAND_SIZE, BAND_LH, BAND_MAX = 1.6, 2.5, 10
 _ROOT = re.compile(r'^(<svg\b[^>]*viewBox="0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"[^>]*>)(.*)(</svg>)\s*$', re.S)
 
 
-def annotate(svg, rows):
+def annotate(svg, rows, td=None):
     """put the rows' notes in a band at the foot of one A4 page. The page content is scaled uniformly (aspect kept, so
     true-proportion drawings stay true) to make room; nothing on the page is covered. No rows -> the page unchanged."""
     if not rows: return svg
@@ -78,7 +82,7 @@ def annotate(svg, rows):
         raise TDInputError("annotate: not an engine A4 page (svg with viewBox 0 0 297 210)")
     lines = []
     for r in by_sev(rows):
-        for i, l in enumerate(wrap(note_text(r), SW - 30, BAND_SIZE)):
+        for i, l in enumerate(wrap(note_text(r, td), SW - 30, BAND_SIZE)):
             lines.append((l if i == 0 else "   " + l, RED if r.severity == "high" else INK))
     extra = 0
     if len(lines) > BAND_MAX: extra = len(lines) - (BAND_MAX - 1); lines = lines[:BAND_MAX - 1]
@@ -86,11 +90,13 @@ def annotate(svg, rows):
     k = (SH - band) / SH; ox = (SW - SW * k) / 2
     y0 = SH - band
     o = [f'<g transform="translate({f(ox)} 0) scale({k:.5f})">{m.group(4)}</g>',
+         '<g data-td="notes">',
          f'<rect x="8" y="{f(y0 + 0.4)}" width="{SW - 16}" height="{f(band - 1.4)}" fill="#EEF6FD" stroke="{GUIDE}" stroke-width="0.25"/>',
          t(11, y0 + 3.4, "TD NOTES — recommendations from the technical designers; every number is from the file named", 1.6, 700, GUIDE)]
     y = y0 + 3.4 + BAND_LH
     for l, col in lines: o.append(t(11, y, l, BAND_SIZE, 500, col)); y += BAND_LH
     if extra: o.append(t(11, y, f"+ {extra} more lines — see the TD comment sheet", BAND_SIZE, 700, MUTED))
+    o.append("</g>")
     return m.group(1) + "\n".join(o) + m.group(5)
 
 
@@ -107,7 +113,9 @@ def sheet_lines(td):
          ("sub", f"Rev {td.rev}" + (f" — supersedes Rev {td.supersedes}" if td.supersedes else " — first issue"))]
     L.append(("h", "HOLD — do not change these points"))
     if hold:
-        for r in hold: L.append(("row", f"{where(r)}: keep at {val_text(r.num)}"))
+        for r in hold:                  # numbers only from the signed master POM (LESSONS T2)
+            L.append(("row", f"{where(r)}: keep at {val_text(r.num)}") if td.from_signed_master(r.num)
+                     else ("row", f"{where(r)}: {NO_MASTER}"))
     else:
         L.append(("muted", "no points held this round"))
     L.append(("h", "PATTERN changes — the factory edits the pattern"))
