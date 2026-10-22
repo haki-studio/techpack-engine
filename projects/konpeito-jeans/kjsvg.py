@@ -384,3 +384,36 @@ def candy_masks(path, W, H, prefixes, ppm=PPM):
         m = np.asarray(Image.open(io.BytesIO(png)).convert("RGBA"))[..., 3] > 127
         out.append((f"konpeito {k:02d} {G['col'][3:]}" + (" (back row)" if G["layer"].startswith("F1") else ""), m, G["col"], G["layer"]))
     return out
+
+def elem_mask(path, layer, W, H, pred, ppm=PPM):
+    """cairosvg render of ONLY the elements of `layer` for which pred(tag, fill) is true -> bool mask. Per-motif A14
+    references for the house border (PR #30 review item 2): white border flowers (ellipse petals, red centre circles
+    knocked out) and white border dots (circles) are separate motifs, not one layer blob."""
+    import cairosvg
+    root = ET.parse(path).getroot()
+    for g in list(root):
+        if g.tag != NS + "g": continue
+        if g.attrib.get("id") != layer: root.remove(g); continue
+        for parent in [g] + list(g.iter(NS + "g")):
+            for ch in list(parent):
+                if ch.tag != NS + "g" and not pred(ch.tag.replace(NS, ""), ch.attrib.get("fill", "").upper()): parent.remove(ch)
+    png = cairosvg.svg2png(bytestring=ET.tostring(root), output_width=int(W * ppm), output_height=int(H * ppm))
+    return np.asarray(Image.open(io.BytesIO(png)).convert("RGBA"))[..., 3] > 127
+
+def border_refs(path, W, H, ppm=PPM):
+    """reference masks for the house border from the founder's SVG layers 01-03: per-motif flowers + dots, and the
+    band / field / edge AREAS (A15). Returns dict(flowers=[mask per flower], dots=mask, band, field, edge)."""
+    from scipy import ndimage as ndi
+    L3 = "03_border_motifs_WHITE"
+    pet = elem_mask(path, L3, W, H, lambda t, f: t == "ellipse" and f == "#FBF8F1", ppm)
+    red = elem_mask(path, L3, W, H, lambda t, f: f == "#C8162B", ppm)
+    dots = elem_mask(path, L3, W, H, lambda t, f: t == "circle" and f == "#FBF8F1", ppm)
+    lab, n = ndi.label(pet)
+    flowers = [(lab == k) & ~red for k in range(1, n + 1)]
+    outer = layer_mask(path, ("01_",), W, H, ppm); field = layer_mask(path, ("02_",), W, H, ppm)
+    ew = int(round(2.0 * ppm))                                     # heat-cut edge column: outer 2.0 mm of the patch
+    rim = max(1, int(round(0.15 * ppm)))                           # the cut line itself (outer 0.15 mm) is the heat-cut, not thread
+    edge = ndi.binary_erosion(outer, iterations=rim) & ~ndi.binary_erosion(outer, iterations=ew)
+    band = ndi.binary_erosion(outer, iterations=ew) & ~field & ~(pet & ~red) & ~dots   # red band where no white motif sits on it
+    field_ = field
+    return dict(flowers=flowers, dots=dots, band=band, field=field_, edge=edge, red_centres=red)

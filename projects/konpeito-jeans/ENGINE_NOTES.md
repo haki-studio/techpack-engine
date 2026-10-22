@@ -98,3 +98,79 @@ Engine runs: `bench/run_{wb,coin,spill,starP,starY}_svg.yaml` -> `out/engine_m5/
 22. **Flat line colours**: construction lines + topstitch in near-black on dark denim are invisible (PR #29 item 7). On
    dark garments draw seams light grey (#D2D3D7) and topstitch mid grey, with a "drawing only" note. Proposed: flat
    palette chosen by garment luminance in the engine's flat helper.
+
+## Rev B3 (20 Oct 2026, PR #30 review)
+23. **Round dots cannot be judged by IoU on a thread-width coverage mask** (border dots Ø1.5: the DST mask drawn at
+   0.35 mm line width reads Ø1.9-2.0, IoU 0.63, "fail" on a correct dot). Project fix: `kjcompare.dot_rows` measures
+   each SVG circle against its DST needle RUN (stitches between jumps/trims): span vs art Ø (-0.1/+0.35 mm) and centre
+   <= 0.3 mm. Red test: a dot 0.6 mm off first PASSED with a fixed search window (window clipped it) -> runs fixed it.
+   Proposed: `qa.dot_match(svg_circles, dst, stops)` in the engine for every `dot`/bead technique. Check:
+   tests/test_konpeito_gates.py::test_dot_rows_red_green.
+24. **A15 must cover the base areas, not only the motif layers** (band / field / edge of a patch were never gated).
+   Project fix: `kjsvg.border_refs` + `kjcompare.area_gates`: coverage % by the area's own stop + no bare blob >= 1 mm2;
+   the outer 0.15 mm (the heat-cut line itself) is excluded. Proposed: svgart gates every filled layer as an area.
+   Check: test_area_gates_red_green (2 x 2 mm bare square in the band fails).
+25. **Placement gates must use an independent centre** (04-06 took the reference centre from the DST-side regions:
+   circular). Project fix: `kjcompare.indep_centres` (T8 point = file centre for 05/06; 04 pink offset from the mockup
+   pixels; 07 = C5 map) + `candy_position` (unclipped bbox centre of the body stops). Proposed: `qa.position_match(ref_xy,
+   dst, stops)`. Check: test_candy_position_red_green (2 mm shift fails).
+26. **Red tests must fail ONLY on the guard under test**: the first synthetic star failed on IoU, so deleting the
+   outline clause left the test green (prove-the-guard). The star is now tuned so IoU + extents pass and only the
+   outline fails; a source mutation (outline clause removed) turns the test red.
+27. **Reviewer orientation check**: a back view is seen from behind, so image right = wearer's right (PR #30 review
+   item 1 read it the other way). Pages now say so explicitly on T2 / T8 / G4-G6. Proposed: the reviewer prompt states
+   the convention (CLAUDE.md "back = x from CB, + = wearer's right on a back view").
+
+## Rev B4 (21 Oct 2026, PR #34 review)
+28. **Touching motifs of different colours were traced as one blob** (07 front leg: a pink + a yellow konpeito on one soot
+   sprite -> one "yellow" star of 15 px, the pink was missing from every page and file). Cause: the colour mask was the
+   union of all hues, labelled once. Project fix: `kjfront.trace` labels each colour class on its own;
+   `kjfront.check_merges` stops the build when a blob is > 1.3 x the median size (possible merge). Proposed: the engine's
+   motif tracer labels per colour family and runs the merge guard on every traced motif set. Check:
+   tests/test_konpeito_gates.py::test_front_trace_splits_the_touching_pair_and_guard_catches_the_old_way (the B3
+   all-hue labelling of the real mockup must trip the guard; the per-colour trace returns pink + yellow there).
+29. **A position gate whose reference comes from the same trace cannot catch a missing motif** (C5 "independent" 07
+   centre = the same map, 0.0 mm by construction). The count needs its own check: merge guard (28) + an explicit count
+   in the test. Proposed: motif_match reports "mockup motifs found vs file motifs" from two different readers.
+30. **Overlapping motifs in one file**: the motif sewn later lies on top. Bead specks are sewn last, so specks of the
+   motif underneath that fall under a later motif's body must be dropped (`kjfront.section_vis`). Proposed: dst2 /
+   stop planner drops covered top-layer details generically.
+31. **Page date typed by hand went stale** (stamp said 20 Oct, the build ran 21 Oct): DATE = build date (kjcore).
+
+## Rev B5 (21 Oct 2026, PR #34 round 2)
+32. **Motifs clipped by the garment edge on a mockup were dropped by the size floor** (07: 3 candies run off the side
+   seam and show only as 2-9 px slivers on the cut edge; the 6 px / saturation 0.45 floor kept 1 of the 3, so the map
+   was inconsistent). Project fix: `kjfront.edge_slivers` searches a +-3 px band along the traced side seam with a lower
+   saturation floor (0.12, >= 3 px), skips slivers already covered by a main blob, and flags every edge motif
+   `clipped`; clipped motifs are moved in to the keep-out and counted separately on G7/C5 ("14 whole + 3 clipped").
+   Proposed: the engine's motif tracer runs an edge pass on every silhouette and reports whole vs clipped counts.
+   Check: tests/test_konpeito_gates.py::test_clipped_side_seam_candies_mapped (green: all 3 found; red: without the
+   edge pass only 1; mutation EDGE_MIN_PX=99 turns it red).
+33. **dispatch: `review` then `--drain` left two reviewer sessions on one scratch worktree** (21 Oct, PR #34 round 3:
+   `dispatch.sh review konpeito-jeans 34` started c95ec030 (busy); the following `--drain` then showed a second
+   `tp-review-konpeito-jeans` f9aa136d, idle, in the same worktree, with an empty queue). A worker cannot stop it (auto
+   mode denies kill). Proposed: `launch` refuses when a session of the same name exists in any state, and `drain` never
+   starts a role/slug that already has a live session. Check: dispatch dry-run test, review + drain, gives exactly one
+   session per name in `claude agents --json`.
+
+## Rev B6 (21 Oct 2026, founder answers J1-J5 on PR #34)
+34. **LESSONS A7 context — founder override (licensed-lookalike characters).** Problem: A7 says decline copyrighted
+   characters (soot sprites) in AI mockups; Konpeito Rev A-B5 declined them. Founder decision 21 Oct 2026 (J5): KEEP
+   the soot sprites on the Konpeito front leg; the licence risk is accepted by the founder. Proposed LESSONS A7 addition
+   (coordinator to merge): "A7 is the default; only the founder can override it, per product, in writing. Record the
+   override on the pack's decisions page (Q1) and in the brief, with the date, and digitise as the mockup." Check:
+   konpeito pack page Q1 carries the J5 line; brief.md "Founder answers 21 Oct" lists J5.
+35. **Clipped motifs: detect always, sew per product decision.** Problem: Rev B5 sewed 3 candies that were only slivers on
+   the side-seam edge; the founder dropped them (J4: "I don't think that's supposed to be there"). Project fix:
+   `kjfront.trace` keeps detecting + flagging `clipped`; `kjfront.product_map(EXCLUDE_CLIPPED=True)` leaves them off
+   the map (listed as excluded, red X on C5). Proposed (with note 32): the engine edge pass reports clipped motifs and
+   the DEFAULT is to exclude them from the sewn map and ask, not to move them in. Check:
+   tests/test_konpeito_gates.py::test_clipped_side_seam_candies_detected_and_excluded (green: 3 detected, 14 kept;
+   red: EXCLUDE_CLIPPED off -> 17; edge pass off -> 1 detected).
+36. **Character sprites from a low-res mockup (generic primitive).** Problem: no engine primitive for a "fuzzy ball
+   character" (black body + fur + eyes) — built project-side in `kjfront.trace_soot / soot_regions` (eye-pair detection,
+   uniform body Ø = median, radial random-length satin fur as a prebuilt block, triple-run legs, satin eyes, knot pupils)
+   and gated in `kjsoot.py` (centre, cover A15, 2 eyes). Proposed: engine `motifs` gets a `fuzzy_body(geom, fur=(a,b))`
+   primitive (radial random-length satin around any closed shape) usable for any furry motif; plus a `prebuilt` region
+   kind in dst2.build_object (kjcore patches it with `ang="pre"`). Check: a render test of fuzzy_body + sprite gate red
+   (sprite moved 2 mm fails) as in test_soot_sprites_traced_and_gated.

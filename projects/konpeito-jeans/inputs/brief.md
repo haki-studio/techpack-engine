@@ -97,3 +97,25 @@ black (not "as HI"); waistband 2 pieces joined at CB; back pockets = "2 back pat
 19. Size-label number height 3 mm (HI "XS" ~2.5-3 mm).
 20. The canonical konpeito is the first front-row candy of the 02 SVG (all 02 front-row candies are this shape rotated);
     every placed konpeito is upright (no rotation).
+
+- Rev B4 (21 Oct, PR #34 review): the 07 front-leg map has 15 konpeito (the 4th soot sprite carries a pink AND a yellow
+  konpeito, overlapping; the pink is sewn on top). Size 24 is dropped (item 18 above); T3 and F1 say so.
+- Rev B5 (21 Oct, PR #34 round 2): 3 candies at the side seam are clipped by the garment edge on the mockup (blue
+  + 2 yellow slivers; Rev B4 mapped 1, dropped 2). All 3 are kept (PROPOSED): mapped at their sliver height and moved in to the 12 mm side-seam keep-out.
+  The 07 map is 17 = 14 whole + 3 clipped.
+
+## Founder answers 21 Oct 2026 (Rev B6, PR #34) — CONFIRMED
+- J1: 05 pink konpeito moved 9 mm inward from the mockup position = OK (PROPOSED mark dropped).
+- J2: patch field (01 / 03) = plain straight 0° tatami, no knit texture.
+- J3: hammer loop left off = confirmed.
+- J4: the 3 konpeito clipped by the side seam (Rev B5 S10 blue, S11 / S13 yellow) are DROPPED ("I don't think that's
+  supposed to be there"). The trace still detects them; `kjfront.EXCLUDE_CLIPPED` leaves them off the map. 07 map = 14
+  whole konpeito, renumbered S01–S14.
+- J5: the soot-sprite characters on the front leg are KEPT (founder decision; the licence risk is accepted by the founder;
+  overrides LESSONS A7 for this product, recorded on pack page Q1 + ENGINE_NOTES 34). 07 = the mockup trail: 14 konpeito
+  + 9 soot sprites, no longer "artwork to follow". The front-leg MISSING flag is closed.
+
+## Rev B6 assumptions (PROPOSED)
+22. Soot sprites redrawn from the low-res mockup (~1 mm per px): one body Ø for all (median of the 9 traced bodies,
+    14.2 mm), fuzz = radial satin 0.2–1.1 mm beyond the body, 2 legs (triple run 2.8 mm), eyes 0.24 D × 0.31 D white
+    satin with Ø1.2 black pupils at the traced positions; thread "Soot black" #151414 40wt. Confirm on the sew-out.
