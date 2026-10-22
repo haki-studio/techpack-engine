@@ -16,6 +16,10 @@ from render import f, geom_to_path
 import tech, factory, readback
 import kjflat as FL
 import kjart as KA
+import labels as LB
+CARE_FIBRE = "100 % cotton"                       # shell RHT 3x1 denim + pocket bag 40's twill, both 100 % cotton (T5, brief)
+CARE = LB.care_label(CARE_FIBRE)                  # Haki standard care label by fibre (engine/labels.py); None = FLAG, never guess
+assert CARE, f"no Haki standard care label for {CARE_FIBRE}: FLAG it to Haki"
 
 AMBER = "#B26A00"; AMBER_BG = "#FFF3DC"
 FAC = "#1F5FA8"; FAC_BG = "#E8F0FA"     # factory-to-supply items (founder 19 Oct: Mandy fills them from her HI spec)
@@ -336,9 +340,9 @@ def T5():
         ["Zip", "YKK #4.5 metal, close-end, automatic lock slider, 6 in (as HI)", "matte black + DTM tape", "1", "CF fly (Z1)"],
         ["Rivets", "Inverted nipple rivet 15 L (9.5 mm), metal (as HI)", "matte black", "4", "2 front scoop corners + 2 coin-pocket top corners"],
         ["Bartacks", "Back-pocket top corners (as HI, no rivets), belt loops, fly bottom", "DTM black", "—", ""],
-        ["Main label", "Damask woven, flat, 5 × 2.5 cm, sewn down on all 4 sides. Current HI artwork = reference; new artwork: to follow [MISSING]", "jet black / optic white", "1", "inside CB, centred on the waistband"],
+        ["Main label", f"HAKI STANDARD main label 6.5 × 2 cm, white, black logo (T7b, zip labels/); woven, flat, sewn down on all 4 sides  [proposed — confirm weave]", "white / black", "1", "inside CB, centred on the waistband"],
         ["Size label", f"Damask woven CENTREFOLD label 30 × 10 mm (as HI), waist number in Neue Metana; sizes {sz} (artwork T7b, zip labels/)", "jet black / optic white", "1", "inside CB, left of the main label"],
-        ["Care label", "Printed polyester satin ribbon, 3 × 6 cm. Current HI artwork = reference; new artwork: to follow [MISSING]", "optic white / jet black", "1", "wearer's right, waist seam, 5 cm in from side seam"],
+        ["Care label", f"HAKI STANDARD care label for {CARE_FIBRE}, 3 × 6.5 cm, front + back, printed polyester satin ribbon (as HI); artwork T7b, zip labels/ {os.path.basename(CARE)}", "white / black", "1", "wearer's right, waist seam, 5 cm in from side seam"],
         ["Hangtag + string", "Hangtag artwork: to follow [MISSING]; label string through the size-label loop; retail sticker on the hangtag (as HI)", "", "1", "hung from the SIZE label"],
         ["Barcode", "Barcode per size: HK code from PLM: to follow [MISSING] (Code 128, printed on the polybag sticker)", "print black", "1", "polybag sticker"],
         ["Packing", "Packing design: to follow from Haki [MISSING]. Until then as HI: transparent polybag 43 × 31 cm + polybag sticker bottom left", "", "1", ""]]
@@ -363,7 +367,7 @@ def T6():
             ["Fly", "Zip fly, YKK #4.5 close-end 6 in, automatic lock slider; J-shaped topstitch on the front, bartack at the bottom (as HI)."],
             ["Belt loops", "5 loops (2 front 1 cm from the pocket, 2 back, 1 at CB), bartacked top + bottom (as HI)."],
             ["Hem", "Turned twice and topstitched, as the HI pants."],
-            ["Labels", "Main label inside CB sewn down on all 4 sides; centrefold size label on its left; care label in the waist seam, wearer's right (T7)."],
+            ["Labels", "Haki standard main label (6.5 × 2 cm) inside CB sewn down on all 4 sides; centrefold size label on its left; care label in the waist seam, wearer's right (T7)."],
             ["Not on Konpeito", "Cargo pockets, snap buttons, HI flag labels, hammer loop (confirmed by the founder 21 Oct)"]]
     tb, y = table(12, 36, [("Operation", 34), ("How (plain words)", 150)], rows, 1.85, 5.0)
     o.append(tb)
@@ -398,10 +402,10 @@ def label_detail(X, Y, s=0.4, size="32"):
     o.append(t(113, wb_h / 2, "inside back waistband", ts(1.7), 500, MUTED)); o.append(t(113, wb_h / 2 + ts(1.7) * 1.4, "(seen from inside)", ts(1.7), 500, MUTED))
     o.append(t(113, wb_h + 2, "waist seam", ts(1.7), 500, MUTED))
     o.append(f'<line x1="0" y1="{wb_h}" x2="110" y2="{wb_h}" stroke="{INK}" stroke-width="0.9"/>')
-    mx, my = 30, 7.5
-    o.append(f'<rect x="{mx}" y="{my}" width="50" height="25" fill="#0A0A0A"/>')
-    o.append(f'<rect x="{mx + 1.2}" y="{my + 1.2}" width="47.6" height="22.6" fill="none" stroke="#B0B0B0" stroke-width="0.5" stroke-dasharray="1.4 1"/>')
-    o.append(t(mx + 25, my + 11, "main label", ts(1.7), 700, "#FFFFFF", "middle")); o.append(t(mx + 25, my + 11 + ts(1.7) * 1.3, "(reference art)", ts(1.5), 500, "#FFFFFF", "middle"))
+    mw, mh = LB.MAIN_MM; mx, my = 55 - mw / 2, (wb_h - mh) / 2       # Haki standard main label, centred on CB
+    tag, _ = img(LB.render(LB.MAIN, dpi=300), mx, my, w=mw, h=mh); o.append(tag)
+    o.append(f'<rect x="{f(mx)}" y="{f(my)}" width="{f(mw)}" height="{f(mh)}" fill="none" stroke="{INK}" stroke-width="0.4"/>')
+    o.append(f'<rect x="{f(mx + 1.2)}" y="{f(my + 1.2)}" width="{f(mw - 2.4)}" height="{f(mh - 2.4)}" fill="none" stroke="#9A9A9A" stroke-width="0.4" stroke-dasharray="1.4 1"/>')
     lw = KL.H; loop = (KL.W - 2 * KL.SA) / 2          # centrefold label folded: 10 wide, hangs 10
     lx = mx - 6 - lw; ly = wb_h
     o.append(f'<rect x="{lx}" y="{ly - KL.SA}" width="{lw}" height="{loop + KL.SA}" rx="2" fill="#0A0A0A" stroke="#555" stroke-width="0.4"/>')
@@ -416,30 +420,32 @@ def label_detail(X, Y, s=0.4, size="32"):
     o.append(t(tx + 12, ty + 14 + ts(1.6) * 2.6, "[MISSING]", ts(1.5), 700, AMBER, "middle"))
     o.append(t(lx + lw + 4, ly + loop - 4, "size label (centrefold, as HI): both ends sewn into the waist seam,", ts(1.6), 600, INK))
     o.append(t(lx + lw + 4, ly + loop - 4 + ts(1.6) * 1.35, "a small loop — the hang-tag string ties through it", ts(1.6), 600, INK))
-    o.append(t(60, -4.5, "main label: sewn down on all 4 sides", ts(1.6), 600, INK, "start"))
+    o.append(t(60, -4.5, "main label 6.5 × 2 cm: sewn down on all 4 sides", ts(1.6), 600, INK, "start"))
     return f'<g transform="translate({f(X)} {f(Y)}) scale({f(s)})">' + "\n".join(o) + "</g>"
 
 def T7():
-    o = hdr("T7 · LABELS + TRIMS PLACEMENT", "Inside / outside positions of every label and metal trim. Label types + positions as Hidden Inventory (factory tech pack p. 9, 10, 13); size label = HI centrefold label with our waist sizes (founder 20 Oct); artwork on T7b.", "T7")
+    o = hdr("T7 · LABELS + TRIMS PLACEMENT", "Inside / outside positions of every label and metal trim. Positions as Hidden Inventory (factory tech pack p. 9, 10, 13); main + care label = the Haki standard labels (founder 22 Oct); size label = HI centrefold label with our waist sizes (founder 20 Oct); artwork on T7b.", "T7")
     s = 0.085
     o.append(flat_group("back", 14 - BB[0] * s, 32, s, emb=True))
     o.append(flat_group("front", 84 - FB[0] * s, 32, s, emb=True))
     bx = 14 - BB[0] * s; fx = 84 - FB[0] * s
-    # main label 50 x 25 centred on CB + size label on its left (inside, dashed)
-    o.append(f'<rect x="{f(bx + (380 * MMPX - 25) * s)}" y="{f(32 + 52 * s)}" width="{f(50 * s)}" height="{f(25 * s)}" fill="none" stroke="{GUIDE}" stroke-width="0.35" stroke-dasharray="1 0.6"/>')
-    o.append(f'<rect x="{f(bx + (380 * MMPX - 25 - 21) * s)}" y="{f(32 + 85 * s)}" width="{f(15 * s)}" height="{f(25 * s)}" fill="none" stroke="{GUIDE}" stroke-width="0.35" stroke-dasharray="0.6 0.4"/>')
+    # main label 65 x 20 centred on CB + size label on its left (inside, dashed)
+    mw, mh = LB.MAIN_MM
+    o.append(f'<rect x="{f(bx + (380 * MMPX - mw / 2) * s)}" y="{f(32 + 54.5 * s)}" width="{f(mw * s)}" height="{f(mh * s)}" fill="none" stroke="{GUIDE}" stroke-width="0.35" stroke-dasharray="1 0.6"/>')
+    o.append(f'<rect x="{f(bx + (380 * MMPX - mw / 2 - 21) * s)}" y="{f(32 + 85 * s)}" width="{f(15 * s)}" height="{f(25 * s)}" fill="none" stroke="{GUIDE}" stroke-width="0.35" stroke-dasharray="0.6 0.4"/>')
     o.append(t(bx + 380 * MMPX * s, 32 + 52 * s - 2, "main + size label (inside, CB)", 1.7, 600, GUIDE, "middle"))
-    # care label 30 x 60 hanging from the waist seam, 50 mm in from the wearer's right side seam (front flat: image left)
-    cx0 = fx + ((886 - 760) * MMPX + 50 - 15) * s
-    o.append(f'<rect x="{f(cx0)}" y="{f(32 + 95 * MMPX * s)}" width="{f(30 * s)}" height="{f(60 * s)}" fill="none" stroke="{GUIDE}" stroke-width="0.35" stroke-dasharray="1 0.6"/>')
+    # care label 30 x 65 hanging from the waist seam, 50 mm in from the wearer's right side seam (front flat: image left)
+    cw, ch = LB.CARE_MM
+    cx0 = fx + ((886 - 760) * MMPX + 50 - cw / 2) * s
+    o.append(f'<rect x="{f(cx0)}" y="{f(32 + 95 * MMPX * s)}" width="{f(cw * s)}" height="{f(ch * s)}" fill="none" stroke="{GUIDE}" stroke-width="0.35" stroke-dasharray="1 0.6"/>')
     ly = 32 + 95 * MMPX * s + 4
     o.append(f'<line x1="{f(fx + 5)}" y1="{f(ly + 9)}" x2="{f(cx0)}" y2="{f(ly)}" stroke="{GUIDE}" stroke-width="0.25"/>')
     o.append(t(fx + 4.5, ly + 9.6, "care label (inside)", 1.7, 600, GUIDE, "end"))
     o.append(t(14, 140, "LABEL DETAIL — inside back waistband at CB (0.4 : 1)", 2.1, 700))
     o.append(label_detail(40, 148, 0.4))
-    rows = [["Main label", "damask woven, flat", "inside back waistband, centred on CB, 5 × 2.5 cm; SEWN DOWN ON ALL 4 SIDES (jet black). Nothing hangs from it.", "current HI art = reference; new artwork: to follow [MISSING]"],
+    rows = [["Main label", "Haki standard, woven, flat", "inside back waistband, centred on CB, 6.5 × 2 cm, white; SEWN DOWN ON ALL 4 SIDES (black thread). Nothing hangs from it.", "artwork: Haki standard main label (T7b, zip labels/)"],
             ["Size label", "damask woven, centrefold", f"inside CB, left of the main label: 30 × 10 mm folded at the middle, both ends in the waist seam (small loop); waist numbers {' '.join(SIZES)}", "artwork T7b + zip labels/ (Neue Metana, white on black)"],
-            ["Care label", "printed satin", "wearer's right side, in the waist seam, 5 cm in from the side seam; 3 × 6 cm", "current HI art = reference; new artwork: to follow [MISSING]"],
+            ["Care label", "printed satin", "wearer's right side, in the waist seam, 5 cm in from the side seam; 3 × 6.5 cm, front + back; top 0.5 cm (above the dashed line) goes into the seam", f"artwork: Haki standard care label, {CARE_FIBRE} (T7b, zip labels/)"],
             ["Hang tag", "", "hangs from the SIZE label (string through its fold), never from the main label", "hang tag artwork: to follow [MISSING]"],
             ["Shank button", "28 Line flat tack", "CF waistband, centred on the WB height", "matte black"],
             ["Zip fly", "YKK #4.5, 6 in", "CF fly, close-end, automatic lock slider", "matte black, DTM tape"],
@@ -456,18 +462,58 @@ def T7():
     o.append(t(196, yy + 1, "No HI flag labels and no cargo pockets on Konpeito (different product).", 1.75, 600, MUTED))
     return o
 
+def std_label_columns(xm, xc, y0, wc, h1):
+    """T7b columns 1 + 3: the Haki standard main label and the care label for this fabric (engine/labels.py), dimensioned."""
+    o = []; dm = 'stroke="#7A1F2B" stroke-width="0.2"'
+    for x0 in (xm, xc):
+        o.append(f'<rect x="{f(x0)}" y="{f(y0)}" width="{f(wc)}" height="{f(h1)}" fill="#FFFFFF" stroke="#222" stroke-width="0.3"/>')
+    # main label
+    cx = xm + wc / 2; mw, mh = LB.MAIN_MM
+    o.append(t(cx, y0 + 7, "Main Label", 2.9, 400, INK, "middle"))
+    o.append(t(cx, y0 + 10.5, "HAKI STANDARD — every product", 1.8, 700, GREEN, "middle"))
+    sm = min(1.0, (wc - 16) / mw); w_, h_ = mw * sm, mh * sm; lx, ly = cx - w_ / 2 + 2.5, y0 + 22
+    tag, _ = img(LB.render(LB.MAIN, dpi=300), lx, ly, w=w_, h=h_); o.append(tag)
+    o.append(f'<rect x="{f(lx)}" y="{f(ly)}" width="{f(w_)}" height="{f(h_)}" fill="none" stroke="#555" stroke-width="0.25"/>')
+    o.append(f'<line x1="{f(lx)}" y1="{f(ly - 2.2)}" x2="{f(lx + w_)}" y2="{f(ly - 2.2)}" {dm}/>')
+    for xx in (lx, lx + w_): o.append(f'<line x1="{f(xx)}" y1="{f(ly - 3)}" x2="{f(xx)}" y2="{f(ly - 1.4)}" {dm}/>')
+    o.append(t(lx + w_ / 2, ly - 3.2, f"{mw / 10:g} cm", 1.6, 400, INK, "middle"))
+    o.append(f'<line x1="{f(lx - 2)}" y1="{f(ly)}" x2="{f(lx - 2)}" y2="{f(ly + h_)}" {dm}/>'); o.append(t(lx - 3, ly + h_ / 2 + 0.6, f"{mh / 10:g} cm", 1.6, 400, INK, "end"))
+    if sm < 1: o.append(t(cx, ly + h_ + 4, f"drawn at {sm:.2f} : 1 — 1 : 1 file in labels/", 1.6, 400, MUTED, "middle"))
+    for i, ln in enumerate(["White ground, black HAKI STUDIOS logo + mark.", "Flat, sewn down on all 4 sides,", "centred on CB inside the back waistband."]):
+        o.append(t(cx, ly + h_ + 10 + i * 3.4, ln, 1.7, 400, INK, "middle"))
+    o.append(t(cx, ly + h_ + 10 + 3 * 3.4 + 1, "Weave (damask, as HI)  " + PROPOSED, 1.7, 600, AMBER, "middle"))
+    o.append(t(cx, y0 + h1 - 4, "Type: Woven label. Flat", 2.0, 400, INK, "middle"))
+    # care label: front + back
+    cx = xc + wc / 2; cw, ch = LB.CARE_MM
+    o.append(t(cx, y0 + 7, "Care Label", 2.9, 400, INK, "middle"))
+    o.append(t(cx, y0 + 10.5, f"HAKI STANDARD — {CARE_FIBRE}", 1.8, 700, GREEN, "middle"))
+    sc = min(1.0, (wc - 14) / (2 * cw + 4), (h1 - 34) / ch); w_, h_ = cw * sc, ch * sc
+    lx0 = cx - (2 * w_ + 4) / 2 + 1.5; ly = y0 + 18
+    for k, side in enumerate(("front", "back")):
+        lx = lx0 + k * (w_ + 4)
+        tag, _ = img(LB.render(CARE, page=k + 1, dpi=300), lx, ly, w=w_, h=h_); o.append(tag)
+        o.append(f'<rect x="{f(lx)}" y="{f(ly)}" width="{f(w_)}" height="{f(h_)}" fill="none" stroke="#555" stroke-width="0.25"/>')
+        o.append(t(lx + w_ / 2, ly + h_ + 3.4, side, 1.7, 600, INK, "middle"))
+    o.append(f'<line x1="{f(lx0)}" y1="{f(ly - 2.2)}" x2="{f(lx0 + w_)}" y2="{f(ly - 2.2)}" {dm}/>')
+    for xx in (lx0, lx0 + w_): o.append(f'<line x1="{f(xx)}" y1="{f(ly - 3)}" x2="{f(xx)}" y2="{f(ly - 1.4)}" {dm}/>')
+    o.append(t(lx0 + w_ / 2, ly - 3.2, f"{cw / 10:g} cm", 1.6, 400, INK, "middle"))
+    o.append(f'<line x1="{f(lx0 - 2)}" y1="{f(ly)}" x2="{f(lx0 - 2)}" y2="{f(ly + h_)}" {dm}/>'); o.append(t(lx0 - 3, ly + h_ / 2 + 0.6, f"{ch / 10:g} cm", 1.6, 400, INK, "end"))
+    o.append(t(cx, ly + h_ + 7.5, f"drawn at {sc:.2f} : 1; top 0.5 cm above the dashed line = into the waist seam", 1.5, 400, MUTED, "middle"))
+    o.append(t(cx, y0 + h1 - 4, "Type: Printed satin ribbon", 2.0, 400, INK, "middle"))
+    return o
+
 def T7b():
     import kjlabels as KL
-    o = hdr("T7b · LABEL ARTWORK — size label (new, HI style) + main / care label reference", "Size label: the HI size label (damask woven, centrefold, 30 × 10 mm) with OUR waist sizes in Neue Metana ExtraBold — files in the zip, labels/. Main + care label: current HI artwork, REFERENCE only — new artwork to follow from Haki.", "T7b")
+    o = hdr("T7b · LABEL ARTWORK — Haki standard main + care label, size label", f"Main + care label: the Haki standard labels (founder 22 Oct), made exactly as the files in the zip, labels/; care label = the {CARE_FIBRE} version. Size label: HI centrefold, 30 × 10 mm, OUR waist sizes.", "T7b")
     yb = 36; hcol = 104
     im = Image.open("inputs/reference/HI_p10-10.png")
     X0, X1, Y0, Y1 = int(im.width * 0.03), int(im.width * 0.97), int(im.height * 0.205), int(im.height * 0.961)   # ends on the box rule: below it the HI page text starts (PR #30 nit)
     third = (X1 - X0) / 3
     main = im.crop((X0, Y0, int(X0 + third), Y1)); care = im.crop((int(X0 + 2 * third), Y0, X1, Y1))
-    o.append(t(12, yb - 2, "A · LABELS — main + care = current HI artwork (REFERENCE ONLY, HI p. 10); size label = OURS, drawn in the HI style", 2.2, 700))
-    tag, h1 = img(main, 12, yb, h=hcol); o.append(tag); wc = h1 * main.width / main.height
+    o.append(t(12, yb - 2, f"A · LABELS — main + care = the HAKI STANDARD labels (founder 22 Oct; care label for {CARE_FIBRE}); size label = ours, HI style", 2.2, 700))
+    h1 = hcol; wc = h1 * main.width / main.height    # column width kept from the HI p. 10 frame (3 columns)
     xs = 12 + wc                                   # our size-label column, same frame as HI's middle column
-    tag, _ = img(care, xs + wc, yb, h=hcol); o.append(tag)
+    o += std_label_columns(12, xs + wc, yb, wc, h1)
     k = h1 / main.height                           # mm per HI px
     o.append(f'<rect x="{f(xs)}" y="{f(yb)}" width="{f(wc)}" height="{f(h1)}" fill="#FFFFFF"/>')
     o.append(f'<line x1="{f(xs)}" y1="{f(yb)}" x2="{f(xs)}" y2="{f(yb + h1)}" stroke="#222" stroke-width="0.3"/>')
@@ -498,7 +544,9 @@ def T7b():
     for i, sz in enumerate(KL.SIZE_RUN):
         st, _ = KL.label(sz, 12 + (i % 6) * (KL.W + 4), yr + 3 + (i // 6) * (KL.H + 4)); o += st
     w1 = 3 * wc
-    o.append(missing(12 + w1 + 6, yb, SW - 14 - (12 + w1 + 6), 16, ["Main label + care label: new artwork to follow [MISSING]", "Haki sends new artwork; until then this HI art is a reference for", "type, size, colours and layout only. HI size label (XS–3XL) NOT used."], 1.9))
+    o.append(t(12 + w1 + 6, yb + 2, "Main + care label = Haki standard artwork (founder 22 Oct).", 2.0, 700, GREEN))
+    o.append(t(12 + w1 + 6, yb + 6, f"Files in the zip, labels/: {os.path.basename(LB.MAIN)}, {os.path.basename(CARE)} (+ .ai).", 1.6, 400, INK))
+    o.append(t(12 + w1 + 6, yb + 9.4, "The HI main / care label art and the HI size label (XS–3XL) are NOT used.", 1.6, 400, INK))
     yy = yb + 22; cx = 12 + w1 + 6
     for a, b in [("Size label", "damask woven, CENTREFOLD, 30 × 10 mm flat (as HI): 5 mm seam allowance each"),
                  ("", "end, fold at 15 mm; the 10 mm face shows the waist size, Neue Metana ExtraBold,"),
@@ -506,15 +554,13 @@ def T7b():
                  ("", "Both ends sewn into the waist seam inside CB beside the main label: it stays a small"),
                  ("", "loop — the hang-tag string ties through it."),
                  ("", f"Sizes: {' '.join(KL.SIZE_RUN)} (founder 20 Oct)."),
-                 ("Main label", "damask woven, flat, 5 × 2.5 cm; jet black ground, optic white logo;"),
-                 ("", "inside CB, centred on the waistband, SEWN DOWN ON ALL 4 SIDES (jet black)."),
-                 ("Care label", "printed polyester satin ribbon, 3 × 6 cm, 0.5 cm stitching allowance at the top;"),
-                 ("", "optic white ground, jet black text; wearer's right, waist seam, 5 cm in from the side seam."),
-                 ("Care text (HI)", "SHELL: 100% COTTON · POCKETS: 100% COTTON · MADE IN [factory: country] ·"),
-                 ("", "MACHINE WASH COLD INSIDE OUT AND SEPARATE · DO NOT BLEACH · TUMBLE DRY LOW"),
-                 ("", "HEAT INSIDE OUT OR LINE DRY · IRON MEDIUM HEAT INSIDE OUT · DRY CLEAN · THIS"),
-                 ("", "GARMENT MAY FADE AND STAIN OTHER LIGHT SURFACES AND GARMENTS (until new art)"),
-                 ("Hang tag", "hangs from the SIZE label; artwork to follow [MISSING]"),
+                 ("Main label", "Haki standard: 6.5 × 2 cm, white ground, black logo; woven, flat;"),
+                 ("", "inside CB, centred on the waistband, SEWN DOWN ON ALL 4 SIDES (black thread)."),
+                 ("Care label", f"Haki standard, {CARE_FIBRE}: printed polyester satin ribbon, 3 × 6.5 cm, printed"),
+                 ("", "both sides (front: logo + fibre in 9 languages; back: care text + symbols); white ground,"),
+                 ("", "black print; top 0.5 cm above the dashed line goes into the waist seam, wearer's right,"),
+                 ("", "5 cm in from the side seam. The label prints MADE IN CHINA: tell Haki if made elsewhere."),
+                 ("Hang tag", "hangs from the SIZE label; artwork to follow (T7)."),
                  ("Certification", "all items to be OEKO-TEX certified (as HI).")]:
         o.append(t(cx, yy, a, 1.9, 700)); o.append(t(cx + 18, yy, b, 1.6, 600 if ("MISSING" in b or "proposed" in b) else 400, AMBER if ("MISSING" in b or "proposed" in b) else INK)); yy += 3.6
     return o
@@ -866,7 +912,7 @@ def Q1():
     o.append(t(12, y, "Still open", 2.6, 700)); y += 5
     for ln in ["Q-a  Size run 26 28 29 30 31 32 33 34 36 38 40 (24 dropped; 29 / 31 / 33 half-way between the HI sizes on T3 until the factory grades them) — correct?  " + PROPOSED,
                "Q-b  Soot-sprite drawing (redrawn from the low-res mockup): body Ø, fuzz length and the 2 legs — confirm on the 07a / 07b sew-out.  " + PROPOSED,
-               "Haki still owes (MISSING on T5 / T7 / T7b): main + care label art, hang tag art, packing design, barcodes per size."]:
+               "Haki still owes (MISSING on T5 / T7): hang tag art, packing design, barcodes per size. Main + care label = the Haki standard labels (founder 22 Oct, T7b)."]:
         o.append(t(12, y, ln, 2.0, 400, AMBER)); y += 4.2
     return o
 
@@ -935,7 +981,7 @@ def build():
     idx_plan = [("T1", "Cover / style summary + contents", ""), ("T2", "Flats — front + back", ""),
                 ("T3", "POM / size chart (HI, inches + cm; factory fills gaps)", ""),
                 ("T4", "Pattern — factory HI pattern, minus cargo", ""), ("T5", "Bill of materials (fabric + trims as HI)", ""),
-                ("T6", "Construction, stitching + wash", ""), ("T7", "Labels + trims placement", ""), ("T7b", "Label artwork — size labels + reference", ""),
+                ("T6", "Construction, stitching + wash", ""), ("T7", "Labels + trims placement", ""), ("T7b", "Label artwork — main, care + size labels", ""),
                 ("T8", "Embroidery placement overview", ""), ("G1", "Embroidery summary + thread chart", ""),
                 ("G2", "01 Coin-pocket patch こんぺいとう", ""), ("G3", "02 Konpeito spill (facing)", ""), ("G4", "03 Waistband patch ちひろ note", ""),
                 ("G5", "04 Back pocket L 'haki' + 2 konpeito", ""), ("G6", "05 Back pocket R pink konpeito", ""), ("G6b", "06 Back pocket L lower yellow konpeito", ""),
@@ -1006,8 +1052,7 @@ def build():
     # cover flags come from each page's actual content: a page is flagged when it carries a "[MISSING — …]" box
     import re
     # cover flags: what Haki still owes, per page; every flagged page must carry a [MISSING] mark and no other page may
-    FLAGS = {"T5": "label + hang tag art; packing design; barcodes", "T7": "main, care + hang tag art",
-             "T7b": "main + care label art"}
+    FLAGS = {"T5": "hang tag art; packing design; barcodes", "T7": "hang tag art"}
     has = {pid for pid, _, svg, _ in PAGES if "[MISSING]" in svg}
     assert has == set(FLAGS), f"[MISSING] marks on {sorted(has)} vs cover flags {sorted(FLAGS)}"
     state = {pid: [FLAGS[pid]] for pid in FLAGS}
@@ -1073,7 +1118,7 @@ def package(final):
         if pid.startswith("G"): shutil.copy(f"{OUT}/{pid}.pdf", f"{pkg}/elements/SPEC_{pid}.pdf")
     import kjlabels
     os.makedirs(f"{pkg}/labels", exist_ok=True)
-    for fn in kjlabels.build():
+    for fn in kjlabels.build() + LB.files_for(CARE_FIBRE):
         shutil.copy(fn, f"{pkg}/labels/")
     shutil.copy(final, pkg)
     readme = f"""HAKI — {NAME} ({STYLE}) — {REV}, {DATE}
@@ -1082,6 +1127,9 @@ Tech pack: {os.path.basename(final)} (T pages = garment, G = embroidery, C = com
 Pattern: use the factory's Hidden Inventory pants pattern, remove cargo pockets, 5-pocket jean construction (T4).
 Sizes: waist """ + " ".join(SIZES) + """ (measurements: T3, from the HI chart; 29 / 31 / 33 half-way PROPOSED; back rise / thigh / knee / outseam from the factory's HI spec).
 labels/                  size labels (HI centrefold style, 30 x 10 mm), one SVG + one PDF per size, 1:1 with dimensions (T7b)
+  main-label-6.5x2cm-white.pdf      Haki standard main label, 65 x 20 mm, 1:1 (T7, T7b)
+  haki-studios-care-label-*.pdf/.ai Haki standard care label for this fabric, 30 x 65 mm, front + back, 1:1
+                                    (-white.pdf = the one to make; the plain .pdf also holds a black-ground version)
 
 elements/<no>_<name>/  per embroidery element:
   *.dst *.pes            production stitch files (<= 12 threads each; numbers on G1 read back from these DSTs)
@@ -1102,7 +1150,8 @@ with the fit sample (T3, T4, F1).
 Legend: [proposed - confirm] = for the FACTORY to confirm or correct; [MISSING] = Haki still owes it.
 07a/07b front-leg trail = the mockup (founder 21 Oct): """ + f"{len(FRONT['stars'])} konpeito + {len(FRONT['soot'])} soot sprites" + """, positions G7 / C5, compare C7.
 Soot-sprite drawing redrawn from the low-res mockup: body size, fuzz length, legs PROPOSED - confirm on the sew-out.
-MISSING (to follow from Haki): main + care label artwork, hang tag artwork, packing design,
+Main + care label: the Haki standard labels (labels/, T7b). The care label prints MADE IN CHINA: change it if made elsewhere.
+MISSING (to follow from Haki): hang tag artwork, packing design,
 barcode per size (HK code from PLM, Code 128 on the polybag sticker).
 Sew-out (strike-off) of every file on the washed production denim / patch twill before bulk.
 """

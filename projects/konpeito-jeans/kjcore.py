@@ -60,7 +60,7 @@ COL_SP = {"TXC": 0.20, "EDGE": 0.18, "LINE": 0.18, "FL": 0.30, "FL-hi": 0.30, "K
 
 STYLE = "HK-JN-KONPEITO-BK"
 NAME = "Konpeito Jeans — Washed Black"
-REV = "Rev B6"
+REV = "Rev B7"
 import datetime as _dt
 DATE = (lambda d: f"{d.day} {d:%b %Y}")(_dt.date.today())     # build date (PR #34 nit: the stamp was typed and went stale)
 SIZES = ["26", "28", "29", "30", "31", "32", "33", "34", "36", "38", "40"]     # founder 20 Oct (size labels); Rev A had 24-40 evens
