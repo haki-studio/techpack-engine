@@ -87,7 +87,7 @@ def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=N
         codes = {c for c, _, _ in pset}
         stray = sorted({r.page for r in tdi.rows if r.page and r.page not in codes})
         if stray: raise SpecError(f"TD rows name pages this pack does not have: {', '.join(stray)} (pages: {', '.join(sorted(codes))})")
-        pset = [(c, ttl, [TDR.annotate(s, tdi.page_rows(c)) for s in svgs]) for c, ttl, svgs in pset]
+        pset = [(c, ttl, [TDR.annotate(s, tdi.page_rows(c), tdi) for s in svgs]) for c, ttl, svgs in pset]
         from td import trace as TDT                      # numeral-trace gate: fails the build, before anything is written
         td_sheet_svgs = TDR.comment_sheet(tdi)
         td_trace = TDT.enforce(tdi, td_sheet_svgs + [s for c, _, svgs in pset if tdi.page_rows(c) for s in svgs])
@@ -126,10 +126,11 @@ def main(argv=None):
     ap.add_argument("variants", nargs="+")
     a = ap.parse_args(sys.argv[1:] if argv is None else argv)
     fdir = os.path.abspath(a.family) if a.family else None
+    from td.schema import TDInputError
     for v in a.variants:
         try:
             r = build(v, out_root=a.out, family_dir=fdir, td=a.td and os.path.abspath(a.td))
-        except (SpecError, ValueError) as e:
+        except (SpecError, TDInputError) as e:          # input mistakes get a plain message; real bugs keep their traceback
             print(f"ERROR in {v}:\n  {e}"); return 1
         n = len(r["spec"].proposed())
         print(f"{r['spec'].name}: {len(r['pages'])} pages -> {r['pdf']} ({os.path.getsize(r['pdf']) / 1e6:.1f} MB)")

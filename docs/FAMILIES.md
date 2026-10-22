@@ -54,6 +54,15 @@ Edit `families/tee/family.yaml` once and every tee's pack changes on the next bu
 - **the full new-shape size chart**: paste it under `pom_chart: base:` and delete `deltas:` — the block, every flat
   sketch, every POM table and every print placement follow it (tested: `tests/test_family_tee.py`).
 
+## Rules a family (or variant) declares
+
+- `waist: elastic` (top-level key in `family.yaml`, or in a variant's `overrides:`) — the POM chart must have
+  `waist_relaxed` AND `waist_stretched` (a POM code or name, e.g. `name: Waist relaxed`); the build stops otherwise
+  (LESSONS T3, `engine/pom_rules.py`).
+- `pom_required: [inseam, ...]` — any other POMs this family must chart.
+- Every rise POM (front / back rise, crotch depth / length, CF / CB length) carries `incl_waistband: true` or `false`,
+  and one chart uses one method (LESSONS T1).
+
 ## What is family vs variant
 
 | Family (`family.yaml`, built once) | Variant (`variants/<slug>.yaml`, per product) |
