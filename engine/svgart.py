@@ -397,20 +397,23 @@ def thread_of(fill, palette):
 
 
 # ------------------------------------------------------------------ rendering (cairosvg): the gate reference
-def _keep_tree(path, keep, fill=None):
-    """the SVG with only the shapes inside a group whose id starts with one of `keep` (at any depth)"""
+def _keep_tree(path, keep, fill=None, els=None, exact=False):
+    """the SVG with only the shapes inside a group whose id starts with one of `keep` (at any depth); S1: and, if `els`, only
+    the shapes whose data-s1 number is in it (one family of a mixed layer)"""
     tree = ET.parse(path); root = tree.getroot()
     def prune(g, kept):
         any_kept = False
         for ch in list(g):
             tag = ch.tag.replace(NS, "")
             if tag == "g":
-                k = kept or any(ch.attrib.get("id", "").startswith(p) for p in keep)
+                gid = ch.attrib.get("id", "")
+                k = kept or any((gid == p) if exact else gid.startswith(p) for p in keep)
                 if prune(ch, k): any_kept = True
                 else: g.remove(ch)
             elif tag in ("defs", "style"): continue
             else:
-                ok = kept and (fill is None or _norm_fill(_attr(ch, "fill", "")) == _norm_fill(fill))
+                ok = kept and (fill is None or _norm_fill(_attr(ch, "fill", "")) == _norm_fill(fill)) \
+                    and (els is None or ch.attrib.get("data-s1") in els)
                 if ok: any_kept = True
                 else: g.remove(ch)
         return any_kept
@@ -418,12 +421,12 @@ def _keep_tree(path, keep, fill=None):
     return root
 
 
-def layer_mask(path, keep, W, H, ppm=20.0, fill=None):
+def layer_mask(path, keep, W, H, ppm=20.0, fill=None, els=None, exact=False):
     """cairosvg render of ONLY the layers whose id starts with one of `keep` (and, if fill, only shapes of that fill)
     -> bool mask (H*ppm, W*ppm). The gate reference: rendered from the founder's file, not from this parser."""
     import cairosvg
     from PIL import Image
-    root = _keep_tree(path, list(keep), fill)
+    root = _keep_tree(path, list(keep), fill, els, exact)
     png = cairosvg.svg2png(bytestring=ET.tostring(root), output_width=int(round(W * ppm)), output_height=int(round(H * ppm)), unsafe=False)
     a = np.asarray(Image.open(io.BytesIO(png)).convert("RGBA"))
     return a[..., 3] > 127

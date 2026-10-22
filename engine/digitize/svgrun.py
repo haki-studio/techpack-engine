@@ -264,13 +264,21 @@ def gate_file(cfg, plan, dst, rbk, seg_npz=None):
     stop_of = {pid: i for i, st in enumerate(plan.stops) for pid in st["parts"]}
     wt = {i: plan.threads[st["thread"]].get("weight", "40wt") for i, st in enumerate(plan.stops)}
     masks = qa.dst_stop_masks(dst, origin, shape, ppm, thread_d={i: TD[w] / s for i, w in wt.items()}, to_mm=to_svg)
-    by_layer = {}
-    for p in plan.parts: by_layer.setdefault(p.meta.get("layer", p.zone), []).append(p)
+    by_layer = {}; fam_els = {}
+    for p in plan.parts:                    # S1: a mixed layer is gated per family (lines | shapes) on its own source shapes
+        lid = p.meta.get("layer", p.zone); key = (lid, p.meta["s1_fam"]) if p.meta.get("s1_fam") else lid
+        by_layer.setdefault(key, []).append(p)
+        if p.meta.get("s1_el"): fam_els.setdefault(key, set()).update(p.meta["s1_el"])
+    fams_of = {}
+    for key in by_layer: fams_of.setdefault(key[0] if isinstance(key, tuple) else key, []).append(key)
     CLc = G.get("centreline", {}); MOc = G.get("motif", {})
     cl_rows, motif_rows, rows_all = [], [], {}
     refs = {}
-    for lid, ps in by_layer.items():
-        ref = svgart.layer_mask(sv["svg"], [lid], W, H, ppm); refs[lid] = ref
+    for key, ps in by_layer.items():
+        lid = key[0] if isinstance(key, tuple) else key
+        els = fam_els.get(key) if isinstance(key, tuple) and len(fams_of[lid]) > 1 else None
+        ref = svgart.layer_mask(sv["svg"], [lid], W, H, ppm, els=els, exact=bool(cfg["svg"].get("auto"))); refs[key] = ref
+        if isinstance(key, tuple) and len(fams_of[lid]) > 1: lid = f"{lid} [{key[1]}s]"
         kinds = {p.kind for p in ps}; stops = sorted({stop_of[p.id] for p in ps if p.id in stop_of})
         if kinds & set(COLUMN_KINDS):
             wts = {p.meta.get("thread_wt", "40wt") for p in ps}; w_ = sorted(wts)[0]
@@ -290,7 +298,13 @@ def gate_file(cfg, plan, dst, rbk, seg_npz=None):
                                house_min=sum(r["house_min"] for r in rows), min_iou=min([r["iou"] for r in rows], default=None),
                                mean_iou=round(float(np.mean([r["iou"] for r in rows])), 2) if rows else None, stops=[i + 1 for i in stops]))
     allout = np.any(list(masks.values()), axis=0) if masks else np.zeros(shape, bool)
-    design = ndi.binary_fill_holes(np.any(list(refs.values()), axis=0))
+    design = np.any(list(refs.values()), axis=0)
+    if cfg["svg"].get("auto"):              # S1: art may enclose bare fabric (a ring logo): fill only pinholes (<= 4 mm2)
+        holes = ndi.binary_fill_holes(design) & ~design; lab, n = ndi.label(holes)
+        if n:
+            sz = ndi.sum(holes, lab, range(1, n + 1)) / ppm ** 2
+            design = design | np.isin(lab, [i + 1 for i, a in enumerate(sz) if a <= 4.0])
+    else: design = ndi.binary_fill_holes(design)
     unc = qa.uncovered(design, allout, ppm)
     stop_geoms = [unary_union([plan.part(pid).geom for pid in st["parts"]]) for st in plan.stops]
     EX = dict(halo=0.25, min_mm=0.5, min_ex=0.3, **G.get("exposed", {}))

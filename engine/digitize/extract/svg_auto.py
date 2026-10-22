@@ -37,13 +37,14 @@ STROKE_E, STROKE_MAX_T = 1.6, 7.0
 STAR_HULL, STAR_N, STAR_ASK = 1.12, 5, 0.03     # 5 regular points, hull/area >= 1.12; ask within +-0.03
 TINT_BODY = 8.0               # a lobe on a shape at most 8x its area is that shape's tint (a patch field is not a body)
 FILL_MIN_T = 4.0              # rule 4: fill only where >= ~5 mm wide; below 4 mm a stroke is never asked about as a fill
-LOBE_HULL, LOBE_VD = 1.03, 0.9
+LOBE_HULL, LOBE_VD, LOBE_GAP_SD = 1.03, 0.9, 15.0   # lobes: 4-8 evenly spaced (deg sd) bumps
 FINE_T = 1.0
 BORDER = 0.15                 # within 15 % of a threshold -> ask
 MERGE_DE = 3.0                # two design colours closer than this share one thread
 FAR_DE = 6.0                  # nearest Isacord further than this -> warning (the thread card decides)
 PATCH_RECT = 0.97             # area / minimum rotated rectangle: the patch outline must be a rectangle (band trapezoids)
 PATCH_BAND = (2.0, 15.0)      # band width range between the outline and the field, mm
+MIN_SHAPE_MM2 = 0.05          # below this a parsed piece is a sliver, not a shape
 TAG = "data-s1"               # normalize() numbers every shape element; parts and gates use it to find their source shapes
 SVG_NS = "http://www.w3.org/2000/svg"
 SHAPES = ("path", "rect", "circle", "ellipse", "polygon", "polyline", "line")
@@ -96,9 +97,15 @@ def normalize(src, dst, width_mm, margin_mm=1.0):
     tree = ET.parse(src); root = tree.getroot(); warnings = []
     if root.tag != f"{{{SVG_NS}}}svg": raise AutoError("the root element is not an SVG <svg> (missing the SVG namespace?)")
     vb = _vb(root)
-    grads = _gradients(root); n = 0
+    grads = _gradients(root); n = 0; gids = set(); ng = 0
     for e in root.iter():
         tag = e.tag.replace(f"{{{SVG_NS}}}", "")
+        if tag == "g":                                           # every group gets a UNIQUE id (layers are named by group id)
+            gid = e.attrib.get("id")
+            if not gid or gid in gids:
+                ng += 1; gid = f"{gid}_{ng}" if gid else f"group_{ng}"
+                e.set("id", gid)
+            gids.add(gid)
         if tag in ("text", "image", "foreignObject"):
             warnings.append(f"the SVG has a <{tag}> element: it is not digitised (convert text to outlines, trace images); "
                             f"the 'every shape read' gate fails while it is there")
@@ -127,7 +134,7 @@ def normalize(src, dst, width_mm, margin_mm=1.0):
     s = float(width_mm) / (b[2] - b[0]); m = margin_mm / s
     x0, y0, w, h = b[0] - m, b[1] - m, (b[2] - b[0]) + 2 * m, (b[3] - b[1]) + 2 * m
     W, H = w * s, h * s
-    wrap = ET.Element(f"{{{SVG_NS}}}g", {"transform": f"scale({s:.10g}) translate({-x0:.10g} {-y0:.10g})"})
+    wrap = ET.Element(f"{{{SVG_NS}}}g", {"id": "art", "transform": f"scale({s:.10g}) translate({-x0:.10g} {-y0:.10g})"})
     for ch in list(root): root.remove(ch); wrap.append(ch)
     root.append(wrap)
     for k in ("width", "height", "viewBox", "preserveAspectRatio", "x", "y"): root.attrib.pop(k, None)
@@ -178,13 +185,13 @@ def classify(f):
     if f["E"] >= STROKE_E and f["T"] <= STROKE_MAX_T:
         bl = "stroke-fill" if (near(f["E"], STROKE_E) and f["T"] >= FILL_MIN_T) or near(f["T"], STROKE_MAX_T) else None
         return "stroke", bl
-    if f["T"] < 0.8:                                            # too thin for a fill: a column (rule 4), the house minimum reports
-        return "stroke", None
-    lobed = f["hull"] >= LOBE_HULL and 3 <= f["pk"] <= 8 and f["vd"] <= LOBE_VD
+    lobed = f["hull"] >= LOBE_HULL and 4 <= f["pk"] <= 8 and f["vd"] <= LOBE_VD and f["gap_sd"] < LOBE_GAP_SD
     if lobed:
         star = f["pk"] == STAR_N and f["hull"] >= STAR_HULL and f["gap_sd"] < 6.0
         bl = "star-petals" if abs(f["hull"] - STAR_HULL) <= STAR_ASK and f["pk"] == STAR_N else None
         return ("star" if star else "petals"), bl
+    if f["T"] < FILL_MIN_T:                                     # rule 4: fill only where >= ~5 mm wide; smaller = satin
+        return "stroke", None
     bl = "stroke-fill" if near(f["E"], STROKE_E) and f["T"] <= STROKE_MAX_T else None
     return "fill", bl
 
@@ -302,7 +309,7 @@ def derive(norm_svg, fabric="twill", answers=None):
     allp = []
     for L in Ls:
         for i, e in enumerate(L.elements):
-            for j, P in enumerate(svgart.polys(e.geom)): allp.append(dict(L=L, i=i, j=j, e=e, P=P))
+            for j, P in enumerate(svgart.polys(e.geom)): allp.append(dict(L=L, i=i, j=j, e=e, P=P, tiny=P.area < MIN_SHAPE_MM2))
     geoms = [r["P"] for r in allp]; tree = STRtree(geoms) if geoms else None
     def on_other(k):
         P = allp[k]["P"]
@@ -322,6 +329,8 @@ def derive(norm_svg, fabric="twill", answers=None):
         shapes = {}; border = {}; n_cls = {}
         for k, r in enumerate(allp):
             if r["L"] is not L: continue
+            if r["tiny"]:                                        # a zero-area sliver of the parse: nothing to sew (reported)
+                shapes[f"{r['i']}.{r['j']}"] = {"as": "skip"}; n_cls["skip"] = n_cls.get("skip", 0) + 1; continue
             f = features(r["P"]); cls, bl = classify(f)
             if cls in ("petals", "star") and on_other(k): kind = "petal_tint" if cls == "petals" else "star_tint"
             else: kind = {"petals": "petal", "star": "star"}.get(cls)

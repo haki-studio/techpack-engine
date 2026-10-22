@@ -139,7 +139,7 @@ class _B:
         S = cfg["svg"]; T = cfg["threads"]
         self.palette = T.get("palette") or {}; self.weights = T.get("weight", {}); self.max_dE = float(T.get("max_dE", 3.0))
         self.tints = set(T.get("tints", [])); self.parts = []; self.n = {}; self.report = {}; self.thread_dE = {}
-        self.fill_map = T.get("fill_map") or {}; self.src = None            # S1: fill -> thread decided by svg_auto
+        self.fill_map = T.get("fill_map") or {}; self.src = None; self.fam = None   # S1: fill -> thread decided by svg_auto
         self.dot_floor = 0.0
         if cfg.get("fabric"):                                                # S1: pile swallows small dots (rules/fabrics.yaml)
             from digitize.extract.svg_auto import fabric_rules
@@ -160,7 +160,7 @@ class _B:
         pre = layer.split("_")[0] if layer[:2].isdigit() else layer[:6]
         self.n[pre] = self.n.get(pre, 0) + 1
         m = dict(layer=layer, thread_wt=self.weights.get(thread, "40wt"))
-        if self.src: m["s1_el"] = list(self.src)                            # S1: the SVG shapes this part comes from (gates)
+        if self.src: m["s1_el"] = list(self.src); m["s1_fam"] = self.fam   # S1: the SVG shapes this part comes from (gates)
         m.update(meta)
         for key in ("cl", "axis"):                 # point lists follow the frame too
             if key in m and m[key] is not None: m[key] = [self.pt(q) for q in m[key]]
@@ -279,7 +279,7 @@ def _shapes(B, L, z0, spec):
             if d is None: raise SvgPartsError(f"layer {L.id}: shape {i}.{j} has no decision (the run config is stale: derive it again)")
             a = d["as"]; z = z0 + i + 0.01 * j
             if a == "skip": continue
-            th = B.thread(e.fill); B.src = [tag] if tag else None
+            th = B.thread(e.fill); B.src = [tag] if tag else None; B.fam = "shape"
             if a in ("stroke", "stroke_dot"):
                 st = strokes.setdefault(e.fill, dict(z=z, P=[], src=set(), dots=False)); st["P"].append(P)
                 if tag: st["src"].add(tag)
@@ -294,7 +294,7 @@ def _shapes(B, L, z0, spec):
                       note="long axis of the shape (minimum rotated rectangle), declared by svg_auto"))
             else: raise SvgPartsError(f"layer {L.id}: shape {i}.{j}: unknown decision {a!r}")
     for f, st in strokes.items():
-        B.src = sorted(st["src"]) or None
+        B.src = sorted(st["src"]) or None; B.fam = "line"
         B.column(L.id, unary_union(st["P"]), B.thread(f), st["z"], dict(spec.get("column", {}), dots=st["dots"]), "lettering")
     B.src = None
 
