@@ -7,6 +7,7 @@ name: Haki heavyweight tee
 factory:
   name: Jiangxi Shengnan Garment Co., Ltd
   contact: Mandy Luo
+  supplier: mandy          # key of this factory's limits in factory.json (top level = Mandy Luo); read by engine/supplier_gate.py
 rev: Rev A
 date: 20 Oct 2026
 
