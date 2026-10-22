@@ -49,7 +49,7 @@ silhouette WITHOUT cargo pockets. Measurements: Hidden Inventory published size 
   shell RHT 3x1 denim 12 oz 100 % cotton, enzyme + stone wash, colour washed black; pocket bag 40's twill 160 GSM 100 % cotton;
   threads topstitch Tex 135 / TKT 20, overlock + buttonhole Tex 60 / TKT 50; YKK #4.5 close-end auto-lock zip 6 in (replaces the
   button fly); 28 Line flat tack shank button; 15 L (9.5 mm) inverted nipple rivets at scoop + coin pocket corners;
-  main label damask 5 × 2.5 cm inside CB on the WB, size label beside it, printed satin care label with HI care text
+  main label = the Haki standard 6.5 × 2 cm white main label (founder 22 Oct; was damask 5 × 2.5 cm) inside CB on the WB, size label beside it, printed satin care label with HI care text
   (wearer's right, waist seam, 5 cm in from the side seam); OEKO-TEX certified. HI flag labels + cargo pockets NOT used.
 - Patches 01 + 03 sewn on after the wash. Coin-patch edge red, as in the SVG.
 - Measurements (coordinator, 19 Oct): the HI tech pack has no measurement chart; the factory (Mandy) fills back rise, thigh,
@@ -119,3 +119,18 @@ black (not "as HI"); waistband 2 pieces joined at CB; back pockets = "2 back pat
 22. Soot sprites redrawn from the low-res mockup (~1 mm per px): one body Ø for all (median of the 9 traced bodies,
     14.2 mm), fuzz = radial satin 0.2–1.1 mm beyond the body, 2 legs (triple run 2.8 mm), eyes 0.24 D × 0.31 D white
     satin with Ø1.2 black pupils at the traced positions; thread "Soot black" #151414 40wt. Confirm on the sew-out.
+    SUPERSEDED by Rev B8 #22 below.
+
+## Rev B8 — founder 22 Oct 2026 on the soot sprites — CONFIRMED
+- J6: "I don't love digitizing. The eyes all look crazy and cracked out. Some limbs of the soot sprites are missing. See
+  the reference image again." -> the sprites are redrawn from a hand-read art table of the original mockup
+  (inputs/soot_art.json); candies, body, fuzz and positions unchanged.
+
+## Rev B8 assumptions (PROPOSED)
+22. (replaces Rev B6 #22) Soot sprites: one body Ø for all (median of the 9 traced bodies, 14.2 mm), fuzz = radial satin
+    0.2–1.1 mm beyond the body; limbs as on the mockup per inputs/soot_art.json — arms reaching to the candy each sprite
+    holds where the arm shows (an arm behind a candy held against the body is not sewn), legs, 23 limbs in all, triple
+    run; eyes 0.30 D × 0.38 D white satin (zigzag, 0.20 mm crossings, no split) with Ø2.1 black satin-dot pupils, both
+    pupils offset by ONE gaze per sprite (the mockup cannot resolve the pupils: both look at the candy held, up when the
+    arms are raised); thread "Soot black" #151414 40wt. The mockup is ~1 mm per px, so limbs and gaze are a reading of
+    it, not a trace. Confirm on the sew-out.

@@ -205,3 +205,28 @@ def test_soot_sprites_traced_and_gated():
     M = C.dst_masks_on(f"out/stitch/{stem}.dst", rj["origin_mm"], shape, to_px)
     r = kjsoot.sprite_gate(q, M, to_px, shape)
     assert not r["ok"] and r["pos_mm"] > kjsoot.POS_MAX
+
+
+def test_soot_art_gates_red_on_b7_green_on_b8(tmp_path):
+    """Rev B8 (founder 22 Oct: 'the eyes all look crazy and cracked out; some limbs are missing'). The B7 gate passed 9/9
+    because it counted white blobs. The art gate checks the DST against inputs/soot_art.json (hand-read from the mockup):
+    limbs, shared gaze, eye size, eye satin density/split. Red: the shipped Rev B7 DSTs (tests/fixtures/konpeito_b7) fail
+    on EVERY new check for every sprite; green: the B8 build passes 9/9; mutations of the table turn single checks red."""
+    import copy, json, kjsoot, kjfront
+    b7_dir = os.path.join(ROOT, "tests", "fixtures", "konpeito_b7")
+    red = kjsoot.run(b7_dir, str(tmp_path / "g7.json"), str(tmp_path / "c7.png"))
+    assert len(red) == 9 and not any(r["ok"] for r in red)
+    assert not any(r["limbs_ok"] for r in red)                                    # (a) limbs: B7 = 2 fixed stub legs
+    assert all(r["gaze_agree_mm"] > kjsoot.GAZE_AGREE for r in red)               # (b) pupils look different ways
+    assert all(r["eye_area_err_pct"] > 100 * kjsoot.EYE_AREA_TOL for r in red)    # (c) eyes too small
+    assert all(r["row_gap_mm"] > kjsoot.ROW_GAP_MAX for r in red)                 # (d) open satin = the "cracks"
+    assert all(r["pos_mm"] <= kjsoot.POS_MAX and r["eyes"] == 2 for r in red)     # ... while the old checks still pass
+    green = kjsoot.run(out=str(tmp_path / "g8.json"), sheet_png=str(tmp_path / "c8.png"))
+    assert len(green) == 9 and all(r["ok"] for r in green)
+    # mutations on the B8 DST: drop a limb from the table / turn one sprite's gaze -> that sprite goes red
+    art = copy.deepcopy(kjfront.soot_art()); art["sprites"]["K01"]["limbs"].pop(0)
+    art["sprites"]["K05"]["eyes"]["gaze"] = [0.65, 0.0]
+    rows = {r["id"]: r for r in kjsoot.run(out=str(tmp_path / "gm.json"), sheet_png=str(tmp_path / "cm.png"), art=art)}
+    assert not rows["K01"]["limbs_ok"] and rows["K01"]["limbs_dst"] == 4 and rows["K01"]["limbs_art"] == 3
+    assert not rows["K05"]["ok"] and rows["K05"]["gaze_err_mm"] > kjsoot.GAZE_MAX
+    assert rows["K09"]["ok"]

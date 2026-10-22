@@ -44,9 +44,9 @@ KJ_RULES = {  # code -> (name, stitch, angle rule, density, stitch length, under
  "STAR":  ("Puffy star body",             "Satin, radial",    "radial from star centre", "0.38", "—", "edge run",              "0.15", "direct on denim"),
  "SOOT":  ("Soot-sprite body",            "Tatami",           "45°",                    "0.42", "3.5", "edge run + 90° tatami", "0.20", "black 40wt, direct on denim; cut away under the candies"),
  "FUR":   ("Soot-sprite fuzz",            "Satin, radial, random length", "radial from the body centre", "0.42 at the rim", "—", "none", "0.00", "hairs 0.2–1.1 beyond the body over a 1.0 mm overlap"),
- "LEG":   ("Soot-sprite leg",             "Triple run",       "along the leg",          "—",    "2.0–3.0", "—",              "0.00", "2 legs, 2.8 beyond the body"),
- "EYE":   ("Soot-sprite eye white",       "Satin",            "0°",                     "0.36", "—", "none",                 "0.10", "0.24 D × 0.31 D oval, sewn after the candies"),
- "PUPIL": ("Soot-sprite pupil Ø1.2",      "Satin dot",        "crossed 90°",            "0.20", "—", "none",                 "0.00", "black, sewn last"),
+ "LEG":   ("Soot-sprite leg",             "Triple run",       "along the leg",          "—",    "2.0–3.0", "—",              "0.00", "arms + legs per the art table (inputs/soot_art.json)"),
+ "EYE":   ("Soot-sprite eye white",       "Satin",            "across the oval",        "0.20", "—", "centre run",           "0.00", "0.30 D × 0.38 D oval, no split, sewn after the candies"),
+ "PUPIL": ("Soot-sprite pupil Ø2.1",      "Satin dot",        "crossed 90°",            "0.20", "—", "none",                 "0.00", "black, sewn last; one gaze per sprite"),
  "STAR-hi": ("Puffy star highlight",      "Satin, radial",    "radial",                 "0.38",  "—",  "none",                 "0.10", ""),
 }
 tech.RULES.update(KJ_RULES)
@@ -60,7 +60,7 @@ COL_SP = {"TXC": 0.20, "EDGE": 0.18, "LINE": 0.18, "FL": 0.30, "FL-hi": 0.30, "K
 
 STYLE = "HK-JN-KONPEITO-BK"
 NAME = "Konpeito Jeans — Washed Black"
-REV = "Rev B7"
+REV = "Rev B8"
 import datetime as _dt
 DATE = (lambda d: f"{d.day} {d:%b %Y}")(_dt.date.today())     # build date (PR #34 nit: the stamp was typed and went stale)
 SIZES = ["26", "28", "29", "30", "31", "32", "33", "34", "36", "38", "40"]     # founder 20 Oct (size labels); Rev A had 24-40 evens

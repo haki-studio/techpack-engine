@@ -213,14 +213,45 @@ def trace_soot(G):
     for k, q in enumerate(out, 1): q["id"] = f"K{k:02d}"
     return out
 
-def soot_regions(q, x=None, y=None, seed=None):
-    """one soot sprite in leg mm: black tatami body, radial fuzz of random length (prebuilt block), 2 triple-run legs,
-    2 white satin eyes, 2 black satin-dot pupils."""
+SOOT_ART_PATH = "inputs/soot_art.json"   # Rev B8: per-sprite art table, hand-read from the mockup (kjsootart.py)
+SOOT_EYE_SP = 0.20        # eye white satin row spacing (0.40 same side): solid white, no split (eyes < 7 mm wide)
+_ART = {}
+
+def soot_art(path=SOOT_ART_PATH):
+    if path not in _ART: _ART[path] = json.load(open(path))
+    return _ART[path]
+
+def _triple(pts, step=1.5):
+    """triple run along a polyline (out, back, out), ~step mm stitches."""
+    from shapely.geometry import LineString
+    ln = LineString(pts); n = max(2, int(math.ceil(ln.length / step)))
+    f = [tuple(ln.interpolate(ln.length * k / n).coords[0]) for k in range(n + 1)]
+    return f + f[-2::-1] + f[1:]
+
+def _eye_satin(c, w, h, tilt, sp=SOOT_EYE_SP):
+    """one satin oval: centre-run underlay along the long axis, then a zigzag across the width, needle points on
+    alternate sides every sp mm (2 x sp on the same side); no split (w < 7 mm), no short connector stitches."""
+    t = math.radians(tilt); ux, uy = math.cos(t), math.sin(t); vx, vy = -uy, ux        # u = across (width), v = long axis
+    a, b = w / 2, h / 2
+    P = lambda s, r: (c[0] + ux * s + vx * r, c[1] + uy * s + vy * r)
+    und = [P(0, -b + 0.6), P(0, b - 0.6)]
+    n = max(4, int(h / sp)); zz = []
+    for k in range(n + 1):
+        r = -b + h * k / n; hw = a * math.sqrt(max(0.0, 1 - (r / b) ** 2))
+        if hw < 0.3: continue
+        zz.append(P(-hw if len(zz) % 2 == 0 else hw, r))
+    return [und, zz]
+
+def soot_regions(q, x=None, y=None, seed=None, art=None):
+    """one soot sprite in leg mm: black tatami body, radial fuzz of random length (prebuilt block), then from the Rev B8
+    art table (inputs/soot_art.json, by K id): its limbs (arms to the candies it holds, legs) as triple runs, 2 white satin
+    eyes at the table size/tilt and 2 black satin-dot pupils offset by ONE shared gaze vector."""
     from shapely.geometry import Point, LineString
     from shapely import affinity
     import kjsvg
     cx = q["x_from_side_mm"] if x is None else x; cy = q["y_from_waist_mm"] if y is None else y
     D = q["d_mm"]; R = D / 2
+    A = (art or soot_art())["sprites"][q["id"]]
     rng = np.random.default_rng(seed if seed is not None else int(q["id"][1:]) * 7919)
     regs = [dict(col="kj_soot", geom=Point(cx, cy).buffer(R - 0.15, quad_segs=24), st="tatami", ang=45.0, grp="SOOT", layer=0)]
     n = int(round(2 * math.pi * (R + 0.6) / 0.42)); pts = []
@@ -231,15 +262,15 @@ def soot_regions(q, x=None, y=None, seed=None):
     pts.append(pts[0])
     ring = Point(cx, cy).buffer(R + SOOT_FUR[1], quad_segs=24).difference(Point(cx, cy).buffer(R - 1.0, quad_segs=24))
     regs.append(dict(col="kj_soot", geom=ring, st="satin", ang="pre", grp="FUR", layer=0, pre=[pts]))
-    for sgn in (-1, 1):
-        th = math.radians(90 + sgn * 28)
-        a = (cx + (R - 0.6) * math.cos(th), cy + (R - 0.6) * math.sin(th)); b = (cx + (R + SOOT_LEG) * math.cos(th), cy + (R + SOOT_LEG) * math.sin(th))
-        regs.append(dict(col="kj_soot", geom=LineString([a, b]).buffer(0.25), st="bean", ang="pre", grp="LEG", layer=0, pre=[[a, b, a, b]]))
-    ew, eh = SOOT_EYE[0] * D, SOOT_EYE[1] * D
-    for (ex, ey), (px_, py_) in zip(q["eyes_mm"], q["pupils_mm"]):
-        e = affinity.scale(Point(cx + ex, cy + ey).buffer(1.0, quad_segs=16), ew / 2, eh / 2)
-        regs.append(dict(col="kj_white", geom=e, st="satin", ang=0.0, grp="EYE", layer=0))
-        regs.append(kjsvg.bead("kj_soot", "PUPIL", Point(cx + ex + px_, cy + ey + py_).buffer(SOOT_PUPIL_D / 2 + 0.1, quad_segs=12), SOOT_PUPIL_D))
+    for L in A["limbs"]:
+        P = [(cx + px_, cy + py_) for px_, py_ in L["pts"]]
+        regs.append(dict(col="kj_soot", geom=LineString(P).buffer(0.25), st="bean", ang="pre", grp="LEG", layer=0, pre=[_triple(P)], limb=L["kind"]))
+    E = A["eyes"]; gx, gy = E["gaze"]
+    for ex, ey in E["centres"]:
+        c = (cx + ex, cy + ey)
+        e = affinity.rotate(affinity.scale(Point(c).buffer(1.0, quad_segs=24), E["w"] / 2, E["h"] / 2), E["tilt_deg"], origin=c)
+        regs.append(dict(col="kj_white", geom=e, st="satin", ang="pre", grp="EYE", layer=0, pre=_eye_satin(c, E["w"], E["h"], E["tilt_deg"])))
+        regs.append(kjsvg.bead("kj_soot", "PUPIL", Point(c[0] + gx, c[1] + gy).buffer(E["pupil"] / 2 + 0.1, quad_segs=16), E["pupil"]))
     return regs
 
 def sections(stars, frame=None):
