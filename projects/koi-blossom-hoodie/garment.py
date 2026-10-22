@@ -159,7 +159,7 @@ def p_questions():
     for q in qs: o.append(t(12, y, q, 1.75, 400, PROP)); y += 4.6
     y += 6; o.append(t(12, y, "REVISION LOG", 2.4, 700)); y += 5
     import textwrap
-    revs = [("Garment Rev A", DATE, "Garment pages + pattern: zip-hoodie block (founder decision 19 Oct, hood option 1) with this design's welt override (mockup welts, " + f"{F.WELT_ANG:.0f}°)."),
+    revs = [("Garment Rev A", "19 Oct 2026", "Garment pages + pattern: zip-hoodie block (founder decision 19 Oct, hood option 1) with this design's welt override (mockup welts, " + f"{F.WELT_ANG:.0f}°)."),
             ] + [(f"Embroidery {rv}", dt, txt) for rv, dt, txt in kbcore.REV_LOG]
     for rv, dt, txt in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(46, y, dt, 1.7))

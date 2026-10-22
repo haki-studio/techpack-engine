@@ -1,4 +1,4 @@
-"""Package: stale split files removed, merged tech pack (garment T + embroidery G), thread charts for every stitch file, elements/, README, zip."""
+"""Package: stale split files removed, merged INTERNAL tech pack (garment T + embroidery G), thread charts for every stitch file, elements/, README, zip."""
 import kbcore
 import os, shutil, glob, subprocess, json
 import pyembroidery as pe
@@ -20,7 +20,7 @@ emb = f"out/HAKI_{kbcore.SHORT}_EMBROIDERY-PACK_{kbcore.REV_EMB.replace(' ', '')
 gar = glob.glob(f"out/garment/HAKI_{kbcore.SHORT}_GARMENT_*.pdf")[0]
 from pypdf import PdfWriter, PdfReader
 w = PdfWriter(); w.append(PdfReader(gar)); w.append(PdfReader(emb))
-full = f"out/HAKI_{kbcore.SHORT}_TECHPACK_{kbcore.REV_EMB.replace(' ', '')}.pdf"; w.write(full + ".tmp.pdf")
+full = f"out/HAKI_{kbcore.SHORT}_INTERNAL_{kbcore.REV_EMB.replace(' ', '')}.pdf"; w.write(full + ".tmp.pdf")     # internal merged pack; factory copies = rfq.py
 subprocess.run(["python3", "shrink.py", full + ".tmp.pdf", full, "3000", "82"], check=True); os.remove(full + ".tmp.pdf")
 pdf = full; shutil.copy(pdf, PKG)
 shutil.copytree("out/garment/pattern", f"{PKG}/pattern")
@@ -51,6 +51,6 @@ Size M (read from the DST):
 max 12 thread colours per file (factory limit, incl. registration). Production-intent drafts: the factory digitizer checks
 density + pull on the shell and sews out size M before bulk. Every [proposed - confirm] in the PDF is still open.
 """)
-for z in glob.glob("out/*.zip"): os.remove(z)
-subprocess.run(f"cd {PKG} && zip -qr ../HAKI_{kbcore.SHORT}_{kbcore.REV_EMB.replace(' ', '')}_files.zip .", shell=True)
-print("zip MB", round(os.path.getsize(glob.glob('out/*.zip')[0]) / 1e6, 1))
+for z in glob.glob("out/*_INTERNAL_files.zip"): os.remove(z)
+subprocess.run(f"cd {PKG} && zip -qr ../HAKI_{kbcore.SHORT}_{kbcore.REV_EMB.replace(' ', '')}_INTERNAL_files.zip .", shell=True)
+print("zip MB", round(os.path.getsize(glob.glob('out/*_INTERNAL_files.zip')[0]) / 1e6, 1))

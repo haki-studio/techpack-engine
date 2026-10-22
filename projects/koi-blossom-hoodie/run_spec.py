@@ -87,6 +87,29 @@ CFG = {
             "Back half of the sleeves: plain [proposed — confirm]."],
    production=PROD, reference=REF["02"])}
 
+# factory copy (Rev D, `run_spec.py --factory`, run by rfq.py): neutral reference + change notes, no build provenance
+REF_FAC = {"01": "Artwork: every motif traced from the design mockup and its close-up. Fish: tetras at 0.82 x the mockup fish length (confirmed). "
+                 "Stitch files are for SAMPLING: production-intent drafts, the fish fill is under revision — your digitizer checks density + pull on the shell before the strike-off.",
+           "02": "Artwork: traced from the design mockup (front view; no sleeve close-up). Fish: tetras at the same scale as the fronts. "
+                 "Stitch files are for SAMPLING: production-intent drafts, the fish fill is under revision — your digitizer checks density + pull on the shell before the strike-off."}
+CHG_FAC = {"01": ["Layout from the design mockup, mapped to the size-M",
+                  "  front pattern pieces.",
+                  "Zip: art stops 15 each side of CF (mockup lilies touch it);",
+                  "  FR bottom lily moved ~15 off the zip  [proposed — confirm].",
+                  "Hem band: mockup petals cross the band seam; the FL + FR",
+                  "  clusters end 10 above it  [proposed — confirm].",
+                  "Side seam: FR vine leaves kept 15 inside the seam.",
+                  f"Welts at the mockup position + angle ({WELT_DEG}),",
+                  "  size 1.4 × 13; art keeps 6 clear on every size.",
+                  "Fish: sew the tetras in the stitch files (they replace",
+                  "  the mockup's fish), at 0.82 x the mockup fish length."],
+           "02": [c.replace("Fish (tetras, founder reference) + petals sized like", "Fish: the files' tetras replace the mockup's fish;")
+                   .replace("  the fronts (one motif scale).", "  sized like the fronts (one motif scale).") for c in CFG["02"]["changes"]]}
+
 if __name__ == "__main__":
-    for el in (sys.argv[1:] or ["01", "02"]):
+    args = [a for a in sys.argv[1:] if a != "--factory"]
+    if "--factory" in sys.argv:
+        kbcore.MODE = "factory"
+        for el in CFG: CFG[el].update(reference=REF_FAC[el], changes=CHG_FAC[el])
+    for el in (args or ["01", "02"]):
         print(espec.build(CFG[el], D))

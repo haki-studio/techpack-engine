@@ -139,3 +139,10 @@ Problems hit while building this product, worked around in project code only. Ea
 ## 17. Vectorised sleeve mapping
 - `mockmap.sleeve_P` calls griddata per point; tracing polygons needs thousands. `floratrace.to_mm` does one griddata call per
   array. Proposed: make `sleeve_P` accept arrays.
+
+## Rev D (22 Oct 2026, RFQ edition): engine asks
+- factory.requests_page (F1): "art W x H mm → N hoopings today" trips factory_copy's history pattern (`N mm → M`). Reword in the engine,
+  e.g. "art W x H mm: N hoopings on the proposed frame". Koi uses a narrow scrub rule for it (rfqgate.SCRUB) until then.
+- factory.requests_page reads the ONE factory profile on file (frames "on file", needles "confirmed", chenille yes). For an RFQ to a
+  new factory those are another factory's facts. Koi's pack.f1_pages passes a neutral copy in factory mode (frames/needles/chenille/
+  thread card = not confirmed). The engine should take a per-supplier profile (or an "unknown supplier" default).
