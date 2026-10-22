@@ -251,6 +251,12 @@ def part_map(plan, bounds, path, ppm=8.0):
 
 
 # ------------------------------------------------------------------ gates on the file
+def cut_other_shapes(out, full, ref):
+    """S1 per-shape window: drop the DST pixels that lie on ANOTHER shape's art (a crossing ring, a same-thread fill
+    beside a bar) so one shape's row measures only its own stitches. full = every shape of the layer, ref = this one."""
+    return out & ~(full & ~ref)
+
+
 def gate_file(cfg, plan, dst, rbk, seg_npz=None):
     """every M5 gate on the written DST vs the founder's layers (cairosvg). Families = SVG layers; a family's DST
     stitches = the stops that sew its parts (plan.stops order = file order)."""
@@ -300,7 +306,7 @@ def gate_file(cfg, plan, dst, rbk, seg_npz=None):
                 st = sorted({stop_of[p.id] for p in pe if p.id in stop_of})
                 me = np.any([masks[i] for i in st if i in masks], axis=0) if st else np.zeros(shape, bool)
                 re_ = eref[el]
-                me = me & ~(full & ~re_)
+                me = cut_other_shapes(me, full, re_)
                 r = qa.centreline_match(re_, me, ppm, name=f"{lid} {el or ''} {w_}".replace("  ", " "), profile=True, **kw)
                 r.update(layer=lid, shape=el, stops=[i + 1 for i in st]); cl_rows.append(r)
             continue

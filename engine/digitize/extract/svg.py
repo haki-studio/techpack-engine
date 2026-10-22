@@ -230,6 +230,9 @@ class _B:
                 if L < 0.25: continue
                 if len(sts) > 1 and not closed and L < 1.1 * w: continue        # skeleton spur (cusps, stroke ends)
                 ww = w
+                # S1: each stroke of a glyph at its OWN skeleton width (the bowl of an a swells to 2.5 mm where its
+                # stem is 1.6: one width per glyph sewed the bowl's thick side at 0.73). Hand runs keep one per layer.
+                if per_shape and not closed and s.get("w"): ww = max(min_w, round(float(s["w"]) - ALLOW, 2))
                 if closed: ww = max(0.8 if w >= 0.8 else w, min(w, L / math.pi - (min_counter + 0.2 + ALLOW)))
                 # a width profile only on a shape that IS one open stroke: a glyph's strokes meet at junctions (wider
                 # samples, not a taper) and profiling them sewed the lettering fixture's A thinner (ratio 0.84 -> 0.60)

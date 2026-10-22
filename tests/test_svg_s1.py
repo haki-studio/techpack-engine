@@ -188,3 +188,47 @@ def test_cli_more_than_12_colours_is_a_gate_fail_not_a_crash(tmp_path):
     rc, res, log = cli(tmp_path / "many.svg", tmp_path / "o", width=100)
     assert rc == 0, log
     assert gate(res, "threads_le_needles")["pass"] is False and res["ok"] is False
+
+
+# ------------------------------------------------------------------ lettering follow-up (22 Oct): i stems, a bowl, cut-out
+def _png(name):
+    from PIL import Image
+    return np.asarray(Image.open(os.path.join(FIX, name)).convert("L")) > 127
+
+
+def test_wide_satin_edge_spurs_do_not_thin_the_row():
+    """the lettering fixture's i (2.5 mm stem + dot, DST read-back at 20 px/mm): the satin's zig-zag edge grows skeleton
+    spurs ~ half the width, which a fixed 0.6 mm prune keeps and which pull the median width to 0.80"""
+    ref, out = _png("gate_i_ref.png"), _png("gate_i_dst.png")
+    assert qa.centreline_match(ref, out, 20)["ok"] is False                     # fixed 0.6 mm spurs: ratio ~0.8
+    r = qa.centreline_match(ref, out, 20, profile=True)
+    assert r["ok"] is True and abs(r["ratio"] - 1) <= 0.1, r
+
+
+def _svg2dst_inproc(svg, out, width):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("svg2dst_cli", CLI); m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    assert m.main(["--svg", svg, "--width-mm", str(width), "--fabric", "twill", "--hoop", "300x300", "--out", str(out), "--name", "t"]) == 0
+    return {r["shape"]: r for r in json.load(open(os.path.join(str(out), "gates.json")))["centreline"]}
+
+
+def test_cut_other_shapes_is_load_bearing(tmp_path, monkeypatch):
+    """gate_file's per-shape window: a 1.6 mm bar 0.3 mm under a same-thread 50 mm fill. With the other shapes' art cut
+    out the bar's row reads its own stitches; without the cut-out the fill's stitches inflate it (ratio 1.4) and it fails"""
+    from digitize import svgrun
+    svg = os.path.join(FIX, "gate_bar_beside_fill.svg")
+    on = _svg2dst_inproc(svg, tmp_path / "on", 60)["2"]
+    assert on["ok"] is True and abs(on["ratio"] - 1) <= 0.15, on
+    monkeypatch.setattr(svgrun, "cut_other_shapes", lambda out, full, ref: out)
+    off = _svg2dst_inproc(svg, tmp_path / "off", 60)["2"]
+    assert off["ok"] is False and off["ratio"] > 1.2, off
+
+
+def test_cli_lettering_every_shape_passes(tmp_path):
+    """DejaVu Sans Bold 'Haki Studios', 100 mm: 11/11 per-shape rows (red at 9711ed5: both i's 0.80-0.82, the a bowl's
+    thick end 0.73 when a glyph was sewn at one width)"""
+    rc, res, log = cli(os.path.join(FIX, "lettering_haki.svg"), tmp_path / "o", width=100)
+    assert rc == 0, log
+    rows = json.load(open(tmp_path / "o" / "gates.json"))["centreline"]
+    assert len(rows) == 11 and all(r["ok"] for r in rows), [(r["shape"], r["ratio"], r.get("ratio90")) for r in rows if not r["ok"]]
