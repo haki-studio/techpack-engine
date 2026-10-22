@@ -247,11 +247,27 @@ def fixed_satin(p, ang, sp=None, pull=0.2):
         out += [a] + (sub(a, b, d / math.ceil(d / 6.0)) if d > 7.0 else [b])
     return out
 
+def _fan_order(segs, cx, cy, gap_deg=30.0, min_mm=1.0):
+    """rays in angle order, starting after the widest empty sector when the shape is a FAN (centre on its edge: tails,
+    fins, rays; ENGINE_PLAN G2). Without this the sweep wraps across the fan (last ray -> first ray = one long stitch over
+    the sewn satin). Ray pieces shorter than min_mm do not count and, in a fan, are dropped: the stubs a root centre on
+    the edge leaves behind it, and slivers where a ray grazes a straight side (sewing one = a long stitch out and back;
+    its neighbours cover it). A floret round its centre has no gap > gap_deg: its rays are returned untouched.
+    -> (rays, is_fan)"""
+    keep = [g for g in segs if g.length >= min_mm]
+    if len(keep) < 3: return segs, False
+    ang = [math.degrees(math.atan2(g.centroid.y - cy, g.centroid.x - cx)) % 360.0 for g in keep]
+    order = sorted(range(len(keep)), key=lambda i: ang[i])
+    g, k = max(((ang[order[(k + 1) % len(order)]] - ang[order[k]]) % 360.0, k) for k in range(len(order)))
+    if g < gap_deg: return segs, False
+    return [keep[order[(k + 1 + j) % len(order)]] for j in range(len(order))], True
+
 def radial_satin(p, cx, cy, sp=None, pull=0.15, short=True):
     sp = sp or SP_RAD
     pp = p.buffer(pull) if pull else p
     out = []
-    for i, s in enumerate(SR.radial(pp, cx, cy, sp)):
+    rays, fan = _fan_order(SR.radial(pp, cx, cy, sp), cx, cy)
+    for i, s in enumerate(rays):
         cs = list(s.coords)
         if len(cs) < 2: continue
         a, b = cs[0], cs[-1]
@@ -260,6 +276,8 @@ def radial_satin(p, cx, cy, sp=None, pull=0.15, short=True):
             a = (a[0] + (b[0]-a[0])*0.35, a[1] + (b[1]-a[1])*0.35)
         seg = [a, b] if i % 2 == 0 else [b, a]
         d = math.hypot(b[0]-a[0], b[1]-a[1])
+        if fan and out and math.dist(out[-1], seg[0]) > 7.0:            # a fan's long side: the hop to the next ray's
+            out += sub(out[-1], seg[0], 6.0)[:-1]                        # end runs along the edge in <= 6 mm stitches
         out += [seg[0]] + (sub(seg[0], seg[1], d / math.ceil(d / 6.0)) if d > 7.0 else [seg[1]])
     return out
 
