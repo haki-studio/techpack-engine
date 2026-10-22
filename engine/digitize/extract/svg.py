@@ -82,10 +82,15 @@ def frame_of(place, Ls):
 def polys(g): return svgart.polys(g)
 
 
-def stroke_width(G, ppm=40.0):
-    """visible stroke width of outline art: median skeleton width of its strokes (column.glyph_columns at 40 px/mm)"""
-    ws = [s["w"] for p in polys(G) for s in C.glyph_columns(p, ppm=ppm) if C.poly_len(s["cl"]) > 0.8]
-    return float(np.median(ws)) if ws else 2 * G.area / max(G.length, 1e-6)
+def stroke_width(G, ppm=40.0, weighted=False):
+    """visible stroke width of outline art: median skeleton width of its strokes (column.glyph_columns at 40 px/mm).
+    weighted (S1, one source shape): the LENGTH-weighted median, so a glyph's short pieces (the 3 ticks of a ぺ, 0.9 mm)
+    do not out-vote its main stroke (12 mm at 1.65 mm); the pooled per-layer median hid this on the hand runs."""
+    ss = [(s["w"], C.poly_len(s["cl"])) for p in polys(G) for s in C.glyph_columns(p, ppm=ppm) if C.poly_len(s["cl"]) > 0.8]
+    if not ss: return 2 * G.area / max(G.length, 1e-6)
+    if not weighted: return float(np.median([w for w, _ in ss]))
+    ss.sort(); c = np.cumsum([l for _, l in ss])
+    return float(ss[int(np.searchsorted(c, c[-1] / 2))][0])
 
 
 def _taper(P, cl, min_w, n=24, dev=0.25, share=0.25, belly=2.0):
@@ -203,7 +208,7 @@ class _B:
                         knots=[(c.x, c.y, d, ang)], art_d=round(art, 3), house_min=bool(hm), min_d=min_d)
 
     def column(self, layer, G, thread, z, spec, kind):
-        wv = stroke_width(G); wt = self.weights.get(thread, "40wt")
+        wv = stroke_width(G, weighted=bool(spec.get("per_shape"))); wt = self.weights.get(thread, "40wt")
         min_w = float(spec.get("min_w", 0.85 if wt == "40wt" else 0.45))
         w = max(min_w, round(wv - ALLOW, 2)); self.report[layer] = dict(w_art=round(wv, 2), w_needle=w, thread=wt)
         corner = float(spec.get("corner", C.CORNER)); min_counter = float(spec.get("min_counter", 0.6))
