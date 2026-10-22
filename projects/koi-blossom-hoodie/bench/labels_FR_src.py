@@ -45,14 +45,26 @@ M = [
       [[-91, 230], [-78, 232], [-62, 248], [-55, 257], [-60, 260], [-77, 252], [-91, 240]], [-53.0, 267.4]),
 ]
 FLORA_T = ["kb_navy", "kb_cobalt", "kb_royal", "kb_corn", "kb_sky", "kb_ice", "kb_white", "kb_lav"]
+HEART = [[-205, 131], [-193, 131], [-188, 136], [-189, 143], [-194, 147.5], [-204, 148], [-209, 143], [-209, 136]]
 M += [
- {"id": "flower_upper", "what": "the pale upper lily: petals with dark shading", "confidence": 0.75, "parts": [
-   {"id": "petals", "primitive": "lobe", "hint": {"polygons": [[[-222, 94], [-186, 90], [-150, 108], [-147, 128], [-158, 160], [-196, 182], [-222, 180]]]},
+ {"id": "flower_upper", "what": "the pale upper lily: five petals round a dark heart", "confidence": 0.75, "parts": [
+   # G3: ONE WINDOW PER PETAL (hint.each), back to front. The mockup is soft here: no edge splits the petals in the
+   # pixels, so one window made flat slabs (G2 runs 3-4); each petal now takes its own long axis.
+   {"id": "petals", "primitive": "lobe", "hint": {"each": True, "polygons": [
+      [[-202, 102], [-196, 103.5], [-189, 109], [-186, 119], [-186.5, 128], [-190, 133], [-205, 135], [-212, 130], [-212.5, 118], [-209, 108]],   # top (back)
+      [[-185, 124], [-178, 118], [-168, 114.5], [-158, 113.5], [-150, 115], [-154, 119.5], [-162, 126], [-170, 133], [-179, 138], [-186, 139]],   # upper right
+      [[-208, 133], [-207, 146], [-214, 150.5], [-222, 150.5], [-226, 146], [-226, 138], [-220, 133], [-213, 130.5]],                              # left
+      [[-195, 147], [-193, 154], [-196, 162], [-203, 170], [-211, 176], [-218, 182], [-224, 182], [-224, 165], [-221, 156], [-213, 150], [-206, 147.5]],      # lower left
+      [[-194, 145], [-184, 141.5], [-174, 140.5], [-166, 143.5], [-160.5, 151], [-160.5, 158], [-163.5, 163.5], [-170, 160.5], [-179, 158], [-188, 157], [-195, 154]]]},  # lower right (front)
     "tones": FLORA_T, "z": 6.0, "direction": {"intent": "outline"}, "colour": "auto", "confidence": 0.75,
-    "params": {"layers": "none", "lobe_sep_mm": 6, "min_lobe_mm2": 40, "tone": "lit"}}]},
+    "params": {"layers": "none", "lobe_sep_mm": 60, "min_lobe_mm2": 20, "min_mass_mm2": 8, "tone": "lit"}},
+   {"id": "heart", "what": "the dark heart; its pale cup tips sewn first at the heart's angle", "primitive": "lobe",
+    "hint": {"polygons": [HEART]}, "tones": FLORA_T, "z": 6.5, "direction": {"intent": "outline"}, "colour": "auto",
+    "confidence": 0.7, "params": {"layers": "lit", "lobe_sep_mm": 60, "min_lobe_mm2": 10, "min_mass_mm2": 6, "tone": "dominant",
+                                  "min_layer_mm2": 15}}]},
  {"id": "flower_lower", "what": "the dark lower flower", "confidence": 0.6, "parts": [
    {"id": "petals", "primitive": "lobe", "hint": {"polygons": [[[-214, 182], [-176, 174], [-140, 188], [-134, 222], [-166, 241], [-200, 239], [-216, 214]]],
-    "except": ["fish3.tail", "fish3.body"]},
+    "except": ["fish3.tail", "fish3.body", "flower_upper.petals"]},
     "tones": FLORA_T, "z": 5.0, "direction": {"intent": "grain"}, "colour": "auto", "confidence": 0.6,
     "question": "dark petals or leaves? the mockup is soft here", "alternatives": ["band"],
     "params": {"layers": "none", "lobe_sep_mm": 6, "min_lobe_mm2": 40}}]},
@@ -66,7 +78,7 @@ M += [
     "params": {"lobe_sep_mm": 5, "min_lobe_mm2": 15, "min_mass_mm2": 6, "tone": "dominant"}}]},
 ]
 d = {"schema": "techpack.labels/1",
-     "source": {"view": "F", "crop": [-220, 30, -50, 300], "by": "session f5e7f669 (builder-techpack-engine-g2)", "date": "2026-10-22",
+     "source": {"view": "F", "crop": [-220, 30, -50, 300], "by": "session f5e7f669 (builder-techpack-engine-g2); upper lily petal windows: session dc908122 (G3)", "date": "2026-10-22",
                 "image": "the run's vision sheet (digitize.labels.sheet on run_fr_labels.yaml: mockup + informing close-up), 3 and 5 px/mm"},
      "_doc": "ENGINE_PLAN G2: written by the session looking at the vision sheet once (no API). Each fish = radial tail (a fan from its root seed) + lobe body + band stripe + dot eye; flora = lobes / cord. Geometry is traced from the input pixels inside each window (A14).",
      "review_below": 0.6, "motifs": M}
