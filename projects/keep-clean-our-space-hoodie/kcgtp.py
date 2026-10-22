@@ -18,10 +18,12 @@ import hoodie as HD, hflat as HF
 import emb_place as EP, factory as FA, dstview as DV
 import pattern_kc as PC
 import kcdoc as KD
+import labelsheet as LS
 
 STYLE = kccore.STYLE; REV = kccore.REV_GAR; DATE = kccore.DATE; NAME = kccore.NAME
 FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · GARMENT · {REV} · {DATE}"
 PROP = "#8A5A00"; ALT = "#F5F2EC"
+SHELL_MAT = "12 oz cotton duck canvas, washed black (pre-washed before embroidery)"   # as recorded: no fibre % -> care label MISSING (LESSONS D7)
 SIZES = HD.SIZES
 HF.SHELL = "#2B2F38"; HF.SHELL_D = "#22252D"; HF.SHERPA = "#F2ECDF"          # washed black duck, cream sherpa
 def prop(x, y, s, size=1.85): return t(x, y, s + "  [proposed — confirm]", size, 600, PROP)
@@ -153,7 +155,7 @@ NOTES = [("1", "Hood: 3 panels — side pair + 10 cm centre panel. Washed black 
          ("5", f"Hem band: self fabric, {HD.hcm('S','M')/10:.1f} cm finished, folded; {HD.EL_HEM_W/10:.0f} cm elastic, flat {HD.FLAT/10:.0f} cm each side of the zip. Not embroidered.", True),
          ("6", f"Cuff band: self fabric, {HD.hcm('T','M')/10:.1f} cm finished, folded, closed into a loop. Not embroidered (stars stop 10 mm above the cuff seam).", True),
          ("7", "Embroidery: 01 JP + 03 CN badges (FR), 02 EN + 04 KR badges (FL), 05 star field (FR, FL, both full sleeves), 06 back star field (B01, stars only): direct embroidery on the cut panels before any seam; 3D puff on all four badges, all stars flat (G pages); hood plain.", False),
-         ("8", "Lining: cotton flannel body (plaid, as mockup), polyester taffeta sleeves; hood fully lined in sherpa. Labels on the back neck facing.", True)]
+         ("8", "Lining: cotton flannel body (plaid, as mockup), polyester taffeta sleeves; hood fully lined in sherpa. Haki standard main label on the back neck facing; care label MISSING until the fibre is confirmed (T6b).", True)]
 
 def p_flats():
     o = H("FLATS + CONSTRUCTION", "Size M · zip-hoodie block (Drum Island body + 3-panel sherpa hood + self-fabric bands); numbered notes = hoodie + design specifics.", "T2")
@@ -300,7 +302,7 @@ def p_bom():
     cols = sorted({c for p in CUR for c in CUR[p]["colours"]})
     hoops = sum(len(CUR[p]["splits"]["sections"]) or 1 for p in CUR)
     BACKING = sum((s_["size_mm"][0] + 60) * (s_["size_mm"][1] + 60) for p in CUR for s_ in CUR[p]["splits"]["sections"].values()) / 1e6   # m² = m at 100 cm width
-    rows = [("Shell", "12 oz cotton duck canvas, washed black (pre-washed before embroidery)", f"{m(shell):.2f} m", True),
+    rows = [("Shell", SHELL_MAT, f"{m(shell):.2f} m", True),
             ("Hood lining", "Sherpa 280 g/m² polyester, cream", f"{m(sher):.2f} m", True),
             ("Body lining", "Cotton flannel, plaid (green / red / navy, as mockup)", f"{m(flan):.2f} m", True), ("Sleeve lining", "Polyester taffeta 210T, black", f"{m(taf):.2f} m", True),
             ("Pocketing", "8 oz cotton twill", f"{m(pock):.2f} m", True), ("Fusing", "Woven fusible 60 g/m² (facings, welts)", f"{m(fus):.2f} m", False),
@@ -311,13 +313,14 @@ def p_bom():
             ("3D puff foam", "3 mm embroidery foam, black: FR one sheet (01 + 03), FL one sheet (02 + 04 ring)", "2 sheets", True),
             ("Embroidery backing", f"2.5 oz cutaway, black, 100 cm wide — {hoops} hoopings per jacket (G6), each split file + 30 per side", f"{BACKING:.2f} m", True),
             ("Thread — seams", "Coats Epic 120 (Tex 27), black — estimate from the block, factory to confirm", "~ 450 m", True), ("Thread — topstitch", "Coats Gral 40 (Tex 60), tonal charcoal — estimate from the block", "~ 140 m", True),
-            ("Labels", "Main + size on back neck facing; care label left side seam lining", "1 set", False)]
+            ("Main label", LS.main_bom("T6b") + "; back neck facing", "1", False),
+            ("Care label", LS.care_bom(SHELL_MAT) + "; left side seam lining (T6b)", "1", False)]
     hd = ["Item", "Description", "Qty / consumption"]; cx = [12, 52, 200]
     for x_, h_ in zip(cx, hd): o.append(t(x_, 33, h_, 1.8, 700, MUTED))
     for i, (a, b_, q, p) in enumerate(rows):
         y = 38 + i * 4.4
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y - 3.0)}" width="{SW - 22}" height="4.4" fill="{ALT}"/>')
-        o.append(t(cx[0], y, a, 1.75, 700)); o.append(t(cx[1], y, b_ + ("  [proposed — confirm]" if p else ""), 1.7, 400, PROP if p else INK)); o.append(t(cx[2], y, q, 1.75, 600))
+        o.append(t(cx[0], y, a, 1.75, 700)); o.append(t(cx[1], y, b_ + ("  [proposed — confirm]" if p else ""), 1.7, 400, LS.AMBER if LS.MISSING in b_ else PROP if p else INK)); o.append(t(cx[2], y, q, 1.75, 600))
     y = 38 + len(rows) * 4.4 + 5
     o.append(t(12, y, "ZIP LENGTH PER SIZE (cm, hem-band edge to CF neck − 0.5)", 1.9, 700)); y += 4.4
     for j, sz in enumerate(SIZES):
@@ -399,14 +402,16 @@ def p_revisions():
                             "back + hood = artwork to follow [MISSING]; answered questions removed; every stitch file, gate and page rebuilt."),
             ("Rev E", "21 Oct 2026", "Review fix (PR #31): JP top star = dark centre pit inside a white satin ring + white glint on the upper-left arm (mockup); "
                             "JP bottom star = one saturated red (no light facets) with a sharper star-shaped pit at the measured 0.45 R; sample tracker filled; files + pages rebuilt."),
-            ("Rev F", DATE, "Review fix 2 (PR #31): JP top star re-traced - all five arms gold (slimmer, sharp tips), dark pit in a thin white ring, white glint as a streak "
+            ("Rev F", "21 Oct 2026", "Review fix 2 (PR #31): JP top star re-traced - all five arms gold (slimmer, sharp tips), dark pit in a thin white ring, white glint as a streak "
                             "through the centre into the upper-left notch (mockup); the A14 gate passes on the shipped DST (was FAIL in Rev E); the pack build now stops on any failing gate; files + pages rebuilt."),
-            ("Rev G", DATE, "Review fix (PR #38): G1 cover caption set the CN glyph as a missing-glyph box; now drawn as a font outline, and every page build stops on CJK in plain text (tofu guard). "
+            ("Rev G", "21 Oct 2026", "Review fix (PR #38): G1 cover caption set the CN glyph as a missing-glyph box; now drawn as a font outline, and every page build stops on CJK in plain text (tofu guard). "
                             "Stitch files unchanged from Rev F (same counts); pages, compare sheets and zip rebuilt."),
-            ("Rev H", DATE, "Founder answers (21 Oct): BACK = embroidered stars only in the front's style (06, B01; layout seeded from the front field, proposed), hood plain; "
+            ("Rev H", "21 Oct 2026", "Founder answers (21 Oct): BACK = embroidered stars only in the front's style (06, B01; layout seeded from the front field, proposed), hood plain; "
                             "glow halo + star haze DROPPED (Glow green + Star haze threads removed); puff kept on the 2.5-3.0 mm strokes, asked of the factory (F1/F2); CN weight 800 kept. Every stitch file, gate and page rebuilt."),
-            ("Rev I", DATE, "Founder defect (21 Oct, EN badge FL M): small flat satins sewn on top after the foam at P, R, S, A, E now sew WITH the puff stroke they join (no flat piece left inside a puff glyph, "
-                            "same for JP / CN); new gate on every DST (frag gate: 0 at every size). Sliver star specks (e.g. right of CLEAN) sew as the house dot. Every stitch file, gate and page rebuilt.")]
+            ("Rev I", "21 Oct 2026", "Founder defect (21 Oct, EN badge FL M): small flat satins sewn on top after the foam at P, R, S, A, E now sew WITH the puff stroke they join (no flat piece left inside a puff glyph, "
+                            "same for JP / CN); new gate on every DST (frag gate: 0 at every size). Sliver star specks (e.g. right of CLEAN) sew as the house dot. Every stitch file, gate and page rebuilt."),
+            ("Rev J", DATE, "Labels only (founder 22 Oct): the Haki standard main label (6.5 × 2 cm, white, sewn down on all 4 sides) on the back neck facing; care label = the Haki standard care label by fibre, "
+                            "MISSING here because the shell fibre % is not recorded (T6b, BOM). Stitch files, art and every other page unchanged from Rev I.")]
     y = 36
     for rv, dt, ch in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(36, y, dt, 1.7))
@@ -434,13 +439,17 @@ def p_revisions():
             o.append(t(x, yy + 1, v, 1.6 if x > 13 else 1.8, 600 if x == 13 else 400))
     return o
 
+def p_labels():
+    return LS.hoodie_page(H, SHELL_MAT)                 # T6b: Haki standard main label + care label (MISSING: no fibre %)
+
 PAGES = ["T1 Cover", "T2 Flats + construction", "T3 Size chart + measurement check", "T4 Pattern pieces + cut list", "T5 Hood + bands detail",
-         "T6 Bill of materials", "T7 Embroidery placement + keep-outs, all sizes", "T8 Sample checks + open questions", "T9 Revision log + sample tracker"]
+         "T6 Bill of materials", "T6b Labels (Haki standard)", "T7 Embroidery placement + keep-outs, all sizes", "T8 Sample checks + open questions", "T9 Revision log + sample tracker"]
 
 def build(emb_pdf, emb_pages, out_pdf):
     for sz in SIZES: assert CHECK[sz] and WALKS_OK[sz] and SHAPE_OK[sz], f"pattern QA failed for {sz}"
     index = [(n, i + 1) for i, n in enumerate(PAGES)] + [("EMBROIDERY SECTION (G1–G6, specs, F1)", len(PAGES) + 1)] + emb_pages
-    pages = [p_cover(index), p_flats(), p_pom(), p_pieces(), p_hood(), p_bom(), p_placement(), p_fit(), p_revisions()]
+    LS.export("out/labels", SHELL_MAT)                 # Haki standard label files for the zip labels/
+    pages = [p_cover(index), p_flats(), p_pom(), p_pieces(), p_hood(), p_bom(), p_labels(), p_placement(), p_fit(), p_revisions()]
     w = PdfWriter(); os.makedirs("out/pages", exist_ok=True)
     for i, pg in enumerate(pages, 1):
         import tofu; svg = tofu.check(doc(pg), f"T{i}"); pdf = f"out/pages/T{i}.pdf"
