@@ -31,7 +31,20 @@ SPEC = {el: glob.glob(f"out/{el}_{kbcore.ELEMS[el][0]}/*SPEC_*.pdf")[0] for el i
 def hdr(title, sub, page): return SB.header(title, sub, page)
 TOT = sum(CUR[p]["stitches"] for p in PS); TRIMS = sum(CUR[p]["trims"] for p in PS)
 MH = sum(mh(CUR[p]) for p in PS)
-MH_SPLIT = sum(mh(s) for p in PS for s in CUR[p]["splits"]["sections"].values())
+def sew(r):
+    """the files a factory sews for one piece (CUR[p] or ALL[sz][p]): its split files when it needs 2+ hoopings, else the ONE
+    full file (td-chair C-05, Rev F: a single-hooping piece has no split file to choose between)"""
+    secs = r["splits"]["sections"]
+    return list(secs.values()) if len(secs) > 1 else [r.get("full", r)]
+MH_SPLIT = sum(mh(s) for p in PS for s in sew(CUR[p]))
+# strike-off send-back list: ONE source for the summary (QF section 4) and the techpack (F1) (td-chair C-06, Rev F)
+SEND_BACK = [("a", "photos straight-on in daylight + a close-up per colour area, with your thread card, the colour swatches we send and a ruler in the shot"),
+             ("b", "the sewn size vs the file (W × H mm)"),
+             ("c", "the chalked CF length + chest width on each front block before and after embroidery (mm), to show the pull-up"),
+             ("d", "puckering, show-through, thread breaks, any area you would digitise differently"),
+             ("e", "how you aligned the second hooping and whether the crosses left needle holes"),
+             ("f", "run time per hooping and your price for it")]
+def send_back(): return "Send back: " + "; ".join(f"({k}) {v}" for k, v in SEND_BACK) + "."
 HOOPS = sum(max(1, len(CUR[p]["splits"]["sections"])) for p in PS)
 EL_OF = kbcore.ELEM_OF
 
@@ -103,19 +116,19 @@ def overview():
             b = pl[p][1].bounds
             o.append(t(cx[2 + j], y, f"{b[0]:+.0f}…{b[2]:+.0f}", 1.4)); o.append(t(cx[2 + j], y + 2.6, f"{b[1]:.0f}…{b[3]:.0f}", 1.4, 400, MUTED))
     ky = ty + 9.5 + 7*6.2 + 4
-    o.append(t(tx, ky, "KEEP-OUTS (all sizes, measured: table below + T7)", 2.0, 700))
+    o.append(t(tx, ky, "KEEP-OUTS (all sizes, measured: table below + TECHPACK T7)", 2.0, 700))
     ko = [f"CF zip {F.KEEP_CF:.0f} each side · side, armhole, shoulder {F.KEEP_SEAM:.0f}", f"Hem-band seam {F.KEEP_HEM:.0f} · welt box {F.KEEP_WELT:.0f} · hood neck seam {F.KEEP_NECK:.0f}",
           f"Sleeves: cap {F.KEEP_CAP:.0f}, underarm seams {F.KEEP_SEAM:.0f}, cuff seam {F.KEEP_CUFF:.0f}", "Back half of the sleeves, back, hood: no embroidery."]
     for i, k in enumerate(ko): o.append(t(tx, ky + 4.2 + i*3.2, k, 1.6))
     # min clearance per size table
     my = ky + 4.2 + 4*3.2 + 4
-    o.append(t(tx, my, "SMALLEST CLEARANCE PER PIECE (mm, min in brackets)", 2.0, 700)); my += 4.5
+    o.append(t(tx, my, "TIGHTEST KEEP-OUT PER PIECE (art to edge mm [minimum])", 2.0, 700)); my += 4.5
     allok = True
     for i, sz in enumerate(kbcore.SIZES):
         c = EP.clearances(sz); row = []
-        for p in PS:
-            k, v = min(((k, v - F.MIN(p)[k]) for k, v in c[p].items()), key=lambda kv: kv[1])
-            row.append(f"{p} {c[p][k]:.1f} {k[:6]}"); allok &= v >= -0.3
+        for p in PS:                                       # every keep-out tied with the tightest margin (C-02: FL welt + hem tie at M)
+            mg = {k: v - F.MIN(p)[k] for k, v in c[p].items()}; lo = min(mg.values())
+            row.append(f"{p} " + " / ".join(f"{c[p][k]:.1f} {k[:5]} [{F.MIN(p)[k]:.0f}]" for k in mg if mg[k] <= lo + 0.005)); allok &= lo >= -0.3
         o.append(t(tx, my + i*3.1, sz, 1.45, 700)); o.append(t(tx + 8, my + i*3.1, " · ".join(row), 1.3))
     o.append(t(tx, my + 7*3.1 + 1.5, "All keep-outs pass on every size." if allok else "KEEP-OUT FAILURE — see T7", 1.7, 700, GREEN if allok else RED))
     return o
@@ -209,9 +222,10 @@ def files_page():
                 fu = r["full"]
                 o.append(t(cx[3], y, f"{fu['size_mm'][0]:.0f} × {fu['size_mm'][1]:.0f}", 1.4)); o.append(t(cx[4], y, f"{fu['stitches']:,}", 1.4)); o.append(t(cx[5], y, f"{fu['trims']}", 1.4)); o.append(t(cx[6], y, f"{fu['stops']}", 1.4))
                 secs = r.get("splits", {}).get("sections", {})
+                if len(secs) == 1: o.append(t(cx[7], y, "one hooping: sew the full file", 1.4, 400, MUTED))
                 for j, nm in enumerate(("S1_top", "S2_bottom")):
                     s_ = secs.get(nm)
-                    if s_: o.append(t(cx[7 + j], y, f"{s_['stitches']:,} / {s_['trims']} / {s_['size_mm'][0]:.0f}×{s_['size_mm'][1]:.0f}", 1.4))
+                    if s_ and len(secs) > 1: o.append(t(cx[7 + j], y, f"{s_['stitches']:,} / {s_['trims']} / {s_['size_mm'][0]:.0f}×{s_['size_mm'][1]:.0f}", 1.4))
                 fits = bool(secs) and all(v["fits"] for v in secs.values()); allfit &= fits
                 o.append(t(cx[9], y, "yes" if fits else "CHECK", 1.4, 700, GREEN if fits else RED))
             else:
@@ -238,7 +252,7 @@ def files_page():
     o.append(t(bx, by + bh + 3, f"FR size M: red = split line (y {sp.get('sy', 0):.0f}), blue = files, + = registration crosses.", 1.4, 400, MUTED))
     sy0 = by + bh + 8
     o.append(t(bx, sy0, "SEWING A SPLIT PIECE", 2.0, 700))
-    steps = ["1. Mark CF / sleeve centre + split line on the", "    cut panel (chalk) from the pattern.",
+    steps = ["1. Chalk CF / sleeve centre + split line on the", "    oversized block (E0) from the 1:1 plot.",
              "2. Hoop S1 (top). Stop 1 starts with the", "    registration crosses (stop-1 thread). Sew S1.",
              "3. Re-hoop for S2; align the needle on the", "    shared crosses, sew them (check), then S2.",
              "4. Motifs < 70 go whole to one file; larger", "    fills overlap 1.2 across the split.",
@@ -280,7 +294,7 @@ def hooping_page():
     y += 2.5
     notes = ["The split line is chosen where it cuts the least art inside the frame (searched 12–88 % of the art height). Motifs under 70 mm (fish, petals, leaves)",
              "go whole to one file; larger fills that still cross it overlap 1.2 mm (amber) — check that joint on the strike-off photos.",
-             "Needle start = centre of each file's design (origin of the DST/PES). Mark it on the cut panel from the pattern (DXF layer 13 + layer 8 cross).",
+             "Needle start = centre of each file's design (origin of the DST/PES). Chalk it on the oversized block (E0) from the 1:1 plot (DXF layer 13 + layer 8 cross).",
              "Registration crosses sew at the start of stop 1 in that stop's thread (max 12 colours per file); S2 re-registers on the crosses S1 sewed; pick out after S2.",
              "h / piece = machine hours of both split files (factory.machine_hours incl. trims + colour changes), + 2 hoopings."]
     for i, l in enumerate(notes): o.append(t(12, y + i*3.2, l, 1.5, 400, MUTED))
@@ -304,6 +318,8 @@ def f1_pages():
     for svg in FA.requests_page(kbcore.NAME, so, th, pcs, page="F1", prof=prof):
         svg = re.sub(r" is ΔE [\d.]+ from the design colour", " from the design colour", svg)
         svg = svg.replace("Strike-off (sew-out) — first, before any bulk", "Strike-off (sew-out) — after the fit sample, before the embroidered sample")      # S4
+        svg = svg.replace("Factory requests — please answer before bulk", "Factory requests — please answer before the sample")              # C-06
+        svg = f1_send_back(svg)
         if fac:
             svg = svg.replace("Sew these size-M files on the real shell fabric (washed, as in bulk), with the proposed threads + backing:",
                               "Sew these size-M split files on the washed shell, with the proposed threads + backing (full files = reference only):")    # S6
@@ -311,6 +327,19 @@ def f1_pages():
                               "incl. jacket-back frames, and needles per head. If a file is larger than your frame, don't sew it: tell us, we re-split.")   # S5
         out.append(svg)
     return out
+
+def f1_send_back(svg):
+    """C-06: replace the engine's 4 fixed send-back lines with SEND_BACK (= QF section 4), wrapped in the same 4-line slot"""
+    import re, textwrap
+    keys = ("Send back: (a)", "(b) design size", "(c) puckering", "(d) actual run time")
+    els = [m for m in re.finditer(r'<text x="([\d.]+)" y="([\d.]+)"[^>]*>([^<]*)</text>', svg) if m.group(3).startswith(keys)]
+    if len(els) != 4: return svg
+    x, y = float(els[0].group(1)), float(els[0].group(2))
+    lines = textwrap.wrap(send_back(), 128)
+    new = "".join(t(x, y + i * 2.6, l, 1.95, 400, INK) for i, l in enumerate(lines))
+    for m in reversed(els): svg = svg[:m.start()] + svg[m.end():]
+    i = svg.rfind("</svg>")
+    return svg[:i] + new + svg[i:]
 
 def build():
     pages = {"G1": None, "G2": overview(), "G3": threads(), "G4": summary(), "G5": files_page(), "G6": hooping_page()}

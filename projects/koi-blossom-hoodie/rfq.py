@@ -1,12 +1,14 @@
-"""Rev E "RFQ / sample edition" (Rev D + the review / technical-design fixes: construction pages CS, CI, CD; QF2 feasibility questions) — three PDFs from one build, a thin layer over the garment.py + pack.py page builders:
-  HAKI_KOIB_FACTORY-SUMMARY_RevE.pdf  what the factory needs to make it right the first time (the factory-summary page kinds
+"""Rev F "RFQ / sample edition" (Rev D + the Rev E review / technical-design fixes: construction pages CS, CI, CD; QF2 feasibility
+questions; + Rev F: one embroidery method everywhere (rfqgate.method_gate), CP pocket bag per size, one file per single-hooping piece,
+F1 send-back = QF section 4) — three PDFs from one build, a thin layer over the garment.py + pack.py page builders:
+  HAKI_KOIB_FACTORY-SUMMARY_RevF.pdf  what the factory needs to make it right the first time (the factory-summary page kinds
                                       of the Konpeito factory copy, same names + order: KINDS)
-  HAKI_KOIB_TECHPACK_RevE.pdf         full reference for the factory: the summary pages + pattern, stitch files, hooping, specs
-  HAKI_KOIB_INTERNAL_RevE.pdf         our copy: finish.py's merged T + G pack (provenance, revision logs, internal questions) + TBD
+  HAKI_KOIB_TECHPACK_RevF.pdf         full reference for the factory: the summary pages + pattern, stitch files, hooping, specs
+  HAKI_KOIB_INTERNAL_RevF.pdf         our copy: finish.py's merged T + G pack (provenance, revision logs, internal questions) + TBD
 Every page is a fc_shim.Page(id, kind, title, audience, svg) — fc_shim = temporary mirror of engine/factory_copy.py (Konpeito).
 Factory copies are built with kbcore.MODE = "factory" (neutral wording; scrub_svg with rfqgate.RULES on every page) and
 both pass summary_gate + leak_gate (red-then-green against the internal copy).
-Also: out/TBD_RevE.md + .png, the factory files zip, and bench/dst_sha_RevE.json (sha256 of every DST/PES, to prove the stitch
+Also: out/TBD_RevF.md + .png, the factory files zip, and bench/dst_sha_RevF.json (sha256 of every DST/PES, to prove the stitch
 files did not move). When engine/factory_copy.py lands: `import factory_copy as FC` instead of fc_shim, delete fc_shim.py.
 usage: python3 rfq.py   (after run_all.sh)"""
 import kbcore
@@ -61,7 +63,7 @@ def p_cover(index):
     for name, pg in index: o.append(t(ix, y, name, 1.6)); o.append(t(SW - 14, y, str(pg), 1.6, 600, MUTED, "end")); y += 3.2
     tot = sum(PK.CUR[p]["stitches"] for p in kbcore.PIECES)
     y += 2.5; o.append(t(ix, y, "AT A GLANCE (size M)", 2.2, 700)); y += 4
-    for a, b_ in [("Pattern", "Haki jacket block body + sleeve, 3-panel hood (T2–T5, DXF)"), ("Embroidery", f"fronts + front half of sleeves, {tot:,} stitches"),
+    for a, b_ in [("Pattern", "our block (DXF): body + sleeve, 3-panel hood (T2–T5)"), ("Embroidery", f"fronts + front half of sleeves, {tot:,} stitches"),
                   ("Hoopings", f"{PK.HOOPS} per jacket on {PK.FR_S} mm (proposed frame)"), ("Files", "DST + PES per size and piece; DXF per size; label artwork")]:
         o.append(t(ix, y, a, 1.6, 400, MUTED)); o.append(t(ix + 16, y, b_, 1.55, 600)); y += 3.3
     o.append(t(14, SH - 14, SAMPLING, 1.9, 700, ORANGE))
@@ -113,7 +115,7 @@ def ZB_zebra(o, i, y, h, x0=11, x1=None):
 OPEN = [("Back + hood", "plain — no embroidery on the back, the hood or the back half of the sleeves."),
         ("Art clearances", f"art stops {F.KEEP_HEM:.0f} mm above the hem-band seam and the cuff seams, and {F.KEEP_CF:.0f} mm each side of the zip (nothing crosses the zip)."),
         ("Grading", "XS–S sew the art at 92 %, M–XL at 100 % (L + XL sew the size-M art; on the wearer's left front a few motifs are re-placed on each size's piece), XXL–3XL at 108 % (G5)."),
-        ("Welt pockets", f"position + angle as drawn ({F.WELT_ANG:.0f}° from horizontal), opening 1.4 × 13 cm (T2, T7)."),
+        ("Welt pockets", f"position + angle as drawn ({F.WELT_ANG:.0f}° from horizontal), opening 1.4 × 13 cm (T2, T7); pocket bag trimmed to fit (CP)."),
         ("Thread colours", "all 12 are targets from the design artwork — please match them on your physical thread card before the strike-off (G3, F1)."),
         ("Care label", "held until the fibre content is confirmed (Q1); the main label is final (T6b)."),
         ("Construction", "seam table (CS), inside view + bag-out order (CI), welt pocket + zip details (CD). Confirm each, or tell us the method you would use."),
@@ -168,7 +170,7 @@ def thread_rows(o, x, y, keys, rh=3.5, size=1.55):
     o.append(t(x, y, "ΔE = colour distance to the target: green < 3, amber 3–5.5 (check on the card), red > 5.5 (propose your nearest).", 1.3, 400, MUTED))
     return y + 2.8
 
-def split_tot(p, k): return sum(v[k] for v in PK.CUR[p]["splits"]["sections"].values())
+def sew_tot(p, k): return sum(v[k] for v in PK.sew(PK.CUR[p]))          # the files the factory sews (C-05: full file for a 1-hooping piece)
 METHOD = ["Embroider an oversized block of shell, not the cut panel: the piece's cut outline + 30 mm all round, chalked with CF, the welt box and the keep-out lines from the 1:1 plot.",
           "After embroidery, lay the 1:1 pattern piece on the sewn block, align CF + the welt box, and re-cut. A cut front is narrower than the frame and the art sits "
           f"{F.KEEP_CF:.0f} mm from CF, so a cut panel has nothing to clamp; the wearer's right front ({PK.CUR['FR']['stitches']:,} st) also pulls up more than the left ({PK.CUR['FL']['stitches']:,}).",
@@ -185,7 +187,7 @@ def p_e0():
     y += 3; o.append(t(12, y, "METHOD  [proposed — confirm, or tell us your method]", 2.0, 700, PROP)); y += 4
     for l in METHOD: y = para(o, 12, y, l, 100, 1.5, PROP, 2.9); y += 0.5
     tx = 112; ty = 32; o.append(t(tx, ty, "STITCH FILES, SIZE M (counted from the DST files)", 2.0, 700)); ty += 4.5
-    hd = ["Piece", "Art mm", "Full file st", "Trims", "Stops", "Hoopings", "Split files st / trims", "Run time"]
+    hd = ["Piece", "Art box mm", "Full file st", "Trims", "Stops", "Hoopings", "Files you sew: st / trims", "Run time"]
     cx = [tx, tx + 36, tx + 55, tx + 72, tx + 83, tx + 94, tx + 109, tx + 140]
     for x_, h_ in zip(cx, hd): o.append(t(x_, ty, h_, 1.4, 700, MUTED))
     for i, p in enumerate(kbcore.PIECES):
@@ -193,14 +195,18 @@ def p_e0():
         ZB_zebra(o, i, yy + 0.6, 4, tx - 1, SW - 11)
         o.append(t(cx[0], yy, f"{p} {kbcore.PIECE_NAME[p]}", 1.45, 600)); o.append(t(cx[1], yy, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.45))
         o.append(t(cx[2], yy, f"{r['stitches']:,}", 1.45, 600)); o.append(t(cx[3], yy, f"{r['trims']}", 1.45)); o.append(t(cx[4], yy, f"{r['stops']}", 1.45))
-        o.append(t(cx[5], yy, f"{len(r['splits']['sections'])}", 1.45)); o.append(t(cx[6], yy, f"{split_tot(p, 'stitches'):,} / {split_tot(p, 'trims')}", 1.45))
-        o.append(t(cx[7], yy, f"{sum(PK.mh(v) for v in r['splits']['sections'].values())*60:.0f} min", 1.45))
+        o.append(t(cx[5], yy, f"{len(r['splits']['sections'])}", 1.45))
+        o.append(t(cx[6], yy, f"{sew_tot(p, 'stitches'):,} / {sew_tot(p, 'trims')}" + ("  S1 + S2" if len(r['splits']['sections']) > 1 else "  full file"), 1.45))
+        o.append(t(cx[7], yy, f"{sum(PK.mh(v) for v in PK.sew(r))*60:.0f} min", 1.45))
     yy = ty + 4.2 + 4 * 4 + 0.5
     o.append(t(cx[0], yy, "Per jacket", 1.55, 700)); o.append(t(cx[2], yy, f"{PK.TOT:,}", 1.55, 700)); o.append(t(cx[3], yy, f"{PK.TRIMS:,}", 1.55, 700))
-    o.append(t(cx[5], yy, f"{PK.HOOPS}", 1.55, 700)); o.append(t(cx[6], yy, f"{sum(split_tot(p, 'stitches') for p in kbcore.PIECES):,} / {sum(split_tot(p, 'trims') for p in kbcore.PIECES)}", 1.55, 700))
+    o.append(t(cx[5], yy, f"{PK.HOOPS}", 1.55, 700)); o.append(t(cx[6], yy, f"{sum(sew_tot(p, 'stitches') for p in kbcore.PIECES):,} / {sum(sew_tot(p, 'trims') for p in kbcore.PIECES)}", 1.55, 700))
     o.append(t(cx[7], yy, f"{PK.MH_SPLIT:.1f} h", 1.55, 700))
-    yy += 4; yy = para(o, tx, yy, "You sew the split files: their stitches include the registration crosses and the overlap at the split. Run time = the split files at the proposed machine "
-                                  "speed + 6 s per trim + 4 s per colour change (the element pages quote one full file). Please give your own run time and price per hooping.", 120, 1.4, MUTED, 2.6)
+    one = [p for p in kbcore.PIECES if len(PK.CUR[p]["splits"]["sections"]) == 1]
+    yy += 4; yy = para(o, tx, yy, "You sew the split files of a 2-hooping piece (their stitches include the registration crosses and the overlap at the split)"
+                                  + (f" and the full file of a 1-hooping piece ({', '.join(one)}): it has no split file." if one else ".")
+                                  + " Run time = those files at the proposed machine speed + 6 s per trim + 4 s per colour change. Art box = the art; "
+                                  "the stitch-file box (F1) is up to 1 mm larger. Please give your own run time and price per hooping.", 120, 1.4, MUTED, 2.6)
     yy += 4; o.append(t(tx, yy, "HOOPING", 2.0, 700)); yy += 4
     for l in [f"Files are split for a {PK.FR_S} mm frame  [proposed — confirm]: pieces taller than the frame sew in two hoopings, S1 (top) then S2 (bottom).",
               "If your largest frame is smaller than a file, don't sew it: tell us your frame and we re-split the files.",
@@ -220,7 +226,7 @@ E_Q = {"01": [f"Art stops {F.KEEP_HEM:.0f} mm above the hem-band seam and {F.KEE
        "02": ["Back half of each sleeve plain (no embroidery) — OK?",
               f"Art stops {F.KEEP_CUFF:.0f} mm above the cuff seam, {F.KEEP_SEAM:.0f} mm off the underarm seam, {F.KEEP_CAP:.0f} mm off the cap — OK?",
               "Grading: XS–S at 92 %, L + XL sew the M art, XXL–3XL at 108 % — OK?",
-              "Embroider the sleeve flat before the underarm seam and the cuff band are sewn."]}
+              "Embroider each sleeve as an oversized block of shell (E0) before the underarm seam and the cuff band are sewn."]}
 def _sleeve_sign():
     """S9: which way is the front on each sleeve, from the pattern (S01 / S02 'underarm front' edge side) + the cap notch"""
     import numpy as np
@@ -299,12 +305,9 @@ def p_qf():
     for p in kbcore.PIECES:
         secs = PK.CUR[p]["splits"]["sections"]
         fl.append(f"{p}: " + (" + ".join(f"{nm[:2]} {v['stitches']:,} st" for nm, v in secs.items()) if len(secs) > 1 else f"{PK.CUR[p]['stitches']:,} st, one hooping"))
-    for l in ["Sew the size-M SPLIT files on the washed shell, with the proposed threads + backing, by the oversized-block method (E0): " + "; ".join(fl) + ". "
-              "The full files (one per piece) are reference only.",
-              "Send back: (a) photos straight-on in daylight + a close-up per colour area, with your thread card, the colour swatches we send and a ruler in the shot; "
-              "(b) the sewn size vs the file (W × H mm); (c) each front panel's CF length + chest width before and after embroidery (mm), to show the pull-up; "
-              "(d) puckering, show-through, thread breaks; (e) how you aligned the second hooping and whether the crosses left needle holes; "
-              "(f) run time per hooping and your price for it."]:
+    for l in ["Sew the size-M files on the washed shell, with the proposed threads + backing, by the oversized-block method (E0): the SPLIT files of a 2-hooping piece, "
+              "the full file of a 1-hooping piece: " + "; ".join(fl) + ". The other full files are reference only.",
+              PK.send_back()]:
         y = para(o, x1, y, l, 200, 1.5, INK, 2.8); y += 1.2
     o.append(t(12, SH - 12, SAMPLING, 1.6, 700, ORANGE))
     return o
@@ -363,9 +366,13 @@ TBD = [("Decide with the factory", [
           "Shell they propose (weight, wash) + fibre % of shell, flannel, taffeta, sherpa, pocketing (Q1). The care label waits on this (labelsheet MISSING state).",
           "Embroidery in-house or subcontracted; largest frame + needles per head. A bigger frame removes the S1/S2 hoop splits (G5/G6).",
           "Physical thread card for the 12 threads, the 6 blues on washed navy first (G3).",
-          "Construction (Rev E): seam table CS, inside view + bag-out order CI, welt / zip / hood details CD: every method amber [proposed]; their answers to QF2 (a)-(m).",
-          f"Pocket bag fit: the pattern bag (mouth {CN.BAG_MOUTH / 10:.1f}, side {CN.BAG_SIDE / 10:.1f}, {CN.BAG_DEPTH / 10:.1f} deep) vs a welt whose low corner is {CN.WELT_LOW / 10:.1f} cm above the hem seam and "
-          f"{CN.WELT_TO_FAC / 10:.1f} cm from the facing: factory to lay it on the pattern (CD). Not verified by us.",
+          "Construction (Rev E/F): seam table CS, inside view + bag-out order CI, welt / zip / hood details CD, pocket bag CP: every method amber [proposed]; their answers to QF2 (a)-(m).",
+          "Pocket bag (Rev F, CP, checked by us on the pattern, every size): the drafted P02 (18 × 20 cm) laid at the welt runs "
+          + ", ".join(f"{sz} {CN.BAGS[sz]['hem_c'] / 10:+.1f} / {CN.BAGS[sz]['fac_c'] / 10:+.1f}" for sz in kbcore.SIZES)
+          + " cm to the hem seam / facing edge (minus = crosses). ★ Proposed: P02 trimmed 2 cm above the hem seam + 1 cm off the facing, depth at the welt centre "
+          + ", ".join(f"{sz} {CN.BAGS[sz]['depth'] / 10:.1f}" for sz in kbcore.SIZES)
+          + f" cm (a rectangle that clears is only {min(r['rect'] for r in CN.BAGS.values()) / 10:.1f} cm deep). Factory answers on CP; the DXF P02 is still the 20 cm draft, "
+          "a trimmed P02 per size follows once confirmed. Alternative = move the welt up (changes the art keep-outs): design call (Nick).",
           "Shrinkage: mill warp / weft % after pre-wash, flannel + sherpa %, the SA + shrinkage they cut with (CS).",
           "Packing: fold, polybag, carton qty + size (Q2). Trims (zip, elastic, threads): their stock equivalents (T6)."]),
        ("Decided by us", [
@@ -382,7 +389,9 @@ TBD = [("Decide with the factory", [
           f"S8 two near-empty hoopings kept (★ fidelity first): FL S1 {PK.CUR['FL']['splits']['sections']['S1_top']['stitches']:,} st / {PK.CUR['FL']['splits']['sections']['S1_top']['trims']} trims and "
           f"SL S1 {PK.CUR['SL']['splits']['sections']['S1_top']['stitches']:,} st / {PK.CUR['SL']['splits']['sections']['S1_top']['trims']} trims. Cost: 2 of the {PK.HOOPS} hoopings per jacket (re-hoop + crosses + set-up each). Lead asks the founder.",
           f"S13 FR art at L/XL NOT re-fitted to the band (kept + flagged): FR hem clearance L {CLR['L']:.1f} / XL {CLR['XL']:.1f} mm vs {CLR['M']:.1f} at M. A re-fit needs a new placement rule (move the lower FR cluster per size) + new L/XL DSTs; it is not an existing re-fit. Lead asks the founder.",
-          "Embroidery method: oversized block + re-cut (★ proposed, E0); factory may answer with its own (QF2 m)."]),
+          "Embroidery method: oversized block + re-cut (★ proposed, E0) on every page since Rev F (method gate on the shipped PDFs); factory may answer with its own (QF2 m).",
+          f"Shell for the blocks: + {CN.BLOCK_M:.2f} m per jacket at M on top of the pattern-area figure (T6 note, proposed).",
+          "SA of the cuff-elastic overlap (1.5) and the hanger-loop ends (0) are not pattern edges: amber with * on CS."]),
        ("Decide at sampling", [
           "Fit sample (no embroidery) first: hood crown + face opening with the sherpa, relaxed band + cuff sizes, zip lies flat.",
           "Strike-off on washed duck: pull/shrink, puckering, density, the S1/S2 joints; fish + lily detail at 1:1 (F1).",
@@ -416,6 +425,7 @@ TABLE = [(Page("C1", "cover", "Cover", FACTORY, ""), None),
          (Page("CS", "construction", "Seams, stitches + wash", FACTORY, ""), lambda: CN.p_seams()),
          (Page("CI", "construction", "Inside view + bag-out order", FACTORY, ""), lambda: CN.p_inside()),
          (Page("CD", "construction", "Welt, zip + hood details", FACTORY, ""), lambda: CN.p_details()),
+         (Page("CP", "construction", "Pocket bag on the front pattern, every size", FACTORY, ""), lambda: CN.p_bag()),
          (Page("T6b", "labels_packing", "Labels — main + care label", FACTORY, ""), lambda: ZB.p_labels()),
          (Page("G2", "artwork_placement", "Embroidery placement + keep-outs", FACTORY, ""), lambda: PK.overview()),
          (Page("T7", "artwork_placement", "Embroidery placement on the pattern, every size", FACTORY, ""), lambda: GM.p_placement()),
@@ -481,15 +491,21 @@ def render(pages, out, tag):
 def sha_manifest():
     m = {os.path.relpath(p, OUT): hashlib.sha256(open(p, "rb").read()).hexdigest() for p in sorted(glob.glob(f"{OUT}/0*_*/**/*.dst", recursive=True) + glob.glob(f"{OUT}/0*_*/**/*.pes", recursive=True))}
     json.dump(m, open(f"bench/dst_sha_{R_}.json", "w"), indent=1)
-    if os.path.exists("bench/dst_sha_RevD.json") and R_ != "RevD":                  # Rev E changed no stitch file: prove it
-        old = json.load(open("bench/dst_sha_RevD.json")); diff = sorted(k for k in set(old) | set(m) if old.get(k) != m.get(k))
-        print("DST sha vs RevD:", "identical" if not diff else f"{len(diff)} differ: {diff[:6]}")
+    for pf in sorted(glob.glob("bench/dst_sha_Rev*.json")):                       # Rev E + F changed no stitch file: prove it
+        if pf.endswith(f"_{R_}.json"): continue
+        old = json.load(open(pf)); diff = sorted(k for k in set(old) | set(m) if old.get(k) != m.get(k))
+        print(f"DST sha vs {pf[-9:-5]}:", "identical" if not diff else f"{len(diff)} differ: {diff[:6]}")
     return m
 def factory_zip():
     """the files a factory gets with the PDFs: pattern, stitch files (+ thread charts, art, previews), labels, factory README"""
     Z = f"{OUT}/pkg_factory"; shutil.rmtree(Z, ignore_errors=True); os.makedirs(f"{Z}/elements")
     for el, (slug, _, _) in kbcore.ELEMS.items():
         shutil.copytree(f"{OUT}/{el}_{slug}", f"{Z}/elements/{el}_{slug}", ignore=shutil.ignore_patterns("summary.json", "result_*.json", "*.pdf", "*.json"))
+    for sz in kbcore.SIZES:                                  # C-05: a 1-hooping piece ships its full file only (no split file to choose between)
+        for P in kbcore.PIECES:
+            if len(PK.ALL[sz][P]["splits"]["sections"]) == 1:
+                el = kbcore.ELEM_OF[P]
+                for x in glob.glob(f"{Z}/elements/{el}_{kbcore.ELEMS[el][0]}/{sz}/splits/*_{P}_{sz}_S*"): os.remove(x)
     shutil.copytree(f"{OUT}/garment/pattern", f"{Z}/pattern")
     if os.path.isdir(f"{OUT}/garment/labels"): shutil.copytree(f"{OUT}/garment/labels", f"{Z}/labels")
     for p in (FAC_SUM, FAC_REF): shutil.copy(p, Z)
@@ -499,7 +515,7 @@ def factory_zip():
 {os.path.basename(FAC_REF)}   full reference: every page, incl. pattern pieces, stitch files per size and the hooping table.
 pattern/     DXF per size + all sizes (AAMA, mm; layer 8 = embroidery art box + design centre, layer 13 = needle start), 1:1 plot PDF size M.
 elements/01_front-fish/<size>/   wearer's right + left front stitch files (DST + PES), thread charts, previews.
-elements/02_sleeve-fish/<size>/  wearer's right + left sleeve (front half) stitch files. splits/ = two hoopings for a {PK.FR_S} mm frame [proposed - confirm].
+elements/02_sleeve-fish/<size>/  wearer's right + left sleeve (front half) stitch files. splits/ = the two hoopings of a piece that needs 2 on a {PK.FR_S} mm frame [proposed - confirm]; a 1-hooping piece: sew its full file.
 labels/      Haki standard main label artwork (care label follows once the fibre content is confirmed).
 
 {SAMPLING}
@@ -525,10 +541,10 @@ def build():
     n_sum, png_sum = render(summ, FAC_SUM, "summary")
     kbcore.MODE = "internal"
     buf = io.BytesIO(open(INTERNAL, "rb").read()); rd = PdfReader(buf); w = PdfWriter()
-    MARK = ("every proposed / open item (internal)", "CONSTRUCTION — seams, stitches", "INSIDE VIEW + BAG-OUT ORDER", "DETAILS — welt pocket")
+    MARK = ("every proposed / open item (internal)", "CONSTRUCTION — seams, stitches", "INSIDE VIEW + BAG-OUT ORDER", "DETAILS — welt pocket", "POCKET BAG ON THE FRONT PATTERN")
     for pg_ in rd.pages:                                   # re-runs: drop the pages an earlier rfq.py run appended
         if not any(m in (pg_.extract_text() or "") for m in MARK): w.add_page(pg_)
-    for i, mk in enumerate((CN.p_seams, CN.p_inside, CN.p_details)):                # internal copy keeps the construction pages too
+    for i, mk in enumerate((CN.p_seams, CN.p_inside, CN.p_details, CN.p_bag)):                # internal copy keeps the construction pages too
         cairosvg.svg2pdf(bytestring=doc(mk()).encode(), write_to=f"{PG}/int_c{i}.pdf"); w.append(PdfReader(f"{PG}/int_c{i}.pdf"))
     svg = doc(p_tbd()); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"{PG}/tbd.pdf"); w.append(PdfReader(f"{PG}/tbd.pdf")); w.write(INTERNAL)
     cairosvg.svg2png(bytestring=svg.encode(), write_to=f"{OUT}/TBD_{R_}.png", output_width=2400)
@@ -543,6 +559,11 @@ def build():
         if r["empty"]: print("EMPTY", os.path.basename(p), r["empty"])
         assert not r["blind"], "leak gate found nothing in the INTERNAL copy — the gate is blind (red-then-green failed)"
     assert g["ok"], "leak gate: internal strings in a factory copy"
+    mg = rfqgate.method_gate([FAC_SUM, FAC_REF]); g["method_gate"] = mg
+    json.dump(g, open(f"{OUT}/leak_gate_{R_}.json", "w"), indent=1, ensure_ascii=False)
+    for p, h in mg.items():
+        for x in h: print("METHOD", os.path.basename(p), x)
+    assert not any(mg.values()), "method gate: a factory page embroiders the cut panel while E0 says oversized block"
     sha = sha_manifest(); zp = factory_zip()
     ih = next(iter(g["gates"].values()))["internal_hits"]
     print(f"leak gate ok: {ih} hits in internal, 0 in summary ({n_sum} pp) + techpack ({n_ref} pp); "

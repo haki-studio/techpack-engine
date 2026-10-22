@@ -20,19 +20,19 @@ REF = {"01": ("Rev C: EVERY motif traced from the input pixels (no templates, no
               "the SR cuff lily (its own petal fan), every leaf, stem + petal one by one from the pixels; fish = tetras traced from inputs/reference_fish.png at the "
               "mockup fish poses (0.82 x, founder decision). The SL lower fish swims head-down-left as the mockup shows (Rev B had it reversed). "
               "A sleeve close-up (inputs/closeup_request.md) would sharpen the leaves.")}
-PROD = ["Embroider the cut panels flat, BEFORE zip, welts,",
-        "  side seams, sleeve seams and hem band / cuffs.",
+PROD = ["Embroider an oversized block of shell, then re-cut",
+        "  (E0); BEFORE zip, welts, seams, hem band + cuffs.",
         "12 threads, 40wt polyester (G3); stop order p4.",
         "Washed navy duck: 75/11 sharp, 2.5 oz navy/black",
         "  cutaway, no topping. Pre-wash the shell first.",
-        "Mark CF / sleeve centre, keep-out lines + needle",
+        "Chalk CF / sleeve centre, keep-out lines + needle",
         "  start (G6, DXF layer 13) before hooping.",
         "Frame (factory.json): split files S1 + S2,",
         "  registration crosses open stop 1 (G6).",
         "Sew-out on production canvas before bulk."]
 CFG = {
  "01": dict(id="01", short="front fish", title="FRONT — tetra fish school + blue lilies (split at the zip)",
-   sub="Direct embroidery on both cut front panels (F02 wearer's right, F01 wearer's left) · mm, finished size · art files 1:1",
+   sub="Embroidery on both fronts, sewn as oversized blocks + re-cut (F02 wearer's right, F01 wearer's left) · mm, finished size · art files 1:1",
    coords="PLACEMENT (x from CF, + = wearer's left; y down from the CF neck seam)",
    view_note="Front view, size M (0.23:1). Gold bar = zip at CF, dark = welt boxes. Hood not drawn (no embroidery on the hood).",
    p1_notes=[f"FR: {n('FR','fish')} fish, {n('FR','flowers')} lilies, {n('FR','leaves')} leaves, {n('FR','petals')} petals — FL: {n('FL','fish')} fish,",
@@ -63,7 +63,7 @@ CFG = {
             "  0.82 x the mockup fish length (decision 19 Oct)."],
    production=PROD, reference=REF["01"]),
  "02": dict(id="02", short="sleeve fish", title="SLEEVES — tetra fish, lilies + petals",
-   sub="Direct embroidery on the front half of both cut sleeves (S01 wearer's right, S02 wearer's left) · mm, finished size · art files 1:1",
+   sub="Embroidery on the front half of both sleeves, sewn as oversized blocks + re-cut (S01 wearer's right, S02 wearer's left) · mm, finished size · art files 1:1",
    coords="PLACEMENT (sleeve pattern coords: x from the sleeve centre line, y down from the underarm line)",
    view_note="Both sleeve pieces, size M (0.19:1). Shaded = back half (no embroidery). Thin line = sleeve centre (shoulder) line.",
    p1_notes=[f"SR: {n('SR','fish')} fish, {n('SR','flowers')} lily, {n('SR','leaves')} leaves, {n('SR','petals')} petals — SL: {n('SL','fish')} fish,",

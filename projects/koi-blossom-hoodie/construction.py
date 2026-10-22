@@ -1,7 +1,8 @@
-"""Rev E construction pages (technical-design review of Rev D: M1-M3, M5, M6, S1, S3, S10, S15, N1, N2, N5, N6):
+"""Rev E construction pages (technical-design review of Rev D: M1-M3, M5, M6, S1, S3, S10, S15, N1, N2, N5, N6), Rev F fixes:
   CS  seams + stitches + wash (one row per seam; SA read from the pattern edges, the rest amber [proposed])
   CI  inside view (drawn from the pattern pieces F01/K01/L01/P02, B01/K02/L02/R01) + numbered bag-out order
-  CD  welt pocket, zip / hood / neck junction, zip garage, hanger loop, zip ordering lengths
+  CD  welt pocket (both welt ends from the pattern), zip / hood / neck junction, zip garage, hanger loop, zip ordering lengths
+  CP  pocket bag P02 laid on F01 at the welt, every size: clearance to the hem seam + facing, and a proposed bag that clears (Rev F, C-04)
 and the project-level overrides of the zip-hoodie block pages (install(ZB), called by garment.py after it feeds the block
 this design's pattern): T2 notes 9-10 (zip garage + hanger loop placed), T3 extended hem / cuff rows + every callout drawn,
 T4 S02 drawn + not-to-scale note, T5 centre-panel label moved off the table. The block itself is not edited.
@@ -9,12 +10,13 @@ Every number is read from the pattern (front.pieces / hoodie) or the BOM; method
 import kbcore
 import math
 import numpy as np
-from shapely.geometry import Polygon, LineString, box
+from shapely.geometry import Polygon, LineString, Point, box
 from shapely import affinity
 import sheet as SHT
 from sheet import t, INK, MUTED, GREEN, RED, SW, SH, dim_h, dim_v
 from render import f
 import hoodie as HD, drum
+from pattern import cut_poly
 import front as F, emb_place as EP
 import build as ZB                       # projects/zip-hoodie-block (garment.py put it on the path + fed it this pattern)
 HF = ZB.HF
@@ -58,7 +60,44 @@ def zip_len(sz): g, mt = F.pieces(sz); return g["F01"].edges[0].length + mt["hem
 ZIPS = {sz: zip_len(sz) for sz in kbcore.SIZES}
 TURN = 15                                                                # cm, turning opening in a sleeve-lining seam [proposed]
 FLAT = HD.FLAT / 10
-FL_WELT_M = EP.clearances("M")["FL"]["welt"]                     # mm, art to the welt box, wearer's left front, size M
+FL_WELT_M = EP.clearances("M")["FL"]["welt"]                     # mm, art to the welt box, wearer's left front, size M (= G2 + T7, C-02)
+
+def welt_ends(g):
+    """(upper end, lower end, unit vector upper -> lower, normal toward CF): welt end = middle of a short side of the
+    welt box on F01 (front coords: x from CF, y down from the CF neck)"""
+    c = np.array(g["F01"].internal[0][1][:4], float)
+    e = sorted([(c[0] + c[3]) / 2, (c[1] + c[2]) / 2], key=lambda p: p[1])
+    u = (e[1] - e[0]) / np.linalg.norm(e[1] - e[0]); n = np.array([-u[1], u[0]])
+    return e[0], e[1], u, (n if n[0] < 0 else -n)
+WE = welt_ends(G)
+FAC_LOW = WE[1][0] - G["K01"].sew_poly().intersection(LineString([(-1, WE[1][1]), (400, WE[1][1])])).bounds[2]   # lower welt end to the facing edge
+
+# ---------------------------------------------------------------- pocket bag fit (C-04): P02 laid on F01 at the welt, per size
+BAG_HEM, BAG_FAC = 20.0, 10.0                                            # mm the bag keeps off the hem seam / facing edge [proposed]
+def bag_fit(sz):
+    """the drafted P02 placed as drafted (mouth = its 18 cm top edge, centred on the welt line and sewn to the welt opening;
+    bag square to the welt, toward CF, where the hand goes), its clearances, and the proposed bag = P02 trimmed to keep
+    BAG_HEM above the hem seam and BAG_FAC off the facing edge. Clearance < 0 = the bag crosses it (mm)."""
+    g, mt = F.pieces(sz); top, low, u, n = welt_ends(g); mid = (top + low) / 2
+    b = g["P02"].sew_poly(); x0, y0, x1, _ = b.bounds
+    B = Polygon([tuple(mid + u * (x - (x0 + x1) / 2) + n * (y - y0)) for x, y in b.exterior.coords])
+    k01, f01, hem = g["K01"].sew_poly(), g["F01"].sew_poly(), mt["hem_f"]
+    lj = LineString(next(e for e in g["K01"].edges if e.name == "lining join").pts)
+    def fac(P):
+        I = P.intersection(k01)
+        if I.area < 1: return P.distance(k01)
+        return -max(Point(q).distance(lj) for gg in getattr(I, "geoms", [I]) for q in gg.exterior.coords)
+    S = B.intersection(f01.difference(k01.buffer(BAG_FAC)).intersection(box(-1e3, -1e3, 1e3, hem - BAG_HEM)))
+    if S.geom_type != "Polygon": S = max(S.geoms, key=lambda q: q.area)
+    depth = LineString([tuple(mid), tuple(mid + n * 400)]).intersection(S).length
+    rect = next(d for d in range(200, 0, -5) if (lambda R: hem - R.bounds[3] >= BAG_HEM and fac(R) >= BAG_FAC)(
+        Polygon([tuple(mid + u * (x - (x0 + x1) / 2) + n * (y - y0)) for x, y in b.intersection(box(x0, y0, x1, y0 + d)).exterior.coords])))
+    return dict(g=g, mt=mt, top=top, low=low, B=B, S=S, k01=k01, f01=f01, hem=hem, hem_c=hem - B.bounds[3], fac_c=fac(B), cf_c=B.bounds[0],
+                s_hem=hem - S.bounds[3], s_fac=fac(S), depth=depth, rect=rect, area=S.area / B.area, low_y=hem - max(q[1] for q in g["F01"].internal[0][1]))
+BAGS = {sz: bag_fit(sz) for sz in kbcore.SIZES}
+# C-09: extra shell for the oversized embroidery blocks, size M (block = the cut piece's bounding rectangle + 30 mm all round)
+BLOCK_M = sum((lambda c: (c.bounds[2] - c.bounds[0] + 60) * (c.bounds[3] - c.bounds[1] + 60) - c.area)(cut_poly(G[k])) for k in ("F01", "F02", "S01", "S02")) / 1e6 / (1.5 * 0.8)
+BAG_OK = all(r["hem_c"] >= BAG_HEM and r["fac_c"] >= BAG_FAC for r in BAGS.values())
 
 # ---------------------------------------------------------------- CS seams + stitches + wash (M1, M5, S3)
 EPIC, GRAL = "Epic 120", "Gral 40"
@@ -97,14 +136,16 @@ def p_seams():
         h = 2.2 + 2.3 * nl
         if i % 2: o.append(f'<rect x="11" y="{f(y - 2.6)}" width="{SW - 22}" height="{f(h)}" fill="{ALT}"/>')
         o.append(t(cx[0], y, str(i), 1.4, 700, MUTED)); o.append(t(cx[1], y, nm, 1.42, 700)); o.append(t(cx[2], y, pcs, 1.32, 400, MUTED))
-        o.append(t(cx[3], y, st, 1.38, 600, PROP)); o.append(t(cx[4], y, spi, 1.38, 600, PROP)); o.append(t(cx[5], y, s_, 1.42, 700, INK))
+        o.append(t(cx[3], y, st, 1.38, 600, PROP)); o.append(t(cx[4], y, spi, 1.38, 600, PROP))
+        o.append(t(cx[5], y, s_ + ("" if isinstance(sa_, tuple) or sa_ == "—" else " *"), 1.42, 700, INK if isinstance(sa_, tuple) or sa_ == "—" else PROP))     # * = not a pattern edge
         wrap(o, cx[6], y, top, 64, 1.32, PROP, 2.3); o.append(t(cx[7], y, thr, 1.32, 600, PROP)); wrap(o, cx[8], y, fin, 98, 1.32, PROP, 2.3)
         y += h
     y += 3
     o.append(t(12, y, "KEY", 1.9, 700)); y2 = y + 3.6
     for l in ["301 = single-needle lockstitch · 304 = zigzag · 504 = 3-thread overlock · bartack = 1 cm, 28–42 stitches  [proposed — confirm]",
               "SPI = stitches per inch (10 SPI = 2.5 mm stitch, 8 SPI = 3.2 mm). Thread from the BOM (T6): Coats Epic 120 (Tex 27) for seams,",
-              "Coats Gral 40 (Tex 60) for topstitching; tonal = navy top + bobbin on the shell, cream on the sherpa  [proposed — confirm]."]:
+              "Coats Gral 40 (Tex 60) for topstitching; tonal = navy top + bobbin on the shell, cream on the sherpa  [proposed — confirm].",
+              "SA * (amber) = not a pattern edge (elastic overlap, folded loop ends): proposed — confirm."]:
         o.append(t(12, y2, l, 1.38, 400, INK)); y2 += 2.7
     wx = 160
     o.append(t(wx, y, "WASH + SHRINKAGE  [proposed — confirm]", 1.9, 700, PROP)); y3 = y + 3.6
@@ -127,7 +168,7 @@ def plaid(p, X, Y, step=40):
         if not s_.is_empty and s_.geom_type == "LineString": out.append(line(X, Y, list(s_.coords), FLAN_L, 0.25))
     return "".join(out)
 STEPS = [
-    "Embroider the cut front + sleeve panels first (E0). Fuse the facings K01 / K02 and the welts P01.",
+    "Embroider the fronts + sleeves first, each as an oversized block of shell, then re-cut on the 1:1 pattern piece (E0; or your method, QF2 m). Fuse the facings K01 / K02 and the welts P01.",
     "Fronts: welt pockets with their bags (CD).",
     "Shell: shoulders, set the sleeves, side + underarm seams in one pass; topstitch (CS 1–4).",
     "Shell hood H01 + H02 + H01, topstitch; sew it to the body neck (notch at HPS = shoulder seam, CB notch).",
@@ -154,6 +195,7 @@ def p_inside():
     o.append(poly(l01, X, Y, FLANNEL, INK, 0.25)); o.append(plaid(l01, X, Y))
     o.append(poly(k01, X, Y, FACE_I, INK, 0.3))
     o.append(poly(WELT, X, Y, "none", MUTED, 0.25, "0.8 0.5"))
+    o.append(poly(BAGS["M"]["S"], X, Y, "none", PROP, 0.3, "1.0 0.6"))                    # proposed pocket bag (CP)
     hem = MT["hem_f"]; band = box(0, hem, f01.bounds[2], hem + MT["hem_h"])
     o.append(poly(band, X, Y, FACE_I, INK, 0.3)); o.append(line(X, Y, [(0, hem + MT["hem_h"] / 2), (f01.bounds[2], hem + MT["hem_h"] / 2)], MUTED, 0.2, "0.6 0.5"))
     o.append(f'<rect x="{f(X(-6))}" y="{f(Y(-85))}" width="{f(6 * s)}" height="{f((hem + MT["hem_h"] + 85) * s)}" fill="#3A3A3A"/>')
@@ -161,7 +203,7 @@ def p_inside():
     o.append(t(X(0), Y(hem + MT["hem_h"]) + 4, "F01 wearer's left front, inside (CF at left)", 1.45, 700))
     for (x, y), n in [((30, 150), 6), ((180, 120), 5), ((200, 470), 2), ((-3, -40), 8), ((150, hem + 28), 10)]:
         o.append(call(X(x), Y(y), n))
-    o.append(t(X(0), Y(hem + MT["hem_h"]) + 7.5, "dashed = welt box; pocket bag behind the lining: CD", 1.25, 400, MUTED))
+    o.append(t(X(0), Y(hem + MT["hem_h"]) + 7.5, "grey dashed = welt box; amber dashed = proposed pocket bag (CP)", 1.25, 400, MUTED))
     # back B01 inside: lining L02 + pleat, facing K02, labels, hanger loop, hem band
     bx, by = 84 + 310 * s, 38 + 30 * s
     X2 = lambda x: bx + x * s; Y2 = lambda y: by + y * s
@@ -181,7 +223,7 @@ def p_inside():
     for (x, y), n in [((60, 40), 6), ((-28, py0 + 20), 5), ((150, 300), 5), ((-200, hb + 28), 10), ((0, -50), 7)]:
         o.append(call(X2(x), Y2(y), n))
     o.append(t(X2(PLEAT_W / 2) + 2, Y2(py0 + 25), f"CB pleat {PLEAT_W / 10:.0f} cm: stitched 5 cm (red), released below", 1.25, 600, INK))
-    o.append(t(X2(40), Y2(lab_y) + 2.6, "main label + hanger loop (amber)", 1.2, 400, MUTED))
+    o.append(t(X2(-32) - 1.2, Y2(lab_y) + 2.6, "main label + hanger loop (amber)", 1.2, 400, INK, "end"))
     ly = Y2(hb + MT["hem_h"]) + 9
     for col, lab in [(SHELL_I, "shell (duck)"), (FACE_I, "facing / band (duck, fused facings)"), (FLANNEL, "body lining (plaid flannel)")]:
         o.append(f'<rect x="{f(bx - 300 * s)}" y="{f(ly - 2.2)}" width="4" height="2.6" fill="{col}" stroke="{INK}" stroke-width="0.15"/>' + t(bx - 300 * s + 5.5, ly, lab, 1.3)); ly += 3.3
@@ -215,16 +257,20 @@ def p_details():
     o.append(t(ox, Y(y1) + 4, "WELT POCKET, wearer's left front (right = mirror). Red = bartacks.", 1.35, 700))
     y = Y(y1) + 8.5
     for l, p in [(f"Type: single welt, one piece P01 folded lengthwise + fused; finished {WELT_W / 10:.1f} × {WELT_L / 10:.1f} cm at {F.WELT_ANG:.0f}° (pattern).", False),
-                 (f"Welt box on the panel: {WELT.bounds[0] / 10:.1f} cm from CF at its nearest corner; {WELT_TO_FAC / 10:.1f} cm clear of the facing edge (pattern).", False),
-                 (f"Bag: 2 × P02 per pocket (cotton twill), mouth {BAG_MOUTH / 10:.1f} cm, side {BAG_SIDE / 10:.1f} cm, {BAG_DEPTH / 10:.1f} cm deep at the centre (pattern); seams 0.5 cm, overlocked.", False),
-                 (f"The welt's lowest corner is {WELT_LOW / 10:.1f} cm above the hem seam and {WELT_TO_FAC / 10:.1f} cm from the facing edge (pattern): please lay the bag on the front pattern and tell us how it hangs.", False),
+                 (f"Welt ends (middle of each short side; x from CF, height above the hem seam): upper end {WE[0][0] / 10:.1f} / {(MT['hem_f'] - WE[0][1]) / 10:.1f} cm, "
+                  f"lower end {WE[1][0] / 10:.1f} / {(MT['hem_f'] - WE[1][1]) / 10:.1f} cm (pattern; every size: CP).", False),
+                 (f"Facing edge clearance: the upper end's nearest corner is {WELT.bounds[0] / 10:.1f} cm from CF and {WELT_TO_FAC / 10:.1f} cm clear of the facing edge; "
+                  f"the lower end is {FAC_LOW / 10:.1f} cm from it. The welt's lowest corner is {WELT_LOW / 10:.1f} cm above the hem seam (pattern).", False),
+                 (f"Bag: 2 × P02 per pocket (cotton twill), drafted mouth {BAG_MOUTH / 10:.1f} cm, side {BAG_SIDE / 10:.1f} cm, {BAG_DEPTH / 10:.1f} cm deep (pattern); seams 0.5 cm, overlocked. "
+                  + ("The drafted bag clears the hem seam and the facing at every size (CP)." if BAG_OK else
+                     f"At this welt the drafted bag crosses the hem seam and the facing (CP, red): cut the proposed bag on CP instead, {BAGS['M']['depth'] / 10:.1f} cm deep at the welt centre at size M."), not BAG_OK),
                  ("Bartacks: both welt ends, 1 cm, through welt + shell + bag. Edge-stitch the welt ends only." + PR, True),
-                 ("Bag to facing: where the bag reaches the facing, catch its CF edge in the facing-to-lining seam so it can't twist; otherwise it hangs free." + PR, True),
+                 (f"Bag edges: the proposed bag keeps {BAG_FAC / 10:.0f} cm off the facing edge and {BAG_HEM / 10:.0f} cm above the hem seam; it hangs free between shell and lining, held at the welt." + PR, True),
                  ("No bag stitching shows on the outside front: only the welt and its bartacks." + PR, True)]:
         n = wrap(o, ox, y, l, 165, 1.35, PROP if p else INK, 2.4); y += n * 2.4 + 0.6
     y += 1.5; o.append(t(ox, y, "PLEASE ANSWER", 1.6, 700)); y += 3.2
     for q in ["Is any pocket-bag stitching visible on the outside front?   YES / NO",
-              f"Can you sew the welts with the art 6 mm from the welt box (wearer's left front: {FL_WELT_M:.1f} mm at size M)?   YES / NO — if NO, the clearance you need: ____ mm"]:
+              f"Can you sew the welts with the art 6 mm from the welt box? Tightest at size M: wearer's left front (FL), {FL_WELT_M:.1f} mm (G2 table, TECHPACK T7).   YES / NO — if NO, the clearance you need: ____ mm"]:
         n = wrap(o, ox, y, q, 160, 1.38, INK, 2.4, 600); y += n * 2.4 + 0.8
     # zip / hood / neck junction (schematic)
     jx, jy = 150, 34; o.append(t(jx, jy, "ZIP + HOOD + NECK JUNCTION (schematic, inside view at CF)", 1.7, 700))
@@ -255,6 +301,62 @@ def p_details():
     o.append(t(jx + 7 * 19, y + 3, "pattern", 1.25, 400, MUTED)); o.append(t(jx + 7 * 19, y + 6, "order", 1.25, 700))
     y += 9.5
     wrap(o, jx, y, "Order length = the pattern length (hem-band edge to CF neck − 0.5, T5) rounded to the nearest whole cm (T6). Please tell us if your supplier cuts in other steps.", 185, 1.32, PROP, 2.35)
+    return o
+
+# ---------------------------------------------------------------- CP pocket bag on the front pattern, every size (C-04)
+def p_bag():
+    o = H("POCKET BAG ON THE FRONT PATTERN — every size", "F01 wearer's left front, inside (right front = mirror), lower part. Pieces from the pattern (DXF). Red = the drafted bag P02 where it crosses; amber = proposed bag.", "CP")
+    s = 0.104; gap = 38.6; base = 36 + 330 * s                            # page y of every size's hem seam
+    for j, sz in enumerate(kbcore.SIZES):
+        r = BAGS[sz]; hem = r["hem"]; ox = 14 + j * gap
+        X = lambda x, ox=ox: ox + x * s; Y = lambda y, hem=hem: base + (y - hem) * s
+        win = box(-10, hem - 330, 320, hem)
+        o.append(poly(r["f01"].intersection(win), X, Y, SHELL_I, INK, 0.25))
+        o.append(poly(r["k01"].intersection(win), X, Y, FACE_I, INK, 0.25))
+        o.append(f'<rect x="{f(X(0))}" y="{f(Y(hem))}" width="{f(r["f01"].intersection(win).bounds[2] * s)}" height="{f(r["mt"]["hem_h"] * s)}" fill="{FACE_I}" stroke="{INK}" stroke-width="0.25"/>')
+        o.append(poly(r["S"], X, Y, PROP, PROP, 0.3)); o.append(poly(r["S"], X, Y, "#FFFFFF", PROP, 0.01).replace('fill="#FFFFFF"', 'fill="#FFFFFF" fill-opacity="0.55"'))
+        bad = r["B"].difference(r["f01"].difference(r["k01"]).intersection(box(-1e3, -1e3, 1e3, hem)))
+        if bad.area > 1: o.append(poly(bad, X, Y, RED, RED, 0.2).replace(f'fill="{RED}"', f'fill="{RED}" fill-opacity="0.45"'))
+        o.append(poly(r["B"], X, Y, "none", RED if r["hem_c"] < BAG_HEM or r["fac_c"] < BAG_FAC else GREEN, 0.3, "0.9 0.5"))
+        g = r["g"]; o.append(poly(Polygon(g["F01"].internal[0][1]), X, Y, "#3A3A3A", INK, 0.2))
+        o.append(line(X, Y, [(0, hem - 330), (0, hem + r["mt"]["hem_h"])], INK, 0.5))
+        o.append(t(X(150), Y(hem) + r["mt"]["hem_h"] * s + 4, sz, 2.0, 700, INK, "middle"))
+    ly = base + 55 * s + 10
+    for col, lab in [(RED, "drafted bag P02 (18 × 20 cm, DXF) laid at the welt; red fill = where it crosses the hem seam / facing / CF"), (PROP, "proposed bag: P02 trimmed "
+                     f"{BAG_HEM / 10:.0f} cm above the hem seam + {BAG_FAC / 10:.0f} cm off the facing edge"), ("#3A3A3A", "welt box · grey = facing K01 + hem band · black line = CF")]:
+        o.append(f'<rect x="14" y="{f(ly - 2.2)}" width="4" height="2.6" fill="{col}" fill-opacity="0.6"/>' + t(19.5, ly, lab, 1.4)); ly += 3.3
+    # per-size table
+    y = ly + 3
+    hd = ["Size", "Welt upper end x / above hem", "Welt lower end x / above hem", "Drafted bag: to hem seam", "to facing edge", "to CF",
+          "Proposed bag: depth at welt centre", "to hem seam", "to facing edge", "share of the drafted bag"]
+    cx = [14, 24, 60, 96, 128, 148, 164, 206, 226, 248]
+    for x_, h_ in zip(cx, hd): o.append(t(x_, y, h_, 1.3, 700, MUTED))
+    for i, sz in enumerate(kbcore.SIZES):
+        r = BAGS[sz]; yy = y + 3.6 + i * 3.2; hem = r["hem"]
+        if i % 2 == 0: o.append(f'<rect x="13" y="{f(yy - 2.3)}" width="{SW - 26}" height="3.2" fill="{ALT}"/>')
+        bad = lambda v, lim: RED if v < lim else INK
+        o.append(t(cx[0], yy, sz, 1.4, 700))
+        o.append(t(cx[1], yy, f"{r['top'][0] / 10:.1f} / {(hem - r['top'][1]) / 10:.1f} cm", 1.35)); o.append(t(cx[2], yy, f"{r['low'][0] / 10:.1f} / {(hem - r['low'][1]) / 10:.1f} cm", 1.35))
+        o.append(t(cx[3], yy, f"{r['hem_c'] / 10:+.1f} cm", 1.35, 700, bad(r["hem_c"], BAG_HEM))); o.append(t(cx[4], yy, f"{r['fac_c'] / 10:+.1f} cm", 1.35, 700, bad(r["fac_c"], BAG_FAC)))
+        o.append(t(cx[5], yy, f"{r['cf_c'] / 10:+.1f} cm", 1.35, 700, bad(r["cf_c"], 0)))
+        o.append(t(cx[6], yy, f"{r['depth'] / 10:.1f} cm", 1.35, 700, PROP)); o.append(t(cx[7], yy, f"{r['s_hem'] / 10:+.1f} cm", 1.35, 400, PROP))
+        o.append(t(cx[8], yy, f"{r['s_fac'] / 10:+.1f} cm", 1.35, 400, PROP)); o.append(t(cx[9], yy, f"{r['area'] * 100:.0f} %", 1.35, 400, PROP))
+    y += 3.6 + 7 * 3.2 + 2
+    hc = [r["hem_c"] for r in BAGS.values()]; fc = [r["fac_c"] for r in BAGS.values()]; dp = [r["depth"] for r in BAGS.values()]
+    rng = lambda v: f"{-max(v) / 10:.1f}" if abs(max(v) - min(v)) < 0.5 else f"{-max(v) / 10:.1f}–{-min(v) / 10:.1f}"
+    rect = min(r["rect"] for r in BAGS.values()); low = min(r["low_y"] for r in BAGS.values())
+    notes = [(("The drafted bag clears the hem seam and the facing at every size." if BAG_OK else
+               f"The drafted bag does not fit at this welt: square to the welt it runs {rng(hc)} cm past the hem seam and "
+               f"{rng(fc)} cm into the facing at every size. Hung straight down instead, it has only "
+               f"{(low - BAG_HEM) / 10:.1f} cm below the welt's lowest corner before the hem seam."), INK, 700),
+             ("Clearance = the bag's nearest point to the hem seam / facing edge / CF; minus = it crosses. Bag placed as drafted: its 18 cm mouth centred on the "
+              "welt and sewn to the welt opening, the bag square to the welt toward CF (where the hand goes).", MUTED, 400),
+             (f"Proposed: cut the bag to the amber shape: the drafted P02 trimmed to stay {BAG_HEM / 10:.0f} cm above the hem seam and {BAG_FAC / 10:.0f} cm off the facing edge. "
+              f"Depth at the welt centre {min(dp) / 10:.1f} cm (XS) to {max(dp) / 10:.1f} cm (3XL). A rectangular bag square to the welt would clear only up to "
+              f"{rect / 10:.1f} cm deep, too shallow for a hand. The DXF still holds the 20 cm draft: we send the trimmed P02 per size once you confirm." + PR, PROP, 600),
+             ("PLEASE ANSWER: will you cut the bag to the proposed shape?   YES / NO — or tell us how you would fit the bag at this welt (photo of the bag laid on the front piece).", INK, 700)]
+    for l, col, w in notes:
+        n = wrap(o, 14, y, l, 230, 1.42, col, 2.5, w); y += n * 2.5 + 1.2
     return o
 
 # ---------------------------------------------------------------- block page overrides (install)
@@ -340,7 +442,7 @@ def p_pom():
         col = PROP if pr else INK
         o.append(t(cx[0], y, k, 1.6, 700, col)); o.append(t(cx[1], y, nm[:34], 1.5, 600, col)); o.append(t(cx[2], y, how[:56], 1.25, 400, MUTED))
         for j, v in enumerate(vals): o.append(t(cx[3 + j], y, f"{v:g}", 1.5, 600 if sizes[j] == "M" else 400, col))
-        o.append(t(cx[10], y, f"±{tol:g}", 1.42, 400, PROP if k.endswith("+") else MUTED)); o.append(t(cx[11], y, "proposed" if pr else "jacket", 1.42, 600, col))
+        o.append(t(cx[10], y, f"±{tol:g}", 1.42, 400, PROP if k.endswith("+") else MUTED)); o.append(t(cx[11], y, "proposed" if pr else "block", 1.42, 600, col))
     y = 35.5 + len(order) * 3.9 + 4
     o.append(t(80, y, "PATTERN CHECK — every size measured off the drafted pattern pieces vs this chart", 1.9, 700)); y += 4.2
     for j, sz in enumerate(sizes):
@@ -381,3 +483,12 @@ def install(Z):
             out.append(el)
         return out
     Z.p_pieces, Z.p_hood = p_pieces, p_hood
+    bom0 = Z.p_bom
+    def p_bom():
+        o = bom0()
+        y = 38 + 13 * 4.6 + 6 + 4.4 + 9                                    # under the block's zip-length row
+        o.append(t(12, y, "SHELL FOR THE EMBROIDERY BLOCKS" + PR, 1.9, 700, PROP))
+        o.append(t(12, y + 4, f"The shell figure above is from the pattern pieces. The embroidered pieces F01, F02, S01, S02 are cut as oversized blocks first (piece + 30 mm all round, E0): "
+                              f"your marker must include the blocks, about + {BLOCK_M:.2f} m of shell per jacket at size M (block = the piece's rectangle + 30 mm).", 1.5, 400, PROP))
+        return o
+    Z.p_bom = p_bom

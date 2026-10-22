@@ -88,3 +88,29 @@ test_konpeito_gates (needs Konpeito's gitignored out/front_stars.json; no Konpei
   The real orientation isn't in the pattern, so the drawing was removed and CD asks the factory to lay it on the pattern (TBD item).
 - PR #57 head moved (640ea23) but engine/factory_copy.py is unchanged since 598ea82: no shim re-sync.
 - No DST rebuild: stitch files are Rev D's; rfq.py now compares bench/dst_sha_RevE.json with RevD.
+
+---
+# Rev F (session 08df9438, builder; brief BRIEF-builder-RevF-fixes.md) — last fix round on PR #59
+
+## What changed and why
+- **C-01 one method everywhere**: CI step 1, T7, G5 step 1, G6 needle note, both element-spec subtitles + PRODUCTION notes, E02 question
+  now say oversized block + re-cut. New `rfqgate.method_gate` runs on the SHIPPED PDFs in rfq.build (assert): sentence with an embroidery
+  verb + "cut panel/sleeve/front" fails while any page names the oversized block. Red on the Rev E PDFs (1 summary, 8 techpack hits) →
+  green on Rev F. Tests: 10 new in test_koi_rfq_gate.py (red: 9 fail with CUT_RX neutered).
+- **C-04 pocket bag, new page CP** (construction.bag_fit): P02 placed as drafted (18 cm mouth centred on the welt, bag square to the welt toward CF).
+  Result, every size: −2.5 cm past the hem seam, −4.0…−6.0 cm into the facing, crosses CF at XS–L. Hung straight down: only 5.7 cm room.
+  A rectangle that clears is ≤ 7.0 cm deep (useless). ★ Proposed (amber): P02 trimmed 2 cm above hem seam + 1 cm off facing →
+  depth at welt centre XS 12.2 · S 13.0 · M 13.9 · L 14.9 · XL 15.8 · XXL 16.7 · 3XL 17.7 cm. DXF P02 NOT changed (engine piece); CP says a trimmed
+  P02 follows after the factory confirms. Alternative (move the welt up) = design call, in TBD.
+- C-02: G2 table = "TIGHTEST KEEP-OUT PER PIECE … [minimum]" with ties (FL at M = hem 10.4 [10] / welt 6.5 [6]); the old table picked hem only.
+  CD question cites G2 + TECHPACK T7. C-03: CD prints both welt ends (x / above hem) + facing clearance per end (upper 9.3, lower 16.3).
+- C-05: `pack.sew()` = split files for 2-hooping pieces, the full file for a 1-hooping one (SR at XS–XL): E0, G5, QF §4, zip (SR split files removed for XS–XL).
+- C-06: F1 title "before the sample"; F1 send-back = `pack.SEND_BACK` = QF §4 (one source). C-07: E0 "Art box mm"; F1 "stitch-file box".
+- C-08: scrub → "our block (DXF)"; T3 source column "block"; cover "our block (DXF)". C-09: T6 note, + 0.36 m shell for the blocks at M.
+- Review SHOULD 1: CS rows 18/22 SA amber with * (not a pattern edge). NITs: CI label outside its box; G2 "TECHPACK T7".
+- REV = Rev F, REV_LOG line; sha manifest compares every earlier bench file (RevD + RevE identical).
+
+## State
+Summary 17 pp, techpack 31 pp, internal 31 pp. Leak gate 0 factory / 147 internal / 0 empty, Author+Creator blank. Method gate 0.
+DST sha RevF = RevE = RevD (158 files). pytest tests/: 579 pass, 2 fail = known Konpeito (gitignored input).
+Founder calls unchanged + amber: M5, S2, S8, S13. New for the lead: pocket-bag shape (factory confirms on CP) or welt move (Nick).

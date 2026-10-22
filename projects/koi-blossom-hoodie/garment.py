@@ -143,7 +143,7 @@ def p_placement():
         o.append(t(cxs[6], yy, f"{sum(max(1, len(r[P]['splits']['sections'])) for P in kbcore.PIECES)}", 1.4))
         o.append(t(cxs[7], yy, f"{sum(mh(s) for P in kbcore.PIECES for s in r[P]['splits']['sections'].values()):.1f}", 1.4))
     yb = y + 3.6 + 7 * 3.0 + 2
-    for l in ["Embroider the cut panels flat before assembly (fronts before zip + welts, sleeves before the underarm seam + cuff band).",
+    for l in ["Embroider each front + sleeve as an oversized block of shell (cut outline + 30 mm), then re-cut on the 1:1 pattern piece (E0); fronts before zip + welts, sleeves before the underarm seam + cuff band.",
               "Backing 2.5 oz navy cutaway; welt boxes, zip and hem band are not embroidered; hood + back plain [proposed — confirm]."]:
         o.append(t(12, yb, l, 1.5, 400, MUTED)); yb += 3.1
     return o
