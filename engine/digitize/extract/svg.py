@@ -88,16 +88,23 @@ def stroke_width(G, ppm=40.0):
     return float(np.median(ws)) if ws else 2 * G.area / max(G.length, 1e-6)
 
 
-def _taper(P, cl, min_w, n=24, dev=0.25, share=0.25):
+def _taper(P, cl, min_w, n=24, dev=0.25, share=0.25, belly=2.0):
     """S1 tapered stroke (crescent, brush stroke): local visible width along the centreline (2 x distance to the outline);
     >= `share` of the samples off the median by > `dev` -> (needle width at the belly, ("table", width multipliers)),
-    else None (one width is right: a round-ended stroke's skeleton stops at the cap centres, so its samples stay flat)"""
+    else None (one width is right: a round-ended stroke's skeleton stops at the cap centres, so its samples stay flat).
+    A taper narrows at BOTH ends with its belly in the middle half; a glyph stroke that runs into a junction widens at an
+    end instead and keeps one width (konpeito wb: 70 glyph strokes profiled, 2 exposed stitches; lettering fixture: 71).
+    Only a belly >= `belly` mm is profiled: below it the 0.85 mm minimum satin leaves nothing to follow."""
     from shapely.geometry import LineString
     line = LineString(cl)
     if line.length < 1e-6: return None
     lw = np.array([2 * P.exterior.distance(line.interpolate(f, normalized=True)) for f in np.linspace(0, 1, n)])
     mid = float(np.median(lw))
-    if mid <= 0 or np.mean(np.abs(lw / mid - 1) > dev) < share: return None
+    if mid <= 0 or lw.max() < belly or np.mean(np.abs(lw / mid - 1) > dev) < share: return None
+    if line.length < 3 * lw.max(): return None                     # a dot / square (an i dot) is no taper
+    if np.mean(lw >= 0.9 * lw.max()) >= 0.5: return None          # flat-ended bar (an i stem): full width most of its length
+    k = int(np.argmax(lw)); e = max(1, n // 8)
+    if not (n // 4 <= k <= 3 * n // 4) or max(lw[:e].max(), lw[-e:].max()) > (1 - dev) * mid: return None
     wmax = max(min_w, float(lw.max()) - ALLOW)
     return round(wmax, 2), ("table", [round(max(min_w, float(v) - ALLOW) / wmax, 3) for v in lw])
 
@@ -201,10 +208,9 @@ class _B:
         w = max(min_w, round(wv - ALLOW, 2)); self.report[layer] = dict(w_art=round(wv, 2), w_needle=w, thread=wt)
         corner = float(spec.get("corner", C.CORNER)); min_counter = float(spec.get("min_counter", 0.6))
         dots = spec.get("dots", False); k = 0
-        per_shape = bool(spec.get("per_shape"))      # S1: each shape keeps its own width; a tapered stroke its profile
+        per_shape = bool(spec.get("per_shape"))      # S1 (G = one source shape): a tapered stroke sews on its width profile
         for P in polys(G):
             if P.area < 0.05: continue
-            if per_shape: w = max(min_w, round(stroke_width(P) - ALLOW, 2))
             ys = np.array(P.exterior.coords); ext = ys.max(0) - ys.min(0)
             if dots and max(ext) < 2.2 and max(ext) / max(min(ext), 1e-6) < 1.5 and not P.interiors:
                 self.dot(layer, P, thread, z + 0.001 * k, kind="dot", min_d=float(spec.get("dot_min_d", 1.0))); k += 1; continue
@@ -220,7 +226,9 @@ class _B:
                 if len(sts) > 1 and not closed and L < 1.1 * w: continue        # skeleton spur (cusps, stroke ends)
                 ww = w
                 if closed: ww = max(0.8 if w >= 0.8 else w, min(w, L / math.pi - (min_counter + 0.2 + ALLOW)))
-                caps = tuple(s["caps"]); prof = _taper(P, cl, min_w) if per_shape and not closed else None
+                # a width profile only on a shape that IS one open stroke: a glyph's strokes meet at junctions (wider
+                # samples, not a taper) and profiling them sewed the lettering fixture's A thinner (ratio 0.84 -> 0.60)
+                caps = tuple(s["caps"]); prof = _taper(P, cl, min_w) if per_shape and not closed and len(sts) == 1 else None
                 if prof: ww, prof = prof; caps = ("flat", "flat")
                 g = C.column_geom(cl, ww, caps, closed, prof)
                 t = np.array(cl[min(1, len(cl) - 1)]) - np.array(cl[0])

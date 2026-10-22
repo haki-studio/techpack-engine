@@ -12,6 +12,14 @@ SVG = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120"><rect x="5
        '<circle cx="160" cy="60" r="35" fill="#e94f37"/><circle cx="20" cy="110" r="1.5" fill="#f4d35e"/></svg>')
 REQ = dict(svg=SVG, file_name="a.svg", width_mm=90, fabric="twill", hoop="300x300", answers={})
 STUB_ENV = dict(os.environ, SVG2DST_ALLOW_STUB="true")
+REAL = server.REAL_CLI
+
+
+@pytest.fixture(autouse=True)
+def stub_only(monkeypatch):
+    """S1 put the real CLI at scripts/svg2dst.py and it always wins: the stub tests (and the HTTP fixture, whose handler
+    calls convert) pin it off; a test that wants an engine sets REAL_CLI itself."""
+    monkeypatch.setattr(server, "REAL_CLI", "/nonexistent/svg2dst.py")
 
 
 @pytest.mark.parametrize("svg,needle", [
@@ -194,3 +202,14 @@ def test_check_result_matches_plm_contract(mut, needle):
     contract.check_result(json.loads(json.dumps(r)))
     mut(r)
     with pytest.raises(ValueError, match=needle): contract.check_result(r)
+
+
+def test_real_engine_round_trip(monkeypatch):
+    """the S1 engine behind the worker: no run.yaml, contract-valid result, a real DST, engine_real passes"""
+    monkeypatch.setattr(server, "REAL_CLI", REAL)
+    r = server.convert(dict(REQ), env={k: v for k, v in os.environ.items() if k != "SVG2DST_ALLOW_STUB"})
+    res = contract.check_result(r["result"])
+    gates = {g["id"]: g["pass"] for g in res["gates"]}
+    assert res["engine"] == "svg2dst" and gates["engine_real"] is True and gates["fits_hoop"] is True
+    assert len(res["threads"]) == 3 and res["stats"]["stitches"] > 500
+    assert base64.b64decode(r["files"]["dst"])[:3] == b"LA:"
