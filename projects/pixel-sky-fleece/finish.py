@@ -18,6 +18,8 @@ rfq = shrink(f"{OUT}/HAKI_{STYLE}_RFQ_{REV}.pdf"); internal = shrink(f"{OUT}/HAK
 pkg = f"{OUT}/pkg"; shutil.rmtree(pkg, ignore_errors=True)
 for d in ("elements", "jacquard", "pattern", "compare", "art"): os.makedirs(f"{pkg}/{d}")
 shutil.copy(rfq, f"{pkg}/HAKI_{STYLE}_RFQ_{REV}.pdf")
+import labels as LB
+os.makedirs(f"{pkg}/labels"); shutil.copy(LB.MAIN, f"{pkg}/labels/")   # Haki standard main label; care label MISSING until the shell fibre is known (pack.SHELL_RECORDED)
 for F in ("E1", "E2", "E3", "E1B"):
     for ext in ("dst", "pes"): shutil.copy(f"{OUT}/stitch/{F}/{STYLE}_{F}.{ext}", f"{pkg}/elements/")
     shutil.copy(f"{OUT}/art/{STYLE}_{F}_ART.svg", f"{pkg}/art/")
@@ -40,6 +42,7 @@ EMBROIDERY (size M = every size, art 100 %; placement on G1 + pattern layer 8)
 JACQUARD (engineered sherpa, 1 px = 1 cell = 2.5 mm finished [proposed]; palette 0 sky, 1 cream, 2 black, 9 outside)
   jacquard/{STYLE}_JQ_<panel>_<size>.png + .bmp    panels: front_L (F01), front_R (F02: _birdA / _birdB), back (B01), sleeve_R (S01), sleeve_L (S02)
 
+LABELS   labels/main-label-6.5x2cm-white.pdf = Haki Studios main label, 65 x 20 mm, 1:1 (T6); care label to follow
 PATTERN  pattern/{STYLE}_pattern_<size>.dxf (AAMA layers, mm), _ALL-SIZES.dxf, _M_1to1_PLOT.pdf (check the 100 mm box)
 COMPARE  compare/*_preview.png  mockup vs stitch preview / cell map, same scale
 

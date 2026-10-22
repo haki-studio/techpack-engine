@@ -42,6 +42,8 @@ BIG = max(FILES, key=lambda f_: GATES[f_[0]]["size_mm"][0] * GATES[f_[0]]["size_
 hexs = lambda c: "#%02X%02X%02X" % tuple(c)
 # colour standard (TD N1): hex from the files (jacquard palette, flat render colours, thread design colours); TCX to follow
 import fflat as FF
+import labelsheet as LS
+SHELL_RECORDED = "jacquard sherpa, fibre content: mill to state"     # no fibre % recorded -> care label MISSING (LESSONS D7, never guessed)
 COLOURS = [("Sky blue — sherpa yarn 0 + collar outer taslan", hexs(JQ.COL[0])), ("Cream — sherpa yarn 1 + collar inner", hexs(JQ.COL[1])),
            ("Black — bird yarn 2 (option A)", hexs(JQ.COL[2])), ("Navy — binding, tapes, facing, pocket zip tape", hexs(FF.NAVY)),
            ("Black — CF zip tape + teeth", hexs(FF.ZIPC)), ("Blue — zip pulls", hexs(FF.PULL)),
@@ -224,21 +226,23 @@ def p_bom():
     return o
 
 def p_labels():
-    o = H("T6 · LABELS + PACKAGING", "All proposed — confirm. Label artwork, RN / manufacturer ID and care text follow from Haki Studios. Positions on the finished garment.", "T6")
+    o = H("T6 · LABELS + PACKAGING", "Main label = Haki Studios standard label (art right, 1 : 1, file in the zip labels/). Care label: fibre not confirmed yet. RN / manufacturer ID follow from Haki Studios. Positions on the finished garment.", "T6")
     img_fit(o, f"{OUT}/labels_key.png", 12, 30, 125, 60); o.append(t(12, 30, "BACK VIEW (inside positions shown through)", 1.7, 700))
-    rows = [("1  Main label", "Haki Studios house label, woven, artwork to follow", f"inside back neck: centred at CB on the neck tape NT1 ({FL.NECKT_W/10:.1f} cm navy taslan), sewn on both short ends"),
-            ("1  Size label", "woven, size only", "folded, centred under the main label, caught in the main label's lower seam"),
-            ("1  Hanger loop", f"P04, navy taslan, {gM['P04'].note.split(':')[0]}", "CB, caught under the neck tape above the main label"),
-            ("2  Care / content / COO", "printed (satin), text to follow (below)", "inside the wearer's LEFT side seam, ~10 cm above the hem binding, text reading down"),
-            ("Hangtag", "Haki hangtag, supplied or sourced (F2–F3 q23)", "through the hanger loop with string / pin; never through the jacquard face")]
+    rows = [("1  Main label", "Haki standard, 6.5 × 2 cm, white, woven, flat (art right)", f"inside back neck: centred at CB on the neck tape NT1 ({FL.NECKT_W/10:.1f} cm navy taslan), sewn down on all 4 sides; the 2 cm label is taller than the tape — centre it on the tape", False),
+            ("1  Size label", "woven, size only", "folded, centred under the main label, caught in the main label's lower seam", True),
+            ("1  Hanger loop", f"P04, navy taslan, {gM['P04'].note.split(':')[0]}", "CB, caught under the neck tape above the main label", True),
+            ("2  Care / content / COO", "Haki standard care label " + LS.MISSING, "inside the wearer's LEFT side seam, ~10 cm above the hem binding, text reading down", True),
+            ("Hangtag", "Haki hangtag, supplied or sourced (F2–F3 q23)", "through the hanger loop with string / pin; never through the jacquard face", True)]
     y = 96
     for x_, h_ in zip([12, 52, 120], ["Item", "What", "Placement"]): o.append(t(x_, y, h_, 1.65, 700, MUTED))
-    for i, (a, b_, c_) in enumerate(rows):
-        y += 4.6; zebra(o, i, y, 4.6, 11, 286)
-        o.append(t(12, y, a, 1.6, 700)); o.append(t(52, y, b_[:62], 1.5, 400, PROP)); o.append(t(120, y, c_ + "  [proposed — confirm]", 1.5, 400, PROP))
-    y += 8; o.append(t(12, y, "CARE / CONTENT / COO LABEL — draft text", 2.0, 700)); y += 4
-    for l in ["Shell: [mill to state, fibre content %] · Collar outer: nylon taslan · Collar inner: [mill to state] · Binding + tapes: nylon taslan",
-              "Pocketing: [supplier to state] · Embroidery thread: polyester · Made in [country] · RN / manufacturer ID [to follow] · Style HK-FL-PIXSKY · Size [ ]",
+    for i, (a, b_, c_, pp) in enumerate(rows):
+        ls_ = wrap(c_ + "  [proposed — confirm]", 92); y += 4.6; zebra(o, i, y, 3.0 * len(ls_) + 1.6, 11, 196)
+        o.append(t(12, y, a, 1.6, 700)); o.append(t(52, y, b_[:70], 1.5, 400, (PROP if pp else INK) if "MISSING" not in b_ else LS.AMBER))
+        for j, l in enumerate(ls_): o.append(t(120, y + j * 3.0, l, 1.5, 400, PROP))
+        y += 3.0 * (len(ls_) - 1)
+    y += 8; o.append(t(12, y, "CARE / CONTENT / COO LABEL — Haki standard care label " + LS.MISSING, 2.0, 700, LS.AMBER)); y += 4
+    y = para(o, 14, y, "The shell fibre % is not known yet (mill to state, F2–F3 q4). Haki standard care labels exist for 100 % cotton and 90 % cotton / 10 % polyester only; once the fibre is stated, Haki confirms the care label and sends its artwork. Do not print a care label until then.", 170, 1.55, INK, 2.9) + 0.6
+    for l in ["Other components: collar outer nylon taslan · collar inner [mill to state] · binding + tapes nylon taslan · pocketing [supplier to state] · embroidery thread polyester · RN / manufacturer ID [to follow] · Style HK-FL-PIXSKY",
               CARE + "."]:
         y = para(o, 14, y, l + "  [proposed — confirm]", 170, 1.55, PROP, 2.9) + 0.6
     y += 3; o.append(t(12, y, "PACKAGING", 2.0, 700)); y += 4
@@ -251,6 +255,8 @@ def p_labels():
               "2 = care / content / COO label, wearer's left side seam,", "     inside, ~10 cm above the hem binding.",
               "Back view: wearer's left = viewer's left."]:
         o.append(t(tx, ty, l, 1.6)); ty += 3.2
+    o += LS.panel(200, 58, 86, SHELL_RECORDED, f"Position: CB inside the neck, centred on the neck tape NT1 ({FL.NECKT_W/10:.1f} cm) — the label is taller than the tape [proposed — confirm].",
+                  "Position: wearer's left side seam, inside, ~10 cm above the hem binding.")[0]
     return o
 
 def p_seams():
