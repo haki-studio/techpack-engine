@@ -25,3 +25,5 @@ decorations:
     top_below_hps_cm: 18
     width_cm: 7
     height_cm: 5
+revisions:
+  - {rev: Rev A, date: 20 Oct 2026, change: "Template test variant: back DTF print + front-left embroidery."}

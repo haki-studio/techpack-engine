@@ -10,6 +10,19 @@ factory:
   supplier: mandy          # key of this factory's limits in factory.json (top level = Mandy Luo); read by engine/supplier_gate.py
 rev: Rev A
 date: 20 Oct 2026
+# the block's rev log, newest last. pom_changes must agree with the chart (engine/revgate.py fails the build if not):
+# every chart change under pom_chart.deltas is logged here, and every value stated here is what T3 prints.
+revisions:
+  - rev: Rev A
+    date: 20 Oct 2026
+    change: "Tee family block: Mandy's graded chart + the March 2026 new tee shape (drop shoulder, boxy), recorded at size L; other sizes moved by the same amount (amber until Mandy confirms)."
+    pom_changes:
+      - {pom: A, size: L, to: "27"}
+      - {pom: F, size: L, to: "10 1/4"}
+      - {pom: H, size: L, to: "7 5/8"}
+      - {pom: G, by: -1.5, unit: cm}
+      - {pom: C, by: 2, unit: in}
+      - {pom: P, size: L, to: "4"}
 
 # printed first on the F1 page (most important open questions for the factory)
 factory_questions:

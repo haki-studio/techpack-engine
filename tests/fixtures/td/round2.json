@@ -1,0 +1,97 @@
+{
+  "product": "td-fixture-trouser",
+  "round": "fit sample round 2",
+  "rev": "C",
+  "supersedes": "B",
+  "signed_master": "tests/fixtures/td/pom_signed.csv",
+  "rows": [
+    {
+      "id": "F1",
+      "kind": "delta",
+      "point": "front rise",
+      "size": "M",
+      "lens": "fit",
+      "severity": "high",
+      "unit": "cm",
+      "source": "file+cell",
+      "baseline": {
+        "value": 26.5,
+        "ref": "tests/fixtures/td/measured_sheet_r1.csv#E2"
+      },
+      "target": {
+        "value": 26.2,
+        "ref": "tests/fixtures/td/pom_signed.csv#C2"
+      },
+      "method": "CF waist seam to crotch seam",
+      "location": "front crotch extension, lower the CF rise",
+      "knock_on": [
+        "thigh",
+        "front crotch curve"
+      ],
+      "page": "T3",
+      "incl_waistband": false
+    },
+    {
+      "id": "F2",
+      "kind": "pom",
+      "point": "back rise",
+      "size": "M",
+      "lens": "fit",
+      "severity": "medium",
+      "hold": true,
+      "value": 36.5,
+      "unit": "cm",
+      "source": "file+cell",
+      "ref": "tests/fixtures/td/pom_signed.csv#C3",
+      "incl_waistband": false
+    },
+    {
+      "id": "F3",
+      "kind": "pom",
+      "point": "thigh",
+      "size": "M",
+      "lens": "fit",
+      "severity": "medium",
+      "hold": true,
+      "value": 33,
+      "unit": "cm",
+      "source": "file+cell",
+      "ref": "tests/fixtures/td/pom_signed.csv#C4"
+    },
+    {
+      "id": "S1",
+      "kind": "tolerance",
+      "point": "front rise",
+      "lens": "spec",
+      "severity": "medium",
+      "value": 0.5,
+      "unit": "cm",
+      "source": "file+cell",
+      "ref": "tests/fixtures/td/pom_signed.csv#D2",
+      "page": "T3"
+    },
+    {
+      "id": "S2",
+      "kind": "pom",
+      "point": "waist",
+      "size": "M",
+      "lens": "spec",
+      "severity": "low",
+      "value": 41,
+      "unit": "cm",
+      "source": "photo_estimate",
+      "ref": "IMG_2231",
+      "page": "T3",
+      "comment": "tape photo reads above the measured sheet; re-measure flat"
+    },
+    {
+      "id": "M1",
+      "kind": "comment",
+      "point": "back pocket",
+      "lens": "make",
+      "severity": "high",
+      "comment": "bartack missing at the pocket mouth, both sides",
+      "ref": "photo IMG_2240"
+    }
+  ]
+}
