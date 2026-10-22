@@ -34,8 +34,9 @@ def max_colours(prof, supplier, method):
 
 
 def count_colours(colours):
-    """colour entries -> count: each entry 1, an entry with count: n -> n, a CMYK / process entry -> 4"""
-    if colours is None: return None
+    """colour entries -> count: each entry 1, an entry with count: n -> n, a CMYK / process entry -> 4.
+    No list, or an EMPTY list, = not recorded (None) — never 0 colours, which would pass every limit."""
+    if not colours: return None
     n = 0
     for c in colours:
         if isinstance(c, dict) and c.get("count") is not None: n += int(c["count"])

@@ -42,7 +42,8 @@ def test_mandy_embroidery_limit_is_the_confirmed_needles():
 def test_colour_counting():
     assert SG.count_colours([{"name": "Process CMYK (desert)"}, {"name": "magenta"}]) == 5
     assert SG.count_colours([{"name": "gradient", "count": 3}, "black"]) == 4
-    assert SG.count_colours([]) == 0 and SG.count_colours(None) is None
+    assert SG.count_colours([]) is None and SG.count_colours(None) is None
+    assert one(dict(name="d", method="embroidery", supplier="mandy", colours=SG.count_colours([])))["status"] == SG.NOT_RECORDED
 
 
 def test_special_trims_flag_missing_moq_lead_time_and_maker():
@@ -79,3 +80,9 @@ def test_f1_asks_what_is_not_recorded():
     sp = Spec(FAM, os.path.join(FAM, "variants", "alabasta.yaml"))
     f1 = "".join("".join(p) for c, _, p in TP.pages(sp) if c == "F1")
     assert "NOT RECORDED: D1 Alabasta desert scene (screen, 5 colours)" in f1 and "max screen colours not recorded" in f1
+
+
+def test_empty_colour_list_is_not_recorded_in_a_pack(tmp_path):
+    from family.build import build
+    r = build(variant_with(colours=[]), out_root=str(tmp_path), png=False, family_dir=FAM)
+    assert r["supplier"][0][1]["status"] == SG.NOT_RECORDED and "design colour count not recorded" in r["supplier"][0][1]["text"]
