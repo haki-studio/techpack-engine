@@ -192,7 +192,11 @@ def centreline_match(ref, out, ppm, name="", pull=0.0, near_mm=1.0, d_max=0.5, w
     (qa.dst_stop_masks), limited here to near_mm of ref. Returns dict(family, mean_d, p90_d, w_ref, w_dst, ratio, ok)."""
     from scipy.spatial import cKDTree
     o = out & ndi.binary_dilation(ref, iterations=max(1, int(near_mm * ppm)))
-    sr, mr = skeleton(ref, ppm, spur_mm); so, mo = skeleton(o, ppm, spur_mm)
+    sr, mr = skeleton(ref, ppm, spur_mm)
+    if profile and sr.any():    # a satin's zig-zag edge grows skeleton spurs ~ half its width: prune at 0.6 x the shape's width
+        wr0 = float(np.median(2 * ndi.distance_transform_edt(mr)[sr] / ppm))
+        if 0.6 * wr0 > spur_mm: spur_mm = 0.6 * wr0; sr, mr = skeleton(ref, ppm, spur_mm)
+    so, mo = skeleton(o, ppm, spur_mm)
     pts = lambda sk: np.c_[(np.nonzero(sk)[1] + 0.5) / ppm, (np.nonzero(sk)[0] + 0.5) / ppm]
     R, O = pts(sr), pts(so)
     if len(O) == 0 or len(R) == 0:

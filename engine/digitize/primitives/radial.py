@@ -6,7 +6,9 @@
   3. each centre owns its Voronoi cell inside the mass; radius = fit x the distance to the cell edge, capped at r_max
      (a WHOLE floret that fits: a clipped radial reads as a satin blob, not a fan).
   4. outline: params.lobes >= 3 -> an n-petal notched outline (petal axes every 360/n deg, the first pointing away from
-     the mass centre); 0 -> a disc. Minus the knot hole. One `radial` part (radial satin; DirSpec mode radial, construct
+     the mass centre); 0 -> a disc. Minus the knot hole. params.shape "traced" (G2): a FAN instead of a floret - the
+     centre's whole traced cell, no radius cap and no lobed outline, rays from the centre (a root seed on the shape's
+     narrow end: tails, fins, rays, fans); long rays are cut into <= 7 mm stitches by dst2.radial_satin. One `radial` part (radial satin; DirSpec mode radial, construct
      rule radial, meta centre). Under r_min / min_mm2: no petals, only the knot (rule 9).
   5. bead (params.bead, default true): a `bead` at the centre (dot technique) in the palest other thread of the label's
      tones, else a thread different from what surrounds it (never an invisible bead); sewn first.
@@ -15,7 +17,8 @@
      >= ground_share, sewn LAST with the florets and knots knocked out of it (B2 / B37: details first, the darkest
      connected tone last hides the travel between them).
 params: min_mass_mm2 15, sep_mm 4, r_max 3.2, r_min 1.5, fit 1.35, min_mm2 5, lobes 5, notch_mm 0.6, bead true, bead_d 1.5,
-peak_sigma_mm 0.6, tophat_mm 3, prominence 4, ground null, ground_angle null, ground_share 0.15, centres "lightness"."""
+peak_sigma_mm 0.6, tophat_mm 3, prominence 4, ground null, ground_angle null, ground_share 0.15, centres "lightness",
+shape "lobed"."""
 import math
 import numpy as np
 from scipy import ndimage as ndi
@@ -25,7 +28,7 @@ from digitize.schema import DirSpec
 
 D = dict(min_mass_mm2=15.0, sep_mm=4.0, r_max=3.2, r_min=1.5, fit=1.35, min_mm2=5.0, lobes=5, notch_mm=0.6, notch_deg=8.0,
          waist=0.7, bead=True, bead_d=1.5, peak_sigma_mm=0.6, tophat_mm=3.0, prominence=4.0, ground=None, ground_angle=None,
-         ground_share=0.15, centres="lightness")
+         ground_share=0.15, centres="lightness", shape="lobed")
 
 
 def lobed_outline(c, r, phase, n=5, notch=0.6, notch_deg=8.0, waist=0.7, pts=180):
@@ -83,19 +86,20 @@ def recognise(ctx, lp, z, claim):
                 r = min(P["r_max"], P["fit"] * float(cdist[py, px]) / ppm)
                 cg = ev.polys(cm, min_mm2=0.2) if cm.any() else []
                 if not cg: continue
-                reg = union(cg).intersection(G).intersection(Point(c).buffer(r))
+                fan = P["shape"] == "traced"                              # --- G2 --- the whole traced cell, rays from c
+                reg = union(cg).intersection(G) if fan else union(cg).intersection(G).intersection(Point(c).buffer(r))
                 vv = ctx.thread_lab[cm]; vv = vv[vv >= 0]
                 cc = {t: int((vv == ctx.threads.index(t)).sum()) for t in lighter}
                 fl_t = ft or (max(cc, key=lambda t: (cc[t], lum(ctx, t))) if cc else lighter[-1])
                 ph = math.degrees(math.atan2(c[1] - gc.y, c[0] - gc.x)) % (360.0 / max(P["lobes"], 1))
                 kd = P["bead_d"] if P["bead"] else 0.0
-                fg = lobed_outline(c, r, ph, int(P["lobes"]), P["notch_mm"], P["notch_deg"], P["waist"]).intersection(reg)
+                fg = reg if fan else lobed_outline(c, r, ph, int(P["lobes"]), P["notch_mm"], P["notch_deg"], P["waist"]).intersection(reg)
                 if kd: fg = fg.difference(Point(c).buffer(kd / 2))
                 fg = fg.buffer(0); k_member += 1
                 fl = None
-                if r >= P["r_min"] and not fg.is_empty and fg.area >= P["min_mm2"]:
+                if (fan or r >= P["r_min"]) and not fg.is_empty and fg.area >= P["min_mm2"]:
                     fl = part(ctx, lp, "radial", fg, fl_t, z - 0.1, DirSpec(0.0, mode="radial", source="splitter", note="radial from its centre"),
-                              ev.mask(fg), centre=[float(c[0]), float(c[1])], construct=dict(rule="radial"), phase=round(ph, 2),
+                              ev.mask(fg), centre=[float(c[0]), float(c[1])], construct=dict(rule="radial"), phase=round(ph, 2), **({"fan": True} if fan else {}),
                               group=f"{lp['pid']}.m{mi}")
                     parts.append(fl); beads.append(fg)
                 if kd:

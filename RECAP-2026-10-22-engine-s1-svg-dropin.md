@@ -56,3 +56,9 @@ use column_points' `prof` width profile (techniques/column_satin.py) or sew as f
 - Full suite: 401 passed (`~/.venvs/techpack/bin/python -m pytest -q tests`).
 - identity_check: probe 84ff50ea74938675 / 1ecd8f657db3f53a, M5 wb 449c14f6e8f693b6, crop 911978994b664110 (all unchanged).
 - Open finding: lettering fixture 8/11 per-shape centreline (both i's 0.80-0.82, a bowl ratio90 0.73), soft; see PARITY_S1.md.
+
+## Pass 3 (lead TASK: lettering follow-up, branch engine-s1-lettering off 9711ed5)
+- i's 0.80-0.82 = gate artefact (zig-zag edge spurs survive a 0.6 mm prune) -> per-shape prune at 0.6 x shape width (`qa.centreline_match(profile=True)`).
+- a bowl ratio90 0.73 = real (one width per glyph) -> per-stroke width in S1 (`extract/svg.py` column()); now 0.80, on the limit.
+- Reviewer note: cut-out moved to `svgrun.cut_other_shapes`; `test_cut_other_shapes_is_load_bearing` switches it off -> bar row ratio 1.4, fails.
+- Lettering 11/11; Konpeito 4 unchanged; fixtures gate_i_ref/dst.png (real read-back masks), gate_bar_beside_fill.svg.

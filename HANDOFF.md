@@ -129,6 +129,8 @@ scripts/status.py`, `claude agents`). Closing a session never stops them.
 - Merged today: #5 #6 #7 #8 #9 #10 (engine M5, M2, M6, M4g, M3a, M3b), #11 #12 #16 #18 (docs, re-plan), #13 (Koi trial) then #19
   (Koi-specific code removed, mockup-governs generic parts kept), #14 (M4c chaos/crowns), #15 #17 (tee family), #21 (M4s stack_parts +
   travel_on_fill gates; verdict x/11). Castle crop on main: 2/11 (old 9: 1/9); BENCH_m4s.md quotes pre-#14 numbers — stale, fix in G1.
+- **G2 (2026-10-22, branch engine-g2, PR open, founder judges):** Koi FR via session labels, zero subject code; fish 5/5 vs the
+  mockup, orphans 0, identity unchanged. Open: upper lily = flat slabs (needs per-petal label windows); tetra-vs-mockup gate question.
 - **Next engine work = docs/ENGINE_PLAN.md RE-PLAN (G1 → G2 → G3)**: generic primitives + vision step done by the SESSION (no API).
   Open engine follow-ups: dst2/compile block-join defect (LESSONS B39) with a unit test; turn on `unsewn_only` hidden travel for the
   crop (travel_on_fill fails 5.8 m); retire-or-keep decision on the strict run-based stack gate (founder; recommend keep both).

@@ -38,6 +38,9 @@ apply. Stitch count is reported, never a limit.
   the subject-splitter result on the same gates.
 - **G2** vision step by the session on an UNSEEN mockup with zero new subject code (proof: Koi FR — the fish must come out of
   lobe + band + radial + dot), side-by-side vs Rev B, judged by the founder.
+  *Status 2026-10-22 (branch engine-g2, PR pending founder judgement):* fish vs mockup 5/5 (Rev B 0/5), flora 23/34 (12/34),
+  orphans 0 (26), trims 40/100 cm2 (108), identity unchanged. Open: the upper lily sews as flat slabs (one lobe window over a soft
+  mockup area; needs per-petal label windows); fish gate reference (founder tetra vs mockup fish) is a founder question.
 - **G3** design-type-aware targets + the review/question loop surfaced for the founder (then the PLM page uses it).
 - **P1 image → DST in PLM (founder 2026-10-20: next after G2):** a small PLM window, image in → DST/PES + stitch preview +
   gate table + questions out. The vision step becomes one API call writing the same labels file (`--no-api` mocks; cost per
