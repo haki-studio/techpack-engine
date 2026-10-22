@@ -18,6 +18,7 @@ SEV_ORDER = {"high": 0, "medium": 1, "low": 2}
 STANDING_PATTERN = ("Change the pattern at {points} only. Do NOT grade or scale the whole piece. "
                     "Send the new pattern PDF + a measured sheet BEFORE cutting.")
 STANDING_SA = "Tell us the seam allowance and shrinkage % you used."
+NO_MASTER = "change nothing, wait for the next sheet"
 
 
 def num(x, unit=None):
@@ -109,7 +110,9 @@ def sheet_lines(td):
          ("sub", f"Rev {td.rev}" + (f" — supersedes Rev {td.supersedes}" if td.supersedes else " — first issue"))]
     L.append(("h", "HOLD — do not change these points"))
     if hold:
-        for r in hold: L.append(("row", f"{where(r)}: keep at {val_text(r.num)}"))
+        for r in hold:                  # numbers only from the signed master POM (LESSONS T2)
+            L.append(("row", f"{where(r)}: keep at {val_text(r.num)}") if td.from_signed_master(r.num)
+                     else ("row", f"{where(r)}: {NO_MASTER}"))
     else:
         L.append(("muted", "no points held this round"))
     L.append(("h", "PATTERN changes — the factory edits the pattern"))

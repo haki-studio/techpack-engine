@@ -13,6 +13,9 @@ Every row:
   page      optional pack page code ("T3") -> a "TD: ..." annotation on that page
   size      optional size ("M")
   comment   optional words (no numbers: every number is a field with a source)
+  incl_waistband  true | false — REQUIRED on every rise row (pom / delta); one method per file (LESSONS T1)
+Top level: signed_master = "<file>" of the signed master POM sheet; a HOLD row prints its number only when it is a
+cell of that file, else "change nothing, wait for the next sheet" (LESSONS T2).
 
 A NUMBER is never bare: it carries where it came from.
   value, unit (cm | mm), source, ref       on the row itself (pom / tolerance / comment value; delta = the change)
@@ -54,7 +57,7 @@ class Num:
 
 class Row:
     __slots__ = ("id", "kind", "point", "lens", "severity", "hold", "page", "size", "comment", "num", "baseline",
-                 "target", "method", "location", "knock_on", "raw")
+                 "target", "method", "location", "knock_on", "raw", "incl_waistband")
 
     @property
     def is_pattern_change(self): return self.kind == "delta"
@@ -76,7 +79,12 @@ class Row:
 
 
 class TDInput:
-    __slots__ = ("product", "round", "rev", "supersedes", "rows", "path")
+    __slots__ = ("product", "round", "rev", "supersedes", "rows", "path", "signed_master")
+
+    def from_signed_master(self, n):
+        """True when a number is a cell of the signed master POM sheet (only those may be printed on a HOLD list)"""
+        return bool(self.signed_master) and n is not None and n.source == "file+cell" and \
+            n.ref.partition("#")[0] == self.signed_master
 
     def pattern_rows(self): return [r for r in self.rows if r.kind == "delta"]
     def hold_rows(self): return [r for r in self.rows if r.hold]
@@ -125,6 +133,7 @@ def _row(d, i):
     if not isinstance(r.hold, bool): raise TDInputError(f"{where}: hold is true or false")
     r.page, r.size, r.comment = d.get("page"), d.get("size"), d.get("comment")
     r.method, r.location, r.knock_on = d.get("method"), d.get("location"), list(d.get("knock_on") or [])
+    r.incl_waistband = d.get("incl_waistband")
     unit, source, ref = d.get("unit"), d.get("source"), d.get("ref")
     r.num = _num(d, where, unit, source, ref) if "value" in d else None
     r.baseline = _num(d["baseline"], f"{where}.baseline", unit, source, ref) if d.get("baseline") else None
@@ -155,6 +164,9 @@ def _row(d, i):
     return r
 
 
+def where_(r): return f"{r.id} {r.point}" + (f" {r.size}" if r.size else "")
+
+
 def parse(data, path=None):
     """dict -> TDInput (raises TDInputError naming the first bad field)"""
     if not isinstance(data, dict): raise TDInputError("TD input is an object with product, round, rev, rows")
@@ -163,6 +175,7 @@ def parse(data, path=None):
     for k in ("product", "round", "rev"):
         setattr(td, k, str(_need(data, k, "TD input")))
     td.supersedes = data.get("supersedes")
+    td.signed_master = data.get("signed_master")      # "<file>" of the signed master POM sheet, if one is signed
     rows = data.get("rows")
     if not isinstance(rows, list): raise TDInputError("TD input: 'rows' must be a list")
     td.rows = [_row(d, i) for i, d in enumerate(rows)]
@@ -170,6 +183,9 @@ def parse(data, path=None):
     for r in td.rows:
         if r.id in seen: raise TDInputError(f"rows: id '{r.id}' used twice (the chair merges by id)")
         seen.add(r.id)
+    import pom_rules                                 # LESSONS T1: a rise says incl_waistband; one method per table
+    bad = pom_rules.rise_check([(where_(r), r.incl_waistband) for r in td.rows if r.kind in ("pom", "delta")], "TD rows")
+    if bad: raise TDInputError("\n".join(bad))
     held = {(r.point, r.size) for r in td.hold_rows()}
     for r in td.pattern_rows():
         if (r.point, r.size) in held:
