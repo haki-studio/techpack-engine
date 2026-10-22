@@ -84,13 +84,18 @@ def plot_pdf(size, path, blk=None, style=None, emb=True):
     g, mt = blk.draft(size); em = emb_marks(size) if emb else {}; w = PdfWriter()
     for code in blk.ORDER:
         pc = g[code]; b = PT.cut_poly(pc).bounds; m = 25.0
-        W = (b[2] - b[0]) + 2*m; H = (b[3] - b[1]) + 2*m + 40
+        W = (b[2] - b[0]) + 2*m + 14; H = max((b[3] - b[1]) + 2*m + 40, 150.0)    # room for the vertical 100 mm ruler
         X = lambda x: x - b[0] + m; Y = lambda y: y - b[1] + m + 40
         o = [f'<rect width="{W:.1f}" height="{H:.1f}" fill="#FFFFFF"/>']
         o += PD.piece_svg(pc, X, Y, 1.0, label=True, size=size, emb=em.get(code, ()), lw=1.0, text_mm=7, emb_fill=False)
         o.append(f'<rect x="{m}" y="8" width="100" height="25" fill="none" stroke="#000" stroke-width="0.4"/>')
         o.append(f'<text x="{m + 2}" y="18" font-size="5" font-family="Helvetica">TEST: 100 mm</text>')
         o.append(f'<text x="{m + 2}" y="28" font-size="4" font-family="Helvetica">print at 100 % — no scaling</text>')
+        # vertical 100 mm ruler: with the 100 mm box it checks the scale on BOTH axes (pattern_diff, TD design §4)
+        rx = W - 8
+        o.append(f'<line x1="{rx}" y1="40" x2="{rx}" y2="140" stroke="#000" stroke-width="0.4"/>')
+        for ty in (40, 140): o.append(f'<line x1="{rx - 3}" y1="{ty}" x2="{rx + 3}" y2="{ty}" stroke="#000" stroke-width="0.4"/>')
+        o.append(f'<text x="{rx - 2}" y="92" font-size="3.5" font-family="Helvetica" text-anchor="end">100 mm</text>')
         o.append(f'<text x="{m + 110}" y="18" font-size="6" font-weight="700" font-family="Helvetica">{ST} · {pc.code} {pc.name.replace("&", "+")} · size {size} · cut {pc.qty}</text>')
         o.append(f'<text x="{m + 110}" y="28" font-size="4.5" font-family="Helvetica">{pc.material} · seam allowance included (dashed = sew line) · notches = slits · ⊕ = drill holes</text>')
         svg = f'<svg xmlns="http://www.w3.org/2000/svg" width="{W:.1f}mm" height="{H:.1f}mm" viewBox="0 0 {W:.1f} {H:.1f}">' + "".join(o) + "</svg>"
