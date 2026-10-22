@@ -55,3 +55,11 @@ Result (B7 art): summary 16 pages, 0 hits, min 1390 chars/page; internal 340 hit
 hits, 0 empty; re-extracted zip checked separately; unstripped source .ai = red on `\bDevin\b`. Every page read at
 110 dpi, nothing clipped. Still to do on the B8 re-run (after #58): re-check G7 wording (EXTRA patterns will flag new
 provenance words).
+
+## Round 3 — B8 G7 line (lead-approved rule)
+B8 build (598ea82 + #58 merge) failed the gate on one new G7 line: "Rev B8 (founder 22 Oct): limbs, eye size and gaze
+from a hand-read art table of the low-res mockup (~1 mm per px)". Stopped, reported, lead approved a scrub rule with
+wording that does NOT claim "as on the mockup" (most legs are inferred): "Limbs, eye size and gaze as drawn on this page
+and in the stitch file [proposed — confirm on the sew-out]." EXTRA + KJ_SCRUB moved to `kjfactory_words.py` (no build
+data) so `tests/test_konpeito_factory_words.py` (raw line red, scrubbed green) runs in a fresh checkout.
+Side finding: tests/test_konpeito_gates.py collects fresh, but 3 tests fail at run time on git-ignored out/front_stars.json.
