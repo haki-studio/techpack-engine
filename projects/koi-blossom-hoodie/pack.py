@@ -287,14 +287,30 @@ def hooping_page():
     return o
 
 def f1_pages():
-    import sheet as _SH; _SH.FOOT = SB.FOOT
-    so = [dict(file=os.path.basename(CUR[p]["file"]) + ".dst", piece=f"{p} {kbcore.PIECE_NAME[p]}", stitches=CUR[p]["stitches"], trims=CUR[p]["trims"]) for p in PS]
-    so += [dict(file=os.path.basename(s["file"]) + ".dst", piece=f"{p} split {nm}", stitches=s["stitches"], trims=s["trims"]) for p in PS for nm, s in CUR[p]["splits"]["sections"].items()]
-    th = [dict(name=PAL[k][1], code=f"Isacord {SB.TH[k]['isacord'][0]} / Polyneon {SB.TH[k]['polyneon'][0]}", de=min(SB.TH[k]["isacord"][3], SB.TH[k]["polyneon"][3])) for k in kbcore.KB_KEYS]
+    import sheet as _SH, re; _SH.FOOT = SB.FOOT
+    fac = kbcore.factory()
+    so = [dict(file=os.path.basename(CUR[p]["file"]) + ".dst", piece=f"{p} {kbcore.PIECE_NAME[p]}", stitches=CUR[p]["stitches"], trims=CUR[p]["trims"])
+          for p in PS if not fac or len(CUR[p]["splits"]["sections"]) < 2]
+    so += [dict(file=os.path.basename(s["file"]) + ".dst", piece=f"{p} split {nm}", stitches=s["stitches"], trims=s["trims"])
+           for p in PS if not fac or len(CUR[p]["splits"]["sections"]) > 1 for nm, s in CUR[p]["splits"]["sections"].items()]
+    # N7: ΔE per brand (the engine line prints one ΔE; ours names both)
+    th = [dict(name=PAL[k][1], code=f"Isacord {SB.TH[k]['isacord'][0]} (ΔE {SB.TH[k]['isacord'][3]:.1f}) / Polyneon {SB.TH[k]['polyneon'][0]} (ΔE {SB.TH[k]['polyneon'][3]:.1f})",
+               de=min(SB.TH[k]["isacord"][3], SB.TH[k]["polyneon"][3])) for k in kbcore.KB_KEYS]
     pcs = [dict(piece=f"{EL_OF[p]} {p}", w=CUR[p]["size_mm"][0], h=CUR[p]["size_mm"][1], hoopings=len(CUR[p]["splits"]["sections"])) for p in PS]
-    # factory copy: the profile on file is another factory's (frames, needles, chenille) — ask, never state it as theirs
-    prof = dict(PROF, frames_confirmed=False, needles_confirmed=False, chenille=False, thread_card_received=False) if kbcore.factory() else PROF
-    return FA.requests_page(kbcore.NAME, so, th, pcs, page="F1", prof=prof)
+    # factory copy: the profile on file is another factory's (frames, needles, chenille) — ask, never state it as theirs; one frame everywhere (S5)
+    prof = dict(PROF, frames_mm=[list(FRAME)], frames_confirmed=False, needles_confirmed=False, chenille=False, thread_card_received=False,
+                thread_brands=["the brand you use (Isacord, Madeira Polyneon or equivalent)"]) if fac else PROF
+    out = []
+    for svg in FA.requests_page(kbcore.NAME, so, th, pcs, page="F1", prof=prof):
+        svg = re.sub(r" is ΔE [\d.]+ from the design colour", " from the design colour", svg)
+        svg = svg.replace("Strike-off (sew-out) — first, before any bulk", "Strike-off (sew-out) — after the fit sample, before the embroidered sample")      # S4
+        if fac:
+            svg = svg.replace("Sew these size-M files on the real shell fabric (washed, as in bulk), with the proposed threads + backing:",
+                              "Sew these size-M split files on the washed shell, with the proposed threads + backing (full files = reference only):")    # S6
+            svg = svg.replace("including border / jacket-back frames, and the needles per head.",
+                              "incl. jacket-back frames, and needles per head. If a file is larger than your frame, don't sew it: tell us, we re-split.")   # S5
+        out.append(svg)
+    return out
 
 def build():
     pages = {"G1": None, "G2": overview(), "G3": threads(), "G4": summary(), "G5": files_page(), "G6": hooping_page()}

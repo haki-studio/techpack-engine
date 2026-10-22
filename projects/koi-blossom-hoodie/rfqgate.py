@@ -2,10 +2,11 @@
 and scrub rules, and check() over rendered PDFs. Kept free of build imports so tests can load it."""
 import fc_shim as FC
 
-REV = "Rev D"                        # = kbcore.REV (not imported here: kbcore pulls in the engine)
+REV = "Rev E"                        # = kbcore.REV (not imported here: kbcore pulls in the engine)
 # names / sources that are internal for THIS product (another product, people, our build steps)
 EXTRA = [r"Drum Island", r"Mandy", r"\bSteph\b", r"\bNick\b", r"\bDevin\b", r"\b[Kk]oi\b(?!-)", r"AI close-up", r"AI mockup",
-         r"factory\.json", r"\btrace/", r"REVIEW_OPEN", r"\bfidelity\b", r"\bTD\b", r"\bchair\b"]
+         r"factory\.json", r"\btrace/", r"REVIEW_OPEN", r"\bfidelity\b", r"\bTD\b", r"\bchair\b",
+         r"\.(png|jpe?g|py|json|pkl)\b"]       # any of our file names ("ref.png"): the shim's base list only has .py / .json / .pkl after a word
 # (regex, replacement | None = drop the text element): run BEFORE fc_shim.BASE_SCRUB on block / engine pages we don't own
 SCRUB = [(r"\(founder 22 Oct 2026\)", "(Haki Studios, 22 Oct 2026)"), (r"founder decision 19 Oct 2026, ", ""),
          (r"FOUNDER DECISION 19 Oct", "confirmed"),

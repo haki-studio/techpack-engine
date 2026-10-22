@@ -44,6 +44,8 @@ class Flat(HF.Flat):
 ZB.G = {sz: F.pieces(sz) for sz in SIZES}; ZB.gM, ZB.mM = ZB.G["M"]; ZB.HF.Flat = Flat
 ZB.STYLE = STYLE
 ZB.SHELL_MAT = "washed navy 12 oz duck"         # as recorded (cover, questions): no fibre % -> care label MISSING (LESSONS D7)
+import construction as CN                       # Rev E: T2-T5 overrides (notes 9-10, D+/H+ rows, S02, label off the table) + CS/CI/CD pages
+CN.install(ZB)
 
 def mh(r): return FA.machine_hours(r["stitches"], FA.load(), trims=r["trims"], colour_changes=r["stops"] - 1)
 

@@ -1,7 +1,8 @@
-"""Koi blossom Rev D factory copy (projects/koi-blossom-hoodie/rfqgate.py on fc_shim = mirror of engine/factory_copy.py):
+"""Koi blossom factory copy (Rev D, Rev E) (projects/koi-blossom-hoodie/rfqgate.py on fc_shim = mirror of engine/factory_copy.py):
 the leak gate is red on every planted internal string and green on clean factory text; it refuses when the internal
 copy has no hits (blind); the Koi scrub rules turn the real block / engine wording into text the gate passes; and the
-Rev D page table passes summary_gate. Red-then-green (skill prove-the-guard)."""
+page table passes summary_gate; a file name of ours ("ref.png") is caught only because of the Rev E path pattern in rfqgate.EXTRA.
+Red-then-green (skill prove-the-guard)."""
 import os, sys
 import cairosvg
 import pytest
@@ -12,10 +13,11 @@ if PROJ not in sys.path: sys.path.insert(0, PROJ)
 import rfqgate as G
 import fc_shim as FC
 
-CLEAN = "Blossom Tetra Hooded Jacket · Rev D · 22 Oct 2026 · art stops 10 mm above the hem band [proposed — confirm]"
+CLEAN = "Blossom Tetra Hooded Jacket · Rev E · 22 Oct 2026 · art stops 10 mm above the hem band [proposed — confirm]"
 PLANTED = ["confirmed by the founder 19 Oct", "FOUNDER DECISION 19 Oct", "Frame (factory.json)", "traced from inputs/front.png",
            "Rev C is built for fidelity", "the approved Drum Island jacket", "(LESSONS A11)", "AI close-up", "engine hoodie.py block",
-           "Rev A koi 43,470", "read back by fidelity.py", "Claude", "the trims gate passes", "Mandy said yes"]
+           "Rev A koi 43,470", "read back by fidelity.py", "Claude", "the trims gate passes", "Mandy said yes",
+           "see ref.png", "art from closeup.jpg"]
 # wording the block / engine pages really print (T2, T3, T6b, G3, G6), as the factory copy must NOT show it
 REAL = ["Main + care label = the Haki standard labels (founder 22 Oct 2026), artwork right at 1 : 1, files in the zip labels/.",
         "Size M, front and back. Body and sleeve are the approved Drum Island jacket; numbered notes are the hoodie changes.",
@@ -63,7 +65,19 @@ def test_check_reads_rendered_pdfs(tmp_path):
     assert not G.check([clean], clean)["ok"]
 
 
-def test_rev_d_page_table_passes_summary_gate():
+PATH_RX = r"\.(png|jpe?g|py|json|pkl)\b"
+
+
+@pytest.mark.parametrize("s", ["see ref.png", "art from closeup.jpg", "the ref.jpeg crop"])
+def test_file_names_caught_only_by_the_path_pattern(s):
+    """review SHOULD 2 (Rev D): the shim's base patterns miss a bare file name; rfqgate.EXTRA's path pattern catches it"""
+    assert PATH_RX in G.EXTRA
+    without = [x for x in G.EXTRA if x != PATH_RX]
+    assert FC.leak_gate([CLEAN, s], PLANTED, extra_patterns=without, current_rev=G.REV)["factory_hits"] == 0, "red: base list alone should miss it"
+    assert gate([CLEAN, s], PLANTED)["factory_hits"], f"green: path pattern should catch {s!r}"
+
+
+def test_page_table_passes_summary_gate():
     """the TABLE in rfq.py, read without importing it (rfq.py needs the full build): every Page(...) line"""
     import ast
     src = open(os.path.join(PROJ, "rfq.py")).read()
@@ -72,7 +86,7 @@ def test_rev_d_page_table_passes_summary_gate():
         if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "Page":
             a = [ast.literal_eval(x) if not isinstance(x, ast.Name) else {"FACTORY": FC.FACTORY, "INT": FC.INTERNAL}[x.id] for x in node.args]
             pages.append(FC.Page(*a))
-    assert len(pages) >= 20
+    assert len(pages) >= 24
     assert FC.summary_gate(pages) == []
     bad = [FC.Page(p.id, p.kind, p.title, FC.FACTORY) if p.id == "TBD" else p for p in pages]
     assert any("internal-only" in x for x in FC.summary_gate(bad))                             # red: a decisions page tagged factory

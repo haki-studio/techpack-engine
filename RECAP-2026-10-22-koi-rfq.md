@@ -55,3 +55,36 @@ test_konpeito_gates (needs Konpeito's gitignored out/front_stars.json; no Konpei
 - When PR #57 merges: `import factory_copy as FC` in rfq.py / rfqgate.py, delete fc_shim.py.
 - Founder card koi-blossom-rfq-questions: all ★ defaults shown amber; change Q2/QF/E01/E02 text if he answers differently.
 - Session size: transcript ~19 MB at the end; next Koi work should start a fresh builder from this RECAP.
+
+---
+# Rev E (session 14252606, builder; brief BRIEF-builder-RevE-fixes.md) — fix round on PR #59
+
+## What changed and why
+- **Founder rule**: the factory summary must hold everything the sample room needs. The TD said Rev D could not
+  produce a correct first sample (no seam spec, no bag-out order, welt/zip/wash undefined). Rev E adds pages, one per topic.
+- New `construction.py` (project level; the zip-hoodie block itself is NOT edited, other jackets use it):
+  - **CS** seam table: 22 seams, SA read from the pattern edges, stitch/SPI/topstitch/thread/finish amber; wash + shrinkage block (M5 ★ no garment wash).
+  - **CI** inside view drawn from the real pattern pieces (F01/K01/L01, B01/K02/L02 + CB pleat from L02.internal) + 13-step bag-out order.
+  - **CD** welt detail (P01 fold/length, bag P02 numbers, welt-to-facing 9.3 cm, welt low corner 7.7 cm above hem), zip/hood/neck junction,
+    zip garage P03, hanger loop P04, zip ordering lengths (pattern → rounded, N2), CF keep-out reference (S10).
+  - `install(ZB)` overrides T2 (notes 9-10 + callouts), T3 (D+/H+ rows from the band cut lengths, every callout drawn, hood measuring
+    conditions), T4 (S02 drawn, not-to-scale note, "removed from the jacket" line gone), T5 (centre-panel label off the table).
+- rfq.py: QF split into **QF** (quote + S14 items, sample plan = ONE order, pattern/file rules, strike-off with split files only + panel
+  before/after measurement) and **QF2** (feasibility (a)-(m) closed YES/NO + numbers, open points, labels, colour standards, packing).
+  E0 rewritten (heading gap, split-file stitches/trims column, run-time basis, METHOD = oversized block + re-cut, frame line, crosses).
+  E01 L/XL note (N8), E02 sleeve sign convention from the pattern (S9). Cover contents no longer truncated (review MUST).
+- pack.f1_pages: one frame (400 × 450) everywhere, split files only in the factory copy, thread-card grammar, ΔE per brand, S4 wording.
+- rfqgate.EXTRA: `\.(png|jpe?g|py|json|pkl)\b` (review SHOULD 2) + test (red: 5 fail without it; green 29 pass).
+- REV = Rev E (kbcore + rfqgate), REV_LOG line.
+
+## ★ defaults built (lead asks the founder; all amber + in TBD)
+- S2 hem gather: kept for the M sample; re-derive grading before bulk. Pattern numbers unchanged.
+- S8 near-empty hoopings (FL S1 234 st / 7 trims, SL S1 396 / 5): kept; cost = 2 of 7 hoopings.
+- S13 FR at L/XL: **kept + flagged, not re-fitted** — a re-fit needs a new placement rule + new L/XL DSTs, not an existing re-fit.
+- M5: no garment wash.
+
+## Dead ends / caveats
+- Drew the pocket bag on CI/CD at first: the pattern bag (20 deep) perpendicular to the welt crosses CF, hanging down it crosses the hem.
+  The real orientation isn't in the pattern, so the drawing was removed and CD asks the factory to lay it on the pattern (TBD item).
+- PR #57 head moved (640ea23) but engine/factory_copy.py is unchanged since 598ea82: no shim re-sync.
+- No DST rebuild: stitch files are Rev D's; rfq.py now compares bench/dst_sha_RevE.json with RevD.

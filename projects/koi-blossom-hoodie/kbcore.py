@@ -85,14 +85,17 @@ REV_LOG = [("Rev A", "16 Oct 2026", "first embroidery pack: koi school + blue li
                                     "fish 0.82 x mockup length = founder decision"),
            ("Rev D", "22 Oct 2026", "RFQ / sample edition (rfq.py): factory summary + full reference pack from one build, both through the "
                                     "leak gate; RFQ questions, open design questions, TBD list. Stitch files = Rev C art (rebuilt, DST sha manifest); "
-                                    "fish fill under revision")]
+                                    "fish fill under revision"),
+           ("Rev E", "22 Oct 2026", "review + technical-design fixes on Rev D: construction pages (seam table, inside view + bag-out order, welt / zip / hood "
+                                    "details), extended hem + cuff rows, feasibility questions, embroidery method, wash + shrinkage, one sample order + one frame "
+                                    "everywhere; cover contents unclipped. Stitch files unchanged (DST sha = Rev D)")]
 PIECES = ("FR", "FL", "SR", "SL")
 ELEM_OF = {"FR": "01", "FL": "01", "SR": "02", "SL": "02"}
 PIECE_NAME = {"FR": "wearer's right front", "FL": "wearer's left front", "SR": "wearer's right sleeve", "SL": "wearer's left sleeve"}
 PIECE_CODE = {"FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
-REV = "Rev D"; REV_EMB = REV; REV_GAR = REV; DATE = "22 Oct 2026"      # one revision for the whole pack from Rev D
+REV = "Rev E"; REV_EMB = REV; REV_GAR = REV; DATE = "22 Oct 2026"      # one revision for the whole pack from Rev D
 ART_REV = "Rev C"                    # the embroidery art + stitch files are still Rev C (fish fill under revision)
 
 # ---------------------------------------------------------------- copy mode (Rev D): "internal" = our team, "factory" = goes to a supplier

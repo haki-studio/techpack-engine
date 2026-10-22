@@ -1,12 +1,12 @@
-"""Rev D "RFQ / sample edition" — three PDFs from one build, a thin layer over the garment.py + pack.py page builders:
-  HAKI_KOIB_FACTORY-SUMMARY_RevD.pdf  what the factory needs to make it right the first time (the factory-summary page kinds
+"""Rev E "RFQ / sample edition" (Rev D + the review / technical-design fixes: construction pages CS, CI, CD; QF2 feasibility questions) — three PDFs from one build, a thin layer over the garment.py + pack.py page builders:
+  HAKI_KOIB_FACTORY-SUMMARY_RevE.pdf  what the factory needs to make it right the first time (the factory-summary page kinds
                                       of the Konpeito factory copy, same names + order: KINDS)
-  HAKI_KOIB_TECHPACK_RevD.pdf         full reference for the factory: the summary pages + pattern, stitch files, hooping, specs
-  HAKI_KOIB_INTERNAL_RevD.pdf         our copy: finish.py's merged T + G pack (provenance, revision logs, internal questions) + TBD
+  HAKI_KOIB_TECHPACK_RevE.pdf         full reference for the factory: the summary pages + pattern, stitch files, hooping, specs
+  HAKI_KOIB_INTERNAL_RevE.pdf         our copy: finish.py's merged T + G pack (provenance, revision logs, internal questions) + TBD
 Every page is a fc_shim.Page(id, kind, title, audience, svg) — fc_shim = temporary mirror of engine/factory_copy.py (Konpeito).
 Factory copies are built with kbcore.MODE = "factory" (neutral wording; scrub_svg with rfqgate.RULES on every page) and
 both pass summary_gate + leak_gate (red-then-green against the internal copy).
-Also: out/TBD_RevD.md + .png, the factory files zip, and bench/dst_sha_RevD.json (sha256 of every DST/PES, to prove the stitch
+Also: out/TBD_RevE.md + .png, the factory files zip, and bench/dst_sha_RevE.json (sha256 of every DST/PES, to prove the stitch
 files did not move). When engine/factory_copy.py lands: `import factory_copy as FC` instead of fc_shim, delete fc_shim.py.
 usage: python3 rfq.py   (after run_all.sh)"""
 import kbcore
@@ -14,6 +14,7 @@ import os, io, json, glob, hashlib, shutil, subprocess, textwrap
 import cairosvg
 from pypdf import PdfWriter, PdfReader
 import garment as GM                    # T pages (zip-hoodie block builders fed with this design's pattern)
+import construction as CN               # CS / CI / CD construction pages (Rev E)
 import pack as PK                       # G pages, F1
 import sheet as SHT, specbase as SB
 from sheet import t, doc, INK, MUTED, RED, GREEN, ORANGE, SW, SH
@@ -57,7 +58,7 @@ def p_cover(index):
         o.append(f'<rect x="{ix}" y="{f(y - 2.4)}" width="4.5" height="3" fill="{hx}" stroke="#999" stroke-width="0.1"/>')
         o.append(t(ix + 6, y, a, 1.75, 700)); o.append(t(ix + 24, y, b_, 1.6, 400, PROP if "proposed" in b_ else INK)); y += 3.8
     y += 3; o.append(t(ix, y, "CONTENTS", 2.4, 700)); y += 4.2
-    for name, pg in index: o.append(t(ix, y, name[:62], 1.6)); o.append(t(SW - 14, y, str(pg), 1.6, 600, MUTED, "end")); y += 3.2
+    for name, pg in index: o.append(t(ix, y, name, 1.6)); o.append(t(SW - 14, y, str(pg), 1.6, 600, MUTED, "end")); y += 3.2
     tot = sum(PK.CUR[p]["stitches"] for p in kbcore.PIECES)
     y += 2.5; o.append(t(ix, y, "AT A GLANCE (size M)", 2.2, 700)); y += 4
     for a, b_ in [("Pattern", "Haki jacket block body + sleeve, 3-panel hood (T2–T5, DXF)"), ("Embroidery", f"fronts + front half of sleeves, {tot:,} stitches"),
@@ -111,11 +112,13 @@ def ZB_zebra(o, i, y, h, x0=11, x1=None):
 # ---------------------------------------------------------------- Q2 open design points + packing (kept amber until confirmed)
 OPEN = [("Back + hood", "plain — no embroidery on the back, the hood or the back half of the sleeves."),
         ("Art clearances", f"art stops {F.KEEP_HEM:.0f} mm above the hem-band seam and the cuff seams, and {F.KEEP_CF:.0f} mm each side of the zip (nothing crosses the zip)."),
-        ("Grading", "XS–S sew the art at 92 %, M–XL at 100 % (L + XL use the size-M art, re-placed on their pieces), XXL–3XL at 108 % (G5)."),
+        ("Grading", "XS–S sew the art at 92 %, M–XL at 100 % (L + XL sew the size-M art; on the wearer's left front a few motifs are re-placed on each size's piece), XXL–3XL at 108 % (G5)."),
         ("Welt pockets", f"position + angle as drawn ({F.WELT_ANG:.0f}° from horizontal), opening 1.4 × 13 cm (T2, T7)."),
         ("Thread colours", "all 12 are targets from the design artwork — please match them on your physical thread card before the strike-off (G3, F1)."),
         ("Care label", "held until the fibre content is confirmed (Q1); the main label is final (T6b)."),
-        ("Construction", "welt pockets, pocket bags, facings and body lining follow the pattern pieces (T4 + DXF). Tell us if you need a separate seam spec.")]
+        ("Construction", "seam table (CS), inside view + bag-out order (CI), welt pocket + zip details (CD). Confirm each, or tell us the method you would use."),
+        ("Wash", "no garment wash; the shell is pre-washed before cutting and embroidery (CS)."),
+        ("Embroidery method", "embroider an oversized block of shell, then lay the 1:1 pattern piece on it and re-cut (E0). Or tell us your method.")]
 PACK = [("Fold", "your standard fold for a zip jacket, zip closed, hood folded in."), ("Polybag", "one per piece, with a suffocation warning."),
         ("Carton", "your standard — please state pieces per carton and carton size."), ("Hangtag + barcode", "artwork and numbers follow from Haki Studios.")]
 def p_q2():
@@ -165,47 +168,66 @@ def thread_rows(o, x, y, keys, rh=3.5, size=1.55):
     o.append(t(x, y, "ΔE = colour distance to the target: green < 3, amber 3–5.5 (check on the card), red > 5.5 (propose your nearest).", 1.3, 400, MUTED))
     return y + 2.8
 
+def split_tot(p, k): return sum(v[k] for v in PK.CUR[p]["splits"]["sections"].values())
+METHOD = ["Embroider an oversized block of shell, not the cut panel: the piece's cut outline + 30 mm all round, chalked with CF, the welt box and the keep-out lines from the 1:1 plot.",
+          "After embroidery, lay the 1:1 pattern piece on the sewn block, align CF + the welt box, and re-cut. A cut front is narrower than the frame and the art sits "
+          f"{F.KEEP_CF:.0f} mm from CF, so a cut panel has nothing to clamp; the wearer's right front ({PK.CUR['FR']['stitches']:,} st) also pulls up more than the left ({PK.CUR['FL']['stitches']:,}).",
+          "Or tell us your method (QF2 m). Measure each front panel's CF length + chest width before and after embroidery (QF, strike-off)."]
 def p_e0():
     o = H("EMBROIDERY SUMMARY — threads, stitch files, how to sew", f"Size M, all 4 pieces. Per-size files + hoop splits: {tp('G5', 'G6')}. Hex = on-screen target; match on your physical card.", "E0")
-    o.append(t(12, 32, f"THREADS — 12 colours, 40 wt polyester (Isacord or Madeira Polyneon)  [proposed — confirm on your card]", 2.0, 700))
+    o.append(t(12, 32, "THREADS — 12 × 40 wt polyester  [proposed — confirm on your card]", 2.0, 700))
     y = thread_rows(o, 12, 36.5, kbcore.KB_KEYS)
     y += 4; o.append(t(12, y, "BACKING + NEEDLES", 2.0, 700)); y += 4
     for l in ["Backing 2.5 oz cutaway, navy/black, 30 mm larger than each hooping; trim to 5 mm after sewing. No topping.",
-              "Needle 75/11 sharp. Bobbin 60 wt navy or black polyester. Pre-wash the shell before embroidery.",
-              "Embroider the cut panels flat, before zip, welts, side + sleeve seams and the hem / cuff bands."]:
+              "Needle 75/11 sharp. Bobbin 60 wt navy or black polyester. The shell is pre-washed before embroidery (no garment wash, CS).",
+              "Embroider before the zip, welts, side + sleeve seams and the hem / cuff bands are sewn."]:
         y = para(o, 12, y, l, 100, 1.5, INK, 2.9)
+    y += 3; o.append(t(12, y, "METHOD  [proposed — confirm, or tell us your method]", 2.0, 700, PROP)); y += 4
+    for l in METHOD: y = para(o, 12, y, l, 100, 1.5, PROP, 2.9); y += 0.5
     tx = 112; ty = 32; o.append(t(tx, ty, "STITCH FILES, SIZE M (counted from the DST files)", 2.0, 700)); ty += 4.5
-    hd = ["Piece", "Art mm", "Stitches", "Trims", "Stops", "Hoopings", "Run time"]; cx = [tx, tx + 40, tx + 62, tx + 80, tx + 94, tx + 108, tx + 126]
-    for x_, h_ in zip(cx, hd): o.append(t(x_, ty, h_, 1.45, 700, MUTED))
+    hd = ["Piece", "Art mm", "Full file st", "Trims", "Stops", "Hoopings", "Split files st / trims", "Run time"]
+    cx = [tx, tx + 36, tx + 55, tx + 72, tx + 83, tx + 94, tx + 109, tx + 140]
+    for x_, h_ in zip(cx, hd): o.append(t(x_, ty, h_, 1.4, 700, MUTED))
     for i, p in enumerate(kbcore.PIECES):
         r = PK.CUR[p]; b = PK.BB[p]; yy = ty + 4.2 + i * 4
         ZB_zebra(o, i, yy + 0.6, 4, tx - 1, SW - 11)
-        o.append(t(cx[0], yy, f"{p} {kbcore.PIECE_NAME[p]}", 1.5, 600)); o.append(t(cx[1], yy, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.5))
-        o.append(t(cx[2], yy, f"{r['stitches']:,}", 1.5, 600)); o.append(t(cx[3], yy, f"{r['trims']}", 1.5)); o.append(t(cx[4], yy, f"{r['stops']}", 1.5))
-        o.append(t(cx[5], yy, f"{len(r['splits']['sections'])}", 1.5)); o.append(t(cx[6], yy, f"{sum(PK.mh(v) for v in r['splits']['sections'].values())*60:.0f} min", 1.5))
+        o.append(t(cx[0], yy, f"{p} {kbcore.PIECE_NAME[p]}", 1.45, 600)); o.append(t(cx[1], yy, f"{b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}", 1.45))
+        o.append(t(cx[2], yy, f"{r['stitches']:,}", 1.45, 600)); o.append(t(cx[3], yy, f"{r['trims']}", 1.45)); o.append(t(cx[4], yy, f"{r['stops']}", 1.45))
+        o.append(t(cx[5], yy, f"{len(r['splits']['sections'])}", 1.45)); o.append(t(cx[6], yy, f"{split_tot(p, 'stitches'):,} / {split_tot(p, 'trims')}", 1.45))
+        o.append(t(cx[7], yy, f"{sum(PK.mh(v) for v in r['splits']['sections'].values())*60:.0f} min", 1.45))
     yy = ty + 4.2 + 4 * 4 + 0.5
     o.append(t(cx[0], yy, "Per jacket", 1.55, 700)); o.append(t(cx[2], yy, f"{PK.TOT:,}", 1.55, 700)); o.append(t(cx[3], yy, f"{PK.TRIMS:,}", 1.55, 700))
-    o.append(t(cx[5], yy, f"{PK.HOOPS}", 1.55, 700)); o.append(t(cx[6], yy, f"{PK.MH_SPLIT:.1f} h", 1.55, 700))
-    yy += 4; yy = para(o, tx, yy, "Run time = proposed machine speed + 6 s per trim + 4 s per colour change, split files. Please give your own run time and price per hooping (strike-off).", 95, 1.4, MUTED, 2.6)
+    o.append(t(cx[5], yy, f"{PK.HOOPS}", 1.55, 700)); o.append(t(cx[6], yy, f"{sum(split_tot(p, 'stitches') for p in kbcore.PIECES):,} / {sum(split_tot(p, 'trims') for p in kbcore.PIECES)}", 1.55, 700))
+    o.append(t(cx[7], yy, f"{PK.MH_SPLIT:.1f} h", 1.55, 700))
+    yy += 4; yy = para(o, tx, yy, "You sew the split files: their stitches include the registration crosses and the overlap at the split. Run time = the split files at the proposed machine "
+                                  "speed + 6 s per trim + 4 s per colour change (the element pages quote one full file). Please give your own run time and price per hooping.", 120, 1.4, MUTED, 2.6)
     yy += 4; o.append(t(tx, yy, "HOOPING", 2.0, 700)); yy += 4
     for l in [f"Files are split for a {PK.FR_S} mm frame  [proposed — confirm]: pieces taller than the frame sew in two hoopings, S1 (top) then S2 (bottom).",
-              "Stop 1 of each split file opens with registration crosses in its own thread: re-hoop S2 on the crosses S1 sewed, then pick them out.",
-              "A larger (jacket-back) frame removes the joins — tell us which frames you have (Q, section 2).",
+              "If your largest frame is smaller than a file, don't sew it: tell us your frame and we re-split the files.",
+              "Stop 1 of each split file opens with registration crosses in its own thread, about 10 mm outside the art: re-hoop S2 on the crosses S1 sewed, "
+              "then pick them out. On the oversized block they can sit outside the cut line; tell us your alignment method (QF2 l).",
               f"Each piece's needle start + split line per size: {tp('G6')} and the DXF (layer 13)."]:
-        yy = para(o, tx, yy, l, 95, 1.5, PROP if "proposed" in l else INK, 2.9); yy += 0.6
+        yy = para(o, tx, yy, l, 120, 1.5, PROP if "proposed" in l else INK, 2.9); yy += 0.6
     yy += 3; o.append(t(tx, yy, "SEWING ORDER (per piece)", 2.0, 700)); yy += 4
-    yy = para(o, tx, yy, "stems → leaves (dark tones first) → lilies (dark → light → throat → stamen lines → anthers) → petals → fish (tail + fins → body → cyan line + red stripe → eye).", 95, 1.5, INK, 2.9)
+    yy = para(o, tx, yy, "stems, then leaves (dark tones first), lilies (dark tone, light tone, throat, stamen lines, anthers), petals, fish (tail + fins, body, cyan line + red stripe, eye).", 120, 1.5, INK, 2.9)
     yy += 3; o.append(t(tx, yy, SAMPLING, 1.6, 700, ORANGE))
     return o
 
 E_Q = {"01": [f"Art stops {F.KEEP_HEM:.0f} mm above the hem-band seam and {F.KEEP_CF:.0f} mm each side of the zip (nothing crosses the zip) — OK?",
-              "Grading: XS–S at 92 %, L + XL sew the M art, XXL–3XL at 108 % (stitch counts above) — OK?",
+              "Grading: XS–S at 92 %, L + XL sew the M art (wearer's left front re-placed per size), XXL–3XL at 108 % (stitch counts above) — OK?",
               "Welt boxes are not embroidered: the art keeps clear of them on every size (G2).",
               "Thread colours: please match all 12 on your card; the 6 blues must read on the washed navy."],
        "02": ["Back half of each sleeve plain (no embroidery) — OK?",
               f"Art stops {F.KEEP_CUFF:.0f} mm above the cuff seam, {F.KEEP_SEAM:.0f} mm off the underarm seam, {F.KEEP_CAP:.0f} mm off the cap — OK?",
               "Grading: XS–S at 92 %, L + XL sew the M art, XXL–3XL at 108 % — OK?",
               "Embroider the sleeve flat before the underarm seam and the cuff band are sewn."]}
+def _sleeve_sign():
+    """S9: which way is the front on each sleeve, from the pattern (S01 / S02 'underarm front' edge side) + the cap notch"""
+    import numpy as np
+    sg = {P: np.sign(np.mean([q[0] for q in next(e for e in GM.F.pieces("M")[0][kbcore.PIECE_CODE[P]].edges if e.name == "underarm front").pts])) for P in ("SR", "SL")}
+    w = lambda v: "+ x" if v > 0 else "− x"
+    return f"Front of the sleeve: SR {w(sg['SR'])}, SL {w(sg['SL'])} (toward the front underarm seam); cap notches: single = front, double = back (DXF)."
+SLEEVE_SIGN = _sleeve_sign()
 def p_element(el):
     pcs = list(kbcore.ELEMS[el][2]); title = kbcore.ELEMS[el][1]
     o = H(f"{el} · {title}", f"One page for the sample room. Full spec (stop list, stitch types, 1:1 details): {tp(el)}.", f"E{el}")
@@ -219,7 +241,8 @@ def p_element(el):
     for p in pcs:
         b = pl[p][1].bounds
         y = para(o, tx, y, f"{p} {kbcore.PIECE_NAME[p]}: {b[2]-b[0]:.0f} × {b[3]-b[1]:.0f}, x {b[0]:+.0f} … {b[2]:+.0f}, y {b[1]:.0f} … {b[3]:.0f}", 120, 1.55, INK, 2.9)
-    y = para(o, tx, y, ("x from CF (+ = wearer's left), y down from the CF neck seam." if el == "01" else "x from the sleeve centre line, y down from the underarm line.") + " Every size: G2 + DXF layer 8.", 120, 1.4, MUTED, 2.6)
+    y = para(o, tx, y, ("x from CF (+ = wearer's left), y down from the CF neck seam." if el == "01" else
+                        f"x from the sleeve centre line, y down from the underarm line. {SLEEVE_SIGN}") + " Every size: G2 + DXF layer 8.", 120, 1.4, MUTED if el == "01" else INK, 2.6)
     y += 3; o.append(t(tx, y, "STITCHES + HOOPINGS PER SIZE (counted from the DST files)", 2.0, 700)); y += 4.2
     cx = [tx, tx + 11, tx + 24] + [tx + 24 + 30 * (j + 1) for j in range(len(pcs))]
     for x_, h_ in zip(cx, ["Size", "Art", *[f"{p} stitches / hoopings" for p in pcs]]): o.append(t(x_, y, h_, 1.4, 700, MUTED))
@@ -229,6 +252,7 @@ def p_element(el):
         o.append(t(cx[0], yy, sz, 1.5, 700)); o.append(t(cx[1], yy, f"{kbcore.GRADE[sz][1] * 100:.0f} %", 1.45, 600, PROP))
         for j, p in enumerate(pcs): o.append(t(cx[2 + j], yy, f"{r[p]['full']['stitches']:,} / {len(r[p]['splits']['sections'])}", 1.45))
     y += 3.6 + 7 * 3.3 + 1
+    if el == "01": y = para(o, tx, y, "L + XL sew the size-M art. On the wearer's left front a few motifs are re-placed on each size's piece to keep the keep-outs, so its L / XL counts differ from M.", 120, 1.4, MUTED, 2.6)
     y = para(o, tx, y, f"Frame {PK.FR_S} mm [proposed — confirm]. 2 hoopings = split files S1 + S2 with registration crosses (E0).", 120, 1.45, PROP, 2.7)
     y += 3; o.append(t(tx, y, f"THREADS ({len(cols(pcs))} colours)", 2.0, 700)); y += 1
     y = thread_rows(o, tx, y + 3, cols(pcs), 3.3, 1.5)
@@ -238,48 +262,111 @@ def p_element(el):
     return o
 
 def p_qf():
-    """ALL factory questions on one page: RFQ first, then the strike-off, open design points, packing"""
-    o = H("FACTORY QUESTIONS — quote, strike-off, open points, packing", "Please name your prices; we have not set any. Amber = our proposal — confirm or tell us what you would change.", "Q")
+    """factory questions 1: quote, tell us, the sample plan + pattern / file rules, the strike-off"""
+    o = H("FACTORY QUESTIONS 1 — quote, sample plan, strike-off", "Please name your prices; we have not set any. Amber = our proposal — confirm or tell us what you would change. Can-you-make-it questions: QF2.", "QF")
     x1, x2, x3 = 12, 104, 198; y = 32
     o.append(t(x1, y, "1  PLEASE QUOTE", 2.1, 700)); y += 4.4
     o.append(t(x1 + 52, y, "Price", 1.35, 700, MUTED)); o.append(t(x1 + 72, y, "Lead time (days)", 1.35, 700, MUTED)); y += 3.8
-    for a in ["Fit sample, M, no embroidery", "Embroidery strike-off (files: below)", "Embroidered sample, size M"]:
+    for a in ["Fit sample, M, no embroidery", "Embroidery strike-off (files: section 4)", "Embroidered sample, size M"]:
         o.append(t(x1, y, a, 1.5)); blank(o, x1 + 52, y, 17); blank(o, x1 + 72, y, 17); y += 4.2
     y += 2; o.append(t(x1, y, "Bulk, price per piece, FOB origin port", 1.6, 700)); o.append(t(x1, y + 3, "[proposed — confirm the Incoterm]", 1.3, 600, PROP)); y += 7
     for j, q in enumerate(LADDER): o.append(t(x1 + j * 22, y, f"{q} pcs", 1.5, 700)); blank(o, x1 + j * 22, y + 4, 17)
     y += 9
-    for l in ["Freight quoted separately: air and sea, to Ohio, USA — say whether duty is included.",
+    for l in ["Currency of every price: ______   Is the sample cost credited against the bulk order?  YES / NO",
+              "Embroidery is priced per (circle): 1,000 stitches · trim · hooping · piece",
+              "Bulk quote: the size split you assumed ______________ and any XXL–3XL upcharge ______",
+              "Freight quoted separately: air and sea, to Ohio, USA — say whether duty is included.",
               "Please send a quotation sheet: unit price per quantity, spec, freight, total. Sampling + set-up charges listed separately."]:
-        y = para(o, x1, y, l, 95, 1.45, INK, 2.7); y += 0.6
-    y += 3; o.append(t(x1, y, "3  STRIKE-OFF — first, before any sample", 2.1, 700)); y += 4.4
-    for l in ["Sew the size-M files on the washed shell, with the proposed threads + backing: "
-              + ", ".join(f"{p} {PK.CUR[p]['stitches']:,} st" for p in kbcore.PIECES) + " (E01, E02).",
-              "Send back: photos straight-on in daylight + a close-up with a ruler; the sewn size vs the file (W × H mm); puckering, show-through, thread breaks; run time per hooping and your price for it.",
-              "Your digitizer may adjust density + pull for this shell: tell us what you changed."]:
-        y = para(o, x1, y, l, 95, 1.45, INK, 2.7); y += 0.8
+        y = para(o, x1, y, l, 95, 1.45, INK, 2.7); y += 0.9
     y = 32; o.append(t(x2, y, "2  PLEASE TELL US", 2.1, 700)); y += 4.6
-    for q in ["MOQ per colourway (pcs)", "MOQ per order (pcs)", "Sample lead time (days)", "Bulk lead time (days)", "Embroidery: in-house or subcontracted?",
-              "Max thread colours per head", "Largest embroidery frame (mm)", "Shell you propose: weight + wash", "Fibre % — shell", "Fibre % — body lining (flannel)",
-              "Fibre % — sleeve lining (taffeta)", "Fibre % — hood lining (sherpa)", "Fibre % — pocketing", "Payment terms"]:
+    for q in ["MOQ per colourway (pcs)", "MOQ per order (pcs)", "Sample lead time (days)", "Bulk lead time (days)", "Shell you propose: weight + wash",
+              "Fibre % — shell", "Fibre % — body lining (flannel)", "Fibre % — sleeve lining (taffeta)", "Fibre % — hood lining (sherpa)", "Fibre % — pocketing", "Payment terms"]:
         o.append(t(x2, y, q, 1.45)); blank(o, x2 + 52, y, 36); y += 4.15
-    y += 1.5; y = para(o, x2, y, "The care label (T6b) is printed from the shell fibre content, which is not confirmed yet: please state it, and we send the matching care label artwork.", 95, 1.4, MUTED, 2.6)
-    y = 32; o.append(t(x3, y, "4  OPEN DESIGN POINTS — please confirm", 2.1, 700)); y += 4.6
-    sref = {"(G5)": "(E01, E02)", "(T2, T7)": "(T2, G2)", "(G3, F1)": "(E0, section 3)", "(Q1)": "(section 2)"}   # summary page codes
-    for i, (a, b_) in enumerate(OPEN, 1):
-        for k_, v_ in sref.items(): b_ = b_.replace(k_, v_)
-        o.append(t(x3, y, f"{i}. {a}", 1.5, 700)); y = para(o, x3 + 3, y + 2.8, b_, 92, 1.4, PROP, 2.6); y += 1.2
-    y += 2; o.append(t(x3, y, "5  PACKING  [proposed — confirm]", 2.1, 700)); y += 4.4
-    for a, b_ in PACK: y = para(o, x3, y, f"{a}: {b_}", 92, 1.45, PROP, 2.7); y += 0.5
-    o.append(t(12, SH - 12, SAMPLING + "  Sample plan: fit sample → strike-off → embroidered sample, M.", 1.6, 700, ORANGE))
+    y += 1.5; y = para(o, x2, y, "The care label (T6b) is printed from the shell fibre content, which is not confirmed yet: please state it, and we send the matching care label artwork. "
+                                 "Shrinkage questions: CS. Frames, colours per head, trims in stock: QF2.", 95, 1.4, MUTED, 2.6)
+    y = 32; o.append(t(x3, y, "3  SAMPLE PLAN — in this order", 2.1, 700)); y += 4.6
+    for l in ["1. Fit sample, size M, no embroidery: hood, bands and zip; measure against T3, including D+ and H+.",
+              "2. Embroidery strike-off: the split files on the washed shell (section 4).",
+              "3. Embroidered sample, size M, after 1 and 2 are approved."]:
+        y = para(o, x3, y, l, 92, 1.5, INK, 2.8); y += 0.8
+    y += 2; o.append(t(x3, y, "PATTERN + FILES  [proposed — confirm]", 1.8, 700, PROP)); y += 4
+    for l in ["Cut from our DXF as supplied, without re-grading. Before cutting, send us your pattern print or a measured sheet of the cut pieces (size M).",
+              "Your digitizer may adjust density + pull for this shell: list every change on the strike-off report.",
+              "Construction: CS (seams), CI (inside view + bag-out order), CD (welt, zip, hood details)."]:
+        y = para(o, x3, y, l, 92, 1.45, PROP, 2.7); y += 0.8
+    y = 112; o.append(t(x1, y, "4  STRIKE-OFF — after the fit sample, before the embroidered sample", 2.1, 700)); y += 4.6
+    fl = []
+    for p in kbcore.PIECES:
+        secs = PK.CUR[p]["splits"]["sections"]
+        fl.append(f"{p}: " + (" + ".join(f"{nm[:2]} {v['stitches']:,} st" for nm, v in secs.items()) if len(secs) > 1 else f"{PK.CUR[p]['stitches']:,} st, one hooping"))
+    for l in ["Sew the size-M SPLIT files on the washed shell, with the proposed threads + backing, by the oversized-block method (E0): " + "; ".join(fl) + ". "
+              "The full files (one per piece) are reference only.",
+              "Send back: (a) photos straight-on in daylight + a close-up per colour area, with your thread card, the colour swatches we send and a ruler in the shot; "
+              "(b) the sewn size vs the file (W × H mm); (c) each front panel's CF length + chest width before and after embroidery (mm), to show the pull-up; "
+              "(d) puckering, show-through, thread breaks; (e) how you aligned the second hooping and whether the crosses left needle holes; "
+              "(f) run time per hooping and your price for it."]:
+        y = para(o, x1, y, l, 200, 1.5, INK, 2.8); y += 1.2
+    o.append(t(12, SH - 12, SAMPLING, 1.6, 700, ORANGE))
     return o
 
+def FMQ():
+    z = [v / 10 for v in CN.ZIPS.values()]
+    return [
+     ("a", f"Set the 2-way separating zip's bottom box into the folded {GM.HD.hcm('S', 'M') / 10:.1f} cm hem band with {GM.HD.EL_HEM_W / 10:.0f} cm elastic ({CN.FLAT:.0f} cm flat each side of the zip)?", "YES / NO + scrap-mock photo"),
+     ("b", "Zip top enclosed between shell hood, sherpa hood and facings, top stop 5 mm below the face edge (CD)?", "YES / NO + scrap-mock photo"),
+     ("c", "Sherpa bagged to the duck at the face edge (SA 0.6 cm) with a 6 mm topstitch through ~8 mm pile?", "YES / NO + scrap mock; SA you need ___ mm"),
+     ("d", "Welt pockets on an embroidered front, art 6 mm from the welt box (CD)?", "YES / NO"),
+     ("e", "12 thread colours in one file: max colours per head? Embroidery in-house?", "max ___ · in-house YES / NO"),
+     ("f", f"Largest embroidery frame (inner sewing field)? Our files are split for {PK.FR_S} mm.", "___ × ___ mm"),
+     ("g", f"YKK #5 antique brass 2-way separating zip in 7 lengths ({min(z):.0f}–{max(z):.0f} cm, CD): stock, MOQ, lead time?", "stock YES / NO · MOQ ___ · ___ days"),
+     ("h", f"{GM.HD.EL_HEM_W / 10:.0f} cm + {GM.HD.EL_CUFF_W / 10:.1f} cm woven elastic, cream sherpa 280 g/m², plaid cotton flannel: in stock / swatch?", "YES / NO each · swatch YES / NO"),
+     ("i", "Woven damask main label (T6b): weave it in-house? MOQ?", "YES / NO · MOQ ___"),
+     ("j", "If embroidery is subcontracted: the same embroidery shop for bulk as for the sample?", "YES / NO"),
+     ("k", "Can you supply the content, country-of-origin, care and size labels (section 6)?", "YES / NO each"),
+     ("l", "Second-hooping alignment: crosses ~10 mm outside the art, picked out after (E0). Your method?", "same YES / NO · yours: ______"),
+     ("m", "Embroider an oversized block, then re-cut with the 1:1 pattern piece (E0)?", "YES / NO · yours: ______")]
+
+def p_qf2():
+    """factory questions 2: the feasibility matrix (closed YES / NO + numbers), open design points, labels, colour standards, packing"""
+    o = H("FACTORY QUESTIONS 2 — can you make it?", "Circle YES / NO and fill the numbers. Amber = our proposal — confirm or tell us what you would change.", "QF2")
+    x1, x3 = 12, 182; y = 32
+    o.append(t(x1, y, "1  CAN YOU MAKE IT — please answer each", 2.1, 700)); y += 4.6
+    for i, (k, q, a) in enumerate(FMQ()):
+        ZB_zebra(o, i, y + 0.6, 6.2, x1 - 1, x3 - 5)
+        o.append(t(x1, y, f"({k})", 1.5, 700)); n = len(textwrap.wrap(q, 92))
+        para(o, x1 + 6, y, q, 92, 1.45, INK, 2.5); o.append(t(x1 + 110, y, a, 1.42, 600, INK)); y += max(6.2, 2.5 * n + 1.2)
+    y += 2; y = para(o, x1, y, f"If your largest frame is smaller than a file, don't sew it: tell us and we re-split the files for your frame.", 150, 1.5, PROP, 2.8)
+    y = 32; o.append(t(x3, y, "2  OPEN DESIGN POINTS — please confirm", 2.1, 700)); y += 4.6
+    sref = {"(G5)": "(E01, E02)", "(T2, T7)": "(T2, G2)", "(G3, F1)": "(E0, QF section 4)", "(Q1)": "(QF section 2)"}
+    for i, (a, b_) in enumerate(OPEN, 1):
+        for k_, v_ in sref.items(): b_ = b_.replace(k_, v_)
+        o.append(t(x3, y, f"{i}. {a}", 1.45, 700)); y = para(o, x3 + 3, y + 2.6, b_, 82, 1.35, PROP, 2.45); y += 1.0
+    y += 2; o.append(t(x3, y, "3  LABELS  [proposed — confirm]", 2.0, 700)); y += 4.2
+    for l in ["Main label: Haki standard woven damask, back neck facing, 1 cm below the hood seam, text upright when the jacket hangs (T6b).",
+              "Size label: folded into the main-label seam. Content + country-of-origin + care label: left side seam of the lining (T6). "
+              "The care label waits for the fibre %; content + origin are required for bulk. RN: we send it."]:
+        y = para(o, x3, y, l, 82, 1.35, PROP, 2.45); y += 0.8
+    y += 1.5; o.append(t(x3, y, "4  COLOUR STANDARDS  [proposed — confirm]", 2.0, 700)); y += 4.2
+    for l in ["We send a physical swatch or Pantone TCX for the shell, sherpa, plaid flannel, zip tape and elastic before the fit sample. "
+              "Threads: the hex values are on-screen targets; match on your physical card. Bobbin: navy on the shell, cream on the sherpa side."]:
+        y = para(o, x3, y, l, 82, 1.35, PROP, 2.45); y += 0.8
+    y += 1.5; o.append(t(x3, y, "5  PACKING  [proposed — confirm]", 2.0, 700)); y += 4.2
+    for a, b_ in PACK: y = para(o, x3, y, f"{a}: {b_}", 82, 1.35, PROP, 2.45); y += 0.4
+    o.append(t(12, SH - 12, SAMPLING + "  Sample plan: fit sample, then strike-off, then the embroidered sample (QF section 3).", 1.6, 700, ORANGE))
+    return o
+
+GATHER = {sz: GM.F.pieces(sz)[1]["hem_band"] / 10 - 2 * ZB.CH["D"][2][kbcore.SIZES.index(sz)] for sz in kbcore.SIZES}
+CLR = {sz: EP.clearances(sz)["FR"]["hem"] for sz in ("M", "L", "XL")}
 # ---------------------------------------------------------------- TBD (internal: md + png + a page in the internal pack)
 TBD = [("Decide with the factory", [
           "MOQ, sample + bulk lead times, FOB price at 100/200/300/500, sample cost, payment terms, freight air + sea (Q1). They quote first.",
           "Shell they propose (weight, wash) + fibre % of shell, flannel, taffeta, sherpa, pocketing (Q1). The care label waits on this (labelsheet MISSING state).",
           "Embroidery in-house or subcontracted; largest frame + needles per head. A bigger frame removes the S1/S2 hoop splits (G5/G6).",
           "Physical thread card for the 12 threads, the 6 blues on washed navy first (G3).",
-          "Construction detail for welts, pocket bags, facings, lining: the pack points to the jacket block (T2 note 4, T4 + DXF); no separate seam page exists. Ask if they need one.",
+          "Construction (Rev E): seam table CS, inside view + bag-out order CI, welt / zip / hood details CD: every method amber [proposed]; their answers to QF2 (a)-(m).",
+          f"Pocket bag fit: the pattern bag (mouth {CN.BAG_MOUTH / 10:.1f}, side {CN.BAG_SIDE / 10:.1f}, {CN.BAG_DEPTH / 10:.1f} deep) vs a welt whose low corner is {CN.WELT_LOW / 10:.1f} cm above the hem seam and "
+          f"{CN.WELT_TO_FAC / 10:.1f} cm from the facing: factory to lay it on the pattern (CD). Not verified by us.",
+          "Shrinkage: mill warp / weft % after pre-wash, flannel + sherpa %, the SA + shrinkage they cut with (CS).",
           "Packing: fold, polybag, carton qty + size (Q2). Trims (zip, elastic, threads): their stock equivalents (T6)."]),
        ("Decided by us", [
           "Back + hood plain (★ default, founder card koi-blossom-rfq-questions; shown amber until he answers).",
@@ -289,7 +376,13 @@ TBD = [("Decide with the factory", [
           "'Prepared for' + quantity + reply-by on the cover: blank, the founder writes them.",
           "Product name 'Blossom Tetra Hooded Jacket' (style code HK-HD-KOIB-NV kept). Welt position + angle (mockup).",
           "Fish fill: PR #52 tetra-governed fish replaces the Rev C fish before bulk (files are for sampling).",
-          "Hangtag, barcode, RN, Pantone/TCX references: we send them."]),
+          "Hangtag, barcode, RN, Pantone/TCX references: we send them.",
+          "M5 garment wash: ★ NO garment wash, shell pre-washed before cutting (amber on CS). Lead asks the founder.",
+          f"S2 hem elastic gather falls with size (full hem, band length − 2 × D: {GATHER['XS']:.1f} cm at XS, {GATHER['M']:.1f} at M, {GATHER['3XL']:.1f} at 3XL): ★ keep for the M sample; re-derive the hem-band / elastic grading at a constant gather before bulk. Pattern numbers unchanged. Lead asks the founder / Nick.",
+          f"S8 two near-empty hoopings kept (★ fidelity first): FL S1 {PK.CUR['FL']['splits']['sections']['S1_top']['stitches']:,} st / {PK.CUR['FL']['splits']['sections']['S1_top']['trims']} trims and "
+          f"SL S1 {PK.CUR['SL']['splits']['sections']['S1_top']['stitches']:,} st / {PK.CUR['SL']['splits']['sections']['S1_top']['trims']} trims. Cost: 2 of the {PK.HOOPS} hoopings per jacket (re-hoop + crosses + set-up each). Lead asks the founder.",
+          f"S13 FR art at L/XL NOT re-fitted to the band (kept + flagged): FR hem clearance L {CLR['L']:.1f} / XL {CLR['XL']:.1f} mm vs {CLR['M']:.1f} at M. A re-fit needs a new placement rule (move the lower FR cluster per size) + new L/XL DSTs; it is not an existing re-fit. Lead asks the founder.",
+          "Embroidery method: oversized block + re-cut (★ proposed, E0); factory may answer with its own (QF2 m)."]),
        ("Decide at sampling", [
           "Fit sample (no embroidery) first: hood crown + face opening with the sherpa, relaxed band + cuff sizes, zip lies flat.",
           "Strike-off on washed duck: pull/shrink, puckering, density, the S1/S2 joints; fish + lily detail at 1:1 (F1).",
@@ -320,19 +413,23 @@ TABLE = [(Page("C1", "cover", "Cover", FACTORY, ""), None),
          (Page("T4", "pattern", "Pattern pieces + cut list", FACTORY, ""), lambda: ZB.p_pieces()),
          (Page("T6", "bom", "Bill of materials", FACTORY, ""), lambda: ZB.p_bom()),
          (Page("T5", "construction", "Hood + bands construction", FACTORY, ""), lambda: ZB.p_hood()),
-         (Page("T6b", "labels_packing", "Labels — Haki standard main + care label", FACTORY, ""), lambda: ZB.p_labels()),
-         (Page("G2", "artwork_placement", "Embroidery placement overview + keep-outs", FACTORY, ""), lambda: PK.overview()),
+         (Page("CS", "construction", "Seams, stitches + wash", FACTORY, ""), lambda: CN.p_seams()),
+         (Page("CI", "construction", "Inside view + bag-out order", FACTORY, ""), lambda: CN.p_inside()),
+         (Page("CD", "construction", "Welt, zip + hood details", FACTORY, ""), lambda: CN.p_details()),
+         (Page("T6b", "labels_packing", "Labels — main + care label", FACTORY, ""), lambda: ZB.p_labels()),
+         (Page("G2", "artwork_placement", "Embroidery placement + keep-outs", FACTORY, ""), lambda: PK.overview()),
          (Page("T7", "artwork_placement", "Embroidery placement on the pattern, every size", FACTORY, ""), lambda: GM.p_placement()),
          (Page("G3", "artwork_summary", "Thread colours + embroidery trims", FACTORY, ""), lambda: PK.threads()),
          (Page("G4", "artwork_summary", "Stitch summary per piece", FACTORY, ""), lambda: PK.summary()),
          (Page("G5", "artwork_summary", "Stitch files + hoop splits, every size", FACTORY, ""), lambda: PK.files_page()),
          (Page("G6", "artwork_summary", "Hooping table, every size", FACTORY, ""), lambda: PK.hooping_page()),
-         (Page("E0", "artwork_summary", "Embroidery summary — threads, files, hooping", FACTORY, ""), lambda: p_e0()),
+         (Page("E0", "artwork_summary", "Embroidery: threads, files, hooping, method", FACTORY, ""), lambda: p_e0()),
          (Page("01", "artwork_element", "Element 01 front — spec, stops, 1:1 details", FACTORY, ""), lambda: ("pdf", espec_pdf("01"))),
          (Page("02", "artwork_element", "Element 02 sleeves — spec, stops, 1:1 details", FACTORY, ""), lambda: ("pdf", espec_pdf("02"))),
-         (Page("E01", "artwork_element", "01 front — placement, stitches per size, threads, questions", FACTORY, ""), lambda: p_element("01")),
-         (Page("E02", "artwork_element", "02 sleeves — placement, stitches per size, threads, questions", FACTORY, ""), lambda: p_element("02")),
-         (Page("QF", "factory_questions", "Factory questions — quote, strike-off, open points, packing", FACTORY, ""), lambda: p_qf()),
+         (Page("E01", "artwork_element", "01 front: placement, stitches, threads", FACTORY, ""), lambda: p_element("01")),
+         (Page("E02", "artwork_element", "02 sleeves: placement, stitches, threads", FACTORY, ""), lambda: p_element("02")),
+         (Page("QF", "factory_questions", "Factory questions 1: quote, plan, strike-off", FACTORY, ""), lambda: p_qf()),
+         (Page("QF2", "factory_questions", "Factory questions 2: can you make it?", FACTORY, ""), lambda: p_qf2()),
          (Page("Q1", "factory_questions", "Request for quotation", FACTORY, ""), lambda: p_q1()),
          (Page("Q2", "factory_questions", "Open design points + packing", FACTORY, ""), lambda: p_q2()),
          (Page("F1", "factory_questions", "Strike-off + factory requests", FACTORY, ""), lambda: ("svgs", PK.f1_pages())),
@@ -383,7 +480,10 @@ def render(pages, out, tag):
 
 def sha_manifest():
     m = {os.path.relpath(p, OUT): hashlib.sha256(open(p, "rb").read()).hexdigest() for p in sorted(glob.glob(f"{OUT}/0*_*/**/*.dst", recursive=True) + glob.glob(f"{OUT}/0*_*/**/*.pes", recursive=True))}
-    json.dump(m, open("bench/dst_sha_RevD.json", "w"), indent=1)
+    json.dump(m, open(f"bench/dst_sha_{R_}.json", "w"), indent=1)
+    if os.path.exists("bench/dst_sha_RevD.json") and R_ != "RevD":                  # Rev E changed no stitch file: prove it
+        old = json.load(open("bench/dst_sha_RevD.json")); diff = sorted(k for k in set(old) | set(m) if old.get(k) != m.get(k))
+        print("DST sha vs RevD:", "identical" if not diff else f"{len(diff)} differ: {diff[:6]}")
     return m
 def factory_zip():
     """the files a factory gets with the PDFs: pattern, stitch files (+ thread charts, art, previews), labels, factory README"""
@@ -395,7 +495,7 @@ def factory_zip():
     for p in (FAC_SUM, FAC_REF): shutil.copy(p, Z)
     open(f"{Z}/README.txt", "w").write(f"""HAKI STUDIOS - {NAME} (style {STYLE}) - {REV} - {DATE}
 
-{os.path.basename(FAC_SUM)}   start here: what you need to make the sample right the first time, + our questions (Q1, Q2).
+{os.path.basename(FAC_SUM)}   start here: what you need to make the sample right the first time, + our questions (QF, QF2).
 {os.path.basename(FAC_REF)}   full reference: every page, incl. pattern pieces, stitch files per size and the hooping table.
 pattern/     DXF per size + all sizes (AAMA, mm; layer 8 = embroidery art box + design centre, layer 13 = needle start), 1:1 plot PDF size M.
 elements/01_front-fish/<size>/   wearer's right + left front stitch files (DST + PES), thread charts, previews.
@@ -425,8 +525,11 @@ def build():
     n_sum, png_sum = render(summ, FAC_SUM, "summary")
     kbcore.MODE = "internal"
     buf = io.BytesIO(open(INTERNAL, "rb").read()); rd = PdfReader(buf); w = PdfWriter()
-    for pg_ in rd.pages:                                   # re-runs: drop the TBD page an earlier rfq.py run appended
-        if "every proposed / open item (internal)" not in (pg_.extract_text() or ""): w.add_page(pg_)
+    MARK = ("every proposed / open item (internal)", "CONSTRUCTION — seams, stitches", "INSIDE VIEW + BAG-OUT ORDER", "DETAILS — welt pocket")
+    for pg_ in rd.pages:                                   # re-runs: drop the pages an earlier rfq.py run appended
+        if not any(m in (pg_.extract_text() or "") for m in MARK): w.add_page(pg_)
+    for i, mk in enumerate((CN.p_seams, CN.p_inside, CN.p_details)):                # internal copy keeps the construction pages too
+        cairosvg.svg2pdf(bytestring=doc(mk()).encode(), write_to=f"{PG}/int_c{i}.pdf"); w.append(PdfReader(f"{PG}/int_c{i}.pdf"))
     svg = doc(p_tbd()); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"{PG}/tbd.pdf"); w.append(PdfReader(f"{PG}/tbd.pdf")); w.write(INTERNAL)
     cairosvg.svg2png(bytestring=svg.encode(), write_to=f"{OUT}/TBD_{R_}.png", output_width=2400)
     open(f"{OUT}/TBD_{R_}.md", "w").write(tbd_md())
