@@ -58,5 +58,6 @@ not limited - clean-up after the strike-off. The files are production-intent dra
 density + pull on 12 oz duck, edits if needed, and sews out before bulk. Every value marked [proposed - confirm] is still open.
 """)
 for z in glob.glob("out/*.zip"): os.remove(z)
+if os.path.isdir("out/labels"): shutil.copytree("out/labels", f"{PKG}/labels")   # Haki standard main + care label files (gtp.build, LESSONS D7)
 subprocess.run(f"cd {PKG} && zip -qr ../HAKI_{cfcore.SHORT}_{cfcore.REV_GAR.replace(' ', '')}_files.zip .", shell=True)
 print("pdf MB", round(os.path.getsize(full) / 1e6, 1), "zip MB", round(os.path.getsize(glob.glob('out/*.zip')[0]) / 1e6, 1))
