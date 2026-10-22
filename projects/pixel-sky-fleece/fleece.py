@@ -22,6 +22,7 @@ BIND_W = 12.0              # finished binding width (hem, cuffs) — visible nav
 BIND_CUT = 50.0            # binding cut width (double fold over ~10 mm sherpa)
 CUFF_EL_W = 10.0           # cuff elastic inside the binding channel
 PIPE_W = 8.0               # navy piping visible in the collar seam
+NECKT_W, NECKT_CUT = 15.0, 40.0   # inside neck tape (navy taslan) finished / cut width — PROPOSED (TD PS-11)
 ZIPF_W = 35.0              # CF zip facing strip (taslan), finished
 PKT_L, PKT_ANGLE = 165.0, 7.4     # vertical pocket zip: opening length, lean from vertical (top toward the side seam)
 PKT_C = (198.0, 432.0)     # pocket opening centre, size M, wearer's-left front coords (mm) — read off the mockup (mockmap)
@@ -45,7 +46,7 @@ def chart_vals():
     nm, how, vals, tol = drum.POM_CM["D"]          # straight boxy body, bound (not ribbed) hem: sweep = chest
     out["D"] = (nm, "1/2, along the bound hem edge, flat", [round(v + EASE_CM["B"], 2) for v in drum.POM_CM["B"][2]], tol, "= chest, bound hem (confirmed 21 Oct)")
     out["M"] = ("Collar height at CB", "neck seam to collar edge, stand", [COLLAR_H / 10] * 7, 0.3, "PROPOSED")
-    out["Q"] = ("Binding width", "hem + cuff, finished", [BIND_W / 10] * 7, 0.1, "PROPOSED")
+    out["Q"] = ("Binding width", "hem + cuff, finished, at the pile base", [BIND_W / 10] * 7, 0.3, "PROPOSED")   # ±0.1 not measurable on a pile edge (TD PS-14)
     out["R"] = ("Pocket zip opening", "vertical zip pocket, teeth", [PKT_L / 10] * 7, 0.3, "PROPOSED")
     return out
 
@@ -127,13 +128,16 @@ def draft(size):
     g["P02"] = Piece("P02", "POCKET BAG", "4 (2 pairs)", "Pocketing — tricot fleece 160 g, cream",
                      [Edge("opening", [(0, 0), (0, PBAG_D)], PT.SA_STD), Edge("bottom", [(0, PBAG_D), (PBAG_W, PBAG_D - 25)], PT.SA_STD),
                       Edge("side", [(PBAG_W, PBAG_D - 25), (PBAG_W, 30)], PT.SA_STD), Edge("top", [(PBAG_W, 30), (0, 0)], PT.SA_STD)],
-                     ((PBAG_W / 2, 20), (PBAG_W / 2, PBAG_D - 40)), category="POCKETING", note="zip-side bag sewn to the zip tape; caught in the side seam? no — free-hanging, bar-tacked to the CF facing")
-    g["P04"].material = "Taslan — nylon, navy"; g["P04"].note = "folded in 4, edge-stitched; in the collar seam at CB"
+                     ((PBAG_W / 2, 20), (PBAG_W / 2, PBAG_D - 40)), category="POCKETING", note="sewn to the pocket zip tape all round the opening; free-hanging, no other anchoring [proposed]")
+    g["P04"].material = "Taslan — nylon, navy"; g["P04"].note = "hanger loop: folded in 4, edge-stitched; caught under the neck tape NT1 at CB"
+    # ---- inside neck finish (TD PS-11): navy taslan tape over the collar / body neck seam, carries the main + size label and the hanger loop
+    g["NT1"] = _rect("NT1", "NECK TAPE", "1", "Binding — navy taslan, straight grain", Ln, NECKT_CUT, (0, PT.SA_STD, 0, PT.SA_STD),
+                     cat="TRIM", fold=[[(0, NECKT_CUT / 2), (Ln, NECKT_CUT / 2)]], note=f"{NECKT_W/10:.1f} cm finished over the neck seam inside, zip to zip; main + size label + hanger loop at CB")
     el_cuff = 2 * m("H", size)
     mt.update(Ln=Ln, hem_len=hem_len, sleeve_open=sleeve_open, el_cuff=el_cuff, collar_h=H, pocket=pocket_line(size, 1))
     return g, mt
 
-ORDER = ["B01", "F01", "F02", "S01", "S02", "C01", "C02", "Z01", "P02", "P04", "BD1", "BD2", "BD3"]
+ORDER = ["B01", "F01", "F02", "S01", "S02", "C01", "C02", "Z01", "P02", "P04", "BD1", "BD2", "BD3", "NT1"]
 
 # ---------------------------------------------------------------- QA (pattern vs fleece chart + seam walks)
 def measure(size):
@@ -157,7 +161,8 @@ def measure(size):
              ("Collar outer vs inner (top)", E("C01", "top fold"), E("C02", "top fold"), 0.5),
              ("Hem binding vs body hem", g["BD1"].edges[0].length, mt["hem_len"], 1.0),
              ("Cuff binding vs sleeve opening", g["BD2"].edges[0].length, mt["sleeve_open"], 1.0),
-             ("Zip facing vs CF + collar", g["Z01"].edges[1].length, g["F01"].edges[0].length + COLLAR_H, 1.0)]
+             ("Zip facing vs CF + collar", g["Z01"].edges[1].length, g["F01"].edges[0].length + COLLAR_H, 1.0),
+             ("Neck tape vs neck seam", g["NT1"].edges[0].length, mt["Ln"], 1.0)]
     return meas, walks, mt
 
 def shape_checks(size):

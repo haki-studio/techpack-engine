@@ -89,3 +89,34 @@ Dead end: 2-D majority growth for the sleeve's centre gap -> horizontal stripes 
 | Bird position = wearer's RIGHT | brief wording fixed; Q1 assumption removed |
 | Close-ups NOT NEEDED | Q1 + R1 A10 + J3 text; closeup_request.md kept with a "NOT NEEDED" header |
 STATUS.json now has `answered` (closed questions with the answer + date); Q1 prints them in green under "ANSWERED". Binding/tape navy + zips stay PROPOSED.
+
+## Rev G (2026-10-22): the "RFQ edition" for the new low-MOQ factory from Texworld
+The founder wants to send this pack as an RFQ to a different factory (one that can knit colours into sherpa). His words: "doesn't need to be perfect, but good enough to send". Rev G folds in the lead's brief, two lead TASKs, td-generalist's PS-01..26 and the TD chair's merged sheet (`projects/pixel-sky-fleece/td/`: B1–B14 from files, N1–N7 as placeholders).
+
+**Two PDFs from one build** (`pack.py`, mode `rfq` / `internal`):
+- `HAKI_HK-FL-PIXSKY_RFQ_RevG.pdf`, 20 pages, for the factory: T1 cover ("Prepared for: ____"), Q1 quote sheet, T2–T7, J1–J3, G1–G5, F1, F2–F3 (the chair's 28 questions word for word), Q2 open points.
+- `..._TECHPACK_RevG.pdf`, 22 pages, internal: the same pages, but with the full J3 and G pages, plus Q3 (decisions log and the chair's section (c) holds) and R1.
+- `rfq_text_gate`: a regex list scanned over the rendered RFQ PDF text (factory.json, gates, IoU, founder, Rev A–F, .py/.json, Drum Island, IP, PS-ids …).
+  - The build fails on any hit in the RFQ copy.
+  - It also fails if the same scan finds nothing in the internal copy, which proves the gate is not blind. First run: 154 internal hits, 0 in the RFQ copy.
+  - Result goes to `out/rfq_text_gate.json` and to an R1 row. LESSONS E11 and ENGINE_NOTES 12 propose moving it into the engine.
+
+**What changed, and why**
+
+| Item | Change |
+|---|---|
+| Old factory content (PS-01) | The engine's F1 (`factory.requests_page`) prints the old factory's frames as "confirmed" and says "washed, as in bulk", and the engine is off-limits to this session. So F1 is now written in the project: strike-off, a wash test, threads ("your nearest match"). Frames and colours per file are now questions (q11). |
+| RFQ basics (PS-06) | Q1 quote sheet: knit-down / fit sample / strike-off / proto prices and days; bulk FOB at 100/200/300/500 for options A and B; the lead's blanks for MOQ, 3rd-colour MOQ, sample and bulk lead times and CNY dates. **Our 21/45-day targets are not printed.** |
+| Fabric + colour (PS-07/09, N1/N2) | Shell "please state" goes to q4. Pile "~8-10 mm" is taken from the fleece.py docstring and marked proposed. T5 colour standard: hex + "TCX: ____", plus the line "both fabrics dipped to the same TCX in parallel". |
+| Seams + neck (PS-10/11) | New T7: per-seam stitch type / finish / "SPI: factory to state", plus the assembly order. New piece **NT1 neck tape** in fleece.py: length = neck seam (49.7 cm at M), with a seam walk. It carries the main and size labels and the hanger loop P04. |
+| Labels + packing (PS-12, N6) | New T6, with `fflat.labels_key()` back-view markers. Care/content text is all placeholders ("[mill to state]"), because fleece.py states no fibre. The brand is written "Haki Studios". |
+| Measuring (PS-14) | `fflat.measure_key()` puts the POM letters on the M front flat. Rule: measure at the base of the pile. New H2 "stretched": TBD at the fit sample. Binding tolerance Q changed in fleece.py from ±0.1 to ±0.3 [proposed]. |
+| G1 (PS-15) | The E3 line now gives both the underarm origin and the grading rule (kept from the cuff seam: 323.7 mm at M), plus "per-size positions = DXF layer-8 marks". |
+| Pocket bag (PS-21) | fleece.py and T2 now say the same thing: "sewn to the zip tape round the opening, free-hanging [proposed]; factory to advise CF facing or side seam". **This deviates from chair B11** ("top bar-tacked to the CF facing"): the bag sits about 20 cm from CF, so it cannot reach the facing. The lead accepted this. |
+| Chin guard (N7) | Asked as q19 only; not designed in (chair over the lead's earlier "optional detail"). |
+| STATUS.json (B14) | The collar question is moved to `answered`. The open questions are re-worded for the new factory and for the N1–N6 owners. |
+| J1 stale line | "clouds drawn in 2 × 2 blocks (2.5 mm)" dated from Rev A. It now reads "drawn per cell; checker lattice 3 × 3 cells (7.5 mm)". |
+
+**Other outputs:** `out/TBD_RevG.md` + `.png` (`tbd.py`) with three groups: decided by us, with the factory, at sampling (incl. the sleeve-backs line and the chair's holds). The supplier zip has no json and no QA sheets (compare previews are the `*_rfq.png` versions), and its README is clean.
+
+**Pending:** the founder fills in "Prepared for"; Nick picks the TCX colours, ladder and size ratio; Ops sets the reply-by date and terms. Engine follow-ups are in ENGINE_NOTES 12 (requests_page new-factory mode + wash parameter; supplier-copy gate as an engine test).

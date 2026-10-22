@@ -10,4 +10,4 @@ cd projects/pixel-sky-fleece
 python3 gates_jq.py; python3 gates_fl.py; python3 gates_selftest.py; python3 emb_place.py; ../../scripts/heavy.sh python3 pattern_fl.py dxf pdf png
 python3 fflat.py; python3 compare.py
 # pack twice: R1 (D2) reads the recompressed PDF that finish.py writes in the first pass
-for pass in 1 2; do ../../scripts/heavy.sh python3 pack.py; python3 finish.py; done
+for pass in 1 2; do ../../scripts/heavy.sh python3 pack.py; python3 finish.py; done   # Rev G: RFQ + internal PDFs, rfq_text_gate

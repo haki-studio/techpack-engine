@@ -140,6 +140,49 @@ def back(size="M"):
     hem = mt["hem_b"]; ch = mt["block"].chest2; C.line([(-ch, hem - 6), (ch, hem - 6)], NAVY, FL.BIND_W)
     return C
 
+def measure_key(size="M"):
+    """numbered-point key for the size chart (TD PS-14): the front flat greyed, each point of measure drawn as a red line
+    with its chart letter, at the pattern's own landmarks (HPS, shoulder / underarm points, hem, sleeve cap + cuff)."""
+    from PIL import ImageFont
+    C = front("A", size, emb=False); g, mt = FL.draft(size)
+    C.im = Image.blend(C.im, Image.new("RGB", C.im.size, (255, 255, 255)), 0.55); C.d = ImageDraw.Draw(C.im)
+    try: F = ImageFont.truetype("DejaVuSans-Bold.ttf", 30)
+    except Exception: F = ImageFont.load_default()
+    hps, sp, ua, hem, ch = mt["hps_f"], mt["sp_f"], mt["ua_f"], mt["hem_f"], mt["block"].chest2
+    tf = sleeve_tf("R", mt); h, W, Ww, Lu = mt["cap_h"], mt["W"], mt["Ww"], mt["Lu"]
+    pk = FL.pocket_line(size, 1)
+    lines = {"A": [(hps[0], hps[1]), (hps[0], hem)], "B": [(-ch, ua[1]), (ch, ua[1])], "C": [(-sp[0], sp[1]), (sp[0], sp[1])],
+             "D": [(-ch, hem - 3), (ch, hem - 3)], "E": [(sp[0], sp[1]), (ua[0], ua[1])], "J": [(-hps[0], hps[1]), (hps[0], hps[1])],
+             "K": [(12, hps[1]), (12, 0)], "M": [(-hps[0] - 25, hps[1] + 5), (-hps[0] - 25, hps[1] + 5 - FL.COLLAR_H)],
+             "G": [tuple(tf(0, -h)), tuple(tf(0, Lu))], "F": [tuple(tf(0, 25)), tuple(tf(W * 0.98, 25))],
+             "H": [tuple(tf(0, Lu - 6)), tuple(tf(Ww, Lu - 6))], "R": [pk[0], pk[1]]}
+    RED_ = (200, 30, 30)
+    for k, pts in lines.items():
+        P = C.T(pts); C.d.line(P, fill=RED_, width=5)
+        for q in P: C.d.ellipse([q[0] - 6, q[1] - 6, q[0] + 6, q[1] + 6], fill=RED_)
+        f = {"C": 0.3, "K": 0.8, "A": 0.6}.get(k, 0.5)                   # keep labels apart where lines cross at CF
+        mx, my = P[0][0] + (P[-1][0] - P[0][0]) * f, P[0][1] + (P[-1][1] - P[0][1]) * f
+        C.d.ellipse([mx - 22, my - 22, mx + 22, my + 22], fill=(255, 255, 255), outline=RED_, width=4)
+        C.d.text((mx, my), k, fill=RED_, font=F, anchor="mm")
+    return C
+
+def labels_key(size="M"):
+    """label positions on the back flat (T6): 1 main + size label and hanger loop at CB on the neck tape (inside),
+    2 care / content / COO label in the wearer's left side seam, 100 mm above the hem [proposed]; back view: wearer's
+    left = viewer's left."""
+    from PIL import ImageFont
+    C = back(size); g, mt = FL.draft(size); ch = mt["block"].chest2
+    C.im = Image.blend(C.im, Image.new("RGB", C.im.size, (255, 255, 255)), 0.5); C.d = ImageDraw.Draw(C.im)
+    try: F = ImageFont.truetype("DejaVuSans-Bold.ttf", 34)
+    except Exception: F = ImageFont.load_default()
+    RED_ = (200, 30, 30)
+    for n, (x, y) in (("1", (0, 12)), ("2", (-ch, mt["hem_b"] - 100))):
+        (px, py), = C.T([(x, y)])
+        C.d.rectangle([px - 22, py - 10, px + 22, py + 10], outline=RED_, width=5)
+        C.d.ellipse([px + 26, py - 52, px + 74, py - 4], fill=(255, 255, 255), outline=RED_, width=4)
+        C.d.text((px + 50, py - 28), n, fill=RED_, font=F, anchor="mm")
+    return C
+
 if __name__ == "__main__":
     for opt in ("A", "B"): front(opt).im.save(f"out/flat_front_{opt}.png")
-    back().im.save("out/flat_back.png"); print("ok")
+    back().im.save("out/flat_back.png"); measure_key().im.save("out/measure_key.png"); labels_key().im.save("out/labels_key.png"); print("ok")

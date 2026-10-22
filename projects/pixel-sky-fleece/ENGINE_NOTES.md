@@ -92,3 +92,14 @@ Check: synthetic checker with a drifting grid -> lattice with <= 3 phase patches
   (d) checker lattices snapped to whole squares (complete >= half-in squares, drop the rest).
 - **Check:** `gates_jq.py` here - 0 islands <= 2 cells in every map of every size (bird-enclosed excepted), red on 2/2
   planted specks. Move it into `tests/` as a generic gate on any `*_JQ_*.png` set.
+
+## 12. Supplier (RFQ) copy of a pack + a new, unknown factory (Rev G, TD chair L1/L2)
+- **Problem:** the Rev F pack went to a NEW factory carrying the old factory's answers ("Factory said ..."), its frames and
+  colour limits as "confirmed" (`factory.requests_page` prints `Frames on file ... (confirmed)` from factory.json), engine QA
+  (R1, gate blocks, IoU, Rev history) and founder provenance. `requests_page` also hard-codes "washed, as in bulk".
+- **Done here (project):** `pack.py` builds two PDFs; the RFQ copy drops QA pages and provenance; F1 is written in the
+  project (strike-off + wash test + threads) and frames / colours become factory questions (F2-F3). `rfq_text_gate`
+  scans the rendered supplier PDF for banned strings and must ALSO find them in the internal copy (red-then-green).
+- **Proposed fix (engine):** `factory.json` keyed per named factory, with an "unknown factory" profile whose limits print
+  as questions; `requests_page(wash=...)` instead of the fixed wash text; a generic `supplier_copy` mode + text gate in
+  `engine/` with a test (plant one banned string -> red).

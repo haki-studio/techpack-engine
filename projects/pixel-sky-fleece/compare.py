@@ -1,5 +1,6 @@
 """out/compare_<element>.png: mockup crop vs stitch preview (DST live view) at the SAME scale + zoomed regions;
-out/compare_jacquard.png: mockup vs the jacquard cell maps drawn back into the mockup view + zooms + agreement table."""
+out/compare_jacquard.png: mockup vs the jacquard cell maps drawn back into the mockup view + zooms + agreement table.
+Each also as *_rfq.png for the supplier copy (Rev G): same images, no gate table, no QA numbers, no file paths."""
 import json, pickle
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -65,15 +66,17 @@ def element(F, title):
     x0, y0, x1, y1 = pl[F]["art_bounds"]; b = (x0 - 8, y0 - 8, x1 + 8, y1 + 8); ppm = min(14.0, 1500 / (b[2] - b[0]))
     st = live(F, b, ppm, so, org, stops)
     sub = f"{G['stitches']:,} stitches · {G['trims']} trims · {G['stops']} stops · A14 motifs {G['motifs_pass']}/{G['motifs_n']} (min IoU {min(m['iou'] for m in G['motifs']):.2f})"
+    sub_r = f"{G['stitches']:,} stitches · {G['trims']} trims · {G['stops']} colour stops"
     if F != "E3":
         mk = mock_crop(b, ppm); top = hcat([label(mk, f"MOCKUP {title}", "inputs/front.png (low-res AI render, 0.6 mm/px)"),
                                             label(st, f"STITCH PREVIEW {F} (DST read-back)", sub)])
+        top_r = hcat([label(mk, f"MOCKUP {title}", "design mockup (low-res render)"), label(st, f"STITCH PREVIEW {F}", sub_r)])
         srt = sorted(art[F], key=lambda a: -a[1].area); motifs = srt[:1] + srt[-4:]           # the biggest + the 4 smallest (the hard ones)
         zooms = []
         for col, geom, ref in motifs:
             g = geom.bounds; zb = (g[0] - 4, g[1] - 4, g[2] + 4, g[3] + 4); zp = min(14.0, 420 / (zb[2] - zb[0]))
             zooms.append(hcat([label(mock_crop(zb, zp), "mockup", f"{col}"), label(live(F, zb, zp, so, org, stops), "stitches", f"{zb[2]-zb[0]:.0f} mm wide")], 6))
-        z = hcat(zooms, 24); out = vcat([top, z, gate_table(G, max(top.size[0], z.size[0]))])
+        z = hcat(zooms, 24); out = vcat([top, z, gate_table(G, max(top.size[0], z.size[0]))]); rfq = vcat([top_r, z])
     else:
         # sleeve: motifs were moved onto the sleeve pattern one by one (centroids via mockmap.sleeve_to_img), so the render
         # crop is shown at the same mm scale next to the file; zooms pair each motif with its own render pixels
@@ -91,7 +94,9 @@ def element(F, title):
         z = hcat(zooms, 24)
         info = Image.new("RGB", (z.size[0], 48), "white"); ImageDraw.Draw(info).text((6, 6), "DST read-back: " + sub, fill=(20, 20, 20), font=FSB)
         out = hcat([left, vcat([z, info, gate_table(G, z.size[0], FSB)])], 40)
-    out.save(f"out/compare_{F}.png"); return out
+        info_r = Image.new("RGB", (z.size[0], 48), "white"); ImageDraw.Draw(info_r).text((6, 6), sub_r, fill=(20, 20, 20), font=FSB)
+        rfq = hcat([left, vcat([z, info_r])], 40)
+    out.save(f"out/compare_{F}.png"); rfq.save(f"out/compare_{F}_rfq.png"); return out
 
 def jacquard_sheet():
     import jq_view
@@ -127,8 +132,10 @@ def jacquard_sheet():
     for bpx in ((330, 880, 730, 1140), (745, 880, 1130, 1140), (430, 600, 700, 830), (10, 860, 350, 1300)):
         w = bpx[2] - bpx[0]; k = 560 / w
         zs.append(vcat([a.crop(bpx).resize((560, int((bpx[3] - bpx[1]) * k))), v.crop(bpx).resize((560, int((bpx[3] - bpx[1]) * k)), Image.NEAREST)], 6))
-    out = vcat([full, label(hcat(zs, 18), "ZOOMS (top: mockup, bottom: cell map) — left band, right band, bird, right sleeve", "2.5 mm cells, traced per cell; checker fringes redrawn as a regular 7.5 mm lattice")])
-    out.save("out/compare_jacquard.png")
+    zl = label(hcat(zs, 18), "ZOOMS (top: mockup, bottom: cell map) — left band, right band, bird, right sleeve", "2.5 mm cells, traced per cell; checker fringes redrawn as a regular 7.5 mm lattice")
+    out = vcat([full, zl]); out.save("out/compare_jacquard.png")
+    side = hcat([label(a.resize((900, 900)), "MOCKUP", "design mockup (front)"), label(v.resize((900, 900)), "JACQUARD CELL MAPS (option A)", "drawn into the mockup view, same scale")])
+    vcat([side, label(hcat(zs, 18), "ZOOMS (top: mockup, bottom: cell map) — left band, right band, bird, right sleeve", "2.5 mm cells")]).save("out/compare_jacquard_rfq.png")
     json.dump(dict(agree_front=round(agree, 4), agree_band=round(agree_band, 4), agree_sleeve=round(agree_sleeve, 4),
                    diff_sky_as_cream=round(float(bad_sc.sum() / judged.sum()), 4), diff_cream_as_sky=round(float(bad_cs.sum() / judged.sum()), 4)),
               open("out/jacquard/agreement.json", "w"))
