@@ -12,7 +12,7 @@ from pypdf import PdfWriter, PdfReader
 import factory_copy as FC
 from factory_copy import Page, FACTORY, INTERNAL
 import kjpages as P
-from kjcore import REV, SIZES
+from kjcore import REV, SIZES, KJ_PAL
 import sheet
 from sheet import t, INK, MUTED
 
@@ -38,7 +38,8 @@ TITLES = {"T1": "Cover + contents", "T2": "Flats — front + back", "T3": "Measu
           "G4": "03 Waistband patch ちひろ note", "G5": "04 / 05 / 06 Back pockets — 'haki' + konpeito", "G7": "07 Front-leg trail — konpeito + soot sprites", "F1": "Strike-off, threads + our requests"}
 
 # Konpeito-only leaks: pointers to internal pages, decision ids, people
-EXTRA = [r"\bG6b?\b", r"_image\.png|back_pocket_haki\.png", r"\b\d+ px\b", r"\bmoved \d+ mm\b", r"\bthread added\b", r"\bthe trace\b", r"\bC[1-7]\b", r"\bQ1\b", r"\bJ[1-5]\b", r"\bQ-[ab]\b", r"Mandy", r"\bNick\b", r"\bSteph\b", r"\bDevin\b"]
+EXTRA = [r"\bG6b?\b", r"_image\.png|back_pocket_haki\.png", r"\b\d+ px\b", r"\bmoved \d+ mm\b", r"\bthread added\b", r"\bthe trace\b", r"\bC[1-7]\b", r"\bQ1\b", r"\bJ[1-5]\b", r"\bQ-[ab]\b", r"Mandy", r"\bNick\b", r"\bSteph\b", r"\bDevin\b",
+         r"per px\b", r"median of the", r"\bclient\b", r"mockup pixels", r"traced (?:bodies|per sprite)", r"reads cream", r"\bdropped\b"]   # how we digitised, not what to sew
 
 # Konpeito wording -> factory wording (applied after factory_copy.BASE_SCRUB); None = drop the line
 KJ_SCRUB = [
@@ -75,6 +76,15 @@ KJ_SCRUB = [
     (r"The trail on the garment mockup is the artwork \([^)]*\)\.", "The trail on the garment mockup is the artwork."),
     (r"^the (\d+) konpeito clipped", r"The \1 konpeito clipped"), (r"\s*The trace still finds them; this product excludes them\.", ""),
     (r"^the soot-sprite characters are KEPT as on the mockup\s*\.\s*Sewn first", "Soot sprites as on the mockup: sewn first"),
+    # PR #57 review: say what to sew, not how we got there (B8 rewrites G7: the EXTRA patterns catch new wording)
+    (r"^Edge red, as in the SVG \(shared with patch 03\): confirmed.*\(the mockup edge reads cream\)\.$", f"Edge: red {KJ_PAL['kj_red'][0]} (shared with patch 03)."),
+    (r"Silhouette traced from the client flat lay; construction lines placed from it;", "Silhouette and construction lines from the flat lay;"),
+    (r"\s*\(read from the mockup pixels\)", ""),
+    (r"one width: art [\d.]+ mm -[>›] ([\d.]+ mm needle span)", r"one width, \1"),
+    (r"\s*\(size 24 dropped: not on the HI chart, no label\)", ""),
+    (r" = median of the \d+ traced bodies;", ";"),
+    (r"\s*Redrawn from the low-res mockup \(~1 mm per px\):$", ""),
+    (r"^eye \+ pupil positions traced per sprite; uniform body size, the fuzz length", "Eye + pupil positions as on the mockup; one body size; the fuzz length"),
 ]
 
 
@@ -203,7 +213,12 @@ def reference_zip(fac_pdfs):
                       for k, no, title, *_, stem in P.EL)
     rd = README.format(name=P.NAME, style=P.STYLE, rev=REV, date=P.DATE, summary=os.path.basename(SUMMARY), files=files, sizes=" ".join(SIZES))
     open(f"{pkg}/README.txt", "w").write(rd)
-    texts = [rd] + [open(os.path.join(r, f_)).read() for r, _, fs in os.walk(pkg) for f_ in fs if f_.endswith((".txt", ".svg")) and f_ != "README.txt"]
+    texts = {}
+    for r, _, fs in os.walk(pkg):
+        for f_ in fs:
+            p = os.path.join(r, f_)
+            if f_.endswith((".pdf", ".ai")): FC.strip_creator(p)       # Illustrator's "%%For: (<user name>)"
+            if f_.endswith((".txt", ".svg", ".pdf", ".ai")): texts[os.path.relpath(p, pkg)] = FC.file_text(p)
     if os.path.exists(REFZIP): os.remove(REFZIP)
     with zipfile.ZipFile(REFZIP, "w", zipfile.ZIP_DEFLATED) as zf:
         for root, _, fs in os.walk(pkg):
@@ -230,26 +245,30 @@ def build():
     P.FACTORY = False
     final = P.build()
     shutil.copy(final, INTERNAL_PDF)
-    # 3 · leak gate on the rendered text (red-then-green: the internal copy must have hits)
-    g = FC.leak_gate(FC.pdf_texts(SUMMARY), FC.pdf_texts(INTERNAL_PDF), EXTRA, current_rev=REV)
+    P.package(final)
+    shrink(SUMMARY); shrink(INTERNAL_PDF)          # the gate reads the files we ship, so it runs after the shrink
+    # 3 · leak gate on the rendered text (red-then-green: the internal copy must have hits; every factory page has text)
+    internal = FC.pdf_texts(INTERNAL_PDF)
+    g = FC.leak_gate(FC.pdf_texts(SUMMARY), internal, EXTRA, current_rev=REV)
     for h in g["factory"]: print("LEAK:", h)
     assert not g["blind"], "leak gate found nothing in the INTERNAL copy — the gate is blind"
+    assert not g["empty"], f"factory summary pages with no text layer (the gate cannot read them): {g['empty']}"
     assert g["ok"], f"leak gate: {g['factory_hits']} internal strings in the factory summary"
-    # 4 · reference zip (stitch files, previews, labels) + its text through the same gate
-    P.package(final)
-    shrink(SUMMARY)
+    # 4 · reference zip (stitch files, previews, labels): every shipped file's text + metadata through the same gate
     texts = reference_zip(fac_pdfs)
-    gz = FC.leak_gate(texts, FC.pdf_texts(INTERNAL_PDF), EXTRA, current_rev=REV)
+    gz = FC.leak_gate(texts, internal, EXTRA, current_rev=REV)
     for h in gz["factory"]: print("ZIP LEAK:", h)
-    assert gz["ok"], f"leak gate: {gz['factory_hits']} internal strings in the reference zip text"
-    shrink(INTERNAL_PDF)
+    assert not gz["empty"], f"reference zip files with no readable text: {gz['empty']}"
+    assert gz["ok"], f"leak gate: {gz['factory_hits']} internal strings in the reference zip"
     json.dump(dict(summary=os.path.basename(SUMMARY), pages=[[p.id, p.kind, p.title] for p in fac],
                    internal_pages=[[p.id, p.kind] for p in pages if p.audience == INTERNAL],
                    summary_gate=probs, leak_gate={k: v for k, v in g.items() if k != "patterns"},
-                   zip_leak_gate={k: v for k, v in gz.items() if k not in ("patterns", "internal_sample")}, patterns=g["patterns"]),
+                   zip_leak_gate={k: v for k, v in gz.items() if k not in ("patterns", "internal_sample")}, zip_files=sorted(texts),
+                   patterns=g["patterns"]),
               open(f"{FOUT}/leak_gate.json", "w"), indent=1, ensure_ascii=False)
     print(f"FACTORY SUMMARY {len(fac)} pages: {SUMMARY} ({os.path.getsize(SUMMARY) // 1024} kB)")
     print(f"leak gate ok: 0 in the factory copy, {g['internal_hits']} in the internal copy; zip text 0 hits")
+    print(f"zip gate read {len(texts)} files (text + metadata)")
     print("reference zip", REFZIP, os.path.getsize(REFZIP) // 1024, "kB; internal", INTERNAL_PDF)
 
 

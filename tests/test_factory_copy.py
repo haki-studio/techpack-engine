@@ -71,3 +71,56 @@ def test_scrub_svg_rewrites_and_drops():
     assert "Position CONFIRMED." in out and "Generated" not in out
     assert "labels; 1 : 1 file" in out and "founder" not in out
     assert not FC.scan(out, FC.BASE_PATTERNS)
+
+
+# ---- PR #57 review (f7d46bb) findings: each test is red on f7d46bb's factory_copy.py
+KJ_T8_DROP = [(r"^(?:move CONFIRMED|kept: confirmed|kept as the mockup)$", None)]
+
+
+def test_scrub_drop_rule_sees_the_rewritten_text():
+    # T8 note column: BASE_SCRUB removes the "(founder 21 Oct)" date and leaves "()"; the anchored drop must still fire
+    rules = FC.BASE_SCRUB + KJ_T8_DROP
+    assert FC.scrub_text("move CONFIRMED (founder 21 Oct)", rules) is None
+    assert FC.scrub_text("kept as the mockup (founder 21 Oct)", rules) is None
+    assert FC.scrub_text("CONFIRMED (founder 20 Oct)", rules) is None
+    assert FC.scrub_text("centre 17 mm in from the OUTER edge (clears the outer topstitch)", rules) is not None
+
+
+def test_scrub_drops_orphan_status_tail_of_a_wrapped_line():
+    # G3: "Generated, not traced: ... (confirmed 19 Oct)" wraps; line 1 is dropped, line 2 must not survive as "(confirmed)"
+    assert FC.scrub_text("(confirmed 19 Oct)", FC.BASE_SCRUB) is None
+    assert FC.scrub_text("(confirmed)", FC.BASE_SCRUB) is None
+    assert FC.scrub_text("Sew on AFTER the garment wash (confirmed)", FC.BASE_SCRUB) == "Sew on AFTER the garment wash (confirmed)"
+
+
+def test_leak_gate_flags_layer_ids_and_before_after_values():
+    g = FC.leak_gate(["hearts 1.14 -> 0.99 (40wt); signature_risa 0.95 -> 0.85 (40wt)"], ["founder"])
+    assert not g["ok"] and g["factory_hits"] >= 2
+    assert FC.leak_gate(["one width: art 1.63 mm -> 1.48 mm needle span" + " pad" * 10], ["founder"])["factory_hits"] == 1
+    g = FC.leak_gate(["hearts 0.99 mm satin (40wt); name ちひろ 0.85 mm satin (40wt)" + " pad" * 10], ["founder"])
+    assert g["ok"], g["factory"]
+
+
+def test_leak_gate_red_when_factory_text_is_empty():
+    internal = ["checked by the founder 19 Oct"] * 3
+    g = FC.leak_gate([""] * 3, internal)
+    assert not g["ok"] and g["empty"] == [1, 2, 3]
+    g = FC.leak_gate([], internal)
+    assert not g["ok"] and g["empty"]
+    g = FC.leak_gate([CLEAN[1], "   "], internal, image_only=[2])          # a page a human read and marked image-only
+    assert g["ok"] and g["empty"] == []
+    g = FC.leak_gate({"README.txt": CLEAN[1], "logo.pdf": ""}, internal)
+    assert not g["ok"] and g["empty"] == ["logo.pdf"]
+
+
+def test_file_text_reads_pdf_metadata_and_strip_creator(tmp_path):
+    from pypdf import PdfWriter
+    w = PdfWriter(); w.add_blank_page(100, 100); w.add_metadata({"/Author": "Devin Das", "/Title": "care label"})
+    p = tmp_path / "label.pdf"; w.write(p)
+    raw = p.read_bytes().replace(b"%PDF-1.3\n", b"%PDF-1.3\n%%For: (Devin Das) ()\n", 1)
+    p.write_bytes(raw)
+    assert "Devin" in FC.file_text(str(p))
+    assert FC.strip_creator(str(p)) == 2
+    assert "Devin" not in FC.file_text(str(p)) and p.stat().st_size == len(raw)
+    from pypdf import PdfReader
+    assert len(PdfReader(str(p)).pages) == 1                            # still a valid PDF

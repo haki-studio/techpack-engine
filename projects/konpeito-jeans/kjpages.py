@@ -32,6 +32,7 @@ def facbox(x, y, w, h, lines, size=2.0, title="FACTORY TO SUPPLY"):
     return "\n".join(o)
 OUT = "out/pack"; os.makedirs(OUT, exist_ok=True)
 FACTORY = False                          # kjfactory.py sets it: element pages without the internal QA panels
+WB_FAC = {"name_chihiro": "name ちひろ", "signature_risa": "signature 理砂", "lettering": "lettering 元気でね / また会おうね"}   # factory names of the 03 layers
 A = pickle.load(open("out/art.pkl", "rb"))
 GATES = json.load(open("out/gates.json"))
 FRONT = json.load(open("out/front_stars.json"))
@@ -754,7 +755,7 @@ def element_page(pid, key, no, title, piece, proc, stem, ref_png=None, ref_crop=
     gen = A.get("generated", {}).get(key) or (A.get("generated", {}).get("star" + key[-1]) if key.startswith("star") else None)
     yy += 2
     o.append(t(cx, yy, "F · NOTES", 2.1, 700)); yy += 3.8
-    notes = (extra or []) + [("Generated, not traced: " + (g_.replace("[proposed — confirm]", "(confirmed 19 Oct)") if key == "spill" else g_)) for g_ in (gen or [])]
+    notes = (extra or []) + [("Generated, not traced: " + (g_.replace("[proposed — confirm]", "(confirmed 19 Oct)") if key == "spill" else g_)) for g_ in ([] if FACTORY else gen or [])]
     fs, wn, lh = 1.7, 135, 3.0
     for fs, wn, lh in ((1.7, 135, 3.0), (1.6, 144, 2.8), (1.5, 154, 2.6), (1.45, 165, 2.35), (1.45, 172, 2.15)):
         if yy + lh * sum(len(wrap(n_, wn)) for n_ in notes) <= SH - 16: break
@@ -1016,8 +1017,10 @@ def build():
     add("G4", "WB patch", element_page("G4", "wb", "03", "Waistband patch — ちひろ note", "back waistband, wearer's right (image right on the back view)", "embroidered patch, heat-cut edge", RB["wb"]["file"],
                                        "out/svg_wb.png", None,
                                        [f"Art: {SV}: HAKI_waistband-patch_ART.svg, layers 01–16 in stitch order; thread = layer fill.",
-                                        "Lettering ちひろ / 元気でね / また会おうね / 理砂, frame, hearts, face: satin COLUMNS on the centrelines of the SVG outlines, ONE width per layer (art width - 0.15 mm):",
-                                        "  " + "; ".join(f"{k_.split('_', 1)[1].rsplit('_', 1)[0]} {v['w_art']} -> {v['w_needle']} ({v['thread']})" for k_, v in tf['wb'].items()) + ".",
+                                        "Lettering ちひろ / 元気でね / また会おうね / 理砂, frame, hearts, face: satin COLUMNS on the centrelines of the SVG outlines, "
+                                        + ("one needle span per layer:" if FACTORY else "ONE width per layer (art width - 0.15 mm):"),
+                                        "  " + "; ".join((f"{WB_FAC.get(n_, n_)} {v['w_needle']} mm ({v['thread']})" if FACTORY else f"{n_} {v['w_art']} -> {v['w_needle']} ({v['thread']})")
+                                                         for n_, v in ((k_.split('_', 1)[1].rsplit('_', 1)[0], v) for k_, v in tf['wb'].items())) + ".",
                                         "Flowers: one satin per petal along its axis; white centres, cheeks, eyes and accent dots = round bead satin dots at the SVG centres and sizes.",
                                         "Flower-centre dots are Ø1.0 in the art: 0.9 mm needle span (visible ~1.1, the house-minimum satin dot). Check 気, 会, 理, 砂 counters on the sew-out.",
                                         "Sew on after the waistband is attached and AFTER the garment wash (confirmed 19 Oct); the patch runs over the waist seam onto the back panel (no yoke); 1 mm red edge stitch. Position CONFIRMED (founder 20 Oct)."],
@@ -1088,7 +1091,7 @@ def preview_1to1(png, wmm, hmm, out_pdf, title):
     im = Image.open(png); pad = 2.0
     tag, _ = img(im, 20, 30, w=wmm + 2 * pad)
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>', t(20, 18, title + " — stitch preview at 1 : 1 (print at 100 %)", 3.2, 700),
-         t(20, 24, f"Drawn from the DST read-back. Design {wmm:.1f} × {hmm:.1f} mm. 50 mm check bar below.", 2.2, 400, MUTED), tag,
+         t(20, 24, f"Drawn from the DST stitch file. Design {wmm:.1f} × {hmm:.1f} mm. 50 mm check bar below.", 2.2, 400, MUTED), tag,
          f'<line x1="20" y1="{f(36 + hmm + 2 * pad)}" x2="70" y2="{f(36 + hmm + 2 * pad)}" stroke="{INK}" stroke-width="0.4"/>',
          t(20, 34 + hmm + 2 * pad, "50 mm", 2.0)]
     if hmm + 2 * pad > SH - 40:     # tall files: A4 portrait would not hold them either; scale note

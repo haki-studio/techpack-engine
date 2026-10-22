@@ -94,6 +94,7 @@ BASE_PATTERNS = [
     r"\.py\b", r"\.json\b", r"\.pkl\b", r"\binputs/", r"\bout/", r"\bprojects/",
     r"licen[cs]e risk", r"licensed character", r"\bPLM\b", r"\bpipeline\.", r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-",
     r"Generated, not traced", r"\bas before\b",
+    r"\b[a-z]+_[a-z]+ [\d.]+ ?(?:->|-›|→)", r"\b\d+(?:\.\d+)?(?: mm)? ?(?:->|-›|→) ?\d",   # "name_chihiro 0.9 -> 0.85": layer ids, before -> after
     r"\b\d{1,2} " + _MON + r"\b(?! \d{4})",     # a decision date ("founder 19 Oct"); a full build date "22 Oct 2026" is fine
 ]
 
@@ -114,6 +115,41 @@ def pdf_texts(pdf):
     return [_norm(pg.extract_text() or "") for pg in PdfReader(pdf).pages]
 
 
+def file_text(path):
+    """everything a recipient can read in a file we ship: the text of .txt/.svg/.md; for .pdf/.ai the text layer PLUS the
+    document info, the XMP author/title/tool fields and the PostScript '%%' header lines (Illustrator writes
+    '%%For: (<user name>)' there)"""
+    if not path.lower().endswith((".pdf", ".ai")):
+        return open(path, encoding="utf-8", errors="replace").read()
+    from pypdf import PdfReader
+    r = PdfReader(path)
+    meta = " ".join(f"{k} {v}" for k, v in (r.metadata or {}).items())
+    raw = open(path, "rb").read().decode("latin-1")
+    # XMP: the fields a person can read (author, title, tool) — not the instance uuids or the base64 thumbnail
+    xmp = " ".join(re.sub(r"<[^>]+>", " ", v) for _, v in
+                   re.findall(r"<((?:dc|pdf|photoshop):\w+|xmp:CreatorTool)\b[^>]*>(.*?)</\1>", raw, re.S))
+    dsc = " ".join(re.findall(r"^%%\w+:.*$", raw, re.M))
+    return _norm(" ".join(pdf_texts(path)) + " " + meta + " " + xmp + " " + dsc)
+
+
+def strip_creator(path, who=b"Haki"):
+    """overwrite the user name Illustrator / Acrobat leave in a shipped .ai / .pdf ('%%For: (Jane Doe)', /Author (...),
+    XMP dc:creator) in place, padded with spaces to the same byte length so the PDF xref offsets stay valid.
+    Returns how many fields changed."""
+    raw = open(path, "rb").read()
+
+    def same(m):
+        n = len(m.group(2))
+        return m.group(1) + (who[:n] + b" " * max(0, n - len(who))) + m.group(3)
+    n = 0
+    for pat in (rb"(%%For: \()([^)]*)(\))", rb"(/Author ?\()([^)]*)(\))", rb"(<dc:creator>\s*<rdf:Seq>\s*<rdf:li>)([^<]*)(</rdf:li>)"):
+        raw, k = re.subn(pat, same, raw)
+        n += k
+    if n:
+        open(path, "wb").write(raw)
+    return n
+
+
 def scan(texts, patterns):
     """[(page_no, pattern, snippet)] for every pattern hit; texts = one string per page (or one string)"""
     if isinstance(texts, str):
@@ -127,17 +163,29 @@ def scan(texts, patterns):
     return hits
 
 
-def leak_gate(factory_text, internal_text, extra_patterns=(), current_rev=None, patterns=None):
+def leak_gate(factory_text, internal_text, extra_patterns=(), current_rev=None, patterns=None, min_chars=40, image_only=()):
     """Red-then-green text gate. The same pattern list must find hits in the INTERNAL copy (else the gate is blind —
     a typo'd pattern or an empty text layer) and none in the FACTORY copy.
-    factory_text / internal_text: a string or a list of page strings (pdf_texts()).
-    Returns dict(ok, blind, factory_hits, internal_hits, factory=[...], internal_sample=[...], patterns=[...])."""
+    The factory side can be blind too: a page whose text layer is empty (outlined text, a page that is one image) passes
+    any pattern list. Every factory page / file needs >= min_chars of text unless it is listed in image_only (1-based
+    page numbers, or names when factory_text is a {name: text} dict) — list a page there only after a human read it.
+    factory_text / internal_text: a string, a list of page strings (pdf_texts()) or a {name: text} dict.
+    Returns dict(ok, blind, empty, factory_hits, internal_hits, factory=[...], internal_sample=[...], patterns=[...])."""
     pats = list(BASE_PATTERNS if patterns is None else patterns) + list(extra_patterns)
     if current_rev:
         pats.append(rev_pattern(current_rev))
-    fh, ih = scan(factory_text, pats), scan(internal_text, pats)
+    if isinstance(factory_text, str):
+        factory_text = [factory_text]
+    named = dict(factory_text) if isinstance(factory_text, dict) else {i: tx for i, tx in enumerate(factory_text, 1)}
+    if isinstance(internal_text, dict):
+        internal_text = list(internal_text.values())
+    empty = [k for k, tx in named.items() if len(_norm(tx or "").strip()) < min_chars and k not in set(image_only)]
+    if not named:
+        empty = ["<no factory text at all>"]
+    fh = [(k, pat, snip) for k, tx in named.items() for _, pat, snip in scan(tx or "", pats)]
+    ih = scan(internal_text, pats)
     blind = not ih
-    return dict(ok=not fh and not blind, blind=blind, factory_hits=len(fh), internal_hits=len(ih),
+    return dict(ok=not fh and not blind and not empty, blind=blind, empty=empty, factory_hits=len(fh), internal_hits=len(ih),
                 factory=[list(h) for h in fh][:80], internal_sample=[list(h) for h in ih][:10], patterns=pats)
 
 
@@ -156,22 +204,32 @@ BASE_SCRUB = [
     (r"\(read back from the DST\)", "(from the DST)"),
     (r"\s*\(factory\.json\)", ""),
     (r"^Generated, not traced: .*", None),
-]
+    (r"^\(?(?:placement |move )?(?:confirmed|CONFIRMED)\)?\.?$", None),     # a status word alone: decision history, or the
+]                                                                              # tail of a wrapped line whose head was dropped
 
 
-def scrub_text(s, rules):
-    for pat, rep in rules:
-        if rep is None:
-            if re.search(pat, s):
-                return None
-        else:
-            s = re.sub(pat, rep, s)
+def _tidy(s):
     s = re.sub(r"\(\s*[;:,]?\s*\)", "", s)                  # "labels ()" left by a removed "(founder 22 Oct)"
     s = re.sub(r"\(\s*[;:,]\s*", "(", s)                       # "(; care label ..." / "(: soot sprites ..."
     s = re.sub(r"\s+([,;])", r"\1", re.sub(r"  +", " ", s))
     s = re.sub(r"\s+\.(\s|$)", r".\1", s)
     s = re.sub(r"\s*[—–]\s*$", "", s)                           # "... (garment factory) — founder 19 Oct" -> no dangling dash
-    return s.strip() if s.strip() and s.strip() not in ".,;:" else None
+    return s.strip()
+
+
+def scrub_text(s, rules):
+    """apply the rewrite rules in order, tidying the leftovers after each one; a drop rule (replacement None) is
+    tested on the raw text AND on the result, so "move CONFIRMED (founder 21 Oct)" -> "move CONFIRMED" still meets an
+    anchored drop rule. None = drop the line."""
+    drops = [pat for pat, rep in rules if rep is None]
+    if any(re.search(p, s) for p in drops):
+        return None
+    for pat, rep in rules:
+        if rep is not None:
+            s = _tidy(re.sub(pat, rep, s))
+    if any(re.search(p, s) for p in drops):
+        return None
+    return s if s and s not in ".,;:" else None
 
 
 def scrub_svg(svg, rules):
