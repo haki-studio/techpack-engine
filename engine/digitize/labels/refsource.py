@@ -22,7 +22,7 @@ def governing(labels):
     return [(uid, parts, ref) for uid, _, parts, ref in RG.units(labels) if ref and LS.governs(ref)]
 
 
-def _window_mask(ref, parts, to_px):
+def _hint_mask(ref, parts, to_px):
     from PIL import Image, ImageDraw
     H, W = ref["rgb"].shape[:2]; im = Image.new("L", (W, H), 0); d = ImageDraw.Draw(im)
     g = unary_union([w for _, ws in parts for w in ws])
@@ -46,7 +46,7 @@ def composite(ref, labels, labels_dir, palette, bare=()):
     for uid, parts, r in G:
         gv = LS.governs(r)
         m, pic = RG.place(r, labels_dir, to_px, shape)
-        win = _window_mask(ref, parts, to_px)
+        win = _hint_mask(ref, parts, to_px)
         n_col = n_sil = 0
         if "silhouette" in gv:
             if not bare: raise ValueError(f"labels reference of {uid} governs the silhouette, but the run declares no bare tone (threads.bare)")
