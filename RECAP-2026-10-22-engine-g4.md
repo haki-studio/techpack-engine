@@ -62,3 +62,13 @@ Next builder, in order:
    `git ls-remote origin engine-tetra-ref` = the approved sha = `gh pr view --json headRefOid`. SendMessage
    lead-eng-techpack-engine-m2: `DONE techpack-engine-g4 — PR 1 ...` with link + sha + bench numbers.
 4. Then PR 2 per the lead's brief (chaos < 5 %, fewer trims with orphans 0, shading), `--base main`, "Merge PR <n> first" if PR 1 is open.
+
+## Session g4b (continues d2f588bb)
+- Full suite on afee22a: 528 pass, 1 fail = G1 subject-word guard flagged `refsource._window_mask` ("window"). Renamed `_hint_mask` (cb06c25); g1+g4 tests 53 pass.
+- identity_check on cb06c25: probe + wb unchanged; Castle crop run KILLED by system low memory (not a failure). Re-run the crop only when RAM allows. cb06c25 pushed.
+- PR 1 = https://github.com/haki-studio/techpack-engine/pull/52 (head cb06c25). Lead TASK: crop identity PENDING in body; re-run crop when avail >= 4 GB + heavy-jobs 0, edit body, THEN reviewer → verify heads → DONE. Then PR 2.
+
+## Session g4c
+- identity_check on cb06c25: probe 84ff50ea/1ecd8f65, wb 449c14f6, Castle crop e5b64b20d56db7e8 (126,230 st / 154 trims): ALL unchanged vs main.
+- Full suite on cb06c25: 529 passed. PR #52 body updated (no PENDING left).
+- Lead TASK (re-prioritised): finish PR #52 to DONE, then STOP — do not start PR 2 until a new TASK. Heavy commands `nice -n 19` + heavy-jobs 0 only.
