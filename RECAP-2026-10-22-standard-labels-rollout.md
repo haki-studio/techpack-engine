@@ -20,3 +20,10 @@ Founder 22 Oct: one standard main label (6.5 × 2 cm white) for every product; c
 ## Open / gotchas
 - Standard care label prints "DRY CLEAN" and "MADE IN CHINA" — the old jacket draft said "do not dry clean"; flagged.
 - Comet City + Red Beast + zip-hoodie-block (Koi uses it) also write a "Labels" BOM row — see later updates.
+
+## Update ~18:45Z
+- Pixel Sky pushed: tp-pixel-sky-fleece 5f734e3 → **399ef87** (T6 both PDFs, rfq_text_gate 0/154). Review by lead-eng-pixel-sky-fleece-techpack.
+- Lead ruling: `fibre_confirmed` flag. The jackets' care label = 100 % cotton but amber "[proposed — confirm fibre: 100 % cotton]". KCOS/Koi/Comet/Red Beast stay MISSING.
+- Added zip-hoodie-block T6b (`labelsheet.hoodie_page`), used by Koi, Red Beast, Comet, KCOS. Embroidery packs: "labels: none" row corrected.
+- PR **#54** (standard-labels-rollout → standard-labels) @ c1dc079; reviewer subagent running. PNGs: ~/labels-rollout-pngs/.
+- KCOS Rev J: branch labels-kcos (worktree ~/te-labels-kcos), rebuild running.
