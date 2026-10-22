@@ -61,8 +61,15 @@ def check(log, chart, current_rev, measured=None, scope="pack", require_deltas=T
     latest = {}
     for e in log:
         for c in e.get("pom_changes") or []:
-            key = (c.get("pom"), c.get("size") if "to" in c else "*by")
-            latest[key] = (e.get("rev"), c)
+            pom = c.get("pom")
+            if "by" in c and pom in chart.poms:
+                # `by` changes add up across revisions: the chart shows their SUM (Rev A -1.5 cm + Rev B -0.5 cm = -2 cm)
+                p = chart.poms[pom]; u = c.get("unit", p.unit)
+                if u not in MM_PER: F.append(f"R2 {e.get('rev')}: {pom} unit '{u}'"); continue
+                prev = latest.get((pom, "*by"), (None, {"_cum": Fraction(0), "_txt": []}))[1]
+                d = _num(c["by"]) * Fraction(str(MM_PER[u])) / Fraction(str(MM_PER[p.unit]))
+                c = {"by": True, "_cum": prev["_cum"] + d, "_txt": prev["_txt"] + [f"{c['by']} {u} ({e.get('rev')})"]}
+            latest[(pom, c.get("size") if "to" in c else "*by")] = (e.get("rev"), c)
     named = set(also_named)
     for (pom, _), (rev, c) in latest.items():
         named.add(pom)
@@ -76,14 +83,13 @@ def check(log, chart, current_rev, measured=None, scope="pack", require_deltas=T
             if _num(c["to"]) != Fraction(p.raw(sz)).limit_denominator(64):
                 F.append(f"R2 {rev}: log says {pom} {p.name} = {c['to']} {p.unit} at {sz}; the chart prints {p.show(sz)}")
         elif "by" in c:
-            u = c.get("unit", p.unit)
-            if u not in MM_PER: F.append(f"R2 {rev}: {pom} unit '{u}'"); continue
-            by = _num(c["by"]) * Fraction(str(MM_PER[u])) / Fraction(str(MM_PER[p.unit]))
+            by = c["_cum"]; txt = " + ".join(c["_txt"])
             for sz in chart.sizes:
                 rep.values += 1
                 got = Fraction(p.raw(sz)) - Fraction(chart.base_values.get(pom, {}).get(sz, p.raw(sz)))
                 if abs(got - by) > Fraction(1, 10000):
-                    F.append(f"R2 {rev}: log says {pom} {p.name} {c['by']} {u} on every size; the chart moved it "
+                    u = c["_txt"][-1].split()[1]
+                    F.append(f"R2 {rev}: log says {pom} {p.name} {txt} on every size; the chart moved it "
                              f"{float(got) * MM_PER[p.unit] / MM_PER[u]:+g} {u} at {sz}"); break
         else:
             F.append(f"R2 {rev}: {pom} change needs 'to' (with size) or 'by'")

@@ -91,3 +91,22 @@ def test_elastic_waist_family_needs_relaxed_and_stretched_waist():
     f = fam_with(); f["pom_required"] = ["inseam"]
     with pytest.raises(SpecError, match="missing required POM\\(s\\) inseam"):
         spec_from(f)
+
+
+def test_pack_page_note_hides_an_unsigned_hold_number():
+    from td import render as R
+    from sheet import header, doc, t
+    page = doc(header("T3", "sub", "T3") + [t(20, 150, "x", 2)])
+    d = raw(); row(d, "F3").update(source="photo_estimate", ref="IMG_1", page="T3")     # reviewer's case
+    td = schema.parse(d)
+    out = R.annotate(page, td.page_rows("T3"), td)
+    assert "thigh M — HOLD: change nothing, wait for the next sheet" in out and "33" not in out
+    d = raw(); row(d, "F3")["page"] = "T3"; td = schema.parse(d)                         # signed master: number shown
+    out = R.annotate(page, td.page_rows("T3"), td)
+    assert "thigh M = 33 cm" in out and "HOLD (do not change)" in out
+
+
+def test_rise_rule_covers_other_rise_names():
+    for n in ("crotch depth", "Front crotch", "CF seam length", "CB length", "back rise"):
+        assert pom_rules.rise_check([(n, None)]), n
+    assert pom_rules.rise_check([("crotch point", None), ("cuff length", None)]) == []

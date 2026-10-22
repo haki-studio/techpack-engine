@@ -53,7 +53,7 @@ def test_R2_logged_value_must_match_the_chart():
     msg = fails(spec_with(fam=f))
     assert "log says A Body length = 27 in at L; the chart prints 26 1/2" in msg
     f = fam_raw(); f["revisions"][0]["pom_changes"][3]["by"] = -2                # G by -1.5 cm on the chart
-    assert "log says G Bicep -2 cm on every size; the chart moved it -1.5 cm" in fails(spec_with(fam=f))
+    assert "log says G Bicep -2 cm (Rev A) on every size; the chart moved it -1.5 cm" in fails(spec_with(fam=f))
 
 
 def test_R2_newest_statement_wins():
@@ -92,3 +92,22 @@ def test_R1_page_prints_the_logged_chart_values():
     sp = Spec(FAM, ALA)
     r1 = "".join(next(p for c, _, p in TP.pages(sp) if c == "R1"))
     assert "A Body length 27 in at L" in r1 and "G Bicep -1.5 cm every size" in r1
+
+
+def test_every_variant_in_the_repo_passes_the_rev_gate():
+    import glob
+    vs = glob.glob(os.path.join(ROOT, "families", "*", "variants", "*.yaml"))
+    assert len(vs) >= 2
+    for v in vs:
+        fam = os.path.dirname(os.path.dirname(v))
+        assert all(r.ok for r in rev_gate(Spec(fam, v))), v
+
+
+def test_repeated_by_changes_add_up():
+    f = fam_raw(); f["rev"] = "Rev B"
+    f["pom_chart"]["deltas"]["changes"]["G"]["by"] = -2.0                         # chart: -2 cm in total
+    f["revisions"] = f["revisions"] + [{"rev": "Rev B", "date": "22 Oct 2026", "change": "bicep another -0.5 cm",
+                                        "pom_changes": [{"pom": "G", "by": -0.5, "unit": "cm"}]}]
+    assert all(r.ok for r in rev_gate(spec_with(fam=f)))                         # -1.5 (Rev A) + -0.5 (Rev B) = -2
+    f["pom_chart"]["deltas"]["changes"]["G"]["by"] = -0.5                         # chart shows only the last step
+    assert "log says G Bicep -1.5 cm (Rev A) + -0.5 cm (Rev B) on every size" in fails(spec_with(fam=f))
