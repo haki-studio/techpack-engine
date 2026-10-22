@@ -91,6 +91,7 @@ def product_files(root, slugs=None):
     only files are its package copy (out/pkg*) is judged on that copy"""
     import glob, os
     proj = os.path.join(root, "projects")
+    if not slugs and not os.path.isdir(proj): return {}                 # wrong root: nothing judged, the caller refuses it
     slugs = slugs or sorted(d for d in os.listdir(proj) if os.path.isdir(os.path.join(proj, d, "out")))
     res = {}
     for s in slugs:
@@ -133,3 +134,12 @@ def lowered(baseline, counts):
     for s, n in counts.items():
         if s in b["products"] and n < b["products"][s]: b["products"][s] = n
     return b
+
+
+def unjudged(judged, baseline, asked=()):
+    """products the gate must refuse to pass because it judged NO file of them (a gate that saw nothing cannot pass, per
+    product too: a wrong --root, an emptied out/ or a typo'd slug would otherwise turn a held-to-0 product green).
+    judged {slug: files judged}. A product counts if it is in the baseline or was asked for by name; a product folder
+    with no stitch files that nobody asked about (e.g. a pattern-only block) is not an error."""
+    want = set(baseline.get("products", {})) | set(asked)
+    return sorted(s for s in want if judged.get(s, 0) == 0)

@@ -39,17 +39,25 @@ if __name__ == "__main__":
         print(f"ORPHAN files with orphans: {bad} of {len(res)}" + (f", {err} not judged" if err else ""))
         if js: json.dump(dict(params=GO.ORPHAN_DEFAULTS, files=res), open(js, "w"), indent=1, default=float)
         sys.exit(2 if err else 1 if bad else 0)
-    by, counts, files, err = GO.product_files(root, rest or None), {}, {}, 0
+    bfile = opt.get("--baseline", GO.BASELINE); base = GO.load_baseline(bfile)
+    by, counts, files, judged, err = GO.product_files(root, rest or None), {}, {}, {}, 0
+    if not rest: by.update({s: [] for s in base.get("products", {}) if s not in by})   # a baseline product with no out/ at all
     for s, fs in by.items():
         res, e = judge(fs, root, "--list" in a); err += e
-        counts[s] = sum(r["n"] for r in res.values()); files.update(res)
-    bfile = opt.get("--baseline", GO.BASELINE); base = GO.load_baseline(bfile); rk = GO.ratchet(counts, base)
+        counts[s] = sum(r["n"] for r in res.values()); files.update(res); judged[s] = len(res)
+    blind = GO.unjudged(judged, base if not rest else {"products": {}}, rest)
+    for s in blind: print(f" ERR  {s}: no production PES judged under {os.path.join(root, 'projects', s, 'out')}; a gate that saw nothing cannot pass")
+    err += len(blind)
+    for s in [s for s in counts if not judged[s] and s not in blind]: counts.pop(s)          # no stitch files, not asked for
+    rk = GO.ratchet(counts, base)
     for s, r in rk["rows"].items():
         note = {"block": "FAIL (held to 0)", "over": f"FAIL ({-r['below']} over the baseline)", "ok": "ok",
                 "lower": f"ok, {r['below']} below the baseline: lower it (--update-baseline)"}[r["status"]]
         print(f"ORPHAN {s:32s} files {len(by[s]):4d}  orphans {r['count']:6d}  limit {r['limit']:6d}  {note}")
     print("ORPHAN GATE", "PASS" if rk["ok"] else "FAIL")
-    if "--update-baseline" in a:
+    if "--update-baseline" in a and err:
+        print("baseline NOT updated: some files or products could not be judged (an unjudged file is not a 0)")
+    elif "--update-baseline" in a:
         json.dump(GO.lowered(base, counts), open(bfile, "w"), indent=1); print("baseline lowered where counts dropped:", bfile)
     if js: json.dump(dict(params=GO.ORPHAN_DEFAULTS, ratchet=rk, files=files), open(js, "w"), indent=1, default=float)
     sys.exit(2 if err else 0 if rk["ok"] else 1)

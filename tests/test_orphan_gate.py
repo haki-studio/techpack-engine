@@ -185,3 +185,24 @@ def test_a_trim_alone_ends_a_block(monkeypatch):
     p.add_stitch_absolute(pe.END, 40, 0)
     monkeypatch.setattr(GO.pe, "read", lambda path: p)
     assert [len(b[2]) for b in GO.blocks("mem")] == [3, 2]
+
+
+def test_unjudged_products_are_refused():
+    base = {"products": {"comet-city-hoodie": 0, "wave": 10}}
+    assert GO.unjudged({"comet-city-hoodie": 84, "wave": 3}, base) == []
+    assert GO.unjudged({"comet-city-hoodie": 0, "wave": 3}, base) == ["comet-city-hoodie"]       # emptied out/
+    assert GO.unjudged({"wave": 3}, base) == ["comet-city-hoodie"]                               # wrong root / no folder
+    assert GO.unjudged({"drum-island": 0, "comet-city-hoodie": 1, "wave": 1}, base) == []        # pattern-only, not asked
+    assert GO.unjudged({}, {"products": {}}, ["no-such-product"]) == ["no-such-product"]         # typo'd slug
+
+
+def test_cli_exits_2_when_it_judged_nothing(tmp_path):
+    """review PR #39: a held-to-0 product with no files, a typo'd slug or a wrong --root must not read PASS"""
+    import json
+    bl = tmp_path / "baseline.json"; bl.write_text(json.dumps({"products": {"comet-city-hoodie": 0}}))
+    (tmp_path / "projects" / "comet-city-hoodie" / "out").mkdir(parents=True)                    # out/ with no PES
+    r = _cli(tmp_path, "--baseline", str(bl)); assert r.returncode == 2 and "saw nothing" in r.stdout, r.stdout
+    r = _cli(tmp_path, "--baseline", str(bl), "no-such-product"); assert r.returncode == 2, r.stdout
+    r = _cli(tmp_path / "nowhere", "--baseline", str(bl)); assert r.returncode == 2, r.stdout + r.stderr
+    r = _cli(tmp_path, "--baseline", str(bl), "--update-baseline")
+    assert r.returncode == 2 and "NOT updated" in r.stdout and json.loads(bl.read_text())["products"] == {"comet-city-hoodie": 0}
