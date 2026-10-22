@@ -102,7 +102,7 @@ class Run:
         from digitize.labels import schema as LS, compile as LC
         self.labels = LS.load(config.path(self.cfg, self.cfg["labels"]), palette=self.cfg["threads"]["palette"])
         R = LC.resolve(self.labels, (self.cfg.get("review") or {}).get("labels"))
-        return dict(zones=[dict(id=r["pid"], tones=r["tones"], geoms=r["geoms"], **({"rest": True} if r["rest"] else {})) for r in R])
+        return dict(zones=[dict(id=r["zone"], tones=r["tones"], geoms=r["geoms"], **({"rest": True} if r["rest"] else {})) for r in R])
 
     def ref(self):
         if self._ref is None:
@@ -388,6 +388,8 @@ class Run:
         # --- M4s --- part-based stack + travel on sewn fill, on the labelled written file (two new verdict lines)
         from digitize import gates_stack
         gates_stack.run_hook(row, plan, segs, sp, self.crop, self.cfg.get("gates_m4s"))
+        if self.cfg.get("labels"):                          # --- G3 --- motif_match per labelled motif vs the reference the labels name
+            row["motif_reference"] = self.motif_reference(dst)
         row["verdict"] = bench.verdict(row, self.cfg_b["targets"])
         json.dump(row, open(self.f("gates.json"), "w"), indent=1, default=float)
         self._row, self._aux = row, aux
@@ -401,6 +403,24 @@ class Run:
               f" (cap {row['stack_parts']['cap_per_100cm2']})"
               f", travel on sewn fill {row['travel_on_fill']['n_exposed']} stitches / {row['travel_on_fill']['exposed_mm']} mm")
         return row, aux
+
+    def motif_reference(self, dst):
+        """G3: every labelled motif (or part with its own `reference`) graded with qa.motif_match against the mockup
+        (the GATE reference, bench.json's registration) or the picture its labels name (digitize.labels.refgrade).
+        Reported, not a verdict line: which reference governs a motif is the labeller's (founder's) call."""
+        import qa
+        from digitize.labels import schema as LS, refgrade as RG
+        lpth = config.path(self.cfg, self.cfg["labels"]); T = self.cfg["threads"]
+        labels = LS.load(lpth, palette=T["palette"])
+        reg = register.load(os.path.join(self.cfg["project"], self.cfg_b["registration"]))
+        ev = evidence.build(register.reference(reg, self.view, self.crop, ppm=float(self.cfg_b["ppm"])), T["palette"], **self.cfg["evidence"])
+        ms = qa.dst_stop_masks(dst, self.origin, (ev.H, ev.W), ev.ppm, to_mm=lambda x, y: (x - ev.bounds[0], y - ev.bounds[1]))
+        out = np.any(list(ms.values()), axis=0) if ms else np.zeros((ev.H, ev.W), bool)
+        rows = RG.grade(labels, os.path.dirname(lpth), ev, out, bare=tuple(T.get("bare") or ()))
+        res = dict(source="digitize.labels.refgrade: qa.motif_match (near 1.5 mm) per labelled motif; mockup = bench registration",
+                   labels=os.path.relpath(lpth, self.cfg["project"]), summary=RG.summary(rows), rows=rows)
+        print("    motif reference: " + ", ".join(f"{k} {v['ok']}/{v['n']} (IoU {v['mean_iou']})" for k, v in res["summary"].items()))
+        return res
 
     def _gated(self):
         if not hasattr(self, "_row"): self.gates()

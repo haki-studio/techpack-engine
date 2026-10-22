@@ -180,6 +180,9 @@ def axial_diff(a, b):
     d = abs((a - b) % 180.0); return min(d, 180.0 - d)
 
 
+ANGLE_EPS = 1e-6      # DirSpec keeps 0.01 deg: 140.01 - 125.01 = 14.999999999999986, so "< sep" compares with this slack (G3)
+
+
 NO_SINGLE_ANGLE = ("contour", "radial")     # rows follow an outline / rays from a centre: a different texture (rule 3); M3b adds radial
 
 
@@ -202,14 +205,14 @@ def separate(parts, sep=(15.0, 25.0), touch=0.3, kinds=None, field_of=None):
             fixed.add(i); continue
         nbs = [int(j) for j in tree.query(p.geom.buffer(touch), predicate="intersects")
                if int(j) != i and int(j) in fixed and parts[j].thread == p.thread and parts[j].dir.mode not in NO_SINGLE_ANGLE]
-        clash = [j for j in nbs if axial_diff(parts[j].dir.angle, p.dir.angle) < sep[0]]
+        clash = [j for j in nbs if axial_diff(parts[j].dir.angle, p.dir.angle) < sep[0] - ANGLE_EPS]
         if clash:
             base = p.dir.angle - p.meta.get("sep_deg", 0.0)                   # the part's own (evidence) angle
             cands = sorted({(parts[j].dir.angle + s * mid) % 180.0 for j in clash for s in (-1, 1)} |
                            {(parts[j].dir.angle + s * sep[0]) % 180.0 for j in clash for s in (-1, 1)},
                            key=lambda a: axial_diff(a, base))
             cands = [a for a in cands if axial_diff(a, base) <= sep[1]]           # never turn a part > sep[1] off its evidence
-            ok = [a for a in cands if all(axial_diff(a, parts[j].dir.angle) >= sep[0] for j in nbs)]
+            ok = [a for a in cands if all(axial_diff(a, parts[j].dir.angle) >= sep[0] - ANGLE_EPS for j in nbs)]
             if not ok:
                 p.meta["sep_unresolved"] = parts[clash[0]].id; fixed.add(i); continue
             new = ok[0]; old = p.dir.angle
@@ -232,7 +235,7 @@ def separation_report(parts, sep=15.0, touch=0.3):
             j = int(j)
             if j <= i or parts[j].thread != p.thread or p.dir.mode in NO_SINGLE_ANGLE or parts[j].dir.mode in NO_SINGLE_ANGLE: continue
             n += 1
-            if axial_diff(p.dir.angle, parts[j].dir.angle) < sep:
+            if axial_diff(p.dir.angle, parts[j].dir.angle) < sep - ANGLE_EPS:
                 close += 1
                 if len(ex) < 10: ex.append((p.id, parts[j].id, round(axial_diff(p.dir.angle, parts[j].dir.angle), 1)))
     return dict(pairs=n, close=close, examples=ex)

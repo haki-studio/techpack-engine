@@ -50,6 +50,7 @@ def _load():
 def part(ctx, lp, kind, geom, thread, z, d, mask=None, **meta):
     """an engine Part for a labelled part: id <label>.<n>, zone = the motif (part map / review grouping), meta label"""
     m = dict(label=lp["pid"], motif=lp["motif"], primitive=lp["primitive"], label_confidence=lp["confidence"], splitter="labels")
+    if lp.get("piece"): m["label_piece"] = lp["piece"]                  # G3 hint.each: which window of the part
     m.update(meta)
     rgb = ctx.ev.mean_rgb(mask) if mask is not None and mask.any() else None
     return Part(id=ctx.new_id(lp["pid"]), kind=kind, geom=geom, thread=thread, z=float(z), dir=d, zone=lp["motif"], rgb=rgb, meta=m)

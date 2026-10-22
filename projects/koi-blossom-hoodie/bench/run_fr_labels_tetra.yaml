@@ -1,0 +1,68 @@
+# Digitizing run: Koi Blossom FR size M, upper-panel crop, through the LABELS CONTRACT (ENGINE_PLAN G2).
+#   PYTHONPATH=engine python3 -m digitize.run projects/koi-blossom-hoodie/bench/run_fr_labels.yaml --stages all --no-api
+# G2 proof: the session looked at the vision sheet once and wrote bench/labels_FR.json; every part (fish included) is made by
+# the generic primitives (engine/digitize/primitives) through the G1 compiler. No subject splitters, no subject code,
+# no Anthropic API calls. Bench (crop, mockup-only gate reference, targets) and palette = the Koi trial's (run_fr_crop.yaml).
+name: KOI_FR_M_labels
+label: "G2 labels: generic primitives (session-written labels, unseen mockup)"
+bench: bench/bench.json            # crop, view, targets; its registration (MOCKUP ONLY) is the gate reference
+registration: bench/registration.json   # extraction source: the mockup + the close-up informing detail inside mockup motifs
+labels: bench/labels_FR_tetra.json # G3 proof: same labels, fish graded vs the founder tetra -> DST must equal run_fr_labels.yaml's
+out_dir: out/digitize/KOI_FR_M_labels_tetra
+
+techniques:
+  tatami: true
+  satin: true
+  split_satin: true
+  run: true
+  bean: true
+  guided_fill: true
+  contour_fill: true
+  blend: true
+
+threads:
+  needles: factory                 # factory.json: 12 colours per stitch file
+  protected: [kb_red, kb_cyan, kb_black]   # the tetra's neon red + cyan stripes and its eye (founder fish reference): never merged;
+                                   # cyan has no pixels in the koi close-up, so only protection keeps a needle for it
+  # candidate palette = the delivered Rev B thread card (out/pkg/.../FR_M_thread-chart.txt), so both files choose from the
+  # same threads; plus the bare navy duck (two tones: the twill's shadow and its lit threads), which is NEVER sewn
+  # (threads.bare, below): the Koi design leaves the shell bare between motifs.
+  palette:
+    kb_duck: "#121B2A"
+    kb_duck_lt: "#26354F"
+    kb_navy: "#23396F"
+    kb_cobalt: "#30569A"
+    kb_royal: "#4A73B0"
+    kb_corn: "#6F93C8"
+    kb_sky: "#97B2D8"
+    kb_ice: "#C7D6EA"
+    kb_white: "#F1EEF2"
+    kb_lav: "#B9B5CC"
+    kb_cyan: "#3FB6E0"
+    kb_red: "#D8262E"
+    kb_black: "#15181F"
+  names:
+    kb_duck: Duck (bare shell)
+    kb_duck_lt: Duck twill light (bare shell)
+    kb_navy: Deep navy
+    kb_cobalt: Cobalt
+    kb_royal: Royal blue
+    kb_corn: Cornflower
+    kb_sky: Sky blue
+    kb_ice: Ice blue
+    kb_white: Silver white
+    kb_lav: Lavender grey
+    kb_cyan: Neon cyan
+    kb_red: Neon red
+    kb_black: Eye black
+  bare: [kb_duck, kb_duck_lt]      # tones that are the bare shell: evidence only, never a thread (run.py)
+
+evidence: {ppm: 4.0, smooth_mm: 0.35, mode_mm: 0.6}
+sequence: {keep_mm: 1.0, min_fragment_mm2: 2.0}
+stub: {min_part_mm2: 8.0, min_protected_mm2: 2.0, close_mm: 0.6}
+budget: {stitches_max: null}
+direction: {sigma_mm: 4.0, fill_sigma_mm: 10.0, min_coh: 0.25}
+specks: {min_mm2: 4.0}             # small motifs (petals 10-40 mm2): only true specks merge
+# rule 3: touching same-thread parts of these generic kinds are turned 15-25 deg apart (audited sep_deg)
+separate_kinds: [band, band_grain, lobe, lobe_grain, plane, plane_grain]
+

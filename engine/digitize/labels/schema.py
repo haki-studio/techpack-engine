@@ -17,6 +17,9 @@ draws geometry: a part's outline is traced from the input pixels inside its hint
                                               # garment mm. polygons = WINDOWS (required unless "rest"); seeds = optional
                                               # points the part's pixels must connect to (components without a seed are
                                               # given back); except = other parts' windows cut out of this one
+                                              # "each": true (G3) = every window is its OWN piece, listed back
+                                              # to front (one window per piece): pieces claim front first,
+                                              # sew back first, each takes its own direction; one question / answer
          "tones": ["cf_white", "cf_cream"] | "all",   # palette tones that belong to the part (evidence classes)
          "z": 3.0,                            # sew depth: lower sews first; claims run from the highest z down
          "direction": {"intent": "along"},    # see INTENTS: never "auto" (DIGITIZING_PRINCIPLES rule 2)
@@ -25,8 +28,15 @@ draws geometry: a part's outline is traced from the input pixels inside its hint
          "question": "optional: what the labeller is unsure about",
          "alternatives": ["lobe"],            # optional: other primitives the review question offers
          "params": {...},                     # optional, primitive-specific numbers (see digitize/primitives/*)
-         "rest": false}                       # true: takes every pixel nobody else claimed (one per file)
-      ]}]}
+         "rest": false,                       # true: takes every pixel nobody else claimed (one per file)
+         "reference": {...}}                  # optional (G3): this part is graded as its own unit (below)
+      ],
+      "reference": {"image": "refs/x.png", "box": [x0, y0, x1, y1]}}]}
+                                              # optional (G3): the picture motif_match grades this motif against
+                                              # instead of the mockup crop (default = the mockup). image: a path
+                                              # relative to the labels file (opaque / non-background pixels = the
+                                              # motif); box: where it sits, garment mm. Grading only: it never
+                                              # changes what is extracted (digitize.labels.refgrade).
 
 PRIMITIVES and the direction intents each accepts (first = default when "direction" is omitted):
   stroke  1-7 mm strokes (lettering, stems, fins, rails)    across            satin column across the stroke
@@ -57,7 +67,8 @@ PRIMITIVES = {
 }
 INTENTS = ("along", "across", "angle", "grain", "outline", "radial", "none")
 PART_KEYS = {"id", "primitive", "hint", "tones", "z", "direction", "colour", "confidence", "question", "alternatives", "params",
-             "rest", "what"}
+             "rest", "what", "reference"}
+REFERENCE_KEYS = {"image", "box"}
 REVIEW_BELOW = 0.6
 
 
@@ -86,6 +97,20 @@ def intent_of(p):
     return d.get("intent") or PRIMITIVES[p["primitive"]][0]
 
 
+def _reference_errs(where, r):
+    """problems with a motif / part `reference` (G3)"""
+    if not isinstance(r, dict): return [f"{where}: reference must be an object {{image, box}}"]
+    errs = []
+    extra = set(r) - REFERENCE_KEYS
+    if extra: errs.append(f"{where}: reference has unknown keys {sorted(extra)} (have {sorted(REFERENCE_KEYS)})")
+    if not isinstance(r.get("image"), str) or not r.get("image"): errs.append(f"{where}: reference.image (a picture path) required")
+    b = r.get("box")
+    if not (isinstance(b, (list, tuple)) and len(b) == 4 and all(isinstance(v, (int, float)) and not isinstance(v, bool)
+                                                                 and math.isfinite(v) for v in b) and b[2] > b[0] and b[3] > b[1]):
+        errs.append(f"{where}: reference.box must be [x0, y0, x1, y1] garment mm with x1 > x0, y1 > y0, got {b!r}")
+    return errs
+
+
 def validate(d, palette=None):
     """raise LabelsError naming every problem (all at once, so one look at the file fixes them all)"""
     errs = []
@@ -98,6 +123,7 @@ def validate(d, palette=None):
         c = m.get("confidence", 1.0)
         if not isinstance(c, (int, float)) or not 0 <= c <= 1: errs.append(f"motif {m['id']}: confidence {c!r} not in 0..1")
         if not m.get("parts"): errs.append(f"motif {m['id']}: no parts")
+        if "reference" in m: errs += _reference_errs(f"motif {m['id']}", m["reference"])
         for p in m.get("parts", []) or []:
             pid = part_id(m, p) if p.get("id") else f"{m['id']}.<no id>"
             if not p.get("id"): errs.append(f"{pid}: part without an id"); continue
@@ -130,6 +156,10 @@ def validate(d, palette=None):
                 for w in pols:
                     if not isinstance(w, list) or len(w) < 3 or not all(isinstance(q, (list, tuple)) and len(q) == 2 for q in w):
                         errs.append(f"{pid}: a hint polygon needs >= 3 [x, y] points")
+            if "each" in h:
+                if not isinstance(h["each"], bool): errs.append(f"{pid}: hint.each must be true or false, got {h['each']!r}")
+                elif h["each"] and len(h.get("polygons") or []) < 2: errs.append(f"{pid}: hint.each needs >= 2 windows (one per piece)")
+            if "reference" in p: errs += _reference_errs(pid, p["reference"])
             for o in h.get("except", []) or []:
                 if o not in ids: errs.append(f"{pid}: hint.except names unknown part {o!r}")
             for s in h.get("seeds", []) or []:
