@@ -63,6 +63,7 @@ def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=N
         stray = sorted({r.page for r in tdi.rows if r.page and r.page not in codes})
         if stray: raise SpecError(f"TD rows name pages this pack does not have: {', '.join(stray)} (pages: {', '.join(sorted(codes))})")
         pset = [(c, ttl, [TDR.annotate(s, tdi.page_rows(c)) for s in svgs]) for c, ttl, svgs in pset]
+        td_sheet_svgs = TDR.comment_sheet(tdi)          # refuses a sheet a factory must never get BEFORE any file is written
     for code, title, svgs in pset:
         for i, svg in enumerate(svgs):
             name = code if len(svgs) == 1 else f"{code}_{i + 1}"
@@ -80,7 +81,7 @@ def build(variant_path, out_root=None, png=True, family_dir=None, fam_override=N
     shrink(raw, final); os.remove(raw)
     res = dict(spec=spec, pdf=final, pages=listing, out=out)
     if tdi:
-        sheet = TDR.comment_sheet(tdi)
+        sheet = td_sheet_svgs
         res["td_sheet"] = write_pdf(sheet, os.path.join(out, f"{spec.slug}_td_comment_sheet_Rev{tdi.rev}.pdf"))
         for i, svg in enumerate(sheet):
             if png: cairosvg.svg2png(bytestring=svg.encode(), write_to=os.path.join(out, "pages", f"C1{'' if i == 0 else f'_{i + 1}'}.png"), output_width=2400)
@@ -98,10 +99,11 @@ def main(argv=None):
     ap.add_argument("variants", nargs="+")
     a = ap.parse_args(sys.argv[1:] if argv is None else argv)
     fdir = os.path.abspath(a.family) if a.family else None
+    from td.schema import TDInputError
     for v in a.variants:
         try:
             r = build(v, out_root=a.out, family_dir=fdir, td=a.td and os.path.abspath(a.td))
-        except (SpecError, ValueError) as e:
+        except (SpecError, TDInputError) as e:          # input mistakes get a plain message; real bugs keep their traceback
             print(f"ERROR in {v}:\n  {e}"); return 1
         n = len(r["spec"].proposed())
         print(f"{r['spec'].name}: {len(r['pages'])} pages -> {r['pdf']} ({os.path.getsize(r['pdf']) / 1e6:.1f} MB)")
