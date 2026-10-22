@@ -284,9 +284,26 @@ def gate_file(cfg, plan, dst, rbk, seg_npz=None):
             wts = {p.meta.get("thread_wt", "40wt") for p in ps}; w_ = sorted(wts)[0]
             m = np.any([masks[i] for i in stops if i in masks], axis=0) if stops else np.zeros(shape, bool)
             pull = max(p.stitch.pull_comp for p in ps if p.kind in COLUMN_KINDS)
-            r = qa.centreline_match(ref, m, ppm, name=f"{lid} {w_}", pull=pull / s, near_mm=CLc.get("near_mm", 1.0),
-                                    d_max=CLc.get("d_max", 0.5), w_tol=CLc.get("w_tol", 0.20))
-            r.update(layer=lid, stops=[i + 1 for i in stops]); cl_rows.append(r); continue
+            kw = dict(pull=pull / s, near_mm=CLc.get("near_mm", 1.0), d_max=CLc.get("d_max", 0.5), w_tol=CLc.get("w_tol", 0.20))
+            if not cfg["svg"].get("auto"):
+                r = qa.centreline_match(ref, m, ppm, name=f"{lid} {w_}", **kw)
+                r.update(layer=lid, stops=[i + 1 for i in stops]); cl_rows.append(r); continue
+            # S1: one row PER SOURCE SHAPE against the stops that sew it, thick end gated too: a pooled row let a tapered
+            # crescent sewn at one column width pass on the ring's numbers (2026-10-22)
+            # any OTHER shape's art (a crossing ring, a same-thread fill beside it) is cut out of the window: its stitches
+            # are not this shape's width
+            lk = key[0] if isinstance(key, tuple) else key; els_ = sorted(fam_els.get(key, ())) or [None]
+            eref = {el: ref if el is None else svgart.layer_mask(sv["svg"], [lk], W, H, ppm, els={el}, exact=True) for el in els_}
+            full = svgart.layer_mask(sv["svg"], [lk], W, H, ppm, exact=True)
+            for el in els_:
+                pe = [p for p in ps if el is None or el in (p.meta.get("s1_el") or ())]
+                st = sorted({stop_of[p.id] for p in pe if p.id in stop_of})
+                me = np.any([masks[i] for i in st if i in masks], axis=0) if st else np.zeros(shape, bool)
+                re_ = eref[el]
+                me = me & ~(full & ~re_)
+                r = qa.centreline_match(re_, me, ppm, name=f"{lid} {el or ''} {w_}".replace("  ", " "), profile=True, **kw)
+                r.update(layer=lid, shape=el, stops=[i + 1 for i in st]); cl_rows.append(r)
+            continue
         if kinds <= set(SKIP_IOU): continue
         near = MOc.get("near_mm_knot", 0.15) if "knot" in kinds else MOc.get("near_mm", 0.3)
         rows = qa.motif_match(ref, masks, ppm, min_mm2=MOc.get("min_mm2", 0.5), near_mm=near, out_stops=stops)

@@ -180,11 +180,13 @@ def skeleton(mask, ppm, spur_mm=0.6):
     return _prune(skeletonize(m), max(1, int(spur_mm * ppm))), m
 
 
-def centreline_match(ref, out, ppm, name="", pull=0.0, near_mm=1.0, d_max=0.5, w_tol=0.20, spur_mm=0.6):
+def centreline_match(ref, out, ppm, name="", pull=0.0, near_mm=1.0, d_max=0.5, w_tol=0.20, spur_mm=0.6, profile=False):
     """Thin strokes (< 1.2 mm: lettering, line art) gated on CENTRELINES, not area (konpeito ENGINE_NOTES 4 + 8,
     LESSONS A19): a 0.2 mm registration error on a 0.7 mm line already costs ~30 % IoU, so area IoU fails good files.
     Skeleton-to-skeleton mean distance (symmetric mean of both directions) <= d_max mm AND the visible width (2 x the
     distance transform on the skeleton, median; minus 2 x pull) within +-w_tol of the reference's.
+    profile=True (S1 per-shape rows) also gates the THICK end (90th percentile width, ratio90): a tapered stroke sewn at
+    one column width keeps its median and loses its belly, so the median alone passes it.
     ref: input-pixel / founder-art mask; out: the DST's stitches of this family's stop(s) drawn at thread width
     (qa.dst_stop_masks), limited here to near_mm of ref. Returns dict(family, mean_d, p90_d, w_ref, w_dst, ratio, ok)."""
     from scipy.spatial import cKDTree
@@ -196,11 +198,15 @@ def centreline_match(ref, out, ppm, name="", pull=0.0, near_mm=1.0, d_max=0.5, w
         return dict(family=name, mean_d=None, p90_d=None, w_ref=None, w_dst=None, ratio=None, ok=False)
     d1, _ = cKDTree(O).query(R); d2, _ = cKDTree(R).query(O)
     md = float((d1.mean() + d2.mean()) / 2); p90 = float(np.percentile(np.r_[d1, d2], 90))
-    def width(m, sk):
-        v = 2 * ndi.distance_transform_edt(m)[sk] / ppm; return float(np.median(v)) if v.size else 0.0
+    def width(m, sk, q=50):
+        v = 2 * ndi.distance_transform_edt(m)[sk] / ppm; return float(np.percentile(v, q)) if v.size else 0.0
     wr = width(mr, sr); wo = width(mo, so) - 2 * pull; ratio = wo / wr if wr else 0.0
-    return dict(family=name, mean_d=round(md, 2), p90_d=round(p90, 2), w_ref=round(wr, 2), w_dst=round(wo, 2),
-                ratio=round(ratio, 2), ok=bool(md <= d_max and abs(ratio - 1) <= w_tol))
+    r = dict(family=name, mean_d=round(md, 2), p90_d=round(p90, 2), w_ref=round(wr, 2), w_dst=round(wo, 2),
+             ratio=round(ratio, 2), ok=bool(md <= d_max and abs(ratio - 1) <= w_tol))
+    if profile:
+        wr9 = width(mr, sr, 90); wo9 = width(mo, so, 90) - 2 * pull; r9 = wo9 / wr9 if wr9 else 0.0
+        r.update(w90_ref=round(wr9, 2), w90_dst=round(wo9, 2), ratio90=round(r9, 2), ok=bool(r["ok"] and abs(r9 - 1) <= w_tol))
+    return r
 
 
 def dst_stitches(dst, origin=(0.0, 0.0)):

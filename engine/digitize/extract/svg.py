@@ -88,6 +88,20 @@ def stroke_width(G, ppm=40.0):
     return float(np.median(ws)) if ws else 2 * G.area / max(G.length, 1e-6)
 
 
+def _taper(P, cl, min_w, n=24, dev=0.25, share=0.25):
+    """S1 tapered stroke (crescent, brush stroke): local visible width along the centreline (2 x distance to the outline);
+    >= `share` of the samples off the median by > `dev` -> (needle width at the belly, ("table", width multipliers)),
+    else None (one width is right: a round-ended stroke's skeleton stops at the cap centres, so its samples stay flat)"""
+    from shapely.geometry import LineString
+    line = LineString(cl)
+    if line.length < 1e-6: return None
+    lw = np.array([2 * P.exterior.distance(line.interpolate(f, normalized=True)) for f in np.linspace(0, 1, n)])
+    mid = float(np.median(lw))
+    if mid <= 0 or np.mean(np.abs(lw / mid - 1) > dev) < share: return None
+    wmax = max(min_w, float(lw.max()) - ALLOW)
+    return round(wmax, 2), ("table", [round(max(min_w, float(v) - ALLOW) / wmax, 3) for v in lw])
+
+
 def polar_profile(geo, c, n=360):
     out = []
     for i in range(n):
@@ -187,8 +201,10 @@ class _B:
         w = max(min_w, round(wv - ALLOW, 2)); self.report[layer] = dict(w_art=round(wv, 2), w_needle=w, thread=wt)
         corner = float(spec.get("corner", C.CORNER)); min_counter = float(spec.get("min_counter", 0.6))
         dots = spec.get("dots", False); k = 0
+        per_shape = bool(spec.get("per_shape"))      # S1: each shape keeps its own width; a tapered stroke its profile
         for P in polys(G):
             if P.area < 0.05: continue
+            if per_shape: w = max(min_w, round(stroke_width(P) - ALLOW, 2))
             ys = np.array(P.exterior.coords); ext = ys.max(0) - ys.min(0)
             if dots and max(ext) < 2.2 and max(ext) / max(min(ext), 1e-6) < 1.5 and not P.interiors:
                 self.dot(layer, P, thread, z + 0.001 * k, kind="dot", min_d=float(spec.get("dot_min_d", 1.0))); k += 1; continue
@@ -204,10 +220,13 @@ class _B:
                 if len(sts) > 1 and not closed and L < 1.1 * w: continue        # skeleton spur (cusps, stroke ends)
                 ww = w
                 if closed: ww = max(0.8 if w >= 0.8 else w, min(w, L / math.pi - (min_counter + 0.2 + ALLOW)))
-                g = C.column_geom(cl, ww, s["caps"], closed)
+                caps = tuple(s["caps"]); prof = _taper(P, cl, min_w) if per_shape and not closed else None
+                if prof: ww, prof = prof; caps = ("flat", "flat")
+                g = C.column_geom(cl, ww, caps, closed, prof)
                 t = np.array(cl[min(1, len(cl) - 1)]) - np.array(cl[0])
+                ex = dict(prof=prof) if prof else {}
                 self.add(layer, kind, g, thread, z + 0.001 * k, DirSpec(_deg(t) + 90.0, source="rule", note="across the stroke (column)"),
-                         cl=[tuple(q) for q in cl], w=ww, caps=tuple(s["caps"]), closed=bool(closed)); k += 1
+                         cl=[tuple(q) for q in cl], w=ww, caps=caps, closed=bool(closed), **ex); k += 1
 
     def petals(self, layer, geo, thread, z, spec, kind=None):
         kind = kind or ("petal_tint" if thread in self.tints else "petal"); j = 0
@@ -269,7 +288,7 @@ def _compact(e):
 
 def _shapes(B, L, z0, spec):
     """S1 role `shapes` (svg_auto): one decision per shape, keyed '<element>.<polygon>'. Strokes (and the round pieces of an
-    element that holds a stroke: eyes, i-dots) are pooled per colour into satin columns exactly as the M5 column role does;
+    element that holds a stroke: eyes, i-dots) are pooled per element + colour into satin columns, each shape at its own width (a tapered one on its width profile);
     every other shape is a dot / knot, petals, a star or a fill at its declared long-axis angle."""
     sh = spec["shapes"]; strokes = {}
     for i, e in enumerate(L.elements):
@@ -281,7 +300,7 @@ def _shapes(B, L, z0, spec):
             if a == "skip": continue
             th = B.thread(e.fill); B.src = [tag] if tag else None; B.fam = "shape"
             if a in ("stroke", "stroke_dot"):
-                st = strokes.setdefault(e.fill, dict(z=z, P=[], src=set(), dots=False)); st["P"].append(P)
+                st = strokes.setdefault((e.fill, i), dict(z=z, P=[], src=set(), dots=False)); st["P"].append(P)
                 if tag: st["src"].add(tag)
                 st["dots"] |= a == "stroke_dot"; st["z"] = min(st["z"], z)
             elif a in ("dot", "knot"): B.dot(L.id, P, th, z, kind=a, min_d=0.9 if a == "knot" else 1.1)
@@ -293,9 +312,9 @@ def _shapes(B, L, z0, spec):
                 B.add(L.id, d.get("kind", "graphic_fill"), P, th, z, DirSpec(float(d["dir"]), source="rule",
                       note="long axis of the shape (minimum rotated rectangle), declared by svg_auto"))
             else: raise SvgPartsError(f"layer {L.id}: shape {i}.{j}: unknown decision {a!r}")
-    for f, st in strokes.items():
+    for (f, _), st in strokes.items():        # per source element: crossing same-colour strokes keep their own widths
         B.src = sorted(st["src"]) or None; B.fam = "line"
-        B.column(L.id, unary_union(st["P"]), B.thread(f), st["z"], dict(spec.get("column", {}), dots=st["dots"]), "lettering")
+        B.column(L.id, unary_union(st["P"]), B.thread(f), st["z"], dict(spec.get("column", {}), dots=st["dots"], per_shape=True), "lettering")
     B.src = None
 
 
