@@ -68,7 +68,7 @@ def test_synthetic_red_sliver_sewn_before_its_block():
     assert r["n"] == 1 and not r["hits"][0]["sewn_after"]
 
 
-@pytest.mark.parametrize("case", ["same_stop", "other_thread", "gap_1mm", "not_tiny", "not_bigger"])
+@pytest.mark.parametrize("case", ["same_stop", "other_thread", "gap_1mm", "not_tiny", "not_bigger", "dense_small"])
 def test_synthetic_green(case):
     stops = {
         "same_stop": [("#ff0000", [BIG, SLIVER])],                                   # sewn with its block: the fix
@@ -76,6 +76,7 @@ def test_synthetic_green(case):
         "gap_1mm": [("#ff0000", [BIG]), ("#00ff00", [OTHER]), ("#ff0000", [rows(21, 23, 2, 4)])],          # not touching
         "not_tiny": [("#ff0000", [rows(0, 40, 0, 30)]), ("#00ff00", [OTHER]), ("#ff0000", [rows(40.1, 49, 0, 3)])],   # 9 mm: a shape, not a sliver
         "not_bigger": [("#ff0000", [rows(0, 3, 0, 4)]), ("#00ff00", [OTHER]), ("#ff0000", [rows(3.1, 5, 0, 4)])],      # siblings, neither the body
+        "dense_small": [("#ff0000", [rows(0, 40, 0, 30, 0.1)]), ("#00ff00", [OTHER]), ("#ff0000", [rows(40.1, 47, 0, 7, 0.1)])],  # 142 st: a motif
     }[case]
     r = GO.orphan_fragments(write_pes(stops))
     assert r["ok"] and r["n"] == 0, (case, r["hits"])
@@ -173,3 +174,14 @@ def test_cli_prod_gate_end_to_end(tmp_path):
     shutil.copy(os.path.join(FIX, "kcos_revI_FL_M.pes"), d / "HAKI_KCOS_FL_M.pes")
     r = _cli(tmp_path, "--baseline", str(bl), "--update-baseline"); assert r.returncode == 0 and "8 below the baseline" in r.stdout
     assert json.loads(bl.read_text())["products"]["keep-clean-our-space-hoodie"] == 0
+
+
+def test_a_trim_alone_ends_a_block(monkeypatch):
+    """a trim with no jump after it (possible in a DST) still splits the stop into two blocks"""
+    p = pe.EmbPattern(); p.add_thread(pe.EmbThread("#ff0000"))
+    for x in (0, 1, 2): p.add_stitch_absolute(pe.STITCH, x * 10, 0)
+    p.add_stitch_absolute(pe.TRIM, 20, 0)
+    for x in (3, 4): p.add_stitch_absolute(pe.STITCH, x * 10, 0)
+    p.add_stitch_absolute(pe.END, 40, 0)
+    monkeypatch.setattr(GO.pe, "read", lambda path: p)
+    assert [len(b[2]) for b in GO.blocks("mem")] == [3, 2]
