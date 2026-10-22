@@ -31,6 +31,7 @@ def facbox(x, y, w, h, lines, size=2.0, title="FACTORY TO SUPPLY"):
     for i, ln in enumerate(lines): o.append(t(x + 3, y + 5 + (i + 1) * size * 1.5, ln, size, 400, FAC))
     return "\n".join(o)
 OUT = "out/pack"; os.makedirs(OUT, exist_ok=True)
+FACTORY = False                          # kjfactory.py sets it: element pages without the internal QA panels
 A = pickle.load(open("out/art.pkl", "rb"))
 GATES = json.load(open("out/gates.json"))
 FRONT = json.load(open("out/front_stars.json"))
@@ -723,10 +724,11 @@ def element_page(pid, key, no, title, piece, proc, stem, ref_png=None, ref_crop=
         o.append(t(cx, 35 + i * 3.8, a, 1.9, 400, MUTED)); o.append(t(cx + 26, 35 + i * 3.8, b, 1.9, 700))
     st, y2 = stop_table(rb, cx + 62, 35 - 3.4); o.append(st)
     yy = max(35 + 8 * 3.8, y2) + 3
-    o.append(t(cx, yy, "D · STITCH CHECK per thread (min stroke / gap / counter, mm)", 2.1, 700)); yy += 4
-    tb, yy = table(cx, yy, [("Thread", 30), ("Thresholds", 22), ("Thin area (+ bead dots, visible Ø)", 30), ("Counters", 12), ("", 12)], stitch_check(A[key]["vis"] if key in A else []), 1.75, 3.4)
-    o.append(tb)
-    g = GATES.get(key)
+    if not FACTORY:     # the factory copy (kjfactory.py) carries no internal QA panels: D stitch check, E fidelity
+        o.append(t(cx, yy, "D · STITCH CHECK per thread (min stroke / gap / counter, mm)", 2.1, 700)); yy += 4
+        tb, yy = table(cx, yy, [("Thread", 30), ("Thresholds", 22), ("Thin area (+ bead dots, visible Ø)", 30), ("Counters", 12), ("", 12)], stitch_check(A[key]["vis"] if key in A else []), 1.75, 3.4)
+        o.append(tb)
+    g = None if FACTORY else GATES.get(key)
     if g:
         yy += 2; o.append(t(cx, yy, "E · FIDELITY (LESSONS A14) — motif_match per family; compare sheet in the pack", 2.1, 700)); yy += 4
         rows = [[r["family"][:34], str(r["motifs"]), str(r["passed"]), str(r["min_iou"]), str(r["mean_iou"])] for r in g["families"]]
