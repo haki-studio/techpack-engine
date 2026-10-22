@@ -1,7 +1,7 @@
 # SVG → DST — the CLI contract (`scripts/svg2dst.py`)
 
-Status: **proposed by S2 (PLM window), 2026-10-20.** S1 ("SVG drop-in", ENGINE_PLAN.md) owns the real
-implementation. Until S1 lands, `services/svg2dst/stub_engine.py` implements this same contract with a
+Status: **implemented by S1, 2026-10-22** (`scripts/svg2dst.py`, `engine/digitize/extract/svg_auto.py`; parity and
+open findings: `projects/konpeito-jeans/bench/PARITY_S1.md`). Proposed by S2 (PLM window), 2026-10-20. Until S1 lands, `services/svg2dst/stub_engine.py` implements this same contract with a
 deliberately crude fill so the PLM window and the worker can be built and tested end to end. The stub
 **always fails the hard gate `engine_real`**, so nothing it makes can be mistaken for a production file.
 

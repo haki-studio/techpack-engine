@@ -166,14 +166,18 @@ def test_cli_logo_contract_and_per_shape_rows(logo):
     assert any(p.get("meta", {}).get("prof") for p in parts)            # the crescent sews on a width profile
 
 
-def test_cli_question_answer_round_trip(logo, tmp_path):
-    _, (_, res, _) = logo
-    assert res["questions"]
+STARS = os.path.join(ROOT, "projects", "konpeito-jeans", "svg", "HAKI_back-pocket-stars_ART.svg")
+
+
+def test_cli_question_answer_round_trip(tmp_path):
+    """the konpeito stars ask star-vs-petals (~1 s a run): an answer removes its question, a bad option is exit 2"""
+    rc, res, log = cli(STARS, tmp_path / "q", width=24.23)
+    assert rc == 0 and res["questions"], log
     q = res["questions"][0]; other = [o for o in q["options"] if o != q["default"]][0]
-    rc, r2, log = cli(os.path.join(FIX, "logo_badge.svg"), tmp_path / "a", answers={q["id"]: other})
+    rc, r2, log = cli(STARS, tmp_path / "a", width=24.23, answers={q["id"]: other})
     assert rc == 0, log
-    assert q["id"] not in [x["id"] for x in r2["questions"]]
-    rc, _, log = cli(os.path.join(FIX, "logo_badge.svg"), tmp_path / "b", answers={q["id"]: "not-an-option"})
+    assert q["id"] not in [x["id"] for x in r2["questions"]] and len(r2["questions"]) == len(res["questions"]) - 1
+    rc, _, log = cli(STARS, tmp_path / "b", width=24.23, answers={q["id"]: "not-an-option"})
     assert rc == 2 and "not one of" in log
 
 

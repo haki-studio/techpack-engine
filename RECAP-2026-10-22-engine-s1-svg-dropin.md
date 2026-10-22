@@ -25,7 +25,21 @@ Worktree `~/te-s1-svg` (off origin/main 1f03682). NO PR yet. Session handed off 
 | illustration (unseen) | - | 16,507 st, 20 trims, all hard gates PASS (1 open 60wt question) |
 NOTE: these numbers predate the last classifier changes (lobe gap_sd, small-shape -> satin, exact ids): RE-RUN all 7 before quoting.
 
-## Known defect found by LOOKING (fix before the PR)
+## Pass 2 (builder replacement, 22 Oct night): crescent fixed, tests, parity
+| what | where | why |
+|---|---|---|
+| per-shape centreline gate | `svgrun.gate_file` (auto only), `qa.centreline_match(profile=True)` | the pooled [lines] row passed the one-width crescent; per shape + thick end (ratio90) on TAPERED refs only (w90-w50 >= 0.4 mm; on even lettering p90 is junction noise) |
+| window excludes other shapes' art | gate_file `full & ~ref` | crossing ring + same-thread fill beside the bar leaked into its window |
+| columns per source element | `_shapes` strokes keyed (fill, element) | ring + bar crossed and were one polygon |
+| width = length-weighted median (S1 only) | `stroke_width(weighted=)` | coin ぺ: 3 ticks out-voted the main stroke -> 0.85 mm, ratio 0.57 |
+| taper profile | `extract/svg.py::_taper` | only: one open stroke, length >= 3x belly, belly >= 2 mm, < half samples near belly, narrow ends + central belly. First cut profiled 70 wb glyph strokes (2 exposed) and the i stems (LESSONS A35) |
+| >12 colours | `factory.check_threads(raise_over=)` | the S1 "gate fail not crash" claim was false: compile raised; the new test caught it |
+| tests | `tests/test_svg_s1.py` (21), worker tests autouse REAL_CLI off + real round trip | red: no-config on origin/main (ValueError empty palette, not KeyError); per-shape rows at d0ae3ca (1 pooled row) |
+| parity | `projects/konpeito-jeans/bench/PARITY_S1.md` + `bench/s1/*.png` | all 7 hard 8/8; lettering 8/11 per-shape soft (open finding) |
+
+Dead ends: width-scaled skeleton spur pruning (the bar miss was the neighbour fill, not spurs) - reverted.
+
+## Known defect found by LOOKING (FIXED in pass 2)
 Logo crescent (tapered white shape) is sewn as ONE-width column (column role = one needle width per layer, the M5
 lettering rule), so it reads thinner than the art; the [lines] centreline row pooled it with the navy ring (w_ref 3.55)
 and passed. Fix: (1) centreline rows per thread within a family; (2) tapered strokes (skeleton width max/median > ~1.6):
@@ -37,3 +51,8 @@ use column_points' `prof` width profile (techniques/column_satin.py) or sew as f
 3. Full suite (`~/.venvs/techpack/bin/python -m pytest -q tests`, check free RAM / heavy-jobs first); `scripts/identity_check.sh` (M5 wb 449c14f6e8f693b6 must be unchanged: hand runs untouched); orphan gate on new files.
 4. Parity table file `projects/konpeito-jeans/bench/PARITY_S1.md` + previews (commit PNGs); docs: SVG2DST.md status (S1 real), services/svg2dst/README (stub only until merge, then delete SVG2DST_ALLOW_STUB), ENGINE_PLAN S1 done, LESSONS rows (A?? S1 geometry-only roles; prefix-id masks; ring-hole uncovered).
 5. PR --base main, independent reviewer posts REVIEW: APPROVE <sha>, DONE to lead-eng-techpack-engine-m2 with PR link + sha + gate table.
+
+## Pass 2 verification
+- Full suite: 401 passed (`~/.venvs/techpack/bin/python -m pytest -q tests`).
+- identity_check: probe 84ff50ea74938675 / 1ecd8f657db3f53a, M5 wb 449c14f6e8f693b6, crop 911978994b664110 (all unchanged).
+- Open finding: lettering fixture 8/11 per-shape centreline (both i's 0.80-0.82, a bowl ratio90 0.73), soft; see PARITY_S1.md.

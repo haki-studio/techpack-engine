@@ -129,7 +129,7 @@ class SvgRun:
         json.dump(dict(base=os.path.basename(self.base), origin=res["origin"], build=res["build"], readback=rb, stops=res["stops"],
                        exact_trims=res["exact_trims"], exposed_travel_gt1mm=sum(1 for v in ex if v > 1.0),
                        max_exposed_travel=round(ex[-1], 2) if ex else 0.0, machine_min=round(mins, 1),
-                       threads=factory.check_threads(self.base + ".pes")),
+                       threads=factory.check_threads(self.base + ".pes", raise_over=not self.cfg["threads"].get("allow_over"))),
                   open(self.f("readback.json"), "w"), indent=1)
         np.savez_compressed(self.f("stitch_parts.npz"), segs=np.asarray(res["segs"], np.float32), parts=np.asarray([p or "" for p in res["seg_parts"]]))
         print(f"compile: {rb['stitches']} stitches, {rb['trims']} trims, {rb['stops']} stops, max stitch {rb['max_stitch']} mm, "
