@@ -1,0 +1,47 @@
+{
+ "fish1": {
+  "image": "refs/tetra_fish1.png",
+  "box": [
+   -181.6,
+   34.0,
+   -130.6,
+   67.8
+  ]
+ },
+ "fish2": {
+  "image": "refs/tetra_fish2.png",
+  "box": [
+   -134.8,
+   89.6,
+   -94.6,
+   124.2
+  ]
+ },
+ "fish3": {
+  "image": "refs/tetra_fish3.png",
+  "box": [
+   -160.4,
+   158.0,
+   -96.8,
+   197.6
+  ]
+ },
+ "fish4": {
+  "image": "refs/tetra_fish4.png",
+  "box": [
+   -75.8,
+   148.8,
+   -31.6,
+   186.8
+  ]
+ },
+ "fish5": {
+  "image": "refs/tetra_fish5.png",
+  "box": [
+   -100.0,
+   219.0,
+   -54.4,
+   273.4
+  ]
+ }
+}
