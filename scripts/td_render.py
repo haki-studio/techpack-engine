@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TD rows json -> the factory comment sheet (PDF + PNG + plain text). Checks the json first; a bad row stops it.
+"""TD rows json -> the factory comment sheet (PDF + PNG + plain text). Checks the json and the numeral trace first.
 
   python3 scripts/td_render.py projects/<slug>/td/<event>.json [--out projects/<slug>/td/out]
 
@@ -17,7 +17,7 @@ except ImportError:
     sys.exit("engine deps missing: run scripts/setup_wsl.sh (LESSONS E5)")
 sys.path.insert(0, os.path.join(ROOT, "engine"))
 import cairosvg  # noqa: E402
-from td import schema, render  # noqa: E402
+from td import schema, render, trace  # noqa: E402
 from family.build import write_pdf  # noqa: E402
 
 
@@ -27,6 +27,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     try:
         td = schema.load(a.td); pages = render.comment_sheet(td); lines = render.sheet_lines(td)
+        rep = trace.enforce(td, pages)                   # numeral-trace gate: nothing is written if it fails
     except schema.TDInputError as e:
         print(f"ERROR in {a.td}:\n  {e}"); return 1
     out = a.out or os.path.join(os.path.dirname(os.path.abspath(a.td)), "out")
@@ -36,6 +37,7 @@ def main(argv=None):
     for i, svg in enumerate(pages):
         cairosvg.svg2png(bytestring=svg.encode(), write_to=f"{stem}_{i + 1}.png", output_width=2400)
     with open(stem + ".txt", "w") as fh: fh.write("\n".join(s for _, s in lines) + "\n")
+    print(rep.summary())
     print(f"{len(td.rows)} TD rows -> {stem}.pdf ({len(pages)} page(s)) + .txt + page PNGs")
     return 0
 

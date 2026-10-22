@@ -46,5 +46,18 @@
   "open_questions": [
     "chenille: which machine (Tajima TMCE / Barudan BEMR / other), which file format, loop (moss) / chain mode and needle (loop) height set in the file or at the machine, which chenille yarns + colours (engine M6: chenille + true chain are planned, the machine file raises FactoryFormatNeeded until chenille_format is set)",
     "3D puff: do your Brother heads sew satin stitches longer than 7.5 mm over foam (published practice: 10-12 mm columns)? Until confirmed, puff columns are capped at 7 mm. Also confirm foam (3 mm), needle and speed at the strike-off."
-  ]
+  ],
+  "suppliers": {
+    "_doc": "Every supplier other than the top-level embroidery factory (key 'mandy'). max_colours per method; a method missing here is NOT RECORDED (engine/supplier_gate.py never passes it). Record a limit only with its source.",
+    "emmie": {
+      "name": "Emmie (Aungcrown, hat factory)",
+      "max_colours": {
+        "embroidery": {
+          "value": 9,
+          "per": "design",
+          "source": "Emmie, WhatsApp 2026-03-15: 'embroidery color cannot exceed 9 colors' (the Rainbow hat design had 10; quoted in missions/sampling-strategist/evidence-sample-history.md)"
+        }
+      }
+    }
+  }
 }
