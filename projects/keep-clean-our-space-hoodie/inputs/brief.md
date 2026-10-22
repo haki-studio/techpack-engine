@@ -91,3 +91,20 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 5. CN text: Simplified 污 — 不要世界污染. CLOSED.
 6. KR text 우리들 소중한 우주!: approved. CLOSED.
 7. 'WE WANT NO DIRTY COSMOS': left out. CLOSED.
+
+## Rev H (21 Oct 2026) — founder answers to the 4 PR #38 questions (CLOSED) + builder assumptions
+1. BACK: embroidered stars on the back only, nothing else; same star style as the front (front star primitives + colours;
+   no badges, no text). Hood stays plain. CLOSED. The back/hood [MISSING] item is removed.
+   - Builder [PROPOSED — exact layout]: new piece BK = pattern B01, element **06 back stars**. No back view exists, so the
+     layout is SEEDED from the front's star-field logic: the fronts' field density (163 field stars on 2,036 cm² of free
+     front area, badges excluded = 8.0 / dm²) on the back's free area (3,102 cm² at M → 248 stars), no two stars closer
+     than 3.3 mm (the fronts' 10th-percentile gap), and every back star is a copy of a front field star (same primitive,
+     thread, size and traced shape), drawn from the front stars in turn (2 hem-corner blobs > 20 mm² left out).
+   - Back keep-outs: hood neck seam 10, shoulders 15, armholes 15, side seams 15, hem-band seam 10 (same as the fronts).
+     Positions follow the back panel per size (width / length ratio), star size constant. With the hood down the hood
+     covers the upper back stars (they show with the hood up).
+2. STAR HAZE / GLOW: dropped entirely (stipple glow round the badges + haze under the sparkles). CLOSED.
+   Glow green + Star haze threads removed: 10 threads on the jacket.
+3. PUFF on the strokes 2.5–3.0 mm: kept; asked of the factory on F1 + F2 (Mandy: can these thin strokes puff cleanly;
+   confirm on the strike-off). OPEN for the factory.
+4. CN text weight 800: kept. CLOSED.

@@ -25,3 +25,10 @@
 
 ## Open
 - back view (founder), star haze (founder), puff 2.5-3.0 strokes + foam (factory strike-off).
+
+## Rev E — fix round PR #31 (21 Oct 2026)
+- Review: 1 should-fix (JP stars) + 1 low (T9 tracker blank); 4 founder notes left open (back view, star haze, puff 2.5 mm rule / flat parts, CN weight 800).
+- JP top star: centre = 0.6 mm fabric pit inside a 1.3 mm white satin ring (column_region), upper facet of the upper-left arm in white (glint). IoU fit still picks k 0.38 (the blurry mockup favours fuller arms).
+- JP red star: `light="kc_red"` (no pink facets), star pit 0.45 R with sharper `pit_k=0.42` (new star_facets arg) — measured ~0.43 R on the mockup. IoU 0.77 (was 0.81; bigger pit vs blurred mockup), gate ≥ 0.70 passes.
+- T9 sample tracker: rows filled (files/basis, sent, received, result, next step; all pending).
+- REV → Rev E / 21 Oct; every size rebuilt, compare sheets + pack + zip regenerated.

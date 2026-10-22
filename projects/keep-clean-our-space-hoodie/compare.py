@@ -2,7 +2,7 @@
 out/compare_<el>_<slug>.png = mockup crop (Lanczos x4 from inputs/flat.png, mapped at the badge's motif scale S about its
 anchor, the badge's per-size move applied) | the written DST read back (dstview: every sewn stitch as a thread, PES colours)
 at the same scale, + 4 zoomed pairs on named features. out/compare_front_<size>.png (both fronts) and
-out/compare_05_sleeves.png (mockup sleeves | SR + SL DST). usage: python3 compare.py [size]"""
+out/compare_05_sleeves.png (mockup sleeves | SR + SL DST), out/compare_06_back.png (Rev H back stars). usage: python3 compare.py [size]"""
 import kccore, pickle, sys, json, os
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -154,6 +154,35 @@ def sleeves():
         c = rs[0]["geom"].centroid; z = (c.x - 9, c.y - 9, c.x + 9, c.y + 9)
         s_ = DV.image([base("FL")], z, 24); s_.save("out/ref/sparkle_dst.png")
 
+def back_sheet():
+    """Rev H back star field (06): no back view of the design exists, so the sheet compares the STYLE with the front field
+    at the same scale: mockup front field (mapped) | front DST | back DST, 100 x 100 mm crops, + the whole back DST."""
+    import back as BKM
+    ppm = 4.0; n = META["counts"]
+    # a front field window with no badge: FL lower-middle (density there is the field's), same window size on the back
+    fz = (20, 240, 120, 340); bz = (-50, 250, 50, 350)
+    mk = MM.warp(fz, ppm); fd = DV.image([base("FL")], fz, ppm); bd = DV.image([base("BK")], bz, ppm)
+    b = BKM.piece(size).sew_poly().bounds; bbw = (b[0] - 5, b[1] - 5, b[2] + 5, b[3] + 5); pw = 1.2
+    whole = DV.image([base("BK")], bbw, pw); dw = ImageDraw.Draw(whole)
+    dw.line([((x - bbw[0])*pw, (y - bbw[1])*pw) for x, y in BKM.piece(size).sew_poly().exterior.coords], fill=(150, 150, 150), width=2)
+    dw.line([((x - bbw[0])*pw, (y - bbw[1])*pw) for x, y in BKM.clip_for(size).exterior.coords], fill=(200, 70, 70), width=1)
+    dw.rectangle([((bz[0] - bbw[0])*pw, (bz[1] - bbw[1])*pw), ((bz[2] - bbw[0])*pw, (bz[3] - bbw[1])*pw)], outline=(255, 200, 0), width=2)
+    W = mk.width; H = mk.height
+    out = Image.new("RGB", (3*W + 4*20 + whole.width, max(H, whole.height) + 150), (255, 255, 255))
+    x = 10
+    for im_, lab in ((mk, "MOCKUP front (FL, mapped)"), (fd, "FRONT DST, same window"), (bd, "BACK DST (B01)")):
+        out.paste(im_, (x, 40)); ImageDraw.Draw(out).text((x, 14), lab, fill=(0, 0, 0), font=FS); x += W + 20
+    out.paste(whole, (x, 40)); ImageDraw.Draw(out).text((x, 14), f"WRITTEN DST back B01 size {size} (whole piece, red = keep-outs, yellow = window)", fill=(0, 0, 0), font=FS)
+    d = ImageDraw.Draw(out); y = 50 + max(H, whole.height)
+    for i, l in enumerate([f"No back view of the design exists (founder 21 Oct: stars only on the back, same style as the front). Layout SEEDED [PROPOSED]: {n['BK_field']} stars,",
+                           f"front field density {n['BK_density_per_dm2']:.1f} per dm2 ({n['front_field_stars']} front field stars on {n['front_free_area_cm2']:.0f} cm2 free front area) on {n['BK_free_area_cm2']:.0f} cm2 free back area,",
+                           f"no two stars closer than {n['BK_nn_min_mm']:.1f} mm (fronts' 10th-percentile gap). Every back star is a copy of a front field star (same primitive, thread, size, traced shape).",
+                           "Same scale on all three windows (4 px/mm). Not gated against a reference (none exists): listed as 'generated, not traced' (A14)."]):
+        d.text((10, y + i*24), l, fill=(0, 0, 0), font=FS)
+    out.save("out/compare_06_back.png")
+    return "out/compare_06_back.png"
+
 if __name__ == "__main__":
     for el in ("01", "02", "03", "04"): print(sheet(el))
     fronts(); sleeves(); print("fronts + sleeves")
+    print(back_sheet())
