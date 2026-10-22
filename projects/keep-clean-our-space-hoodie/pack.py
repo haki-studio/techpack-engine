@@ -199,7 +199,7 @@ def threads():
           ("Topping", "none (duck surface is firm; foam acts as topping under the puff satin)"), ("Needles", "75/11 sharp (duck); 80/12 for the puff stops"),
           ("Bobbin", "60wt black polyester pre-wound"),
           ("Frames", f"{FR_S} (factory.json{'' if PROF['frames_confirmed'] else ', PROPOSED'}): fronts {HOOP['FR']} + {HOOP['FL']} hoopings, sleeves {HOOP['SR']} + {HOOP['SL']}, back {HOOP['BK']} (split files, G5/G6)"),
-          ("Patches / labels", "none — all artwork is direct embroidery on the cut pieces")]
+          ("Patches / labels", "no embroidered patches or labels — woven main + printed care label = Haki standard (garment pages)")]
     for i, (a, b) in enumerate(tr):
         o.append(t(12, yb + 14.5 + i*3.6, a, 1.85, 600)); o.append(t(42, yb + 14.5 + i*3.6, b, 1.8, 400, ORANGE if PROP in b else INK))
     return o
