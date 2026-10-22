@@ -124,6 +124,11 @@ kinds:
     pull_comp: 0.15
     underlay: []
     note: heat-cut edge, a closed 2 mm column on the outline, sewn LAST
+  graphic_fill:                # S1 (svg_auto): a wide flat shape of a vector file
+    techniques: [tatami]
+    dir: geometry              # the shape's long axis, declared by svg_auto (never auto)
+    underlay: [edge_run, lattice_90]
+    note: flat graphic area of an SVG, tatami at its long axis
   floret:
     techniques: [radial]
     dir: geometry

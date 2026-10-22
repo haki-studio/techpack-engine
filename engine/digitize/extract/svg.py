@@ -137,10 +137,18 @@ class _B:
     def __init__(self, cfg, rb, frame):
         self.cfg, self.rb, self.frame = cfg, rb, frame
         S = cfg["svg"]; T = cfg["threads"]
-        self.palette = T["palette"]; self.weights = T.get("weight", {}); self.max_dE = float(T.get("max_dE", 3.0))
+        self.palette = T.get("palette") or {}; self.weights = T.get("weight", {}); self.max_dE = float(T.get("max_dE", 3.0))
         self.tints = set(T.get("tints", [])); self.parts = []; self.n = {}; self.report = {}; self.thread_dE = {}
+        self.fill_map = T.get("fill_map") or {}; self.src = None            # S1: fill -> thread decided by svg_auto
+        self.dot_floor = 0.0
+        if cfg.get("fabric"):                                                # S1: pile swallows small dots (rules/fabrics.yaml)
+            from digitize.extract.svg_auto import fabric_rules
+            self.dot_floor = float(fabric_rules(cfg["fabric"]).get("dot_min_d", 0.0))
 
     def thread(self, fill):
+        if fill in self.fill_map:                                            # S1: the derived thread, dE to it reported
+            k = self.fill_map[fill]; _, dE = svgart.thread_of(fill, {k: self.palette[k]})
+            self.thread_dE[fill] = (k, dE); return k
         k, dE = svgart.thread_of(fill, self.palette)
         if dE > self.max_dE:
             raise SvgPartsError(f"SVG fill {fill} has no thread within dE {self.max_dE} (nearest {k}, dE {dE}): add it to "
@@ -152,6 +160,7 @@ class _B:
         pre = layer.split("_")[0] if layer[:2].isdigit() else layer[:6]
         self.n[pre] = self.n.get(pre, 0) + 1
         m = dict(layer=layer, thread_wt=self.weights.get(thread, "40wt"))
+        if self.src: m["s1_el"] = list(self.src)                            # S1: the SVG shapes this part comes from (gates)
         m.update(meta)
         for key in ("cl", "axis"):                 # point lists follow the frame too
             if key in m and m[key] is not None: m[key] = [self.pt(q) for q in m[key]]
@@ -166,6 +175,7 @@ class _B:
     # -------------------------------------------------------------- roles
     def dot(self, layer, g, thread, z, kind="dot", min_d=1.1, ang=30.0):
         from digitize.techniques.dot import needle_d
+        min_d = max(min_d, self.dot_floor)
         c = g.centroid; art = 2 * math.sqrt(g.area / math.pi); d, hm = needle_d(art, min_d)
         return self.add(layer, kind, Point(c.x, c.y).buffer(d / 2, quad_segs=16), thread, z,
                         DirSpec(ang, source="rule", note="bead dot: satin rows at one angle"),
@@ -199,8 +209,8 @@ class _B:
                 self.add(layer, kind, g, thread, z + 0.001 * k, DirSpec(_deg(t) + 90.0, source="rule", note="across the stroke (column)"),
                          cl=[tuple(q) for q in cl], w=ww, caps=tuple(s["caps"]), closed=bool(closed)); k += 1
 
-    def petals(self, layer, geo, thread, z, spec):
-        kind = "petal_tint" if thread in self.tints else "petal"; j = 0
+    def petals(self, layer, geo, thread, z, spec, kind=None):
+        kind = kind or ("petal_tint" if thread in self.tints else "petal"); j = 0
         for P0 in polys(geo):                       # one shape may hold several flowers / candies
             if P0.area < 1.0: continue
             P = Polygon(P0.exterior); c = P.centroid; c = (c.x, c.y)
@@ -257,9 +267,44 @@ def _compact(e):
     return max(ext) < 2.5 and max(ext) / max(min(ext), 1e-6) < 1.5
 
 
+def _shapes(B, L, z0, spec):
+    """S1 role `shapes` (svg_auto): one decision per shape, keyed '<element>.<polygon>'. Strokes (and the round pieces of an
+    element that holds a stroke: eyes, i-dots) are pooled per colour into satin columns exactly as the M5 column role does;
+    every other shape is a dot / knot, petals, a star or a fill at its declared long-axis angle."""
+    sh = spec["shapes"]; strokes = {}
+    for i, e in enumerate(L.elements):
+        tag = e.attrib.get("data-s1")
+        for j, P in enumerate(polys(e.geom)):
+            d = sh.get(f"{i}.{j}")
+            if d is None: raise SvgPartsError(f"layer {L.id}: shape {i}.{j} has no decision (the run config is stale: derive it again)")
+            a = d["as"]; z = z0 + i + 0.01 * j
+            if a == "skip": continue
+            th = B.thread(e.fill); B.src = [tag] if tag else None
+            if a in ("stroke", "stroke_dot"):
+                st = strokes.setdefault(e.fill, dict(z=z, P=[], src=set(), dots=False)); st["P"].append(P)
+                if tag: st["src"].add(tag)
+                st["dots"] |= a == "stroke_dot"; st["z"] = min(st["z"], z)
+            elif a in ("dot", "knot"): B.dot(L.id, P, th, z, kind=a, min_d=0.9 if a == "knot" else 1.1)
+            elif a == "petals": B.petals(L.id, P, th, z, dict(n=d.get("n")), kind=d.get("kind"))
+            elif a == "star":
+                c = P.centroid
+                B.add(L.id, d.get("kind", "star"), P, th, z, DirSpec(0.0, source="rule", note="radial from the star centre"), centre=(c.x, c.y))
+            elif a == "fill":
+                B.add(L.id, d.get("kind", "graphic_fill"), P, th, z, DirSpec(float(d["dir"]), source="rule",
+                      note="long axis of the shape (minimum rotated rectangle), declared by svg_auto"))
+            else: raise SvgPartsError(f"layer {L.id}: shape {i}.{j}: unknown decision {a!r}")
+    for f, st in strokes.items():
+        B.src = sorted(st["src"]) or None
+        B.column(L.id, unary_union(st["P"]), B.thread(f), st["z"], dict(spec.get("column", {}), dots=st["dots"]), "lettering")
+    B.src = None
+
+
 def extract(cfg, rb=None):
-    """-> (parts, info). info: layers (id, order, role, n parts), frame, size, width report, thread dE per fill."""
+    """-> (parts, info). info: layers (id, order, role, n parts), frame, size, width report, thread dE per fill.
+    S1: a run.yaml with no thread palette (or svg.auto: true) gets its palette and layer roles from svg_auto.fill_config."""
     from digitize import config
+    from digitize.extract import svg_auto
+    svg_auto.fill_config(cfg)
     S = cfg["svg"]; path = config.path(cfg, S["file"])
     Ls = svgart.layers(path); W, H, scale = svgart.size_mm(path)
     if abs(scale - 1.0) > 1e-6: raise SvgPartsError(f"{path}: user units are {scale} mm, not 1 mm (export the art true-size in mm)")
@@ -301,6 +346,8 @@ def extract(cfg, rb=None):
                 th = B.thread(e.fill); c = e.geom.centroid
                 B.add(L.id, spec.get("kind", "star"), e.geom, th, z0 + i, DirSpec(0.0, source="rule", note="radial from the star centre"),
                       centre=(c.x, c.y))
+        elif role == "shapes":
+            _shapes(B, L, z0, spec)
         elif role in ("petals", "auto"):
             for i, e in enumerate(L.elements):
                 th = B.thread(e.fill)

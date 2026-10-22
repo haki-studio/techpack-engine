@@ -41,6 +41,8 @@ class SvgRun:
     def __init__(self, yaml_path, overrides=None):
         self.cfg = config.load(yaml_path, overrides)
         if self.cfg.get("source") != "svg": raise SystemExit(f"{yaml_path}: not an SVG run (source: svg)")
+        from digitize.extract import svg_auto
+        svg_auto.fill_config(self.cfg)                       # S1: no palette in the yaml -> derived from the SVG itself
         self.out = config.path(self.cfg, self.cfg["out_dir"]); os.makedirs(self.out, exist_ok=True)
         self.rb = Rulebook(self.cfg.get("rules"), toggles=self.cfg["techniques"], overrides=self.cfg.get("rule_overrides"))
         self.name = self.cfg["name"]; self.base = os.path.join(self.out, self.name)
@@ -68,10 +70,15 @@ class SvgRun:
     # ------------------------------------------------------------ plan
     def make_plan(self):
         t0 = time.time(); plan = ObjectPlan.from_json(self.f("parts.json")); P = self.rb.principles; issues = []
+        fab = None
+        if self.cfg.get("fabric"):
+            from digitize.extract.svg_auto import fabric_rules
+            fab = fabric_rules(self.cfg["fabric"])
         for p in plan.parts:
             p.technique = self.rb.technique_for(p.kind); p.stitch = self.rb.stitch_spec(p.kind, p.technique)
             p.stitch.params.update(kind_params(self.rb, p.kind))
             if p.technique == "dot" and p.meta.get("min_d"): p.stitch.params["min_d"] = p.meta["min_d"]
+            if fab: apply_fabric(p, fab)
         sq = self.cfg["sequence"]
         if sq.get("cut_under", False): SQ.cut_under(plan.parts, sq["keep_mm"])
         for p in plan.parts: issues += techniques.get(p.technique).check(p, P)
@@ -82,7 +89,9 @@ class SvgRun:
             else: plan.stops.append(dict(thread=p.thread, parts=[p.id], last=True))
         need = config.needles(self.cfg)
         if TH.needles_used(plan.threads) > need:                                                # M4g: <colour>+foam = the same needle
-            raise SystemExit(f"plan uses {TH.needles_used(plan.threads)} threads > {need} needles")
+            if not self.cfg["threads"].get("allow_over"):
+                raise SystemExit(f"plan uses {TH.needles_used(plan.threads)} threads > {need} needles")
+            plan.meta["threads_over"] = TH.needles_used(plan.threads)      # S1 (svg2dst): written, and the thread gate fails
         CP.plan_blocks(plan)
         plan.meta.update(issues=issues)
         plan.to_json(self.f("plan.json")); self.plan = plan
@@ -95,7 +104,7 @@ class SvgRun:
         plan = ObjectPlan.from_json(self.f("plan.json"))
         W, H = plan.meta["svg"]["size_mm"]; b = self.bounds(plan)
         part_map(plan, b, self.f("part_map.png"))
-        qs = []
+        qs = [dict(q) for q in (self.cfg.get("_s1") or {}).get("questions", [])]          # S1: the derived-config questions first
         for k, i in enumerate(plan.meta.get("issues", []), 1):
             qs.append(dict(id=f"q{k:03d}", text=i["text"], part_ids=[i["part"]], options=["accept", "change"], default="accept",
                            topic=i.get("technique"), severity=i.get("severity", "check")))
@@ -174,6 +183,20 @@ class SvgRun:
         live_big = dstlive.render(self.base + ".dst", cols, ppm=30, shell="#1f1f22", bounds=bb, origin=tuple(rbk["origin"]))
         live_big.save(self.f("live.png"))
         print(f"panel: {self.f('panel.png')} + live.png")
+
+
+def apply_fabric(p, fab):
+    """rules/fabrics.yaml deltas on one part's StitchSpec (S1, svg2dst --fabric). twill / denim carry none."""
+    t = p.technique; sp = p.stitch
+    if t in ("tatami", "satin", "split_satin", "column_satin", "turning_satin", "radial") and fab.get("pull_add"):
+        sp.pull_comp = round(sp.pull_comp + float(fab["pull_add"]), 3)
+    if t == "tatami" and fab.get("spacing_mul"): sp.spacing = round(sp.spacing * float(fab["spacing_mul"]), 3)
+    if t == "tatami" and fab.get("lattice_all"):
+        sp.params["lattice_min_mm2"] = 0.0
+        if "lattice_90" not in sp.underlay: sp.underlay = list(sp.underlay) + ["lattice_90"]
+    if t == "column_satin" and fab.get("centre_run_min_w"):
+        sp.params["centre_run_min_w"] = min(float(sp.params.get("centre_run_min_w", 1.4)), float(fab["centre_run_min_w"]))
+        if sp.underlay == [] and p.kind not in ("patch_edge",): sp.underlay = ["centre_run"]
 
 
 # ------------------------------------------------------------------ sequence for patches
