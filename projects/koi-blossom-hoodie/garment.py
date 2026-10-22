@@ -43,6 +43,7 @@ class Flat(HF.Flat):
 # feed the block pages this design's pattern
 ZB.G = {sz: F.pieces(sz) for sz in SIZES}; ZB.gM, ZB.mM = ZB.G["M"]; ZB.HF.Flat = Flat
 ZB.STYLE = STYLE
+ZB.SHELL_MAT = "washed navy 12 oz duck"         # as recorded (cover, questions): no fibre % -> care label MISSING (LESSONS D7)
 
 def mh(r): return FA.machine_hours(r["stitches"], FA.load(), trims=r["trims"], colour_changes=r["stops"] - 1)
 
@@ -168,7 +169,7 @@ def p_questions():
     return o
 
 PAGES = ["T1 Cover", "T2 Flats + construction", "T3 Size chart + measurement check", "T4 Pattern pieces + cut list", "T5 Hood + bands detail",
-         "T6 Bill of materials", "T7 Embroidery placement on the pattern (all sizes)", "T8 Open questions + revision log"]
+         "T6 Bill of materials", "T6b Labels (Haki standard)", "T7 Embroidery placement on the pattern (all sizes)", "T8 Open questions + revision log"]
 
 def build():
     fails = [sz for sz in SIZES if not (ZB.CHECK[sz] and ZB.WALKS_OK[sz] and ZB.SHAPE_OK[sz])]
@@ -179,7 +180,8 @@ def build():
     PO.write_dxf(SIZES, f"{OUT}/pattern/{STYLE}_pattern_ALL-SIZES.dxf", blk=Blk, style=STYLE, emb=True)
     PO.plot_pdf("M", f"{OUT}/pattern/{STYLE}_pattern_M_1to1_PLOT.pdf", blk=Blk, style=STYLE, emb=True)
     index = [(n, i + 1) for i, n in enumerate(PAGES)]
-    pages = [p_cover(index), ZB.p_flats(), ZB.p_pom(), ZB.p_pieces(), ZB.p_hood(), ZB.p_bom(), p_placement(), p_questions()]
+    pages = [p_cover(index), ZB.p_flats(), ZB.p_pom(), ZB.p_pieces(), ZB.p_hood(), ZB.p_bom(), ZB.p_labels(), p_placement(), p_questions()]
+    ZB.LS.export(f"{OUT}/labels", ZB.SHELL_MAT)                 # Haki standard label files for the pack zip labels/
     w = PdfWriter()
     for i, pg in enumerate(pages, 1):
         svg = doc(pg); pdf = f"{OUT}/T{i}.pdf"

@@ -13,6 +13,7 @@ from sheet import t, doc, INK, MUTED, RED, GREEN, SW, SH, dim_h, dim_v
 from render import f
 import drum, pattern as PT, pattern_draw as PD
 import front as F_                    # front.WELT = this design's welt (engine per-design override)
+import labelsheet as LS
 import hoodie as HD, hflat as HF
 import emb_place as EP, stitchrender as SR, factory as FA
 import pattern_cc as PC
@@ -20,6 +21,7 @@ import pattern_cc as PC
 STYLE = cccore.STYLE; REV = cccore.REV_GAR; DATE = cccore.DATE; NAME = cccore.NAME
 FOOT = f"HAKI STUDIOS · {NAME} · {STYLE} · GARMENT · {REV} · {DATE}"
 PROP = "#8A5A00"; ALT = "#F5F2EC"
+SHELL_MAT = "12 oz cotton duck canvas, washed navy (pre-washed before embroidery)"   # as recorded: no fibre % -> care label MISSING (LESSONS D7)
 SIZES = HD.SIZES
 HF.SHELL = "#2A3350"; HF.SHELL_D = "#222A44"; HF.SHERPA = "#F2ECDF"
 def prop(x, y, s, size=1.85): return t(x, y, s + "  [proposed — confirm]", size, 600, PROP)
@@ -115,7 +117,7 @@ NOTES = [("1", "Hood: 3 panels — side pair + 10 cm centre panel. Washed navy d
          ("5", f"Hem band: self fabric, {HD.hcm('S','M')/10:.1f} cm finished, folded; {HD.EL_HEM_W/10:.0f} cm elastic, flat {HD.FLAT/10:.0f} cm each side of the zip. Not embroidered.", True),
          ("6", f"Cuff band: self fabric, {HD.hcm('T','M')/10:.1f} cm finished, folded, closed into a loop. Not embroidered (02 stops 10 mm above the cuff seam).", True),
          ("7", "Embroidery 01 front scene (FR + FL) + 02 sleeves (SR + SL): direct embroidery on the cut panels, before any seam (G pages).", False),
-         ("8", "Lining: cotton flannel body (plaid, as mockup), polyester taffeta sleeves; hood fully lined in sherpa. Labels on the back neck facing.", True)]
+         ("8", "Lining: cotton flannel body (plaid, as mockup), polyester taffeta sleeves; hood fully lined in sherpa. Haki standard main label on the back neck facing; care label per T6b.", True)]
 
 def p_flats():
     o = H("FLATS + CONSTRUCTION", "Size M · zip-hoodie block (Drum Island body + 3-panel sherpa hood + self-fabric bands); numbered notes = hoodie + design specifics.", "T2")
@@ -263,7 +265,7 @@ def p_bom():
     cols = _pk.USED
     hoops = sum(len(CUR[p]["splits"]["sections"]) or 1 for p in CUR)
     BACKING = sum((s_["size_mm"][0] + 60) * (s_["size_mm"][1] + 60) for p in CUR for s_ in CUR[p]["splits"]["sections"].values()) / 1e6   # m² = m at 100 cm width
-    rows = [("Shell", "12 oz cotton duck canvas, washed navy (pre-washed before embroidery)", f"{m(shell):.2f} m", True),
+    rows = [("Shell", SHELL_MAT, f"{m(shell):.2f} m", True),
             ("Hood lining", "Sherpa 280 g/m² polyester, cream", f"{m(sher):.2f} m", True),
             ("Body lining", "Cotton flannel, plaid (navy / green, as mockup)", f"{m(flan):.2f} m", True), ("Sleeve lining", "Polyester taffeta 210T, navy", f"{m(taf):.2f} m", True),
             ("Pocketing", "8 oz cotton twill", f"{m(pock):.2f} m", True), ("Fusing", "Woven fusible 60 g/m² (facings, welts)", f"{m(fus):.2f} m", False),
@@ -273,13 +275,14 @@ def p_bom():
             ("Embroidery thread", f"40wt polyester, {len(cols)} colours over the jacket, ≤ 12 per file (G3) — FR + FL + SR + SL", f"{sum(CUR[p]['stitches'] for p in CUR):,} stitches (M)", True),
             ("Embroidery backing", f"2.5 oz cutaway, black, 100 cm wide — {hoops} hoopings per jacket (G6), each split file + 30 per side", f"{BACKING:.2f} m", True),
             ("Thread — seams", "Coats Epic 120 (Tex 27), navy", "~ 450 m", False), ("Thread — topstitch", "Coats Gral 40 (Tex 60), tonal navy", "~ 140 m", False),
-            ("Labels", "Main + size on back neck facing; care label left side seam lining", "1 set", False)]
+            ("Main label", LS.main_bom("T6b") + "; back neck facing", "1", False),
+            ("Care label", LS.care_bom(SHELL_MAT, "T6b") + "; left side seam lining", "1", False)]
     hd = ["Item", "Description", "Qty / consumption"]; cx = [12, 52, 200]
     for x_, h_ in zip(cx, hd): o.append(t(x_, 33, h_, 1.8, 700, MUTED))
     for i, (a, b_, q, p) in enumerate(rows):
         y = 38 + i * 4.4
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y - 3.0)}" width="{SW - 22}" height="4.4" fill="{ALT}"/>')
-        o.append(t(cx[0], y, a, 1.75, 700)); o.append(t(cx[1], y, b_ + ("  [proposed — confirm]" if p else ""), 1.7, 400, PROP if p else INK)); o.append(t(cx[2], y, q, 1.75, 600))
+        o.append(t(cx[0], y, a, 1.75, 700)); o.append(t(cx[1], y, b_ + ("  [proposed — confirm]" if p else ""), 1.7, 400, LS.AMBER if LS.MISSING in b_ else PROP if p else INK)); o.append(t(cx[2], y, q, 1.75, 600))
     y = 38 + len(rows) * 4.4 + 5
     o.append(t(12, y, "ZIP LENGTH PER SIZE (cm, hem-band edge to CF neck − 0.5)", 1.9, 700)); y += 4.4
     for j, sz in enumerate(SIZES):
@@ -370,12 +373,13 @@ def p_revisions():
     return o
 
 PAGES = ["T1 Cover", "T2 Flats + construction", "T3 Size chart + measurement check", "T4 Pattern pieces + cut list", "T5 Hood + bands detail",
-         "T6 Bill of materials", "T7 Embroidery placement + keep-outs, all sizes", "T8 Sample checks + open questions", "T9 Revision log + sample tracker"]
+         "T6 Bill of materials", "T6b Labels (Haki standard)", "T7 Embroidery placement + keep-outs, all sizes", "T8 Sample checks + open questions", "T9 Revision log + sample tracker"]
 
 def build(emb_pdf, emb_pages, out_pdf):
     for sz in SIZES: assert CHECK[sz] and WALKS_OK[sz] and SHAPE_OK[sz], f"pattern QA failed for {sz}"
     index = [(n, i + 1) for i, n in enumerate(PAGES)] + [("EMBROIDERY SECTION (G1–G6, specs, F1)", len(PAGES) + 1)] + emb_pages
-    pages = [p_cover(index), p_flats(), p_pom(), p_pieces(), p_hood(), p_bom(), p_placement(), p_fit(), p_revisions()]
+    LS.export("out/labels", SHELL_MAT)                 # Haki standard label files for the zip labels/
+    pages = [p_cover(index), p_flats(), p_pom(), p_pieces(), p_hood(), p_bom(), LS.hoodie_page(H, SHELL_MAT), p_placement(), p_fit(), p_revisions()]
     w = PdfWriter(); os.makedirs("out/pages", exist_ok=True)
     for i, pg in enumerate(pages, 1):
         svg = doc(pg); pdf = f"out/pages/T{i}.pdf"
