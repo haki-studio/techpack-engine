@@ -47,5 +47,6 @@ All stitch files: 15 threads max (15-needle head). Thread: Madeira Polyneon 40 (
 checks density + pull on 12 oz duck, edits if needed, and sews out before bulk.
 """)
 for z in glob.glob("out/*.zip"): os.remove(z)
+if os.path.isdir("out/labels"): shutil.copytree("out/labels", f"{PKG}/labels")   # Haki standard main + care label files (gtp.build, LESSONS D7)
 subprocess.run(f"cd {PKG} && zip -qr ../HAKI_Drum-Island_plum-pine_RevC-G_files.zip .", shell=True)
 print("zip MB", os.path.getsize("out/HAKI_Drum-Island_plum-pine_RevC-G_files.zip") // 1_000_000)

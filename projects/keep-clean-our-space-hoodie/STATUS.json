@@ -2,41 +2,6 @@
  "slug": "keep-clean-our-space-hoodie",
  "log": [
   [
-   "2026-10-16T21:02:54",
-   "intake",
-   "projects created from inbox"
-  ],
-  [
-   "2026-10-16T21:13:00",
-   "inventory",
-   "5 elements: 01 JP badge (FR upper), 02 EN badge (FL upper), 03 CN badge (FR lower), 04 KR oval (FL lower), 05 star field (fronts + sleeves); back + hood plain (proposed). Body = Drum Island, hood pattern waits for engine PR"
-  ],
-  [
-   "2026-10-16T21:40:35",
-   "art",
-   "4 badges + star field composed on Drum Island M; all 7 sizes fit keep-outs (EN badge nudged 6-9 mm)"
-  ],
-  [
-   "2026-10-16T22:14:27",
-   "stitch",
-   "M fronts built (FR 23k st/127 trims, FL 22k/87, foam pause marked); all sizes + splits building"
-  ],
-  [
-   "2026-10-16T23:56:40",
-   "qa",
-   "all 7 sizes x 4 pieces + splits built; every section fits 360 frame; keep-outs pass all sizes"
-  ],
-  [
-   "2026-10-17T00:12:46",
-   "pattern",
-   "WAITING: hoodie block is on origin (engine/hoodie.py, c026934) but not in the shared tree (builders no longer pull); it also hard-codes the Drum Island welt, which collides with badge 03 \u2014 needs a welt override (ENGINE_NOTES 10)"
-  ],
-  [
-   "2026-10-17T00:12:46",
-   "documents",
-   "embroidery pack 15 pp (G1-G6, E01-E05, S1-S2, R1, F1), merged + shrunk 4.0 MB, zip 29.9 MB"
-  ],
-  [
    "2026-10-17T00:13:12",
    "delivered",
    "Rev A embroidery pack delivered (15 pp, 112 stitch files incl. splits). M: FR 23,604 st/172 trims, FL 21,459/114, SR 2,619/118, SL 2,274/104. Pattern + T pages waiting for hood block sync + welt override"
@@ -125,15 +90,137 @@
    "2026-10-20T21:02:04",
    "delivered",
    "Rev D delivered: 25-page PDF + zip (C:/Users/devin/Desktop/keep-clean-RevD/). M: FR 59,273/542, FL 47,730/385, SR 6,735/204, SL 6,944/200. Puff on all signs (<2.5 mm flat, G4), CN \u6c61; open: back view, star haze"
+  ],
+  [
+   "2026-10-20T21:04:53",
+   "review",
+   "PR #31"
+  ],
+  [
+   "2026-10-21T00:14:45",
+   "art",
+   "fix round PR #31: JP top star white ring + dark pit, red star solid red + star pit; rebuilding"
+  ],
+  [
+   "2026-10-21T01:06:22",
+   "documents",
+   "Rev E: JP stars fixed (white ring + pit, solid red star pit), T9 tracker filled; 25 pp rebuilt"
+  ],
+  [
+   "2026-10-21T01:06:49",
+   "review",
+   "PR #31 (fix round Rev E)"
+  ],
+  [
+   "2026-10-21T05:06:18",
+   "stitch",
+   "fix round 2: A14 gate FAIL on JP top star (iou 0.70) \u2014 re-fitting"
+  ],
+  [
+   "2026-10-21T05:21:11",
+   "stitch",
+   "fix round 2: top JP star re-traced, A14 gate PASS on M DST (iou 0.74); rebuilding all sizes"
+  ],
+  [
+   "2026-10-21T06:03:44",
+   "documents",
+   "Rev F built: A14 gate 0 blocking (top JP star iou 0.74 on DST), 25 pp"
+  ],
+  [
+   "2026-10-21T06:05:02",
+   "review",
+   "PR #38 (Rev F fix round 2; #31 merged at Rev D)"
+  ],
+  [
+   "2026-10-21T06:18:42",
+   "documents",
+   "fix round 3: G1 caption tofu"
+  ],
+  [
+   "2026-10-21T06:20:35",
+   "documents",
+   "Rev G: G1 CN glyph tofu fixed + tofu guard on every page; rebuilding pack"
+  ],
+  [
+   "2026-10-21T06:58:09",
+   "documents",
+   "Rev G built: 25 pp, G1 CN glyph as outline, tofu guard on every page, gates blocking 0"
+  ],
+  [
+   "2026-10-21T06:58:44",
+   "review",
+   "PR #38 (Rev G fix round 3)"
+  ],
+  [
+   "2026-10-21T06:59:36",
+   "review",
+   "PR #38 Rev G pushed; re-review blocked: old reviewer session 0000c1c8 still alive (idle) - stop it, then dispatch.sh review keep-clean-our-space-hoodie 38"
+  ],
+  [
+   "2026-10-21T11:30:54",
+   "art",
+   "Rev H started: founder answers 21 Oct - back = stars only (front style), no glow/haze, puff 2.5-3.0 kept as factory question, CN 800 kept"
+  ],
+  [
+   "2026-10-21T11:40:19",
+   "stitch",
+   "Rev H: all 7 sizes x 5 pieces (FR FL SR SL + BK back stars) + splits built; M: FR 29,127 st/279 trims, FL 27,473/226, SR 2,756/97, SL 2,771/97, BK 5,352/187 (248 stars); glow+haze gone, 10 threads"
+  ],
+  [
+   "2026-10-21T11:52:59",
+   "qa",
+   "Rev H gates: 147 files pass (max stitch < 7.5, <= 10 colours, sections fit 400x450, foam isolation, keep-outs incl. back), glyph gate + A14/A15 BLOCKING 0, pattern QA pass; page fixes in progress"
+  ],
+  [
+   "2026-10-21T12:07:04",
+   "documents",
+   "Rev H pack: 27 pp (T1-T9 + G1-G6, E01-E06, S1-S3, R1, F1-F2), 4.4 MB; zip 30.5 MB; tests 275 pass"
+  ],
+  [
+   "2026-10-21T12:07:04",
+   "delivered",
+   "Rev H delivered to Desktop/keep-clean-RevH: back stars (248, PROPOSED layout), glow+haze dropped, puff question on F1/F2, CN 800 kept; M total 67,479 st / 886 trims"
+  ],
+  [
+   "2026-10-21T12:08:27",
+   "review",
+   "PR #38 Rev H"
+  ],
+  [
+   "2026-10-21T13:05:50",
+   "art",
+   "Rev I fix round started: puff-glyph flat fragments (EN P/R/S/A/E) + star-speck slivers"
+  ],
+  [
+   "2026-10-21T13:20:10",
+   "stitch",
+   "Rev I: puff glyph bits merged into the puff stop (EN 7, CN 31, JP 1), 5 sliver specks -> dots at M; frag gate red on Rev H FL M (8 = the founder's spots); building M fronts"
+  ],
+  [
+   "2026-10-21T13:49:35",
+   "review",
+   "PR #38 Rev I"
   ]
  ],
  "questions": [
-  "Back + hood: a back design is planned - send the back view; back + hood = artwork to follow [MISSING] in Rev D.",
-  "Star haze (soft glow round the badges + under the big sparkles): pending - kept as in Rev C. Keep, change or drop?"
+  "Back stars (06, Rev H): the back layout is seeded from the front field logic (248 stars at M, density + spacing of the front field, copies of the front stars) - confirm, or send a back view to place them from. [PROPOSED]",
+  "Factory (Mandy, F1/F2): can the thin 3D puff strokes 2.5-3.0 mm wide (JP / CN text, list on G4) puff cleanly? Confirm on the strike-off; any that do not are sewn flat."
  ],
- "stage": "delivered",
- "stage_index": 7,
+ "stage": "review",
+ "stage_index": 8,
  "blocked": false,
- "updated": "2026-10-20T21:02:04",
- "preview": "out/compare_03_cn-badge.png"
+ "updated": "2026-10-21T13:49:35",
+ "preview": "out/zoom/M_FL_badge02.png",
+ "answers": [
+  {
+   "date": "2026-10-21",
+   "source": "founder",
+   "items": [
+    "Back: embroidered stars only, same star style as the front; no badges or text; hood plain. Back/hood MISSING removed.",
+    "Star haze / glow: dropped entirely (stipple haze + glow halo round badges and sparkles).",
+    "Puff: kept on the 28 strokes 2.5-3.0 mm; factory question on F1/F2 for Mandy (confirm on the strike-off).",
+    "CN text weight 800: keep."
+   ]
+  }
+ ]
 }

@@ -212,3 +212,76 @@ Chinese phrase, upside-down mirrored Hangul)." Check: the spec page prints the s
   the house minimum and listed for the strike-off (F2).
 - Proposed engine fix: a `puff` part extractor step that applies `min_w` per column and reports the flat ones; the
   project's 2.5 vs house 3.0 should be settled by the strike-off (feed back as a LESSONS row with the measured result).
+
+## 25. A failing A14/A15 gate still produced a pack (Rev E, PR #31 round 2)
+- Problem: `gates.py` printed `BLOCKING 1` (JP top star, IoU 0.70 on the shipped size-M DST) but exited 0, so
+  `build_all.py` built and shipped the pack. The fix comment quoted the scene fit's IoU (0.73, `best_star`), which is
+  not the gate: the fit scored white ring + glint parts too, while the gate's mockup mask and stitched mask are the
+  yellow family only.
+- Fix here: `gates.py` exits 3 in binding mode when `blocking > 0` (prints each failing row); `build_all.py` stops with a
+  message and also asserts `gates.json["blocking"] == 0` before building pages. `best_star(..., cols=)` fits a
+  multi-colour star on the threads the gate measures. Proven red/green: iou_min forced to 0.95 -> 11 FAIL rows, exit 3;
+  real run exit 0.
+- Proposed engine fix: `qa.gate_or_die(res)` used by every project's pack build; LESSONS row "quote the gate number
+  read from the DST, never the art fit". Check: a test that runs the pack entry point on a fixture with one FAIL row
+  and asserts a non-zero exit and no PDF written.
+
+## 26. Ringed / glinted stars need a motif, not scene constants (review PR #31 item 3)
+- Problem: the JP top star (dark pit in a thin white ring, white glint streak through the centre) is built in
+  `scene.py` with constants measured from this mockup: `_TOP_PIT_R 0.6`, `_TOP_RING_W 0.9`, `_TOP_GOLD_R 1.1`,
+  `_TOP_GLINT ((-132°, 4.4 mm, 1.0), (48°, 2.9 mm, 0.8))`; the red star uses `pit_k 0.42` at 0.45 R. (Rev E's facet
+  recolour window -158..-125° was wrong - the mockup's glint is a streak into the notch, not an arm facet - and is gone.)
+- Proposed engine fix: `motifs.star_facets(..., centre=dict(pit_r, ring_w, ring_col), glints=[(ang, reach, w, col)])`
+  with the pit/ring/glint measured by a generic `trace_star_centre(mask)` (dark-blob radius + pale annulus + pale
+  streak directions), not typed. Check: a render test that a ringed star's gold-only IoU against a synthetic mask
+  stays >= 0.70 and the pit stays unstitched (no stitch within pit_r of the centre).
+
+### 26 (cont.) - scope of the Rev F star constants (review PR #38, note)
+- `_TOP_GLINT` (48° / -132°), `_TOP_PIT_R`, `_TOP_GOLD_R`, `_TOP_RING_W` in `scene.py` and the `best_star` k range
+  0.30-0.50 fitted on the yellow mask only are **one-star tuning for this mockup**, measured from its crop. They are
+  not a generic primitive and the next product will not reuse them; the reusable route is item 26's
+  `trace_star_centre(mask)` + `star_facets(centre=, glints=)`.
+
+## 27. CJK in plain SVG text renders as tofu (review PR #38, G1 cover caption)
+- Problem: `sheet.t()` writes `font-family="Noto Sans CJK JP"`, but that font is not installed on the build box, so
+  cairosvg falls back to Liberation Sans / DejaVu and any CJK / Hangul char becomes a missing-glyph box. It hit T9
+  (Rev E) and then G1 (Rev F): fixed per call each time, so it came back.
+- Proposed engine fix: `sheet.t()` routes CJK / Hangul runs through the outline setter (what `kcdoc.auto` does in this
+  project), and `sheet.doc()` (or the page writer) refuses a page whose `<text>` holds a CJK char (this project:
+  `tofu.py`, called on every G/E/S/R/F/T page before svg2pdf).
+- Check: red then green done here - `tofu.check('<text>CN 污</text>')` raises, outline-set text passes; the Rev G
+  pack builds with the guard on every page.
+
+## 28. A star field for a panel no view shows (Rev H, founder 21 Oct: back = front-style stars only)
+- Problem: the founder wants stars on the back "from the front's star-field logic", but no back view exists. The
+  project seeds it in `scene.py`: front field density (stars / free front area, badges excluded), a minimum gap at the
+  fronts' 10th-percentile nearest-neighbour distance, rejection sampling on the back's keep-out clip, and every back
+  star a translated COPY of a front field star (same primitive, thread, traced size) taken from the front stars in turn
+  (outliers > 20 mm² left out). The sleeve back halves (Rev A) already did a cruder version (fixed 9 mm gap, size table).
+- Proposed engine fix: `motifs.seed_field(source_units, source_area, target_clip, gap="p10", seed=...)` returning moved
+  copies + a stats dict (density, gap, library size) for the spec page, used for sleeve backs and unseen panels alike.
+- Check: a test that the seeded density on a synthetic target is within 5 % of the source density, no pair closer than
+  the gap, and the size histogram of the copies matches the source (KS distance < 0.1).
+
+## 29. Dropped decorative layers leave threads + fixtures behind (Rev H: glow + haze removed)
+- Problem: removing the glow / haze layers removed two threads from the jacket, but `tests/test_kcos_gates.py` builds
+  synthetic stops in `kc_glow`, and `dst2.write` crashed on the unknown hex (PES thread colour None). Fixed in the
+  project by keeping the two hexes registered (`kccore.LEGACY_PAL`) outside the thread list (`KC_KEYS`).
+- Proposed engine fix: test fixtures use engine test colours (e.g. `test_a`, `test_b` in motifs2.PAL), never a
+  product's palette keys; `dst2.write` raises a clear `UnknownThread(key)` instead of a pyembroidery TypeError.
+- Check: `pytest tests/test_kcos_gates.py` green with LEGACY_PAL deleted once the fixtures are moved.
+- Also found: `specbase.TH` is built once at import from the palette, so when another test imports specbase first, a
+  project key added later has no thread row and `dst2.write` raises `KeyError`. Project fix: kccore tops up `specbase.TH`
+  if specbase is already loaded. Engine fix: `specbase.th(key)` computed lazily. Check: full `pytest tests` (275 pass;
+  the KCOS foam test was red in the full suite, green alone, before the top-up).
+
+## 30. Flat fragments inside a puff glyph (Rev I, founder defect 21 Oct, EN badge FL M) — LESSONS row, ready to paste
+Builders may not edit LESSONS.md (rule 5), so the row is here for the coordinator:
+
+| B43 | KCOS Rev D–H 3D puff text: a puff glyph's gap fillers (`kcmotifs.gap_fillers`) and narrow stroke bits came out under `PUFF_MIN_MM`, so the width rule classed them FLAT while the rest of the glyph was PUFF. They sewed as 8 separate little satins on top AFTER the foam was torn, each at its own angle (EN FL M stops 7–8, 21–36 st, 1.2–6 mm: P, R ×2, S, A ×2, E, N; CN 27 more, JP 宙 one). Glyph IoU / A14 gates passed: the bits lie inside the glyph outline. The founder found them on a screenshot. | Puff is decided per GLYPH, flat only for WHOLE strokes: inside a puff glyph every gap filler, every narrow group touching a puff stroke and every narrow group < 8 mm sews PUFF in the stroke's own stop (`kcmotifs.puff_absorb`); an absorbed filler is widened 0.6 mm into the stroke it joins so core + rim make one shape (`bridge_fillers`; a filler centred on its own piece stayed a detached strip, seen on the P zoom). No per-letter rules. | `kcgates.flat_fragments` on every written DST (full + splits, every size, `frag_gate.py`, in `build_all.py`): no flat-after-foam fragment < 8 mm or touching the glyph's puff stitches. Red on Rev H FL M (exactly the 8 founder spots) + 28 on FR, 0 on Rev I; synthetic red/green in `tests/test_kcos_gates.py`. |
+| A33 | KCOS Rev H: the smallest traced star specks (A14 "traced silhouette" fallback) were slivers, 0.7 × 7.9 mm right of CLEAN on FL M, that sewed as a zigzag line, and the back copied them. | Minimum-size filter on every star speck after tracing: rotated-box narrow side ≥ 1.0 mm, long side ≤ 3 × narrow, inscribed disc ≥ 1.0 mm, else the house dot at the same centre (< 0.5 mm² dropped); count per piece on the E05 page. | `kcmotifs.speck_sliver` (test: sliver red, dot + concave sparkle green); counts in scene META `speck_filter` (M: FR 1, CN ring 1, FL 3, sleeves 0, back 0 dotted, 0 dropped). |
+
+- Proposed engine fix: the digitize pipeline's puff decision (`engine/digitize` specialty) works per object today; give
+  it a "decide per glyph / per connected art shape" step and the same fragment gate on the written file
+  (`specialty.plan_gates` + a DST read-back check), so no product sews a stray flat bit on top of torn foam.
+- Check: port `tests/test_kcos_gates.py::test_flat_fragment_*` to the engine with an engine palette.

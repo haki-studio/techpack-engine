@@ -17,7 +17,7 @@ from shapely import affinity
 import mockmap as MM, front as F, kcmotifs as KM, kclettering as KL, kcsatin as KS, kctrace as TR
 
 S = MM.S
-items = {"FR": [], "FL": [], "SR": [], "SL": []}
+items = {"FR": [], "FL": [], "SR": [], "SL": [], "BK": []}
 META = {"badges": {}, "counts": {}, "traced": {}}
 FAMC = {"kc_mint": "mint", "kc_blue": "blue", "kc_red": "red", "kc_lemon": "yellow", "kc_gold": "yellow", "kc_white": "white"}
 def tr_log(el, kind, found):
@@ -42,12 +42,14 @@ def fit(regs, fn, el, kind, aspect=False, starts=None, ret_iou=False):
     _, info = TR.register_glyph(body, fn, aspect=aspect, starts=starts, drop_frag=kind in ("sparkle", "dot"))
     META["traced"].setdefault(el, {}).setdefault("fits", []).append(dict(kind=kind, iou_before=info["iou_before"], iou_after=info["iou_after"], scale=info["scale"], aspect=info["aspect"]))
     return (TR.apply(regs, info), info["iou_after"]) if ret_iou else TR.apply(regs, info)
-def best_star(make, ks, fn, el, kind):
-    """trace a star's SHAPE too: try inner-radius ratios ks, fit each (affine + aspect), keep the best IoU"""
+def best_star(make, ks, fn, el, kind, cols=None):
+    """trace a star's SHAPE too: try inner-radius ratios ks, fit each (affine + aspect), keep the best IoU.
+    cols: only these threads make the fitted body (a star whose centre/glint is another colour is fitted on the colour
+    the mockup mask - and the A14 gate - sees; review PR #31 round 2)"""
     best = None
     for k in ks:
         regs = [r for r in make(k) if not r["geom"].is_empty]
-        body = unary_union([r["geom"] for r in regs if not r.get("glow")])
+        body = unary_union([r["geom"] for r in regs if not r.get("glow") and (cols is None or r["col"] in cols)])
         _, info = TR.register_glyph(body, fn, aspect=True)
         if best is None or info["iou_after"] > best[0]: best = (info["iou_after"], k, regs, info)
     META["traced"].setdefault(el, {}).setdefault("fits", []).append(dict(kind=kind, k=best[1], iou_after=best[3]["iou_after"], iou_before=best[3]["iou_before"], scale=best[3]["scale"], aspect=best[3]["aspect"]))
@@ -153,7 +155,7 @@ META["badges"]["01"] = dict(anchor_px=J0, centre=JC, angle=JANG, angle_start=jp_
 jp = register(jp, ref_fn_for(J0, JC, "mint"), "01")          # each glyph fitted to the mockup glyph silhouette (A14)
 jcore, jrim = text_regs(jp, "kc_mint", "PF-TXC", "01-text", "round", rim=True); ref_glyphs("01", "FR", jp, ["kc_mint", "kc_mint_lt"])
 jshape = unary_union([r["geom"] for r in jcore + jrim])
-add("FR", KM.stipple_band(jshape, "01-glow", outer=4.5, seed=11), 20, "01", unit="01-glow")
+if kccore.GLOW: add("FR", KM.stipple_band(jshape, "01-glow", outer=4.5, seed=11), 20, "01", unit="01-glow")          # Rev H: glow dropped (founder 21 Oct)
 # Rev C (review of PR #20): the mockup has a small mint dot right of い (A14 row 'moved', 5.8 mm2, 93 mm from CF) that no
 # Rev B/C motif stitched. Traced from the mockup's own mint component (TR.comps), flat satin dot (code DOT, mint).
 _dp = (J0[0] + (-93.0 - JC[0]) / S, J0[1] + (111.2 - JC[1]) / S)
@@ -212,9 +214,28 @@ add("FR", best_star(lambda k: [dict(r, geom=r["geom"].difference(eyes).buffer(0)
 c = TR.snap("yellow", 460.0, 391.3); tr_log("01", "stars", c)
 sz1, rot1 = star_from(c, 6) if c else (14.4, 6)
 sx1, sy1 = J(*((c["cx"], c["cy"]) if c else (460.0, 391.3)))
-fs, _ = KM.star_facets(sx1, sy1, sz1, "kc_gold", "01-star1", rot=rot1, k=0.30, pit=0.32, round_=0.12)
-fs = best_star(lambda kp: KM.star_facets(sx1, sy1, sz1, "kc_gold", "01-star1", rot=rot1, k=kp[0], pit=kp[1], round_=0.12)[0] + KM.dot(sx1, sy1, 1.4, "kc_white", "01-star1", grp="FACE"),
-               [(k, p) for k in (0.28, 0.32, 0.38) for p in (0.12, 0.18, 0.24, 0.30)], ref_fn_for(J0, JC, "yellow"), "01", "star (top)")
+# Rev F (review PR #31 round 2, A14 FAIL on the DST): measured on the mockup crop - the centre is a dark pit (fabric,
+# r 0.6) in a thin pale ring (out to r ~1.5), and the white glint is a STREAK through the centre (upper-left into the notch
+# between the top and left arms, short tail lower-right), not an arm facet. All five arms stay gold. Gold ends at r 1.1
+# (the ring overlaps it 0.4 mm; sharp tips, round 0.04). Fitted on the gold + lemon facets only (what the mockup's yellow mask and the gate see).
+_TOP_PIT_R, _TOP_RING_W, _TOP_GOLD_R = 0.6, 0.9, 1.1
+_TOP_GLINT = ((-132.0, 4.4, 1.0), (48.0, 2.9, 0.8))     # (direction deg y-down, reach from centre mm, width mm)
+def _top_star(kp):
+    out = KM.star_facets(sx1, sy1, sz1, "kc_gold", "01-star1", rot=rot1, k=kp, pit=_TOP_GOLD_R / (sz1 / 2), round_=0.04)[0]
+    rc = _TOP_PIT_R + _TOP_RING_W / 2
+    # the ring is TWO half-arcs meeting at the glint roots (one closed ring forced a travel stitch straight across the
+    # dark pit to reach the second glint, seen on the Rev F M DST); arcs overlap 6 deg at each join
+    a0 = _TOP_GLINT[1][0]                        # the two glints are opposite (48 / -132 deg): arcs a0..a0+180, a0+180..a0+360
+    for t0, t1 in ((a0 - 6, a0 + 186), (a0 + 174, a0 + 366)):
+        arc = [(sx1 + rc * math.cos(math.radians(t)), sy1 + rc * math.sin(math.radians(t))) for t in np.linspace(t0, t1, 14)]
+        out.append(KS.column_region("kc_white", "FACE", arc, _TOP_RING_W, ("flat", "flat"), False, unit="01-star1"))
+    r0 = _TOP_PIT_R + _TOP_RING_W * 0.6
+    for ang, reach, w in _TOP_GLINT:
+        u = (math.cos(math.radians(ang)), math.sin(math.radians(ang)))
+        cl = [(sx1 + u[0] * r0, sy1 + u[1] * r0), (sx1 + u[0] * reach, sy1 + u[1] * reach)]
+        out.append(KS.column_region("kc_white", "FACE", cl, w, ("flat", "flat"), False, prof=("taper", 1.0, 0.15), unit="01-star1"))
+    return out
+fs = best_star(_top_star, (0.30, 0.34, 0.38, 0.42, 0.46, 0.50), ref_fn_for(J0, JC, "yellow"), "01", "star (top)", cols=("kc_gold", "kc_lemon", "kc_lemon_lt"))
 add("FR", [r for r in fs if r["grp"] != "FACE"], 30, "01", unit="01-star1"); add("FR", [r for r in fs if r["grp"] == "FACE"], 33, "01", unit="01-star1")
 # small top-right star: a 4-point sparkle in star gold (mockup)
 c = TR.snap("yellow", 482.5, 415.0); tr_log("01", "stars", c)
@@ -228,9 +249,10 @@ add("FR", _s2, 22, "01", unit="01-star2")
 # bottom red star (review item 5): SOLID red, faceted, with a small dark star pit (fabric) in the middle
 c = TR.snap("red", 406.3, 563.8); tr_log("01", "stars", c)
 sz3, rot3 = star_from(c, 10) if c else (15.0, 10)
-fs, _ = KM.star_facets(*J(*((c["cx"], c["cy"]) if c else (406.3, 563.8))), sz3, "kc_red", "01-star3", rot=rot3, pit=0.30, pit_shape="star")
 _p3 = J(*((c["cx"], c["cy"]) if c else (406.3, 563.8)))
-add("FR", best_star(lambda k: KM.star_facets(*_p3, sz3, "kc_red", "01-star3", rot=rot3, k=k, pit=0.30, pit_shape="star")[0], [0.40, 0.46, 0.52, 0.58],
+# Rev E (review PR #31 item 1): mockup red star = ONE saturated red (no light facets) with a dark star-shaped pit
+# measured ~0.43 of the star radius; pit star sharper (k 0.42) so its points read at that size
+add("FR", best_star(lambda k: KM.star_facets(*_p3, sz3, "kc_red", "01-star3", rot=rot3, k=k, light="kc_red", pit=0.45, pit_shape="star", pit_k=0.42)[0], [0.40, 0.46, 0.52, 0.58],
                     ref_fn_for(J0, JC, "red"), "01", "star (red)"), 30, "01", unit="01-star3")
 put("FR", (jcore, jrim), 31, "01", "01-text")
 
@@ -262,7 +284,7 @@ ecore, erim = text_regs(keep + L2, "kc_mint", "PF-TXC", "02-text", "round", rim=
 ccore, crim = text_regs(clean, "kc_lemon", "PF-TXC", "02-text", "round", rim=True)
 ref_glyphs("02", "FL", keep + L2, ["kc_mint", "kc_mint_lt"]); ref_glyphs("02", "FL", clean, ["kc_lemon", "kc_lemon_lt"])
 eshape = unary_union([r["geom"] for r in ecore + erim + ccore + crim])
-add("FL", KM.stipple_band(eshape, "02-glow", outer=4.5, seed=12), 20, "02", unit="02-glow")
+if kccore.GLOW: add("FL", KM.stipple_band(eshape, "02-glow", outer=4.5, seed=12), 20, "02", unit="02-glow")          # Rev H: glow dropped (founder 21 Oct)
 STARS_EN = [(325, 105), (425, 130), (495, 215), (570, 300), (645, 400), (720, 495), (770, 600), (800, 840), (750, 935), (645, 985),
             (540, 910), (460, 815), (385, 720), (305, 625), (225, 530), (140, 430), (115, 310), (195, 190)]      # 18 stars (crop_en2: /4 + (670,380))
 for i, (cx_, cy_) in enumerate(STARS_EN):
@@ -295,7 +317,7 @@ for i, ((px, py, k), (x, y)) in enumerate(zip(DOTS_CN, dpts)):
     dcores += c_; drims += r_
 # glow (review item 2): soft halo round every dot (mockup: green haze round the dots), one connected band
 dshape = unary_union([r["geom"] for r in dcores + drims])
-add("FR", KM.stipple_band(dshape, "03-glow", outer=3.6, seed=13), 20, "03", unit="03-glow")
+if kccore.GLOW: add("FR", KM.stipple_band(dshape, "03-glow", outer=3.6, seed=13), 20, "03", unit="03-glow")          # Rev H: glow dropped (founder 21 Oct)
 add("FR", dcores, 30, "03", unit="03-dots"); add("FR", drims, 32, "03", unit="03-dots")
 # text column: 6 glyphs between the mockup's first + last glyph centres (the AI drew 7 garbled glyphs)
 t0 = C(370.0, 690.0); t1 = C(407.5, 867.5)
@@ -367,6 +389,7 @@ def speck_motif(s, x, y, col="kc_white", unit=None, uniform=False, fn=None):
                 if tp is not None and tp.area >= 1.6 and tp.distance(cxy) < 1.5:
                     tr_log("05", "traced silhouettes", True); st = [KM.R(col, tp, "satin", "auto", "DOT", unit=unit, kob=0.6)]
         x, y = unary_union([r["geom"] for r in st]).centroid.coords[0]
+        if not kccore.GLOW: return st                      # Rev H: no haze under the sparkles (founder 21 Oct)
         return KM.haze(x, y, 0.55 * sp, unit, star=unary_union([r["geom"] for r in st])) + st
     d = {2: 1.45, 3: 1.7, 4: 2.0}.get(ext, 1.45)
     if c: d = max(1.45, 2 * math.sqrt(c["area"] / math.pi) * (S if uniform else math.sqrt(MM.SX * MM.SY)))
@@ -386,6 +409,27 @@ def speck_motif(s, x, y, col="kc_white", unit=None, uniform=False, fn=None):
             tr_log("05", "traced silhouettes", True)
             return [KM.R(col, tp, "satin", "auto", "DOT", unit=unit, kob=0.6)]
     return dr
+# Rev I (founder 21 Oct, FL M: a ~5 mm zigzag right of CLEAN; reviewer LOW note on the back): the smallest traced specks
+# came out as slivers (0.7 x 7.9 mm), and a satin that narrow sews as a zigzag line, not a star. Minimum-size filter on
+# every star speck (field 05, CN sparkles 03-sp; the back 06 copies the guarded front stars): the bounding rectangle's
+# narrow side >= SPECK_MIN_W, long side <= SPECK_MAX_ASPECT x narrow side, inscribed disc >= SPECK_MIN_IN, else it sews as the house dot at
+# the same centre (count kept); a speck smaller than SPECK_DROP_MM2 is dropped. Counts per piece -> META counts.
+SPECK_MIN_W, SPECK_MIN_IN, SPECK_MAX_ASPECT, SPECK_DROP_MM2, SPECK_DOT_D = 1.0, 1.0, 3.0, 0.5, 1.45
+SPECK_FIX = {}
+def speck_guard(regs, P, col="kc_white"):
+    from shapely.ops import polylabel
+    body = unary_union([r["geom"] for r in regs if not r.get("glow")]).buffer(0)
+    if body.is_empty: return regs
+    if body.area < SPECK_DROP_MM2:
+        SPECK_FIX.setdefault(P, dict(dotted=0, dropped=0))["dropped"] += 1; return []
+    worst = KM.speck_sliver(body, SPECK_MIN_W, SPECK_MIN_IN, SPECK_MAX_ASPECT)
+    if worst is None: return regs
+    SPECK_FIX.setdefault(P, dict(dotted=0, dropped=0))["dotted"] += 1
+    SPECK_FIX.setdefault("log", []).append((P, regs[0].get("unit"), [r["grp"] for r in regs], round(worst[0], 2), [round(v, 2) for v in worst[1]]))
+    c = polylabel(max(getattr(body, "geoms", [body]), key=lambda q: q.area), 0.02)
+    u = regs[0].get("unit"); cl = regs[0]["col"]
+    tr_log("05", "sliver specks sewn as dots", True)
+    return KM.dot(c.x, c.y, SPECK_DOT_D, cl, u)
 nfield = {"FR": 0, "FL": 0, "SR": 0, "SL": 0}; ncn = 0
 # sleeve quads in the mockup (px): top fold at the shoulder, cuff outer, underarm, cuff inner
 SLQ = {"SR": dict(A=(203, 428), B=(50, 1240), C=(226, 565), D=(246, 1236)),
@@ -422,7 +466,7 @@ for i, s in enumerate(SP):
     if max(s["w"], s["h"]) > 9: EXCL["big_glint"] += 1; continue
     if any(z is not None and z.contains(pt) for z in BADGE_PX.values()): EXCL["in_badge"] += 1; continue
     if cn_ring_px.contains(pt):           # sparkles inside the CN dot ring are part of badge 03
-        x, y = C(px, py); add("FR", speck_motif(s, x, y, unit=f"03-sp{ncn}", uniform=True, fn=ref_fn_for(C0, CC, "white")), 21, "03", unit=f"03-sp{ncn}"); ncn += 1; continue
+        x, y = C(px, py); add("FR", speck_guard(speck_motif(s, x, y, unit=f"03-sp{ncn}", uniform=True, fn=ref_fn_for(C0, CC, "white")), "FR-03"), 21, "03", unit=f"03-sp{ncn}"); ncn += 1; continue
     side = None
     for P in ("SR", "SL"):
         if on_sleeve(P, px, py): side = P
@@ -434,14 +478,14 @@ for i, s in enumerate(SP):
     x, y = MM.P(px, py)
     P = "FR" if x < 0 else "FL"
     META.setdefault("field_specks", []).append(dict(P=P, px=px, py=py, x=x, y=y, unit=f"05-{P}{nfield[P]}"))
-    add(P, speck_motif(s, x, y, unit=f"05-{P}{nfield[P]}", fn=ref_fn_field("white")), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
+    add(P, speck_guard(speck_motif(s, x, y, unit=f"05-{P}{nfield[P]}", fn=ref_fn_field("white")), P), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
 # sleeves: mapped front half + seeded back half at the same density and size mix
 for P in ("SR", "SL"):
     sp = SLV[P].sew_poly()
     front_half = sp.intersection(box(0, -500, 600, 600) if P == "SR" else box(-600, -500, 0, 600))
     back_half = sp.difference(front_half)
     for (x, y, s) in sleeve_mapped[P]:
-        add(P, speck_motif(s, x, y, unit=f"05-{P}{nfield[P]}"), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
+        add(P, speck_guard(speck_motif(s, x, y, unit=f"05-{P}{nfield[P]}"), P), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
     nf = len(sleeve_mapped[P]); dens = nf / max(front_half.area, 1)
     rng = random.Random(55 if P == "SR" else 66); nb = int(round(dens * back_half.area)); pts = []
     exts = [max(s["w"], s["h"]) for _, _, s in sleeve_mapped[P]] or [3]
@@ -452,9 +496,51 @@ for P in ("SR", "SL"):
         pts.append(q)
     for q in pts:
         e = rng.choice(exts); s = dict(w=e, h=e)
-        add(P, speck_motif(s, *q, unit=f"05-{P}{nfield[P]}"), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
+        add(P, speck_guard(speck_motif(s, *q, unit=f"05-{P}{nfield[P]}"), P), 21, "05", unit=f"05-{P}{nfield[P]}"); nfield[P] += 1
     META["counts"][P + "_front_mapped"] = nf; META["counts"][P + "_back_seeded"] = len(pts)
+# ================================================================ 06 back star field (Rev H, founder 21 Oct 2026)
+# "embroidered stars on the back only; same star style as the front; place them from the front's star-field logic".
+# No back view exists, so the layout is SEEDED [PROPOSED]: the fronts' field density (stars per cm2 of free front area,
+# badges excluded) and spacing (the fronts' own nearest-neighbour distances) on the back's free area, and every back star
+# is a COPY of a front field star (same primitive, thread, size and traced shape), drawn from the front stars in turn so
+# the size + shape mix is the front's exactly.
+import back as BKM
+def _units(P):
+    g = {}
+    for r in items[P]:
+        u = r.get("unit") or ""
+        if u.startswith("05-"): g.setdefault(u, []).append(r)
+    return g
+FRONT_STARS = []
+for P in ("FR", "FL"): FRONT_STARS += list(_units(P).values())
+# the star LIBRARY copied to the back leaves out outliers > 20 mm2 (two 43-51 mm2 traced blobs at the front hem corners,
+# hem-corner glints, not field stars); density + spacing are still measured on every front field star
+LIB = [rs for rs in FRONT_STARS if unary_union([r["geom"] for r in rs]).area <= 20.0]
+_fc = [unary_union([r["geom"] for r in rs]).centroid for rs in FRONT_STARS]
+_badges = unary_union([r["geom"] for P in ("FR", "FL") for r in items[P] if r["el"] in ("01", "02", "03", "04")]).buffer(8.0)
+_free_front = unary_union([F.clip_for("M", "R"), F.clip_for("M", "L")]).difference(_badges)
+DENS_F = len(FRONT_STARS) / max(_free_front.area, 1.0)
+_nn = sorted(min(a.distance(b) for b in _fc if b is not a) for a in _fc)
+NN_MIN = float(np.percentile(_nn, 10))                  # spacing: no two back stars closer than the fronts' 10th-percentile gap
+BK_CLIP = BKM.clip_for("M")
+nb_target = int(round(DENS_F * BK_CLIP.area))
+rng = random.Random(606); bb = BK_CLIP.bounds; bpts = []; tries = 0
+while len(bpts) < nb_target and tries < 200000:
+    tries += 1; q = (rng.uniform(bb[0], bb[2]), rng.uniform(bb[1], bb[3]))
+    if not BK_CLIP.contains(Point(q)) or any(math.dist(q, p) < NN_MIN for p in bpts): continue
+    bpts.append(q)
+order = list(range(len(LIB))); rng.shuffle(order)
+for i, q in enumerate(bpts):
+    rs = LIB[order[i % len(order)]]; c0 = unary_union([r["geom"] for r in rs]).centroid
+    u = f"06-BK{i}"
+    add("BK", speck_guard([dict(KS.move(r, 1.0, (0, 0), (q[0] - c0.x, q[1] - c0.y)), unit=u) for r in rs], "BK"), 21, "06", unit=u)
+META["counts"].update(BK_field=len(bpts), BK_target=nb_target, BK_density_per_dm2=round(DENS_F * 1e4, 2), BK_nn_min_mm=round(NN_MIN, 1),
+                      BK_front_nn_median_mm=round(float(np.median(_nn)), 1), BK_free_area_cm2=round(BK_CLIP.area / 100, 0),
+                      front_free_area_cm2=round(_free_front.area / 100, 0), front_field_stars=len(FRONT_STARS), BK_library=len(LIB))
 META["counts"].update({k + "_field": v for k, v in nfield.items()}, cn_sparkles=ncn, specks_detected=len(SP), **{"excluded_" + k: v for k, v in EXCL.items()})
+META["counts"]["speck_filter"] = dict(rule=f"bounding-rect narrow side >= {SPECK_MIN_W} mm, long <= {SPECK_MAX_ASPECT} x narrow, inscribed disc >= {SPECK_MIN_IN} mm, else house dot {SPECK_DOT_D} mm; < {SPECK_DROP_MM2} mm2 dropped",
+                                      per_piece={k: SPECK_FIX.get(k, dict(dotted=0, dropped=0)) for k in ("FR", "FR-03", "FL", "SR", "SL", "BK")},
+                                      BK_note="the back copies the guarded front stars, then is checked again", log=SPECK_FIX.get("log", []))
 META["counts"]["glints"] = json.load(open("out/ref/specks_glints.json"))
 spans = [SPAN(max(s["w"], s["h"])) for s in SP if 5 <= max(s["w"], s["h"]) <= 9]
 META["counts"]["sparkle_spans"] = dict(n=len(spans), lt5=sum(1 for v in spans if v < 5), s5_8=sum(1 for v in spans if 5 <= v <= 8), gt8=sum(1 for v in spans if v > 8))

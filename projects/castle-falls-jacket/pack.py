@@ -123,7 +123,7 @@ def threads():
     tr = [("Backing", "2.5 oz cutaway, black/charcoal (navy shell), 30 larger than each hooping; trim to 5 from stitching. Very dense art: test a second layer on the strike-off."),
           ("Needles / bobbin", "75/11 sharp (canvas) · 60wt navy polyester pre-wound bobbin"),
           ("Frames", f"{FR_S} (factory.json{'' if PROF['frames_confirmed'] else ', PROPOSED'}): back 4, each front 2, each sleeve 4 hoopings (split files, G5/G6)"),
-          ("Patches / labels", "none — all artwork is direct embroidery")]
+          ("Patches / labels", "no embroidered patches or labels — woven main + printed care label = Haki standard (garment pages)")]
     for i, (a, b) in enumerate(tr):
         o.append(t(12, yb + 14 + i * 3.4, a, 1.75, 600)); o.append(t(40, yb + 14 + i * 3.4, b, 1.7))
     return o

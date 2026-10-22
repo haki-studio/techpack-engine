@@ -200,14 +200,15 @@ def build(cfg, vis_all):
     for i, l in enumerate(_rl): o.append(t(14, SH - 9 - 3.0 * (len(_rl) - i), l, 1.75, 600, ORANGE))
     pages.append(o)
 
-    w = PdfWriter()
+    w = PdfWriter(); sfx = kbcore.fx("", "_factory")          # factory copy (Rev D, rfq.py): same pages, scrubbed wording
     for i, pg in enumerate(pages, 1):
-        svg = doc(pg)
-        cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"out/e{el}_{i}.pdf")
-        cairosvg.svg2png(bytestring=svg.encode(), write_to=f"out/prev_{el}_p{i}.png", output_width=2400)
-        w.append(PdfReader(f"out/e{el}_{i}.pdf"))
-    spec = f"{OUT}/HAKI_{kbcore.SHORT}_{el}_{slug}_SPEC_{kbcore.REV_EMB.replace(' ', '')}.pdf"
+        svg = kbcore.scrub(doc(pg))
+        cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"out/e{el}_{i}{sfx}.pdf")
+        cairosvg.svg2png(bytestring=svg.encode(), write_to=f"out/prev_{el}_p{i}{sfx}.png", output_width=2400)
+        w.append(PdfReader(f"out/e{el}_{i}{sfx}.pdf"))
+    spec = f"{OUT}/HAKI_{kbcore.SHORT}_{el}_{slug}_SPEC_{kbcore.REV_EMB.replace(' ', '')}{sfx.upper()}.pdf"
     w.write(spec)
+    if kbcore.factory(): return spec                       # art SVGs, previews + summary.json are the internal build's
     for p in pieces:
         b = BBs[p]; ox, oy = b[0] - 5, b[1] - 5; Wd, Hd = b[2] - b[0] + 10, b[3] - b[1] + 10
         g, mt = F.pieces("M"); pc = g[F.CODE[p]].sew_poly()

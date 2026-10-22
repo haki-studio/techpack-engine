@@ -1,0 +1,125 @@
+{
+ "element": "front2",
+ "file": "HAKI_KJ_07b_front-leg-trail-lower",
+ "stitches": 2290,
+ "trims": 32,
+ "jumps": 102,
+ "stops": 9,
+ "threads": 8,
+ "max_stitch": 6.0,
+ "size_mm": [
+  83.9,
+  191.4
+ ],
+ "origin_mm": [
+  64.05,
+  736.38
+ ],
+ "machine_min": 6.8,
+ "per_stop": [
+  {
+   "stop": 1,
+   "stitches": 692,
+   "trims": 1,
+   "jumps": 22,
+   "col": "kj_soot",
+   "codes": [
+    "FUR",
+    "LEG",
+    "SOOT"
+   ]
+  },
+  {
+   "stop": 2,
+   "stitches": 296,
+   "trims": 5,
+   "jumps": 6,
+   "col": "kj_yellow",
+   "codes": [
+    "STAR"
+   ]
+  },
+  {
+   "stop": 3,
+   "stitches": 121,
+   "trims": 0,
+   "jumps": 1,
+   "col": "kj_yellow_hi",
+   "codes": [
+    "STAR-hi"
+   ]
+  },
+  {
+   "stop": 4,
+   "stitches": 297,
+   "trims": 5,
+   "jumps": 19,
+   "col": "kj_pink",
+   "codes": [
+    "STAR"
+   ]
+  },
+  {
+   "stop": 5,
+   "stitches": 122,
+   "trims": 0,
+   "jumps": 1,
+   "col": "kj_pink_hi",
+   "codes": [
+    "STAR-hi"
+   ]
+  },
+  {
+   "stop": 6,
+   "stitches": 297,
+   "trims": 5,
+   "jumps": 7,
+   "col": "kj_blue",
+   "codes": [
+    "STAR"
+   ]
+  },
+  {
+   "stop": 7,
+   "stitches": 122,
+   "trims": 0,
+   "jumps": 1,
+   "col": "kj_blue_hi",
+   "codes": [
+    "STAR-hi"
+   ]
+  },
+  {
+   "stop": 8,
+   "stitches": 271,
+   "trims": 12,
+   "jumps": 27,
+   "col": "kj_white",
+   "codes": [
+    "EYE",
+    "KNOT"
+   ]
+  },
+  {
+   "stop": 9,
+   "stitches": 72,
+   "trims": 4,
+   "jumps": 18,
+   "col": "kj_soot",
+   "codes": [
+    "PUPIL"
+   ]
+  }
+ ],
+ "exposed_runs_gt1mm": 0,
+ "max_exposed": 0.44,
+ "trims_by": {
+  "SOOT": 1,
+  "STAR": 18,
+  "STAR-hi": 3,
+  "KNOT": 8,
+  "EYE": 3,
+  "PUPIL": 4
+ },
+ "travel_trimmed": 2
+}

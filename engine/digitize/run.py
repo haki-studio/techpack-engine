@@ -109,6 +109,13 @@ class Run:
             reg = register.load(config.path(self.cfg, self.cfg.get("registration") or self.cfg_b["registration"]))   # --- mockup-governs --- run.yaml
             # `registration:` = the EXTRACTION source (mockup + informing close-ups); bench.json's stays the gate reference
             self._ref = register.reference(reg, self.view, self.crop, ppm=float(self.cfg_b["ppm"]))
+            self.refsource = []
+            if self.cfg.get("labels"):                      # --- G4 --- a labels reference that governs: composited in
+                from digitize.labels import schema as LS, refsource
+                lpth = config.path(self.cfg, self.cfg["labels"]); T = self.cfg["threads"]
+                self._ref, self.refsource = refsource.composite(self._ref, LS.load(lpth, palette=T["palette"]), os.path.dirname(lpth),
+                                                                T["palette"], bare=tuple(T.get("bare") or ()))
+                for r in self.refsource: print(f"    reference governs {r['unit']}: {r['governs']} ({r['image']}, recoloured {r['recoloured_mm2']} mm2, bared {r['bared_mm2']} mm2)")
         return self._ref
 
     # ------------------------------------------------------------ extract
@@ -170,7 +177,7 @@ class Run:
             lpth = config.path(cfg, cfg["labels"])
             plan.meta.update(labels=dict(file=os.path.relpath(lpth, cfg["project"]), sha256=hashlib.sha256(open(lpth, "rb").read()).hexdigest()[:16],
                                          by=self.labels.get("source", {}).get("by"), parts=sum(1 for _ in __import__("digitize.labels.schema", fromlist=["x"]).iter_parts(self.labels))),
-                             label_questions=label_q)
+                             label_questions=label_q, reference_governs=getattr(self, "refsource", []))
         if getattr(ctx, "building_report", None):                  # M3a: details under a rule 9 minimum, as SUGGESTIONS
             plan.meta["building_suggest"] = ctx.building_report.get("suggest", [])
         plan.to_json(self.f("parts.json"), with_blocks=False)
@@ -416,8 +423,11 @@ class Run:
         ev = evidence.build(register.reference(reg, self.view, self.crop, ppm=float(self.cfg_b["ppm"])), T["palette"], **self.cfg["evidence"])
         ms = qa.dst_stop_masks(dst, self.origin, (ev.H, ev.W), ev.ppm, to_mm=lambda x, y: (x - ev.bounds[0], y - ev.bounds[1]))
         out = np.any(list(ms.values()), axis=0) if ms else np.zeros((ev.H, ev.W), bool)
-        rows = RG.grade(labels, os.path.dirname(lpth), ev, out, bare=tuple(T.get("bare") or ()))
-        res = dict(source="digitize.labels.refgrade: qa.motif_match (near 1.5 mm) per labelled motif; mockup = bench registration",
+        plan = ObjectPlan.from_json(self.f("plan.json"))                 # --- G4 --- the thread shown per stop: colour grade
+        stop_hex = [plan.threads[s["col"]]["hex"] for s in CP.regions(plan, roles=False)]
+        if ms and max(ms) >= len(stop_hex): raise RuntimeError(f"motif reference: the DST has {max(ms) + 1} stops, the plan {len(stop_hex)}")
+        rows = RG.grade(labels, os.path.dirname(lpth), ev, out, bare=tuple(T.get("bare") or ()), stops=(ms, stop_hex), palette=T["palette"])
+        res = dict(source="digitize.labels.refgrade: qa.motif_match (near 1.5 mm) per labelled motif (+ sewn colours where the reference governs colour); mockup = bench registration",
                    labels=os.path.relpath(lpth, self.cfg["project"]), summary=RG.summary(rows), rows=rows)
         print("    motif reference: " + ", ".join(f"{k} {v['ok']}/{v['n']} (IoU {v['mean_iou']})" for k, v in res["summary"].items()))
         return res

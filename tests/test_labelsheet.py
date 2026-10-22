@@ -35,3 +35,13 @@ def test_export_drops_a_stale_care_label(tmp_path):
     d = str(tmp_path / "labels")
     LS.export(d, JACKET)
     assert LS.export(d, UNKNOWN[0]) == ["main-label-6.5x2cm-white.pdf"]
+
+
+def test_proposed_fibre_is_amber_and_says_so(tmp_path, monkeypatch):
+    """the jackets' '100% cotton duck' is our own proposal: the care label is shown, but as proposed, never as confirmed."""
+    monkeypatch.chdir(tmp_path)
+    svg = "".join(LS.panel(0, 0, 86, JACKET, "m", "c")[0])
+    assert "[proposed — confirm fibre: 100 % cotton]" in svg and LS.AMBER in svg and LS.MISSING not in svg
+    assert "[proposed — confirm fibre: 100 % cotton]" in LS.care_bom(JACKET)
+    ok = "".join(LS.panel(0, 0, 86, JACKET, "m", "c", fibre_confirmed=True)[0])
+    assert "confirm fibre" not in ok and "confirm fibre" not in LS.care_bom(JACKET, fibre_confirmed=True)

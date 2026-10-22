@@ -58,5 +58,6 @@ Other sizes (XS-3XL) are rebuilt from the same art after the strike-off.
 """)
 for z in glob.glob("out/HAKI_WAVE_*SAMPLING*.zip"): os.remove(z)
 zp = f"out/HAKI_WAVE_EMB-SAMPLING_{WC.REV_EMB.replace(' ', '')}_M.zip"
+if os.path.isdir("out/labels"): shutil.copytree("out/labels", f"{PKG}/labels")   # Haki standard main + care label files (gtp.build, LESSONS D7)
 subprocess.run(f"cd {PKG} && zip -qr ../{os.path.basename(zp)} .", shell=True)
 print("zip MB", round(os.path.getsize(zp) / 1e6, 1), zp)

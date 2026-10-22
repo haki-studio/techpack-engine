@@ -1,9 +1,12 @@
-# Source of bench/labels_FR.json (the session wrote the labels as this script so the windows stay editable):
+# Source of the Koi FR labels (the session wrote the labels as this script so the windows stay editable):
 #   python3 projects/koi-blossom-hoodie/bench/labels_FR_src.py projects/koi-blossom-hoodie/bench/labels_FR.json
-# G3: --fish-ref tetra writes the variant whose fish motifs name the founder's tetra as their reference (bench/refs/,
-# made by make_tetra_refs.py); grading only, the sewing is unchanged. The default file stays on the mockup until the
-# founder answers card techpack-koi-fish-reference.
-#   python3 projects/koi-blossom-hoodie/bench/labels_FR_src.py projects/koi-blossom-hoodie/bench/labels_FR_tetra.json --fish-ref tetra
+#   python3 projects/koi-blossom-hoodie/bench/labels_FR_src.py projects/koi-blossom-hoodie/bench/labels_FR_mockup.json --fish-ref mockup
+# G4 (founder 2026-10-22, card techpack-koi-fish-reference: "we want the tetra"): the DEFAULT file's fish follow the
+# founder's tetra. Each fish motif names its tetra picture as `reference` with governs [silhouette, colour] (the sewing
+# takes the tetra's outline and colours; the grade checks both), and its parts are the tetra's anatomy read off the same
+# template (bench/make_tetra_refs.py: tail fin, silver body, its blue shade, red stripe, cyan stripe, eye). The mockup still gives each fish's
+# position, heading and count; its size is 0.82 x the mockup length (founder 19 Oct). --fish-ref mockup = the G3 koi
+# labels (fish traced from the mockup's koi, graded vs the mockup), kept as the before-picture.
 import json, os, sys
 LIGHT = ["kb_white", "kb_lav", "kb_ice", "kb_sky"]
 def sq(x, y, r=2.2): return [[x - r, y - r], [x + r, y - r], [x + r, y + r], [x - r, y + r]]
@@ -86,9 +89,43 @@ d = {"schema": "techpack.labels/1",
                 "image": "the run's vision sheet (digitize.labels.sheet on run_fr_labels.yaml: mockup + informing close-up), 3 and 5 px/mm"},
      "_doc": "ENGINE_PLAN G2: written by the session looking at the vision sheet once (no API). Each fish = radial tail (a fan from its root seed) + lobe body + band stripe + dot eye; flora = lobes / cord. Geometry is traced from the input pixels inside each window (A14).",
      "review_below": 0.6, "motifs": M}
-if "--fish-ref" in sys.argv and sys.argv[sys.argv.index("--fish-ref") + 1] == "tetra":
+MODE = sys.argv[sys.argv.index("--fish-ref") + 1] if "--fish-ref" in sys.argv else "tetra"
+if MODE not in ("tetra", "mockup"): raise SystemExit(f"--fish-ref tetra | mockup, got {MODE!r}")
+
+
+def tetra_fish(m, r, conf=0.85):
+    """the fish motif m re-labelled on its tetra (refs/tetra_refs.json row r): same id, same part ids where they exist"""
+    mid, W = m["id"], r["windows"]
+    body_seed = [round(v, 2) for v in __import__("shapely.geometry", fromlist=["Polygon"]).Polygon(W["body"]).representative_point().coords[0]]
+    parts = [
+      {"id": "tail", "what": "tail fin: a fan from the root", "primitive": "radial", "hint": {"polygons": [W["tail"]], "seeds": [r["root"]]},
+       "tones": LIGHT, "z": 7.0, "direction": {"intent": "radial"}, "colour": "auto", "confidence": conf,
+       "alternatives": ["lobe"], "params": {"shape": "traced", "centres": "seeds", "bead": False, "min_mass_mm2": 3.0}},
+      {"id": "body", "what": "silver body (fins inside it)", "primitive": "lobe", "hint": {"polygons": [W["body"]], "seeds": [body_seed],
+       "except": [f"{mid}.tail"]}, "tones": LIGHT, "z": 7.2, "direction": {"intent": "outline"}, "colour": "kb_white",
+       "confidence": conf, "params": {"lobe_sep_mm": 60, "min_lobe_mm2": 10, "min_mass_mm2": 8, "tone": "lit"}},
+      {"id": "shade", "what": "the blue shade on the lower body", "primitive": "lobe", "hint": {"polygons": [W["body"]],
+       "except": [f"{mid}.tail"]}, "tones": ["kb_cobalt", "kb_royal", "kb_corn"], "z": 7.15, "direction": {"intent": "outline"},
+       "colour": "auto", "confidence": conf, "params": {"lobe_sep_mm": 60, "min_lobe_mm2": 4, "min_mass_mm2": 4, "tone": "dominant"}},
+      {"id": "stripe", "what": "red stripe, rear half of the belly", "primitive": "band", "hint": {"polygons": [W["fish"]]},
+       "tones": ["kb_red"], "z": 7.4, "direction": {"intent": "along"}, "colour": "kb_red", "confidence": conf,
+       "params": {"min_part_mm2": 4, "min_mass_mm2": 4, "min_band_mm": 1.5}},
+      {"id": "cyan", "what": "neon cyan stripe along the back", "primitive": "band", "hint": {"polygons": [W["fish"]]},
+       "tones": ["kb_cyan"], "z": 7.45, "direction": {"intent": "along"}, "colour": "kb_cyan", "confidence": conf,
+       "params": {"min_part_mm2": 3, "min_mass_mm2": 3, "min_band_mm": 1.0}},
+    ]
+    if r.get("eye"):
+        parts.append({"id": "eye", "what": "eye", "primitive": "dot", "hint": {"polygons": [sq(*r["eye"])], "seeds": [r["eye"]]},
+                      "tones": ["kb_black", "kb_duck", "kb_duck_lt", "kb_navy"], "z": 7.6, "direction": {"intent": "none"},
+                      "colour": "kb_black", "confidence": conf, "params": {"min_mm2": 0.2, "max_mm2": 6}})
+    return dict(m, what=m["what"] + "; the founder's neon tetra", parts=parts,
+                reference=dict(image=r["image"], box=r["box"], governs=["silhouette", "colour"]))
+
+
+if MODE == "tetra":
     refs = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "refs/tetra_refs.json")))
-    for m in M:
-        if m["id"] in refs: m["reference"] = refs[m["id"]]
-    d["source"]["reference"] = "fish motifs: the founder's tetra at each mockup fish pose, 0.82 x length (bench/make_tetra_refs.py)"
+    M[:] = [tetra_fish(m, refs[m["id"]]) if m["id"] in refs else m for m in M]
+    d["source"]["by"] += "; fish = the founder's tetra: session d2f588bb (G4)"
+    d["source"]["reference"] = ("fish motifs: the founder's tetra (inputs/reference_fish.png) at each mockup fish pose, 0.82 x the mockup "
+                                "length; it governs the fish silhouette + colour (bench/make_tetra_refs.py, founder 2026-10-22)")
 json.dump(d, open(sys.argv[1], "w"), indent=1)

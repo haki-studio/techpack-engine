@@ -43,6 +43,9 @@ class Flat(HF.Flat):
 # feed the block pages this design's pattern
 ZB.G = {sz: F.pieces(sz) for sz in SIZES}; ZB.gM, ZB.mM = ZB.G["M"]; ZB.HF.Flat = Flat
 ZB.STYLE = STYLE
+ZB.SHELL_MAT = "washed navy 12 oz duck"         # as recorded (cover, questions): no fibre % -> care label MISSING (LESSONS D7)
+import construction as CN                       # Rev E: T2-T5 overrides (notes 9-10, D+/H+ rows, S02, label off the table) + CS/CI/CD pages
+CN.install(ZB)
 
 def mh(r): return FA.machine_hours(r["stitches"], FA.load(), trims=r["trims"], colour_changes=r["stops"] - 1)
 
@@ -140,7 +143,7 @@ def p_placement():
         o.append(t(cxs[6], yy, f"{sum(max(1, len(r[P]['splits']['sections'])) for P in kbcore.PIECES)}", 1.4))
         o.append(t(cxs[7], yy, f"{sum(mh(s) for P in kbcore.PIECES for s in r[P]['splits']['sections'].values()):.1f}", 1.4))
     yb = y + 3.6 + 7 * 3.0 + 2
-    for l in ["Embroider the cut panels flat before assembly (fronts before zip + welts, sleeves before the underarm seam + cuff band).",
+    for l in ["Embroider each front + sleeve as an oversized block of shell (cut outline + 30 mm), then re-cut on the 1:1 pattern piece (E0); fronts before zip + welts, sleeves before the underarm seam + cuff band.",
               "Backing 2.5 oz navy cutaway; welt boxes, zip and hem band are not embroidered; hood + back plain [proposed — confirm]."]:
         o.append(t(12, yb, l, 1.5, 400, MUTED)); yb += 3.1
     return o
@@ -158,7 +161,7 @@ def p_questions():
     for q in qs: o.append(t(12, y, q, 1.75, 400, PROP)); y += 4.6
     y += 6; o.append(t(12, y, "REVISION LOG", 2.4, 700)); y += 5
     import textwrap
-    revs = [("Garment Rev A", DATE, "Garment pages + pattern: zip-hoodie block (founder decision 19 Oct, hood option 1) with this design's welt override (mockup welts, " + f"{F.WELT_ANG:.0f}°)."),
+    revs = [("Garment Rev A", "19 Oct 2026", "Garment pages + pattern: zip-hoodie block (founder decision 19 Oct, hood option 1) with this design's welt override (mockup welts, " + f"{F.WELT_ANG:.0f}°)."),
             ] + [(f"Embroidery {rv}", dt, txt) for rv, dt, txt in kbcore.REV_LOG]
     for rv, dt, txt in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(46, y, dt, 1.7))
@@ -168,7 +171,7 @@ def p_questions():
     return o
 
 PAGES = ["T1 Cover", "T2 Flats + construction", "T3 Size chart + measurement check", "T4 Pattern pieces + cut list", "T5 Hood + bands detail",
-         "T6 Bill of materials", "T7 Embroidery placement on the pattern (all sizes)", "T8 Open questions + revision log"]
+         "T6 Bill of materials", "T6b Labels (Haki standard)", "T7 Embroidery placement on the pattern (all sizes)", "T8 Open questions + revision log"]
 
 def build():
     fails = [sz for sz in SIZES if not (ZB.CHECK[sz] and ZB.WALKS_OK[sz] and ZB.SHAPE_OK[sz])]
@@ -179,7 +182,8 @@ def build():
     PO.write_dxf(SIZES, f"{OUT}/pattern/{STYLE}_pattern_ALL-SIZES.dxf", blk=Blk, style=STYLE, emb=True)
     PO.plot_pdf("M", f"{OUT}/pattern/{STYLE}_pattern_M_1to1_PLOT.pdf", blk=Blk, style=STYLE, emb=True)
     index = [(n, i + 1) for i, n in enumerate(PAGES)]
-    pages = [p_cover(index), ZB.p_flats(), ZB.p_pom(), ZB.p_pieces(), ZB.p_hood(), ZB.p_bom(), p_placement(), p_questions()]
+    pages = [p_cover(index), ZB.p_flats(), ZB.p_pom(), ZB.p_pieces(), ZB.p_hood(), ZB.p_bom(), ZB.p_labels(), p_placement(), p_questions()]
+    ZB.LS.export(f"{OUT}/labels", ZB.SHELL_MAT)                 # Haki standard label files for the pack zip labels/
     w = PdfWriter()
     for i, pg in enumerate(pages, 1):
         svg = doc(pg); pdf = f"{OUT}/T{i}.pdf"

@@ -138,7 +138,7 @@ def threads():
     tr = [("Backing", "2.5 oz cutaway, black/navy (dark ground), cut 30 larger than each art box; trim to 5 from stitching after embroidery"),
           ("Topping", "none (canvas surface is firm)"), ("Needles", "75/11 sharp (canvas)"), ("Bobbin", "60wt polyester, navy (dark ground) pre-wound"),
           ("Frames", f"01 back: border frame ≥ {ab[2]-ab[0]+14:.0f} × {ab[3]-ab[1]+14:.0f} (M, single file) or the 360² split files (G5); 04 sleeves: split per the frame (G5); 02/03: 360²"),
-          ("Patches / labels", "none on this garment — all artwork is direct embroidery")]
+          ("Patches / labels", "no embroidered patches or labels — woven main + printed care label = Haki standard (garment pages)")]
     for i, (a, b) in enumerate(tr): o.append(t(12, yb + 11.5 + i * 3.6, a, 1.8, 600)); o.append(t(42, yb + 11.5 + i * 3.6, b, 1.8))
     return o
 

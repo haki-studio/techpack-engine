@@ -82,12 +82,34 @@ REV_LOG = [("Rev A", "16 Oct 2026", "first embroidery pack: koi school + blue li
            ("Rev C", "19 Oct 2026", "Rev B review fixes: gate references from input pixels only (refmask.py); all 6 lilies traced (own petal fans, "
                                     "tone bands from the pixels, long rows along each petal); every leaf, stem + petal traced one by one; tetras traced "
                                     "from reference_fish.png (lavender-blue facets, tapered red stripe) at the fish poses measured on the mockup; "
-                                    "fish 0.82 x mockup length = founder decision")]
+                                    "fish 0.82 x mockup length = founder decision"),
+           ("Rev D", "22 Oct 2026", "RFQ / sample edition (rfq.py): factory summary + full reference pack from one build, both through the "
+                                    "leak gate; RFQ questions, open design questions, TBD list. Stitch files = Rev C art (rebuilt, DST sha manifest); "
+                                    "fish fill under revision"),
+           ("Rev E", "22 Oct 2026", "review + technical-design fixes on Rev D: construction pages (seam table, inside view + bag-out order, welt / zip / hood "
+                                    "details), extended hem + cuff rows, feasibility questions, embroidery method, wash + shrinkage, one sample order + one frame "
+                                    "everywhere; cover contents unclipped. Stitch files unchanged (DST sha = Rev D)"),
+           ("Rev F", "22 Oct 2026", "last fix round before the RFQ: one embroidery method on every page (oversized block + re-cut), pocket bag drawn on "
+                                    "the front pattern per size with its clearances (CP) + a proposed bag that clears, both welt ends from the pattern, one "
+                                    "clearance source, one file per single-hooping piece, F1 send-back = QF section 4, 'our block (DXF)'. Stitch files unchanged (DST sha = Rev E)")]
 PIECES = ("FR", "FL", "SR", "SL")
 ELEM_OF = {"FR": "01", "FL": "01", "SR": "02", "SL": "02"}
 PIECE_NAME = {"FR": "wearer's right front", "FL": "wearer's left front", "SR": "wearer's right sleeve", "SL": "wearer's left sleeve"}
 PIECE_CODE = {"FR": "F02", "FL": "F01", "SR": "S01", "SL": "S02"}
 SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 GRADE = {"XS": ("A", 0.92), "S": ("A", 0.92), "M": ("B", 1.0), "L": ("B", 1.0), "XL": ("B", 1.0), "XXL": ("C", 1.08), "3XL": ("C", 1.08)}
-REV_EMB = "Rev C"; REV_GAR = "Rev A"; DATE = "19 Oct 2026"
+REV = "Rev F"; REV_EMB = REV; REV_GAR = REV; DATE = "22 Oct 2026"      # one revision for the whole pack from Rev D
+ART_REV = "Rev C"                    # the embroidery art + stitch files are still Rev C (fish fill under revision)
+
+# ---------------------------------------------------------------- copy mode (Rev D): "internal" = our team, "factory" = goes to a supplier
+# rfq.py sets MODE; the page builders word provenance + decisions neutrally in factory mode, and scrub() rewrites the
+# block / engine pages this project does not own. rfqgate.check() runs the leak gate on the rendered PDF text afterwards.
+MODE = "internal"
+def factory(): return MODE == "factory"
+def fx(internal, fac): return fac if factory() else internal
+def scrub(svg):
+    """factory mode: rfqgate.RULES (Koi rules + fc_shim.BASE_SCRUB) on every <text> of a page; internal mode: unchanged"""
+    if not factory(): return svg
+    import rfqgate
+    return rfqgate.scrub(svg)
 def outdir(P): e = ELEM_OF[P]; return f"out/{e}_{ELEMS[e][0]}"
