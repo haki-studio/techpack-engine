@@ -20,19 +20,19 @@ REF = {"01": ("Rev C: EVERY motif traced from the input pixels (no templates, no
               "the SR cuff lily (its own petal fan), every leaf, stem + petal one by one from the pixels; fish = tetras traced from inputs/reference_fish.png at the "
               "mockup fish poses (0.82 x, founder decision). The SL lower fish swims head-down-left as the mockup shows (Rev B had it reversed). "
               "A sleeve close-up (inputs/closeup_request.md) would sharpen the leaves.")}
-PROD = ["Embroider the cut panels flat, BEFORE zip, welts,",
-        "  side seams, sleeve seams and hem band / cuffs.",
+PROD = ["Embroider an oversized block of shell, then re-cut",
+        "  (E0); BEFORE zip, welts, seams, hem band + cuffs.",
         "12 threads, 40wt polyester (G3); stop order p4.",
         "Washed navy duck: 75/11 sharp, 2.5 oz navy/black",
         "  cutaway, no topping. Pre-wash the shell first.",
-        "Mark CF / sleeve centre, keep-out lines + needle",
+        "Chalk CF / sleeve centre, keep-out lines + needle",
         "  start (G6, DXF layer 13) before hooping.",
         "Frame (factory.json): split files S1 + S2,",
         "  registration crosses open stop 1 (G6).",
         "Sew-out on production canvas before bulk."]
 CFG = {
  "01": dict(id="01", short="front fish", title="FRONT — tetra fish school + blue lilies (split at the zip)",
-   sub="Direct embroidery on both cut front panels (F02 wearer's right, F01 wearer's left) · mm, finished size · art files 1:1",
+   sub="Embroidery on both fronts, sewn as oversized blocks + re-cut (F02 wearer's right, F01 wearer's left) · mm, finished size · art files 1:1",
    coords="PLACEMENT (x from CF, + = wearer's left; y down from the CF neck seam)",
    view_note="Front view, size M (0.23:1). Gold bar = zip at CF, dark = welt boxes. Hood not drawn (no embroidery on the hood).",
    p1_notes=[f"FR: {n('FR','fish')} fish, {n('FR','flowers')} lilies, {n('FR','leaves')} leaves, {n('FR','petals')} petals — FL: {n('FL','fish')} fish,",
@@ -63,7 +63,7 @@ CFG = {
             "  0.82 x the mockup fish length (decision 19 Oct)."],
    production=PROD, reference=REF["01"]),
  "02": dict(id="02", short="sleeve fish", title="SLEEVES — tetra fish, lilies + petals",
-   sub="Direct embroidery on the front half of both cut sleeves (S01 wearer's right, S02 wearer's left) · mm, finished size · art files 1:1",
+   sub="Embroidery on the front half of both sleeves, sewn as oversized blocks + re-cut (S01 wearer's right, S02 wearer's left) · mm, finished size · art files 1:1",
    coords="PLACEMENT (sleeve pattern coords: x from the sleeve centre line, y down from the underarm line)",
    view_note="Both sleeve pieces, size M (0.19:1). Shaded = back half (no embroidery). Thin line = sleeve centre (shoulder) line.",
    p1_notes=[f"SR: {n('SR','fish')} fish, {n('SR','flowers')} lily, {n('SR','leaves')} leaves, {n('SR','petals')} petals — SL: {n('SL','fish')} fish,",
@@ -87,6 +87,29 @@ CFG = {
             "Back half of the sleeves: plain [proposed — confirm]."],
    production=PROD, reference=REF["02"])}
 
+# factory copy (Rev D, `run_spec.py --factory`, run by rfq.py): neutral reference + change notes, no build provenance
+REF_FAC = {"01": "Artwork: every motif traced from the design mockup and its close-up. Fish: tetras at 0.82 x the mockup fish length (confirmed). "
+                 "Stitch files are for SAMPLING: production-intent drafts, the fish fill is under revision — your digitizer checks density + pull on the shell before the strike-off.",
+           "02": "Artwork: traced from the design mockup (front view; no sleeve close-up). Fish: tetras at the same scale as the fronts. "
+                 "Stitch files are for SAMPLING: production-intent drafts, the fish fill is under revision — your digitizer checks density + pull on the shell before the strike-off."}
+CHG_FAC = {"01": ["Layout from the design mockup, mapped to the size-M",
+                  "  front pattern pieces.",
+                  "Zip: art stops 15 each side of CF (mockup lilies touch it);",
+                  "  FR bottom lily moved ~15 off the zip  [proposed — confirm].",
+                  "Hem band: mockup petals cross the band seam; the FL + FR",
+                  "  clusters end 10 above it  [proposed — confirm].",
+                  "Side seam: FR vine leaves kept 15 inside the seam.",
+                  f"Welts at the mockup position + angle ({WELT_DEG}),",
+                  "  size 1.4 × 13; art keeps 6 clear on every size.",
+                  "Fish: sew the tetras in the stitch files (they replace",
+                  "  the mockup's fish), at 0.82 x the mockup fish length."],
+           "02": [c.replace("Fish (tetras, founder reference) + petals sized like", "Fish: the files' tetras replace the mockup's fish;")
+                   .replace("  the fronts (one motif scale).", "  sized like the fronts (one motif scale).") for c in CFG["02"]["changes"]]}
+
 if __name__ == "__main__":
-    for el in (sys.argv[1:] or ["01", "02"]):
+    args = [a for a in sys.argv[1:] if a != "--factory"]
+    if "--factory" in sys.argv:
+        kbcore.MODE = "factory"
+        for el in CFG: CFG[el].update(reference=REF_FAC[el], changes=CHG_FAC[el])
+    for el in (args or ["01", "02"]):
         print(espec.build(CFG[el], D))

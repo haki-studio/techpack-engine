@@ -44,6 +44,8 @@ class Flat(HF.Flat):
 ZB.G = {sz: F.pieces(sz) for sz in SIZES}; ZB.gM, ZB.mM = ZB.G["M"]; ZB.HF.Flat = Flat
 ZB.STYLE = STYLE
 ZB.SHELL_MAT = "washed navy 12 oz duck"         # as recorded (cover, questions): no fibre % -> care label MISSING (LESSONS D7)
+import construction as CN                       # Rev E: T2-T5 overrides (notes 9-10, D+/H+ rows, S02, label off the table) + CS/CI/CD pages
+CN.install(ZB)
 
 def mh(r): return FA.machine_hours(r["stitches"], FA.load(), trims=r["trims"], colour_changes=r["stops"] - 1)
 
@@ -141,7 +143,7 @@ def p_placement():
         o.append(t(cxs[6], yy, f"{sum(max(1, len(r[P]['splits']['sections'])) for P in kbcore.PIECES)}", 1.4))
         o.append(t(cxs[7], yy, f"{sum(mh(s) for P in kbcore.PIECES for s in r[P]['splits']['sections'].values()):.1f}", 1.4))
     yb = y + 3.6 + 7 * 3.0 + 2
-    for l in ["Embroider the cut panels flat before assembly (fronts before zip + welts, sleeves before the underarm seam + cuff band).",
+    for l in ["Embroider each front + sleeve as an oversized block of shell (cut outline + 30 mm), then re-cut on the 1:1 pattern piece (E0); fronts before zip + welts, sleeves before the underarm seam + cuff band.",
               "Backing 2.5 oz navy cutaway; welt boxes, zip and hem band are not embroidered; hood + back plain [proposed — confirm]."]:
         o.append(t(12, yb, l, 1.5, 400, MUTED)); yb += 3.1
     return o
@@ -159,7 +161,7 @@ def p_questions():
     for q in qs: o.append(t(12, y, q, 1.75, 400, PROP)); y += 4.6
     y += 6; o.append(t(12, y, "REVISION LOG", 2.4, 700)); y += 5
     import textwrap
-    revs = [("Garment Rev A", DATE, "Garment pages + pattern: zip-hoodie block (founder decision 19 Oct, hood option 1) with this design's welt override (mockup welts, " + f"{F.WELT_ANG:.0f}°)."),
+    revs = [("Garment Rev A", "19 Oct 2026", "Garment pages + pattern: zip-hoodie block (founder decision 19 Oct, hood option 1) with this design's welt override (mockup welts, " + f"{F.WELT_ANG:.0f}°)."),
             ] + [(f"Embroidery {rv}", dt, txt) for rv, dt, txt in kbcore.REV_LOG]
     for rv, dt, txt in revs:
         o.append(t(12, y, rv, 1.8, 700)); o.append(t(46, y, dt, 1.7))
