@@ -30,7 +30,7 @@ def live_piece(P, bb, ppm, size="M", root=None):
     return out
 
 # ---------------------------------------------------------------- chenille overlay (primary foam, factory 19 Oct)
-CHEN_W = 2.0           # a chenille loop row is ~2 mm wide (moss / loop fill rows 2.0 mm apart cover the foam)
+CHEN_W = 2.2           # a chenille loop row is ~2.2 mm wide (loop / moss rows 1.8 mm apart cover the foam)
 def chenille_paths(rec):
     """[(colour key, [(x, y) ...])] in piece coords from a chenille readback record (rec = result['chenille'])"""
     if not rec: return []

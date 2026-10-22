@@ -1,4 +1,4 @@
-M SR {'stitches': 166875, 'trims': 723, 'jumps': 1667, 'stops': 13, 'size_mm': (429.9, 301.2), 'max_stitch': 7.43} 122s
-M SR S1_left {'stitches': 79368, 'trims': 357, 'stops': 12, 'size_mm': (216.8, 321.0), 'fits': True} split_clip
-M SR S2_right {'stitches': 87636, 'trims': 374, 'stops': 13, 'size_mm': (225.3, 321.0), 'fits': True} split_clip
+M SR primary {'stitches': 292704, 'trims': 759, 'stops': 15, 'size_mm': (499.4, 388.2), 'max_stitch': 7.27} chenille plan {'paths': 575, 'needle_points': 6562, 'length_m': 14.0}
+M SR primary S1_left {'stitches': 139440, 'trims': 352, 'stops': 14, 'size_mm': (255.7, 407.8), 'fits': True}
+M SR primary S2_right {'stitches': 153124, 'trims': 424, 'stops': 15, 'size_mm': (255.7, 407.8), 'fits': True}
 DONE M ['SR']

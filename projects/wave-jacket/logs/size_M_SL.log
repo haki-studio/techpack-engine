@@ -1,5 +1,4 @@
-M SL {'stitches': 121260, 'trims': 624, 'jumps': 1573, 'stops': 17, 'size_mm': (411.1, 360.4), 'max_stitch': 7.43} 91s
-M SL absorbed near-empty sections: ['(0, 1) (8 mm2) -> (0, 0)', '(1, 1) (1228 mm2) -> (1, 0)']
-M SL S1_top-left {'stitches': 36135, 'trims': 211, 'stops': 11, 'size_mm': (213.2, 335.6), 'fits': True} split_clip
-M SL S2_top-right {'stitches': 85372, 'trims': 421, 'stops': 17, 'size_mm': (229.6, 320.4), 'fits': True} split_clip
+M SL primary {'stitches': 236101, 'trims': 763, 'stops': 18, 'size_mm': (500.0, 357.1), 'max_stitch': 7.25} chenille plan {'paths': 589, 'needle_points': 6685, 'length_m': 14.2}
+M SL primary S1_left {'stitches': 42880, 'trims': 133, 'stops': 16, 'size_mm': (215.4, 377.0), 'fits': True}
+M SL primary S2_right {'stitches': 193293, 'trims': 623, 'stops': 18, 'size_mm': (309.4, 377.0), 'fits': True}
 DONE M ['SL']

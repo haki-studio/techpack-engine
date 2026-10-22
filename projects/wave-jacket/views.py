@@ -35,10 +35,22 @@ def view_regions(view, size):
         sm, g = sleeve_to_view(view, side, size); f, _ = MM.body_tf(view, size)
         half = box(0, -400, 400, 900) if sm.sgn > 0 else box(-400, -400, 0, 900)
         q = np.array(sm.quad_px.exterior.coords); X, Y = f(q[:, 0], q[:, 1]); sl.append(Polygon(np.c_[X, Y]).buffer(0))
+        # PR #27 review 5: near the sleeve centre fold the inverse sleeve map is ill-conditioned, so art there was smeared
+        # into long streak fans along the sleeve edge of the preview (not in the DST). Pieces whose mapped area grows far
+        # beyond the sleeve's typical scale, or that turn into slivers, are dropped from the PREVIEW only (it shows the
+        # visible half; the fold itself is not visible in a flat lay).
+        mapped = []
         for r in A[P]:
             gg = r["geom"].intersection(half)
-            if gg.is_empty: continue
-            out.append(dict(r, geom=MM.map_geom(gg, g, densify=1.0).buffer(0), _z=1))
+            if gg.is_empty or gg.area < 0.05: continue
+            mg = MM.map_geom(gg, g, densify=1.0).buffer(0)
+            if mg.is_empty: continue
+            mapped.append((r, gg, mg, mg.area / gg.area))
+        med = float(np.median([k for *_, k in mapped])) if mapped else 1.0
+        for r, gg, mg, k in mapped:
+            w0 = 2 * gg.area / max(gg.length, 1e-6); w1 = 2 * mg.area / max(mg.length, 1e-6)
+            if k > 3.0 * med or (w1 < 0.45 * w0 * np.sqrt(med) and mg.length > 4 * gg.length * np.sqrt(med)): continue
+            out.append(dict(r, geom=mg, _z=1))
     return out, sl, pans
 
 def view_png(view, size="M", ppm=2.0, pad=12):
@@ -66,7 +78,13 @@ def view_png(view, size="M", ppm=2.0, pad=12):
     if view == "front":
         for w_ in (FRT.WELT_R, FRT.WELT_L): d.polygon(T(w_.exterior.coords), fill=(22, 26, 40), outline=(110, 115, 135))
         d.rectangle([T([(-6, 0)])[0], T([(6, hem + 55)])[0]], fill=(160, 125, 60))
-        for c in (FRT.COLLAR_R, FRT.COLLAR_L): d.polygon(T(c.exterior.coords), fill=(30, 35, 50), outline=(90, 95, 115))
+        # collar for the PREVIEW (review 13: the leaves rising above the shoulders read as a hood): a shirt collar lying flat -
+        # the back stand across the neck (inside of the collar, darker) + two leaves from the stand fold down to the points
+        nk = FRT._neck; hx, hy = nk[-1]                                   # CF neck (0, 0) -> HPS (-100, -95)
+        stand = nk + [(hx, hy - 24), (0, hy - 32), (-hx, hy - 24)] + [(-x, y) for x, y in nk[::-1]]
+        d.polygon(T(stand), fill=(22, 26, 38), outline=(90, 95, 115))
+        leaf = [(-8, 14), (-72, 66), (hx - 48, hy + 52), (hx - 14, hy - 22)] + nk[::-1]
+        for sg in (1, -1): d.polygon(T([(sg * x, y) for x, y in leaf]), fill=(30, 35, 50), outline=(90, 95, 115))
     else:
         nk = [p for p in pans][0]; nb = nk.bounds
         d.polygon(T([(-100, -30), (100, -30), (95, 28), (0, 34), (-95, 28)]), fill=(30, 35, 50), outline=(90, 95, 115))

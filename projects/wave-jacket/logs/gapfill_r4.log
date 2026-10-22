@@ -1,0 +1,5 @@
+BK {'gaps': 12, 'tails': 50, 'filled': 62, 'regions_added': 250, 'merged_into_stripes': 111}
+FR {'gaps': 2, 'tails': 25, 'filled': 27, 'regions_added': 69, 'merged_into_stripes': 41}
+FL {'gaps': 6, 'tails': 23, 'filled': 29, 'regions_added': 99, 'merged_into_stripes': 71}
+SR {'gaps': 27, 'tails': 40, 'filled': 67, 'regions_added': 309, 'merged_into_stripes': 123}
+SL {'gaps': 23, 'tails': 28, 'filled': 51, 'regions_added': 314, 'merged_into_stripes': 134}

@@ -1,0 +1,5 @@
+BK {'rings_replaced': 1167, 'rings_kept': 127, 'cords': 879, 'cord_length_m': 8.73, 'grain_foam_mm2': 22913, 'foam_mm2': 33171}
+FR {'rings_replaced': 520, 'rings_kept': 58, 'cords': 303, 'cord_length_m': 3.01, 'grain_foam_mm2': 8162, 'foam_mm2': 12523}
+FL {'rings_replaced': 619, 'rings_kept': 373, 'cords': 404, 'cord_length_m': 3.89, 'grain_foam_mm2': 10652, 'foam_mm2': 23791}
+SR {'rings_replaced': 553, 'rings_kept': 330, 'cords': 371, 'cord_length_m': 3.67, 'grain_foam_mm2': 10094, 'foam_mm2': 22444}
+SL {'rings_replaced': 510, 'rings_kept': 284, 'cords': 396, 'cord_length_m': 3.91, 'grain_foam_mm2': 9851, 'foam_mm2': 20864}

@@ -1,0 +1,67 @@
+diff --git a/projects/wave-jacket/gates.py b/projects/wave-jacket/gates.py
+index 542b133..a174039 100644
+--- a/projects/wave-jacket/gates.py
++++ b/projects/wave-jacket/gates.py
+@@ -179,6 +179,29 @@ def dst_family(P, bb, fam):
+         if rec: live.draw_chenille(im, rec, bb, PPM, flat={"w1": 255, "w3": 255, "w1e": 255})
+     return ndi.binary_closing(np.asarray(im) > 0, iterations=2)
+ 
++def family_raster(P, bb, shape):
++    """1 = stripes + rope cords, 2 = foam (crests, shades, hollows, curl cords), 3 = drops - from the art (what each area IS)"""
++    from PIL import Image, ImageDraw
++    im = Image.new("L", shape[::-1], 0); d = ImageDraw.Draw(im)
++    code = lambda g: 1 if g in ("WV", "RP") else (3 if g in ("DR", "DR-b") else 2)
++    for r in sorted(D[P], key=lambda r: r.get("layer", 0)):
++        for q in WR.polys_of(r["geom"]):
++            d.polygon([((x - bb[0]) * PPM, (y - bb[1]) * PPM) for x, y in q.exterior.coords], fill=code(r["grp"]))
++    return np.asarray(im)
++
++def visible_segments(segs, shape, w_mm=0.45, keep=0.3):
++    """the stitches you SEE (what the live view and the founder judge): every segment drawn in sewing order on one raster,
++    later stitches over earlier ones; a segment is visible when >= keep of its own pixels survive on top. Underlay, padding
++    and travel under later fills drop out. Input = the DST(s) only."""
++    from PIL import Image, ImageDraw
++    im = Image.new("I", (shape[1], shape[0]), 0); d = ImageDraw.Draw(im); w = max(1, int(round(w_mm * PPM)))
++    exp = []
++    for i, (x0, y0, x1, y1) in enumerate(segs):
++        d.line([(x0 * PPM, y0 * PPM), (x1 * PPM, y1 * PPM)], fill=i + 1, width=w)
++        exp.append(max(1.0, np.hypot(x1 - x0, y1 - y0) * PPM * w))
++    cnt = np.bincount(np.asarray(im).ravel(), minlength=len(segs) + 1)[1:]
++    return [s_ for s_, c, e in zip(segs, cnt, exp) if c >= keep * e]
++
+ def align(ref, out, max_mm=SHIFT):
+     """each ref component pasted at its best shift (max overlap with `out` within +/- max_mm, FFT correlation, a small
+     distance penalty so ties keep the mapped position). Returns (aligned mask, source-id image, {id: shift mm})"""
+@@ -258,7 +281,22 @@ def gate_piece(P):
+         r = json.load(open(f"out/01_wave/{SIZE}/result_{P}.json"))["full"]
+         segs = qa.dst_segments(r["file"] + ".dst", origin=(r["origin"][0] - bb[0], r["origin"][1] - bb[1]))
+         if r.get("chenille"): segs += qa.dst_segments(r["chenille"]["file"] + ".dst", origin=(r["chenille"]["origin"][0] - bb[0], r["chenille"]["origin"][1] - bb[1]))
+-        dm = qa.direction_match(g, PPM, segs, tile_mm=8.0)
++        vis_s = visible_segments(segs, g.shape)
++        dm = qa.direction_match(g, PPM, vis_s, tile_mm=8.0)
++        dm_all = qa.direction_match(g, PPM, segs, tile_mm=8.0)
++        dm["all_stitches_pct_ok"] = dm_all["pct_ok"]; dm["visible_share"] = round(len(vis_s) / max(1, len(segs)), 3)
++        # per motif family (A16 sets the direction per family): stripes + rope cords on 8 mm tiles; foam curls and drops
++        # turn within a few mm, so they are judged on 4 mm tiles
++        fam_of = family_raster(P, bb, g.shape)
++        by = {1: [], 2: [], 3: []}
++        for q in vis_s:
++            cx, cy = int((q[0] + q[2]) / 2 * PPM), int((q[1] + q[3]) / 2 * PPM)
++            if 0 <= cy < fam_of.shape[0] and 0 <= cx < fam_of.shape[1] and fam_of[cy, cx] in by: by[fam_of[cy, cx]].append(q)
++        fams = {}
++        for k, nm, tm, ms in ((1, "stripes", 8.0, 12), (2, "foam", 4.0, 6), (3, "drops", 4.0, 4)):
++            f_ = qa.direction_match(g, PPM, by[k], tile_mm=tm, min_stitches=ms)
++            fams[nm] = dict(tile_mm=tm, tiles=f_["tiles"], pct_ok=f_["pct_ok"], fail_dev=len(f_["fail_dev"]), fail_chaos=len(f_["fail_chaos"]))
++        dm["by_family"] = fams
+         for k in ("fail_dev", "fail_chaos"):
+             for t_ in dm[k]: t_["at_mm"] = [round(t_["at_mm"][0] + bb[0], 1), round(t_["at_mm"][1] + bb[1], 1)]
+         dm["tile_mm"] = 8.0; res["direction"] = dm
+@@ -296,7 +334,7 @@ if __name__ == "__main__":
+     for r in S: print(r)
+     for P in WC.PIECES:
+         d_ = res[P].get("direction")
+-        if d_: print(P, "direction", d_["pct_ok"], "% OK of", d_["tiles"], "tiles; off-grain", len(d_["fail_dev"]), "chaotic", len(d_["fail_chaos"]))
++        if d_: print(P, "direction", d_["pct_ok"], "% OK of", d_["tiles"], "tiles; off-grain", len(d_["fail_dev"]), "chaotic", len(d_["fail_chaos"]), "| by family", d_.get("by_family"))
+     for P in WC.PIECES:
+         un = [g for g in res[P]["uncovered"] if g["why"] == "UNEXPLAINED"]
+         print(P, "uncovered", len(res[P]["uncovered"]), "unexplained", len(un), [(g["x_mm"], g["y_mm"], g["area_mm2"]) for g in un[:6]])

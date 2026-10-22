@@ -70,16 +70,31 @@ def merge_tiny(stops, clear=0.4):
             k = cand[0]; stops[k] = dict(stops[k], regions=stops[k]["regions"] + s["regions"]); del stops[j]; changed = True; break
     return stops
 
+def tiny_why(stops, j, clear=0.4):
+    """PR #27 review (round 4, item 5): why a tiny stop (< TINY_MM2) could not be merged - the other-colour stops sewn
+    between it and every same-colour stop that touch its regions (moving it would put it under / over them)"""
+    s = stops[j]
+    if sum(r["geom"].area for r in s["regions"]) >= TINY_MM2: return None
+    U = unary_union([r["geom"] for r in s["regions"]]).buffer(clear)
+    same = [i for i in range(len(stops)) if i != j and stops[i]["col"] == s["col"]]
+    if not same: return "only stop of this thread"
+    out = []
+    for i in same:
+        a, b = (i + 1, j) if i < j else (j + 1, i)
+        blk = sorted({k + 1 for k in range(a, b) if stops[k]["col"] != s["col"] and any(r["geom"].intersects(U) for r in stops[k]["regions"])})
+        out.append(f"to stop {i + 1}: touches stop{'s' if len(blk) > 1 else ''} " + ",".join(map(str, blk)) + " sewn between")
+    return "kept: merging would change what lies on top (" + "; ".join(out[:2]) + ")"
+
 def stops_for(vis):
     st = tech.stops(vis); n0 = len(st); return merge_tiny(dst2.merge_stops(st)), n0
 
 def sews(stops, basting=False):
     """what each colour stop sews: region codes + stitch types (underlay/edge runs are part of every fill object)"""
     out = []
-    for s in stops:
+    for j, s in enumerate(stops):
         codes = sorted({tech.rule_for(r["grp"]) for r in s["regions"]})
         types = sorted({r["st"] for r in s["regions"]})
-        out.append(dict(col=s["col"], codes=codes, types=types, objects=len(s["regions"])))
+        out.append(dict(col=s["col"], codes=codes, types=types, objects=len(s["regions"]), tiny_why=tiny_why(stops, j)))
     if basting and out: out[0]["codes"] = ["REG crosses"] + out[0]["codes"]
     return out
 
@@ -103,37 +118,39 @@ def hoop_plan(P, ub):
     if w <= FRAME[0] - 16 and h <= FRAME[1] - 16: return ("one", None)
     return ("split", FRAME)
 
-def write_set(sv, origin, base, reg=None, primary=True):
-    """primary = lockstitch file without the foam + the CHENILLE file of the foam (same origin, same hooping);
-    alternative (primary=False) = everything lockstitch, foam as padded tatami + loop runs (Rev A/B padded)"""
-    lock = [r for r in sv if r["grp"] not in FOAM_GRPS] if primary else sv
-    stops, n0 = stops_for(lock); pat, st = dst2.make_pattern(lock, stops, origin, reg_marks=reg)
+def write_set(sv, origin, base, reg=None, primary=True, plan=False):
+    """Rev B fix round (20 Oct, LESSONS B33): the PRIMARY file is all lockstitch - foam as padded tatami, rows along the curl
+    (A16) + spiral curl cord + loop spiral (the Rev B 'alt_padded' set). Chenille has no confirmed machine format
+    (factory.json chenille_format = null), so it is a PLAN (json + preview, chenille.plan), never a machine file."""
+    stops, n0 = stops_for(sv); pat, st = dst2.make_pattern(sv, stops, origin, reg_marks=reg)
     pat = cap_stitches(reg_in_first_colour(pat) if reg else pat)
     dst2.write(pat, base); dst2.render(base, base + "_preview.png", bg=(39, 47, 67), s=0.5)
     out = dict(stops=stops, n0=n0, st=st)
-    if primary:
+    if plan:
         foam = [r for r in sv if r["grp"] == "FM"]; cords = [r for r in sv if r["grp"] == "FM-curl"]
         if foam:
             import chenille
-            out["chenille"] = chenille.write(foam, cords, origin, base + "_CHENILLE")
+            d = os.path.join(os.path.dirname(base), "chenille_plan"); os.makedirs(d, exist_ok=True)
+            out["chenille_plan"] = chenille.plan(foam, cords, origin, os.path.join(d, os.path.basename(base) + "_CHENILLE-PLAN"))
     return out
 
 for P in which:
     rp = f"{OUT}/result_{P}.json"
     res = {}
     vis = dst2.merge_colours(D[P])
+    import flowdir; flowdir.install(vis, P, size)   # A16: stripe flow field + close-up grain (grainfield.py) + crest outlines
     ub = unary_union([r["geom"] for r in vis]).bounds; c = ((ub[0]+ub[2])/2, (ub[1]+ub[3])/2)
     plan, frame = hoop_plan(P, ub)
-    for variant, primary in (("primary", True), ("alt_padded", False)):
-        sub = "" if primary else "alt_padded/"; os.makedirs(f"{OUT}/{sub}", exist_ok=True)
-        t = time.time(); base = f"{OUT}/{sub}HAKI_WAVE_01_wave_{P}_{size}" + ("" if primary else "_ALT-PADDED")
-        w = write_set(vis, c, base, primary=primary); stops = w["stops"]
+    for variant, primary in (("primary", True),):
+        sub = ""; os.makedirs(f"{OUT}/{sub}", exist_ok=True)
+        t = time.time(); base = f"{OUT}/{sub}HAKI_WAVE_01_wave_{P}_{size}"
+        w = write_set(vis, c, base, primary=primary, plan=True); stops = w["stops"]
         ex = dst2.exposed_travel(stops, w["st"].get("runs", []))
-        full = record(base, stops, dict(origin=c, art_box=ub, stops_before_merge=w["n0"], secs=round(time.time()-t), satin_guard=dict(glcore.COV_LOG),
+        full = record(base, stops, dict(origin=c, art_box=ub, stops_before_merge=w["n0"], secs=round(time.time()-t), satin_guard=dict(glcore.COV_LOG), flowdir=dict(flowdir.LOG),
                                         exposed_travel=dict(runs_over_1mm=sum(1 for e in ex if e > 1.0), runs_over_2mm=sum(1 for e in ex if e > 2.0), max_mm=round(max(ex), 1) if ex else 0.0),
                                         build_trims_by_code=sorted(w["st"].get("by", {}).items(), key=lambda kv: -kv[1])[:10]))
-        if "chenille" in w: full["chenille"] = w["chenille"]
-        print(size, P, variant, {k: full[k] for k in ("stitches", "trims", "stops", "size_mm", "max_stitch")}, ("chenille " + str({k: w["chenille"][k] for k in ("stitches", "trims", "stops")})) if "chenille" in w else "", flush=True)
+        if "chenille_plan" in w: full["chenille_plan"] = w["chenille_plan"]
+        print(size, P, variant, {k: full[k] for k in ("stitches", "trims", "stops", "size_mm", "max_stitch")}, ("chenille plan " + str({k: w["chenille_plan"][k] for k in ("paths", "needle_points", "length_m")})) if "chenille_plan" in w else "", flush=True)
         R = dict(full=full, plan=plan)
         if plan == "split":
             for wm in (70.0, 55.0, 40.0):
@@ -159,10 +176,9 @@ for P in which:
                 sv = sp["secs"][key]; t = time.time()
                 bb = unary_union([r["geom"] for r in sv] + [Point(m).buffer(6) for m in marks[key]]).bounds
                 cc = ((bb[0]+bb[2])/2, (bb[1]+bb[3])/2)
-                bs = f"{OUT}/{sub}splits/HAKI_WAVE_01_wave_{P}_{size}_{names[key]}" + ("" if primary else "_ALT-PADDED"); os.makedirs(os.path.dirname(bs), exist_ok=True)
+                bs = f"{OUT}/{sub}splits/HAKI_WAVE_01_wave_{P}_{size}_{names[key]}"; os.makedirs(os.path.dirname(bs), exist_ok=True)
                 w = write_set(sv, cc, bs, reg=marks[key], primary=primary)
                 r = record(bs, w["stops"], dict(bbox=bb, origin=cc, marks=marks[key], secs=round(time.time()-t)), basting=True)
-                if "chenille" in w: r["chenille"] = w["chenille"]
                 fw, fh = frame
                 r["fits"] = (r["size_mm"][0] <= fw - 16 and r["size_mm"][1] <= fh - 16) or (r["size_mm"][1] <= fw - 16 and r["size_mm"][0] <= fh - 16)
                 spl["sections"][names[key]] = r

@@ -22,7 +22,11 @@ OUT = f"out/{N}_{SLUG}"; os.makedirs(OUT, exist_ok=True)
 D = pickle.load(open("art_M.pkl", "rb")); V = {P: D[P] for P in WC.PIECES}
 CUR = json.load(open("dst_current.json"))
 PROF = FA.load()
-def mh(r): return FA.machine_hours(r.get("total_stitches", r["stitches"]), PROF, trims=r.get("total_trims", r["trims"]), colour_changes=r.get("total_stops", r["stops"]) - 1)
+def _mh1(r): return FA.machine_hours(r.get("total_stitches", r["stitches"]), PROF, trims=r.get("total_trims", r["trims"]), colour_changes=r.get("total_stops", r["stops"]) - 1)
+def mh(r):
+    """run time as hooped: summed over the split sections (incl. registration) when the piece is split - same as G4"""
+    ss = (r.get("splits") or {}).get("sections", {}) or {}
+    return sum(_mh1(s) for s in ss.values()) if ss else _mh1(r.get("full", r))
 BB = {P: unary_union([r["geom"] for r in V[P]]).bounds for P in WC.PIECES}
 ALLV = [r for P in WC.PIECES for r in V[P]]
 
@@ -57,7 +61,8 @@ def p1():
         o.append(t(rx + 46, y, f"{r['stops']}", 1.7)); o.append(t(rx + 56, y, f"{r['hoopings']}", 1.7)); o.append(t(rx + 68, y, f"{mh(r)*60:.0f} min", 1.7)); y += 3.5
     tot = sum(CUR[P].get("total_stitches", CUR[P]["stitches"]) for P in WC.PIECES); tt = sum(CUR[P].get("total_trims", CUR[P]["trims"]) for P in WC.PIECES); th = sum(mh(CUR[P]) for P in WC.PIECES)
     o.append(t(rx, y, "All", 1.75, 700)); o.append(t(rx + 13, y, f"{tot:,}", 1.75, 700)); o.append(t(rx + 33, y, f"{tt:,}", 1.75, 700)); o.append(t(rx + 68, y, f"{th:.1f} h", 1.75, 700)); y += 4
-    o.append(t(rx, y, f"Lockstitch + chenille files (primary foam). Run time = {PROF['spm']} spm + 6 s/trim + 4 s/colour change, one head.", 1.45, 400, MUTED)); y += 6
+    o.append(t(rx, y, f"All lockstitch (foam padded; chenille = plan only). Run time = {PROF['spm']} spm + 6 s/trim + 4 s/colour change,", 1.45, 400, MUTED)); y += 3
+    o.append(t(rx, y, "one head, summed over the hoopings incl. registration (= G4).", 1.45, 400, MUTED)); y += 6
     o.append(t(rx, y, "KEEP-OUT CLEARANCES, SIZE M (mm, art outline → sew line)", 2.0, 700)); y += 4
     cl = EP.clearances("M")
     for P in WC.PIECES:
@@ -68,15 +73,28 @@ def p1():
     y += 2
     o.append(t(rx, y, "Min: every seam the wave crosses 3 (armhole/cap, side, shoulder, underarm) ·", 1.45, 400, MUTED)); y += 2.9
     o.append(t(rx, y, "CF zip 15 · hem 10 · cuff 10 · welt 6 · collar flat 6 · neck 6 (emb_place.py).", 1.45, 400, MUTED)); y += 6
-    for l_ in ["!Art traced from the low-res AI render (~1.4 mm/px) + the founder's", "!close-up on the FL crest. Generated: seam warps + tapers (G7/G9)", "!and the art under the collar fall (mirrored to the neck keep-out).",
+    for l_ in ["!Art traced from the render + the founder's close-ups (20 Oct, pixel-", "!aligned; mockup = placement). Generated: seam warps + tapers (G7/G9)", "!and the art under the collar fall (mirrored to the neck keep-out).",
                "Rev B SEAMLESS wave: armhole mapped cap <-> body by seam length,", "stripes continue across every seam, 3 mm short, match notches", "on both pieces; each sleeve one continuous trace (no fold seam)."]:
         col = ORANGE if l_.startswith("!") else MUTED
         o.append(t(rx, y, l_.lstrip("!"), 1.6, 600 if col == ORANGE else 400, col)); y += 2.9
     return o
 
+def crop_on(grp, w, h, P="BK"):
+    """fix round 3: detail crops are centred on the art they name (the old fixed offsets from the bbox showed bare fabric
+    after the Rev B wrap moved the crests): the w x h window holding the most area of group `grp` (DR: most drop motifs)"""
+    from shapely.geometry import box as _box
+    rs = [r for r in V[P] if r["grp"] == grp]
+    if not rs: b = BB[P]; return (b[0], b[1], b[0] + w, b[1] + h)
+    cs = [r["geom"].centroid for r in rs]; best, bv = None, -1
+    for c in cs:
+        bx = _box(c.x - w / 2, c.y - h / 2, c.x + w / 2, c.y + h / 2)
+        v = sum(1 for q in cs if bx.contains(q)) if grp == "DR" else sum(r["geom"].intersection(bx).area for r in rs if r["geom"].intersects(bx))
+        if v > bv: best, bv = (c.x - w / 2, c.y - h / 2, c.x + w / 2, c.y + h / 2), v
+    return best
+
 def p2():
     o = header(f"{N} · STITCH-DIRECTION MAP + REGION CODES (size M)", "Hatch = stitch direction. Dark solid = line work (bean / run). Labels = region code (stitch table p3). Each piece drawn at its own scale.", "p2 / 6")
-    lay = [("BK", 12, 30, 92), ("FR", 108, 30, 44), ("FL", 156, 30, 44), ("SR", 204, 30, 42), ("SL", 250, 30, 42)]
+    lay = [("BK", 12, 30, 88), ("FR", 104, 30, 42), ("FL", 150, 30, 42), ("SR", 196, 30, 42), ("SL", 242, 30, 42)]   # fix round 3: SL ran past the right margin
     for P, x, y, w in lay:
         b = BB[P]; bb = (b[0] - 3, b[1] - 3, b[2] + 3, b[3] + 3)
         dm = direction_map(V[P], bb, 3.0, label_min=150, label_mm=3.0)
@@ -85,9 +103,9 @@ def p2():
         o.append(t(x, y + hh + 3, f"{P} {PC.NAME[P]} ({w/(bb[2]-bb[0]):.2f}:1)", 1.6, 700))
     zy = 128; zx = 12
     o.append(t(zx, zy, "DETAIL CROPS (2:1)", 2.2, 700))
-    b = BB["BK"]; crops = [((b[0] + 40, b[1] + 60, b[0] + 100, b[1] + 100), "Crest: padded foam, curl lines, loops, grey hollow"),
-                           ((-40, 300, 20, 340), "Stripes: tatami along each tone + cream rope lines"),
-                           ((b[2] - 100, b[3] - 70, b[2] - 40, b[3] - 30), "Drops + crests at the lower right")]
+    crops = [(crop_on("FM", 60, 40), "Crest: padded foam, curl lines, loops, grey hollow"),
+             (crop_on("WV", 60, 40), "Stripes: tatami along each tone + cream rope lines"),
+             (crop_on("DR", 60, 40), "Spray drops: satin along each drop's long axis")]
     for c, cap in crops:
         im = direction_map(V["BK"], c, 12, label_min=25, label_mm=1.4)
         tag, hh = img_tag(im, zx, zy + 3, 120 * 0.75 if False else (c[2] - c[0]) * 1.4); o.append(tag)
@@ -120,8 +138,8 @@ def p3():
         o.append(t(cx[10], y, "single run" if st.startswith("Run") else f"{q:.1f}%", 1.5, 600, MUTED if st.startswith("Run") else qc)); o.append(t(cx[11], y, f"{s_['n']}", 1.5, 400, MUTED))
     yb = 36 + len(order) * rh + 3
     notes = ["Globals: 40wt polyester, 75/11 sharp needle, 3.0 oz cutaway + 1.5 oz tearaway under the foam [proposed], no topping. Satin > 7.0 wide → split satin. Tie-in/off every object; exposed moves > 2.0 trimmed.",
-             "FOAM (factory 19 Oct: chenille available): PRIMARY = the _CHENILLE file per hooping, sewn after the lockstitch file from the same origin: loop / moss rows 2 mm apart + chain curl cords;",
-             "      ALTERNATIVE = alt_padded/ files: padded tatami per curl, rows along the curl (A16) + spiral cord + loop spiral. Grey hollows = thin 1.1 mm ridges. Stripes = twisted cords (rows along, 15° twist).",
+             f"FOAM: CHENILLE in ECRU is the look to sample first (founder 20 Oct); these files sew the LOCKSTITCH alternate: padded tatami, rows along the curl + spiral curl cord + loop spiral. Stripes: rows along a flow field, {WC.CORD_TWIST:.0f}° cord twist.",
+             "      CHENILLE (factory: available, format unknown - LESSONS B33): a path PLAN per piece in chenille_plan/ (moss spirals 1.8 mm apart, constant 2.5 mm stitch; chain curl cords 2.0 mm), no machine file yet.",
              "Width = qa.check_geom share below the minimum (fill/satin 0.8, line 0.6). Amber/red codes are tapered ends + traced flecks: kept for fidelity, check on the sew-out.",
              "Stitch counts are never estimated per region: per-file and per-stop counts (p1, p4, p5, G4, G5) are read back from the DST files."]
     for i, n_ in enumerate(notes): o.append(t(12, yb + i * 3.3, n_, 1.55, 400, ORANGE if "FOAM" in n_ else MUTED))
@@ -159,8 +177,8 @@ def stops_page(Ps, page):
 def p6():
     o = header(f"{N} · 1:1 DETAILS, REFERENCE, WHAT CHANGED, PRODUCTION NOTES", "", "p6 / 6")
     o.append(t(14, 31, "1:1 STITCH-OUT DETAILS (print at 100 % to check scale)", 2.4, 700))
-    b = BB["BK"]; crops = [((b[0] + 45, b[1] + 55, b[0] + 105, b[1] + 100), "Crest + curls (BK)"), ((-30, 295, 30, 340), "Stripes + rope lines (BK)"),
-                           ((b[2] - 95, b[3] - 70, b[2] - 35, b[3] - 25), "Crest + drops (BK)")]
+    crops = [(crop_on("FM", 60, 45), "Crest + curls (BK)"), (crop_on("WV", 60, 45), "Stripes + rope lines (BK)"),
+             (crop_on("DR", 60, 45), "Crest + drops (BK)")]
     x = 14
     for c, cap in crops:
         im = SR.render(V["BK"], c, 12, base=WC.FABRIC); tag, hh = img_tag(im, x, 35, c[2] - c[0]); o.append(tag)
@@ -170,15 +188,15 @@ def p6():
     tag, hh = SHT.embed("inputs/back.png", (0, 230, 620, 740), 46, 14, my + 3); o.append(tag)
     tag2, hh2 = SHT.embed("inputs/closeup_mockup_foam.png", None, 22, 62, my + 3); o.append(tag2)
     o.append(t(14, my + 3 + max(hh, hh2) + 3, "Render (back) · founder's detail close-up (FL shoulder crest)", 1.5, 400, MUTED))
-    o.append(t(14, my + 3 + max(hh, hh2) + 6.5, "Art TRACED from the low-res AI render (~1.4 mm/px), not originals.", 1.55, 700, ORANGE))
-    o.append(t(14, my + 3 + max(hh, hh2) + 9.5, "FL shoulder crest + bands: traced from the close-up, registered", 1.55, 700, ORANGE))
-    o.append(t(14, my + 3 + max(hh, hh2) + 12.5, "onto the render (A12); elsewhere it is the foam texture reference.", 1.55, 700, ORANGE))
+    o.append(t(14, my + 3 + max(hh, hh2) + 6.5, "Art TRACED from the AI render + founder close-ups, not originals.", 1.55, 700, ORANGE))
+    o.append(t(14, my + 3 + max(hh, hh2) + 9.5, "Close-ups (back, fronts, 4 sleeve halves) registered onto the", 1.55, 700, ORANGE))
+    o.append(t(14, my + 3 + max(hh, hh2) + 12.5, "render: classes, drop outlines + grain come from them (A12).", 1.55, 700, ORANGE))
     cx = 92
     o.append(t(cx, my, "WHAT CHANGED vs THE RENDER (and why)", 2.3, 700))
     import pickle as _pk
     _fg = [v for d in _pk.load(open("art_M.pkl", "rb")).get("fold_gap", {}).values() for v in d.values() if v >= 1.0]
     _fgs = f"{min(_fg):.0f}-{max(_fg):.0f}" if _fg else "0"
-    ch = ["Layout: render mapped onto the Drum Island pattern (body unchanged),
+    ch = ["Layout: render mapped onto the Drum Island pattern (body unchanged),",
           "  x 1.45 mm/px, y neck → hem seam (back 1.14, front 1.24 mm/px).",
           "Curls + drops keep their render shape (mean scale) — no oval curls.",
           "Rev B SEAMLESS wrap: sleeves mapped by a harmonic map, render armhole",
@@ -187,9 +205,13 @@ def p6():
           "  one smooth warp per piece side lines the stripes up across each",
           "  seam (generated, G7/G9); curls moved whole out of keep-outs.",
           "!Generated — under the collar fall (FL/FR): art mirrored to the neck.",
-          "Stripes: twisted cords (rows along, 15° twist), flecks dropped, dark",
+          f"Stripes: rows ALONG each stripe (flow field), {WC.CORD_TWIST:.0f}° cord twist, dark",
           "  slits closed; rope lines = continuous 2.4 mm cream cords.",
-          "Foam: grey blobs → thin ridges; one continuous spiral cord per curl.",
+          "20 Oct: stripe patches < 150 mm² merged into their band (one",
+          "  continuous cord per stripe); bare pockets in the art filled;",
+          "  stripe THREAD handed over across every seam (tonematch, G7).",
+          "Foam: grey blobs → thin ridges; one continuous spiral cord per curl;",
+          "  CHENILLE ecru first (path plan); lockstitch padded = alternate.",
           "Keep-outs: seams 3, CF zip 15, hem/cuff 10, welt 6, neck 6.",
           "Threads: 9 (12 allowed): 2 creams + grey for the foam, 6 blues.",
           "!Re-check threads + hem/cuff keep-outs on the new shell + rib."]
@@ -199,7 +221,7 @@ def p6():
     pr = ["Embroider the 5 cut pieces flat, BEFORE any", "  seam, welt or zip. Pre-wash the shell first.",
           f"9 threads, 40wt polyester (G3); ≤ {FA.max_threads(PROF)} per file.", "12 oz duck: 75/11 sharp, 3.0 oz cutaway +", "  1.5 oz tearaway under foam [proposed].",
           "Notch the match marks (1:1 plot) on both", "  pieces; no armhole topstitch.",
-          "Foam: CHENILLE file after each lockstitch", "  file (same hooping); padded = alternative.",
+          "Foam: CHENILLE ecru first (path plan, format?);", "  the files sew the padded lockstitch alternate.",
           "Mark CF, welt box (drills), split lines +", "  needle starts (DXF layer 13) before hooping.",
           f"Frame {FA.largest_frame(PROF)[0]:.0f} × {FA.largest_frame(PROF)[1]:.0f} (factory.json): split files,", "  registration crosses open stop 1 (G6).",
           "Sew-out size M on production shell first (F1)."]

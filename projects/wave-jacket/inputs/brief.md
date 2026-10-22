@@ -61,3 +61,47 @@ _Auto-filled at intake 2026-10-16. Edit anything that's wrong; the build reads t
 - The shell colour, hardware colour and (probably) the cuff / hem rib change: thread board and hem / cuff keep-outs must be
   re-checked on them before bulk.
 - Frame 360 x 360 still unconfirmed (factory.json).
+
+## Assumptions (builder, 20 Oct 2026 — Rev B fix round) — PROPOSED in the documents
+- Foam is sewn LOCKSTITCH in every shipped file (padded tatami along the curl + spiral curl cord + loop spiral). Chenille
+  is a path PLAN per piece (chenille_plan/) until the factory names its chenille machine + file format (LESSONS B33).
+- Stripe tone patches < 150 mm2 inside a band are render shading, not design: merged into their band (one cord per stripe).
+- Across every seam and the sleeve centre line the stripe keeps ONE thread: the body (or the side with more stripe) leads,
+  the follower stripe takes its thread, whole region (tonematch.py).
+- Shell colour still unknown (founder 20 Oct): the 9 threads stay PROPOSED and must be re-checked on the new shell.
+
+## Founder answers (20 Oct 2026, evening, via the coordinator) — fix round 2 (PR #27 review)
+- (b) Sample FIRST: ECRU foam + CHENILLE as the primary foam look; padded lockstitch = the alternate. Chenille still ships
+  as a path PLAN + factory question until the factory names its chenille machine + format (LESSONS B33); the lockstitch
+  DSTs are the files that can be sewn today.
+- (a) Close-ups delivered: inputs/closeups/closeup_back.png, closeup_front_left.png, closeup_front_right.png,
+  closeup_sleeves.png (2x2 composite: TL = SR front half, TR = SL front half, BL = SL back half, BR = SR back half).
+  Rule: the MOCKUP governs what / where / how many; close-ups only inform detail inside each motif. The dark-navy
+  blotches inside some sleeve curls are masking artefacts, not design (ignored).
+
+## Assumptions (builder, 20 Oct 2026 — fix round 2) — PROPOSED in the documents
+- The close-ups register onto the mockup views as pure scale + shift (SIFT + RANSAC, 97-98 % inliers): they are
+  super-resolved crops of the same render, so their pixels replace the render's inside each footprint (classes for the
+  trace and the A14/A15 reference, grain for the A16 direction gate). Outside the footprints the render is used and
+  the direction gate does not judge (masked, reported).
+- Gaps the mockup shows embroidered but the art left bare are filled from the mockup / close-up tones there
+  (gapfill.py); only the keep-out edge stays bare.
+
+## Founder decisions (21 Oct 2026) — Rev C art round
+- 'Do A': stop tuning stitches for the seams. The traced ART itself failed the wrap seams (the front and back mockup
+  views were drawn independently), so the art is REDRAWN in a band at every wrap seam (seamredraw.py): one side's art
+  continues across the seam onto the other piece (stripes at their own angle, foam mirrored, curls + drops moved whole),
+  same thread both sides; outside the band the art is the Rev B trace. Each seam is shown before / after on G7.
+- W4: the wave does NOT carry over the shoulders onto the back. The front wave ends at the shoulder seam; shoulder L and
+  shoulder R are not wrap seams (removed from the wrap-seam gate, said on G7). The back keeps its own art.
+- W3: ecru foam thread = Isacord 0184 Pearl (CONFIRMED).
+- W2: shell / hardware / rib colour still open - the other 8 threads stay PROPOSED.
+
+## Assumptions (builder, 21 Oct 2026 — Rev C) — PROPOSED in the documents
+- Redraw band: at least 8 mm beyond the keep-out on both sides of a seam, at most 42 mm (sleeve centre line, which is
+  not a seam: 4-20 mm, to avoid a mirror look). Stripes are matched AT the stitch edge on both sides and keep their own
+  angle beyond (across the 30 mm CF zip gap this means a stripe meets itself at the zip edge, not on a straight line
+  under the zip).
+- Continued foam that meets bare fabric ends in lobes (as the mockup's crest ends), not a straight edge.
+- Seam gate (founder): each wrap seam's STITCHED meet / tone >= 85 % and within 5 points of its Rev C art score.
+  Seams with < 10 mm of art (armhole back R) are not graded.

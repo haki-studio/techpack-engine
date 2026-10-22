@@ -117,3 +117,199 @@ Problem → proposed fix → check. Worked around in project code only.
 ## 14. emb_place.py over all sizes in a sampling package
 - The keep-out check loops over every size's art pickle, so a stale Rev A size can print FAIL (or pass) for art that is not
   shipped. Project fix: sizes from argv, default `DOC_SIZES`. Proposed: the engine template does the same.
+
+## 15. Seam TONE handover (Rev B fix round, 20 Oct 2026) — proposed LESSON A33
+- **Problem:** seamwarp lines the stripe EDGES up across a seam, but the two render views disagree on the TONE of the same
+  stripe: same thread on both sides of the seam only 0-77 % on CF zip / side R / underarm R / armhole front R (art, 1-4 mm in).
+  The review asks for "stripe tone and width identical on both sides of every seam".
+- **Fix (project, `tonematch.py`):** per seam (fixed priority order: CF zip, sides, shoulders, armholes, underarms, sleeve
+  centre), the leader side keeps its threads (body over sleeve; else the side with more stripe on the seam); every follower
+  stripe region whose seam samples meet the leader takes the leader's majority thread (>= 60 % of its samples), WHOLE region
+  (a tone step inside a stripe would be a new cut line). Regions lock once they led or followed. [M: CF zip 29 -> 97 %,
+  side R 59 -> 78 %, underarm R 43 -> 89 %, armhole front R 0 -> 100 %, armhole back L 77 -> 92 %; 52 regions re-threaded]
+- **Proposed engine fix:** `engine/wrap.py` tone handover after the seam warp, with the leader rule as a parameter.
+- **Check:** test: two striped panels with swapped tones along a seam -> after the pass every seam sample pair has one thread;
+  a region far from the seam (> 6,000 mm², < 40 % within 60 mm) is never re-threaded.
+
+## 16. Chenille shipped as a DST before the format was known (B33 hit on a live package)
+- **Problem:** the Rev B package (19 Oct) shipped `_CHENILLE.dst/.pes` files as the PRIMARY foam, written by an arc-length
+  resample (B32) in a format the factory never named. B33 (added 20 Oct) forbids exactly that.
+- **Fix (project):** primary files sew the foam lockstitch (padded tatami + spiral curl cord + loop spiral); chenille is a
+  plan per piece (`chenille.plan`: engine `spiral_paths` + `resample_const`, json + preview, constant chord deviation 0).
+- **Proposed check:** `tests/`: a project package containing a file named `*CHENILLE*.dst` while factory.json
+  `chenille_format` is null fails (scan of out/pkg_*).
+
+## 17. Direction gate on a 0.7 px/mm render
+- **Problem:** `qa.direction_match` refuses < 12 ppm (A17); the wave's only reference for most of the garment is the render at
+  ~0.7 px/mm (the FL close-up covers one crest). Resampling to 12 ppm satisfies the guard but the "grain" read is blur.
+- **Workaround (project, gates.py):** 4 ppm reference resampled x3 to 12 ppm, result reported as INDICATIVE on G8 with the
+  source resolution; per-family breakdown (stripes 8 mm tiles, foam + drops 4 mm).
+- **Proposed engine fix:** `direction_match(..., source_ppm=)` that marks tiles whose source resolution is below a thread
+  pitch as "no evidence" (neither OK nor fail), so a low-res mockup cannot fail or pass the gate; then the A24 rule
+  (independent tiles >= 50 %) decides whether the verdict can be given at all.
+
+## 18. Motif gate merged crests through HIDDEN travel runs (fix round 2, 20 Oct 2026)
+- **Problem:** `gates.dst_family` drew EVERY stitch of the family's threads. Cream travel runs sewn before a crest and buried
+  under it (up to 58 mm on FL) joined neighbouring crests into one DST blob, so the FL big curl (6,361 mm2) read IoU 0.50
+  although the art was right (art-mode IoU 0.96). Same class as A21, but the bridge was invisible thread, not a touching motif.
+- **Fix (project, gates.py):** the motif gate reads the VISIBLE top layer of the written DST (`qa.visible_segments`, 12 ppm,
+  sew order) + `near_mm` (1.5 crests, 1.0 drops). Curls: 39 -> 0-1 failing rows per piece with the same DSTs.
+- **Proposed engine fix:** `qa.dst_family_mask(dst, threads, visible=True)` as the one way a motif gate rasterises a file.
+- **Check:** test: two squares of one thread joined by a run sewn BEFORE a third fill that covers the run -> two components.
+
+## 19. Drop reference vs stitched threads did not match (fix round 2)
+- **Problem:** the drop REFERENCE was cream + grey pixels (CREAM + GREY classes) but the stitched side was the w1 thread only,
+  so a drop the render shades grey (traced as w3 / g1) read "MISSING" (IoU 0) with the drop sewn in place.
+- **Fix:** drops compare cream + shade + grey threads, and each drop only with the visible stitches attributed to ITS motif
+  (unit id of the art object under each visible segment's midpoint) - the reference is still input pixels only (A14).
+  The sewn drop is drawn with each stitch shortened by the drop pull compensation at both ends (the fabric pull-in that
+  compensation exists for; same principle as `qa.centreline_match` subtracting 2 x pull).
+- **Proposed engine fix:** `motif_match(..., out_by_motif={id: mask})` + a `pull_mm` argument for the file rasteriser.
+- **Check:** red-then-green: a drop sewn 1 mm off its reference still fails; a drop sewn against a crest in the same
+  thread passes only when its own stitches match.
+
+## 20. Close-ups that are super-resolved crops of the mockup (fix round 2)
+- **Finding:** the founder's close-ups register onto the mockup views as pure scale + shift (SIFT + RANSAC, 92-98 %
+  inliers): they are upscaled crops of the same render (6-14 close-up px per render px), so placement and motif counts are
+  the mockup's by construction and their pixels can replace the render's inside each footprint (classes for the trace and
+  the A14/A15 reference, grain for A16). A 2x2 composite (sleeves) is split at its separator rows / columns; its masking
+  artefacts (exact separator colour, here #1D2B43) count as no data.
+- **Proposed engine fix:** `digitize.extract.register.auto_register(closeup, view)` (SIFT + RANSAC, accept >= 100 inliers and
+  >= 80 % of matches, overlay PNG) writing the registration JSON the engine already reads; composite splitting by
+  uniform separator lines. Needs OpenCV in the engine env (the project ran it on the system python).
+- **Check:** test: a crop of a fixture render upscaled x8 with noise registers back to its box within 0.5 render px.
+
+## 21. Bare areas explained as "moved by the wrap" (fix round 2)
+- **Problem:** A15's explanation "moved by the wrap" (inside 45 mm of a seam, art within 40 mm) accepted 3,000-5,800 mm2 of
+  bare navy per sleeve that the mockup shows embroidered (review: "real bare navy inside the SL art").
+- **Fix (project, gapfill.py):** every gap except a keep-out edge is filled from the mockup / close-up tones there, merged
+  into the touching stripe / crest (small fills take the neighbour's thread), foam fills get the curl structure (rows along
+  the curl + loop spiral). Art level: 18 unexplained -> 1.
+- **Proposed LESSON (A15 addendum):** "moved by the wrap" is not an explanation unless the gap's reference content is found
+  stitched within the reported shift (3 mm check); otherwise fill it.
+
+## 22. clean_vis deleted parts of small motifs (fix round 3, 21 Oct 2026)
+- **Problem:** `dst2.clean_vis` drops fill fragments < 1.5 mm2 or < 0.7 mm wide. On a spray drop (one rigid motif: cream
+  body + shade + grey crescents) that removed the shade / grey crescents whole (BK drop at -95.7/157.5: 19.8 mm2 traced,
+  12.5 mm2 left) and left bare navy inside the traced outline. A14 failed the drop (IoU 0.61) and A15 never saw it (each
+  hole < 25 mm2). Found by following one drop through every build stage (items_for -> ... -> clean_vis).
+- **Fix (project, waveart.keep_unit_slivers):** a piece removed by clean_vis inside a rigid motif goes to the touching
+  surviving region of the SAME motif (longest shared edge); nothing tiny is sewn alone, the silhouette stays traced.
+- **Proposed engine fix:** `clean_vis(vis, absorb_by="unit")`: absorb, don't delete, slivers that belong to a motif.
+- **Check:** test: a 5 mm disc split into a 4 mm core + a 0.5 mm ring (different colour, same unit): after clean_vis the
+  union area is still >= 98 % of the disc.
+
+## 23. qa.visible_segments under-reads satin (fix round 3)
+- **Problem:** the drop gate drew `qa.visible_segments` (each stitch shortened to its visible length, re-centred). On a satin
+  zigzag each stroke hides most of the one before, so the re-centred pieces leave false holes and false bare rims: BK
+  drop 98 art = reference (IoU 0.98) but gate IoU 0.67, with a hole in the middle of a fully sewn satin.
+- **Fix (project, gates.drops_hr_gate):** the sewn shape is the z-buffer raster itself (every stitch in sew order, 0.42 mm,
+  pull-in shortened; a pixel counts when its TOP stitch is a drop thread of that motif), stitches within 1 mm of the drop.
+  Red-then-green on the round-2 files: drop 98 / 105 / 120 pass (fully sewn), the drops that really lost their crescents
+  (82, 99, 100, 104, 109) stay red.
+- **Proposed engine fix:** `qa.visible_mask(segs, bounds, ppm, keep=predicate)` next to visible_segments, used by every
+  shape gate; visible_segments stays for direction only.
+- **Check:** test: a fixed-angle satin square; visible_mask covers >= 97 % of it, visible_segments' mask < 90 % (documents
+  why shape gates must not use it).
+
+## 24. Small constructed motifs need ONE declared angle (fix round 3)
+- **Problem:** drops were satin 'auto' -> turning satin across an elongated drop; the close-up grain at drop scale runs ALONG
+  the drop (edge-dominated): drops scored 10-15 % on A16, dev 70-88 deg.
+- **Fix (project, waveart.drop_angles + wavecore declared satin):** one angle per drop motif = its long axis (minimum rotated
+  rectangle of the whole motif), all its parts, sewn as fixed-angle satin (split > 7 mm), tatami at the same angle if the
+  satin covers < 97 %.
+- **Proposed engine fix:** region key `decl` (declared angle, source) honoured by `dst2.build_object` before the turning-satin
+  branch; `qa.angle_coherence` reads it.
+
+## 25. Stripe rows follow the close-up grain where it is clear (fix round 3)
+- **Problem:** stripes sewn along a geometric flow field + 8 deg cord twist reached 79-84 % on A16 (gate 85).
+- **Fix (project, grainfield.py + flowdir.wv_parts):** where a founder close-up covers the stripe (weight >= 0.6) and shows a
+  clear grain (coherence >= 0.3), the 6 mm cell is sewn at the close-up's thread angle (input pixels, same map + warp as the
+  gate); elsewhere the geometric field + twist. This is A16's rule for organic bands, not a gate change.
+- **Proposed engine fix:** `digitize.direction.grain_field(reference, weight)` producing the 1 mm angle / coherence grid that
+  fills use as their angle source ('closeup' bucket in A28).
+
+## 26. One-sided seam runs ended as straight cuts (fix round 3)
+- **Problem:** where only one piece carries art at a seam (shoulder L: the front wave runs over the shoulder, the back render
+  is bare there) the foam stopped on the keep-out as a straight line along the seam (G9 'parallel straight cut').
+- **Fix (project, seamedge.py):** along each one-sided run >= 6 mm the foam edge is scalloped into lobes (r 2.6 mm, notch
+  2.4 mm), as the mockup's crests end; nothing is invented on the bare partner. Items tagged gen='seam lobes'.
+- **Check:** discont.py parallel straight cuts on those runs -> 0.
+
+## 27. Satin pull compensation as an all-round buffer + drop parts under the crests (fix round 3)
+- **Problem 1:** `dst2.fixed_satin(p, ang, pull)` hatches `p.buffer(pull)`: the buffer also adds rows along the SIDES, so a
+  2 mm drop sews 2.3 mm wide (A14 width / height 1.2-1.3 on 4-8 mm2 drops).
+- **Fix (project, wavecore.ends_satin):** hatch the shape itself, lengthen each stitch by `pull` at both ends only.
+- **Proposed engine fix:** same change inside `fixed_satin` (and `radial_satin`); pull comp acts along the stitch.
+- **Problem 2:** a drop's shade / grey parts sat on the foam-detail layer (under the crests), so a drop traced mostly grey
+  was knocked out whole by an overlapping crest (SL: IoU 0.01). **Fix:** every part of a drop motif sits with the drop
+  (z just under its cream body, sewn in the drop layers).
+- **Check:** test: fixed_satin on a 2 x 4 mm ellipse at 0.15 pull -> sewn width (z-buffer, pull-in modelled) within
+  +/- 5 % of 2 mm.
+
+## 28. Foam loop texture read as chaos on the direction gate (fix round 4, 21 Oct 2026)
+- **Problem:** the padded foam's loop texture (scalloped contour rings, 2.1 mm apart, w3 run on top) points every which way
+  inside a 4 mm tile, so the foam family scored 20-26 % OK (half the failing tiles chaotic), and the live view read as flat
+  hatching. Padded rows at the curl tangent deviated from the close-up grain in the other half.
+- **Fix (project):** `flowdir.fm_grain_parts` (padded foam + its shade / hollow / inner-blue details, 4 mm cells on the
+  piece lattice, angle = close-up grain `ang4` where weight >= 0.6 and coherence >= 0.25, else the old angle) and
+  `foamcord.py` (texture = streamlines of the same grain, seeded 2.1 mm, >= 1.6 mm apart; rings stay where no clear grain).
+  SL foam 19.7 -> 77.7 % on the first experiment.
+- **Caveat (A24):** these angles are read from the close-up the gate grades: self-derived, not independent. Reported so.
+- **Proposed engine fix:** a `texture` primitive in digitize for raised / looped fills: grain streamlines (field from the
+  close-up) as the top texture instead of contour rings; rings only when no grain is readable.
+- **Check:** direction gate foam family on the wave pieces; a unit test that streamlines stay inside the region, keep the
+  min gap and follow the field within 10 deg.
+
+## 29. "keep-out edge" excused real gaps; thin tails never filled (fix round 4)
+- **Problem:** A15 excused any gap < 400 mm2 within 6 mm of the art limit. The reference is already clipped to the limit,
+  so such a gap is mockup art INSIDE the allowed area (SL: a crest 10-15 mm short of the sleeve edge after the rigid curl
+  move: the SL wave-mass row with h 0.38). Separately, spray tails 1-2 mm wide off a crest were under the 25 mm2 / 1 mm
+  opening, so a traced-short mass never got them (BK mass w 0.79).
+- **Fix (project):** explain_gaps excuses only slivers (< 2 mm across, < 2 mm from the limit); gapfill.py fills the rest and
+  also TAILS (>= 6 mm2, >= 1 mm wide, touching the art, reaching >= 2 mm beyond it; rims inside 2 mm are not filled).
+- **Proposed engine fix:** `qa.uncovered` gets `limit=` and reports near-limit gaps as gaps; a `qa.tails()` helper.
+- **Check:** gates A15 table: 'keep-out edge' rows only for slivers; mass rows near the limit pass.
+
+## 30. Straight-cut detector flagged stripes that cross a seam at 90 deg (fix round 4)
+- **Problem:** discont.straight_cuts flags any tone edge at constant position for >= 12 mm. A stripe that crosses a seam
+  square has exactly such edges BY DESIGN (armhole back L A: 26 'across' lines, all stripe edges running with their
+  neighbours), so the in-panel count (88) mixed real cuts with stripes.
+- **Fix (project):** `discont.flow_check`: structure tensor of the tone-edge map beside the line (+-6 mm, the line's own
+  +-1.5 mm left out); coherent (>= 0.4) and within 20 deg of the line = a stripe edge running with the flow, reported as
+  `with_flow`, not a cut. A pasted band end (edges crossing it) stays a cut.
+- **Check:** `test_discont_flow.py` (red-then-green: the old detector flags the 90-deg stripes; a shifted band and a
+  vertical cut through slanted stripes stay cuts).
+
+## 31. Direction headline pooled every object in a tile (fix round 4)
+- **Problem:** the all-visible A16 headline pooled every stitch in an 8 mm tile, so every tile on a crest / stripe border
+  read chaotic; the per-family rows already judged each tile on its dominant object (konpeito ENGINE_NOTES 14).
+- **Fix (project, gates.py):** headline per object (groups = art object under each visible stitch), pooled kept as
+  `pct_ok_pooled` and printed beside it on G8.
+- **Proposed engine fix:** `qa.direction_match(groups=...)` as the default for any multi-object piece; the bench prints both.
+
+## 32. Art-chain steps restore from stale "pre" files (fix round 4)
+- **Problem:** tonematch.py always restarts from art_M_pretone.pkl when it exists, and gapfill.py restored art_M_pregap.pkl
+  at IMPORT time. A partial re-run (from gapfill on) silently dropped the new gap fills, and importing gapfill for a
+  diagnosis rewrote the shipped art. Both happened in this round; the rebuilt files were identical to the previous ones.
+- **Fix (project):** gapfill restores only under `__main__`; the chain scripts delete art_M_pretone.pkl before tonematch.
+- **Proposed engine fix:** an art-chain runner that stamps each stage's input hash into `info` and refuses a "pre" file
+  whose hash is not the current upstream output.
+- **Check:** after a chain re-run, `info['gapfill']` in art_M.pkl equals the gapfill log of that run.
+
+## 33. Two independently drawn mockup views cannot meet at a seam - redraw the ART, not the stitches (Rev C, 21 Oct 2026)
+- **Problem:** four fix rounds tuned warps, tone handovers and stitch settings for the wrap seams; meet / tone stayed
+  34-71 % on the DSTs because the traced ART already failed (continuity --art: CF zip 63/37, side L 58/57, sleeve centre
+  R 70/32). The front and back AI views show different waves at the same seam: no stitch setting can join them.
+- **Fix (project, seamredraw.py, founder 'Do A'):** per wrap seam, both sides unrolled by seam length; two candidate
+  pictures of the joined band (each side continued across by a glide map: stripes at their own angle, matched at the
+  stitch edge = pivot; rigid motifs moved whole); ONE min-mismatch cut path (DP, image-quilting style) that never comes
+  closer than keep-out + 8 mm to the seam, may switch side at a cost, prefers outlines, penalises deleting art and
+  one-sided runs at a keep-out corner; foam continued into bare fabric ends in lobes. Art seams 93-100 %, stitched 95-100 %.
+- **Lesson (proposed LESSONS A33):** before tuning stitches for a cross-piece match, measure the ART on the same metric
+  (`continuity.py --art`); if the art fails, redraw the art in a band (founder-approved design change, shown before /
+  after) - never redefine the metric.
+- **Proposed engine fix:** `engine/seamband.py` (from this file: Side unroll, glide_cols, cut_path, foam_lobes, apply_zone)
+  driven by the pattern's seam walks, for every garment with a wrap; the gates name rows inside redraw zones (still open).
+- **Check:** `test_seamredraw.py` (glide continues a slanted stripe straight and meets at the pivot; m=0 mutation red;
+  the cut never enters the DMIN band; a one-sided corner run is deleted, not kept).

@@ -62,7 +62,7 @@ def lobes(tr, min_dist_px=7.0):
         parts = {"w1": c["mass"].difference(c["shade"]).difference(c["grey"]), "w3": c["shade"], "g1": c["grey"]}
         inner = c["inner"]; blue = c.get("blue", {})
         if c["kind"] == "dot":
-            out.append(dict(kind="dot", anchor=c["filled"].centroid.coords[0], parts=parts, inner=inner, blue=blue, outline=c["filled"]))
+            out.append(dict(kind="dot", anchor=c["filled"].centroid.coords[0], parts=parts, inner=inner, blue=blue, outline=c["filled"], hr=c.get("hr")))
             continue
         F = c["filled"]; b = F.bounds; k = 4.0
         m = rasterize(F, b, k)
@@ -182,14 +182,20 @@ def items_for(size, P):
             if A is None or not all(map(math.isfinite, a_mm)): continue
             unit = f"{view}{i}"
             dz = 0.0001 * i
+            # fix round 3: a spray drop is ONE motif lying on top - its shade / grey / inner parts sit just under its cream
+            # body (drop layer), not on the foam-detail layer under the crests: a drop traced mostly grey (SL back132:
+            # 31 of 35 px grey) was knocked out whole by an overlapping crest (A14 IoU 0.01)
+            zd = (Z["dropb"] + 0.5) if lb["kind"] == "dot" else Z["fdet"]
             for t, g in lb["inner"].items():
                 code = "FM-in" if t in WT.BLUES else ("FM-gr" if t == "g1" else "FM-sh")
-                add(t if t != "w2" else "w3", rigid(g, a, A, a_mm), "satin", "auto", code, Z["fdet"] + dz, unit)
+                add(t if t != "w2" else "w3", rigid(g, a, A, a_mm), "satin", "auto", code, zd + dz, unit)
             for t in ("w3", "g1"):
-                add(t, rigid(lb["parts"][t], a, A, a_mm), "satin", "auto", CODE_OF[t], Z["fdet"] + dz, unit)
+                add(t, rigid(lb["parts"][t], a, A, a_mm), "satin", "auto", CODE_OF[t], zd + dz, unit)
             if lb["kind"] == "dot":
                 for t, g in lb["blue"].items(): add(t, rigid(g, a, A, a_mm), "satin", "auto", "DR-b", Z["dropb"] + dz, unit)
                 add("w1", rigid(lb["parts"]["w1"], a, A, a_mm), "satin", "auto", "DR", Z["drop"] + dz, unit)
+                for r_ in its:
+                    if r_.get("unit") == unit: r_["dot"] = True          # sewn with the drops (layer_of), after the crests
             else:
                 g = rigid(lb["parts"]["w1"], a, A, a_mm)
                 for p in polys(g):
@@ -214,6 +220,70 @@ def visible(items, clip):
         if not g.is_empty and g.area > 0.2: out.append(dict(r, geom=g))
     out.reverse()
     return out
+
+def keep_unit_slivers(before, after):
+    """fix round 3 (PR #27 review 2, A14 drops): dst2.clean_vis deletes fill fragments < 1.5 mm2 or < 0.7 mm wide. Inside a
+    small rigid motif that removed real parts of it - a spray drop's shade and grey crescents (2-8 mm2 of a 20 mm2 drop) -
+    and its morphological close let the stripe UNDER the drop grow back over the hole, so the drop came out small and
+    the stripe showed through. Every piece of a motif's pre-clean area that is no longer covered by the motif itself or by
+    anything ABOVE it goes back to the motif: to the touching surviving region of the same thread family (cream / grey ->
+    the drop body, blues -> the blue underside), longest shared edge; if the motif has no such region (a drop traced all
+    grey) the piece is restored as its own region in its own thread, thickened to the 0.7 mm sewable minimum.
+    Returns (after, n pieces kept, mm2 kept)."""
+    from collections import defaultdict
+    FAMS = lambda c: "foam" if c in ("w1", "w2", "w3", "g1") else "blue"
+    pre = defaultdict(list)
+    for r in before:
+        if r.get("unit") and r["st"] not in ("bean", "run"): pre[r["unit"]].append(r)
+    geoms = [r["geom"] for r in after]; tree = shapely.STRtree(geoms)
+    by_u = defaultdict(list)
+    for i, r in enumerate(after):
+        if r.get("unit") and r["st"] not in ("bean", "run"): by_u[r["unit"]].append(i)
+    n = 0; area = 0.0; extra = []
+    for u, rs in pre.items():
+        P0 = unary_union([r["geom"] for r in rs]).buffer(0); zmax = max(r["z"] for r in rs)
+        near = [int(j) for j in tree.query(P0)]
+        cover = [geoms[j] for j in near if after[j].get("unit") == u or after[j]["z"] > zmax]
+        lost = P0.difference(unary_union(cover).buffer(0)) if cover else P0
+        for q in polys(lost.buffer(0)):
+            if q.area < 0.05: continue
+            src = max(rs, key=lambda r: r["geom"].intersection(q).area)
+            best, bl = None, 0.0
+            for i in by_u.get(u, []):
+                g = after[i]["geom"]
+                if FAMS(after[i]["col"]) != FAMS(src["col"]) or g.distance(q) > 0.3: continue
+                l = q.buffer(0.15).intersection(g).area
+                if best is None or l > bl: best, bl = i, l
+            if best is not None:
+                after[best] = dict(after[best], geom=unary_union([after[best]["geom"], q.buffer(0.02)]).buffer(0))
+            elif q.area >= 1.0:
+                extra.append(dict(src, geom=q.buffer(0.1).buffer(0), st="satin"))
+            else: continue
+            n += 1; area += q.area
+    return after + extra, n, round(area, 1)
+
+def drop_angles(vis):
+    """fix round 3 (PR #27 review 2, A16): a spray drop is a small CONSTRUCTED blob, so it gets one declared direction for the
+    whole motif: satin stitches ALONG its long axis (minimum rotated rectangle of the drop's union: w1 + shade + grey +
+    blue underside), never the turning / 'auto' satin across it. Stored as r['ang'] (degrees, hatch convention) with
+    r['decl'] = 'drop long axis'; wavecore sews it as one fixed-angle satin (split > 7 mm)."""
+    from collections import defaultdict
+    import stitchrender as SR
+    du = defaultdict(list)
+    for r in vis:
+        if r.get("unit") and r["grp"] == "DR": du[r["unit"]]
+    for r in vis:
+        if r.get("unit") in du and r["st"] not in ("bean", "run"): du[r["unit"]].append(r["geom"])
+    ang = {}
+    for u, gs in du.items():
+        g = unary_union(gs).convex_hull
+        if g.area <= 0: continue
+        ang[u] = round(float(SR.auto_angle(g) - 90.0) % 180.0, 1)
+    n = 0
+    for i, r in enumerate(vis):
+        if r.get("unit") in ang and r["st"] not in ("bean", "run"):
+            vis[i] = dict(r, st="satin", ang=ang[r["unit"]], decl="drop long axis"); n += 1
+    return vis, len(ang)
 
 # ---------------------------------------------------------------- loop texture (chenille look)
 def scallop(line, r=0.75, step=1.5):
@@ -379,6 +449,7 @@ def curl_direction(vis):
     return out
 
 def layer_of(r):
+    if r.get("dot") and r["grp"] in ("FM-sh", "FM-gr", "FM-in"): return WC.L_DROPB      # a drop's own shade / grey: with the drop
     return {"RP": WC.L_ROPE, "WV": WC.L_BAND, "FM-sh": WC.L_FDET, "FM-gr": WC.L_FDET, "FM-in": WC.L_FDET, "FM": WC.L_FOAM,
             "FM-loop": WC.L_LOOP, "FM-curl": WC.L_LOOP, "DR-b": WC.L_DROPB, "DR": WC.L_DROP}[r["grp"]]
 
@@ -602,7 +673,7 @@ def rope_lines(its, half=1.2, join=16.0, max_turn=32.0):
         g = LineString(l).simplify(0.2)
         if g.length < 2.0: continue
         p = g.buffer(half, cap_style="round", join_style="round")
-        for q in polys(p): out.append(dict(R("w1", q, "satin", "auto", "RP"), z=z, unit=None))
+        for q in polys(p): out.append(dict(R("w1", q, "tatami", "auto", "RP"), z=z, unit=None))     # A16: rows ALONG the cord
     return out, joined
 
 def grey_ridges(its, w=1.1):
@@ -672,11 +743,14 @@ def build(size):
         clip = PC.clip_for(size, P).buffer(-0.4)        # 0.4 inside the keep-out: cleaning never crosses it
         its = art[P]
         vis = visible(its, clip)
+        vis0 = vis
         vis = dst2.clean_vis(vis)
+        vis, nk, ak = keep_unit_slivers(vis0, vis); st_log[P]["unit_slivers_kept"] = (nk, ak)
         vis = [dict(r, geom=r["geom"].intersection(clip).buffer(0)) for r in vis]
         vis = [r for r in vis if not r["geom"].is_empty and r["geom"].area > 0.3]
         vis = add_loops(vis)
         vis = curl_direction(vis)
+        vis, nd = drop_angles(vis); st_log[P]["drops_declared"] = nd
         for r in vis: r["layer"] = layer_of(r)
         res[P] = vis
         u = unary_union([r["geom"] for r in vis]) if vis else Polygon()

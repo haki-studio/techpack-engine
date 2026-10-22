@@ -1,6 +1,4 @@
-M BK {'stitches': 276861, 'trims': 1199, 'jumps': 3160, 'stops': 13, 'size_mm': (568.8, 490.2), 'max_stitch': 7.42} 215s
-M BK S1_top-left {'stitches': 128696, 'trims': 521, 'stops': 13, 'size_mm': (307.4, 304.8), 'fits': True} split_clip
-M BK S2_top-right {'stitches': 34467, 'trims': 236, 'stops': 11, 'size_mm': (315.5, 312.3), 'fits': True} split_clip
-M BK S3_bottom-left {'stitches': 17399, 'trims': 118, 'stops': 10, 'size_mm': (305.8, 233.7), 'fits': True} split_clip
-M BK S4_bottom-right {'stitches': 98986, 'trims': 375, 'stops': 11, 'size_mm': (284.8, 227.2), 'fits': True} split_clip
+M BK primary {'stitches': 373238, 'trims': 1280, 'stops': 13, 'size_mm': (593.0, 577.8), 'max_stitch': 7.41} chenille plan {'paths': 902, 'needle_points': 9958, 'length_m': 21.0}
+M BK primary S1_left {'stitches': 193470, 'trims': 626, 'stops': 11, 'size_mm': (311.1, 597.6), 'fits': True}
+M BK primary S2_right {'stitches': 180231, 'trims': 669, 'stops': 13, 'size_mm': (296.6, 597.6), 'fits': True}
 DONE M ['BK']
