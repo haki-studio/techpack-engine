@@ -27,6 +27,7 @@ KEEP_POCKET = 22.0           # pocket cut edge (hand openings are topstitched) [
 SPLIT_CLEAR = 10.0           # no star within 10 mm of a hoop split (td-chair-r1)
 POCKET_CLEAR = 10.0          # no star under the pocket or within 10 mm of its edge
 OBJ_CLEAR = 6.0              # star -> badge / script
+TRIM_MAX = 30.0              # a hoop row thinner than this is trimmed off the star area (saves a hooping)
 REV_J = "art_M.pkl"
 OUT = f"out/pv/{SIZE}"; os.makedirs(OUT, exist_ok=True)
 
@@ -108,7 +109,7 @@ for _ in range(300):
     sx -= 0.5
 core, _ = KM.text_columns(g2, "kc_white", "TXC", "round", "07-script")
 for i, r in enumerate(core): r.update(layer=31, el="07", z=31 * 100000 + i, ko=True, kob=0.0)
-items["PK"] += core; objs["PK"].append(("07", fp))
+items["PK"] += core; objs["PK"].append(("07", unary_union([fp] + [r["geom"] for r in core])))   # columns overhang the outline
 script_meta = dict(text=SCRIPT, centre_mm=(round(sx, 1), round(sy, 1)), width_mm=round(fp.bounds[2] - fp.bounds[0], 1),
                    cap_height_mm=round((lambda b: b[3] - b[1])(KL.glyph("sc", "E", 20.0 * k)[0].bounds), 1),
                    font="Source Serif 4 Italic, weight 700 (OFL)", min_stroke_note="satin columns from the font strokes (kcsatin)")
@@ -135,6 +136,9 @@ def cells_for(P):
                     sub = A.intersection(box(a, y0 - 1, b, y1 + 1))
                     if sub.is_empty: cols.append([]); continue
                     _, c0, _, c1 = sub.bounds; ny = math.ceil((c1 - c0) / oh - 1e-9)
+                    if ny == 2 and (c1 - c0) - oh <= TRIM_MAX and all(f.bounds[3] <= c0 + oh - SPLIT_CLEAR for _, f in objs[P]
+                                                                      if f.intersects(box(a, c0, b, c1))):
+                        ny, c1 = 1, c0 + oh                         # a thin last row: trim the star area instead of a hooping
                     if ny == 1: cols.append([(a, c0, b, c1)]); continue
                     if ny > 2: ok = False; break
                     cand = [y for y in np.arange(max(c1 - oh, c0 + 5), min(c0 + oh, c1 - 5) + 0.01, 2.0)
@@ -174,7 +178,7 @@ counts = {}
 for P in cut:
     A = allowed[P]
     for _, f in objs[P]: A = A.difference(f.buffer(OBJ_CLEAR))
-    if plan[P]: A = A.difference(split_lines(P).buffer(SPLIT_CLEAR))
+    if plan[P]: A = A.intersection(unary_union([box(*c["box"]) for c in plan[P]])).difference(split_lines(P).buffer(SPLIT_CLEAR))
     if A.is_empty: counts[P] = 0; continue
     target = int(round(DENS * A.area)); dmin = 0.55 / math.sqrt(DENS)
     x0, y0, x1, y1 = A.bounds; pts = []; tries = 0
