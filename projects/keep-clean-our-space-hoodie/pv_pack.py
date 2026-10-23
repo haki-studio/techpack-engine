@@ -36,23 +36,23 @@ def k1():
     o = header("K1 · FACTORY SUMMARY — please answer these before sampling",
                "Washed-black kangaroo-pocket pullover hoodie on your EE / Come Over hoodie block. Embroidery on the cut pieces before sewing: all-over white stars + 4 colour badges on the back + hem script on the pocket.", "K1")
     y = 33
-    o.append(t(12, y, "HOOPINGS PER PIECE (our plan, size M, field up to 340 x 505 mm each)", 2.8, 700)); y += 5
+    o.append(t(12, y, "HOOPINGS PER PIECE (our plan, size M, field up to 340 x 505 mm each, frame can be turned 90 degrees)", 2.8, 700)); y += 5
     cols = (12, 52, 70, 150, 178, 200)
     for x, h in zip(cols, ("Piece", "Hoopings", "Field size of each hooping (mm, w x h)", "Stitches", "Trims", "Files")): o.append(t(x, y, h, 2.3, 700, MUTED))
     y += 4
     for P in ORDER:
         fs = files(P); cells = plan["cells"][P]
         o.append(t(cols[0], y, B.NAMES[P], 2.4)); o.append(t(cols[1], y, str(len(cells)), 2.4, 700))
-        o.append(t(cols[2], y, ", ".join(f"{c['w']:.0f} x {c['h']:.0f}" for c in cells), 2.3))
+        o.append(t(cols[2], y, ", ".join(f"{v['cell_mm'][2]-v['cell_mm'][0]:.0f} x {v['cell_mm'][3]-v['cell_mm'][1]:.0f}" for _, v in fs), 2.3))
         o.append(t(cols[3], y, f"{sum(v['stitches'] for _, v in fs):,}", 2.3)); o.append(t(cols[4], y, str(sum(v['trims'] for _, v in fs)), 2.3))
         o.append(t(cols[5], y, ", ".join(k for k, _ in fs), 2.1, 400, MUTED)); y += 4.2
     o.append(t(cols[0], y, "Total", 2.4, 700)); o.append(t(cols[1], y, str(plan["total_hoopings"]), 2.4, 700))
     o.append(t(cols[3], y, f"{TOT['stitches']:,}", 2.4, 700)); o.append(t(cols[4], y, str(TOT["trims"]), 2.4, 700)); y += 8
     o.append(t(12, y, "QUESTIONS", 2.8, 700)); y += 5
     sr = R.get("SR-H1", {})
-    Q = [("1. Hoopings + frame.", f"Our plan is {plan['total_hoopings']} hoopings per hoodie (table above). Can you do it in fewer? You confirmed a 340 x 505 mm field in one hooping, but your frames are 300 x 300 and 400 x 450: which frame sews 340 x 505?"),
-         ("2. Wash.", "Is the washed black dyed or washed AFTER sewing? If yes: shrinkage % in length and width, and does the wash change the thread colours or flatten the 3D puff?"),
-         ("3. How you price embroidery.", f"Per 1,000 stitches, per trim, per hooping, or per piece? Please quote one sleeve file as the example: SR-H1 ({sr.get('stitches', 0):,} stitches, {sr.get('trims', 0)} trims, 1 colour). Then please quote the whole hoodie, embroidered, at 100, 200 and 300 pcs."),
+    Q = [("1. Hoopings + frame.", f"How many hoopings do you need for each piece (front, back, pocket, sleeve, hood)? Our plan is {plan['total_hoopings']} per hoodie (table above); the pocket and sleeve fields fit only with the frame turned 90 degrees. You confirmed a 340 x 505 mm field in one hooping, but your frames are 300 x 300 and 400 x 450: which frame sews 340 x 505?"),
+         ("2. Wash.", "Is the washed black dyed or washed AFTER sewing? If yes: shrinkage % in length and width, and does the wash change the thread colours or flatten the 3D puff? Which thread do you use (polyester / rayon)?"),
+         ("3. How you price embroidery.", f"Per 1,000 stitches, per trim, per hooping, or per piece? Please quote one sleeve file as the example: SR-H1 ({sr.get('stitches', 0):,} stitches, {sr.get('trims', 0)} trims, 1 colour). Then please quote (a) the embroidery only and (b) the whole hoodie with embroidery, at 100, 200 and 300 pcs."),
          ("4. Oversized blocks.", "Will you embroider oversized rough-cut blocks and recut them to the pattern after (yes / no)? If no, what allowance do you add for pull-in?"),
          ("5. Strike-off through the wash.", "Before bulk, will you sew one back panel (files BK-H1 + BK-H3: badges in 3D puff + stars) and put it through the real wash, then send photos (daylight, ruler in shot, before and after wash)? Yes / no, and how many days?"),
          ("6. Your pattern.", "Please send the EE / Come Over hoodie pattern (DXF) or the cut panel sizes. Our outlines come from the published size chart (page K6); we re-place every star and badge on your real pieces before bulk, all sizes.")]
@@ -85,8 +85,8 @@ def k3():
             if v.get("foam_pause_before_stop"): o.append(t(x0 + 133, y, "puff", 1.9, 700, ORANGE))
             y += 3.4
     y += 2
-    for line in ("Art centre = file origin, in mm. Front / back: x from CF / CB (+ = wearer's left on the front, wearer's right on the",
-                 "back view), y down from the HPS line. Sleeves: x from the sleeve centre line, y from the cap top. Hood: x from the face",
+    for line in ("Art centre = file origin, in mm. Front / back: x from CF / CB, + = to the right as the piece lies face up (as drawn),",
+                 "y down from the HPS line. Sleeves: x from the sleeve centre line, y from the cap top. Hood: x from the face",
                  "edge, y from the crown. Pocket: x from its centre, y from its top edge.",
                  "'puff' = the file has a machine PAUSE to lay 3 mm foam before the puff stops (same procedure as Rev J).",
                  "Every number is read back from the written DST. Max stitch < 7.5 mm. Max 12 colours per file (your limit)."):
