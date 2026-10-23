@@ -52,4 +52,6 @@ KJ_SCRUB = [
     # B8 G7 (#58): most legs are inferred, so the factory copy must not claim "as on the mockup"
     (r"^Rev B8\s*: limbs, eye size and gaze from a hand-read art table of the low-res mockup \(~1 mm per px\)",
      "Limbs, eye size and gaze as drawn on this page and in the stitch file"),
+    # B9 G7: the base scrub drops "(founder 23 Oct)" and leaves a bare "Rev B9 :" — say what to sew
+    (r"^Rev B9\s*(?:\(founder 23 Oct\))?\s*: each arm leaves", "Arms: each arm leaves"),
 ]

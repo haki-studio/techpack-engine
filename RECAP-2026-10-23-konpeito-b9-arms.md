@@ -36,8 +36,25 @@ Branch `konpeito-b9-arms` (worktree ~/te-konpeito-b9) = local merge of the two a
 - 07a 8,680 st / 148 trims / 26.9 min; 07b 2,446 / 38 / 7.6 min (B8 8,681/149/27.0; 2,437/38/7.6).
 - Compare (reference | B9 | B8): https://claude.ai/artifact/Rim7RdzHJ49aBuCuiksufk
 
+## Rev B9 build + delivery (after REVIEW: APPROVE c4fefb8, lead GO)
+- Rev procedure: kjcore REV = "Rev B9"; G7 adds the B9 arm line + the arm gate in the gate line; Q1 adds J7 (founder's words);
+  brief "Rev B9 — founder 23 Oct — CONFIRMED" (J7) + "Rev B9 assumptions (PROPOSED)" #22; ENGINE_NOTES 39
+  "A limb count doesn't check direction".
+- Factory wording: the base scrub turned the G7 line into a bare "Rev B9 : each arm…"; KJ_SCRUB rule makes it
+  "Arms: each arm leaves…" (test_b9_g7_arm_line_reads_as_an_instruction, red without the rule).
+- Full build per README (rectify → kjfactory), then kjpages.py again for the shrunk SAMPLE READY pair (kjfactory's
+  P.package writes the unshrunk 75 MB zip; B8's SAMPLE READY came from the kjpages main path). front_stars.json rebuilt
+  identical; built 07a/07b DST md5 = tests/fixtures/konpeito_b9 (the reviewed files).
+- Leak gate GREEN: 0 hits in the factory summary / 352 in the internal copy; reference zip 0 hits over 55 files.
+- TECH PACKS/1 Konpeito jeans: B9 FACTORY SUMMARY.pdf 3d8a3376…, FACTORY REFERENCE.zip a2f81a0c…, SAMPLE READY.pdf
+  68c68b04…, SAMPLE READY - files.zip 8a3214c8…; B8's four files → older versions; READ ME item 1 rewritten (B9, why,
+  "do NOT send B8"). Zip file lists identical to B8's (standard main 6.5×2 + care labels kept).
+- Tests: 558 passed.
+
+## Gotcha
+- `source scripts/env.sh` keeps an already-active venv: this shell had ~/.venvs/techpack-grand-line (it has the deps, the
+  build ran fine). The first run also died on a missing out/trace in a fresh worktree: `mkdir -p out/trace out/stitch`.
+
 ## Pending
-- Reviewer (lead runs it). Only after GO: build Rev B9 pack + kjfactory.py factory summary/reference zip (leak gate),
-  TECH PACKS/1 swap (B8 → older versions, READ ME item 1), brief "Rev B9 assumptions", ENGINE_NOTES lesson
-  "a limb count doesn't check direction".
-- HOLD: konpeito-send-to-factory sends B9, not B8.
+- HOLD lifted only for B9: konpeito-send-to-factory sends the B9 FACTORY SUMMARY + REFERENCE zip, never B8.
+- Older nits still open: G7 "(art table)" header; K02/K03 eye placement; kjsootart rewrites the json (hand edits wiped).

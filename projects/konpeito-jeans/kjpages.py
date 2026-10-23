@@ -816,7 +816,8 @@ def G7():
              f"eyes (white satin, {ER['w_D']:.2f} D x {ER['h_D']:.2f} D, rows 0.20) + pupils (black Ø{ART['sprites']['K01']['eyes']['pupil']:.1f} satin dot, ONE gaze per sprite) are sewn last. Body Ø{FRONT['soot'][0]['d_mm']:.1f} mm = median of the {len(FRONT['soot'])} traced bodies;",
              f"tatami 45° cut away under the candies; fuzz = radial satin of random length ({kjfront.SOOT_FUR[0]}–{kjfront.SOOT_FUR[1]} mm beyond the body); arms (to the candy held) + legs = triple runs, {sum(len(v['limbs']) for v in ART['sprites'].values())} limbs in all.",
              "Rev B8 (founder 22 Oct): limbs, eye size and gaze from a hand-read art table of the low-res mockup (~1 mm per px)  [proposed — confirm on the sew-out].",
-             f"Gates per sprite (C7): centre <= {SG['limits']['pos_mm']} mm, cover >= {SG['limits']['cover']:.0%}, 2 eyes; limbs = art table; pupils agree + match the gaze; eye area; no crack: {sum(r['ok'] for r in SG['rows'])} of {len(SG['rows'])} PASS. Konpeito: C6."]
+             "Rev B9 (founder 23 Oct): each arm leaves the side of the body facing the candy it holds (about eye height), runs out, then goes UP to the underside of the candy.",
+             f"Gates per sprite (C7): centre <= {SG['limits']['pos_mm']} mm, cover >= {SG['limits']['cover']:.0%}, 2 eyes; limbs = art table; arms leave the side (<= 35° from level) + never arch over; pupils agree + match the gaze; eye area; no crack: {sum(r['ok'] for r in SG['rows'])} of {len(SG['rows'])} PASS. Konpeito: C6."]
     for ln in lines:
         o.append(t(x0, y, ln, 1.6, 400, AMBER if "proposed" in ln else INK)); y += 3.05
     fn = (f"Stitch files: 07a ({RB['front1']['stitches']:,} st, {RB['front1']['trims']} trims, {RB['front1']['size_mm'][0]:.0f} × {RB['front1']['size_mm'][1]:.0f} mm, {RB['front1']['machine_min']} min) and 07b ({RB['front2']['stitches']:,} st, "
@@ -898,7 +899,7 @@ def C5():
 
 def Q1():
     """founder decisions 21 Oct (answers to the PR #34 questions J1-J5) + what is still open."""
-    o = hdr("Q1 · FOUNDER DECISIONS + OPEN QUESTIONS", "Answers given by the founder (21 Oct 2026 to the Rev B5 questions; 22 Oct on the soot sprites) and the revision each one changed. Open items are listed at the bottom.", "Q1")
+    o = hdr("Q1 · FOUNDER DECISIONS + OPEN QUESTIONS", "Answers given by the founder (21 Oct 2026 to the Rev B5 questions; 22 + 23 Oct on the soot sprites) and the revision each one changed. Open items are listed at the bottom.", "Q1")
     ex = FRONT["excluded_clipped"]
     rows = [["J1", f"05 pink konpeito moved {STARP_POS[0] - 8:.0f} mm inward from the mockup (clears the outer topstitch)", "OK — CONFIRMED", "Rev B6: G6, T8 PROPOSED mark removed"],
             ["J2", "Patch field (01 / 03): straight 0° tatami or a knit texture?", "Straight 0° tatami, no knit texture — CONFIRMED", "Rev B6: no change (FIELD = 0° tatami, G2 / G4)"],
@@ -908,7 +909,9 @@ def Q1():
             ["J5", "Soot-sprite characters on the front leg (look like a licensed character, LESSONS A7)", "KEEP them — founder decision, licence risk accepted by the founder",
              f"Rev B6: {len(FRONT['soot'])} soot sprites digitised into 07a / 07b (G7, C5, C7)"],
             ["J6", "Soot sprites (22 Oct): 'the eyes all look crazy and cracked out; some limbs are missing'", "Redraw them like the reference",
-             "Rev B8: arms + legs, bigger eyes, one gaze (G7, C7)"]]
+             "Rev B8: arms + legs, bigger eyes, one gaze (G7, C7)"],
+            ["J7", "Soot sprites (23 Oct): 'a lot of the arms are upside down of the soot sprites ... k9, 8 5, and 1'", "Arms leave the side and reach UP to the candy",
+             "Rev B9: arms on K01, K05, K08, K09 (G7, C7)"]]
     tb, y = table(12, 36, [("#", 9), ("Question", 112), ("Founder answer", 82), ("Revision it changed", 70)], rows, 1.9, 6.0)
     o.append(tb)
     y += 4
