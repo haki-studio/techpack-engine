@@ -12,6 +12,7 @@ python3 kjstitch.py                            # DST/PES per element + read-back
 python3 kjsoot.py                              # 07 soot sprites (founder 21 Oct: kept): gates + out/compare_soot.png (after kjstitch front1 front2)
 python3 kjcompare.py                           # gates vs the SVG (cairosvg per layer): centreline + motif_match + A15 + exposed stitches; compare sheets with live view
 python3 kjstitch.py front1 front2 && python3 kjpages.py   # pages -> merged PDF (shrunk) + zip with elements/ + labels/ (kjlabels.py size loop labels) + README
+python3 kjfactory.py                           # FACTORY SUMMARY pdf + FACTORY REFERENCE zip + INTERNAL pdf (engine/factory_copy, leak gate, LESSONS E15)
 ```
 Old 16 Oct scripts (build.py, wb.py, backstars.py, spec*.py) are kept for reference; the Rev A pack does not use them.
 
