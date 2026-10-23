@@ -1,0 +1,730 @@
+{
+ "_doc": [
+  "Konpeito Rev B8 soot-sprite art table (founder 22 Oct: 'eyes look crazy and cracked, some limbs missing').",
+  "Hand-read by eye from 20x NEAREST crops of the ORIGINAL mockup inputs/1792127150159_image.png (~1 mm per px; sprites ~15 px):",
+  "the arms are 1-px lines below the tracer's threshold, so they cannot be auto-traced; this table is the art.",
+  "Coordinates: mm relative to the sewn body centre (front_stars.json soot x_from_side_mm / y_from_waist_mm), y DOWN.",
+  "limbs: visible limbs only (an arm behind a candy held against the body is not sewn, as on the mockup); pts = polyline, sewn as a",
+  "triple run; visible_mm = length outside body+fur and outside the candies. holds = the konpeito (S id) the sprite holds.",
+  "eyes: white ovals w x h mm, tilted tilt_deg, at centres; pupil = round black dot of \u00d8 pupil mm; gaze = ONE pupil offset (mm)",
+  "shared by both eyes (the mockup cannot resolve the pupils: art rule = both look at the candy held, up when the arms are raised).",
+  "Eye ratio from the mockup: white ~4-5 px wide x 6 px tall on a ~15 px body -> 0.30 D x 0.38 D (B7 used 0.24 x 0.31).",
+  "Gate: kjsoot.py checks the DST against this table (limb count + ends, gaze, eye area, no gaps in the white)."
+ ],
+ "eye_rule": {
+  "w_D": 0.3,
+  "h_D": 0.38,
+  "sep_D": 0.365,
+  "pupil_of_w": 0.5,
+  "gaze_mm": 0.65,
+  "tilt_max_deg": 20
+ },
+ "sprites": {
+  "K01": {
+   "holds": [
+    "S01",
+    "S02"
+   ],
+   "read": "arm up-left to the pink (dark 1-px line at -5..-4, -11..-8 px); right arm to the blue and 2 legs faint",
+   "limbs": [
+    {
+     "kind": "arm",
+     "to": "S01",
+     "pts": [
+      [
+       -1.65,
+       -6.51
+      ],
+      [
+       -4.48,
+       -9.19
+      ],
+      [
+       -8.33,
+       -10.39
+      ]
+     ],
+     "visible_mm": 5.2
+    },
+    {
+     "kind": "arm",
+     "to": "S02",
+     "pts": [
+      [
+       -0.6,
+       -6.69
+      ],
+      [
+       2.93,
+       -7.68
+      ],
+      [
+       7.22,
+       -7.03
+      ]
+     ],
+     "visible_mm": 3.5
+    },
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       2.48,
+       6.14
+      ],
+      [
+       3.94,
+       9.75
+      ],
+      [
+       3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 3.2
+    },
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       -2.48,
+       6.14
+      ],
+      [
+       -3.94,
+       9.75
+      ],
+      [
+       -3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 3.2
+    }
+   ],
+   "eyes": {
+    "centres": [
+     [
+      -2.5,
+      -0.36
+     ],
+     [
+      2.59,
+      0.67
+     ]
+    ],
+    "w": 4.27,
+    "h": 5.41,
+    "tilt_deg": 11.5,
+    "pupil": 2.14,
+    "gaze": [
+     0.0,
+     -0.65
+    ],
+    "clash_mm2": 0.0,
+    "pulled_in": 0.0
+   },
+   "certainty": "arm to S01 seen; arm to S02 + legs faint"
+  },
+  "K02": {
+   "holds": [
+    "S04",
+    "S03"
+   ],
+   "read": "yellow + blue held against the body; dark px above the yellow on the left = arm; legs not resolvable",
+   "limbs": [
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       2.48,
+       6.14
+      ],
+      [
+       3.94,
+       9.75
+      ],
+      [
+       3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 3.2
+    }
+   ],
+   "eyes": {
+    "centres": [
+     [
+      -2.44,
+      0.89
+     ],
+     [
+      2.44,
+      -0.89
+     ]
+    ],
+    "w": 4.27,
+    "h": 5.41,
+    "tilt_deg": -20.0,
+    "pupil": 2.14,
+    "gaze": [
+     0.19,
+     0.62
+    ],
+    "clash_mm2": 0.69,
+    "pulled_in": 1.0
+   },
+   "certainty": "legs faint (left one under the yellow); arms hidden behind the candies held against the body"
+  },
+  "K03": {
+   "holds": [
+    "S05"
+   ],
+   "read": "pink held against the lower-left body; arm not resolvable; legs faint below right",
+   "limbs": [
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       2.48,
+       6.14
+      ],
+      [
+       3.94,
+       9.75
+      ],
+      [
+       3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 3.2
+    },
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       -2.48,
+       6.14
+      ],
+      [
+       -3.94,
+       9.75
+      ],
+      [
+       -3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 2.2
+    }
+   ],
+   "eyes": {
+    "centres": [
+     [
+      -2.44,
+      -0.89
+     ],
+     [
+      2.44,
+      0.89
+     ]
+    ],
+    "w": 4.27,
+    "h": 5.41,
+    "tilt_deg": 20.0,
+    "pupil": 2.14,
+    "gaze": [
+     -0.46,
+     0.46
+    ],
+    "clash_mm2": 0.16,
+    "pulled_in": 1.0
+   },
+   "certainty": "legs faint; arm hidden behind the pink"
+  },
+  "K04": {
+   "holds": [
+    "S07",
+    "S06"
+   ],
+   "read": "pink + yellow held against the lower-right body; arms not resolvable",
+   "limbs": [
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       -2.48,
+       6.14
+      ],
+      [
+       -3.94,
+       9.75
+      ],
+      [
+       -3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 3.2
+    }
+   ],
+   "eyes": {
+    "centres": [
+     [
+      -1.66,
+      0.94
+     ],
+     [
+      3.22,
+      -0.84
+     ]
+    ],
+    "w": 4.27,
+    "h": 5.41,
+    "tilt_deg": -20.0,
+    "pupil": 2.14,
+    "gaze": [
+     0.46,
+     0.46
+    ],
+    "clash_mm2": 0.05,
+    "pulled_in": 0.75
+   },
+   "certainty": "right leg faint (left under the pink); arms hidden behind the candies"
+  },
+  "K05": {
+   "holds": [
+    "S08",
+    "S09"
+   ],
+   "read": "both arms raised to the pink (up-left) and blue (up-right), legs = vertical dark line below (clearest sprite)",
+   "limbs": [
+    {
+     "kind": "arm",
+     "to": "S08",
+     "pts": [
+      [
+       -1.91,
+       -6.44
+      ],
+      [
+       -4.82,
+       -8.99
+      ],
+      [
+       -8.69,
+       -10.02
+      ]
+     ],
+     "visible_mm": 5.3
+    },
+    {
+     "kind": "arm",
+     "to": "S09",
+     "pts": [
+      [
+       2.16,
+       -6.36
+      ],
+      [
+       4.91,
+       -8.58
+      ],
+      [
+       8.56,
+       -9.24
+      ]
+     ],
+     "visible_mm": 4.3
+    },
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       2.48,
+       6.14
+      ],
+      [
+       3.94,
+       9.75
+      ],
+      [
+       3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 3.2
+    },
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       -2.48,
+       6.14
+      ],
+      [
+       -3.94,
+       9.75
+      ],
+      [
+       -3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 3.2
+    }
+   ],
+   "eyes": {
+    "centres": [
+     [
+      -1.44,
+      0.25
+     ],
+     [
+      3.73,
+      -0.18
+     ]
+    ],
+    "w": 4.27,
+    "h": 5.41,
+    "tilt_deg": -4.8,
+    "pupil": 2.14,
+    "gaze": [
+     0.0,
+     -0.65
+    ],
+    "clash_mm2": 0.0,
+    "pulled_in": 0.0
+   },
+   "certainty": "both arms + legs seen (clearest sprite)"
+  },
+  "K06": {
+   "holds": [
+    "S10"
+   ],
+   "read": "both arms raised empty (1-px lines up-left / up-right above the body, -7..-5, -13..-8 px); stands on the yellow: legs down both sides of it (-7..-6, 8..13 px)",
+   "limbs": [
+    {
+     "kind": "arm",
+     "pts": [
+      [
+       -4.14,
+       -5.3
+      ],
+      [
+       -5.98,
+       -7.66
+      ],
+      [
+       -6.48,
+       -9.46
+      ]
+     ],
+     "visible_mm": 3.4
+    },
+    {
+     "kind": "arm",
+     "pts": [
+      [
+       4.14,
+       -5.3
+      ],
+      [
+       5.98,
+       -7.66
+      ],
+      [
+       6.48,
+       -9.46
+      ]
+     ],
+     "visible_mm": 3.4
+    },
+    {
+     "kind": "leg",
+     "to": "S10",
+     "pts": [
+      [
+       5.58,
+       3.74
+      ],
+      [
+       6.51,
+       9.06
+      ],
+      [
+       6.23,
+       14.43
+      ]
+     ],
+     "visible_mm": 8.8
+    },
+    {
+     "kind": "leg",
+     "to": "S10",
+     "pts": [
+      [
+       -5.34,
+       4.08
+      ],
+      [
+       -5.94,
+       9.45
+      ],
+      [
+       -5.33,
+       14.78
+      ]
+     ],
+     "visible_mm": 8.8
+    }
+   ],
+   "eyes": {
+    "centres": [
+     [
+      -1.79,
+      1.73
+     ],
+     [
+      3.41,
+      1.81
+     ]
+    ],
+    "w": 4.27,
+    "h": 5.41,
+    "tilt_deg": 0.9,
+    "pupil": 2.14,
+    "gaze": [
+     0.0,
+     0.65
+    ],
+    "clash_mm2": 0.0,
+    "pulled_in": 0.0
+   },
+   "certainty": "raised arms seen; legs beside the yellow faint"
+  },
+  "K07": {
+   "holds": [
+    "S11"
+   ],
+   "read": "on the side seam, yellow held below-left; arms/legs not resolvable",
+   "limbs": [
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       2.48,
+       6.14
+      ],
+      [
+       3.94,
+       9.75
+      ],
+      [
+       3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 3.2
+    }
+   ],
+   "eyes": {
+    "centres": [
+     [
+      -3.98,
+      0.25
+     ],
+     [
+      0.91,
+      2.03
+     ]
+    ],
+    "w": 4.27,
+    "h": 5.41,
+    "tilt_deg": 20.0,
+    "pupil": 2.14,
+    "gaze": [
+     -0.39,
+     0.52
+    ],
+    "clash_mm2": 0.03,
+    "pulled_in": 0.15
+   },
+   "certainty": "on the side seam; right leg inferred, arm hidden behind the yellow"
+  },
+  "K08": {
+   "holds": [
+    "S12",
+    "S13"
+   ],
+   "read": "arm out left to the pink; blue held against the lower-right body",
+   "limbs": [
+    {
+     "kind": "arm",
+     "to": "S12",
+     "pts": [
+      [
+       -3.55,
+       -5.7
+      ],
+      [
+       -5.82,
+       -6.78
+      ],
+      [
+       -8.6,
+       -6.12
+      ]
+     ],
+     "visible_mm": 2.7
+    },
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       2.48,
+       6.14
+      ],
+      [
+       3.94,
+       9.75
+      ],
+      [
+       3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 3.2
+    },
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       -2.48,
+       6.14
+      ],
+      [
+       -3.94,
+       9.75
+      ],
+      [
+       -3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 3.2
+    }
+   ],
+   "eyes": {
+    "centres": [
+     [
+      -3.13,
+      -0.44
+     ],
+     [
+      1.76,
+      1.33
+     ]
+    ],
+    "w": 4.27,
+    "h": 5.41,
+    "tilt_deg": 20.0,
+    "pupil": 2.14,
+    "gaze": [
+     -0.64,
+     -0.13
+    ],
+    "clash_mm2": 0.0,
+    "pulled_in": 0.0
+   },
+   "certainty": "arm to S12 seen; legs faint; arm to S13 hidden behind it"
+  },
+  "K09": {
+   "holds": [
+    "S14"
+   ],
+   "read": "long arm up-right to the yellow (clear 1-px trail 9..10, -7..-3 px); 2 legs faint below-left",
+   "limbs": [
+    {
+     "kind": "arm",
+     "to": "S14",
+     "pts": [
+      [
+       1.18,
+       -6.61
+      ],
+      [
+       3.68,
+       -9.34
+      ],
+      [
+       7.3,
+       -10.65
+      ]
+     ],
+     "visible_mm": 4.2
+    },
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       2.48,
+       6.14
+      ],
+      [
+       3.94,
+       9.75
+      ],
+      [
+       3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 3.2
+    },
+    {
+     "kind": "leg",
+     "pts": [
+      [
+       -2.48,
+       6.14
+      ],
+      [
+       -3.94,
+       9.75
+      ],
+      [
+       -3.04,
+       9.95
+      ]
+     ],
+     "visible_mm": 3.2
+    }
+   ],
+   "eyes": {
+    "centres": [
+     [
+      -0.87,
+      1.07
+     ],
+     [
+      4.02,
+      -0.71
+     ]
+    ],
+    "w": 4.27,
+    "h": 5.41,
+    "tilt_deg": -20.0,
+    "pupil": 2.14,
+    "gaze": [
+     0.46,
+     -0.46
+    ],
+    "clash_mm2": 0.02,
+    "pulled_in": 0.4
+   },
+   "certainty": "arm to S14 seen (clear); legs faint"
+  }
+ }
+}
