@@ -38,3 +38,8 @@ zip hooded jacket (Rev J) to a washed-black kangaroo-pocket PULLOVER on the EE /
 ## Next
 - Mandy's answers → factory.json (frame for 340x505, wash after sewing, price basis), then all sizes on HER pattern.
 - Strike-off: back panel BK-H1 + BK-H3 through the real wash.
+
+## Delivered (2026-10-23T22:09:14Z)
+- Reviewer APPROVE. The fixes applied were: K1 Q1 asks for hoopings per piece, the 90° frame note, K1 sizes taken from the read-back, a thread question, and an embroidery-only quote. In the message, the "lighter version ready" hint was removed.
+- The pack was copied to Desktop/TECH PACKS/2 Keep Clean Our Space hoodie/ (Rev K PDF + stitch files zip).
+- Founder card: kcos-pullover-revk-send-mandy.
