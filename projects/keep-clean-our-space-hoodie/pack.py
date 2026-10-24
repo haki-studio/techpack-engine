@@ -153,6 +153,14 @@ def threads():
     yb = 36 + len(kccore.KC_KEYS)*rh + 2
     o.append(t(12, yb, "ΔE2000 vs target: green < 3, amber 3–5.5, red > 5.5 — amber/red rows must be picked from the physical card (F1). Neon mint / lemon / electric blue are", 1.75, 600, ORANGE))
     o.append(t(12, yb + 3.3, "brighter than most standard polyester shades: ask for the nearest fluorescent / high-chroma shade. All targets PROPOSED (read from the mockup).", 1.75, 600, ORANGE))
+    # two threads that map to the SAME card code would sew identically (a rim tint must stay lighter than its core)
+    dup = []
+    for brand in ("isacord", "polyneon"):
+        seen = {}
+        for k in kccore.KC_KEYS: seen.setdefault(TH[k][brand][0], []).append(PAL[k][1])
+        dup += [f"{brand.title()} {c}: {' + '.join(v)}" for c, v in seen.items() if len(v) > 1]
+    if dup:
+        o.append(t(12, yb + 6.6, "SAME CARD CODE for two threads — pick distinct shades (the tint must read lighter than its core): " + "; ".join(dup), 1.75, 700, RED)); yb += 3.4
     o.append(t(12, yb + 10, "TRIMS + CONSUMABLES (per jacket)", 2.2, 700))
     tr = [("Backing", "2.5 oz cutaway, black (washed black shell), 30 larger than each hooping; trim to 5 from stitching after embroidery"),
           ("3D puff foam", "3 mm embroidery foam, BLACK: FR one sheet over 01 JP + the 03 CN dot ring, FL one over 02 EN, at the pause stop; tear away after the puff stops " + PROP),
@@ -329,10 +337,12 @@ def badge_page(el):
             ("Angle", ang), ("Process", {"01": "3D puff text + parts, lighter rims, 3 mm black foam " + PROP, "02": "3D puff text + faceted stars, 3 mm black foam " + PROP,
                                          "03": "flat column-satin text; ring dots 3D puff with lighter rims " + PROP, "04": "flat satin"}[el])]
     if el == "03": rows.append(("Ring", f"{b['dots']} domed dots Ø 12.4 (1.3 lighter rim) alternating blue / mint, soft halo, sparkles inside"))
-    if el == "04": rows.append(("Oval ring", f"outer {2*b['axes'][0]:.0f} × {2*b['axes'][1]:.0f}, ring {b['axes'][2]:.1f} gold (one closed column) + 1.1 lemon highlight"))
+    if el == "04":
+        rw_ = META.get("traced", {}).get("04", {}).get("oval ring width", [b['axes'][2], b['axes'][2]])
+        rows.append(("Oval ring", f"traced from the mockup: ring {rw_[0]:.1f}–{rw_[1]:.1f} gold (one closed column, width table) + 1.1 lemon line"))
     if el == "04": rows.append(("Marks", "none: the render's 'i-arrow' is the '!' of 우주! (source drawn rotated 180°)"))
     for a_, b_ in rows:
-        o.append(t(rx, y, a_, 1.8, 400, MUTED)); o.append(t(rx + 30, y, b_, 1.75, 600, ORANGE if PROP in b_ else INK)); y += 3.5
+        o.append(t(rx, y, a_, 1.8, 400, MUTED)); o.append(KD.auto(rx + 30, y, b_, 1.75, ORANGE if (PROP in b_ or "proposed" in b_ or "confirm" in b_) else INK, 600)); y += 3.5
     y += 2
     o.append(t(rx, y, "PARTS (size M art)", 2.1, 700)); y += 4
     comp = {}
@@ -374,9 +384,9 @@ def text_big(x, y, txt, key, h):
 
 CHANGES = {
  "01": ["WHAT CHANGED vs MOCKUP (Rev B)", "Text re-set from Zen Maru Gothic Bold on the mockup's CURVED", "  baseline; 17 spark bars, 2 hearts, 4 stars, 1 dot from the mockup.",
-        "Domed puff: lighter rim on text / bars / hearts / dot, faceted stars;", "  top star slender with a dark pit + white centre; red star solid with", "  a star-shaped pit. Glow = soft halo round the letters.", "!Reference: low-res mockup only (no close-up)."],
+        "Domed puff: lighter rim on text / bars / hearts / dot, faceted stars;", "  top star slender with a dark pit + white centre; red star solid with", "  a star-shaped pit. Glow = soft halo round the letters.", "!Reference: mockup (layout, traced) + source frame (text, lettering)."],
  "02": ["WHAT CHANGED vs MOCKUP (Rev B)", "18 gold stars counted + placed (2 hidden behind 'N' not added),", "  faceted, lighter top facets. Nunito 1000 em 23 (heavier, as the",
-        "  mockup), line pitch 28 + line length 138 measured. Soft halo.", "Badge moved 9 toward CF (M): clears the 15 armhole keep-out.", "!Reference: low-res mockup only (no close-up)."],
+        "  mockup), line pitch 28 + line length 138 measured. Soft halo.", "Badge moved 9 toward CF (M): clears the 15 armhole keep-out.", "!Reference: mockup (layout, traced) + source frame (text, lettering)."],
  "03": ["WHAT CHANGED vs MOCKUP (Rev B)", "Text from the founder's source frame: 不要世界汚染 (the render's", "  7 glyphs were garbled). 汚 drawn as the source shows (Japanese form).",
         "!Simplified Chinese would be 污 — say which (G4).", "{dots} domed ring dots + {cnsp} sparkles, traced; soft halo round the dots.", "!Reference: mockup (layout) + source frame (text)."],
  "04": ["WHAT CHANGED vs MOCKUP (Rev B)", "Text from the source frame, read upright (drawn rotated 180°):", "  우리들 소중한 우주! — the render's marks were the rotated '!'.",
@@ -413,7 +423,8 @@ def star_page():
              f"Fronts: every detected star is placed on every size (dropped = 0, review item 8). A star in a keep-out moves to the nearest free spot (≤ 8 = nudged);",
              "  if none, ≤ 45 mm (relocated: the render's drop-shoulder strip, x ≈ ±305 at M, lies on the Drum Island sleeve cap, so those stars spread onto the front edge).",
              f"Sleeves: front half mapped from the mockup sleeves; back half seeded at the same density + size mix ({c['SR_back_seeded']} + {c['SL_back_seeded']}) {PROP}.",
-             f"Sizes: sparkle span = (speck px + 1.5) × {MM.S:.3f}, 4.0–8.5 mm ({spn['s5_8']} of {spn['n']} in 5–8 mm, {spn['gt8']} > 8); smaller specks → satin dots Ø 1.45 / 1.7 / 2.0.",
+             (lambda T: f"Sizes + shapes traced (A14): every front star is fitted to its own mockup silhouette (kctrace) — {T.get('sparkles', [0, 0])[1]} sparkles + {T.get('dots', [0, 0])[1]} dots snapped, "
+                        f"{T.get('traced silhouettes', [0, 0])[1]} tiny stars stitched as their traced outline; gate table on compare_front_M (A14/A15).")(META.get("traced", {}).get("05", {})),
              f"Star size is constant over sizes (positions follow the panel), so sleeve files are near-identical across sizes: {sl_txt} — intended (review item 11).",
              "Each speckle is an island on bare fabric: 1–2 trims each (haze + sparkle in two threads). Trims are reported, not reduced (fidelity first)."]
     for i, l in enumerate(lines): o.append(t(14, y + i*3.3, l, 1.6, 400, ORANGE if PROP in l else INK))
@@ -497,9 +508,9 @@ def f1_pages():
     th = [dict(name=PAL[k][1], code=f"Isacord {SB.TH[k]['isacord'][0]} / Polyneon {SB.TH[k]['polyneon'][0]}", de=min(SB.TH[k]["isacord"][3], SB.TH[k]["polyneon"][3])) for k in kccore.KC_KEYS]
     pcs = [dict(piece=f"{p} {kccore.PIECE_NAME[p]}", w=CUR[p]["size_mm"][0], h=CUR[p]["size_mm"][1], hoopings=HOOP[p]) for p in P4]
     svgs = FA.requests_page(kccore.NAME, so, th, pcs, page="F1", prof=PROF)
-    extra = (t(12, 177, "5  3D puff (foam)", 3.2, 700) +
-             t(16, 182, "Can you sew 3 mm foam puff on the JP + EN badges and the CN ring dots? PAUSE stops are marked on S1 (lay foam / tear foam). Which foam do you stock?", 2.4, 400, ORANGE) +
-             t(16, 186, "Price the puff hoopings separately. If puff is not possible, the same files sew flat (dense satin) — tell us and we re-space the puff codes to 0.40.", 2.4, 400, ORANGE))
+    extra = (t(12, 187, "5  3D puff (foam)", 3.2, 700) +
+             t(16, 192, "Can you sew 3 mm foam puff on the JP + EN badges and the CN ring dots? PAUSE stops are marked on S1 (lay foam / tear foam). Which foam do you stock?", 2.4, 400, ORANGE) +
+             t(16, 196, "Price the puff hoopings separately. If puff is not possible, tell us: the same art sews flat and we re-space the puff columns for flat satin.", 2.4, 400, ORANGE))
     return [s.replace("</svg>", extra + "</svg>") for s in svgs]
 
 def build():
