@@ -5,6 +5,7 @@
 #
 #   scripts/dispatch.sh build  <slug> ["extra brief"]   builder in worktree .claude/worktrees/tp-<slug> (branch tp-<slug>)
 #   scripts/dispatch.sh review <slug> <pr>              independent reviewer on that PR (its own scratch worktree)
+#   scripts/dispatch.sh stage  <slug> B|C               next phase of a staged build, fresh session, same worktree
 #   scripts/dispatch.sh fix    <slug> <pr>              builder fix round in the existing tp-<slug> worktree
 #   scripts/dispatch.sh --drain                         start queued jobs while there is room
 #   scripts/dispatch.sh --dry-run <role> <slug> ...     print what would run; no worktree, no session
@@ -63,18 +64,25 @@ EOF
 }
 
 launch() {    # launch <role> <slug> [arg]
-  local role=$1 slug=$2 arg="${3:-}" name="tp-$1-$2" wt="$MAIN/.claude/worktrees/tp-$2" agent prompt
+  local role=$1 slug=$2 arg="${3:-}" name="tp-$1-$2" wt="$MAIN/.claude/worktrees/tp-$2" agent prompt next
   [ -d "$MAIN/projects/$slug" ] || git -C "$MAIN" cat-file -e "origin/main:projects/$slug" 2>/dev/null \
     || { echo "no such product: projects/$slug" >&2; return 2; }
   case $role in
     build)  agent=techpack-builder
-            prompt="Build the tech pack for projects/$slug. Brief: projects/$slug/inputs/brief.md. ${arg}" ;;
+            prompt="Build the tech pack for projects/$slug. Brief: projects/$slug/inputs/brief.md. ${arg}"
+            [ "${TECHPACK_STAGED:-1}" = 0 ] || prompt="$prompt
+Staged build: do phase A only (builder rule 13), then hand off with scripts/dispatch.sh stage $slug B." ;;
+    stage)  agent=techpack-builder; case "$arg" in B|C) ;; *) echo "stage needs B or C" >&2; return 2 ;; esac
+            name="tp-stage$arg-$slug"
+            [ -d "$wt" ] || { echo "stage $arg needs the build worktree $wt" >&2; return 2; }
+            next=""; [ "$arg" = B ] && next=" then hand off with scripts/dispatch.sh stage $slug C"
+            prompt="Staged build of projects/$slug, phase $arg (builder rule 13). Start from projects/$slug/STAGE_HANDOFF.md, not from earlier sessions: do phase $arg only$next." ;;
     fix)    agent=techpack-builder; [ -n "$arg" ] || { echo "fix needs a PR number" >&2; return 2; }
             prompt="Fix round for projects/$slug, PR #$arg: read the reviewer's verdict (gh pr view $arg --comments), fix every blocker and should-fix, rebuild, re-render, push, comment what changed, then run scripts/dispatch.sh review $slug $arg." ;;
     review) agent=reviewer; [ -n "$arg" ] || { echo "review needs a PR number" >&2; return 2; }
             wt="$MAIN/.claude/worktrees/tp-review-$slug"
             prompt="Independent review of the tech pack in PR #$arg (projects/$slug), per .claude/skills/techpack/SKILL.md step 3: fidelity first (stitch preview vs mockup, zoomed, every missing detail), then every page rendered and read, every number vs the generated files, LESSONS gates incl. the A14/A15 tables, grep for hard-coded motif geometry. Post the verdict as a PR comment tied to the head sha, ending with two counts: fixable = blockers + should-fix items the builder can fix alone, founder = items only the founder can decide. Then run, as your last step: python3 scripts/review_next.py $slug $arg --fixable <n> --founder <m> (it approves, starts another fix round while each round clearly improves, or blocks for the founder)." ;;
-    *) echo "unknown role: $role (build | fix | review)" >&2; return 2 ;;
+    *) echo "unknown role: $role (build | stage | fix | review)" >&2; return 2 ;;
   esac
   prompt="$prompt
 
@@ -93,7 +101,11 @@ You are a background worker (LESSONS E10): nobody is waiting on you and the sess
     fi
   fi
   local id
-  id=$(cd "$wt" && claude --bg -n "$name" --agent "$agent" --permission-mode auto "$prompt" 2>&1 | sed -n 's/^backgrounded · \([0-9a-f]*\) .*/\1/p')
+  # Compact at 300k context like ~/.claude/company/bin/spawn.sh (mission token-efficiency, founder yes 2026-10-23):
+  # a plain env var on `claude --bg` does not reach the session, --settings does. TECHPACK_COMPACT_WINDOW overrides.
+  id=$(cd "$wt" && claude --bg -n "$name" --agent "$agent" --permission-mode auto \
+    --settings "{\"env\":{\"CLAUDE_CODE_AUTO_COMPACT_WINDOW\":\"${TECHPACK_COMPACT_WINDOW:-300000}\"}}" \
+    "$prompt" 2>&1 | sed -n 's/^backgrounded · \([0-9a-f]*\) .*/\1/p')
   board "$slug" "$role" "$name ${id:-?} $wt"
   echo "started $name (${id:-id unknown}) in $wt"
 }
@@ -111,7 +123,7 @@ drain() {     # start queued jobs while there is room
 
 case "${1:-}" in
   --drain) exec 9>"$STATE/dispatch.lock"; flock 9; reap_idle; drain ;;
-  build|fix|review) [ $# -ge 2 ] || { sed -n 5,9p "$0"; exit 2; }
+  build|stage|fix|review) [ $# -ge 2 ] || { sed -n 5,9p "$0"; exit 2; }
                     exec 9>"$STATE/dispatch.lock"; flock 9; [ "$DRY" = 1 ] || reap_idle; launch "$1" "$2" "${*:3}"; [ "$DRY" = 1 ] || drain ;;
   *) sed -n 2,15p "$0"; exit 2 ;;
 esac

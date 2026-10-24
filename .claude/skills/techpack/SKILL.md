@@ -48,6 +48,8 @@ session (`claude --bg`) in its own worktree `.claude/worktrees/tp-<slug>` on bra
 `Agent` subagent, because those die with this session and force it to stay open. dispatch.sh runs at most
 TECHPACK_MAX_WORKERS (default 3) at once and respects the company session/RAM cap; the rest are queued and start
 by themselves as workers finish. Heavy commands still share CPU through `scripts/heavy.sh`.
+Each build is staged (techpack-builder rule 13): phase A art, B stitch + QA, C documents + PR, each a fresh session
+that starts from `projects/<slug>/STAGE_HANDOFF.md`, so no session carries the whole build. `TECHPACK_STAGED=0` = one session.
 
 **Then end this session.** Nothing waits on it: each builder pushes, opens its PR and launches its own reviewer
 (`dispatch.sh review`); the reviewer approves, sends a fix round back (`dispatch.sh fix`) while each round clearly improves, or marks the product
