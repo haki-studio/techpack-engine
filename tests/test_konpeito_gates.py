@@ -22,6 +22,10 @@ PPM = 20
 @pytest.fixture(autouse=True)
 def in_project(monkeypatch):
     monkeypatch.chdir(PROJ)          # kjsvg reads inputs/svg relative to the project
+    # the C5 map out/front_stars.json is build output (git-ignored); a fresh worktree gets the committed copy
+    if not os.path.exists("out/front_stars.json"):
+        import shutil; os.makedirs("out", exist_ok=True)
+        shutil.copy(os.path.join(ROOT, "tests", "fixtures", "konpeito_front_stars.json"), "out/front_stars.json")
 
 
 def raster(g, W=16.0, H=16.0, ppm=PPM):
@@ -230,3 +234,45 @@ def test_soot_art_gates_red_on_b7_green_on_b8(tmp_path):
     assert not rows["K01"]["limbs_ok"] and rows["K01"]["limbs_dst"] == 4 and rows["K01"]["limbs_art"] == 3
     assert not rows["K05"]["ok"] and rows["K05"]["gaze_err_mm"] > kjsoot.GAZE_MAX
     assert rows["K09"]["ok"]
+
+
+# ---- Rev B9 (founder 23 Oct: "a lot of the arms are upside down of the soot sprites ... k9, 8 5, and 1") -------------
+def _arm_mask(pts, ppm=PPM, W=40, H=40):
+    im = Image.new("L", (W * ppm, H * ppm), 0); d = ImageDraw.Draw(im)
+    d.line([(x * ppm, y * ppm) for x, y in pts], fill=255, width=int(0.35 * ppm) + 1)
+    return np.asarray(im) > 0
+
+
+def test_arm_shape_catches_root_and_arch():
+    """kjsoot.arm_shape on drawn arms (body centre (20, 20), R 7.1, candy up-right at (31, 8)):
+    the reference "J" (shoulder, out, up) passes; B8's antenna (off the top, over, down to the candy) fails the root
+    band AND the arch; an arm on the side away from the candy fails the side test."""
+    import kjsoot
+    c, cand = (20 * PPM, 20 * PPM), (31 * PPM, 8 * PPM)
+    ok = lambda r: r["side"] and abs(r["elev_deg"]) <= kjsoot.ROOT_BAND_DEG and r["arch_mm"] <= kjsoot.ARCH_TOL
+    J = kjsoot.arm_shape(_arm_mask([(28.5, 19), (30, 19), (30.5, 18), (30.5, 12)]), c, cand)
+    assert ok(J) and J["arch_mm"] < 0.2 and abs(J["elev_deg"]) < 10
+    n = kjsoot.arm_shape(_arm_mask([(22, 11.5), (24, 6), (28, 5), (30, 9)]), c, cand)          # inverted "n"
+    assert not ok(n) and n["elev_deg"] > kjsoot.ROOT_BAND_DEG and n["arch_mm"] > kjsoot.ARCH_TOL
+    back = kjsoot.arm_shape(_arm_mask([(11.5, 19), (10, 19), (9.5, 12)]), c, cand)          # shoulder on the far side
+    assert not back["side"] and not ok(back)
+
+
+def test_soot_arms_red_on_b8_green_on_b9(tmp_path):
+    """B8 passed 'limbs 3/3' with the arms upside down: a limb count doesn't check direction. Red: the shipped B8 DSTs
+    (tests/fixtures/konpeito_b8, md5 = the B8 SAMPLE READY zip) with the B8 art table fail the arm check on exactly the
+    sprites the founder named (K01, K05, K08, K09) while every older check still passes on them. Green: B9 9/9."""
+    import json, kjsoot
+    b8 = os.path.join(ROOT, "tests", "fixtures", "konpeito_b8")
+    red = {r["id"]: r for r in kjsoot.run(b8, str(tmp_path / "g8.json"), str(tmp_path / "c8.png"),
+                                         art=json.load(open(os.path.join(b8, "soot_art_b8.json"))))}
+    assert sorted(i for i, r in red.items() if not r["arms_ok"]) == ["K01", "K05", "K08", "K09"]
+    for i, r in red.items():
+        assert r["limbs_ok"] and r["ok"] == r["arms_ok"]                             # only the arm check turns them red
+    b9 = os.path.join(ROOT, "tests", "fixtures", "konpeito_b9")
+    green = kjsoot.run(b9, str(tmp_path / "g9.json"), str(tmp_path / "c9.png"))
+    assert len(green) == 9 and all(r["ok"] and r["arms_ok"] for r in green)
+    for r in green:
+        for l in r["limb_detail"]:
+            if l["kind"] == "arm" and r["id"] != "K06":                              # K06: raised empty arms, no candy
+                assert abs(l["elev_deg"]) <= 15 and l["arch_mm"] <= kjsoot.ARCH_TOL

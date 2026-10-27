@@ -44,6 +44,26 @@ def eyes_for(q, c, cands):
     return dict(centres=[[round(x, 2), round(y, 2)] for x, y in best[1]], w=round(w, 2), h=round(h, 2), tilt_deg=round(math.degrees(ang), 1),
                 pupil=round(PUP * w, 2), gaze=g, clash_mm2=round(best[0], 2), pulled_in=round(1 - best[2], 2))
 def rel(p, c): return [round(p[0] - c[0], 2), round(p[1] - c[1], 2)]
+# Rev B9 (founder 23 Oct: "a lot of the arms are upside down"): B8 rooted the arm on the UPPER side of the candy direction,
+# so it left the top of the body and arched over and down to the candy. The mockup (founder's red line on K09): the arm
+# leaves the SIDE facing the candy (shoulder, about eye height), runs out, then reaches UP to the candy's underside ("J").
+SHOULDER_DEG, SHOULDER_MIN_DEG, RISE_MIN, ELBOW_R = 10.0, -30.0, 2.5, 0.8     # root elevation (deg above horizontal), lowest root, min climb (mm), elbow round-off (mm)
+def holding_arm(c, k, cand):
+    """[root, elbow-in, elbow-out, hand] in leg mm (y down): root on the body edge at the shoulder on the candy's side,
+    level run out to under the candy, then straight up; the hand ends 0.8 mm inside the candy's lower edge (the candy is
+    sewn later, on top, so the end tucks under it). The root drops below the shoulder (to SHOULDER_MIN_DEG) only when the
+    candy is so low the arm would climb < RISE_MIN."""
+    sx = 1 if k[0] >= c[0] else -1
+    hx = k[0] - sx * 0.5                                                      # just body-side of the candy's centre line
+    col = LineString([(hx, k[1] - 20), (hx, k[1] + 20)]).intersection(cand)
+    bot = max(y for _, y in (col.coords if col.geom_type == "LineString" else [p for g in col.geoms for p in g.coords]))
+    hand = (hx, bot - 0.8)
+    el = math.radians(SHOULDER_DEG)
+    if (c[1] - (R - 0.4) * math.sin(el)) - bot < RISE_MIN:                   # too little climb from the root to the candy edge
+        y_root = min(bot + RISE_MIN - c[1], (R - 0.4) * math.sin(-math.radians(SHOULDER_MIN_DEG)))
+        el = -math.asin(y_root / (R - 0.4))
+    a = (c[0] + sx * (R - 0.4) * math.cos(el), c[1] - (R - 0.4) * math.sin(el))
+    return [a, (hx - sx * ELBOW_R, a[1]), (hx, a[1] - ELBOW_R), hand]
 out = {}
 for q in F['soot']:
     c = (q['x_from_side_mm'], q['y_from_waist_mm']); rd = READ[q['id']]
@@ -64,18 +84,7 @@ for q in F['soot']:
                 m = ((a[0] + e[0]) / 2 + sg * 0.6 * math.cos(th + math.pi / 2), (a[1] + e[1]) / 2 + sg * 0.6 * math.sin(th + math.pi / 2))
                 limbs.append(dict(kind="leg", to=sid, pts=[a, m, e]))
             continue
-        # arm leaves the body on the UPPER side of the candy direction (sprites hold candies up/out), ends under the candy edge
-        up = -1 if math.sin(th) > -0.2 and math.cos(th) > 0 else 1
-        up = 1 if math.cos(th) < 0 else -1
-        if math.sin(th) > 0.3: up = -up      # candy below the equator: leave above it
-        off = 0.55 if d > 13 else 1.05
-        ta = th + up * off * (1 if math.cos(th) >= 0 else 1)
-        a = (c[0] + (R - 0.4) * math.cos(th + (-off if math.cos(th) >= 0 else off) * (1 if math.sin(th) <= 0.3 else -1)), 0)
-        sgn = (-1 if math.cos(th) >= 0 else 1) * (1 if math.sin(th) <= 0.3 else -1)
-        a = (c[0] + (R - 0.4) * math.cos(th + sgn * off), c[1] + (R - 0.4) * math.sin(th + sgn * off))
-        e = (k[0] - 3.4 * math.cos(th - sgn * 0.5), k[1] - 3.4 * math.sin(th - sgn * 0.5))
-        m = (a[0] + (e[0] - a[0]) * 0.5 + 0.9 * math.cos(th + sgn * 1.4), a[1] + (e[1] - a[1]) * 0.5 + 0.9 * math.sin(th + sgn * 1.4))
-        limbs.append(dict(kind="arm", to=sid, pts=[a, m, e]))
+        limbs.append(dict(kind="arm", to=sid, pts=holding_arm(c, k, cand_geom(s))))
     if rd["legs"]:
         for sg in (-1, 1):
             t = math.radians(90 + sg * 22)
