@@ -11,6 +11,7 @@ shutil.copytree("out/stitch", f"{PKG}/elements/stitch-files", ignore=shutil.igno
 os.makedirs(f"{PKG}/elements/art", exist_ok=True)
 for f_ in glob.glob("out/art/*_flat.png") + glob.glob("out/compare_*.png"): shutil.copy(f_, f"{PKG}/elements/art/")
 if os.path.isdir("out/pattern"): shutil.copytree("out/pattern", f"{PKG}/pattern", ignore=shutil.ignore_patterns("*.png"))
+if os.path.isdir("out/labels"): shutil.copytree("out/labels", f"{PKG}/labels")   # Haki standard main label (care label MISSING: fibre not confirmed)
 full = f"out/HAKI_{kccore.SHORT}_FULL-TECHPACK_{kccore.REV_EMB.replace(' ', '')}.pdf"; shutil.copy(full, PKG)
 cur = json.load(open("dst_current.json"))
 import factory as FA, kcdoc as KD
@@ -28,8 +29,9 @@ Embroidery {kccore.REV_EMB} - {kccore.DATE}
 
 {os.path.basename(full)}
     Embroidery pack: G1-G6, element specs E01-E06, stop sequences S1-S3, region table R1, F1-F2 factory requests.
-    Garment pages T1-T9 (zip-hoodie block) come first, then the embroidery pages.
+    Garment pages T1-T9 (+ T6b labels) (zip-hoodie block) come first, then the embroidery pages.
 pattern/                        DXF per size + all sizes, 1:1 plot PDF (size M).
+labels/                         Haki standard main label, 65 x 20 mm, 1:1 (T6b). Care label to follow: fibre content not confirmed.
 
 elements/stitch-files/<size>/   per size: FR (wearer's right front), FL (wearer's left front), SR (right sleeve), SL (left sleeve), BK (back, stars only)
                                 stitch files (DST + PES), previews, thread charts. splits/ = hoop sections for the """ + FR + """ frame
@@ -53,6 +55,8 @@ the front star field - PROPOSED), hood plain; glow halo + star haze dropped (Glo
 Rev I (founder defect 21 Oct, EN badge FL M): the small flat satins sewn on top after the foam (P, R, S, A, E) now sew with
 the puff stroke they join; no flat fragment is left inside any puff glyph (JP, EN, CN; frag_gate.json = 0 at every size).
 Sliver star specks sew as the house dot (count kept). All files rebuilt.
+Rev J (22 Oct): labels only - Haki standard main label; care label MISSING until the shell fibre is confirmed (T6b).
+    Stitch files unchanged from Rev I.
 """ + FOAM + """
 Files are production-intent drafts: the factory digitizer checks
 density, pull and puff on the washed duck, edits if needed, and sews out size M before bulk. Every value marked
