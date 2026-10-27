@@ -153,7 +153,14 @@ def summary():
     _g = "; ".join(f"{P}: " + ", ".join(f"{fam} {sum(r['ok'] for r in _q[P][fam])}/{len(_q[P][fam])}" for fam in ("banks", "islets", "stars"))
                    + f", sea gaps unexplained {sum(1 for r in _q[P]['sea_gaps'] if r['why'] == 'UNEXPLAINED')}" for P in _q)
     o.append(t(12, y + 11, f"Fidelity gates (LESSONS A14/A15, size M DST vs reference, compare sheets): {_g}.", 1.6, 600, GREEN if _q and "UNEXPLAINED" not in json.dumps(_q) and all(r['ok'] for P in _q for fam in ('banks','islets','stars') for r in _q[P][fam]) else ORANGE))
-    o.append(t(12, y + 13.8, "Not sewn (inside a keep-out, hard limit): " + ("; ".join(f"{x.get('kind', 'islet')} at ({x['mm'][0]:.0f}, {x['mm'][1]:.0f})" for x in _ns) if _ns else "none") + ".", 1.6, 400, MUTED))
+    _ps = []
+    for _sz in glcore.SIZES:                      # per-size: a motif whose whole outline falls in THAT size's keep-out
+        _D = pickle.load(open(f"front_{_sz}.pkl", "rb"))["info"]
+        _n = sum(len(_D[P].get("dropped_units", [])) for P in ("FR", "FL"))
+        if _n: _ps.append(f"{_sz} {_n}")
+    _cut = sum(1 for x in META.get("star_trace", []) if x.get("cut_by_keepout"))
+    o.append(t(12, y + 13.8, "Not sewn (inside a keep-out, hard limit), size M: " + ("; ".join(f"{x.get('kind', 'islet')} at ({x['mm'][0]:.0f}, {x['mm'][1]:.0f})" for x in _ns) if _ns else "none")
+               + (f". Other sizes, extra star dots wholly in that size's keep-out: {', '.join(_ps)}" if _ps else "") + f". Stars cut (not moved) by a keep-out: {_cut}.", 1.6, 400, MUTED))
     qy = y + 19
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
     qs = [f"1. Frame: each piece is ~420–505 tall → 2 hoopings on {FR_S} (split S1/S2, registration crosses, G5/G6), or 1 hooping on a ≥ 300 × 520 frame (full files). Which?",

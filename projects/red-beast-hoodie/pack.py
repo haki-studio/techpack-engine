@@ -44,7 +44,7 @@ def cover(index):
     o = [f'<rect width="{SW}" height="{SH}" fill="#FFFFFF"/>']
     o.append(t(14, 24, "HAKI STUDIOS", 3.0, 700, MUTED))
     o.append(t(14, 36, "Red Beast hooded jacket · washed black — embroidery", 7.0, 700))
-    o.append(t(14, 44, f"{REV} · {DATE} · Drum Island body (hooded variant), size M base · 2 elements, 4 pieces · {NTH} threads · all dimensions mm", 2.6, 400, MUTED))
+    o.append(t(14, 44, f"{REV} · {DATE} · zip-hoodie block (Drum Island body + 3-panel hood), size M base · 2 elements, 4 pieces · {NTH} threads · all dimensions mm", 2.6, 400, MUTED))
     o.append(f'<line x1="14" y1="48" x2="{SW-14}" y2="48" stroke="{INK}" stroke-width="0.4"/>')
     fv = espec.piece_view_png("01", V, 2.0); tag, h = img_tag(fv, 14, 54, 100); o.append(tag)
     sv = espec.piece_view_png("02", V, 1.2); tag2, h2 = img_tag(sv, 118, 54, 78); o.append(tag2)
@@ -57,7 +57,7 @@ def cover(index):
     y += 4
     o.append(t(ix, y, "TOTALS, SIZE M (read from the DST files)", 2.4, 700)); y += 5
     for a, b in [("Stitches per jacket", f"{TOT:,}"), ("Trims per jacket", f"{TRIMS:,}"),
-                 ("Hoopings per jacket", f"{NH} on {FR_S} (fronts 2 each, sleeves {hoopings('SR')} + {hoopings('SL')})"),
+                 ("Hoopings per jacket", f"{NH} on {FR_S} (FR {hoopings('FR')} + FL {hoopings('FL')}, SR {hoopings('SR')} + SL {hoopings('SL')})"),
                  ("Machine time / jacket", f"{MH_SPLIT:.1f} h split files ({MH:.1f} h full files)"), ("Threads", f"{NTH} in use (40wt); factory max {FA.max_threads(PROF)} per file")]:
         o.append(t(ix, y, a, 1.9, 400, MUTED)); o.append(t(SW - 14, y, b, 1.8, 600, INK, "end")); y += 4
     o.append(t(SW - 14, SH - 8, SB.FOOT, 1.9, 400, MUTED, "end"))
@@ -202,7 +202,7 @@ def files_page():
     bx = 214; o.append(t(bx, 31.5, "WHAT IS DIGITIZED", 2.0, 700)); yy = 35.5
     notes = ["Order per file: red strokes + streaks →", "crimson shade strokes + cord under-edges →", "black ground strokes → cream cords + teeth", "→ white tooth edges (on top).",
              "", "Hair / shade / black: one object per", "stroke (1.5–3 wide, 5–12 long, staggered),", "satin ALONG the traced flow, split ≤ 6.",
-             "Cords: satin across at the traced width", "(≥ 1.2), one column per branch.", "Teeth: one object each, satin along the", "tooth; streaks: traced bundles in 1.8 strips.",
+             "Cords: strokes ALONG the line at the traced", "width (≥ 1.2), 6–14 mm, staggered.", "Teeth: one object each, rows along the", "tooth; streaks: 1.8 strips, rows along (A16).",
              "", "Ties: 3-stitch tie-on/off at every trim +", "colour change; trims on jumps ≥ 2.5 mm.",
              "", "SEWING A SPLIT PIECE", "1. Mark CF / sleeve centre + split line.", "2. Hoop S1; stop 1 opens with the", "   registration crosses (own stop, crimson).",
              "3. Re-hoop for S2, align on the crosses.", "4. Fills crossing the split overlap 1.2;", "   motifs < 70 go whole to one file.", "5. Pick out the crosses after S2."]
@@ -220,7 +220,7 @@ def split_head_cut(sz, P):
 
 def hooping_page():
     o = hdr("HOOPING TABLE — split line + needle start per file, every size", f"Frame {FR_S} mm (factory.json{'' if PROF['frames_confirmed'] else ', PROPOSED'}). Fronts: x from CF, y from the CF neck seam. Sleeves: sleeve pattern coords. DXF layer 13 = these points.", "G6")
-    hd = ["Size", "Piece", "Split y", "S1 top: needle start (x, y)", "S1 mm", "S2 bottom: needle start (x, y)", "S2 mm", "Full file start (x, y)", "Cream outline crossed", "Machine time", "Trims", "Fit"]
+    hd = ["Size", "Piece", "Split y", "S1 top: needle start (x, y)", "S1 mm", "S2 bottom: needle start (x, y)", "S2 mm", "Full file start (x, y)", "Cream cord cut", "Machine time", "Trims", "Fit"]
     cx = [12, 22, 32, 46, 84, 102, 140, 158, 192, 222, 244, 262]
     for x_, h in zip(cx, hd): o.append(t(x_, 31.5, h, 1.5, 700, MUTED))
     y = 35.3
@@ -250,7 +250,7 @@ def hooping_page():
              "Registration crosses sew as stop 1 in Deep crimson (a thread already in the file: colours per file unchanged, max 12; never cream);",
              "long 4 mm stitches on bare fabric 12 mm outside the art — S2 re-registers on the crosses S1 sewed; pick them out after S2.",
              "Head alignment across a split: cords + teeth must meet within ±0.5 mm, fills within ±1.0 mm (the 1.2 mm overlap hides up to 1 mm) [PROPOSED tolerance].",
-             "The split line search counts a cut through cream cord 40× (Rev B): the 'cream crossed' column is what is left after that."]
+             "Cream cords + teeth go WHOLE to one hooping (up to 230 mm long) and the line search weights cream 40×: 'cream cord cut' = cord actually cut (read from the section files' art)."]
     for i, l in enumerate(notes): o.append(t(12, y + i*3.3, l, 1.55, 400, MUTED))
     return o
 

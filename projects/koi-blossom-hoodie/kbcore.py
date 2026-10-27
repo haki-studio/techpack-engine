@@ -36,14 +36,14 @@ tech.COLOUR_ORDER = KB_ORDER + [c for c in tech.COLOUR_ORDER if c not in KB_ORDE
 # ---------------------------------------------------------------- region codes
 # code -> (name, stitch, angle rule, density, stitch length, underlay, pull comp, notes)
 KB_RULES = {
- "FI":        ("Fish highlight facet (traced)", "Satin, turning",   "along the body (across the facet)", "0.40", "—", "centre run", "0.15", "ice, from reference_fish.png"),
- "FI-shade":  ("Fish body facet (traced)",  "Tatami",             "±20° to the body axis (lavender +20, slate −20)", "0.45", "3.5", "edge run", "0.20", "lavender-blue flank / slate shadow facets"),
- "FI-line":   ("Fish neon cyan line",       "Satin, turning",     "across the line (line runs along the body)", "0.40", "—", "centre run", "0.15", "traced"),
- "FI-red":    ("Fish red stripe",           "Satin, turning",     "across the stripe (tapered, traced)", "0.40", "—", "centre run", "0.20", "mid-body -> tail root"),
+ "FI": ("Fish highlight facet (traced)", "Tatami", "along the body axis (A16)", "0.45", "3.5", "edge run", "0.15", "ice, from reference_fish.png"),
+ "FI-shade": ("Fish body facet (traced)", "Tatami", "body axis: lavender +8°, slate −8° (A16)", "0.45", "3.5", "edge run", "0.20", "lavender-blue flank / slate shadow facets"),
+ "FI-line": ("Fish neon cyan line", "Tatami", "along the body axis (A16)", "0.45", "3.5", "edge run", "0.15", "traced"),
+ "FI-red": ("Fish red stripe", "Tatami", "along the body axis (A16), tapered, traced", "0.45", "3.5", "edge run", "0.20", "mid-body -> tail root"),
  "FI-ring":   ("Fish eye ring",             "Satin dot",          "across dot",               "0.38", "—",   "none",                    "0.10", ""),
  "FI-eye":    ("Fish eye",                  "Satin dot",          "across dot",               "0.38", "—",   "none",                    "0.10", "Ø ≥ 1.5"),
- "FI-fin":    ("Fish fin (traced)",         "Satin, radial",      "fan from the fin root",    "0.40", "—",   "none",                    "0.15", ""),
- "FI-tail":   ("Fish tail (traced)",        "Satin, radial",      "fan from the peduncle",    "0.40", "—",   "centre run",              "0.15", "forked"),
+ "FI-fin": ("Fish fin (traced)", "Tatami", "along the fin's own traced axis (A16)", "0.45", "3.5", "edge run", "0.15", ""),
+ "FI-tail": ("Fish tail (traced)", "Tatami", "along each lobe's own traced axis (A16)", "0.45", "3.5", "edge run", "0.15", "forked"),
  "FL-petal":  ("Lily petal tone",           "Tatami, long rows",  "along the petal axis (centre -> tip)", "0.42", "3.5", "edge run", "0.20", "tone bands traced per petal"),
  "FL-tip":    ("Lily petal, light tone",    "Tatami, long rows",  "along the petal axis",     "0.42", "3.5", "edge run",                "0.20", "lightest tone of the petal"),
  "FL-base":   ("Lily petal, dark tone",     "Tatami, long rows",  "along the petal axis",     "0.42", "3.5", "edge run",                "0.20", "darkest tone of the petal"),
@@ -51,11 +51,11 @@ KB_RULES = {
  "FL-eye":    ("Lily throat",               "Satin, radial",      "radial",                   "0.38", "—",   "none",                    "0.15", "deep-blue, traced"),
  "FL-line":   ("Stamen lines",              "Run (double)",       "throat -> anther",         "—",    "2.0", "none",                    "—",    "over the throat"),
  "FL-stamen": ("Anther knots",              "Satin",              "across knot",              "0.38", "—",   "none",                    "0.10", "traced, Ø ≥ 1.8"),
- "LF":        ("Leaf tone (traced)",        "Satin turning (≤ 3.5 wide) / tatami rows along the leaf axis (wider)", "across / along the leaf", "0.40 / 0.45", "— / 3.5", "centre / edge run", "0.20", "traced axis"),
- "LF-dk":     ("Leaf dark tone (traced)",   "as LF",              "as LF",                    "0.40 / 0.45", "— / 3.5", "centre / edge run", "0.20", ""),
- "ST":        ("Stem / vine (traced)",      "Satin, turning",     "across stem",              "0.40", "—",   "centre run",              "0.15", "≥ 1.2 wide"),
- "PT":        ("Floating petal (traced)",   "Satin turning (≤ 3.5 wide) / tatami along the petal axis", "across / along", "0.40 / 0.45", "— / 3.5", "centre / edge run", "0.20", ""),
- "PT-tone":   ("Floating petal 2nd tone",   "as PT",              "as PT",                    "0.40 / 0.45", "— / 3.5", "none / edge run", "0.20", ""),
+ "LF": ("Leaf tone (traced)", "Tatami herringbone (satin if ≤ 1.8 wide)", "traced midrib ±25°, one side each (A16)", "0.45", "3.5", "edge run", "0.20", ""),
+ "LF-dk": ("Leaf dark tone (traced)", "as LF", "as LF", "0.45", "3.5", "edge run", "0.20", ""),
+ "ST": ("Stem / vine (traced)", "Satin, turning (stroke-like) / tatami along", "across the stem", "0.40", "—", "centre run", "0.15", "≥ 1.2 wide"),
+ "PT": ("Floating petal (traced)", "Tatami, long rows", "along the petal axis (A16)", "0.45", "3.5", "edge run", "0.20", ""),
+ "PT-tone": ("Floating petal 2nd tone", "Tatami, long rows", "along the petal axis (A16)", "0.45", "3.5", "edge run", "0.20", ""),
 }
 tech.RULES.update(KB_RULES)
 tech.LAYER_NAMES.update({20: "Stems", 21: "Leaves", 22: "Flowers", 23: "Floating petals", 24: "Fish"})

@@ -155,7 +155,7 @@ def p_fit():
 def p_revisions():
     o = BM.H("REVISION LOG + SAMPLE TRACKER", "Every change to this garment, newest last.", "T8")
     revs = [("Emb Rev A", "16 Oct 2026", "Embroidery traced from the mockup + head close-up; 28 stitch files + splits; garment pages waited for the hood decision."),
-            ("Emb Rev B", DATE, "Independent review fixes: stroke-structure art (hair, shade and black strokes along the traced flow), raised cords at the traced width with crimson under-edge, teeth as objects, streak bundles cut into fine strips; A14/A15 gates; compare sheets from the DST read-back."),
+            ("Emb Rev B", DATE, "Independent review fixes: stroke-structure art (hair, shade and black strokes along the traced flow), raised cords at the traced width with crimson under-edge, teeth as objects, streak bundles cut into fine strips; A14/A15 gates against references built from the input images only (centreline check for thin strokes); compare sheets from the DST read-back."),
             ("Garment Rev A", DATE, "Founder chose the zip-hoodie block (Drum Island body + hood + elastic bands). Pattern XS–3XL with the moved welts (per-design override) [PROPOSED]; DXF with embroidery marks; T pages.")]
     y = 36
     for rv, dt, ch in revs:
