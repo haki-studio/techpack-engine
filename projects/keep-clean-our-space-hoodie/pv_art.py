@@ -1,4 +1,4 @@
-"""Rev K pullover art + hoop plan, one size (default M). usage: python3 pv_art.py [SIZE] [zoned]
+"""Rev K/L pullover art + hoop plan, one size (default M). usage: python3 pv_art.py [SIZE] [zoned]
 - 4 back badges = the Rev J badge regions UNCHANGED (art_M.pkl from Rev J, elements 01-04: text 宇宙をきれいに,
   KEEP CLEAN OUR SPACE, 不要世界污染, 우리들 소중한 우주! - kccore.TEXT; the new mockup's lettering is AI and its Korean is
   mirror-reversed, td-chair C-02), translated (never rotated or rescaled) to the new mockup's back positions.
@@ -28,6 +28,8 @@ SPLIT_CLEAR = 10.0           # no star within 10 mm of a hoop split (td-chair-r1
 POCKET_CLEAR = 10.0          # no star under the pocket or within 10 mm of its edge
 OBJ_CLEAR = 6.0              # star -> badge / script
 TRIM_MAX = 30.0              # a hoop row thinner than this is trimmed off the star area (saves a hooping)
+TRIM_BY = {"BK": 70.0}       # founder 27 Oct "remove BK-H2": the 59 mm top strip of the back is trimmed, not hooped
+DENS_BY = {"BK": 0.5, "HR": 0.5, "HL": 0.5}   # founder 27 Oct: back stars cut in half, "the hood should be just as sparse"
 REV_J = "art_M.pkl"
 OUT = f"out/pv/{SIZE}"; os.makedirs(OUT, exist_ok=True)
 
@@ -136,7 +138,7 @@ def cells_for(P):
                     sub = A.intersection(box(a, y0 - 1, b, y1 + 1))
                     if sub.is_empty: cols.append([]); continue
                     _, c0, _, c1 = sub.bounds; ny = math.ceil((c1 - c0) / oh - 1e-9)
-                    if ny == 2 and (c1 - c0) - oh <= TRIM_MAX and all(f.bounds[3] <= c0 + oh - SPLIT_CLEAR for _, f in objs[P]
+                    if ny == 2 and (c1 - c0) - oh <= TRIM_BY.get(P, TRIM_MAX) and all(f.bounds[3] <= c0 + oh - SPLIT_CLEAR for _, f in objs[P]
                                                                       if f.intersects(box(a, c0, b, c1))):
                         ny, c1 = 1, c0 + oh                         # a thin last row: trim the star area instead of a hooping
                     if ny == 1: cols.append([(a, c0, b, c1)]); continue
@@ -172,27 +174,47 @@ lib = list(units([r for r in J["BK"] if r["el"] == "06"]).values())
 cents = [unary_union([r["geom"] for r in u]).centroid for u in lib]
 hull = unary_union([Point(c.x, c.y) for c in cents]).convex_hull
 DENS = len(lib) / hull.area * (0.5 if ZONED else 1.0)          # stars per mm^2
+# founder 27 Oct ("stars on the front look bigger than the back? more plus stars on the back?"): a random library pick
+# let size and plus share drift per panel, so every panel now draws a DECK with the library's plus share and the
+# library's size spread (even quantiles of each kind, largest bbox side), shuffled; the same deck rule on every panel.
+def u_size(u): b = unary_union([r["geom"] for r in u]).bounds; return max(b[2] - b[0], b[3] - b[1])
+kind = ["SPK" if any(r["grp"] == "SPK" for r in u) else "DOT" for u in lib]
+by_kind = {k: sorted([i for i in range(len(lib)) if kind[i] == k], key=lambda i: u_size(lib[i])) for k in ("SPK", "DOT")}
+PLUS_SHARE = len(by_kind["SPK"]) / len(lib)
+def deck(n):
+    ns = int(round(n * PLUS_SHARE)); out = []
+    for k, m in (("SPK", ns), ("DOT", n - ns)):
+        L_ = by_kind[k]; out += [L_[min(len(L_) - 1, int((j + 0.5) * len(L_) / m))] for j in range(m)]
+    rnd.shuffle(out); return out
 star_meta = dict(library_units=len(lib), revj_back_hull_mm2=round(hull.area), density_per_m2=round(DENS * 1e6),
-                 kinds={k: sum(1 for u in lib if any(r["grp"] == k for r in u)) for k in ("DOT", "SPK")})
-counts = {}
+                 density_factor=DENS_BY, plus_share=round(PLUS_SHARE, 3),
+                 kinds={k: len(v) for k, v in by_kind.items()})
+counts = {}; star_stats = {}
 for P in cut:
     A = allowed[P]
     for _, f in objs[P]: A = A.difference(f.buffer(OBJ_CLEAR))
     if plan[P]: A = A.intersection(unary_union([box(*c["box"]) for c in plan[P]])).difference(split_lines(P).buffer(SPLIT_CLEAR))
     if A.is_empty: counts[P] = 0; continue
-    target = int(round(DENS * A.area)); dmin = 0.55 / math.sqrt(DENS)
-    x0, y0, x1, y1 = A.bounds; pts = []; tries = 0
+    D = DENS * DENS_BY.get(P, 1.0)
+    target = int(round(D * A.area)); dmin = 0.55 / math.sqrt(D)
+    want = deck(target)
+    x0, y0, x1, y1 = A.bounds; pts = []; used = []; tries = 0
     while len(pts) < target and tries < 60000:
         tries += 1
         x, y = rnd.uniform(x0, x1), rnd.uniform(y0, y1)
         if any((x - a) ** 2 + (y - b) ** 2 < dmin ** 2 for a, b in pts): continue
-        i = rnd.randrange(len(lib)); u = lib[i]; c = cents[i]
+        i = want[len(pts)]; u = lib[i]; c = cents[i]
         rs = [shift(r, x - c.x, y - c.y) for r in u]
         if not unary_union([r["geom"] for r in rs]).buffer(0.5).within(A): continue
-        pts.append((x, y)); n = len(pts)
+        pts.append((x, y)); used.append(i); n = len(pts)
         for j, r in enumerate(rs): r.update(el="05", unit=f"05-{P}{n}", z=21 * 100000 + n * 10 + j)
         items[P] += rs
     counts[P] = len(pts)
+    assert len(pts) == target, f"{P}: placed {len(pts)} of {target} stars"
+    sz = [u_size(lib[i]) for i in used]
+    star_stats[P] = dict(stars=len(used), plus=sum(kind[i] == "SPK" for i in used), mean_mm=round(sum(sz) / len(sz), 2),
+                         median_mm=round(sorted(sz)[len(sz) // 2], 2))
+star_meta["per_panel"] = star_stats
 
 # every star / badge / script region must sit inside one hoop cell (fail loudly)
 assign = {}

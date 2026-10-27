@@ -1,4 +1,4 @@
-"""Rev K pullover: one production stitch file per hooping (the cells of pv_art's hoop plan), same stitch engine and stop
+"""Rev K/L pullover: one production stitch file per hooping (the cells of pv_art's hoop plan), same stitch engine and stop
 rules as kcstitch.py (flat stops, PAUSE for 3 mm foam, puff stops, details on top). Nothing crosses a split, so no
 section is clipped and no registration crosses are needed; each file's origin is its art centre, given in garment mm.
 usage: python3 pv_stitch.py [SIZE] [allover|zoned] [PIECE ...]  -> out/pv/<SIZE>/stitch_<tag>/  + result_<tag>.json
@@ -33,7 +33,7 @@ rp = f"{OUT}/result_{TAG}_{'-'.join(which)}.json"
 res = json.load(open(rp)) if os.path.exists(rp) else {}
 for P in which:
     for i, rs in sorted(A["assign"].get(P, {}).items()):
-        name = f"HAKI_KCOS-PO_{P}-H{i+1}_{SIZE}"; t = time.time()
+        hn = B.hoop_name(P, i, len(A["plan"][P])); name = f"HAKI_KCOS-PO_{hn}_{SIZE}"; t = time.time()
         vis = dst2.merge_colours(rs)
         ub = dst2.bounds_of([r["geom"] for r in vis]); c = ((ub[0] + ub[2]) / 2, (ub[1] + ub[3]) / 2)
         stops = stops_for(vis); pat, st = dst2.make_pattern(vis, stops, c, exact_travel=EXACT)
@@ -45,7 +45,7 @@ for P in which:
                   elements=sorted({r["el"] for r in rs}), stars=len({r["unit"] for r in rs if r["el"] == "05"}),
                   foam_pause_before_stop=puff[0] if puff else None, secs=round(time.time() - t), file=base)
         rb["machine_min"] = round(60 * factory.machine_hours(rb["stitches"], trims=rb["trims"], colour_changes=max(0, rb["stops"] - 1)), 1)
-        res[f"{P}-H{i+1}"] = rb
+        res[hn] = rb
         json.dump(res, open(rp, "w"), default=float, indent=1)
         print(name, {k: rb[k] for k in ("stitches", "trims", "stops", "size_mm", "max_stitch", "machine_min")}, f"{rb['secs']}s", flush=True)
 print("DONE", SIZE, TAG, which, flush=True)

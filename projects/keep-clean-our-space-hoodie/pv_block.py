@@ -79,3 +79,8 @@ NAMES = {"FR": "Front", "BK": "Back", "PK": "Kangaroo pocket", "SR": "Right slee
 if __name__ == "__main__":
     for sz in CHART:
         g = pieces(sz); print(sz, {k: tuple(round(v) for v in (p.bounds[2] - p.bounds[0], p.bounds[3] - p.bounds[1])) for k, p in g.items()})
+
+def hoop_name(P, i, n):
+    """Rev L: the back is two hoopings, one per half. Named BK-L / BK-R so the founder's "remove BK-H2" (a Rev K file)
+    never reappears as a new file with the same name."""
+    return ("BK-L", "BK-R")[i] if P == "BK" and n == 2 else f"{P}-H{i+1}"
