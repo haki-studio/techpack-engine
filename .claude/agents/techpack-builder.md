@@ -47,3 +47,13 @@ Rules:
    push, comment what changed, re-launch the review the same way, stop.
 12. Final report (PR body + last message): deliverable paths, key numbers (stitches/trims per file, sizes, pages),
    PROPOSED items, open questions, and anything blocked.
+13. **Staged build** (the prompt says "phase A/B/C"; mission token-efficiency 2026-10-23: one session per product
+   reached a 541k median context and re-read it every step). Each phase is its own fresh session in the same worktree:
+   - **A** inventory → pattern → art (compare sheets of the art vs mockup included).
+   - **B** stitch → qa (DST/PES, splits, every LESSONS stitch gate).
+   - **C** documents → delivered → PR + review (rule 11).
+   At the end of A and B: commit, then write `projects/<slug>/STAGE_HANDOFF.md` (replace it, ≤ 80 lines): what is done,
+   every output path, key numbers read from files, assumptions + questions, decisions the next phase must keep, gotchas,
+   and exactly what the next phase does. Commit it, run the `scripts/dispatch.sh stage <slug> <next>` line from your
+   prompt, then `scripts/dispatch.sh --drain`, and stop. A phase reads LESSONS.md, CLAUDE.md, the brief and
+   STAGE_HANDOFF.md, then only the files it needs. No "phase" in the prompt (fix rounds, `TECHPACK_STAGED=0`): one session.
