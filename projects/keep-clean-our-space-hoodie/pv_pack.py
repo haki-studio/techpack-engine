@@ -50,7 +50,7 @@ def k1():
     o.append(t(cols[3], y, f"{TOT['stitches']:,}", 2.4, 700)); o.append(t(cols[4], y, str(TOT["trims"]), 2.4, 700)); y += 8
     # founder 27 Oct: "use the same fabric as hidden inventory + the same wash". Lines copied verbatim from the Hidden
     # Inventory Hoodie tech pack (14/09/2025) BOM; that pack has no wash line, so the wash is named, not specified (Q2).
-    o.append(t(12, y, "FABRIC + WASH (same as our Hidden Inventory Hoodie, which you made for us; its BOM, copied exactly)", 2.8, 700)); y += 4.6
+    o.append(t(12, y, "FABRIC + WASH (same as our Hidden Inventory Hoodie, which you made for us; wording from its BOM)", 2.8, 700)); y += 4.6
     for h, q in (("Self", "French Terry/Fleece. 350 GSM. 100% Cotton. Finishing: Brushed on reverse side. Colour: washed black."),
                  ("Rib (cuffs + body hem)", "Rib Knit 1x1. 380 GSM. 2 Way strechable. 95% Cotton 5% Elastane. Colour: washed black."),
                  ("Wash", "The same wash as our Hidden Inventory Hoodie (question 2)."),
@@ -59,7 +59,7 @@ def k1():
     y += 3
     o.append(t(12, y, "QUESTIONS", 2.8, 700)); y += 5
     sr = R.get("SR-H1", {})
-    Q = [("1. Hoopings + frame.", f"How many hoopings do you need for each piece (front, back, pocket, sleeve, hood)? Our plan is {plan['total_hoopings']} per hoodie (table above); the pocket and sleeve fields fit only with the frame turned 90 degrees. You confirmed a 340 x 505 mm field in one hooping, but your frames are 300 x 300 and 400 x 450: which frame sews 340 x 505?"),
+    Q = [("1. Hoopings + frame.", f"How many hoopings do you need for each piece (front, back, pocket, sleeve, hood)? Our plan is {plan['total_hoopings']} per hoodie (table above); the pocket and sleeve fields fit only with the frame turned 90 degrees. You confirmed a 340 x 505 mm field in one hooping, but your frames are 300 x 300 and 400 x 450: which frame sews 340 x 505? Please answer this before digitizing or sewing: if no frame takes 340 x 505, we re-plan the hoopings for your frame."),
          ("2. Wash.", "Please use the same fabric and the same wash as our Hidden Inventory Hoodie. What is that wash called, and is it done AFTER sewing? Shrinkage % in length and width? Does it change the thread colours or flatten the 3D puff? Which thread do you use (polyester / rayon)?"),
          ("3. How you price embroidery.", f"Per 1,000 stitches, per trim, per hooping, or per piece? Please quote one sleeve file as the example: SR-H1 ({sr.get('stitches', 0):,} stitches, {sr.get('trims', 0)} trims, 1 colour). Then please quote (a) the embroidery only and (b) the whole hoodie with embroidery, at 100, 200 and 300 pcs."),
          ("4. Oversized blocks.", "Will you embroider oversized rough-cut blocks and recut them to the pattern after (yes / no)? If no, what allowance do you add for pull-in?"),
@@ -147,6 +147,8 @@ def k5():
               f"No star under the kangaroo pocket or within {k['under_pocket']:.0f} mm of where it is sewn; the pocket carries its own stars.",
               f"Hood: no star within {k['face']:.0f} mm of the face edge (turn-back) [proposed]. Pocket: {k['pocket']:.0f} mm from its cut edge.",
               f"Stars keep {k['objects']:.0f} mm away from every badge and from the hem script.",
+              "Back: no stars in the bottom band above the hem rib (about 6-7 cm), on purpose (Rev L: the thin bottom hooping was removed). Front stars still run to the hem.",
+              "Back files: BK-L = the half with the Japanese burst + Chinese capsule badges; BK-R = the half with KEEP CLEAN OUR SPACE + the Korean oval.",
               "Rib (hem, cuffs) is not embroidered.",
               "Please hoop oversized rough-cut blocks and recut to the pattern after embroidery, if you can (question 4)."):
         y = wrap(o, 14, y, "• " + r, 2.4, width=150); y += 1
