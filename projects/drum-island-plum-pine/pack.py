@@ -6,6 +6,7 @@ from shapely.ops import unary_union
 from pypdf import PdfWriter, PdfReader
 from sheet import t, swatch, doc, INK, MUTED, RED, ORANGE, GUIDE, GREEN, SW, SH
 from render import f
+import labelsheet as LS
 from motifs2 import HEX, PAL
 import tech, stitchrender as SR
 import specbase as SB
@@ -123,9 +124,9 @@ def threads():
     tr = [("Backing", "2.5 oz cutaway, cut 30 larger than each art box; trim to 5 from stitching after embroidery"),
           ("Topping", "none (canvas surface is firm)"), ("Needles", "75/11 sharp (canvas); change every 8 h on the back scene"),
           ("Bobbin", "60wt white polyester pre-wound"), ("Frames", f"01 back: border ≥ {BB[0][2]-BB[0][0]+14:.0f} × {BB[0][3]-BB[0][1]+14:.0f} (single file) or 4 × 360² split files (G5) · 02R/02L/03/04 + sleeve: ≤ 360 × 360"),
-          ("Patches / labels", "no embroidered patches or labels — woven main + printed care label = Haki standard (garment pages)")]
+          ("Patches / labels", LS.pack_patches_row(os.path.dirname(os.path.abspath(__file__))))]
     for i, (a, b) in enumerate(tr):
-        o.append(t(12, yb + 11.5 + i*3.6, a, 1.85, 600)); o.append(t(42, yb + 11.5 + i*3.6, b, 1.85))
+        o.append(t(12, yb + 11.5 + i*3.6, a, 1.85, 600)); o.append(t(42, yb + 11.5 + i*3.6, b, 1.85, 400, LS.AMBER if LS.flagged(b) else INK))
     return o
 
 # ---------------------------------------------------------------- stitch summary + open questions

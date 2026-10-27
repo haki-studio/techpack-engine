@@ -12,6 +12,10 @@ from PIL import Image
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "labels"))
 MAIN = os.path.join(ROOT, "main-label-6.5x2cm-white.pdf")
 MAIN_MM = (65.0, 20.0)
+# the main label's construction: OUR proposal, not yet confirmed by a factory (founder TODO: ask at the Konpeito sample).
+# Flip MAIN_WEAVE_CONFIRMED only when a factory confirms it; every pack then drops the amber [proposed — confirm].
+MAIN_WEAVE = "Weave (damask)"
+MAIN_WEAVE_CONFIRMED = False
 CARE_MM = (30.0, 65.0)
 
 
