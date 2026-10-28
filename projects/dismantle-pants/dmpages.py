@@ -163,14 +163,15 @@ def T2():
           (P(bx, FL.CB_PX * MMPX, (FL.WB_TOP_PX + FL.WB_BOT_PX) / 2 * MMPX), "L1", (2, -11)), (P(bx, 250 * MMPX, 280 * MMPX), "K1", (-12, 4)),
           (P(bx, 323 * MMPX, 60 * MMPX), "W2", (-11, -7)), (P(bx, FL.CB_PX * MMPX, 300 * MMPX), "S1", (10, 8))]
     for (X, Y), lab, (dx, dy) in cs: callout(o, X, Y, lab, dx, dy)
-    # mockup placeholders
-    px = 159; pw = 51; ph = 64
-    for i, side in enumerate(("FRONT", "BACK")):
-        yy = 32 + i * (ph + 5)
-        o.append(f'<rect x="{px}" y="{yy}" width="{pw}" height="{ph}" rx="1.5" fill="#F4F4F4" stroke="{AMBER}" stroke-width="0.5" stroke-dasharray="2 1.2"/>')
-        o.append(t(px + pw / 2, yy + ph / 2 - 3, f"Mockup {side.lower()} — to come", 2.4, 700, AMBER, "middle"))
-        o.append(t(px + pw / 2, yy + ph / 2 + 1, "(founder ChatGPT render)", 2.0, 400, AMBER, "middle"))
-        o.append(t(px + pw / 2, yy + ph / 2 + 5, "[MISSING]", 2.0, 700, AMBER, "middle"))
+    # founder's ChatGPT mockup (reference for look only; M1 lists where it departs from this pack)
+    px = 159; pw = 51
+    mk = Image.open(dmprint.MOCKUP).convert("RGB"); hw = mk.width // 2
+    yy = 32
+    for side, crop in (("front", (0, 0, hw, mk.height)), ("back", (hw, 0, mk.width, mk.height))):
+        tag, h = img(mk.crop(crop), px, yy, w=pw); o.append(tag)
+        o.append(f'<rect x="{px}" y="{f(yy)}" width="{pw}" height="{f(h)}" fill="none" stroke="#BBBBBB" stroke-width="0.25"/>')
+        o.append(t(px + pw / 2, yy + h + 3, f"Mockup {side} — REFERENCE for look only (M1)", 1.6, 600, MUTED, "middle")); yy += h + 6
+    o.append(t(12, SH - 19, "The leg shape on these flats is the Konpeito flat-lay tracing of the HI block, not a measured HI pattern: the team checks it against the real HI fit (T3 / T4).", 1.75, 600, AMBER))
     lx = 214; y = 34
     o.append(t(lx, y, "Callouts", 2.6, 700)); y += 5
     for lab, s_ in [("B1", "28 L flat tack shank button, CF (as HI)"), ("Z1", "zip fly, YKK #4.5 metal, 6 in, J topstitch (as HI)"),
@@ -192,6 +193,27 @@ def T2():
         o.append(t(lx, y, ln, 1.65, 700, INK)); y += 2.9
     o.append(f'<line x1="18" y1="{SH-13}" x2="{18 + 100 * s}" y2="{SH-13}" stroke="{INK}" stroke-width="0.5"/>')
     o.append(t(18, SH - 14.5, "100 mm at flat scale", 1.8, 400, MUTED))
+    return o
+
+
+# ---------------------------------------------------------------- M1 mockup
+MOCK = dmprint.mockup()
+def M1():
+    o = hdr("M1 · MOCKUP — founder ChatGPT render, 27 Oct", "REFERENCE for the look only. The specs in this pack govern (T2–T7); where the render and the pack differ, the pack wins until the founder answers Q11–Q13.", "M1")
+    tag, h = img(dmprint.MOCKUP, 12, 32, w=180); o.append(tag)
+    o.append(t(12, 32 + h + 4, "inputs/mockups/chatgpt-mockup-front-back-2026-10-27.png — front (left), back (right)", 1.7, 400, MUTED))
+    x = 198; y = 36
+    o.append(t(x, y, "Where the render departs from the pack", 2.4, 700)); y += 6
+    for tag_, head, lines in [
+        ("(a)", "Back pockets rounded-square", ["The render's back patch pockets are rounded-square,", "NOT the HI pointed shape the founder asked for.", "Pack keeps HI pointed (T2, T4)  -> Q11"]),
+        ("(b)", f"Check reads bigger: ≈ {MOCK['square_mm_at_hi32']:g} mm", [f"{MOCK['squares_across_half_waist']:g} squares across the front waistband ({MOCK['half_waist_px']} px,", f"pitch {MOCK['pitch_px_mean']:g} px); scaled as if it were HI size 32", f"(half waist 42.0 cm) ≈ {MOCK['square_mm_at_hi32']:g} mm, roughly 2 cm. The photos", f"measure 12–14 mm; pack keeps {SQ * 10:g} mm [estimate]  -> Q5 / Q12"]),
+        ("(c)", "Cropped above the ankle", ["HI is full length (inseam 27–31 in, T3).", "Pack keeps the HI length  -> Q13"]),
+        ("(d)", "Back label + loops: MATCHES the pack", ["No centre-back belt loop; white label outside at", "CB (T7). The render's label art is not ours: the", "Haki standard main label file is used (T7b)."])]:
+        o.append(t(x, y, tag_, 2.0, 700, AMBER if tag_ != "(d)" else GREEN)); o.append(t(x + 7, y, head, 2.0, 700, INK)); y += 3.6
+        for ln in lines: o.append(t(x + 7, y, ln, 1.7, 400, AMBER if ("->" in ln or "[estimate" in ln) else INK)); y += 3.0
+        y += 3
+    o.append(t(x, y + 2, "Also seen on the render (no change needed): HI scoop", 1.7, 400, MUTED)); y += 5
+    o.append(t(x, y, "pockets, zip fly + button, no yoke, check matched.", 1.7, 400, MUTED))
     return o
 
 
@@ -264,6 +286,10 @@ def P1():
     for ln in [f"4. Range {PR['square_cm_range'][0] * 10:.1f}–{PR['square_cm_range'][1] * 10:.1f} mm; the implied outseam favours the low end (a ~100 cm full-length wide leg). Proposed: {SQ * 10:g} mm = 1/2 in, a standard mill check repeat inside the range.  {ESTIMATE}",
                "   Note: the ChatGPT mockup prompt says 'roughly 1.5–2 cm squares' — the photos measure smaller (≈ 45 squares across the half hip). Pick on a swatch (Q5)."]:
         o.append(t(14, dy + 1.5, ln, 1.7, 600, AMBER)); dy += 3.0
+    o.append(missing(192, 140, 93, 18, ["D1 — PICK THE SAMPLE FABRIC FROM A PHYSICAL SWATCH",
+                                          "The print is the one thing the founder approved. Before",
+                                          "sourcing: photo of the swatch in daylight beside a TCX",
+                                          "card, ruler in shot. Repeat = FINISHED size, after wash."], 1.7))
     return o
 
 
@@ -317,6 +343,7 @@ def T3():
     for code, name, how, idx, tol in POM[:5]:
         steps = sorted({round(HI[b][idx] - HI[a][idx], 2) for a, b in zip(SIZES[:-1], SIZES[1:])})
         o.append(t(gx, gy, f"{code} {name}: +{' / +'.join(f'{s:g}' for s in steps)} in", 1.85)); gy += 3.4
+    o.append(t(12, 29.5, "REFERENCE — published customer chart (measured on washed HI denim), not a contract. The factory's measured HI size-32 sheet + shrink-tested pattern becomes the master once signed.", 1.8, 700, AMBER))
     o.append(t(12, SH - 11, "Fabric is NOT the HI denim yet (Q1): if the shell changes (lighter twill / yarn-dyed check), the factory must shrink-test the bulk fabric and re-apply shrinkage to the HI pattern before cutting.", 1.75, 600, AMBER))
     return o
 
@@ -331,7 +358,7 @@ def T4():
                   ("Back", "NO back yoke (as HI); 2 HI pointed back patch pockets centred on each leg (founder: 'same shape as hidden inventory')."),
                   ("Front", "HI scoop pockets + coin pocket + zip fly  [proposed — confirm] (the references show an elastic waist; Q2)."),
                   ("Belt loops", "HI positions, except the CB loop: replaced by 2 loops either side of the outside back label  [proposed — confirm] (Q3)."),
-                  ("Shrinkage", "Shrink-test the bulk check fabric with the chosen finish (T6), add it to the pattern before the first sample.")]:
+                  ("Shrinkage", "Shrink-test the bulk check with the chosen finish (T6), add it to the pattern. Ask the mill: warp + weft shrinkage % and sanforized Y/N. The 12.7 mm repeat is the FINISHED (after wash) size.")]:
         o.append(t(14, y, s_, 2.15, 700)); o.append(t(46, y, b, 1.95, 400, AMBER if amberish(b) else INK)); y += 5.3
     y += 2
     o.append(t(14, y, f"CHECK MATCHING (repeat {SQ * 10:g} mm, P1)  {PROPOSED}", 2.5, 700, AMBER)); y += 5
@@ -339,11 +366,11 @@ def T4():
             ["CB seat seam", "Match the horizontal lines across the CB seam at the hip line; chevron below the seat curve is acceptable."],
             ["Side seams", "Match the horizontal lines front-to-back at the hip line (9 in below the WB top), where the seam is straight grain; let them run off below."],
             ["Inseam", "Match horizontal lines at the crotch point where possible."],
-            ["Waistband", "Cut on straight grain, a horizontal line centred on the WB height; vertical lines match the body at CF and CB."],
-            ["Back pockets", "Cut matched: pocket lines continue the back-leg lines (pocket 'disappears'). Alternative: cut on 45° bias as a deliberate contrast."],
+            ["Waistband", "Grain: as the HI waistband (straight-cut?) [proposed — confirm]; a horizontal line centred on the WB height; vertical lines match the body at CF and CB."],
+            ["Back pockets", "Cut matched: pocket lines continue the back-leg lines (pocket 'disappears'). Alternative: 45° bias (Q9). Size, placement from CB + WB and angle per size: FACTORY SUPPLIES from the HI pattern; if tilted, matched vs bias -> Q9."],
             ["Coin pocket", "Matched to the facing, same as the back pockets."],
-            ["Belt loops", "Cut on straight grain with a line centred along the loop."],
-            ["Cutting", "Single-ply or pinned-ply cutting with the check aligned ply to ply; allow +5–10 % fabric for matching (factory to quote)."]]
+            ["Belt loops", "Grain: straight, a line centred along the loop [proposed — confirm]."],
+            ["Cutting", "Single-ply or pinned-ply cutting with the check aligned ply to ply; extra fabric for matching: factory to quote."]]
     tb, y = table(14, y, [("Where", 30, None), ("Rule", 240, 150)], rows, 1.85, 4.3, head=False); o.append(tb)
     y += 2
     o.append(t(14, y, "Pattern pieces per garment — check against the HI pattern  " + PROPOSED, 2.3, 700, AMBER)); y += 5
@@ -367,14 +394,14 @@ def T5():
         ["Thread — topstitch", "All-purpose polyester Tex 135 / TKT 20 (as HI)", "DTM black", "—", "all visible topstitch"],
         ["Thread — overlock", "All-purpose polyester Tex 60 / TKT 50 (as HI)", "DTM black", "—", "overlock, construction"],
         ["Thread — buttonhole", "All-purpose polyester Tex 60 / TKT 50 (as HI)", "DTM black", "—", "waistband buttonhole"],
-        ["Thread — back label", "Polyester Tex 60 / TKT 50, edge stitch all 4 sides  [proposed — confirm]", "white (DTM label)", "—", "outside back label"],
+        ["Thread — back label", "Polyester Tex 60 / TKT 50, edge stitch all 4 sides  [proposed — confirm]", "needle white, bobbin black", "—", "outside back label"],
         ["Shank button", "Flat tack button with shank, 28 Line, brass / zinc alloy (as HI)", "matte black", "1", "waistband CF (B1)"],
         ["Zip", "YKK #4.5 metal, close-end, automatic lock slider, 6 in (as HI)", "matte black + DTM tape", "1", "CF fly (Z1)"],
-        ["Rivets", "Inverted nipple rivet 15 L (9.5 mm) (as HI: 5 = scoop + coin pocket corners)  [proposed — confirm]", "matte black", "4", "2 scoop + 2 coin-pocket corners"],
+        ["Rivets", "Inverted nipple rivet 15 L (9.5 mm): outer top corner of each scoop pocket + the 2 top corners of the coin pocket = 4. HI BOM lists 5: factory to confirm  [proposed — confirm]", "matte black", "4", "scoop + coin-pocket corners"],
         ["Bartacks", "Back-pocket top corners (horizontal, as HI), belt loops, fly bottom", "DTM black", "—", ""],
         ["Back label", "HAKI STANDARD main label 6.5 × 2 cm, white, black logo (T7b, labels/); OUTSIDE at CB of the waistband  [proposed — confirm]", "white / black", "1", "outside back WB, CB"],
         ["Size label", f"Damask woven CENTREFOLD 30 × 10 mm (as HI / Konpeito), waist number; sizes {sz}", "jet black / optic white", "1", "inside CB"],
-        ["Care label", "HAKI STANDARD care label BY FIBRE — fibre not chosen yet [MISSING]: 100 % cotton → the 100-cotton label; any blend → ask Haki", "white / black", "1", "waist seam, wearer's right, 5 cm from side"],
+        ["Care label", "HAKI STANDARD care label BY FIBRE — fibre not chosen yet [MISSING]: 100 % cotton → the 100-cotton label; any blend → ask Haki. Country of origin + RN / maker id on it: [MISSING] until the fibre + factory are set", "white / black", "1", "waist seam, wearer's right, 5 cm from side"],
         ["Hangtag + string", "Hangtag artwork to follow [MISSING]; string through the size-label loop (as HI)", "", "1", "on the size label"],
         ["Barcode / packing", "Barcode per size (HK code from PLM) + packing design to follow [MISSING]; until then as HI: polybag 43 × 31 cm + sticker", "", "1", "polybag"]]
     tb, y = table(12, 35, [("Item", 30, None), ("Description", 150, 98), ("Colour", 34, None), ("Pcs", 8, None), ("Where", 52, 34)], rows, 1.7, 4.6)
@@ -392,8 +419,8 @@ def T6():
             ["Back", "NO back yoke (as HI). Back panels joined by the CB (seat) seam: 2 rows of topstitch, as HI."],
             ["Side + inside leg", "Outseam and inseam sewn and finished as on the HI pants (same seam type + topstitch)."],
             ["Waistband", "As HI: regular waistband, 2 pieces joined at CB, 2 rows of topstitch, interlined; buttonhole + 28 L shank button at CF."],
-            ["Back label", "Haki standard main label on the OUTSIDE of the waistband, centred on CB and on the WB height; edge-stitched on all 4 sides; sew it on BEFORE the waistband is closed so the stitches are caught inside  [proposed — confirm]."],
-            ["Front pockets", "HI scoop pockets: turned edge with topstitch; 15 L rivet at each pocket's top corner  [proposed — confirm]."],
+            ["Back label", "Haki standard main label OUTSIDE on the waistband, centred on CB + WB height, across the CB waistband seam: seam pressed OPEN and trimmed under the label; white needle thread + black bobbin; edge-stitched on all 4 sides, clear of the waistband topstitch rows [proposed — confirm]. Minimum waistband height: factory to state. Sewing order (before / after the waistband is closed) per the factory's answer (F1). Send a photo of a scrap mock of this corner before cutting."],
+            ["Front pockets", "HI scoop pockets: turned edge with topstitch; 15 L rivet at the OUTER top corner of each scoop pocket (4 rivets in all with the coin pocket; HI lists 5 — F1)  [proposed — confirm]."],
             ["Coin pocket", "HI coin pocket on the wearer's right facing, check matched; 15 L rivets at its 2 top corners  [proposed — confirm]."],
             ["Back pockets", "2 HI pointed back patch pockets, centred on each back leg, check matched; top edge hemmed + topstitched; 2 rows of topstitch; horizontal bartacks at both top corners (as HI, no rivets)."],
             ["Fly", "Zip fly, YKK #4.5 close-end 6 in, automatic lock slider; J topstitch on the front, bartack at the bottom (as HI)."],
@@ -422,6 +449,8 @@ def back_wb_detail(X, Y, s=0.6):
     o.append(f'<rect x="0" y="0" width="{W}" height="{wb}" fill="url(#chkd)" stroke="{INK}" stroke-width="0.6"/>')
     o.append(f'<rect x="0" y="{wb}" width="{W}" height="22" fill="url(#chkd)" stroke="{INK}" stroke-width="0.4" opacity="0.85"/>')
     o.append(f'<line x1="{W/2}" y1="-4" x2="{W/2}" y2="{wb + 22}" stroke="{GUIDE}" stroke-width="0.5" stroke-dasharray="2 1.2"/>')
+    for dx in (-2.5, 2.5):          # CB waistband seam, pressed open + trimmed under the label (seam allowances dotted)
+        o.append(f'<line x1="{W/2 + dx}" y1="0" x2="{W/2 + dx}" y2="{wb}" stroke="#E0E0E0" stroke-width="0.35" stroke-dasharray="0.6 0.6"/>')
     o.append(t(W / 2, -5.5, "CB", ts(1.9), 700, GUIDE, "middle"))
     mw, mh = LB.MAIN_MM; mx, my = W / 2 - mw / 2, (wb - mh) / 2
     tag, _ = img(MAIN_PNG, mx, my, w=mw, h=mh); o.append(tag)
@@ -434,6 +463,11 @@ def back_wb_detail(X, Y, s=0.6):
     o.append(dim_v(my, my + mh, mx + mw + 4, "20", ts(1.5), side=1))
     o.append(dim_h(mx + mw, mx + mw + 15, -6, "15", ts(1.5), col=AMBER))
     o.append(t(0, wb + 30, "waist seam", ts(1.6), 500, MUTED))
+    o.append(t(W + 3, 8, "CB waistband seam runs UNDER the label:", ts(1.5), 700, INK))
+    o.append(t(W + 3, 8 + ts(1.5) * 1.4, "pressed open, trimmed (dotted)", ts(1.5), 400, INK))
+    o.append(t(W + 3, 8 + ts(1.5) * 2.8, "label stitch: white needle / black bobbin,", ts(1.5), 400, INK))
+    o.append(t(W + 3, 8 + ts(1.5) * 4.2, "clear of the WB topstitch rows", ts(1.5), 400, INK))
+    o.append(t(W + 3, 8 + ts(1.5) * 5.6, "WB height: factory to state (40 drawn)", ts(1.5), 600, FAC))
     return f'<g transform="translate({f(X)} {f(Y)}) scale({f(s)})">' + "\n".join(o) + "</g>"
 
 def T7():
@@ -451,12 +485,12 @@ def T7():
     callout(o, cx0, 32 + (95 * MMPX + 30) * s, "L3", -9, 6)
     o.append(t(14, 145, "DETAIL — outside back waistband at CB (0.6 : 1)  " + PROPOSED, 2.1, 700, AMBER))
     o.append(back_wb_detail(22, 156, 0.6))
-    rows = [["L1 Back label", "Haki standard main label, woven, flat", "OUTSIDE back waistband, centred on CB and on the WB height, 6.5 × 2 cm, white; edge-stitched on ALL 4 SIDES (red dashed = stitch line, 1.2 mm in). Nothing hangs from it.", "outside vs inside + label type: [proposed — confirm] (Q3)"],
+    rows = [["L1 Back label", "Haki standard main label, woven, flat", "OUTSIDE back waistband, centred on CB and on the WB height, 6.5 × 2 cm, white; edge-stitched on ALL 4 SIDES (red dashed = stitch line, 1.2 mm in) across the CB seam (pressed open + trimmed). Scrap-mock photo before cutting. Nothing hangs from it.", "outside vs inside + label type: [proposed — confirm] (Q3)"],
             ["L2 Size label", "damask woven, centrefold (as HI)", f"inside CB in the waist seam (moves to CB: no main label inside); 30 × 10 mm folded; waist numbers {' '.join(SIZES)}; the hang-tag string ties through its loop", "artwork T7b + labels/"],
-            ["L3 Care label", "printed satin", "wearer's right, in the waist seam, 5 cm in from the side seam (as HI); 3 × 6.5 cm; top 0.5 cm into the seam", "artwork: by fibre — fibre not chosen [MISSING]"],
+            ["L3 Care label", "printed satin", "wearer's right, in the waist seam, 5 cm in from the side seam (as HI); 3 × 6.5 cm; top 0.5 cm into the seam", "artwork + COO + RN: by fibre / factory — not set [MISSING]"],
             ["Hang tag", "", "hangs from the SIZE label, never from the back label", "artwork to follow [MISSING]"],
             ["Belt loops", "6", "2 front (as HI), 2 side-back (as HI), 2 flanking the back label ≈ 15 mm clear of its ends (replace the HI CB loop)", "[proposed — confirm] (Q3)"],
-            ["Hardware", "matte black", "28 L shank button CF; YKK #4.5 6 in zip; 15 L rivets at the scoop + coin-pocket corners; back pockets bartacked, no rivets", ""]]
+            ["Hardware", "matte black", "28 L shank button CF; YKK #4.5 6 in zip; 15 L rivets: outer top corner of each scoop pocket + 2 coin-pocket corners = 4 (HI lists 5, F1); back pockets bartacked, no rivets", ""]]
     yy = 36
     for r in rows:
         o.append(t(160, yy, r[0], 2.0, 700)); o.append(t(186, yy, r[1], 1.75, 400, MUTED))
@@ -486,13 +520,14 @@ def T7b():
     o.append(f'<line x1="{f(lx - 2)}" y1="{f(ly)}" x2="{f(lx - 2)}" y2="{f(ly + mh)}" {dm}/>'); o.append(t(lx - 3, ly + mh / 2 + 0.6, "2 cm", 1.6, 400, INK, "end"))
     o.append(t(cx, ly + mh + 4, "drawn 1 : 1 — file labels/main-label-6.5x2cm-white.pdf", 1.6, 400, MUTED, "middle"))
     for i, ln in enumerate(["White ground, black HAKI STUDIOS logo + mark.", "Flat; edge-stitched on all 4 sides.",
-                            "Placed OUTSIDE at CB of the back waistband", "[proposed — confirm] (Q3)", "Weave (damask, as HI) [proposed — confirm]"]):
+                            "Placed OUTSIDE at CB of the back waistband", "[proposed — confirm] (Q3)", "Flat woven, heat-cut / ultrasonic edge (D17)"]):
         o.append(t(cx, ly + mh + 11 + i * 3.4, ln, 1.7, 600 if "proposed" in ln else 400, AMBER if "proposed" in ln else INK, "middle"))
     o.append(t(cx, yb + h1 - 4, "Type: Woven label. Flat", 2.0, 400, INK, "middle"))
     # 2 size label
     xs = 12 + wc + 4; cxm = xs + wc / 2
     o.append(t(cxm, yb + 7, "Size Label", 2.7, 400, INK, "middle"))
     o.append(t(cxm, yb + 10.5, "HI centrefold — Haki waist sizes", 1.8, 700, GREEN, "middle"))
+    o.append(t(cxm, yb + 14, "Weave (damask, as HI) [proposed — confirm]", 1.7, 600, AMBER, "middle"))
     s1 = 1.6; lx = cxm - KL.W * s1 / 2; ly = yb + 18
     st, _ = KL.label("32", lx, ly, s1); o += st
     o.append(t(cxm, ly + KL.H * s1 + 4, "1.6 : 1 (size 32). Flat 30 × 10 mm, 5 mm seam", 1.6, 400, MUTED, "middle"))
@@ -519,6 +554,7 @@ def T7b():
     o.append(t(cxc, yb + 74, "3 × 6.5 cm, printed satin, front + back;", 1.7, 400, INK, "middle"))
     o.append(t(cxc, yb + 77.4, "wearer's right in the waist seam, 5 cm", 1.7, 400, INK, "middle"))
     o.append(t(cxc, yb + 80.8, "in from the side seam (as HI).", 1.7, 400, INK, "middle"))
+    o.append(t(cxc, yb + 85, "Country of origin + RN / maker id [MISSING]", 1.7, 700, AMBER, "middle"))
     o.append(t(cxc, yb + h1 - 4, "Type: Printed satin ribbon", 2.0, 400, INK, "middle"))
     yr = yb + h1 + 8
     o.append(t(12, yr, "B · SIZE LABELS 1 : 1 (flat, before folding) — files labels/HAKI_DM_size-label_<size>.svg / .pdf, text outlined (Neue Metana ExtraBold, optic white on jet black)", 2.0, 700))
@@ -539,15 +575,18 @@ QUESTIONS = [
     ("Q2", "Front: HI scoop pockets + coin pocket + zip fly + button?",
      "Yes, as HI (the refs have an elastic waist we ignore)", "Founder named the HI waistband; the refs' front is elastic-only with side-seam pockets. Alternative: HI waistband but slant side pockets, no coin pocket.", "Founder"),
     ("Q3", "Back label: what, and where?",
-     "Haki standard main label 6.5 × 2 cm white, OUTSIDE at CB, sewn all 4 sides; HI CB loop replaced by 2 loops flanking it", "Alternatives: inside CB (as every Haki product) + a separate outside patch (leather / jacron / woven, own art = new artwork owed); black-ground label to sit quieter on the check.", "Founder"),
+     "Haki standard main label 6.5 × 2 cm white, OUTSIDE at CB, sewn all 4 sides; HI CB loop replaced by 2 loops flanking it", "A worn belt covers an outside CB label. Alternative: the inside main label + an outside patch at the wearer's right back waistband (Konpeito position; leather / jacron / woven = new art owed); or a black-ground label.", "Founder"),
     ("Q4", "Colourway", "Black ground + tan line only (as the refs)", "Any second colourway for the sample round?", "Founder"),
-    ("Q5", "Check repeat size", f"{SQ * 10:g} mm (1/2 in) square — estimated from the photos (P1)", "Photos measure 12–14 mm; the ChatGPT prompt said 15–20 mm. Bigger = bolder from a distance. Pick on a swatch / strike-off.", "Founder (swatch)"),
+    ("Q5", "Check repeat size", f"{SQ * 10:g} mm (1/2 in) square — estimated from the photos (P1)", f"Photos measure 12–14 mm; the ChatGPT mockup reads ≈ {MOCK['square_mm_at_hi32']:g} mm (M1). Bigger = bolder from a distance. Pick on a swatch / strike-off.", "Founder (swatch)"),
     ("Q6", "Sizes + sample size", f"HI published run {' '.join(SIZES)}; sample in 32", "Konpeito later added 29 / 31 / 33 — add them here too?", "Founder"),
     ("Q7", "Factory", "The factory that holds the HI pants pattern (as Konpeito)", "If a new factory: it needs the HI pattern / a reference garment, and T3 blue cells become our job.", "Product lead"),
     ("Q8", "Style code", f"{STYLE}", "Confirm against the PLM / Shopify SKU scheme.", "Ops"),
-    ("Q9", "Back pockets: matched or bias?", "Matched to the back leg (pocket 'disappears')", "Bias-cut pockets are a common plaid detail and avoid a near-miss match.", "Founder"),
+    ("Q9", "Back pockets: matched or bias?", "Matched to the back leg (pocket 'disappears')", "Bias-cut pockets avoid a near-miss match; if the HI pocket is tilted, a matched pocket cannot line up everywhere.", "Founder"),
     ("Q10", "Wash / finish", "Rinse + soften only, no stone / enzyme", "HI's stone wash would grey the black and fuzz the lines; only if a worn look is wanted.", "Founder"),
-    ("Q11", "Owed by Haki", "—", "Mockups front / back (ChatGPT render), hang tag art, barcode per size, packing design, care label (after Q1).", "Founder / design"),
+    ("Q11", "Back pockets: HI pointed or rounded-square (as the mockup)?", "HI pointed (founder's words)", "The ChatGPT render drew rounded-square pockets (M1 a).", "Founder"),
+    ("Q12", "Check size: photos (≈ 13 mm) or the mockup (≈ 2 cm)?", f"{SQ * 10:g} mm [estimate]", "Same question as Q5, now with the mockup's scale (M1 b).", "Founder (swatch)"),
+    ("Q13", "Length: full length (HI) or cropped (as the mockup)?", "Full length, HI inseam (T3)", "The render is cropped above the ankle (M1 c); cropping = new inseam per size.", "Founder"),
+    ("Q14", "Owed by Haki", "—", "Hang tag art, barcode per size, packing design, care label + COO / RN (after Q1), a physical swatch (P1).", "Founder / design"),
 ]
 def Q1():
     o = hdr("Q1 · OPEN QUESTIONS — for the internal review", "Everything the founder did not state. The pack is built on the 'assumed' column (amber in the pages); change any of these and the listed pages change.", "Q1")
@@ -557,18 +596,49 @@ def Q1():
     return o
 
 
+# ---------------------------------------------------------------- F1 factory questions + QC
+FACTORY_QS = [
+    ("D2", "Is the waistband CB seam sewn before the waistband is attached? Can the outside label be sewn across it (seam pressed open + trimmed)?"),
+    ("D2", "Minimum finished waistband height on the HI pants (it carries a 20 mm label)?"),
+    ("D7", "Is the HI waistband straight-cut (straight grain) or curved?"),
+    ("D7", "HI waistband interlining: type + weight?"),
+    ("D9", "Seam type + SPI (stitches per inch) for each seam on the HI pants?"),
+    ("D11", "Can you cut a 12.7 mm check matched at CF, CB, side seams, waistband and pockets? Extra fabric needed (%)?"),
+    ("D11", "Option A: stock yarn-dyed black / tan check available? MOQ, lead time, warp + weft shrinkage %, sanforized Y/N?"),
+    ("D11", "Option B: can you print the check in-house? MOQ?"),
+    ("D13", "Matte-black 28 L shank button, YKK #4.5 zip and 15 L rivets in stock?"),
+    ("D13", "Who weaves the Haki main label, and what MOQ?"),
+    ("D15", "Rivets: 4 on this style (2 scoop outer corners + 2 coin pocket); the HI BOM lists 5 — which is right on HI?"),
+    ("D8", "Back pocket size, placement from CB + waistband and angle, per size, from the HI pattern?")]
+QC = [("CF fly", "check lines continuous across the closed fly"), ("CB seam", "horizontal lines matched at the hip line"),
+      ("Side seam at hip", "horizontal lines matched front-to-back"), ("Waistband CF / CB", "lines matched to the body"),
+      ("Pockets", "back + coin pockets matched (or bias, per Q9)"), ("Fabric skew / bow", "measured on the roll and on cut panels"),
+      ("Leg twist after wash", "outseam position at the hem vs the side")]
+def F1():
+    o = hdr("F1 · FACTORY QUESTIONS + CHECK QC", "Yes / no questions for the factory before the first sample, and the QC points for a check fabric. No tolerance is invented here: values are TBD by Haki + the factory.", "F1")
+    o.append(t(12, 36, "A · QUESTIONS FOR THE FACTORY (answer before cutting)", 2.3, 700)); y = 42
+    for i, (ref, q) in enumerate(FACTORY_QS, 1):
+        o.append(t(12, y, f"{i}.", 1.9, 700)); o.append(t(18, y, q, 1.85, 400, INK)); o.append(t(196, y, "yes / no / value: ______", 1.8, 400, FAC)); o.append(t(240, y, ref, 1.6, 400, MUTED)); y += 5.2
+    y += 4
+    o.append(t(12, y, "B · QC — CHECK MATCHING + FABRIC (first sample + bulk)", 2.3, 700)); y += 5
+    rows = [[a, b, "[TBD — Haki/factory to set]"] for a, b in QC]
+    tb, y = table(12, y, [("Point", 40, None), ("What is checked", 110, None), ("Tolerance", 70, None)], rows, 1.85, 4.6); o.append(tb)
+    o.append(t(12, y + 3, "Plus: a photo of a scrap mock of the outside CB label across the waistband seam (T6 / T7) before cutting.", 1.85, 600, INK))
+    return o
+
+
 # ---------------------------------------------------------------- build
 def build():
     PAGES.clear()
     import dmlabels
     labels = dmlabels.build()
-    idx_plan = [("T1", "Cover / summary + contents", ""), ("T2", "Flats — front + back (+ mockup placeholders)", "mockups"),
+    idx_plan = [("T1", "Cover / summary + contents", ""), ("M1", "Mockup — founder ChatGPT render (reference only)", ""), ("T2", "Flats — front + back (+ mockup thumbnails)", ""),
                 ("P1", "Print spec — black / tan windowpane check", ""), ("T3", "POM / size chart (HI, factory fills gaps)", ""),
-                ("T4", "Pattern — factory HI pattern + check matching", ""), ("T5", "Bill of materials (fabric open)", "care label; hang tag; barcode; packing"),
-                ("T6", "Construction, stitching + finish", ""), ("T7", "Labels + trims placement", "care label; hang tag"),
-                ("T7b", "Label artwork — back, size, care label", "care label"), ("Q1", "Open questions", "")]
-    add("T2", "Flats", T2()); add("P1", "Print", P1()); add("T3", "POM", T3()); add("T4", "Pattern", T4()); add("T5", "BOM", T5())
-    add("T6", "Construction", T6()); add("T7", "Labels", T7()); add("T7b", "Label art", T7b()); add("Q1", "Questions", Q1())
+                ("T4", "Pattern — factory HI pattern + check matching", ""), ("T5", "Bill of materials (fabric open)", "care label + COO/RN; hang tag; barcode; packing"),
+                ("T6", "Construction, stitching + finish", ""), ("T7", "Labels + trims placement", "care label + COO/RN; hang tag"),
+                ("T7b", "Label artwork — back, size, care label", "care label; COO + RN"), ("F1", "Factory questions + check QC", ""), ("Q1", "Open questions", "")]
+    add("M1", "Mockup", M1()); add("T2", "Flats", T2()); add("P1", "Print", P1()); add("T3", "POM", T3()); add("T4", "Pattern", T4()); add("T5", "BOM", T5())
+    add("T6", "Construction", T6()); add("T7", "Labels", T7()); add("T7b", "Label art", T7b()); add("F1", "Factory questions", F1()); add("Q1", "Questions", Q1())
     # cover flags must match the pages that carry a [MISSING] mark (as Konpeito)
     has = {pid for pid, _, svg in PAGES if "[MISSING" in svg}
     flagged = {pid for pid, _, m in idx_plan if m}

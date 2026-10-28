@@ -60,3 +60,21 @@ def measure():
 
 if __name__ == "__main__":
     print(json.dumps(measure(), indent=1))
+
+
+MOCKUP = "inputs/mockups/chatgpt-mockup-front-back-2026-10-27.png"
+MOCK_AREAS = [(500, 800, 200, 380), (500, 800, 480, 640), (500, 800, 900, 1080), (500, 800, 1180, 1360)]
+MOCK_WAIST_Y = 60          # px row through the front waistband (flat half waist)
+
+
+def mockup():
+    """check size as drawn on the founder's ChatGPT mockup: pitch (FFT, 4 leg areas, both directions) vs the flat
+    front waistband width, scaled as if the render were HI size 32 (half relaxed waist 33.1 in / 2)."""
+    a = np.asarray(Image.open(MOCKUP).convert("RGB")).astype(float); L = a.mean(-1); m = a.max(-1) < 200
+    ps = []
+    for y0, y1, x0, x1 in MOCK_AREAS:
+        ps += [period(L[y0:y1, x0:x1].mean(0)), period(L[y0:y1, x0:x1].mean(1))]
+    xs = np.where(m[MOCK_WAIST_Y, :768])[0]; waist_px = int(xs.max() - xs.min())
+    pitch = float(np.mean(ps)); half_waist_cm = 33.1 * 2.54 / 2
+    return {"pitch_px": [round(p, 1) for p in ps], "pitch_px_mean": round(pitch, 1), "half_waist_px": waist_px,
+            "squares_across_half_waist": round(waist_px / pitch, 1), "square_mm_at_hi32": round(pitch / (waist_px / half_waist_cm) * 10, 1)}

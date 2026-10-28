@@ -105,7 +105,7 @@ def back_svg(sil, label_href=None):
     for x0, x1 in ((160, 340), (423, 603)):      # HI pointed back patch pockets, centred on each leg
         cx = (x0 + x1) / 2
         pk = [(x0, 183), (x1, 183), (x1 - 8, 352), (cx, 372), (x0 + 8, 352)]
-        o.append(path(T(pk, ox), close=True, fill="url(#chk)"))
+        o.append(path(T(pk, ox), close=True))          # no own fill: the body check shows through = matched (and no darker aliasing)
         o.append(topst(T([(x0, 198), (x1, 198)], ox)))
         inner = Polygon(T(pk, ox)).buffer(-2.0, join_style="mitre")
         o.append(path(list(inner.exterior.coords), STITCH, 0.35, "1.2 0.8"))
@@ -129,7 +129,7 @@ def front_svg(sil):
     o.append(f'<line x1="{f((1092 - ox) * MM)}" y1="{f(zt)}" x2="{f((1092 - ox) * MM)}" y2="{f(zb)}" stroke="{STITCH}" stroke-width="1.6" stroke-dasharray="0.5 0.5"/>')
     # coin pocket (plain, self fabric, check matched) on the wearer's right facing
     cx0, cy0 = (COIN_TL_PX[0] - ox) * MM, COIN_TL_PX[1] * MM; cw, ch = COIN_MM
-    o.append(f'<rect x="{f(cx0)}" y="{f(cy0)}" width="{f(cw)}" height="{f(ch)}" fill="url(#chk)" stroke="{CON}" stroke-width="0.6"/>')
+    o.append(f'<rect x="{f(cx0)}" y="{f(cy0)}" width="{f(cw)}" height="{f(ch)}" fill="none" stroke="{CON}" stroke-width="0.6"/>')
     o.append(topst([(cx0 + 2, cy0 + 2), (cx0 + 2, cy0 + ch - 2), (cx0 + cw - 2, cy0 + ch - 2), (cx0 + cw - 2, cy0 + 2)]))
     o.append(topst([(cx0, cy0 + 4), (cx0 + cw, cy0 + 4)]))
     for rx in (cx0 + 4.25, cx0 + cw - 4.25):

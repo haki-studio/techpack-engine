@@ -27,3 +27,11 @@
 ## Next
 - Founder answers Q1–Q11; drop in the ChatGPT mockups on T2; pick fibre → care label; Rev B; then a factory summary copy
   (LESSONS E15) before any factory send.
+
+## Fix pass (coordinator, 27 Oct, later)
+- New M1 page after T1: founder ChatGPT mockup, REFERENCE for look only; departures (a) rounded back pockets, (b) check ~16.8 mm (25 squares across the half waist, scaled as HI 32; dmprint.mockup()), (c) cropped, (d) label/loops match. T2 placeholders replaced by mockup thumbnails + flats-leg note (Konpeito flat-lay tracing; team checks vs real HI fit). "mockups" no longer [MISSING].
+- New F1 page: 12 factory yes/no questions (D2/D7/D8/D9/D11/D13/D15) + check-matching QC block; all tolerances [TBD — Haki/factory to set], none invented.
+- Text fixes: rivets = outer top corner of each scoop + 2 coin corners = 4, HI lists 5 (T5/T6/T7/F1); T7b weave moved to size label, back label flat woven heat-cut/ultrasonic (D17); D2 CB seam pressed open + trimmed under label, white needle / black bobbin, clear of WB topstitch, min WB height factory to state, scrap-mock photo, sewing order per factory (T6, T7 detail draws the seam); D3 REFERENCE banner on T3; D4 belt-covers-label in Q3; D5 grain [proposed], mill shrinkage + sanforized ask, repeat = finished after wash; D8 pocket size/placement/angle from factory; D10 COO + RN [MISSING]; D19 "factory to quote"; D1 physical-swatch box on P1.
+- Q1 now Q1–Q14 (Q11 pockets, Q12 check size, Q13 length, Q14 owed by Haki).
+- Flats: back + coin pockets no longer have their own fill, so the body check shows through (matched, no darker aliasing).
+- PDF sha256 2ca477f7e8377bd421896c925b21f7d630872bc54dcb867ed57395ec6e100969, 12 pages; overwritten in Desktop/TECH PACKS/Dismantle Pants.
