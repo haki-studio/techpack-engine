@@ -396,7 +396,8 @@ def bucket_views(o, st, boxes):
             u = k / (g.rows + 1)
             curve(o, fg, [(-half - br * u, -drop * u), (half + br * u, -drop * u)])
         o.append(dim(fg.P((half + 4, 0)), fg.P((top + 4, g.Bh)), -3, f"B {st.pom['B'].cm:g} cm" + (" *" if st.pom['B'].proposed else ""), 1.5))
-        o.append(dim(fg.P((-half, -drop - 4)), fg.P((-half - br, -drop - 4)), 0, f"E {st.pom['E'].cm:g} cm" + (" *" if st.pom['E'].proposed else ""), 1.5))
+        # drawn tip -> crown so dim() puts the label below the line, clear of the brim edge
+        o.append(dim(fg.P((-half - br, -drop - 4)), fg.P((-half, -drop - 4)), 0, f"E {st.pom['E'].cm:g} cm" + (" *" if st.pom['E'].proposed else ""), 1.5))
         out[name] = fg
     for name, scale in (("TOP", 1.0), ("UNDER-BRIM", 1.0), ("INSIDE", 1.0)):
         x, y, bw, bh = boxes[name]; R = g.a + br

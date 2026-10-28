@@ -108,7 +108,7 @@ BOXES = {"FRONT": (12, 30, 90, 78), "SIDE": (104, 30, 90, 78), "BACK": (196, 30,
          "TOP": (12, 112, 90, 84), "UNDER-BRIM": (104, 112, 90, 84), "INSIDE": (196, 112, 90, 84)}
 
 
-@pytest.mark.parametrize("key", CAPS)
+@pytest.mark.parametrize("key", CAPS + ["bucket"])
 def test_h3_labels_clear_of_outlines(key):
     svg = page_svg(key, "H3")
     lines = paths(svg)

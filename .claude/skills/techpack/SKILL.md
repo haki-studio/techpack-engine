@@ -25,6 +25,12 @@ images and watch.
      (`engine/hoodie.py`, pattern ready; reference build `projects/zip-hoodie-block/`; its blank fit sample is pending — say so);
      anything else → `unknown — needs a fit chart` (art + stitch files still go ahead on a proposed block; the
      pattern waits for the chart).
+   - **hat style (every cap / hat / trucker / bucket / beanie / snapback — required)**: run
+     `python3 engine/capstyle.py list` and pick the style the hat is made on (e.g. `asce-dad` for our dad caps,
+     `beanie-cuff` for a cuffed beanie). `python3 engine/capstyle.py product "<product name>"` suggests one for a known
+     product. If the images don't make it clear, ASK the operator in step 4: "Which hat style is <product>? Pick one:
+     <the list>". Put it in the plan as `"style": "<key>"`. A hat with no style or an unknown one is refused by intake
+     and by dispatch (LESSONS H1); never invent a style — a new shape is added to `families/cap/styles.yaml` first.
    - **process**: embroidery (thread texture, satin sheen, raised fills), **knit jacquard / printed fleece**
      (pixel-grid scenes on fleece or sherpa — not embroidery; build the artwork + colour count, flag the process),
      print, patch.
@@ -38,8 +44,9 @@ images and watch.
      Write `projects/<slug>/inputs/closeup_request.md` (one prompt per decorated panel, template in
      `techpack-pipeline` §0b) and, in step 4, ask Devin to run those prompts in the same image tool and drop the results
      into `inbox/<slug>/closeups/` (`closeup_<element>.png`). Builders start without them and trace from them when they land.
-4. Write `inbox/_plan.json` (format in `scripts/intake.py`) and run `python3 scripts/intake.py apply inbox/_plan.json`.
-   Post ONE message: a table of products (slug, garment, block, process, elements, flags) + every question that
+4. Write `inbox/_plan.json` (format in `scripts/intake.py`), check it with `python3 scripts/intake.py plan inbox/_plan.json`
+   (it lists every hat that still needs a style, with the valid keys), then run `python3 scripts/intake.py apply inbox/_plan.json`.
+   Post ONE message: a table of products (slug, garment, hat style, block, process, elements, flags) + every question that
    blocks a product (usually: fit charts for non-Drum-Island garments, fabric). Then continue — don't wait.
 
 ## 2. Build (parallel, detached — LESSONS E10)
