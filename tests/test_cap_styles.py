@@ -29,7 +29,8 @@ def test_catalogue_has_the_nine_styles_and_they_validate(cat):
     assert CS.validate(r, f) == []
 
 
-@pytest.mark.parametrize("garment", ["cap", "Dad hat", "trucker", "bucket hat", "beanie", "snapback"])
+@pytest.mark.parametrize("garment", ["cap", "Dad hat", "trucker", "bucket hat", "beanie", "snapback", "caps", "Beanies",
+                                     "hats", "snapbacks", "snap-back", "Snap back cap", "dad-hat", "Trucker Caps", "visor"])
 def test_a_hat_with_no_style_is_refused_and_told_the_valid_keys(cat, garment):
     err = CS.check_choice(garment, None, cat)
     assert err and all(k in err for k in KEYS)
@@ -184,3 +185,33 @@ def test_dispatch_builds_a_hat_with_a_valid_style(tmp_path):
     assert r.returncode == 0 and "claude --bg -n tp-build-probe-cap" in r.stdout, r.stdout + r.stderr
     _project(tmp_path, "probe-tee", {"slug": "probe-tee", "garment": "t-shirt"})
     assert _dispatch(tmp_path, "build", "probe-tee").returncode == 0
+
+
+def test_a_garment_text_cannot_run_shell_commands_at_intake(tmp_path):
+    """reviewer 2026-10-28: the --field values went through os.system inside double quotes, so $(...) ran"""
+    probe = tmp_path / "PWNED"
+    r = _intake(tmp_path, "apply", _plan(tmp_path, garment=f"cap $(touch {probe})", style="asce-dad"))
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert not probe.exists()
+    s = json.loads((tmp_path / "projects" / "probe-cap" / "STATUS.json").read_text())
+    assert s["garment"] == f"cap $(touch {probe})"
+
+
+def test_status_set_only_takes_known_fields(tmp_path):
+    e = dict(os.environ, TECHPACK_ROOT=str(tmp_path), TECHPACK_STATE=str(tmp_path / "state"))
+    (tmp_path / "projects" / "x").mkdir(parents=True)
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "status_set.py"), "x", "intake", "n", "--field", "stage=delivered"],
+                       capture_output=True, text=True, env=e)
+    assert r.returncode != 0 and not (tmp_path / "projects" / "x" / "STATUS.json").exists()
+
+
+def test_dispatch_with_no_garment_recorded_still_catches_a_hat_by_its_name(tmp_path):
+    """reviewer 2026-10-28: check-project passed any project with no garment line; old non-hat projects (no garment
+    line: drum-island-plum-pine, konpeito-jeans, ...) must still pass"""
+    for slug, title in (("probe-beanie", "Pink Hearts Beanie"), ("probe-ff", "Fire Fist"), ("probe-jeans", "Konpeito jeans")):
+        P = tmp_path / "projects" / slug / "inputs"; P.mkdir(parents=True)
+        (P / "brief.md").write_text(f"# Brief — {title}\n\n- Slug: {slug}\n")
+    r = _dispatch(tmp_path, "build", "probe-beanie")
+    assert r.returncode == 2 and "beanie-cuff" in r.stdout + r.stderr, r.stdout + r.stderr
+    assert _dispatch(tmp_path, "build", "probe-ff").returncode == 2           # a product we sell on asce-dad
+    assert _dispatch(tmp_path, "build", "probe-jeans").returncode == 0

@@ -15,8 +15,11 @@ s = json.load(open(p)) if os.path.exists(p) else {"slug": a.slug, "log": [], "qu
 s["stage"] = a.stage; s["stage_index"] = STAGES.index(a.stage) if a.stage in STAGES else s.get("stage_index", 0)
 s["blocked"] = a.blocked; s["updated"] = datetime.datetime.now().isoformat(timespec="seconds")
 if a.preview: s["preview"] = os.path.relpath(os.path.abspath(a.preview), os.path.join(ROOT, "projects", a.slug))
+FIELDS = ("garment", "style")      # the only extra keys a caller may set (never stage/log/...)
 for f in a.field:
-    k, _, v = f.partition("="); s[k] = v
+    k, _, v = f.partition("=")
+    if k not in FIELDS: sys.exit(f"--field {k}: not allowed (allowed: {', '.join(FIELDS)})")
+    s[k] = v
 if a.question: s["questions"] = list(dict.fromkeys(s.get("questions", []) + a.question))
 s["log"].append([s["updated"], a.stage, a.note]); s["log"] = s["log"][-40:]
 json.dump(s, open(p, "w"), indent=1)

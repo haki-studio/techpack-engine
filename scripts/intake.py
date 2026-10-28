@@ -12,7 +12,7 @@ A hat (garment cap / hat / trucker / bucket / beanie / snapback) must name its s
 families/cap/styles.yaml (`python3 engine/capstyle.py list`); a plan with a missing or unknown one is refused whole
 (LESSONS H1). TECHPACK_ROOT overrides the data root (inbox/ + projects/), for tests.
 """
-import sys, os, json, shutil, glob, datetime
+import sys, os, json, shutil, glob, datetime, subprocess
 from PIL import Image, ImageDraw, ImageFont
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -114,8 +114,8 @@ def apply(plan_path):
             assumptions=li(pr.get("assumptions", []), "none")))
         if not os.path.exists(os.path.join(P, "README.md")):
             open(os.path.join(P, "README.md"), "w").write(f"# {pr.get('name', slug)}\nBuilt by the /techpack command. Inputs + brief in inputs/, outputs in out/.\n")
-        fields = " ".join(f'--field {k}="{pr[k]}"' for k in ("garment", "style") if pr.get(k))
-        os.system(f'python3 "{os.path.join(REPO, "scripts", "status_set.py")}" {slug} intake "projects created from inbox" {fields}')
+        fields = [x for k in ("garment", "style") if pr.get(k) for x in ("--field", f"{k}={pr[k]}")]   # argv, never a shell
+        subprocess.run([sys.executable, os.path.join(REPO, "scripts", "status_set.py"), slug, "intake", "projects created from inbox", *fields], check=True)
         print("project", slug)
     done = os.path.join(INBOX, "_done"); os.makedirs(done, exist_ok=True)
     folders = set()

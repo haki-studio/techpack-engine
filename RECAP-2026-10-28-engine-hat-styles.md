@@ -113,3 +113,11 @@ Done + committed (see git log on engine-hat-styles):
 - **Full suite** (heavy-jobs 0): 705 passed, 2 failed — both `test_konpeito_gates.py` soot tests, FileNotFoundError
   `out/stitch/HAKI_KJ_07a_front-leg-trail-upper.json` (gitignored Konpeito build output absent in this fresh worktree;
   branch touches no konpeito/digitize file). Hat tests: test_cap_styles 59 + test_cap_drawing 30 green.
+- **Review 1 (9cb02f84): REQUEST_CHANGES** (logged in reviews.log). Fixed:
+  1. plurals / hyphens slipped past (`caps`, `Beanies`, `hats`, `snapbacks`, `snap-back`) → `capstyle.garment_words`
+     folds plurals + "snap back"; `visor` added (no style fits it yet → refused with "add one to styles.yaml first").
+  2. shell injection: intake's `os.system(... --field garment="...")` ran `$(...)` → `subprocess.run` argv list.
+  3. `check-project` passed any project with no garment line → now judges by the product name (brief/README title or
+     slug): a hat word or a known hat product (e.g. "Fire Fist") needs a style; the 14 main projects all still pass.
+  + `status_set.py --field` only takes garment/style.
+  Tests: red 9 (6 spellings, injection, field allowlist, no-garment) → green; mutation (plural fold + fallback off) red 6.

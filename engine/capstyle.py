@@ -26,10 +26,10 @@ ROOT = os.path.dirname(HERE)
 CAP_DIR = os.path.join(ROOT, "families", "cap")
 
 # garments that are hats: a design whose garment names one of these must pick a style (founder ask 2026-10-28)
-HAT_GARMENTS = ("cap", "hat", "trucker", "bucket", "beanie", "snapback")
+HAT_GARMENTS = ("cap", "hat", "trucker", "bucket", "beanie", "snapback", "visor")
 KINDS = ("cap", "bucket", "knit")
 # garment word -> the style kinds it can be made on (others: any kind)
-GARMENT_KINDS = {"beanie": ("knit",), "bucket": ("bucket",), "trucker": ("cap",), "snapback": ("cap",)}
+GARMENT_KINDS = {"beanie": ("knit",), "bucket": ("bucket",), "trucker": ("cap",), "snapback": ("cap",), "visor": ()}
 
 IDENT = ("name", "kind", "status")                       # plain text allowed (identity, not a factory fact)
 SOURCED = ("factory", "crown_die", "brim_die", "panels", "structure", "crown_profile", "brim", "closure", "size")
@@ -284,8 +284,14 @@ def style_for_product(name, cat=None):
     return (cat or load()).product_style(name)[0]
 
 
+def garment_words(garment):
+    """normalised words with hat plurals / 'snap back' folded: 'Trucker Caps' -> ['trucker', 'cap'] (reviewer 2026-10-28)"""
+    ws = norm(garment).replace("snap back", "snapback").split()
+    return [w[:-1] if w.endswith("s") and w[:-1] in HAT_GARMENTS else w for w in ws]
+
+
 def is_hat_garment(garment):
-    return any(w in HAT_GARMENTS for w in norm(garment).split())
+    return any(w in HAT_GARMENTS for w in garment_words(garment))
 
 
 def check_choice(garment, style, cat=None):
@@ -297,24 +303,36 @@ def check_choice(garment, style, cat=None):
         return (f"'{garment}' is a hat: pick its hat style (style: <key>). Valid styles: {cat.valid_keys_text()}")
     if style not in cat.styles:
         return f"unknown hat style '{style}'. Valid styles: {cat.valid_keys_text()}"
-    kinds = next((GARMENT_KINDS[w] for w in norm(garment).split() if w in GARMENT_KINDS), None)
+    kinds = next((GARMENT_KINDS[w] for w in garment_words(garment) if w in GARMENT_KINDS), None)
     st = cat.styles[style]
+    if kinds == ():
+        return f"no catalogue style is a '{garment}' yet: add one to families/cap/styles.yaml first. Valid styles: {cat.valid_keys_text()}"
     if kinds and st.kind not in kinds:
         ok = ", ".join(k for k, s in cat.styles.items() if s.kind in kinds)
         return f"'{garment}' cannot be made on '{style}' ({st.name}, a {st.kind} block). Valid for it: {ok}"
     return None
 
 
+def _read_project(slug, rel, root=None):
+    root = root or ROOT
+    p = os.path.join(root, "projects", slug, rel)
+    if os.path.exists(p): return open(p, encoding="utf-8").read()
+    r = subprocess.run(["git", "-C", root, "show", f"origin/main:projects/{slug}/{rel}"], capture_output=True, text=True)
+    return r.stdout if r.returncode == 0 else None
+
+
+def project_name(slug, root=None):
+    """the product's name: brief.md title, else README.md title, else the slug"""
+    for rel, pat in (("inputs/brief.md", r"^# Brief\s*[—-]\s*(.+)$"), ("README.md", r"^#\s+(.+)$")):
+        m = re.search(pat, _read_project(slug, rel, root) or "", re.M)
+        if m: return m.group(1).strip()
+    return slug
+
+
 def project_info(slug, root=None):
     """(garment, style) recorded for projects/<slug>: STATUS.json first, then inputs/brief.md; origin/main if the
     folder is not in this checkout (dispatch looks there too)."""
-    root = root or ROOT
-    P = os.path.join(root, "projects", slug)
-    def read(rel):
-        p = os.path.join(P, rel)
-        if os.path.exists(p): return open(p, encoding="utf-8").read()
-        r = subprocess.run(["git", "-C", root, "show", f"origin/main:projects/{slug}/{rel}"], capture_output=True, text=True)
-        return r.stdout if r.returncode == 0 else None
+    read = lambda rel: _read_project(slug, rel, root)
     st = read("STATUS.json"); brief = read("inputs/brief.md") or ""
     s = json.loads(st) if st else {}
     garment, style = s.get("garment"), s.get("style")
@@ -361,8 +379,12 @@ def main(argv=None):
             root = a[a.index("--root") + 1] if "--root" in a else None
             garment, style = project_info(a[1], root)
             cat = load()
-            if garment is None:
-                print(f"projects/{a[1]}: no garment recorded (STATUS.json / inputs/brief.md)"); return 0
+            if garment is None:       # older projects carry no garment line: judge the hat question by the product name
+                name = project_name(a[1], root)
+                if is_hat_garment(name): garment = name
+                elif cat.product_style(name)[0] or cat.product_style(a[1])[0]: garment = f"hat ({name})"
+                else:
+                    print(f"projects/{a[1]}: no garment recorded; '{name}' is not a hat by its name"); return 0
             err = check_choice(garment, style, cat)
             if err: print(f"REFUSED projects/{a[1]}: {err}"); return 1
             print(f"projects/{a[1]}: {garment}" + (f" on style {style} ({cat.styles[style].name})" if style else " (not a hat)"))
