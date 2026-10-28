@@ -76,6 +76,8 @@ cap_frame:
   under_brim:   {max_w_cm: {proposed: 14, note: "sewn flat on the under-brim before the brim is closed; not recorded"}, max_h_cm: {proposed: 5, note: "not recorded"}}
 
 # ---------------------------------------------------------------------------------------------------- SIZES + PACKING
+# POM tolerance for every row whose chart gives no `tol:` (none recorded for any hat)
+pom_tolerance_cm: {proposed: 0.5, note: "± cm on every measurement without its own tolerance; not recorded for any hat — please send yours"}
 sizes:
   range: {value: "head 49–62 cm (6⅛–7¾) on the factory size sheet", source: "Emmie size sheet 2026-05-21"}
   caps: {value: "caps are one size (adjustable)", source: "Emmie size sheet 2026-05-21"}
@@ -90,4 +92,5 @@ block:
   head_ratio: {proposed: 1.22, note: "head length / head width, for the crown base oval on the sketches"}
   strap_opening_w_cm: {proposed: 7, note: "back strap opening width; not recorded"}
   strap_opening_h_cm: {proposed: 5, note: "back strap opening height; not recorded"}
+  brim_inner_depth_cm: {proposed: 3, note: "how far the brim's crown-seam edge curves back, laid flat: CF to the line across the brim ends; not recorded"}
   brim_topstitch_rows: {proposed: 8, note: "rows of topstitching on the brim; the Haki Block spec says 'topstitch rows', count not recorded"}

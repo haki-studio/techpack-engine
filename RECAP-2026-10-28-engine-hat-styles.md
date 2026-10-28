@@ -9,7 +9,7 @@ Branch `engine-hat-styles` off 3bb01868, worktree `~/te-hat-styles`. GitHub susp
 - [x] engine/capstyle.py (load, strict validate, style_for_product, CLI list|show|check|check-project|product)
 - [x] engine/cap_pages.py (H1 style sheet, H2 POM, H3 flats / K1 knit, H4 embroidery, H5 construction+BOM, F1) — renders
 - [ ] intake plan/apply style gate + dispatch build gate + /techpack doc
-- [ ] tests red-then-green
+- [~] tests red-then-green (drawing tests done: tests/test_cap_drawing.py 29 green; catalogue/intake/dispatch tests open)
 - [ ] independent review, reviews.log, DONE to lead
 
 ## Decisions
@@ -56,3 +56,31 @@ Then the remaining build (see the founder ask in the lead's TASK):
    → someday; Rabbit Escape/Shibuya → ripstop-6p; Haki "Block" → haki-cord-5p; Pink "Hearts" Beanie → beanie-cuff;
    Hat Box/Mystery/Tee → None); every style renders (knit has K1 not H3); proposed amber + on F1. Show red first.
 9. heavy-jobs = 0 → full suite; commit; reviewer subagent on the exact sha; append reviews.log; SendMessage lead DONE.
+
+## Session 2 (builder #2, 2026-10-28) — drawing fixes done; HANDOFF again (session-size limit)
+Done + committed (see git log on engine-hat-styles):
+- **Brim drawn at E/F** (lead fix a): `CapGeom.brim_poly` rebuilt — width = F end to end, centre depth = E (crown seam at
+  CF to the tip), seam edge curves back by a new drawing-only constant `block.brim_inner_depth_cm` {proposed: 3} (on F1).
+  TOP view draws the same brim carried under the crown (convex hull with the oval front, `brim_drawn(g, "top")`) so no
+  gap shows. Was 0.84 deep/wide on asce-dad vs chart 0.39; now 0.39 on both views for all 7 cap styles.
+- **Labels clear of outlines** (fix b): SIDE G beside the tip, D lifted off the button; TOP head length/width outside,
+  A label under the oval; UNDER-BRIM F right of the brim, E below it, rows label above; INSIDE labels outside with leaders.
+- **BACK C** (fix c / old step 1): dimension base → button, outside the crown, label "C … along the back seam".
+- **H4** (old step 2): three views in a row under the text, one scale; back frame box above the strap opening.
+- **H2 tolerance** (old step 3): `pom_tolerance_cm` {proposed: 0.5} in family.yaml; H2 rows without `tol` use it; F1
+  lists it under Measurements.
+- `tests/test_cap_drawing.py` (29 tests): brim ratio within 10% on TOP + UNDER-BRIM measured from the drawn SVG paths,
+  not-square guard, H3 label-vs-outline check (+ a probe test proving the check catches an overlap), C stops at button.
+  **Red then green:** against the old cap_pages.py 28 failed / 1 passed (ratio 0.84 vs 0.39, the exact overlaps the lead
+  saw, C top at -120 vs button -99); against the new one 29 passed.
+- Looked at: asce-dad H3 + H4 (fine). NOT yet looked at after these changes: asce-dad H1/H2/F1, beanie-cuff K1/H1, a
+  bucket H3, other cap styles' H3 (tests pass for all 7 caps).
+
+### HANDOFF — next builder, in order
+1. Re-render asce-dad + beanie-cuff + bucket (`~/.venvs/techpack/bin/python engine/cap_pages.py <key> --out
+   out/hat-samples/<key>`) and LOOK at every page (H2 tolerance row, F1 new items, K1, bucket H3).
+2. Old steps 5-9 above are still open: intake.py style gate + STATUS/brief + TECHPACK_ROOT; dispatch.sh build gate;
+   SKILL.md / FAMILIES.md / LESSONS.md / CLAUDE.md; tests/test_cap_styles.py (catalogue, refusals, product → style,
+   every style renders, proposed on F1) + intake/dispatch tests, red then green.
+3. heavy-jobs = 0 → full suite; commit; independent reviewer subagent on the exact sha; append reviews.log; SendMessage
+   lead-eng-techpack-engine-m2 DONE with sha, test counts, PNG paths.

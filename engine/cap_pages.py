@@ -64,6 +64,7 @@ class CapGeom:
         self.B, self.C = st.pom["B"].mm, st.pom["C"].mm
         self.so_w = float(val(fam["strap_opening_w_cm"])) * 10; self.so_h = float(val(fam["strap_opening_h_cm"])) * 10
         self.rows = int(val(fam["brim_topstitch_rows"]))
+        self.si = float(val(fam["brim_inner_depth_cm"])) * 10
         self._oval = self._oval_pts(720)
         self.seams = self._seam_fracs()
 
@@ -109,22 +110,26 @@ class CapGeom:
         return [1 / 6, 2 / 6, 0.5, 4 / 6, 5 / 6]
 
     def brim_ends(self):
-        """brim ends on the base oval: half the (flat) brim width F along the oval from CF, each side"""
-        _, _, P = self._oval
-        return self.at(self.F / 2 / P), self.at(1 - self.F / 2 / P)
+        """brim ends (x, ±y): F apart straight across (POM F), set back behind CF by the inner (seam) curve depth"""
+        return (self.si, self.F / 2), (self.si, -self.F / 2)
 
     def brim_poly(self, k=60):
-        """brim outline seen from above (x, y): inner edge = the base oval between the ends, outer edge = a D through
-        the tip at brim length E in front of CF"""
-        (xe, ye), _ = self.brim_ends()
-        inner = [self.at(fr) for fr in [self.F / 2 / self._oval[2] * (1 - 2 * i / k) for i in range(k + 1)]]
+        """brim outline (x, y), the same seen from above and laid flat under the brim: centre depth = E (crown seam at
+        CF to the tip), width = F (end to end), so it is drawn at the chart's E/F. Inner (seam) edge = a curve from
+        one end through CF to the other; outer edge = a rounded D from end to end through the tip at x = -E."""
+        si, F2, E = self.si, self.F / 2, self.E
+        inner = [(si * u * u, F2 * u) for u in (-1 + 2 * i / k for i in range(k + 1))]
+        e = 2 / 2.6
         outer = []
-        e = 2 / 2.4
         for i in range(k + 1):
-            th = -math.pi / 2 + math.pi * i / k
+            th = math.pi / 2 - math.pi * i / k                   # +y end -> tip -> -y end
             c, s = math.cos(th), math.sin(th)
-            outer.append((xe - (xe + self.E) * (abs(c) ** e), -ye * math.copysign(abs(s) ** e, s)))
-        return inner + outer
+            outer.append((si - (E + si) * abs(c) ** e, F2 * math.copysign(abs(s) ** e, s)))
+        return inner + outer[1:-1]
+
+    def brim_outer(self, k=60):
+        """the outer (free) edge alone, end to end through the tip — the topstitch rows follow it"""
+        return self.brim_poly(k)[k + 1:]
 
     def front_outline(self, w2=None, k=60):
         """crown seen from the front (y, z): superellipse half from the base width to the crown height"""
@@ -224,9 +229,10 @@ def view_side(o, g, fg, dims=True, emb=None):
     if dims:
         o.append(dim(fg.P((g.L + 6, 0)), fg.P((g.L + 6, g.h)), 0, f"crown height {g.h / 10:.1f} cm (from D)", 1.4, MUTED))
         o.append(dim(fg.P(tip), fg.P((0, 0)), -3, pom_lab(st, "E"), 1.6))
-        o.append(dim(fg.P((-2, 0)), fg.P((-2, -g.G)), 3, pom_lab(st, "G"), 1.5))
+        tx, tz = tip                                                 # G beside the tip, clear of the brim edge
+        o.append(dim(fg.P((tx - 3, tz)), fg.P((tx - 3, tz - g.G)), 1.5, pom_lab(st, "G"), 1.5))
         mid = pr[len(pr) // 2]
-        o.append(t(fg.P(mid)[0], fg.P(mid)[1] - 2.2, f"D {st.pom['D'].cm:g} cm over the top" + (" *" if st.pom['D'].proposed else ""), 1.6, 700, PROP if st.pom['D'].proposed else INK, "middle"))
+        o.append(t(fg.P(mid)[0], fg.P(mid)[1] - max(0.6, 8 * fg.s) - 1.6, f"D {st.pom['D'].cm:g} cm over the top" + (" *" if st.pom['D'].proposed else ""), 1.6, 700, PROP if st.pom['D'].proposed else INK, "middle"))
 
 
 def view_front(o, g, fg, dims=True):
@@ -272,7 +278,10 @@ def view_back(o, g, fg, dims=True):
             poly(o, fg, [(sx, -2), (sx + 18, -2), (sx + 18, 18), (sx, 18)], "#BFBFBF", LINE, 0.22)
     o.append(f'<circle cx="{f(fg.P((0, g.h))[0])}" cy="{f(fg.P((0, g.h))[1])}" r="{f(max(0.6, 8 * fg.s))}" fill="{BRIM}" stroke="{LINE}" stroke-width="0.25"/>')
     if dims:
-        o.append(dim(fg.P((-g.b * 0.55, 0)), fg.P((-g.b * 0.55, g.C)), 0, pom_lab(st, "C"), 1.6))
+        # C runs ALONG the back seam (base -> button over the curved back), so its straight projection is the crown
+        # height: dimension base -> button, outside the crown, and say it is measured along the seam
+        off = (g.b + 8) * fg.s
+        o.append(dim(fg.P((0, g.h)), fg.P((0, 0)), off, pom_lab(st, "C") + " along the back seam", 1.5))
         if ck != "none":
             H_ = st.pom["H"]
             o.append(dim(fg.P((-g.so_w / 2 - 12, -6)), fg.P((g.so_w / 2 + 12, -6)), 0,
@@ -282,7 +291,7 @@ def view_back(o, g, fg, dims=True):
 def view_top(o, g, fg, dims=True):
     st = g.st
     pts, _, _ = g._oval
-    poly(o, fg, g.brim_poly(), BRIM)
+    poly(o, fg, brim_drawn(g, "top"), BRIM)
     poly(o, fg, pts, CROWN)
     for fr in g.seams:
         x, y = g.at(fr)
@@ -296,18 +305,21 @@ def view_top(o, g, fg, dims=True):
         ex, ey = mx + (g.xp - mx) * 0.62, my * 0.38
         o.append(f'<circle cx="{f(fg.P((ex, ey))[0])}" cy="{f(fg.P((ex, ey))[1])}" r="{f(4 * fg.s)}" fill="#FFFFFF" stroke="{LINE}" stroke-width="0.18"/>')
     if dims:
-        o.append(dim(fg.P((0, -g.b - 6)), fg.P((g.L, -g.b - 6)), 0, f"head length {g.L / 10:.1f} cm (from A)", 1.4, MUTED))
-        o.append(dim(fg.P((g.L + 6, -g.b)), fg.P((g.L + 6, g.b)), 0, f"head width {g.W / 10:.1f} cm", 1.4, MUTED))
-        o.append(t(fg.P((g.a, 0))[0], fg.P((g.a, 0))[1] + 6, pom_lab(st, "A") + " round", 1.6, 700, PROP if st.pom["A"].proposed else INK, "middle"))
+        top = max(g.b, g.F / 2)                                      # labels sit OUTSIDE the outlines
+        o.append(dim(fg.P((0, -top)), fg.P((g.L, -top)), -2.5, f"head length {g.L / 10:.1f} cm (from A)", 1.4, MUTED))
+        o.append(dim(fg.P((g.L, -g.b)), fg.P((g.L, g.b)), -3, f"head width {g.W / 10:.1f} cm", 1.4, MUTED))
+        bx, by = fg.P((g.a, g.b))
+        o.append(t(bx, by + 3.4, pom_lab(st, "A") + " round", 1.6, 700, PROP if st.pom["A"].proposed else INK, "middle"))
 
 
 def brim_rows(g):
     from shapely.geometry import Polygon, LineString
-    bp = Polygon(g.brim_poly()).buffer(0)            # inner + outer edges share their end points
-    outer = LineString(g.brim_poly()[61:])
+    bp = Polygon(g.brim_poly()).buffer(0)
+    outer = LineString(g.brim_outer())
+    gap = min(5.0, (g.E - 4) / (g.rows + 0.5))                     # rows fit inside the brim's centre depth E
     rows = []
     for k in range(1, g.rows + 1):
-        try: ln = outer.offset_curve(5.0 * k)
+        try: ln = outer.offset_curve(gap * k)                        # + = left of the +y -> -y run = inwards
         except Exception: continue
         ln = ln.intersection(bp.buffer(-1.5))
         for gg in getattr(ln, "geoms", [ln]):
@@ -315,16 +327,27 @@ def brim_rows(g):
     return rows
 
 
+def brim_drawn(g, view="under"):
+    """the brim outline exactly as a view draws it (tests measure it: centre depth / width = E / F).
+    under = laid flat: the brim alone. top = on the cap: the same brim, its seam edge carried round under the crown
+    to the head sides (the crown is drawn over it), so no gap shows between the brim and the crown."""
+    if view == "under": return g.brim_poly()
+    from shapely.geometry import MultiPoint
+    front = [p for p in g._oval[0] if p[0] <= g.a * 0.6]
+    return list(MultiPoint(g.brim_poly() + front).convex_hull.exterior.coords)[:-1]
+
+
 def view_under(o, g, fg, dims=True):
     st = g.st
-    poly(o, fg, g.brim_poly(), BRIM)
-    for r in brim_rows(g): curve(o, fg, r)
+    poly(o, fg, brim_drawn(g), BRIM)
+    rows = brim_rows(g)
+    for r in rows: curve(o, fg, r)
     (xe, ye), _ = g.brim_ends()
-    if dims:
-        o.append(dim(fg.P((xe + 4, -ye)), fg.P((xe + 4, ye)), 0, pom_lab(st, "F") + " (flat)", 1.6))
-        o.append(dim(fg.P((-g.E, 0)), fg.P((0, 0)), -4, pom_lab(st, "E"), 1.6))
-    n = len(brim_rows(g))
-    o.append(t(fg.P((-g.E * 0.55, 0))[0], fg.P((-g.E * 0.55, ye * 0.55))[1], f"{n} topstitch rows", 1.4, 700,
+    if dims:                                                         # every label outside the brim
+        o.append(dim(fg.P((xe, -ye)), fg.P((xe, ye)), -3, pom_lab(st, "F") + " end to end", 1.6))
+        o.append(dim(fg.P((-g.E, 0)), fg.P((0, 0)), (ye + 5) * fg.s, pom_lab(st, "E") + " at the centre", 1.6))
+    X, Y = fg.P((-g.E * 0.35, -ye))
+    o.append(t(X, Y - 2.5, f"{len(rows)} topstitch rows", 1.4, 700,
                PROP if is_prop(st.fam["block"]["brim_topstitch_rows"]) else INK, "middle"))
 
 
@@ -345,8 +368,16 @@ def view_inside(o, g, fg, dims=True):
     poly(o, fg, [(cx - 12, -14), (cx + 12, -14), (cx + 12, 14), (cx - 12, 14)], "#EAF3FB", GUIDE, 0.22, dash="1 0.6")
     if not st.structured():
         poly(o, fg, [(g.a * 0.16, -g.b * 0.55), (g.xp * 0.95, -g.b * 0.45), (g.xp * 0.95, g.b * 0.45), (g.a * 0.16, g.b * 0.55)], "none", "#0A84D6", 0.18, dash="0.4 0.4")
-    labs = [((lx + 1, 26), "label"), ((cx, -20), "character"), ((g.a * 1.2, g.b * 0.6), "seam tape"), ((g.a * 1.55, -g.b * 0.75), "sweatband")]
-    for p, s in labs: o.append(t(fg.P(p)[0], fg.P(p)[1], s, 1.35, 600, MUTED, "middle"))
+    # labels outside the crown, each with a thin leader to what it names
+    sx, sy = g.at(g.seams[1] if g.panels == 5 else g.seams[2])     # a point on a taped seam, lower half
+    tape = (sx + (g.xp - sx) * 0.35, sy * 0.86 * 0.65)
+    ring = g.at(0.62); ring = (g.a + (ring[0] - g.a) * 0.93, ring[1] * 0.93)
+    labs = [((lx + 1, 0), (-14, -g.b * 0.75), "label"), ((cx, -14), (cx, -g.b - 10), "character"),
+            (tape, (tape[0], g.b + 10), "seam tape"), (ring, (ring[0] + 10, -g.b - 10), "sweatband")]
+    for p, q, s in labs:
+        (x0, y0), (x1, y1) = fg.P(p), fg.P(q)
+        o.append(f'<line x1="{f(x0)}" y1="{f(y0)}" x2="{f(x1)}" y2="{f(y1 + (1.0 if y1 < y0 else -1.6))}" stroke="{MUTED}" stroke-width="0.12"/>')
+        o.append(t(x1, y1 + (0 if y1 < y0 else 0.8), s, 1.35, 600, MUTED, "middle"))
 
 
 # ----------------------------------------------------------------------------- bucket views
@@ -440,11 +471,12 @@ def p_pom(st, product):
     o = H(st, product, "POINTS OF MEASURE — how to measure", f"{st.name} ({st.key}) · one size · cm · finished cap · amber = proposed (not recorded) → F1", "H2")
     rows = []
     pset = CS.load().pom_set(st.kind)
+    ftol = st.fam["pom_tolerance_cm"]                              # family default: proposed, listed on F1
     for c, p in st.pom.items():
         src = (p.v.note if p.proposed else p.v.source) or ""
         tol = st.raw["pom"][c].get("tol") if isinstance(st.raw["pom"][c], dict) else None
         rows.append([c, p.name, p.how, V(f"{p.cm:g}", p.proposed, path=p.path), f"{p.cm / 2.54:.2f}",
-                     V("0.5" if tol is None else f"{tol}", tol is None), src])
+                     V(f"{float(val(ftol)):g}", is_prop(ftol), path=ftol.path) if tol is None else f"{tol}", src])
     cols = [("", 0, 6), ("Point of measure", 7, 28), ("How to measure", 36, 70), ("cm", 107, 22), ("in", 130, 9), ("Tol ± cm", 140, 22), ("Source / note", 163, 110)]
     y = table(o, 12, 34, cols, rows, 1.6, 3.6)
     missing = [c for c, d in pset.items() if c not in st.pom]
@@ -457,8 +489,8 @@ def p_pom(st, product):
         y = sline(o, 12, y, "Strap rule", fam["strap"]["rule"], 270, lw=26)
     y = sline(o, 12, y, "Size sheet", fam["sizes"]["range"], 270, lw=26)
     y = sline(o, 12, y, "One size", fam["sizes"]["caps"], 270, lw=26)
-    para(o, 12, y + 1, "Tolerances are proposed (± 0.5 cm, not recorded for any hat) — please send yours. Every measurement is on the "
-                       "finished cap, strap / snap at its middle setting.", 270, 1.5, 2.4, 600, PROP)
+    y = sline(o, 12, y, "Tolerance", V(f"± {float(val(ftol)):g} cm on every row without its own", is_prop(ftol), ftol.source, ftol.note, ftol.path), 270, lw=26)
+    para(o, 12, y + 1, "Every measurement is on the finished cap, strap / snap at its middle setting.", 270, 1.5, 2.4, 400, INK)
     return o
 
 
@@ -476,13 +508,14 @@ def p_flats(st, product):
     def fig(box, w, h, cx, cy, flip=True):
         x, y, bw, bh = box; s = min((bw - 14) / w, (bh - 18) / h)
         return Fig(x + bw / 2 - cx * s, y + 8 + (bh - 8) / 2 + (cy * s if flip else -cy * s), s, flip)
-    W2 = max(g.b, g.brim_ends()[0][1]) + 6
+    W2 = max(g.b, g.F / 2) + 6
     view_front(o, g, fig(boxes["FRONT"], 2 * W2, g.h + g.G + 26, 0, (g.h - g.G - 22) / 2))
     view_side(o, g, fig(boxes["SIDE"], g.L + g.E + 22, g.h + g.G + 14, (g.L - g.E) / 2, (g.h - g.G) / 2))
     view_back(o, g, fig(boxes["BACK"], 2 * W2, g.h + 30, 0, (g.h - 12) / 2))
-    view_top(o, g, fig(boxes["TOP"], g.L + g.E + 22, g.W + 18, (g.L - g.E) / 2, 0, False))
-    view_under(o, g, fig(boxes["UNDER-BRIM"], g.E + g.brim_ends()[0][0] + 16, 2 * g.brim_ends()[0][1] + 10, (g.brim_ends()[0][0] - g.E) / 2, 0, False))
-    view_inside(o, g, fig(boxes["INSIDE"], g.L + 10, g.W + 10, g.a, 0, False))
+    TW = 2 * max(g.b, g.F / 2)
+    view_top(o, g, fig(boxes["TOP"], g.L + g.E + 30, TW + 40, (g.L - g.E) / 2 + 6, 6, False))
+    view_under(o, g, fig(boxes["UNDER-BRIM"], g.E + g.si + 40, g.F + 50, (g.si - g.E) / 2 + 8, 4, False))
+    view_inside(o, g, fig(boxes["INSIDE"], g.L + 40, g.W + 40, g.a - 6, 0, False))
     return o
 
 
@@ -565,27 +598,30 @@ def p_embroidery(st, product):
         y = sline(o, 12, y, lab, v, 140, lw=22)
     y = sline(o, 12, y, "Unstructured", st.fam["mesh_guard"]["spec"], 140, lw=22)
     y = sline(o, 12, y, "Corduroy", st.fam["backing_corduroy"]["spec"], 140, lw=22)
-    if st.kind == "cap":                                       # positions on the front + side views
+    if st.kind == "cap":                                       # three views in a row under the text, one scale
         g = CapGeom(st)
-        s = min(60 / (g.W + 10), 50 / (g.h + 20)); fg = Fig(185, 118 + 0, s)
-        view_front(o, g, fg, dims=False)
-        s2 = min(70 / (g.L + g.E + 10), 50 / (g.h + 20)); fs = Fig(240 + g.E * s2 * 0.4, 118, s2)
-        view_side(o, g, fs, dims=False)
+        s_ = min(84 / (g.L + g.E + 20), 84 / (2 * max(g.b, g.F / 2) + 12), 58 / (g.h + g.G + 16))
+        base = 112 + g.h * s_ + 6                               # crown tops just under the text (text ends ~y 105)
+        figs = {"front": Fig(60, base, s_), "side": Fig(150 - (g.L - g.E) / 2 * s_, base, s_), "back": Fig(240, base, s_)}
+        view_front(o, g, figs["front"], dims=False)
+        view_side(o, g, figs["side"], dims=False)
+        view_back(o, g, figs["back"], dims=False)
+        for nm, x in (("FRONT", 60), ("SIDE (wearer's left; right side = mirror)", 150), ("BACK", 240)):
+            o.append(t(x, base + (g.G + 22) * s_ + 4, nm, 1.7, 700, INK, "middle"))
+        where = {"front": ("front", (0, g.h * 0.45)), "left_side": ("side", (g.L * 0.5, g.h * 0.35))}
         for pos, w, h, fw, fh, ok, note in emb_rows(st):
-            for which, fgx in (("front", fg), ("left_side", fs), ("back", fs)):
-                if pos != which: continue
-                bw, bh = float(val(fw)) * 10, float(val(fh)) * 10
-                if pos == "front": c = (0, g.h * 0.45)
-                elif pos == "left_side": c = (g.L * 0.5, g.h * 0.35)
-                else: c = (g.L - 6, g.h * 0.45)
-                if pos in ("left_side", "back"): bw = min(bw, 60) if pos == "back" else bw
-                x0, y0 = fgx.P((c[0] - bw / 2, c[1] + bh / 2)); x1, y1 = fgx.P((c[0] + bw / 2, c[1] - bh / 2))
-                o.append(f'<rect x="{f(x0)}" y="{f(y0)}" width="{f(x1 - x0)}" height="{f(y1 - y0)}" fill="#EAF3FB" fill-opacity="0.5" stroke="{GUIDE}" stroke-width="0.22" stroke-dasharray="1 0.6"/>')
-                if w is not None:
-                    aw = float(val(w)) * 10; ah = float(val(h)) * 10 if h is not None else min(bh, aw * 0.6)
-                    a0 = fgx.P((c[0] - aw / 2, c[1] + ah / 2)); a1 = fgx.P((c[0] + aw / 2, c[1] - ah / 2))
-                    o.append(f'<rect x="{f(a0[0])}" y="{f(a0[1])}" width="{f(a1[0] - a0[0])}" height="{f(a1[1] - a0[1])}" fill="none" stroke="{RED if ok is False else INK}" stroke-width="0.3"/>')
-        o.append(t(185, 128, "FRONT", 1.7, 700, INK, "middle")); o.append(t(255, 128, "SIDE", 1.7, 700, INK, "middle"))
+            bw, bh = float(val(fw)) * 10, float(val(fh)) * 10
+            if pos == "back":                                  # centred above the strap opening
+                view, c = "back", (0, (g.so_h if st.closure_kind() != "none" else 0) + 4 + bh / 2)
+            elif pos in where: view, c = where[pos]
+            else: continue
+            fgx = figs[view]
+            x0, y0 = fgx.P((c[0] - bw / 2, c[1] + bh / 2)); x1, y1 = fgx.P((c[0] + bw / 2, c[1] - bh / 2))
+            o.append(f'<rect x="{f(x0)}" y="{f(y0)}" width="{f(x1 - x0)}" height="{f(y1 - y0)}" fill="#EAF3FB" fill-opacity="0.5" stroke="{GUIDE}" stroke-width="0.22" stroke-dasharray="1 0.6"/>')
+            if w is not None:
+                aw = float(val(w)) * 10; ah = float(val(h)) * 10 if h is not None else min(bh, aw * 0.6)
+                a0 = fgx.P((c[0] - aw / 2, c[1] + ah / 2)); a1 = fgx.P((c[0] + aw / 2, c[1] - ah / 2))
+                o.append(f'<rect x="{f(a0[0])}" y="{f(a0[1])}" width="{f(a1[0] - a0[0])}" height="{f(a1[1] - a0[1])}" fill="none" stroke="{RED if ok is False else INK}" stroke-width="0.3"/>')
     return o
 
 
@@ -634,6 +670,7 @@ def item_label(st, p):
         return "Style (block)", dict(FIELDS).get(rest, rest.replace("_", " "))
     if p.startswith("cap_frame."):
         _, pos, k = p.split("."); return "Cap-frame limits", f"{POS_NAMES.get(pos, pos)} — max {'width' if 'w_' in k else 'height'} (cm)"
+    if p == "pom_tolerance_cm": return "Measurements", "Tolerance ± (cm), every measurement without its own"
     if p.startswith("block."): return "Sketch constants (drawing only)", p.split(".")[1].replace("_cm", " (cm)").replace("_", " ")
     top = p.split(".")[0]
     return "Every cap (family)", " — ".join(x.replace("_cm", " (cm)").replace("_", " ") for x in p.split("."))
