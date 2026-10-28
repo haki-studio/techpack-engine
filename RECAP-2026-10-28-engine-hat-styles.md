@@ -8,8 +8,8 @@ Branch `engine-hat-styles` off 3bb01868, worktree `~/te-hat-styles`. GitHub susp
 - [x] families/cap/family.yaml + styles.yaml (9 styles) — `capstyle.py check` → 9 valid, 296 proposed values across them
 - [x] engine/capstyle.py (load, strict validate, style_for_product, CLI list|show|check|check-project|product)
 - [x] engine/cap_pages.py (H1 style sheet, H2 POM, H3 flats / K1 knit, H4 embroidery, H5 construction+BOM, F1) — renders
-- [ ] intake plan/apply style gate + dispatch build gate + /techpack doc
-- [~] tests red-then-green (drawing tests done: tests/test_cap_drawing.py 29 green; catalogue/intake/dispatch tests open)
+- [x] intake plan/apply style gate + dispatch build gate + /techpack doc (session 3)
+- [x] tests red-then-green (test_cap_drawing.py 30, test_cap_styles.py 59)
 - [ ] independent review, reviews.log, DONE to lead
 
 ## Decisions
@@ -84,3 +84,32 @@ Done + committed (see git log on engine-hat-styles):
    every style renders, proposed on F1) + intake/dispatch tests, red then green.
 3. heavy-jobs = 0 → full suite; commit; independent reviewer subagent on the exact sha; append reviews.log; SendMessage
    lead-eng-techpack-engine-m2 DONE with sha, test counts, PNG paths.
+
+## Session 3 (builder #3, 2026-10-28) — gates, tests, docs done
+- **intake.py**: new `plan PLAN.json` (check + print, exit 1 on refusal); `apply` runs the same check first and refuses
+  the WHOLE plan before writing anything. A hat garment (cap/hat/trucker/bucket/beanie/snapback) needs `"style": "<key>"`
+  from the catalogue; missing / unknown / wrong-kind → `REFUSED <slug>: ...` naming every valid key. The style lands in
+  STATUS.json (`garment`, `style` via new `status_set.py --field k=v`, mirrored to the board) and brief.md
+  (`- Hat style: asce-dad — ASCE dad cap (crown die SN508, brim die 202)`). `TECHPACK_ROOT` overrides the data root in
+  intake.py, status_set.py and dispatch.sh (tests use tmp dirs).
+- **dispatch.sh build**: runs `capstyle.py check-project <slug> --root ${TECHPACK_ROOT:-$MAIN}` before anything else;
+  refusal → message on stderr, return 2, no session. Projects with no garment recorded pass (no existing hat projects
+  in main, checked).
+- **tests/test_cap_styles.py** (59): catalogue (9 keys validate; refusals name every key; wrong-kind; non-hats need
+  none; 8 validator errors; broken yaml won't load; conflicts proposed; 19 live product names → style; every style
+  renders, knit K1 vs H3, F1 lists every proposed value) + intake gate (plan/apply refuse and write nothing; unknown
+  style; STATUS + brief + project_info round trip) + dispatch gate. **Red:** 9 failed before the gates (7 gate tests +
+  2 test-side needle mistakes fixed); **mutation red:** 29 failed with check_choice / leaf validation / product match
+  disabled; green 59.
+- **Docs**: SKILL.md step 3 (hat style required, `capstyle.py list` / `product`, ASK the operator "Which hat style is X?
+  Pick one: ...") + step 4 (`intake.py plan` first, table gets a hat-style column); docs/FAMILIES.md "Hats" section;
+  LESSONS H1 (new section H); CLAUDE.md layout line.
+- **Looked at** (4 PNGs): beanie-cuff K1 fine; bucket H3 — E label sat on the brim's bottom edge in all 3 side views
+  (dim drawn right→left puts the label above the line) → fixed (tip→crown), and the H3 label test now covers the bucket
+  (red 1 → green); asce-dad H1 + F1 fine. Note for the lead: F1 quotes the current physical seam tape
+  'HAKISTOP · WRITE YOUR OWN STORY' (asking to replace it) — factual, left as is.
+- Gotcha: the red run of the intake tests (before TECHPACK_ROOT existed) wrote `projects/probe-cap/` into the worktree;
+  deleted, and the green run leaves the tree + ~/.techpack/board clean.
+- **Full suite** (heavy-jobs 0): 705 passed, 2 failed — both `test_konpeito_gates.py` soot tests, FileNotFoundError
+  `out/stitch/HAKI_KJ_07a_front-leg-trail-upper.json` (gitignored Konpeito build output absent in this fresh worktree;
+  branch touches no konpeito/digitize file). Hat tests: test_cap_styles 59 + test_cap_drawing 30 green.
