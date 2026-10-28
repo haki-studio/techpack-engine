@@ -65,10 +65,13 @@ EOF
 
 launch() {    # launch <role> <slug> [arg]
   local role=$1 slug=$2 arg="${3:-}" name="tp-$1-$2" wt="$MAIN/.claude/worktrees/tp-$2" agent prompt next
-  [ -d "$MAIN/projects/$slug" ] || git -C "$MAIN" cat-file -e "origin/main:projects/$slug" 2>/dev/null \
+  local data="${TECHPACK_ROOT:-$MAIN}"   # TECHPACK_ROOT: data root override, for tests
+  [ -d "$data/projects/$slug" ] || git -C "$MAIN" cat-file -e "origin/main:projects/$slug" 2>/dev/null \
     || { echo "no such product: projects/$slug" >&2; return 2; }
   case $role in
     build)  agent=techpack-builder
+            # a hat must name a catalogue style before anyone builds it (LESSONS H1)
+            python3 "$R/engine/capstyle.py" check-project "$slug" --root "$data" >&2 || return 2
             prompt="Build the tech pack for projects/$slug. Brief: projects/$slug/inputs/brief.md. ${arg}"
             [ "${TECHPACK_STAGED:-1}" = 0 ] || prompt="$prompt
 Staged build: do phase A only (builder rule 13), then hand off with scripts/dispatch.sh stage $slug B." ;;
