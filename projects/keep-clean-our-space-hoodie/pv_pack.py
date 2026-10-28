@@ -1,8 +1,8 @@
-"""Rev K/L pullover pack (factory-facing): K1 factory summary = questions for Mandy, K2 overview, K3 hoop plan + files,
+"""Rev K/L/M pullover pack (factory-facing): K1 factory summary = questions for Mandy, K2 overview, K3 hoop plan + files,
 K4 back badges + hem script, K5 star field rules, K6 block / size chart; then the Rev J badge stitch-detail pages
 (E01-E04, R1) as reference with a banner. Every stitch number is read from result_<tag>_*.json (DST read-back).
 No prices, no machine minutes and no cost thoughts go in here (request-a-supplier-quote: the factory names prices first).
-usage: python3 pv_pack.py [SIZE] -> out/pv/<SIZE>/HAKI_KCOS-PULLOVER_RevL_<SIZE>.pdf + _files.zip"""
+usage: python3 pv_pack.py [SIZE] -> out/pv/<SIZE>/HAKI_KCOS-PULLOVER_RevM_<SIZE>.pdf + _files.zip"""
 import sys, os, glob, json, zipfile, io
 import cairosvg
 import kccore
@@ -14,8 +14,8 @@ import kcdoc as KD, tofu
 SIZE = next((a for a in sys.argv[1:] if a in B.CHART), "M")
 OUT = f"out/pv/{SIZE}"; PG = f"{OUT}/pages"; os.makedirs(PG, exist_ok=True)
 REVJ = os.environ.get("KCOS_REVJ_PDF", "/mnt/c/Users/devin/Desktop/TECH PACKS/2 Keep Clean Our Space hoodie/Keep Clean Our Space hoodie - Rev J - full tech pack - USABLE WITH CAVEAT.pdf")
-MOCK = "inputs/mockup-2026-10-23-hoodie-front-back.png"
-SB.FOOT = "HAKI STUDIOS · Keep Clean Our Space pullover hoodie (washed black) · Rev L · 27 Oct 2026 · size M"
+MOCK = "inputs/mockups-3-2026-10-27.png"   # Rev M: "Mockups 3", Nick approved 27 Oct
+SB.FOOT = "HAKI STUDIOS · Keep Clean Our Space pullover hoodie (washed black) · Rev M · 28 Oct 2026 · size M"
 plan = json.load(open(f"{OUT}/plan_allover.json"))
 R = {}
 for fp in glob.glob(f"{OUT}/result_allover_*.json"): R.update(json.load(open(fp)))
@@ -34,7 +34,7 @@ def wrap(o, x, y, text, size=2.5, w=400, fill=INK, width=125, lh=None):
 
 def k1():
     o = header("K1 · FACTORY SUMMARY — please answer these before sampling",
-               "Rev L: washed-black kangaroo-pocket pullover hoodie, Come Over block, Hidden Inventory fabric + wash. Embroidered on cut pieces before sewing.", "K1")
+               "Rev M: washed-black kangaroo-pocket pullover hoodie, Come Over block, Hidden Inventory fabric + wash. Embroidered on cut pieces before sewing.", "K1")
     y = 33
     o.append(t(12, y, "HOOPINGS PER PIECE (our plan, size M, field up to 340 x 505 mm each, frame can be turned 90 degrees)", 2.8, 700)); y += 5
     cols = (12, 52, 70, 150, 178, 200)
@@ -59,7 +59,7 @@ def k1():
     y += 3
     o.append(t(12, y, "QUESTIONS", 2.8, 700)); y += 5
     sr = R.get("SR-H1", {})
-    Q = [("1. Hoopings + frame.", f"How many hoopings do you need for each piece (front, back, pocket, sleeve, hood)? Our plan is {plan['total_hoopings']} per hoodie (table above); on a 340 x 505 field the pocket and sleeve hoopings need the frame turned 90 degrees. The back (505 mm tall) and sleeve (500 mm wide) hoopings do NOT fit a 400 x 450 frame either way round. You confirmed a 340 x 505 mm field in one hooping, but your frames are 300 x 300 and 400 x 450: which frame sews 340 x 505? Please answer this before digitizing or sewing: if no frame takes 340 x 505, we re-plan the hoopings for your frame."),
+    Q = [("1. Hoopings + frame.", f"How many hoopings do you need for each piece (front, back, pocket, sleeve, hood)? Our plan is {plan['total_hoopings']} per hoodie (table above); on a 340 x 505 field the pocket and left sleeve hoopings need the frame turned 90 degrees. The back hoopings (up to 486 mm tall) do NOT fit a 400 x 450 frame either way round. You confirmed a 340 x 505 mm field in one hooping, but your frames are 300 x 300 and 400 x 450: which frame sews 340 x 505? Please answer this before digitizing or sewing: if no frame takes 340 x 505, we re-plan the hoopings for your frame."),
          ("2. Wash.", "Please use the same fabric and the same wash as our Hidden Inventory Hoodie. What is that wash called, and is it done AFTER sewing? Shrinkage % in length and width? Does it change the thread colours or flatten the 3D puff? Our files assume 40wt polyester thread (page R1): is that what you use?"),
          ("3. How you price embroidery.", f"Per 1,000 stitches, per trim, per hooping, or per piece? Please quote one sleeve file as the example: SR-H1 ({sr.get('stitches', 0):,} stitches, {sr.get('trims', 0)} trims, 1 colour). Then please quote (a) the embroidery only and (b) the whole hoodie with embroidery, at 100, 200 and 300 pcs."),
          ("4. Oversized blocks.", "Will you embroider oversized rough-cut blocks and recut them to the pattern after (yes / no)? If no, what allowance do you add for pull-in?"),
@@ -104,7 +104,7 @@ def k3():
 
 def k4():
     TX = kccore.TEXT
-    o = header("K4 · BACK BADGES + HEM SCRIPT", "The 4 badges are the Rev J badges unchanged (same stitch files, colours, 3D puff), moved from the jacket fronts to the back. Stitch detail: reference pages E01-E04, R1.", "K4")
+    o = header("K4 · BACK BADGES + HEM SCRIPT", "The 4 badges are the Rev J badges unchanged (same stitch files, colours, 3D puff), placed where the approved mockup has them. Stitch detail: reference pages E01-E04, R1.", "K4")
     import pv_view as V
     o2, (bx, by, bw, bh) = V.piece_svg("BK", pad=10, label=True)
     svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{bx} {by} {bw} {bh}">' + "".join(o2) + "</svg>"
@@ -122,15 +122,15 @@ def k4():
     o.append(t(x0, y, f"Text: {s['text']}", 2.4)); y += 3.4
     o.append(t(x0, y, f"White satin, {s['font']}, {s['width_mm']:.0f} mm wide, cap height {s['cap_height_mm']:.1f} mm", 2.2, 400, MUTED)); y += 3.2
     o.append(t(x0, y, f"Centre x {s['centre_mm'][0]:+.0f}, y {s['centre_mm'][1]:.0f} mm (from pocket centre / top edge); file PK-H1", 2.2, 400, MUTED)); y += 6
-    for line in ("Text is set from the Rev J files, NOT copied from the new mockup:",
-                 "the mockup is an AI render; its Korean line is mirror-reversed and",
-                 "its Chinese line is misspelt. Please sew the text exactly as in the files."):
+    for line in ("Text is set from the Rev J files, NOT copied from the mockup:",
+                 "the mockup is a render; its Korean and Chinese lines are not",
+                 "the approved spelling. Please sew the text exactly as in the files."):
         o.append(t(x0, y, line, 2.3, 600, RED)); y += 3.4
     return o
 
 def k5():
     st = plan["stars"]; n = plan["star_counts"]
-    o = header("K5 · STAR FIELD — white stars all over (body, sleeves, hood, pocket)", f"{sum(n.values())} stars at size M, Rev J star shapes: front, sleeves, pocket ~{st['density_per_m2']} per m²; back + hood HALF that. Every piece has the same star sizes and the same share of 4-point sparkles (~{st['plus_share']*100:.0f}%).", "K5")
+    o = header("K5 · STAR FIELD — white stars placed as in the approved mockup", f"{sum(n.values())} stars at size M (Rev J star shapes), each one placed where the approved mockup (page K2) shows it. About {st['plus_share']*100:.0f}% are 4-point sparkles, the rest dots.", "K5")
     y = 34
     o.append(t(12, y, "Stars per piece (size M)", 2.8, 700)); y += 5
     pp = st.get("per_panel", {})
@@ -142,18 +142,19 @@ def k5():
         y += 4
     y += 4; o.append(t(12, y, "Layout rules (the files already follow them)", 2.8, 700)); y += 5
     k = plan["keep"]
-    for r in (f"No star within {k['split']:.0f} mm of a hoop split line (so a small hooping shift never cuts or doubles a star).",
+    for r in ("Star positions follow the mockup by proportion of each piece (the mockup is not to scale). A star that fell on a seam allowance, a hoop split or a badge was moved up to 10 mm, or left out.",
+              f"No star within {k['split']:.0f} mm of a hoop split line (so a small hooping shift never cuts or doubles a star).",
               f"No star within {k['edge']:.0f} mm of a cut edge (10 mm seam allowance + 8 mm clear) [proposed — confirm your seam allowance].",
               f"No star under the kangaroo pocket or within {k['under_pocket']:.0f} mm of where it is sewn; the pocket carries its own stars.",
               f"Hood: no star within {k['face']:.0f} mm of the face edge (turn-back) [proposed]. Pocket: {k['pocket']:.0f} mm from its cut edge.",
               f"Stars keep {k['objects']:.0f} mm away from every badge and from the hem script.",
-              "Back: no stars in the bottom band above the hem rib (about 6-7 cm), on purpose (Rev L: the thin bottom hooping was removed). Front stars still run to the hem.",
+              "Hoopings cover only the area that carries embroidery; the rest of each piece is plain.",
               "Back files: BK-L = the half with the Japanese burst + Chinese capsule badges; BK-R = the half with KEEP CLEAN OUR SPACE + the Korean oval.",
               "Rib (hem, cuffs) is not embroidered.",
               "Please hoop oversized rough-cut blocks and recut to the pattern after embroidery, if you can (question 4)."):
         y = wrap(o, 14, y, "• " + r, 2.4, width=150); y += 1
     im, h = embed_svg_png(f"{OUT}/stitch_allover/HAKI_KCOS-PO_SR-H1_M_preview.png", 190, 32, 90)
-    o.append(im); o.append(t(190, 34 + h, "Read-back render of file SR-H1 (right sleeve, top hooping)", 2.0, 400, MUTED))
+    o.append(im); o.append(t(190, 34 + h, "Read-back render of file SR-H1 (right sleeve)", 2.0, 400, MUTED))
     return o
 
 def k6():
@@ -181,7 +182,7 @@ def k6():
 
 def build():
     pages = [("K1", k1()),
-             ("K2", img_page("K2", "K2 · OVERVIEW — target look (mockup) and our size-M layout", "Mockup = look and placement only (AI render: do not copy its lettering). Layout = what the stitch files sew.",
+             ("K2", img_page("K2", "K2 · OVERVIEW — target look (mockup) and our size-M layout", "Mockup (approved) = look and placement (do not copy its lettering). Layout = what the stitch files sew.",
                              MOCK, w=200, extra=None)),
              ("K3", k3()), ("K4", k4()), ("K5", k5()), ("K6", k6())]
     from pypdf import PdfWriter, PdfReader
@@ -197,13 +198,13 @@ def build():
         bp = io.BytesIO(cairosvg.svg2pdf(bytestring=ban.encode())); banner = PdfReader(bp).pages[0]
         for i in (16, 17, 18, 19, 25):         # E01-E04, R1
             p = rj.pages[i]; p.merge_page(banner); wr.add_page(p)
-    pdf = f"{OUT}/HAKI_KCOS-PULLOVER_RevL_{SIZE}.pdf"; wr.write(pdf)
-    z = f"{OUT}/HAKI_KCOS-PULLOVER_RevL_{SIZE}_files.zip"
+    pdf = f"{OUT}/HAKI_KCOS-PULLOVER_RevM_{SIZE}.pdf"; wr.write(pdf)
+    z = f"{OUT}/HAKI_KCOS-PULLOVER_RevM_{SIZE}_files.zip"
     with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.write(pdf, os.path.basename(pdf))
         for fp in sorted(glob.glob(f"{OUT}/stitch_allover/*")):
             if fp.endswith((".dst", ".pes", "_preview.png")): zf.write(fp, "stitch_files/" + os.path.basename(fp))
-        zf.writestr("README.txt", "Keep Clean Our Space pullover hoodie, Rev L, size M.\nOne DST + PES per hooping (name = piece-hooping), plus a preview of each.\n"
+        zf.writestr("README.txt", "Keep Clean Our Space pullover hoodie, Rev M, size M.\nOne DST + PES per hooping (name = piece-hooping), plus a preview of each.\n"
                     "Pieces: FR front, BK back, PK kangaroo pocket, SR/SL sleeves, HR/HL hood sides. Hooping plan and placement: PDF pages K3-K4.\n"
                     "Other sizes are built after your answers on page K1 (your pattern, wash, hoopings).\n")
     print(pdf, z, TOT)
