@@ -10,6 +10,7 @@ import sheet as SB
 from sheet import t, header, doc, embed_svg_png, INK, MUTED, RED, ORANGE, GUIDE
 import pv_block as B
 import kcdoc as KD, tofu
+import pv_bom as BOM
 
 SIZE = next((a for a in sys.argv[1:] if a in B.CHART), "M")
 OUT = f"out/pv/{SIZE}"; PG = f"{OUT}/pages"; os.makedirs(PG, exist_ok=True)
@@ -57,14 +58,15 @@ def k1():
         o.append(t(cols[3], y, f"{sum(v['stitches'] for _, v in fs):,}", 2.3)); o.append(t(cols[4], y, str(sum(v['trims'] for _, v in fs)), 2.3))
         o.append(t(cols[5], y, ", ".join(k for k, _ in fs), 2.1, 400, MUTED)); y += 4.2
     o.append(t(cols[0], y, "Total", 2.4, 700)); o.append(t(cols[1], y, str(plan["total_hoopings"]), 2.4, 700))
-    o.append(t(cols[3], y, f"{TOT['stitches']:,}", 2.4, 700)); o.append(t(cols[4], y, str(TOT["trims"]), 2.4, 700)); y += 8
+    o.append(t(cols[3], y, f"{TOT['stitches']:,}", 2.4, 700)); o.append(t(cols[4], y, str(TOT["trims"]), 2.4, 700)); y += 6     # 8 -> 6: room for the Labels row, Q6 still clears the footer
     # founder 27 Oct: "use the same fabric as hidden inventory + the same wash". Lines copied verbatim from the Hidden
     # Inventory Hoodie tech pack (14/09/2025) BOM; that pack has no wash line, so the wash is named, not specified (Q2).
-    o.append(t(12, y, "FABRIC + WASH (same as our Hidden Inventory Hoodie, which you made for us; wording from its BOM)", 2.8, 700)); y += 4.6
-    for h, q in (("Self", "French Terry/Fleece. 350 GSM. 100% Cotton. Finishing: Brushed on reverse side. Colour: washed black."),
-                 ("Rib (cuffs + body hem)", "Rib Knit 1x1. 380 GSM. 2 Way strechable. 95% Cotton 5% Elastane. Colour: washed black."),
+    o.append(t(12, y, "FABRIC + WASH (same as our Hidden Inventory Hoodie, which you made for us; wording from its BOM) + LABELS", 2.8, 700)); y += 4.6
+    # fabric lines + labels from pv_bom (one source): the care label is picked from the Rev M self fabric (100 % cotton)
+    for h, q in (*BOM.FABRIC_ROWS,
                  ("Wash", "The same wash as our Hidden Inventory Hoodie (question 2)."),
-                 ("Block", "Your Come Over hoodie pattern and measurements (page K6), not Hidden Inventory.")):
+                 ("Block", "Your Come Over hoodie pattern and measurements (page K6), not Hidden Inventory."),
+                 *BOM.label_rows()):
         o.append(t(12, y, h, 2.4, 700)); o.append(t(52, y, q, 2.4)); y += 3.8
     y += 2
     o.append(t(12, y, "QUESTIONS", 2.8, 700)); y += 5
@@ -217,8 +219,10 @@ def build():
         zf.write(pdf, os.path.basename(pdf))
         for fp in sorted(glob.glob(f"{OUT}/stitch_allover/*")):
             if fp.endswith((".dst", ".pes", "_preview.png")): zf.write(fp, "stitch_files/" + os.path.basename(fp))
+        for n in BOM.export_labels(f"{OUT}/labels"): zf.write(f"{OUT}/labels/{n}", "labels/" + n)   # Haki standard labels
         zf.writestr("README.txt", "Keep Clean Our Space pullover hoodie, Rev M, size M.\nOne DST + PES per hooping (name = piece-hooping), plus a preview of each.\n"
                     "Pieces: FR front, BK back, PK kangaroo pocket, SR/SL sleeves, HR/HL hood sides. Hooping plan and placement: PDF pages K3-K4.\n"
+                    f"labels/: Haki standard main label + the {BOM.LS.care_fibre(BOM.CARE_SHELL)} care label (page K1).\n"
                     "Other sizes are built after your answers on page K1 (your pattern, wash, hoopings).\n")
     print(pdf, z, TOT)
 
