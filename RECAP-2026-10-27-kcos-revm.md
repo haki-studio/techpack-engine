@@ -39,3 +39,5 @@ Rev L (rule-based halving) is superseded and must NOT be sent. Rev M = stitch fi
 - Gotcha: pv_pack globs result_allover_*.json; stale per-piece result files from an older run override a new combined one. Moved the old ones to out/pv/M/stale-c38457c/.
 - Gotcha: the low-memory reaper killed a background pv_pack; run it in the foreground after `heavy-jobs` = 0 (38 s).
 - Founder open: star size (library 3.8-6.3 mm vs mockup reads ~1.5x) — look choice, not a blocker.
+- Reviewer REQUEST-CHANGES d04a04e (K1: Q4 label overlap, Q6 into footer) → fixed → REVIEW: APPROVE 7104225.
+- Shipped: TECH PACKS Rev M PDF + zip (Rev L → older versions); card kcos-revm-send-mandy filed. Branch not pushed (no GitHub access to techpack-engine from here).
