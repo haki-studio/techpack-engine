@@ -18,7 +18,7 @@ from shapely.geometry import Polygon, Point, LineString
 import pv_block as B
 
 SIZE = next((a for a in sys.argv[1:] if a in B.CHART), "M")
-MOCK = "/mnt/c/Users/devin/Desktop/HakiStop/Designs/Playtime/Keep Clean Our Space/Mockups 3.png"
+MOCK = "inputs/mockups-3-2026-10-27.png"   # copy of Desktop/HakiStop/Designs/Playtime/Keep Clean Our Space/Mockups 3.png
 STARS = "inputs/mockups-3-stars.json"   # from inputs/mockups-3-det2.py (bright-blob detector on Mockups 3)
 OUT = f"out/pv/{SIZE}"; os.makedirs(OUT, exist_ok=True)
 

@@ -33,6 +33,8 @@ OBJ_CLEAR = 6.0              # star -> badge / script
 TRIM_MAX = 30.0              # a hoop row thinner than this is trimmed off the star area (saves a hooping)
 TRIM_BY = {"BK": 70.0}       # founder 27 Oct "remove BK-H2": the 59 mm top strip of the back is trimmed, not hooped
 NUDGE_MAX = 10.0             # Rev M: a mockup star may move this far to clear a keep-out / split, else it is dropped
+NUDGE_EDGE = 20.0            # Rev M TD M5: a star on a seam keep-out may move further (inwards) before it is dropped
+BADGE_GAP = 25.0             # Rev M TD M4: JP burst -> CN capsule clear gap, mm (mockup ~25 mm at its body-height scale)
 STAR_GAP = 3.0               # Rev M: min clear gap between two star units
 REV_J = "art_M.pkl"
 OUT = f"out/pv/{SIZE}"; os.makedirs(OUT, exist_ok=True)
@@ -76,6 +78,9 @@ for el in ("01", "02", "03", "04"):
     rs = [r for r in J[src] if r["el"] == el]
     fp = unary_union([r["geom"] for r in rs]); c = fp.envelope.centroid
     tx, ty = M3["badges_mm"][el]; dx, dy = tx - c.x, ty - c.y
+    if el == "03":   # Rev M TD M4: badges keep Rev J size but y is placed by proportion, so keep the mockup's JP -> CN gap
+        gap = fp.bounds[1] + dy - dict(objs["BK"])["01"].bounds[3]
+        if gap < BADGE_GAP: dy += BADGE_GAP - gap
     area = cut["BK"].buffer(-KEEP_EDGE, join_style=2)
     for _ in range(200):                                   # nudge inwards until the whole badge clears the edge keep-out
         if affinity.translate(fp, dx, dy).within(area): break
@@ -177,28 +182,42 @@ for P in cut:
     plan[P] = cells
 
 def split_lines(P):
+    """Rev M TD M5: only cell edges shared with another cell are hoop splits; a cell's outer edge is just the frame
+    (a star only has to sit inside its cell, checked below)"""
     out = []
     for c in plan[P]:
         x0, y0, x1, y1 = c["box"]
-        out += [LineString([(x0, y0), (x1, y0)]), LineString([(x0, y1), (x1, y1)]), LineString([(x0, y0), (x0, y1)]), LineString([(x1, y0), (x1, y1)])]
+        rest = unary_union([box(*d["box"]) for d in plan[P] if d is not c]).buffer(0.5)
+        for seg in (LineString([(x0, y0), (x1, y0)]), LineString([(x0, y1), (x1, y1)]), LineString([(x0, y0), (x0, y1)]), LineString([(x1, y0), (x1, y1)])):
+            if seg.intersection(rest).length > 1.0: out.append(seg)
     return unary_union(out)
 
 # ---------------------------------------------------------------- star field (Rev M: the mockup's stars, one by one)
 star_meta = dict(source="Mockups 3 (Nick approved 27 Oct 2026)", library_units=len(lib), kinds={k: len(v) for k, v in by_kind.items()},
                  mockup_detected=M3["detected"], mockup_stars=M3["stars"], nudge_max_mm=NUDGE_MAX)
-RINGS = [(0.0, 0.0)] + [(r * math.cos(a * math.pi / 8), r * math.sin(a * math.pi / 8)) for r in np.arange(1.0, NUDGE_MAX + 0.01, 1.0) for a in range(16)]
+RINGS = [(0.0, 0.0)] + [(r * math.cos(a * math.pi / 8), r * math.sin(a * math.pi / 8)) for r in np.arange(1.0, NUDGE_EDGE + 0.01, 1.0) for a in range(16)]
 counts = {}; star_stats = {}; dropped = []; nudges = []
 for P in cut:
     A = allowed[P]
     for _, f in objs[P]: A = A.difference(f.buffer(OBJ_CLEAR))
-    if plan[P]: A = A.intersection(unary_union([box(*c["box"]) for c in plan[P]])).difference(split_lines(P).buffer(SPLIT_CLEAR))
+    cells = unary_union([box(*c["box"]) for c in plan[P]]) if plan[P] else Polygon(); spl = split_lines(P).buffer(SPLIT_CLEAR)
+    if plan[P]: A = A.intersection(cells).difference(spl)
     placed = []; used = []
+    def cause(x, y):   # why a mockup star could not stay where it was (TD M5: every drop gets a reason)
+        p = Point(x, y)
+        if not allowed[P].contains(p): return "seam / edge keep-out" + (" (under the pocket)" if P == "FR" and pocket_fp.buffer(POCKET_CLEAR).contains(p) else "")
+        if any(f.buffer(OBJ_CLEAR).contains(p) for _, f in objs[P]): return "badge / script clearance"
+        if spl.contains(p): return "hoop split clearance"
+        if not cells.contains(p): return "outside the hoop cells"
+        return "star spacing"
     for t in targets[P]:
         i = unit_for(t); ok = None
+        edge = not allowed[P].contains(Point(t["x"], t["y"]))
         for dx, dy in RINGS:
+            if not edge and math.hypot(dx, dy) > NUDGE_MAX: break
             fp = foot(i, t["x"] + dx, t["y"] + dy)
             if fp.buffer(0.5).within(A) and all(fp.distance(g) >= STAR_GAP for g in placed): ok = (dx, dy, fp); break
-        if ok is None: dropped.append(dict(piece=P, x=t["x"], y=t["y"], px=t["px"])); continue
+        if ok is None: dropped.append(dict(piece=P, x=t["x"], y=t["y"], px=t["px"], cause=cause(t["x"], t["y"]))); continue
         dx, dy, fp = ok; placed.append(fp); used.append(i); n = len(placed)
         if dx or dy: nudges.append(round(math.hypot(dx, dy), 1))
         c = cents[i]

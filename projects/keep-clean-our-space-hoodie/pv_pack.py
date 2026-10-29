@@ -20,7 +20,17 @@ plan = json.load(open(f"{OUT}/plan_allover.json"))
 R = {}
 for fp in glob.glob(f"{OUT}/result_allover_*.json"): R.update(json.load(open(fp)))
 ORDER = ("FR", "BK", "PK", "SR", "SL", "HR", "HL")
+def over():
+    """hoopings whose frame (centred on the cell) is bigger than the cut piece in either direction (TD M1)"""
+    out = []
+    for P in ORDER:
+        x0, y0, x1, y1 = plan["pieces_mm"][P]
+        for i, c in enumerate(plan["cells"][P]):
+            fw, fh = c["frame"]; cx, cy = (c["box"][0] + c["box"][2]) / 2, (c["box"][1] + c["box"][3]) / 2
+            if cx - fw / 2 < x0 or cx + fw / 2 > x1 or cy - fh / 2 < y0 or cy + fh / 2 > y1: out.append(B.hoop_name(P, i, len(plan["cells"][P])))
+    return out
 def files(P): return sorted([(k, v) for k, v in R.items() if v["piece"] == P], key=lambda kv: kv[1]["hooping"])
+OVER = over()
 TOT = dict(files=len(R), stitches=sum(v["stitches"] for v in R.values()), trims=sum(v["trims"] for v in R.values()))
 AMB = "#B26A00"
 def threads(v): th = v.get("threads"); return th.get("n", th.get("count", "?")) if isinstance(th, dict) else th
@@ -59,12 +69,12 @@ def k1():
     y += 3
     o.append(t(12, y, "QUESTIONS", 2.8, 700)); y += 5
     sr = R.get("SR-H1", {})
-    Q = [("1. Hoopings + frame.", f"How many hoopings do you need for each piece (front, back, pocket, sleeve, hood)? Our plan is {plan['total_hoopings']} per hoodie (table above); on a 340 x 505 field the pocket and left sleeve hoopings need the frame turned 90 degrees. The back hoopings (up to 486 mm tall) do NOT fit a 400 x 450 frame either way round. You confirmed a 340 x 505 mm field in one hooping, but your frames are 300 x 300 and 400 x 450: which frame sews 340 x 505? Please answer this before digitizing or sewing: if no frame takes 340 x 505, we re-plan the hoopings for your frame."),
+    Q = [("1. Hoopings + frame.", f"How many hoopings do you need for each piece (front, back, pocket, sleeve, hood)? Our plan is {plan['total_hoopings']} per hoodie (table above). On a 340 x 505 field the pocket and left sleeve hoopings need the frame turned 90 degrees. On a 400 x 450 frame every hooping fits without turning EXCEPT the two back hoopings (up to 486 mm tall): there the back needs more hoopings: we will re-plan it for your frame and send the new count. You confirmed a 340 x 505 mm field in one hooping, but your frames are 300 x 300 and 400 x 450: which frame sews 340 x 505? Please answer this before digitizing or sewing: if no frame takes 340 x 505, we re-plan the hoopings for your frame."),
          ("2. Wash.", "Please use the same fabric and the same wash as our Hidden Inventory Hoodie. What is that wash called, and is it done AFTER sewing? Shrinkage % in length and width? Does it change the thread colours or flatten the 3D puff? Our files assume 40wt polyester thread (page R1): is that what you use?"),
-         ("3. How you price embroidery.", f"Per 1,000 stitches, per trim, per hooping, or per piece? Please quote one sleeve file as the example: SR-H1 ({sr.get('stitches', 0):,} stitches, {sr.get('trims', 0)} trims, 1 colour). Then please quote (a) the embroidery only and (b) the whole hoodie with embroidery, at 100, 200 and 300 pcs."),
-         ("4. Oversized blocks.", "Will you embroider oversized rough-cut blocks and recut them to the pattern after (yes / no)? If no, what allowance do you add for pull-in?"),
-         ("5. Strike-off through the wash.", "Before bulk, will you sew one back panel (files BK-L + BK-R: all 4 badges in 3D puff + stars) and put it through the real wash (do the dense 3D puff areas pucker after the wash?), then send photos (daylight, ruler in shot, before and after wash)? Yes / no, and how many days?"),
-         ("6. Your pattern.", "Please send the Come Over hoodie pattern (DXF) or the cut panel sizes. Our outlines come from the published size chart (page K6); we re-place every star and badge on your real pieces before bulk, all sizes.")]
+         ("3. How you price embroidery.", f"Per 1,000 stitches, per trim, per hooping, or per piece? Please quote one sleeve file as the example: SR-H1 ({sr.get('stitches', 0):,} stitches, {sr.get('trims', 0)} trims, 1 colour). Then please quote (a) the embroidery only (b) the whole hoodie with embroidery, and (c) the same without the two hood hoopings (HR-H1, HL-H1), at 100, 200 and 300 pcs."),
+         ("4. Blocks or floating (please choose one).", "Most hoopings are bigger than the cut piece they sit on (" + ", ".join(OVER) + "), so a cut piece cannot be clamped in the frame. Which do you do: (a) embroider oversized rough-cut blocks and recut them to the pattern after, or (b) float the cut piece on hooped tear-away backing? If (a), what allowance do you add for pull-in?"),
+         ("5. Strike-off through the wash.", "Before bulk, will you sew one back panel (files BK-L + BK-R: all 4 badges in 3D puff + stars) and put it through the real wash (do the dense 3D puff areas pucker after the wash?), then send photos (daylight, ruler in shot, before and after wash)? Please also sew file SR-H1 (right sleeve) on a scrap of the same fabric and wash it with the panel: it carries our smallest stars and dots. Yes / no, and how many days?"),
+         ("6. Your pattern.", "Please send the Come Over hoodie pattern (DXF) or the cut panel sizes. Our outlines come from the published size chart (page K6); we re-place every star and badge on your real pieces before bulk, all sizes. Also: how wide is the finish on the kangaroo pocket openings (the script ends near the right opening)? Is the hood lined, and how many panels is it?")]
     for h, q in Q:
         o.append(t(12, y, h, 2.6, 700)); y = wrap(o, 52, y, q, 2.45, width=140); y += 1.5
         o.append(f'<line x1="52" y1="{y}" x2="{SB.SW-12}" y2="{y}" stroke="#CFCFCF" stroke-width="0.2"/>'); o.append(t(52, y - 0.6, "Answer:", 1.9, 400, MUTED)); y += 4
@@ -95,7 +105,7 @@ def k3():
             y += 3.4
     y += 2
     for line in ("Art centre = file origin, in mm. Front / back: x from CF / CB, + = to the right as the piece lies face up (as drawn),",
-                 "y down from the HPS line. Sleeves: x from the sleeve centre line, y from the cap top. Hood: x from the face",
+                 "y down from the HPS line. Sleeves: x from the sleeve centre line (front half = -x on SR, +x on SL, as drawn), y from the cap top. Hood: x from the face",
                  "edge, y from the crown. Pocket: x from its centre, y from its top edge.",
                  "'puff' = the file has a machine PAUSE to lay 3 mm foam before the puff stops (same procedure as Rev J).",
                  "Every number is read back from the written DST. Max stitch < 7.5 mm. Max 12 colours per file (your limit)."):
@@ -146,12 +156,13 @@ def k5():
               f"No star within {k['split']:.0f} mm of a hoop split line (so a small hooping shift never cuts or doubles a star).",
               f"No star within {k['edge']:.0f} mm of a cut edge (10 mm seam allowance + 8 mm clear) [proposed — confirm your seam allowance].",
               f"No star under the kangaroo pocket or within {k['under_pocket']:.0f} mm of where it is sewn; the pocket carries its own stars.",
-              f"Hood: no star within {k['face']:.0f} mm of the face edge (turn-back) [proposed]. Pocket: {k['pocket']:.0f} mm from its cut edge.",
+              f"Hood: no star within {k['face']:.0f} mm of the face edge (turn-back) [proposed]. Hood star positions are approximate until we have your hood pattern [proposed]. Pocket: {k['pocket']:.0f} mm from its cut edge.",
+              "Sleeves are NOT a mirror pair: each sleeve's front half and back half carry different stars. Front half = the side towards the front notch.",
               f"Stars keep {k['objects']:.0f} mm away from every badge and from the hem script.",
               "Hoopings cover only the area that carries embroidery; the rest of each piece is plain.",
               "Back files: BK-L = the half with the Japanese burst + Chinese capsule badges; BK-R = the half with KEEP CLEAN OUR SPACE + the Korean oval.",
               "Rib (hem, cuffs) is not embroidered.",
-              "Please hoop oversized rough-cut blocks and recut to the pattern after embroidery, if you can (question 4)."):
+              "Most hoopings are bigger than the cut piece: blocks or floating, please choose in question 4."):
         y = wrap(o, 14, y, "• " + r, 2.4, width=150); y += 1
     im, h = embed_svg_png(f"{OUT}/stitch_allover/HAKI_KCOS-PO_SR-H1_M_preview.png", 190, 32, 90)
     o.append(im); o.append(t(190, 34 + h, "Read-back render of file SR-H1 (right sleeve)", 2.0, 400, MUTED))
@@ -191,6 +202,8 @@ def build():
         svg = tofu.check(doc(o), k); cairosvg.svg2pdf(bytestring=svg.encode(), write_to=f"{PG}/{k}.pdf")
         cairosvg.svg2png(bytestring=svg.encode(), write_to=f"{PG}/prev_{k}.png", output_width=2000)
         wr.append(f"{PG}/{k}.pdf")
+    if not os.path.exists(REVJ) and not os.environ.get("KCOS_DRAFT"):   # never ship a pack without the badge stitch detail
+        sys.exit(f"Rev J reference pack not readable: {REVJ} (set KCOS_DRAFT=1 for a preview without pages E01-E04, R1)")
     if os.path.exists(REVJ):
         rj = PdfReader(REVJ)
         ban = doc([f'<rect x="0" y="0" width="{SB.SW}" height="9" fill="#B3261E"/>',
