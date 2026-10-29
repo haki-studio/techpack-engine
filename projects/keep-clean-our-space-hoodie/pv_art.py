@@ -1,4 +1,8 @@
-"""Rev K pullover art + hoop plan, one size (default M). usage: python3 pv_art.py [SIZE] [zoned]
+"""Rev K/L/M pullover art + hoop plan, one size (default M). usage: python3 pv_art.py [SIZE]
+Rev M (2026-10-27, Nick approved "Mockups 3"): badges, script and EVERY star sit where the approved mockup has them
+(mock3.py maps mockup px -> garment mm by panel proportion). No density rule, no random placement: each mockup star becomes
+the Rev J library unit of its kind (plus / dot) at its size rank. A star that lands in a keep-out or on a hoop split is
+nudged up to NUDGE_MAX mm, else dropped and counted. Hoopings only cover the area that carries art.
 - 4 back badges = the Rev J badge regions UNCHANGED (art_M.pkl from Rev J, elements 01-04: text 宇宙をきれいに,
   KEEP CLEAN OUR SPACE, 不要世界污染, 우리들 소중한 우주! - kccore.TEXT; the new mockup's lettering is AI and its Korean is
   mirror-reversed, td-chair C-02), translated (never rotated or rescaled) to the new mockup's back positions.
@@ -8,7 +12,7 @@
   SPLIT_CLEAR of a split line, none within KEEP_EDGE of a cut edge, none under the pocket (td-chair-r1 G-03/G-05).
 - hoop plan: every piece cut into cells no bigger than the 340 x 505 mm field (either way round); split lines may not
   cross a badge or the script (+ SPLIT_CLEAR). Fewest hoopings first, then the widest clearance.
-"zoned" = the fallback (founder card): stars at half density, only hood, shoulders / upper back, upper sleeves, top front."""
+Rev L's density rule and "zoned" fallback are gone (Mockups 3 replaces both)."""
 import sys, json, math, pickle, random, itertools, os
 import numpy as np
 from shapely.geometry import Polygon, box, Point, LineString, MultiPolygon
@@ -18,8 +22,7 @@ import pv_block as B
 import kclettering as KL, kcmotifs as KM
 
 SIZE = next((a for a in sys.argv[1:] if a in B.CHART), "M")
-ZONED = "zoned" in sys.argv
-TAG = "zoned" if ZONED else "allover"
+TAG = "allover"
 HOOP = (340.0, 505.0)        # Mandy: 340 x 505 single hooping confirmed (factory.json single_hooping_confirmed_mm.front)
 KEEP_EDGE = 18.0             # cut edge -> star: 10 SA + 8 clear [proposed, td-chair G-03 opinion]
 KEEP_FACE = 40.0             # hood face edge: 30 turn-back + 10 [proposed]
@@ -28,18 +31,20 @@ SPLIT_CLEAR = 10.0           # no star within 10 mm of a hoop split (td-chair-r1
 POCKET_CLEAR = 10.0          # no star under the pocket or within 10 mm of its edge
 OBJ_CLEAR = 6.0              # star -> badge / script
 TRIM_MAX = 30.0              # a hoop row thinner than this is trimmed off the star area (saves a hooping)
+TRIM_BY = {"BK": 70.0}       # founder 27 Oct "remove BK-H2": the 59 mm top strip of the back is trimmed, not hooped
+NUDGE_MAX = 10.0             # Rev M: a mockup star may move this far to clear a keep-out / split, else it is dropped
+NUDGE_EDGE = 20.0            # Rev M TD M5: a star on a seam keep-out may move further (inwards) before it is dropped
+BADGE_GAP = 25.0             # Rev M TD M4: JP burst -> CN capsule clear gap, mm (mockup ~25 mm at its body-height scale)
+STAR_GAP = 3.0               # Rev M: min clear gap between two star units
 REV_J = "art_M.pkl"
 OUT = f"out/pv/{SIZE}"; os.makedirs(OUT, exist_ok=True)
+M3 = json.load(open(f"{OUT}/mock3_targets.json"))            # run mock3.py first
 
 KL.FONTS["sc"] = ("SourceSerif4-Italic[opsz,wght].ttf", 700)
 SCRIPT = "SEE YOU SPACE COWBOY..."
 SCRIPT_W = 200.0             # mockup: ~209 mm wide at M (front 1.49 mm/px); 200 keeps it inside the pocket keep-out
 
-# mockup back view (px, 1307 x 684 render): CB x 985, neck y 150, x 1.63 mm/px (chest 635 / 390 px), y 1.35 mm/px
-BADGE_PX = {"01": (871, 238), "02": (1092, 258), "03": (859, 410), "04": (1055, 472)}
-def back_mm(px, py): return ((px - 985) * 1.63, (py - 150) * 1.35)
 
-rnd = random.Random(20261023 + (7 if ZONED else 0))
 J = pickle.load(open(REV_J, "rb"))
 cut = B.pieces(SIZE)
 
@@ -63,11 +68,6 @@ for P, g in cut.items():
     if P == "HL": a = a.difference(box(-KEEP_FACE, -50, 50, 500))
     if P == "FR": a = a.difference(pocket_fp.buffer(POCKET_CLEAR))
     allowed[P] = a
-if ZONED:   # fallback: hood, shoulders / upper back, upper sleeves, light top front
-    allowed["BK"] = allowed["BK"].intersection(box(-999, -999, 999, 230))
-    allowed["FR"] = allowed["FR"].intersection(box(-999, -999, 999, 170))
-    for P in ("SR", "SL"): allowed[P] = allowed[P].intersection(box(-999, -999, 999, 260))
-    allowed["PK"] = Polygon()
 
 # ---------------------------------------------------------------- badges (Rev J, unchanged) + script
 items = {P: [] for P in cut}
@@ -77,7 +77,10 @@ for el in ("01", "02", "03", "04"):
     src = "FR" if el in ("01", "03") else "FL"
     rs = [r for r in J[src] if r["el"] == el]
     fp = unary_union([r["geom"] for r in rs]); c = fp.envelope.centroid
-    tx, ty = back_mm(*BADGE_PX[el]); dx, dy = tx - c.x, ty - c.y
+    tx, ty = M3["badges_mm"][el]; dx, dy = tx - c.x, ty - c.y
+    if el == "03":   # Rev M TD M4: badges keep Rev J size but y is placed by proportion, so keep the mockup's JP -> CN gap
+        gap = fp.bounds[1] + dy - dict(objs["BK"])["01"].bounds[3]
+        if gap < BADGE_GAP: dy += BADGE_GAP - gap
     area = cut["BK"].buffer(-KEEP_EDGE, join_style=2)
     for _ in range(200):                                   # nudge inwards until the whole badge clears the edge keep-out
         if affinity.translate(fp, dx, dy).within(area): break
@@ -102,7 +105,7 @@ b0 = KL.ink_bounds(gl); k = SCRIPT_W / (b0[2] - b0[0])
 gl = set_sc(SCRIPT, 20.0 * k, 0.6 * k)
 b0 = KL.ink_bounds(gl); sh = b0[3] - b0[1]
 pk_area = cut["PK"].buffer(-KEEP_POCKET, join_style=2)
-H = B.P["pocket_h"]; sx, sy = 70.0, H - KEEP_POCKET - 4 - sh / 2      # mockup: lower right of the pocket, just above the rib
+H = B.P["pocket_h"]; sx, sy = M3["script_mm"][0], H - KEEP_POCKET - 4 - sh / 2   # Mockups 3: lower right of the pocket, just above the rib
 for _ in range(300):
     g2 = KL.place(gl, sx, sy, 0.0); fp = unary_union([g for _, g in g2])
     if fp.within(pk_area): break
@@ -114,9 +117,24 @@ script_meta = dict(text=SCRIPT, centre_mm=(round(sx, 1), round(sy, 1)), width_mm
                    cap_height_mm=round((lambda b: b[3] - b[1])(KL.glyph("sc", "E", 20.0 * k)[0].bounds), 1),
                    font="Source Serif 4 Italic, weight 700 (OFL)", min_stroke_note="satin columns from the font strokes (kcsatin)")
 
+# ---------------------------------------------------------------- star library + Rev M targets
+lib = list(units([r for r in J["BK"] if r["el"] == "06"]).values())
+cents = [unary_union([r["geom"] for r in u]).centroid for u in lib]
+def u_size(u): b = unary_union([r["geom"] for r in u]).bounds; return max(b[2] - b[0], b[3] - b[1])
+kind = ["SPK" if any(r["grp"] == "SPK" for r in u) else "DOT" for u in lib]
+by_kind = {k: sorted([i for i in range(len(lib)) if kind[i] == k], key=lambda i: u_size(lib[i])) for k in ("SPK", "DOT")}
+def unit_for(t): L_ = by_kind[t["kind"]]; return L_[min(len(L_) - 1, int(t["q"] * len(L_)))]
+targets = {P: [t for t in M3["targets"] if t["piece"] == P] for P in cut}
+def foot(i, x, y): c = cents[i]; return affinity.translate(unary_union([r["geom"] for r in lib[i]]), x - c.x, y - c.y)
+# the hoop plan covers the art that is there: stars (within the keep-outs, so a nudge can still land) + badges/script
+plan_area = {P: unary_union([foot(unit_for(t), t["x"], t["y"]).buffer(2.0) for t in targets[P]]).intersection(allowed[P]) if targets[P]
+             else Polygon() for P in cut}
+star_obs = {P: [("star", foot(unit_for(t), t["x"], t["y"])) for t in targets[P]] for P in cut}
+
 # ---------------------------------------------------------------- hoop plan
-def cells_for(P):
-    A = allowed[P].union(unary_union([f for _, f in objs[P]])) if objs[P] else allowed[P]
+def cells_for(P, avoid_stars=True):
+    obs = objs[P] + (star_obs[P] if avoid_stars else [])
+    A = plan_area[P].union(unary_union([f for _, f in objs[P]])) if objs[P] else plan_area[P]
     if A.is_empty: return [], A
     x0, y0, x1, y1 = A.bounds
     best = None
@@ -130,28 +148,31 @@ def cells_for(P):
                 if any(b - a < 5 for a, b in zip(xs, xs[1:])): continue
                 xb = [x0, *xs, x1]
                 if any(b - a > ow + 1e-6 for a, b in zip(xb, xb[1:])): continue
-                if any(LineString([(x, y0 - 5), (x, y1 + 5)]).distance(f) < SPLIT_CLEAR for x in xs for _, f in objs[P]): continue
+                if any(LineString([(x, y0 - 5), (x, y1 + 5)]).distance(f) < SPLIT_CLEAR for x in xs for _, f in obs): continue
                 cols = []; ok = True
                 for a, b in zip(xb, xb[1:]):
                     sub = A.intersection(box(a, y0 - 1, b, y1 + 1))
                     if sub.is_empty: cols.append([]); continue
                     _, c0, _, c1 = sub.bounds; ny = math.ceil((c1 - c0) / oh - 1e-9)
-                    if ny == 2 and (c1 - c0) - oh <= TRIM_MAX and all(f.bounds[3] <= c0 + oh - SPLIT_CLEAR for _, f in objs[P]
+                    if ny == 2 and (c1 - c0) - oh <= TRIM_BY.get(P, TRIM_MAX) and all(f.bounds[3] <= c0 + oh - SPLIT_CLEAR for _, f in obs
                                                                       if f.intersects(box(a, c0, b, c1))):
                         ny, c1 = 1, c0 + oh                         # a thin last row: trim the star area instead of a hooping
                     if ny == 1: cols.append([(a, c0, b, c1)]); continue
                     if ny > 2: ok = False; break
                     cand = [y for y in np.arange(max(c1 - oh, c0 + 5), min(c0 + oh, c1 - 5) + 0.01, 2.0)
-                            if all(LineString([(a, y), (b, y)]).distance(f) >= SPLIT_CLEAR for _, f in objs[P])]
+                            if all(LineString([(a, y), (b, y)]).distance(f) >= SPLIT_CLEAR for _, f in obs)]
                     if not cand: ok = False; break
-                    clear = lambda y: min([LineString([(a, y), (b, y)]).distance(f) for _, f in objs[P]] + [999])
+                    clear = lambda y: min([LineString([(a, y), (b, y)]).distance(f) for _, f in obs] + [999])
                     y = max(cand, key=lambda y: (min(clear(y), 60), -abs(y - (c0 + c1) / 2)))
                     cols.append([(a, c0, b, y), (a, y, b, c1)])
                 if not ok: continue
                 cells = [c for col in cols for c in col]
-                clr = min([LineString([(x, y0), (x, y1)]).distance(f) for x in xs for _, f in objs[P]] + [999])
+                clr = min([LineString([(x, y0), (x, y1)]).distance(f) for x in xs for _, f in obs] + [999])
                 key = (len(cells), -min(clr, 60), sum(abs(x - (x0 + x1) / 2) for x in xs))
                 if best is None or key < best[0]: best = (key, cells, (ow, oh))
+    if avoid_stars:   # a hooping costs more than a star moved <= NUDGE_MAX mm: take the plan that ignores stars if it has fewer cells
+        alt, _ = cells_for(P, False)
+        if not best or len(alt) < len(best[1]): return alt, A
     assert best, f"{P}: no hoop plan fits {HOOP}"
     return [dict(box=c, frame=best[2]) for c in best[1]], A
 
@@ -161,38 +182,55 @@ for P in cut:
     plan[P] = cells
 
 def split_lines(P):
+    """Rev M TD M5: only cell edges shared with another cell are hoop splits; a cell's outer edge is just the frame
+    (a star only has to sit inside its cell, checked below)"""
     out = []
     for c in plan[P]:
         x0, y0, x1, y1 = c["box"]
-        out += [LineString([(x0, y0), (x1, y0)]), LineString([(x0, y1), (x1, y1)]), LineString([(x0, y0), (x0, y1)]), LineString([(x1, y0), (x1, y1)])]
+        rest = unary_union([box(*d["box"]) for d in plan[P] if d is not c]).buffer(0.5)
+        for seg in (LineString([(x0, y0), (x1, y0)]), LineString([(x0, y1), (x1, y1)]), LineString([(x0, y0), (x0, y1)]), LineString([(x1, y0), (x1, y1)])):
+            if seg.intersection(rest).length > 1.0: out.append(seg)
     return unary_union(out)
 
-# ---------------------------------------------------------------- star field
-lib = list(units([r for r in J["BK"] if r["el"] == "06"]).values())
-cents = [unary_union([r["geom"] for r in u]).centroid for u in lib]
-hull = unary_union([Point(c.x, c.y) for c in cents]).convex_hull
-DENS = len(lib) / hull.area * (0.5 if ZONED else 1.0)          # stars per mm^2
-star_meta = dict(library_units=len(lib), revj_back_hull_mm2=round(hull.area), density_per_m2=round(DENS * 1e6),
-                 kinds={k: sum(1 for u in lib if any(r["grp"] == k for r in u)) for k in ("DOT", "SPK")})
-counts = {}
+# ---------------------------------------------------------------- star field (Rev M: the mockup's stars, one by one)
+star_meta = dict(source="Mockups 3 (Nick approved 27 Oct 2026)", library_units=len(lib), kinds={k: len(v) for k, v in by_kind.items()},
+                 mockup_detected=M3["detected"], mockup_stars=M3["stars"], nudge_max_mm=NUDGE_MAX)
+RINGS = [(0.0, 0.0)] + [(r * math.cos(a * math.pi / 8), r * math.sin(a * math.pi / 8)) for r in np.arange(1.0, NUDGE_EDGE + 0.01, 1.0) for a in range(16)]
+counts = {}; star_stats = {}; dropped = []; nudges = []
 for P in cut:
     A = allowed[P]
     for _, f in objs[P]: A = A.difference(f.buffer(OBJ_CLEAR))
-    if plan[P]: A = A.intersection(unary_union([box(*c["box"]) for c in plan[P]])).difference(split_lines(P).buffer(SPLIT_CLEAR))
-    if A.is_empty: counts[P] = 0; continue
-    target = int(round(DENS * A.area)); dmin = 0.55 / math.sqrt(DENS)
-    x0, y0, x1, y1 = A.bounds; pts = []; tries = 0
-    while len(pts) < target and tries < 60000:
-        tries += 1
-        x, y = rnd.uniform(x0, x1), rnd.uniform(y0, y1)
-        if any((x - a) ** 2 + (y - b) ** 2 < dmin ** 2 for a, b in pts): continue
-        i = rnd.randrange(len(lib)); u = lib[i]; c = cents[i]
-        rs = [shift(r, x - c.x, y - c.y) for r in u]
-        if not unary_union([r["geom"] for r in rs]).buffer(0.5).within(A): continue
-        pts.append((x, y)); n = len(pts)
+    cells = unary_union([box(*c["box"]) for c in plan[P]]) if plan[P] else Polygon(); spl = split_lines(P).buffer(SPLIT_CLEAR)
+    if plan[P]: A = A.intersection(cells).difference(spl)
+    placed = []; used = []
+    def cause(x, y):   # why a mockup star could not stay where it was (TD M5: every drop gets a reason)
+        p = Point(x, y)
+        if not allowed[P].contains(p): return "seam / edge keep-out" + (" (under the pocket)" if P == "FR" and pocket_fp.buffer(POCKET_CLEAR).contains(p) else "")
+        if any(f.buffer(OBJ_CLEAR).contains(p) for _, f in objs[P]): return "badge / script clearance"
+        if spl.contains(p): return "hoop split clearance"
+        if not cells.contains(p): return "outside the hoop cells"
+        return "star spacing"
+    for t in targets[P]:
+        i = unit_for(t); ok = None
+        edge = not allowed[P].contains(Point(t["x"], t["y"]))
+        for dx, dy in RINGS:
+            if not edge and math.hypot(dx, dy) > NUDGE_MAX: break
+            fp = foot(i, t["x"] + dx, t["y"] + dy)
+            if fp.buffer(0.5).within(A) and all(fp.distance(g) >= STAR_GAP for g in placed): ok = (dx, dy, fp); break
+        if ok is None: dropped.append(dict(piece=P, x=t["x"], y=t["y"], px=t["px"], cause=cause(t["x"], t["y"]))); continue
+        dx, dy, fp = ok; placed.append(fp); used.append(i); n = len(placed)
+        if dx or dy: nudges.append(round(math.hypot(dx, dy), 1))
+        c = cents[i]
+        rs = [shift(r, t["x"] + dx - c.x, t["y"] + dy - c.y) for r in lib[i]]
         for j, r in enumerate(rs): r.update(el="05", unit=f"05-{P}{n}", z=21 * 100000 + n * 10 + j)
         items[P] += rs
-    counts[P] = len(pts)
+    counts[P] = len(placed)
+    if used:
+        sz = [u_size(lib[i]) for i in used]
+        star_stats[P] = dict(stars=len(used), plus=sum(kind[i] == "SPK" for i in used), mean_mm=round(sum(sz) / len(sz), 2),
+                             median_mm=round(sorted(sz)[len(sz) // 2], 2), mockup=len(targets[P]))
+star_meta.update(per_panel=star_stats, dropped=dropped, nudged=len(nudges), nudge_mean_mm=round(sum(nudges) / len(nudges), 1) if nudges else 0,
+                 plus_share=round(sum(v["plus"] for v in star_stats.values()) / max(1, sum(counts.values())), 3))
 
 # every star / badge / script region must sit inside one hoop cell (fail loudly)
 assign = {}

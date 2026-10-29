@@ -27,7 +27,7 @@ def piece_svg(P, pad=30, label=True, cells=True):
         for i, c in enumerate(A["plan"][P]):
             a, b, cc, d = c["box"]
             o.append(f'<rect x="{f(a)}" y="{f(b)}" width="{f(cc-a)}" height="{f(d-b)}" fill="none" stroke="{CELL}" stroke-width="2.2"/>')
-            if label: o.append(f'<text x="{f(a+6)}" y="{f(b+22)}" font-family="Noto Sans" font-size="20" font-weight="700" fill="{CELL}">{P}-H{i+1}</text>')
+            if label: o.append(f'<text x="{f(a+6)}" y="{f(b+22)}" font-family="Noto Sans" font-size="20" font-weight="700" fill="{CELL}">{B.hoop_name(P, i, len(A["plan"][P]))}</text>')
     return o, (x0, y0, x1 - x0, y1 - y0)
 
 def page_png():
