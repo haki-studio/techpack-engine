@@ -65,18 +65,18 @@ def k1():
                  ("Rib (cuffs + body hem)", "Rib Knit 1x1. 380 GSM. 2 Way strechable. 95% Cotton 5% Elastane. Colour: washed black."),
                  ("Wash", "The same wash as our Hidden Inventory Hoodie (question 2)."),
                  ("Block", "Your Come Over hoodie pattern and measurements (page K6), not Hidden Inventory.")):
-        o.append(t(12, y, h, 2.4, 700)); o.append(t(52, y, q, 2.4)); y += 4.0
-    y += 3
+        o.append(t(12, y, h, 2.4, 700)); o.append(t(52, y, q, 2.4)); y += 3.8
+    y += 2
     o.append(t(12, y, "QUESTIONS", 2.8, 700)); y += 5
     sr = R.get("SR-H1", {})
     Q = [("1. Hoopings + frame.", f"How many hoopings do you need for each piece (front, back, pocket, sleeve, hood)? Our plan is {plan['total_hoopings']} per hoodie (table above). On a 340 x 505 field the pocket and left sleeve hoopings need the frame turned 90 degrees. On a 400 x 450 frame every hooping fits without turning EXCEPT the two back hoopings (up to 486 mm tall): there the back needs more hoopings: we will re-plan it for your frame and send the new count. You confirmed a 340 x 505 mm field in one hooping, but your frames are 300 x 300 and 400 x 450: which frame sews 340 x 505? Please answer this before digitizing or sewing: if no frame takes 340 x 505, we re-plan the hoopings for your frame."),
          ("2. Wash.", "Please use the same fabric and the same wash as our Hidden Inventory Hoodie. What is that wash called, and is it done AFTER sewing? Shrinkage % in length and width? Does it change the thread colours or flatten the 3D puff? Our files assume 40wt polyester thread (page R1): is that what you use?"),
          ("3. How you price embroidery.", f"Per 1,000 stitches, per trim, per hooping, or per piece? Please quote one sleeve file as the example: SR-H1 ({sr.get('stitches', 0):,} stitches, {sr.get('trims', 0)} trims, 1 colour). Then please quote (a) the embroidery only (b) the whole hoodie with embroidery, and (c) the same without the two hood hoopings (HR-H1, HL-H1), at 100, 200 and 300 pcs."),
-         ("4. Blocks or floating (please choose one).", "Most hoopings are bigger than the cut piece they sit on (" + ", ".join(OVER) + "), so a cut piece cannot be clamped in the frame. Which do you do: (a) embroider oversized rough-cut blocks and recut them to the pattern after, or (b) float the cut piece on hooped tear-away backing? If (a), what allowance do you add for pull-in?"),
+         ("4. Blocks or floating.", "Please choose one. Most hoopings are bigger than the cut piece they sit on (" + ", ".join(OVER) + "), so a cut piece cannot be clamped in the frame. Which do you do: (a) embroider oversized rough-cut blocks and recut them to the pattern after, or (b) float the cut piece on hooped tear-away backing? If (a), what allowance do you add for pull-in?"),
          ("5. Strike-off through the wash.", "Before bulk, will you sew one back panel (files BK-L + BK-R: all 4 badges in 3D puff + stars) and put it through the real wash (do the dense 3D puff areas pucker after the wash?), then send photos (daylight, ruler in shot, before and after wash)? Please also sew file SR-H1 (right sleeve) on a scrap of the same fabric and wash it with the panel: it carries our smallest stars and dots. Yes / no, and how many days?"),
          ("6. Your pattern.", "Please send the Come Over hoodie pattern (DXF) or the cut panel sizes. Our outlines come from the published size chart (page K6); we re-place every star and badge on your real pieces before bulk, all sizes. Also: how wide is the finish on the kangaroo pocket openings (the script ends near the right opening)? Is the hood lined, and how many panels is it?")]
     for h, q in Q:
-        o.append(t(12, y, h, 2.6, 700)); y = wrap(o, 52, y, q, 2.45, width=140); y += 1.5
+        o.append(t(12, y, h, 2.6, 700)); y = wrap(o, 52, y, q, 2.45, width=172); y += 1.5
         o.append(f'<line x1="52" y1="{y}" x2="{SB.SW-12}" y2="{y}" stroke="#CFCFCF" stroke-width="0.2"/>'); o.append(t(52, y - 0.6, "Answer:", 1.9, 400, MUTED)); y += 4
     return o
 
