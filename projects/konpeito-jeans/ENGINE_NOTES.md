@@ -196,3 +196,16 @@ Engine runs: `bench/run_{wb,coin,spill,starP,starY}_svg.yaml` -> `out/engine_m5/
    centre-run underlay, no split; pupils Ø2.1 satin dots offset by the shared gaze). The engine dropped the 0.2 mm row
    connectors of a "rows" satin (gaps every ~1 mm) — generate a true zigzag (needle points alternate sides), no short
    connectors. Proposed: an engine `art_table` input kind for any motif too small to trace, with the same gate.
+
+## Rev B9 (23 Oct 2026, founder: "a lot of the arms are upside down of the soot sprites ... k9, 8 5, and 1")
+39. **A limb count doesn't check direction.** Problem: B8's gate said "limbs 3/3 PASS" on every sprite while the founder
+   saw the holding arms upside down: `kjsootart.py` rooted each arm on the UPPER side of the candy direction, so it left
+   the top of the body (49-72° above level) and arched over to the candy like an antenna; the mockup's arm leaves the side
+   facing the candy at eye height and reaches UP to it. Fix: `kjsootart.holding_arm` (shoulder root, level run, elbow,
+   straight up under the candy) and `kjsoot.arm_shape` read from the DST component the limb check matched: root on the
+   candy's side within 35° of level, arch (highest point above the hand) <= 0.5 mm. Check:
+   tests/test_konpeito_gates.py::test_soot_arms_red_on_b8_green_on_b9 (red: the shipped B8 DSTs in
+   tests/fixtures/konpeito_b8 fail on exactly K01/K05/K08/K09 while every older check passes; green: B9 9/9) +
+   test_arm_shape_catches_root_and_arch (J passes; inverted n and far-side arms fail). Proposed LESSONS row: "A limb or
+   part gate must check where it attaches and which way it goes, not only that it exists; prove it red on the version
+   the client rejected."

@@ -3,15 +3,22 @@
 
   intake.py sheet                 contact sheet of every image in inbox/ (with a 100 px grid) -> inbox/_contact.png
   intake.py crop SRC x0 y0 x1 y1 OUT   crop a region (pixel coords of SRC) to OUT
+  intake.py plan PLAN.json        check the plan and print what apply would create; exit 1 on a refusal
   intake.py apply PLAN.json       create projects/<slug>/ for every product in the plan, copy/crop its images into
                                   inputs/, write brief.md + STATUS.json, move used inbox files to inbox/_done/
-Plan format: {"products": [{"slug", "name", "garment", "block", "process", "elements": [...], "ip_flags": [...],
+Plan format: {"products": [{"slug", "name", "garment", "style", "block", "process", "elements": [...], "ip_flags": [...],
               "assumptions": [...], "images": [{"src", "crop": [x0,y0,x1,y1] | null, "as": "front_back.png"}]}]}
+A hat (garment cap / hat / trucker / bucket / beanie / snapback) must name its style, a key from
+families/cap/styles.yaml (`python3 engine/capstyle.py list`); a plan with a missing or unknown one is refused whole
+(LESSONS H1). TECHPACK_ROOT overrides the data root (inbox/ + projects/), for tests.
 """
-import sys, os, json, shutil, glob, datetime
+import sys, os, json, shutil, glob, datetime, subprocess
 from PIL import Image, ImageDraw, ImageFont
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.environ.get("TECHPACK_ROOT") or REPO
+sys.path.insert(0, os.path.join(REPO, "engine"))
+import capstyle
 INBOX = os.path.join(ROOT, "inbox")
 IMG = (".png", ".jpg", ".jpeg", ".webp")
 
@@ -48,7 +55,7 @@ _Auto-filled at intake {date}. Edit anything that's wrong; the build reads this 
 - Garment: {garment}
 - Fit block: {block}
 - Process: {process}
-- Sizes: XS–3XL (default)
+{style}- Sizes: XS–3XL (default)
 - Shell fabric: [proposed — confirm]
 - Hardware / trims: [proposed — confirm]
 - Factory: 360 × 360 frames, 15-needle heads (default — change if different)
@@ -63,8 +70,30 @@ _Auto-filled at intake {date}. Edit anything that's wrong; the build reads this 
 {assumptions}
 """
 
+def refusals(plan):
+    """one line per product the plan cannot create (a hat without a valid catalogue style); empty = go"""
+    cat = capstyle.load(); out = []
+    for pr in plan["products"]:
+        err = capstyle.check_choice(pr.get("garment"), pr.get("style"), cat)
+        if err: out.append(f"REFUSED {pr.get('slug', '?')}: {err}")
+    return out
+
+def style_line(pr):
+    if not pr.get("style"): return ""
+    st = capstyle.load().get(pr["style"])
+    return f"- Hat style: {st.key} — {st.name} (crown die {capstyle.val(st.t['crown_die'])}, brim die {capstyle.val(st.t['brim_die'])})\n"
+
+def check(plan_path):
+    plan = json.load(open(plan_path)); bad = refusals(plan)
+    for pr in plan["products"]:
+        print(f"{pr.get('slug', '?')}: {pr.get('garment', '?')}" + (f" on hat style {pr['style']}" if pr.get("style") else ""))
+    for b in bad: print(b)
+    if bad: print("pick each hat's style from `python3 engine/capstyle.py list` and add \"style\": \"<key>\" to the plan")
+    return 1 if bad else 0
+
 def apply(plan_path):
     plan = json.load(open(plan_path)); used = set()
+    if check(plan_path): return 1                # refuse the whole plan before writing anything
     for pr in plan["products"]:
         slug = pr["slug"]; P = os.path.join(ROOT, "projects", slug); I = os.path.join(P, "inputs")
         os.makedirs(I, exist_ok=True)
@@ -80,12 +109,13 @@ def apply(plan_path):
         li = lambda xs, empty: "\n".join(f"- {x}" for x in xs) if xs else f"- {empty}"
         open(os.path.join(I, "brief.md"), "w").write(BRIEF.format(
             name=pr.get("name", slug), slug=slug, date=datetime.date.today().isoformat(), garment=pr.get("garment", "?"),
-            block=pr.get("block", "unknown — needs a fit chart"), process=pr.get("process", "embroidery"),
+            block=pr.get("block", "unknown — needs a fit chart"), process=pr.get("process", "embroidery"), style=style_line(pr),
             elements=li(pr.get("elements", []), "to be inventoried"), ip=li(pr.get("ip_flags", []), "none seen"),
             assumptions=li(pr.get("assumptions", []), "none")))
         if not os.path.exists(os.path.join(P, "README.md")):
             open(os.path.join(P, "README.md"), "w").write(f"# {pr.get('name', slug)}\nBuilt by the /techpack command. Inputs + brief in inputs/, outputs in out/.\n")
-        os.system(f'python3 "{os.path.join(ROOT, "scripts", "status_set.py")}" {slug} intake "projects created from inbox"')
+        fields = [x for k in ("garment", "style") if pr.get(k) for x in ("--field", f"{k}={pr[k]}")]   # argv, never a shell
+        subprocess.run([sys.executable, os.path.join(REPO, "scripts", "status_set.py"), slug, "intake", "projects created from inbox", *fields], check=True)
         print("project", slug)
     done = os.path.join(INBOX, "_done"); os.makedirs(done, exist_ok=True)
     folders = set()
@@ -109,5 +139,6 @@ if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "sheet"
     if cmd == "sheet": sheet()
     elif cmd == "crop": crop(*sys.argv[2:8])
-    elif cmd == "apply": apply(sys.argv[2])
+    elif cmd == "plan": sys.exit(check(sys.argv[2]))
+    elif cmd == "apply": sys.exit(apply(sys.argv[2]))
     else: print(__doc__)

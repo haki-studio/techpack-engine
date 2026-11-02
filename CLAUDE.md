@@ -11,6 +11,9 @@ pass before anything is delivered.
   renderers (`stitchrender.py`, `render.py`), A4 sheet helpers (`sheet.py`, `specbase.py`), region QA (`qa.py`), pro reference profiler (`proprofile.py`: per-area stitch rates vs 10 pro files, docs/PRO_REFERENCE.md),
   motif library (`motifs.py`, `motifs2.py`), block from a POM chart (`drum.py`), derived blocks (`hoodie.py`: zip hoodie = Drum Island body + hood + elastic bands), pattern drafting + outputs
   (`pattern.py`, `pattern_draw.py`, `pattern_out.py`), thread palettes (`pal/`).
+- `families/` — product families (`tee/`; `cap/` = the hat-style catalogue `styles.yaml` + shared `family.yaml`).
+  Hat code: `engine/capstyle.py` (load/validate/list, intake + dispatch style gate), `engine/cap_pages.py` (hat pages).
+  A hat must name a style key (docs/FAMILIES.md "Hats", LESSONS H1).
 - `projects/<style>/` — one folder per garment: its scene/art builders, spec + pack page builders, run scripts,
   `inputs/` (mockups, references, fixed json). Outputs go to `projects/<style>/out/` (git-ignored).
 - `.claude/skills/` — `techpack-pipeline` (end-to-end procedure) and `embroidery-tech-pack` (patches/labels house spec).

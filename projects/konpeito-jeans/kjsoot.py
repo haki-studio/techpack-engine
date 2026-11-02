@@ -10,6 +10,11 @@ blobs) — against the art table inputs/soot_art.json (hand-read from the mockup
   eye size  eye white area / D^2 within EYE_AREA_TOL of the table ellipse
   no cracks the white satin closes up: neighbouring crossings <= ROW_GAP_MAX mm apart along the eye, and no crossing
             in the middle of the eye spans < 1 - SPLIT_MIN of the eye's width (a split line)
+Rev B9 (founder 23 Oct: "a lot of the arms are upside down"; B8 passed limbs 3/3 because a count doesn't check direction)
+— per sewn arm, read from the DST component the limb check matched:
+  root      where the arm leaves the fur, seen from the body centre: on the held candy's side and within the shoulder band,
+            |elevation| <= ROOT_BAND_DEG from horizontal (holding arms; raised empty arms have no candy to face)
+  no arch   no point of the arm is higher than its hand by more than ARCH_TOL mm (the arm never goes over and comes down)
 Writes out/gates_soot.json and out/compare_soot.png (mockup crop vs stitch preview, same scale, 3 sprites per row)."""
 import json, math
 import numpy as np
@@ -25,6 +30,9 @@ LIMB_MIN, LIMB_MAX, LIMB_COVER = 1.2, 0.5, 0.8   # a limb = >= 1.2 mm of run; >=
 GAZE_AGREE, GAZE_MAX = 0.35, 0.35               # mm: the 2 pupils' offsets agree / match the table gaze
 EYE_AREA_TOL = 0.15                              # +-15 % of the table eye area (needle points + half a thread)
 ROW_GAP_MAX, SPLIT_MIN = 0.30, 0.25             # eye satin: crossings <= 0.30 mm apart (B8 sews 0.20; B7 0.36); no crossing < 75 % of the chord
+# arm direction (B9): B9 roots leave the fur at |elev| <= ~9 deg (eye height; eye centres sit at y ~ 0), B8's at >= ~50 deg
+# (top of the body); 35 deg sits between with margin both ways and is about the top of the eye whites (0.38 D tall)
+ROOT_BAND_DEG, ARCH_TOL = 35.0, 0.5             # arch: half a 0.35 mm rendered thread + raster round-off
 DEBUG = None                                     # list -> art_gate appends (id, crossing positions) per eye
 SOOT_HEX, WHITE_HEX = kjcore.KJ_PAL["kj_soot"][0].upper(), kjcore.KJ_PAL["kj_white"][0].upper()
 FILES = {"front1": "HAKI_KJ_07a_front-leg-trail-upper", "front2": "HAKI_KJ_07b_front-leg-trail-lower"}
@@ -48,8 +56,25 @@ def stop_index(rj, col, last=False):
     ix = [i for i, s in enumerate(rj["per_stop"]) if s.get("col") == col]
     return (ix[-1] if last else ix[0]) if ix else None
 
-def art_gate(q, M, to_px, shape, A, rj, segs):
-    """Rev B8 checks of one sprite against its art-table row A (inputs/soot_art.json)."""
+def arm_shape(comp, c, cand=None):
+    """direction of one sewn arm (bool pixel mask outside body+fur, body centre c in px, held candy centre in px or None):
+    root = mean of the arm pixels within 0.6 mm of its innermost point; elevation of the root above horizontal (deg);
+    side = the root is on the candy's side of the body; hand = the arm pixel nearest the candy (empty arm: farthest from
+    the root); arch = how far (mm) the arm's highest point lies above the hand."""
+    ys, xs = np.nonzero(comp)
+    rr = np.hypot(xs - c[0], ys - c[1]); near = rr <= rr.min() + 0.6 * PPM
+    rx, ry = xs[near].mean(), ys[near].mean()
+    elev = math.degrees(math.atan2(c[1] - ry, abs(rx - c[0])))
+    if cand is not None:
+        side = (rx - c[0]) * (cand[0] - c[0]) > 0
+        h = int(np.argmin(np.hypot(xs - cand[0], ys - cand[1])))
+    else:
+        side = True; h = int(np.argmax(np.hypot(xs - rx, ys - ry)))
+    arch = (ys[h] - ys.min()) / PPM
+    return dict(elev_deg=round(float(elev), 1), side=bool(side), arch_mm=round(float(arch), 2))
+
+def art_gate(q, M, to_px, shape, A, rj, segs, stars=None):
+    """Rev B8 checks of one sprite against its art-table row A (inputs/soot_art.json); B9 adds the arm direction."""
     cx0, cy0 = to_px(q["x_from_side_mm"], q["y_from_waist_mm"]); h = int(24 * PPM)        # work in a 48 mm window round the sprite
     X0, Y0 = max(0, int(cx0) - h), max(0, int(cy0) - h); X1, Y1 = min(shape[1], int(cx0) + h), min(shape[0], int(cy0) + h)
     M = {k: m[Y0:Y1, X0:X1] for k, m in M.items()}; shape = (Y1 - Y0, X1 - X0)
@@ -81,8 +106,15 @@ def art_gate(q, M, to_px, shape, A, rj, segs):
             if cov > best[0]: best = (cov, i, float(max(dd[-3:])) if dd else 99.0)
         ok = best[1] is not None and best[0] >= LIMB_COVER and best[2] <= LIMB_MAX and best[1] not in used
         if ok: used.add(best[1])
-        limbs.append(dict(kind=L["kind"], cover=round(best[0], 2), end_mm=round(best[2], 2), ok=bool(ok)))
+        d_ = dict(kind=L["kind"], cover=round(best[0], 2), end_mm=round(best[2], 2), ok=bool(ok))
+        if L["kind"] == "arm" and best[1] is not None:                # B9: direction, from the sewn component
+            s_ = (stars or {}).get(L.get("to")); cand = to_px(s_["x_from_side_mm"], s_["y_from_waist_mm"]) if s_ else None
+            d_.update(arm_shape(lab == best[1], (cx, cy), cand))
+            d_["dir_ok"] = bool(d_["side"] and (cand is None or abs(d_["elev_deg"]) <= ROOT_BAND_DEG) and d_["arch_mm"] <= ARCH_TOL)
+        elif L["kind"] == "arm": d_["dir_ok"] = False
+        limbs.append(d_)
     limb_ok = len(comps) == len(A["limbs"]) and all(l["ok"] for l in limbs)
+    arms_ok = all(l["dir_ok"] for l in limbs if l["kind"] == "arm")
     # eyes: the white-stop blobs inside the body, filled
     white = M.get(WHITE_HEX, np.zeros(shape, bool)) & (rr < R)
     wl, nw = ndi.label(ndi.binary_fill_holes(white)); E = A["eyes"]; area_t = math.pi / 4 * E["w"] * E["h"]
@@ -125,8 +157,8 @@ def art_gate(q, M, to_px, shape, A, rj, segs):
         else: row_gap = 99.0
         if DEBUG is not None: DEBUG.append((q["id"], vs))
     gap = row_gap
-    ok = limb_ok and agree <= GAZE_AGREE and gerr <= GAZE_MAX and area_r <= EYE_AREA_TOL and row_gap <= ROW_GAP_MAX and split <= SPLIT_MIN
-    return dict(limbs_dst=len(comps), limbs_art=len(A["limbs"]), limbs_ok=bool(limb_ok), limb_detail=limbs,
+    ok = limb_ok and arms_ok and agree <= GAZE_AGREE and gerr <= GAZE_MAX and area_r <= EYE_AREA_TOL and row_gap <= ROW_GAP_MAX and split <= SPLIT_MIN
+    return dict(limbs_dst=len(comps), limbs_art=len(A["limbs"]), limbs_ok=bool(limb_ok), arms_ok=bool(arms_ok), limb_detail=limbs,
                 gaze_agree_mm=round(agree, 2), gaze_err_mm=round(gerr, 2), eye_area_err_pct=round(100 * area_r, 1),
                 row_gap_mm=round(row_gap, 2), split=round(split, 2), art_ok=bool(ok))
 
@@ -179,7 +211,7 @@ def run(dst_dir="out/stitch", out="out/gates_soot.json", sheet_png="out/compare_
         prev = C.render_on(path, rj["origin_mm"], shape, to_px, bg=(62, 61, 62))
         segs = stop_segments(path, rj["origin_mm"])
         for q in sec:
-            r = sprite_gate(q, M, to_px, shape, ART[q["id"]]); r.update(art_gate(q, M, to_px, shape, ART[q["id"]], rj, segs))
+            r = sprite_gate(q, M, to_px, shape, ART[q["id"]]); r.update(art_gate(q, M, to_px, shape, ART[q["id"]], rj, segs, {d["id"]: d for d in F["stars"]}))
             r["ok"] = bool(r["ok"] and r["art_ok"]); r["file"] = stem.split("_")[2]; rows.append(r)
             cx, cy = to_px(q["x_from_side_mm"], q["y_from_waist_mm"]); h = 13 * PPM
             st = prev.crop((int(cx - h), int(cy - h), int(cx + h), int(cy + h)))
@@ -199,17 +231,20 @@ def sheet(tiles, png="out/compare_soot.png"):
     im = Image.new("RGB", (W, H), "white"); d = ImageDraw.Draw(im)
     d.text((pad, 20), "Compare — 07 soot sprites (founder 21 Oct: kept): garment mockup (left) vs stitch preview from the shipped DST (right)", fill=(20, 20, 20), font=C.font(40))
     d.text((pad, 74), "Same scale: 26 x 26 mm tiles around each traced centre. Mockup ~1 mm per px: limbs, eye size and gaze come from the hand-read art table (inputs/soot_art.json).", fill=(90, 90, 90), font=C.font(26))
-    d.text((pad, 108), f"Gate: centre <= {POS_MAX} mm, cover >= {COVER_MIN:.0%}, 2 eyes; limbs = table; pupils agree <= {GAZE_AGREE} mm + match the gaze; eye area +-{EYE_AREA_TOL:.0%}; eye satin rows <= {ROW_GAP_MAX} mm, no split.", fill=(90, 90, 90), font=C.font(26))
+    d.text((pad, 108), f"Gate: centre <= {POS_MAX} mm, cover >= {COVER_MIN:.0%}, 2 eyes; limbs = table; pupils agree <= {GAZE_AGREE} mm + match the gaze; eye area +-{EYE_AREA_TOL:.0%}; eye satin rows <= {ROW_GAP_MAX} mm, no split; arms from the shoulder (<= {ROOT_BAND_DEG:.0f} deg), no arch.", fill=(90, 90, 90), font=C.font(26))
     for k, (r, mk, st) in enumerate(tiles):
         rr, cc = divmod(k, per); x = pad + cc * (2 * T + 3 * pad); y = 170 + rr * (T + 90)
         im.paste(mk.resize((T, T), Image.LANCZOS), (x, y)); im.paste(st.resize((T, T), Image.LANCZOS), (x + T + pad, y))
         col = (20, 140, 60) if r["ok"] else (200, 30, 30)
-        d.text((x, y + T + 8), f"{r['file']} {r['id']}  limbs {r['limbs_dst']}/{r['limbs_art']} · gaze {r['gaze_agree_mm']}/{r['gaze_err_mm']} · eye {r['eye_area_err_pct']}% · rows {r['row_gap_mm']} mm · split {r['split']}  {'PASS' if r['ok'] else 'FAIL'}", fill=col, font=C.font(28))
+        d.text((x, y + T + 8), f"{r['file']} {r['id']}  limbs {r['limbs_dst']}/{r['limbs_art']} · gaze {r['gaze_agree_mm']}/{r['gaze_err_mm']} · eye {r['eye_area_err_pct']}% · rows {r['row_gap_mm']} mm · split {r['split']} · arms {'ok' if r['arms_ok'] else 'UPSIDE DOWN'}  {'PASS' if r['ok'] else 'FAIL'}", fill=col, font=C.font(28))
     im.save(png)
 
 if __name__ == "__main__":
     import sys
     if "--b7" in sys.argv:          # red evidence: the shipped Rev B7 DSTs (tests/fixtures/konpeito_b7) against the B8 art table
         run("../../tests/fixtures/konpeito_b7", "out/gates_soot_b7.json", "out/compare_soot_b7.png")
+    elif "--b8" in sys.argv:        # red evidence: the shipped Rev B8 DSTs + B8 table (tests/fixtures/konpeito_b8): arms upside down
+        run("../../tests/fixtures/konpeito_b8", "out/gates_soot_b8.json", "out/compare_soot_b8.png",
+            art=json.load(open("../../tests/fixtures/konpeito_b8/soot_art_b8.json")))
     else:
         run()

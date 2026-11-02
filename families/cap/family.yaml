@@ -1,0 +1,96 @@
+# CAP FAMILY — what is the same for every Haki cap / hat, whatever its block. The blocks themselves (dies, panels,
+# measurements, construction per style) are the catalogue in styles.yaml; a hat pack is built from ONE style key.
+# Plain value = confirmed: written {value: x, source: "..."}.  {proposed: x, note: "..."} = not recorded -> printed amber
+# "[proposed — confirm]" and asked on the F1 page. When the factory answers, replace {proposed: x} with {value: x, source: ...}.
+# Facts + sources: HakiCode/missions/techpack-engine-m2/hat-styles-facts.md (inventory 2026-10-28).
+
+family: cap
+name: Haki caps + hats
+factory:
+  name: {value: "Shenzhen Aung Crown", source: "PLM manufacturer 'Emmie Aungcrown'; every hat so far"}
+  contact: {value: "Emmie", source: "PLM manufacturer 'Emmie Aungcrown'"}
+  supplier: emmie          # key in factory.json suppliers (max embroidery colours per design); read by engine/supplier_gate.py
+  # Aung Crown's Chinese terms: 顶刀模 = crown die, 舌刀模 = brim (visor) die (not printed: the render machine has no CJK font)
+  die_codes: {value: "Aung Crown names a block by two die codes: crown die + brim (visor) die", source: "Aung Crown production sheets"}
+rev: Rev A
+date: 28 Oct 2026
+
+# printed first on every hat pack's F1 page
+factory_questions:
+  - "Please confirm the crown die and brim die (visor die) codes for this style, and send the mould's measurement sheet (head circumference, front panel height, back height, crown depth, brim length / width / curve, strap length) with tolerances."
+  - "Seam tape text: our brand is now Haki Studios. Please quote a new printed tape (same layout) and tell us the minimum order; until we approve it, keep the current 'HAKISTOP · WRITE YOUR OWN STORY' tape."
+  - "Cap-frame limits: please send the largest embroidery size (width x height) your cap frame sews at each position: front (centred), left side, right side, back (above the strap opening), inside front, under the brim."
+
+# ---------------------------------------------------------------------------------------------------- SHARED CONSTRUCTION
+seam_tape:
+  spec: {value: "printed seam tape over every crown seam (inside)", source: "Emmie chat 2025-09-15; photos 2025-11-13, 2026-02-07"}
+  text: {value: "HAKISTOP · WRITE YOUR OWN STORY", source: "Emmie chat 2025-09-15"}
+  colour_full_fabric: {value: "black tape, white text", source: "Emmie chat 2025-09-15; photos 2025-11-13"}
+  colour_trucker: {value: "tape colour = mesh colour", source: "photos 2026-02-07"}
+  rebrand: {proposed: "new tape text for Haki Studios (layout unchanged)", note: "brand is now Haki Studios (founder rebrand); the tape text is never silently rewritten — the current tape stays until a new one is approved"}
+sweatband:
+  spec: {value: "sweatband inside the crown base with a woven inner label at the front seam", source: "photos 2025-11-13"}
+  material: {proposed: "cotton twill sweatband (mesh-cotton on the Haki Block cap)", note: "material per style not recorded; Haki Block spec says mesh/cotton"}
+  width_cm: {proposed: 3.5, note: "not recorded"}
+inner_label:
+  spec: {value: "woven label on the sweatband at the front seam", source: "photos 2025-11-13"}
+  size_cm: {proposed: [4, 1.5], note: "not recorded"}
+inside_character:
+  spec: {value: "small embroidered character inside the front panel", source: "photos 2025-11-13"}
+button:
+  spec: {value: "top button, fabric covered, colour matches the brim", source: "Emmie chat 2025-10-28 (button, strap and back logo match the brim)"}
+eyelets:
+  spec: {value: "embroidered / stitched eyelets", source: "photos"}
+  count: {proposed: "one per crown panel, on the panel's upper third", note: "count + position not recorded"}
+  colour: {proposed: "matches the crown fabric", note: "not recorded"}
+strap:
+  effective_length_cm: {value: 19, source: "founder rule after strap complaints 2025-10-23/27, checked 2026-02-07 (older bulk was 16 cm)"}
+  rule: {value: "19 cm VISIBLE / effective length, measured on the finished cap from the back panel edge; '19 cm total with 1 cm stitched inside = 18 cm' is wrong (happened once, 2025-10-30)", source: "Emmie chat 2025-10-30"}
+  colour: {value: "strap and back logo colour match the brim", source: "Emmie chat 2025-10-28"}
+mesh_guard:
+  spec: {value: "unstructured caps: mesh guard lining behind the embroidery", source: "founder 2025-09-08: 'All unstructured hats should have this mesh guard'"}
+backing_corduroy:
+  spec: {value: "stretchy corduroy: backing cloth ('fit cloth') behind every embroidery", source: "Emmie chat 2025-11-24"}
+brim_protector:
+  spec: {value: "clear plastic brim protector", source: "bulk photos 2025-12-26"}
+hang_tag:
+  item: Hang tag
+  spec: {value: "Haki hang tag", source: "bulk photos 2025-12-26"}
+  attach: {proposed: "on the strap / snap with a plastic pin (no hole in the crown)", note: "attachment not recorded"}
+
+# ---------------------------------------------------------------------------------------------------- EMBROIDERY
+embroidery:
+  method: {value: "flat embroidery", source: "Emmie size sheet 2026-04-03"}
+  side_back_stitch_max: {value: 5000, source: "Emmie size sheet 2026-04-03: side and back designs under 5K stitches each"}
+  back_logo_width_cm: {value: 1.5, source: "Emmie chats (back logo ~1.5 cm wide, centred)"}
+  stitch_files: {value: "Emmie re-punches every design ('our embroidery mold format is different'): our DST is a reference; the artwork, size and colours are the contract", source: "Emmie chat 2026-03-03"}
+  max_colours: {value: "9 per design", source: "factory.json suppliers.emmie (Emmie 2026-03-15)"}
+# cap-frame limits per position (largest art box the cap frame sews). None of these is recorded -> all proposed + F1.
+# A style's embroidery position may not exceed these (engine/capstyle.py checks; red on the embroidery page).
+cap_frame:
+  front:        {max_w_cm: {proposed: 12, note: "typical cap frame front field; not recorded for Aung Crown"}, max_h_cm: {proposed: 5.5, note: "not recorded"}}
+  left_side:    {max_w_cm: {proposed: 7, note: "not recorded"}, max_h_cm: {proposed: 4, note: "not recorded"}}
+  right_side:   {max_w_cm: {proposed: 7, note: "not recorded"}, max_h_cm: {proposed: 4, note: "not recorded"}}
+  back:         {max_w_cm: {proposed: 8, note: "above the strap opening; not recorded"}, max_h_cm: {proposed: 3, note: "not recorded"}}
+  inside_front: {max_w_cm: {proposed: 5, note: "embroidered on the front panel before the crown is sewn; not recorded"}, max_h_cm: {proposed: 4, note: "not recorded"}}
+  under_brim:   {max_w_cm: {proposed: 14, note: "sewn flat on the under-brim before the brim is closed; not recorded"}, max_h_cm: {proposed: 5, note: "not recorded"}}
+
+# ---------------------------------------------------------------------------------------------------- SIZES + PACKING
+# POM tolerance for every row whose chart gives no `tol:` (none recorded for any hat)
+pom_tolerance_cm: {proposed: 0.5, note: "± cm on every measurement without its own tolerance; not recorded for any hat — please send yours"}
+sizes:
+  range: {value: "head 49–62 cm (6⅛–7¾) on the factory size sheet", source: "Emmie size sheet 2026-05-21"}
+  caps: {value: "caps are one size (adjustable)", source: "Emmie size sheet 2026-05-21"}
+packing:
+  brim: {value: "clear plastic brim protector", source: "bulk photos 2025-12-26"}
+  bag: {proposed: "one cap per clear polybag", note: "Haki Block spec (hat-supplier-compare §2); not recorded for the other styles"}
+  pcs_per_carton: {proposed: 100, note: "Haki Block spec (hat-supplier-compare §2) says ~100 per carton"}
+  crown_fill: {proposed: "tissue in the crown so it keeps its shape", note: "not recorded"}
+
+# block constants the charts do not give (used only to DRAW the flats; the chart governs). All proposed.
+block:
+  head_ratio: {proposed: 1.22, note: "head length / head width, for the crown base oval on the sketches"}
+  strap_opening_w_cm: {proposed: 7, note: "back strap opening width; not recorded"}
+  strap_opening_h_cm: {proposed: 5, note: "back strap opening height; not recorded"}
+  brim_inner_depth_cm: {proposed: 3, note: "how far the brim's crown-seam edge curves back, laid flat: CF to the line across the brim ends; not recorded"}
+  brim_topstitch_rows: {proposed: 8, note: "rows of topstitching on the brim; the Haki Block spec says 'topstitch rows', count not recorded"}

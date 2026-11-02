@@ -1,0 +1,407 @@
+# HAT STYLE CATALOGUE — one entry per block (mould) we make hats on. A hat tech pack is built from ONE key here
+# (intake asks for it; dispatch refuses a hat project without it). Validate: python3 engine/capstyle.py check
+#
+# Value convention (same as families/tee): {value: x, source: "..."} = confirmed; {proposed: x, note: "..."} = not
+# recorded / inferred / in conflict -> amber "[proposed — confirm]" + an F1 factory question. A plain value with no
+# source is refused by capstyle.py. Facts: HakiCode/missions/techpack-engine-m2/hat-styles-facts.md ([F] -> value,
+# [I] / untagged / conflict -> proposed).
+#
+# kind: cap    = cut-and-sew baseball / trucker cap (5 or 6 crown panels + brim). POMs A-H required.
+#       bucket = cut-and-sew bucket hat (crown band + top + all-round brim). POMs A, B, T, E required.
+#       knit   = knitted beanie (no cut-and-sew flats). POMs W, L, C required + a knit: block.
+# POM: {name, how, unit (default cm), value + source | proposed + note, tol (optional)}.
+
+pom_sets:
+  cap:
+    A: {name: Head circumference, how: "inside the sweatband, at its middle, strap at its middle setting"}
+    B: {name: Front panel height, how: "CF, from the sweatband seam up the front panel to its top edge"}
+    C: {name: Back height, how: "CB, from the crown base edge (top of the strap opening excluded) to the button"}
+    D: {name: Crown depth, how: "CF base edge over the button to the CB base edge, along the surface"}
+    E: {name: Brim length, how: "centre of the brim, from the crown seam to the brim edge, flat"}
+    F: {name: Brim width, how: "straight across the brim at the crown seam, end to end"}
+    G: {name: Brim curve, how: "brim upside down on a table: gap between the table and the brim edge at the centre"}
+    H: {name: Strap length, how: "visible / effective strap length on the finished cap, from the back panel edge"}
+    J: {name: Front panel width, how: "at the crown base, seam to seam", optional: true}
+    K: {name: Side panel width, how: "at the crown base, seam to seam", optional: true}
+    M: {name: Back panel width, how: "at the crown base, seam to seam (each back panel)", optional: true}
+  bucket:
+    A: {name: Head circumference, how: "inside the sweatband, at its middle"}
+    B: {name: Crown height, how: "side, from the brim seam to the top seam"}
+    T: {name: Top length, how: "crown top oval, front to back, seam to seam"}
+    E: {name: Brim width, how: "from the brim seam to the brim edge, along the brim, at the front"}
+  knit:
+    W: {name: Width flat, how: "laid flat, cuff folded, at the cuff edge, side to side"}
+    L: {name: Height, how: "laid flat, cuff folded, from the cuff edge to the top of the crown"}
+    C: {name: Cuff depth, how: "folded cuff, from the fold to the cuff edge"}
+
+styles:
+  # ------------------------------------------------------------------------------------------------ ASCE DAD
+  asce-dad:
+    name: ASCE dad cap
+    kind: cap
+    status: "in production — our main dad-cap block (11 products)"
+    factory: {value: "Emmie, Shenzhen Aung Crown", source: "PLM manufacturer 'Emmie Aungcrown'"}
+    crown_die: {value: "SN508", source: "Emmie production sheets PEM250715A-1, PEM2601xx"}
+    brim_die: {value: "202", source: "Emmie production sheets PEM250715A-1, PEM2601xx"}
+    panels: {proposed: 5, note: "CONFLICT: Emmie's spec says '5 panel baseball cap ... ASCE mold' (2025-09-14); Shopify copy says six-panel for ECEG / Greed Island / Valentine / Superrrr and five-panel for Big News / Guardian Deity"}
+    structure: {value: "unstructured (no buckram)", source: "Emmie 2025-09-04/15: 'all those samples with ASCE hat mold ... unstructured'"}
+    crown_profile: {proposed: "low profile, rounded crown", note: "'low profile' from the dad-cap shape; not measured"}
+    brim: {proposed: "pre-curved", note: "curved on every photo; brim die 202 shape not recorded"}
+    closure: {value: "self-fabric or webbing strap + slider (metal on Greed Island + ECEG navy, plastic on Superrrr)", source: "product photos"}
+    size: {value: "58 cm, one size (adjustable)", source: "hat-styles-facts.md: ASCE 58 cm (Emmie sheets)"}
+    pom:
+      A: {value: 58, source: "Emmie sheets PEM250715A-1 / PEM2601xx (58 cm)"}
+      B: {proposed: 8.5, note: "not recorded for ASCE; SWEET block is 8.5 cm (2026-07-06), trucker 8 cm (2026-06-02)"}
+      C: {proposed: 12.5, note: "not recorded for ASCE; trucker back height 12.5 cm (2026-04-29)"}
+      D: {proposed: 33, note: "not recorded for ASCE; trucker crown depth 33 → 34.5 cm (2026-04-03)"}
+      E: {proposed: 7, note: "not recorded"}
+      F: {proposed: 18, note: "not recorded"}
+      G: {proposed: 2.5, note: "not recorded (pre-curved)"}
+      H: {value: 19, source: "family strap rule: 19 cm effective (founder 2025-10-23/27)"}
+    construction:
+      - {area: Crown, spec: {value: "unstructured: no buckram; mesh guard lining behind the front embroidery", source: "Emmie 2025-09-15; founder 2025-09-08 mesh-guard rule"}}
+      - {area: Panels, spec: {proposed: "5 crown panels joined to the button, seams taped inside", note: "panel count in conflict (see Panels)"}}
+      - {area: Brim, spec: {proposed: "pre-curved brim, self fabric both sides, topstitched rows", note: "row count not recorded"}}
+      - {area: Back, spec: {value: "strap opening with self-fabric / webbing strap + slider; back logo colour = brim colour", source: "Emmie 2025-10-28; photos"}}
+    bom:
+      - {item: Crown + brim fabric, spec: {proposed: "per product (cotton twill / corduroy / wool)", note: "fabric is chosen per design"}}
+      - {item: Brim insert, spec: {proposed: "plastic (PE) board, pre-curved", note: "not recorded"}}
+      - {item: Mesh guard, spec: {value: "mesh lining behind the front embroidery", source: "founder 2025-09-08"}}
+      - {item: Strap slider, spec: {value: "metal (Greed Island, ECEG navy) or plastic (Superrrr), per product", source: "product photos"}}
+    embroidery:
+      front: {note: "main design; centred on the front panel(s)"}
+      left_side: {note: "optional"}
+      right_side: {note: "optional"}
+      back: {w_cm: {value: 1.5, source: "family: back logo ~1.5 cm wide, centred"}, note: "back logo above the strap opening"}
+      inside_front: {note: "small character inside the front panel"}
+    products:
+      - {name: "Easy Come Easy Go Hat (Burgundy / Tennis Green / Midnight Blue / Jet Black)", match: "easy come easy go", source: "Emmie 2025-09-04/15"}
+      - {name: "Fire Fist Hat", match: "fire fist", source: "Emmie 2025-09-04/15 (= ASCE)"}
+      - {name: "Rain Dinners Hat", match: "rain dinners", source: "Emmie 2025-09-04/15"}
+      - {name: "Superrrr Hat", match: "superrrr", source: "Emmie 2025-09-04/15; photos"}
+      - {name: "Big News! Hat", match: "big news", source: "Emmie 2025-09-04/15"}
+      - {name: "Greed Island Hat (+ Forest Green)", match: "greed island", source: "Emmie 2025-09-04/15"}
+      - {name: "Guardian Deity Hat (+ CNY)", match: "guardian deity", source: "Emmie 2025-09-04/15"}
+      - {name: "Valentine Hat", match: "valentine", source: "Emmie 2025-09-04/15"}
+      - {name: "Dead or Alive Hat", match: "dead or alive", source: "Emmie 2025-09-15"}
+      - {name: "Tiger Hat", match: "tiger", source: "Emmie 2025-09-04/15"}
+      - {name: "Radical Ed Hat", match: "radical ed", proposed: "inferred: its Shopify text is a copy of Fire Fist's"}
+    factory_questions:
+      - "ASCE (SN508 + 202): is it a 5-panel or a 6-panel crown? Your spec sheet says 5-panel; our shop copy says six-panel for ECEG, Greed Island, Valentine and Superrrr. Please count the panels on a production cap and send a photo of the inside."
+    sources: ["Emmie production sheets PEM250715A-1, PEM2601xx", "Emmie chat 2025-09-04/15 (ASCE mould, unstructured)", "Shopify product copy (panel count conflict)", "product photos (sliders)"]
+
+  # ------------------------------------------------------------------------------------------------ HIDDEN INVENTORY
+  hi-structured:
+    name: Hidden Inventory structured cap
+    kind: cap
+    status: "in production — Hidden Inventory; Nick prefers its size (2026-03-03)"
+    factory: {value: "Emmie, Shenzhen Aung Crown", source: "PLM manufacturer 'Emmie Aungcrown'"}
+    crown_die: {value: "B10", source: "Emmie production sheet PEM250408-2"}
+    brim_die: {value: "123", source: "Emmie production sheet PEM250408-2"}
+    panels: {value: 5, source: "sheet PEM250408-2 '五片棒球帽' (5-panel baseball cap); Shopify copy"}
+    structure: {value: "structured (buckram front)", source: "Shopify copy + sheet PEM250408-2"}
+    crown_profile: {proposed: "mid profile, structured front", note: "not measured"}
+    brim: {proposed: "pre-curved", note: "inferred from photos"}
+    closure: {value: "strap", source: "Shopify copy"}
+    size: {value: "57 cm, one size (adjustable)", source: "Emmie sheet PEM250408-2 (57 cm)"}
+    pom:
+      A: {value: 57, source: "Emmie sheet PEM250408-2"}
+      B: {proposed: 10, note: "not recorded (structured front stands taller than the dad caps)"}
+      C: {proposed: 12.5, note: "not recorded"}
+      D: {proposed: 34, note: "not recorded"}
+      E: {proposed: 7, note: "not recorded"}
+      F: {proposed: 18, note: "not recorded"}
+      G: {proposed: 2.5, note: "not recorded"}
+      H: {value: 19, source: "family strap rule: 19 cm effective (founder 2025-10-23/27)"}
+    construction:
+      - {area: Crown, spec: {value: "structured: buckram (fusible backing) on the front panels", source: "Shopify copy + sheet PEM250408-2"}}
+      - {area: Panels, spec: {value: "5 crown panels joined to the button, seams taped inside", source: "sheet PEM250408-2 (5-panel); family seam tape"}}
+      - {area: Brim, spec: {proposed: "pre-curved brim, self fabric (grey on Hidden Inventory), topstitched rows", note: "row count not recorded"}}
+    bom:
+      - {item: Crown fabric, spec: {proposed: "per product (camo cotton twill on Hidden Inventory)", note: "fabric spec not recorded"}}
+      - {item: Front buckram, spec: {proposed: "fusible buckram on both front panels", note: "weight not recorded"}}
+      - {item: Brim insert, spec: {proposed: "plastic (PE) board, pre-curved", note: "not recorded"}}
+    embroidery:
+      front: {note: "main design; over the buckram"}
+      left_side: {note: "optional"}
+      right_side: {note: "optional"}
+      back: {w_cm: {value: 1.5, source: "family: back logo ~1.5 cm wide, centred"}}
+      inside_front: {note: "small character"}
+    products:
+      - {name: "Hidden Inventory Hat", match: "hidden inventory", source: "Emmie sheet PEM250408-2; Nick 2026-03-03"}
+    sources: ["Emmie production sheet PEM250408-2", "Shopify copy", "Nick 2026-03-03: 'use hidden inventory mold ... I think that size is better'"]
+
+  # ------------------------------------------------------------------------------------------------ TRUCKER
+  trucker-snap:
+    name: Foam-front mesh trucker
+    kind: cap
+    status: "in production — No Rain No Rainbows (new mould May 2026)"
+    factory: {value: "Emmie, Shenzhen Aung Crown", source: "PLM manufacturer 'Emmie Aungcrown'"}
+    crown_die: {proposed: "new trucker mould (May 2026) — code not recorded", note: "Emmie 2026-05-21 'new mold finished'; die code never sent"}
+    brim_die: {proposed: "not recorded", note: "ask with the crown die"}
+    panels: {value: 5, source: "Emmie 2025-08-28; 2026-02-12 ('structured front panels')"}
+    structure: {value: "foam-backed cotton front panels (structured), mesh side + back panels", source: "Emmie 2025-08-28, 2026-02-12"}
+    crown_profile: {proposed: "high profile trucker", note: "not measured"}
+    brim: {value: "pre-curved", source: "Emmie / photos"}
+    closure: {value: "plastic snapback, colour matched", source: "Emmie 2025-09-10"}
+    size: {value: "59 cm, one size (snapback)", source: "Emmie 2026-03-06 (58) → 04-29 (60) → 05-28 (59)"}
+    mesh: {value: "mesh side + back panels; seam tape colour = mesh colour", source: "Emmie 2025-08-28; photos 2026-02-07"}
+    pom:
+      A: {value: 59, source: "Emmie 2026-05-28 (58 → 60 → 59 cm)"}
+      B: {value: 8, source: "Emmie 2026-06-02 (front panel 8 cm)"}
+      C: {proposed: 12.5, note: "CONFLICT: 12.5 cm (2026-04-29) vs 'back crown height 16.2 → 16.8' (2026-03-06), measured at a different point"}
+      D: {value: 34.5, source: "Emmie 2026-04-03 (crown depth 33 → 34.5 cm)"}
+      E: {proposed: 7, note: "not recorded"}
+      F: {proposed: 18, note: "not recorded"}
+      G: {proposed: 2.5, note: "not recorded"}
+      H: {proposed: 19, note: "the 19 cm effective rule was set for slider straps — confirm it holds for the snapback strap"}
+    construction:
+      - {area: Front, spec: {value: "cotton front panels with foam backing (structured)", source: "Emmie 2025-08-28, 2026-02-12"}}
+      - {area: Side + back, spec: {value: "mesh panels; seam tape colour = mesh colour", source: "Emmie 2025-08-28; photos 2026-02-07"}}
+      - {area: Closure, spec: {value: "plastic snapback, colour matched to the cap", source: "Emmie 2025-09-10"}}
+    bom:
+      - {item: Front fabric, spec: {proposed: "cotton twill, per colourway", note: "not recorded"}}
+      - {item: Foam, spec: {proposed: "foam backing on the front panels, thickness ~3 mm", note: "thickness not recorded"}}
+      - {item: Mesh, spec: {proposed: "polyester trucker mesh, per colourway (pink / blue / purple)", note: "mesh spec not recorded"}}
+      - {item: Snapback, spec: {value: "plastic snap closure, colour matched", source: "Emmie 2025-09-10"}}
+    embroidery:
+      front: {note: "main design on the foam front; front panel is 8 cm high (POM B)"}
+      back: {note: "mesh: no embroidery on the mesh unless backed"}
+      inside_front: {note: "small character"}
+    products:
+      - {name: "No Rain No Rainbows Hat (+ Pink / Blue / Purple)", match: "no rain no rainbows", source: "Emmie 2025-08-28 → 2026-06-02"}
+    factory_questions:
+      - "Trucker back height: on 2026-04-29 you wrote 12.5 cm; on 2026-03-06 'back crown height 16.2 → 16.8'. Which point is each measured from? Please send the trucker mould sheet with the crown and brim die codes."
+    sources: ["Emmie chat 2025-08-28 → 2026-06-02 (trucker samples)", "Emmie 2026-05-21 'new mold finished'"]
+
+  # ------------------------------------------------------------------------------------------------ SWEET
+  sweet:
+    name: SWEET block
+    kind: cap
+    status: "in production — Smile, Will of D"
+    factory: {value: "Emmie, Shenzhen Aung Crown", source: "PLM manufacturer 'Emmie Aungcrown'"}
+    crown_die: {proposed: "SWEET brand reference mould — code not recorded", note: "Emmie uses a SWEET-brand reference cap as the mould"}
+    brim_die: {proposed: "not recorded", note: "ask with the crown die"}
+    panels: {proposed: 5, note: "inferred, not recorded"}
+    structure: {value: "unstructured", source: "Emmie 2026-03-04"}
+    crown_profile: {value: "square crown shape", source: "Emmie 2026-03-04 'shorter brim and square crown shape'"}
+    brim: {value: "short, curved", source: "Emmie 2026-03-04 'shorter brim'"}
+    closure: {proposed: "self-fabric strap + slider", note: "inferred"}
+    size: {proposed: "58 cm, one size", note: "inferred"}
+    pom:
+      A: {proposed: 58, note: "inferred"}
+      B: {value: 8.5, source: "Emmie 2026-07-06/16 (front panel 8.5 cm)"}
+      C: {proposed: 12.5, note: "not recorded"}
+      D: {proposed: 33, note: "not recorded"}
+      E: {proposed: 6.5, note: "shorter brim than ASCE (2026-03-04); length not recorded"}
+      F: {proposed: 17.5, note: "not recorded"}
+      G: {proposed: 2.5, note: "not recorded"}
+      H: {proposed: 19, note: "family strap rule, if the closure is a strap (closure inferred)"}
+    construction:
+      - {area: Crown, spec: {value: "unstructured, square crown; mesh guard behind the embroidery", source: "Emmie 2026-03-04; founder 2025-09-08 mesh-guard rule"}}
+      - {area: Brim, spec: {value: "short, curved brim", source: "Emmie 2026-03-04"}}
+    bom:
+      - {item: Crown + brim fabric, spec: {proposed: "per product (navy wool / melton on Will of D)", note: "Will of D fabric from Emmie 2026-06-05; others not recorded"}}
+      - {item: Mesh guard, spec: {value: "mesh lining behind the front embroidery", source: "founder 2025-09-08"}}
+    embroidery:
+      front: {note: "main design"}
+      left_side: {note: "optional"}
+      right_side: {note: "optional"}
+      back: {w_cm: {value: 1.5, source: "family: back logo ~1.5 cm wide"}}
+      inside_front: {note: "small character"}
+    products:
+      - {name: "Smile Hat", match: "smile", source: "Emmie 2026-03-12"}
+      - {name: "Will of D Hat (+ 'The Will Of D Hat' sample)", match: "will of d", source: "Emmie 2026-06-05 'arranged with SWEET hat mold' (one trial on Someday, 2026-07-01)"}
+    sources: ["Emmie 2026-03-04 (square crown, short brim)", "Emmie 2026-03-12 (Smile)", "Emmie 2026-06-05 (Will of D on SWEET)", "Emmie 2026-07-06/16 (front panel 8.5 cm)", "Emmie 'Hat mold compare.pptx' (SWEET vs Someday)"]
+
+  # ------------------------------------------------------------------------------------------------ SOMEDAY
+  someday:
+    name: Someday block
+    kind: cap
+    status: "in production — You Wish"
+    nda: "NDA brand mould: no photos of it may be shared outside Haki + Aung Crown"
+    factory: {value: "Emmie, Shenzhen Aung Crown", source: "PLM manufacturer 'Emmie Aungcrown'"}
+    crown_die: {value: "SN509", source: "Emmie 2026-07-22"}
+    brim_die: {value: "S4", source: "Emmie 2026-07-22"}
+    panels: {value: 5, source: "Emmie sheet SEM260530A-5"}
+    structure: {value: "unstructured: no front buckram (前朴 无朴); half-backing mesh on the front", source: "Emmie sheet SEM260530A-5"}
+    crown_profile: {proposed: "mid profile, rounded", note: "not measured"}
+    brim: {proposed: "pre-curved", note: "untagged in the inventory"}
+    closure: {proposed: "self-fabric strap + slider", note: "inferred"}
+    size: {value: "58 cm, one size", source: "Emmie sheet SEM260530A-5"}
+    pom:
+      A: {value: 58, source: "Emmie sheet SEM260530A-5"}
+      B: {proposed: 9, note: "not recorded"}
+      C: {proposed: 12.5, note: "not recorded"}
+      D: {proposed: 33.5, note: "not recorded"}
+      E: {proposed: 7, note: "not recorded"}
+      F: {proposed: 18, note: "not recorded"}
+      G: {proposed: 2.5, note: "not recorded"}
+      H: {proposed: 19, note: "family strap rule, if the closure is a strap (closure inferred)"}
+    construction:
+      - {area: Crown, spec: {value: "unstructured, no front buckram; half-backing mesh on the front panel", source: "Emmie sheet SEM260530A-5"}}
+      - {area: Panels, spec: {value: "5 crown panels, seams taped inside", source: "sheet SEM260530A-5; family seam tape"}}
+    bom:
+      - {item: Crown + brim fabric, spec: {value: "green 12 oz canvas #22 (You Wish)", source: "Emmie sheet SEM260530A-5"}}
+      - {item: Front half-backing, spec: {value: "mesh half-backing on the front panel", source: "Emmie sheet SEM260530A-5"}}
+    embroidery:
+      front: {note: "main design"}
+      left_side: {note: "optional"}
+      right_side: {note: "optional"}
+      back: {w_cm: {value: 1.5, source: "family: back logo ~1.5 cm wide"}}
+      inside_front: {note: "small character"}
+    products:
+      - {name: "You Wish Hat (+ 'You Wish! Hat' sample)", match: "you wish", source: "Emmie sheet SEM260530A-5; 'Hat mold compare.pptx'"}
+    sources: ["Emmie sheet SEM260530A-5", "Emmie 2026-07-22 (SN509 + S4)", "Emmie 'Hat mold compare.pptx'"]
+
+  # ------------------------------------------------------------------------------------------------ RIPSTOP 6P
+  ripstop-6p:
+    name: Ripstop soft cap
+    kind: cap
+    status: "sampling — Rabbit Escape, Shibuya"
+    factory: {value: "Emmie, Shenzhen Aung Crown", source: "PLM manufacturer 'Emmie Aungcrown'"}
+    crown_die: {proposed: "not recorded", note: "ask Emmie"}
+    brim_die: {proposed: "not recorded", note: "ask Emmie"}
+    panels: {proposed: 6, note: "CONFLICT: 6-panel on the photos (2026-04-26, 06-23); one photo caption says 5-panel (2026-07-31)"}
+    structure: {value: "unstructured", source: "photos 2026-04-26, 2026-06-23"}
+    crown_profile: {proposed: "low profile, soft", note: "not measured"}
+    brim: {value: "short, flexible", source: "photos 2026-04-26, 2026-06-23"}
+    closure: {proposed: "self-fabric strap + slider", note: "inferred"}
+    size: {proposed: "58 cm, one size", note: "inferred"}
+    pom:
+      A: {proposed: 58, note: "inferred"}
+      B: {proposed: 8, note: "not recorded"}
+      C: {proposed: 12, note: "not recorded"}
+      D: {proposed: 32, note: "not recorded"}
+      E: {proposed: 6.5, note: "short brim; not recorded"}
+      F: {proposed: 17.5, note: "not recorded"}
+      G: {proposed: 1.5, note: "flexible brim; not recorded"}
+      H: {proposed: 19, note: "family strap rule, if the closure is a strap (closure inferred)"}
+    construction:
+      - {area: Crown, spec: {value: "unstructured, soft ripstop crown; mesh guard behind embroidery", source: "photos 2026-04-26; founder 2025-09-08 mesh-guard rule"}}
+      - {area: Brim, spec: {value: "short, flexible brim", source: "photos 2026-04-26, 2026-06-23"}}
+      - {area: Patch, spec: {value: "woven HAKI STUDIOS patch (Rabbit Escape)", source: "photos 2026-04-26"}}
+    bom:
+      - {item: Crown + brim fabric, spec: {value: "ripstop: purple grid (Rabbit Escape), black (Shibuya)", source: "photos 2026-04-26, 2026-06-23"}}
+      - {item: Brim insert, spec: {proposed: "soft flexible insert", note: "not recorded"}}
+    embroidery:
+      front: {note: "main design or woven patch"}
+      left_side: {note: "optional"}
+      right_side: {note: "optional"}
+      back: {w_cm: {value: 1.5, source: "family: back logo ~1.5 cm wide"}}
+      inside_front: {note: "small character"}
+    products:
+      - {name: "Rabbit Escape Hat", match: "rabbit escape", source: "photos 2026-04-26"}
+      - {name: "Shibuya Hat", match: "shibuya", source: "photos 2026-06-23; Nick's 'Shibuya Incident' deck"}
+    factory_questions:
+      - "Ripstop cap: 5 or 6 crown panels? The samples look 6-panel (2026-04-26, 06-23) but a 2026-07-31 caption says 5-panel. Please confirm, with the crown and brim die codes."
+    sources: ["sample photos 2026-04-26, 2026-06-23, 2026-07-31", "Nick's 'Shibuya Incident' Hat deck"]
+
+  # ------------------------------------------------------------------------------------------------ BUCKET
+  bucket:
+    name: Ripstop bucket hat
+    kind: bucket
+    status: "sample only — no PLM product (Nick wore it 2026-06-01)"
+    factory: {value: "Emmie, Shenzhen Aung Crown", source: "sample 2026-06-01"}
+    crown_die: {proposed: "not recorded", note: "ask Emmie"}
+    brim_die: {proposed: "not recorded", note: "ask Emmie"}
+    panels: {proposed: "crown side band + top + all-round brim (stitched rows)", note: "construction not recorded"}
+    structure: {value: "soft", source: "sample 2026-06-01"}
+    crown_profile: {proposed: "straight-sided crown, oval top", note: "not measured"}
+    brim: {value: "all-round brim", source: "sample 2026-06-01"}
+    closure: {value: "none", source: "sample 2026-06-01"}
+    size: {proposed: "58 cm, one size", note: "not recorded"}
+    pom:
+      A: {proposed: 58, note: "not recorded"}
+      B: {proposed: 8, note: "not recorded"}
+      T: {proposed: 17, note: "not recorded"}
+      E: {proposed: 6, note: "not recorded"}
+    construction:
+      - {area: Crown, spec: {proposed: "side band + oval top, seams taped inside", note: "not recorded"}}
+      - {area: Brim, spec: {proposed: "all-round brim, 8 rows topstitching, slight downward angle", note: "not recorded"}}
+    bom:
+      - {item: Fabric, spec: {value: "ripstop", source: "sample 2026-06-01"}}
+    embroidery:
+      front: {note: "on the crown side band, centred"}
+      back: {note: "optional"}
+    products: []
+    sources: ["sample worn by Nick 2026-06-01"]
+
+  # ------------------------------------------------------------------------------------------------ BEANIE
+  beanie-cuff:
+    name: Cuffed knit beanie
+    kind: knit
+    status: "in revision — January 2026 sample rejected ('not looking like we wanted', 2026-01-28)"
+    factory: {value: "Emmie, Shenzhen Aung Crown", source: "Emmie chat 2025-12-28 → 2026-01-30"}
+    structure: {value: "KNIT, not cut-and-sew: cuffed beanie", source: "Emmie 2025-12-28/30"}
+    size: {proposed: "one size", note: "not recorded"}
+    knit:
+      yarn: {value: "100 % acrylic", source: "Emmie 2025-12-28/30, 2026-01-30"}
+      stitch: {value: "waffle / jacquard knit body", source: "Emmie 2025-12-28/30"}
+      cuff: {value: "fold-up cuff", source: "Emmie 2025-12-28/30"}
+      gauge: {proposed: "12 gauge", note: "not recorded"}
+      crown: {proposed: "fully fashioned crown, 4-point decrease, no pom-pom", note: "not recorded"}
+      decoration: {value: "hearts are EMBROIDERED, not knitted in: they cannot be jacquarded", source: "Emmie 2026-01-30"}
+    pom:
+      W: {proposed: 21, note: "not recorded; Devin's beanie pack (2026-01-04) holds the asked size"}
+      L: {proposed: 21, note: "not recorded"}
+      C: {proposed: 7, note: "not recorded"}
+    construction:
+      - {area: Body, spec: {value: "knitted tube, waffle / jacquard stitch, 100 % acrylic", source: "Emmie 2025-12-28/30"}}
+      - {area: Cuff, spec: {value: "fold-up cuff", source: "Emmie 2025-12-28/30"}}
+      - {area: Crown, spec: {proposed: "fully fashioned crown, linked closed (no seam lump)", note: "not recorded"}}
+      - {area: Label, spec: {proposed: "woven label sewn on the folded cuff seam, back", note: "not recorded"}}
+    bom:
+      - {item: Yarn, spec: {value: "100 % acrylic", source: "Emmie 2025-12-28/30"}}
+      - {item: Hearts, spec: {value: "embroidery (not jacquard)", source: "Emmie 2026-01-30"}}
+    embroidery:
+      front: {note: "on the folded cuff, centred: hearts (embroidered)"}
+    products:
+      - {name: "Pink \"Hearts\" Beanie", match: "hearts beanie", source: "PLM product (Needs Revisions); Emmie 2025-12-28 → 2026-01-30"}
+    factory_questions:
+      - "Beanie: please send the measurement sheet of the January 2026 sample (width flat, height, cuff depth, gauge) and say what you will change so it matches our 2026-01-04 tech pack."
+    sources: ["Emmie chat 2025-12-28 → 2026-01-30", "Devin's beanie tech pack sent 2026-01-04", "PLM Pink 'Hearts' Beanie"]
+
+  # ------------------------------------------------------------------------------------------------ HAKI CORD 5P
+  haki-cord-5p:
+    name: Haki corduroy 5-panel ("Haki Block")
+    kind: cap
+    status: "sampling — new block, factory not chosen (Emmie or Mandy)"
+    factory: {proposed: "Emmie, Shenzhen Aung Crown", note: "PLM shows Sampling with Emmie; Mandy (Jiangxi Shengnan) also quoted and has never made a hat for us"}
+    crown_die: {proposed: "not chosen", note: "new block"}
+    brim_die: {proposed: "not chosen", note: "new block"}
+    panels: {value: 5, source: "founder spec (hat-supplier-compare §2)"}
+    structure: {value: "unstructured", source: "founder spec (hat-supplier-compare §2)"}
+    crown_profile: {proposed: "mid profile, rounded", note: "not specified"}
+    brim: {value: "pre-curved, rows of topstitching", source: "founder spec (hat-supplier-compare §2)"}
+    closure: {value: "self-fabric strap + metal slider", source: "founder spec (hat-supplier-compare §2)"}
+    size: {value: "58 cm, one size", source: "founder spec (hat-supplier-compare §2)"}
+    pom:
+      A: {value: 58, source: "founder spec (hat-supplier-compare §2)"}
+      B: {proposed: 9, note: "not specified"}
+      C: {proposed: 12.5, note: "not specified"}
+      D: {proposed: 33.5, note: "not specified"}
+      E: {proposed: 7, note: "not specified"}
+      F: {proposed: 18, note: "not specified"}
+      G: {proposed: 2.5, note: "not specified"}
+      H: {value: 19, source: "family strap rule: 19 cm effective (founder 2025-10-23/27)"}
+    construction:
+      - {area: Crown, spec: {value: "solid corduroy crown, unstructured; backing cloth behind every embroidery", source: "founder spec; Emmie 2025-11-24 corduroy backing"}}
+      - {area: Brim, spec: {value: "corduroy brim, pre-curved, topstitch rows", source: "founder spec (hat-supplier-compare §2)"}}
+      - {area: Seam tape, spec: {value: "printed seam tape, 1 colour", source: "founder spec (hat-supplier-compare §2)"}}
+      - {area: Sweatband, spec: {value: "mesh / cotton sweatband, woven 4-sided sweatband label", source: "founder spec (hat-supplier-compare §2)"}}
+    bom:
+      - {item: Crown + brim fabric, spec: {value: "solid corduroy, burgundy first", source: "founder spec (hat-supplier-compare §2)"}}
+      - {item: Embroidery backing, spec: {value: "backing cloth behind every embroidery (stretchy corduroy)", source: "Emmie 2025-11-24"}}
+      - {item: Slider, spec: {value: "metal slider", source: "founder spec"}}
+      - {item: Packing, spec: {value: "brim protector, hang tag, polybag, ~100 per carton", source: "founder spec (hat-supplier-compare §2)"}}
+    embroidery:
+      front: {w_cm: {value: 7.5, source: "founder spec: front ~7.5 cm, 3–4 colours"}, colours: {value: "3–4", source: "founder spec"}}
+      right_side: {w_cm: {value: 4, source: "founder spec: right side ~4 cm"}}
+      back: {w_cm: {value: 2.5, source: "founder spec: back 2.5 cm"}}
+      inside_front: {note: "inside-front character (founder spec)"}
+    products:
+      - {name: "Haki \"Block\" Hat", match: "haki block", source: "PLM product (Sampling, Emmie)"}
+    factory_questions:
+      - "Haki corduroy cap: which of your blocks (crown die + brim die) do you propose for an unstructured 5-panel, 58 cm, pre-curved brim? Please send its measurement sheet."
+    sources: ["founder spec in Missions/hat-supplier-compare/mandy-vs-emmie-2026-10-21.md §2", "PLM Haki \"Block\" Hat (Sampling, Emmie)", "Emmie 2025-11-24 (corduroy backing)"]

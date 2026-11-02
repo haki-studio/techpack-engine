@@ -13,6 +13,13 @@ What it produces for a garment:
 - **Tech pack PDF**: flats, construction details, size chart + grading, BOM (consumption from the pattern),
   seams/assembly, labels/packaging/QC, colourway, pattern pages, inside view, operations, revision log, open
   questions, then the embroidery section (placement, threads, stitch summary, production files, element specs).
+- **Factory copy** (`engine/factory_copy.py`, LESSONS E15): from the same build, a lean **FACTORY SUMMARY** PDF
+  (only what the factory needs to make it right the first time) + a factory-safe reference zip, and the full pack as
+  the **INTERNAL** copy (compare sheets, QA tables, decisions). A project opts in by tagging every page it builds
+  `Page(id, kind, title, factory|internal, svg)` with a kind from `factory_copy.KINDS` (compare / check / qa /
+  decisions are internal-only), scrubbing factory pages with `scrub_svg(svg, BASE_SCRUB + its own rules)`, and failing
+  the build unless `summary_gate(pages) == []` and `leak_gate(pdf_texts(factory), pdf_texts(internal), extra,
+  current_rev)["ok"]` (0 hits in the factory copy, > 0 in the internal copy). Example: `projects/konpeito-jeans/kjfactory.py`.
 
 Start with `CLAUDE.md` (how to run, conventions) and `LESSONS.md` (rules + checks). `docs/ROADMAP.md` covers the
 path to batch runs. Projects: `projects/drum-island-plum-pine` (embroidered work jacket),

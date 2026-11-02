@@ -126,6 +126,12 @@ black (not "as HI"); waistband 2 pieces joined at CB; back pockets = "2 back pat
   the reference image again." -> the sprites are redrawn from a hand-read art table of the original mockup
   (inputs/soot_art.json); candies, body, fuzz and positions unchanged.
 
+## Rev B9 — founder 23 Oct 2026 on the soot-sprite arms — CONFIRMED
+- J7: "i think a lot of the arms are upside down of the soot sprites. like so. k9, 8 5, and 1 suffer from this." (his red
+  line on K09: from beside the right eye, out, then straight up to the yellow) -> each holding arm leaves the side of the
+  body facing the candy (about eye height), runs out, then goes up to the candy's underside. K01, K05, K08, K09 changed;
+  K06's raised empty arms, all legs and eyes unchanged.
+
 ## Rev B8 assumptions (PROPOSED)
 22. (replaces Rev B6 #22) Soot sprites: one body Ø for all (median of the 9 traced bodies, 14.2 mm), fuzz = radial satin
     0.2–1.1 mm beyond the body; limbs as on the mockup per inputs/soot_art.json — arms reaching to the candy each sprite
@@ -134,3 +140,10 @@ black (not "as HI"); waistband 2 pieces joined at CB; back pockets = "2 back pat
     pupils offset by ONE gaze per sprite (the mockup cannot resolve the pupils: both look at the candy held, up when the
     arms are raised); thread "Soot black" #151414 40wt. The mockup is ~1 mm per px, so limbs and gaze are a reading of
     it, not a trace. Confirm on the sew-out.
+
+## Rev B9 assumptions (PROPOSED)
+22. (amends Rev B8 #22) Holding arms: root on the body edge at the shoulder on the candy's side (~10° above level; lower,
+    never below -30°, only where the candy sits so low the arm would climb < 2.5 mm), a level run out to under the candy,
+    a 0.8 mm rounded elbow, then straight up, ending 0.8 mm inside the candy's lower edge (the candy is sewn on top).
+    Gate C7: root within 35° of level on the candy's side, no point of the arm more than 0.5 mm above its hand.
+    The mockup is ~1 mm per px, so the elbow and arm length are a reading of it. Confirm on the sew-out.

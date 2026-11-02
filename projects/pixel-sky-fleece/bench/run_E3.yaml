@@ -1,0 +1,34 @@
+# Pixel Sky fleece E3, digitised by the parts engine (digitize.svgrun) from the SVG traced off the mockup (emb_art.py).
+#   PYTHONPATH=engine python3 -m digitize.run projects/pixel-sky-fleece/bench/run_E3.yaml --no-api
+name: HK-FL-PIXSKY_E3
+label: "Pixel Sky fleece E3"
+source: svg
+out_dir: out/stitch/E3
+techniques: {tatami: true, satin: true, split_satin: true, run: true, bean: true, column_satin: true, dot: true, radial: true, turning_satin: true}
+rule_overrides:
+  kinds:
+    sherpa_fill:
+      techniques: [tatami]
+      dir: 0
+      spacing: 0.40              # denser than duck (0.45): the pile must not poke through [proposed - strike-off]
+      pull_comp: 0.30            # pile pulls more than duck [proposed - strike-off]
+      underlay: [edge_run, lattice_90]
+      note: pixel motif on high-pile sherpa, water-soluble topping on top, one declared angle per motif
+svg:
+  file: out/art/HK-FL-PIXSKY_E3_ART.svg
+  layers:
+    "01_": {role: fill, dir: 0, kind: sherpa_fill}
+    "02_": {role: fill, dir: 0, kind: sherpa_fill}
+    "03_": {role: fill, dir: 0, kind: sherpa_fill}
+threads:
+  needles: factory
+  max_dE: 3.0
+  palette: {yellow: "#F6E23A", gold: "#D9A521", black: "#231F1E"}
+  names: {yellow: "Sparkle yellow", gold: "Sparkle gold", black: "Bird black"}
+sequence: {cut_under: false, touch: -0.05}
+compile:
+  exact_travel: {halo: 0.25, max_ex: 0.2, unsewn_only: true}
+gates:
+  ppm: 20
+  motif: {min_mm2: 4.0, near_mm: 0.3}
+  thread_d: {40wt: 0.40}

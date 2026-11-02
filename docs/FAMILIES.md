@@ -86,6 +86,24 @@ D1..Dn one per decoration (placement on the flat at true proportion for every si
 spec, artwork) · T7 colourway · T8 packing · F1 factory requests (every amber value) · R1 revisions + approvals.
 No prices, quantities or our numbers appear on any page (tested).
 
+## Hats: pick a style from the catalogue
+
+Every hat is made on one of a small set of factory blocks (crown die + brim die, or a knit spec), so a hat is not a
+family per product: it is a **style key** from `families/cap/styles.yaml` (9 today: asce-dad, hi-structured,
+trucker-snap, sweet, someday, ripstop-6p, bucket, beanie-cuff, haki-cord-5p). `families/cap/family.yaml` holds what
+every cap shares (POM tolerance, cap-frame limits, strap rule, sketch constants).
+
+- **Submitting a hat:** pick its style from `python3 engine/capstyle.py list` (`show <key>` for the full sheet,
+  `product "<name>"` for a product we already sell) and put `"style": "<key>"` in the intake plan. Intake and
+  `dispatch.sh build` refuse a hat with no style or an unknown one and print the valid keys (LESSONS H1).
+- **A new shape** (a new crown die, a new beanie) is a new entry in `styles.yaml`, never a free-text style on the brief.
+  `python3 engine/capstyle.py check` validates it: every value is `{value, source}` or `{proposed, note}`, every POM of
+  its kind present, no unknown fields. Proposed values print amber and are listed on F1.
+- **Pages** (`python3 engine/cap_pages.py <key> [--product NAME] --out DIR`): H1 style sheet · H2 POM chart · H3 flats
+  (front / side / back / top / under-brim, cap + bucket) or K1 knit spec (beanie) · H4 embroidery positions vs the
+  cap-frame limits · H5 construction + BOM · F1 factory requests (every amber value). The POM chart governs; the flats
+  are a sketch drawn from it.
+
 ## Next: the Drum Island jacket family
 
 The same pattern, with the jacket's existing engine pieces:
