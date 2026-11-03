@@ -32,7 +32,7 @@ def label_rows():
     fb = LS.care_fibre(CARE_SHELL)
     care = (f"Haki standard care label, {fb}" + ("" if FIBRE_CONFIRMED else " " + LS.unconfirmed(fb))) if fb else f"care label {LS.MISSING}"
     return (("Labels", f"Haki standard main label, woven 6.5 × 2 cm (centre back neck) + {care}, 3 × 6.5 cm printed satin. "
-                       "Placement, artwork 1:1 and one question: page K7. Art: zip labels/."),)
+                       "Placement, artwork 1:1 and question 7 (rib on the care label): page K7. Art: zip labels/."),)
 
 
 # K7 placement rows (item, where, proposed?). The pullover has no lining and no neck facing: the main label sits on the

@@ -15,3 +15,7 @@ Builder `kcos-labels`, for lifetime-product-lead. Founder go via Chief 2026-11-0
 - K1 subtitle + footer say Rev N / 3 Nov 2026; Labels row points to K7. Zip carries labels/ (main + 100-cotton care .pdf/.ai).
 - Test: `tests/test_kcos_revm_labels.py` (425 vs 350, K7 rows, rib question) red on Rev M pv_bom, green on Rev N.
 - NOT sent to Mandy (founder sends).
+- Independent reviewer: **REVIEW: APPROVE c3721c2** (0 must-fix). Should-fix 1 applied after the review: K1's Labels row now names question 7
+  (rib) on K7. Date 3 Nov is UTC-correct. Rev J reference pages keep their Rev J footers, carried over from Rev M as designed.
+- Delivered: TECH PACKS/2 Keep Clean Our Space hoodie/ "... - Rev N (pullover) - for Mandy.pdf" (12 pp, labels = page 7) + "... stitch files size M.zip";
+  Rev M moved to older versions. READ ME - meeting list item 2 rewritten for Rev N.
