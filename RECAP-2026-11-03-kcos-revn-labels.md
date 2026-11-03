@@ -29,3 +29,11 @@ Builder `kcos-labels`, for lifetime-product-lead. Founder go via Chief 2026-11-0
 ## Source confirmed (product lead, 3 Nov)
 - 425 GSM = Mandy WhatsApp 2026-10-31 05:17Z: "the fabric is 425gsm of hidden inventory hoodie. not 365gsm". She said 365, not 350.
   The pack's "350" is our Hidden Inventory BOM figure (SELF_HI_BOM), so the note is accurate as worded. Founder send card filed by the product lead.
+
+## HANDOFF (3 Nov, builder kcos-labels stopping; work accepted by product-lead-lifetime)
+- Branch kcos-labels-revn @ this commit (worktree ~/tpe-kcos-labels), PR https://github.com/haki-studio/techpack-engine/pull/61, reviewed APPROVE c3721c2.
+- Branch family-tee-standard-labels @ d042f94 (worktree ~/tpe-tee-labels), PR https://github.com/haki-studio/techpack-engine/pull/62.
+- Both PRs wait on the release lead. Full suite: 722 pass / 2 known konpeito fails (test_soot_sprites_traced_and_gated,
+  test_soot_art_gates_red_on_b7_green_on_b8: need konpeito build outputs that a fresh worktree lacks; baseline, not labels).
+- Nothing in flight. Open: Nick decides tee main-label placement (back neck vs hem); founder sends Rev N to Mandy (card filed by product lead).
+- Leftover: an untracked symlink named `*` in ~/tpe-kcos-labels (from env.sh), harmless; safety check blocked its removal.
