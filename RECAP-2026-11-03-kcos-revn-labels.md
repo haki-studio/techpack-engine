@@ -19,3 +19,9 @@ Builder `kcos-labels`, for lifetime-product-lead. Founder go via Chief 2026-11-0
   (rib) on K7. Date 3 Nov is UTC-correct. Rev J reference pages keep their Rev J footers, carried over from Rev M as designed.
 - Delivered: TECH PACKS/2 Keep Clean Our Space hoodie/ "... - Rev N (pullover) - for Mandy.pdf" (12 pp, labels = page 7) + "... stitch files size M.zip";
   Rev M moved to older versions. READ ME - meeting list item 2 rewritten for Rev N.
+
+## Job 2: tee family standard labels
+- Branch `family-tee-standard-labels` @ d042f94, PR #62. family.yaml labels: main 6.5x2 cm (assets/labels/main-label-6.5x2cm-white.pdf),
+  care = 100 % cotton white (by blank.fabric), separate size label (proposed); the old hem and neck labels are removed. Main + size placement stay
+  {proposed} (previous hem spot) + a TODO: **Nick decides back neck vs hem**. Size label moved to 10.5 cm so it does not cover the main label on T6.
+- LESSONS D8 + test_tee_family_uses_the_standard_label_files (red on the old yaml). Full suite 722 pass / 2 known konpeito fails.
