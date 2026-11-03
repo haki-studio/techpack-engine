@@ -206,3 +206,24 @@ def test_template_example_uses_back_view_and_embroidery_stub():
     sv = svgs(sp)
     assert "stitch files are made by the techpack-engine stitch path" in sv["D2"]
     assert "max 12 colours per file" in sv["D2"]                              # read from factory.json
+
+
+# ----------------------------------------------------------------------------- D7 standard labels
+def test_tee_family_uses_the_standard_label_files():
+    """LESSONS D7 / D8: a tee pack names the Haki standard label files (founder 22 Oct 2026), never the old brand's
+    hem / neck labels: main = labels.MAIN at 6.5 x 2 cm, care = labels.care_label(blank fabric); the main label's
+    placement stays PROPOSED until Nick decides back neck vs hem; the rendered T6 page carries no old brand name."""
+    import labels as LB
+    fam = yaml.safe_load(open(os.path.join(FAM, "family.yaml")))
+    rel = lambda p: os.path.relpath(p, ROOT)
+    lab = fam["labels"]
+    assert lab["main"]["artwork"] == rel(LB.MAIN) and os.path.exists(os.path.join(ROOT, lab["main"]["artwork"]))
+    assert [float(x) * 10 for x in lab["main"]["size_cm"]] == list(LB.MAIN_MM)
+    care = LB.care_label(fam["blank"]["fabric"]["value"])
+    assert care and lab["care"]["artwork"] == rel(care) and os.path.exists(care)
+    assert [float(x) * 10 for x in lab["care"]["size_cm"]] == list(LB.CARE_MM)
+    assert "proposed" in lab["main"]["placement"] and "Nick" in lab["main"]["placement"]["note"]
+    assert "neck" not in lab                                                     # the old black neck label is gone
+    assert "hakistop" not in open(os.path.join(FAM, "family.yaml")).read().lower()
+    t6 = svgs(spec())["T6"].lower()
+    assert "hakistop" not in t6 and "haki studios" in t6 and "6.5 x 2 cm" in t6

@@ -119,30 +119,37 @@ construction:
 
 # ---------------------------------------------------------------------------------------------------- LABELS + TRIMS
 labels:
+  # Haki standard labels (founder 22 Oct 2026, LESSONS D7, engine/labels.py): ONE main label for every product, care label by
+  # fibre. Artwork paths are repo-relative (assets/labels/; founder mirror: Desktop/TECH PACKS/_Brand labels/).
+  # tests/test_family_tee.py::test_tee_family_uses_the_standard_label_files keeps these in step with engine/labels.py.
   main:
-    item: Main / size label
-    text: "hakistop  AS ALWAYS, MADE WITH LOVE  + size"
-    size_cm: [3.75, 3]
-    material: {proposed: "woven damask, black ground, white text"}
-    position: "hem label (folded into the body hem seam); size on the label"
-    # placement: view front/back; side wearer_left/wearer_right; at hem / side_seam / cb_neck; distances in cm
-    placement: {proposed: {view: front, side: wearer_left, at: hem, from_side_cm: 3, inside: false}}
-    source: "2025-10-17; 2026-01-26; From the Shadows tech-pack slide: 'Hem label'; 614babf4"
+    item: Main label
+    text: "Haki Studios logo + mark (Haki standard main label artwork)"
+    artwork: assets/labels/main-label-6.5x2cm-white.pdf
+    size_cm: [6.5, 2]
+    material: "woven, white ground, black logo; flat, sewn down on all 4 sides (black thread)"
+    # TODO(Nick): OPEN DECISION, back neck vs hem for the 4 new tees. Nick decides; do not pick one here.
+    # Until he answers, the placement below stays the previous tee position (hem), marked proposed, and F1 lists it.
+    # When he answers: back neck = {view: back, at: cb_neck, inside: true}; hem = keep below, drop `proposed`.
+    placement: {proposed: {view: front, side: wearer_left, at: hem, from_side_cm: 3, inside: false},
+                note: "OPEN: Nick decides back neck (centred at CB, inside) or hem for the new tees"}
+    source: "Founder 22 Oct 2026: one standard main label (6.5 x 2 cm, white) on every product"
+  size:
+    item: Size label
+    text: "size (XS-2XL)"
+    size_cm: {proposed: [2, 2]}
+    material: {proposed: "woven, white ground, black text, to match the main label"}
+    placement: {proposed: {view: front, side: wearer_left, at: hem, from_side_cm: 10.5, inside: false},
+                note: "sewn next to the main label: follows wherever Nick puts the main label"}
+    source: "the old hem label carried the size; the standard main label has no size on it"
   care:
     item: Care label
-    text: "fibre content (100 % cotton) + care symbols + MADE IN CHINA"
-    material: "satin"
-    size_cm: {proposed: [3, 6]}
+    text: "Haki standard care label, 100 % cotton (fibre from blank.fabric) + care symbols + MADE IN CHINA"
+    artwork: assets/labels/haki-studios-care-label-100-cotton-white.pdf
+    material: "printed satin, white ground, printed front + back"
+    size_cm: [3, 6.5]
     placement: {proposed: {view: front, side: wearer_left, at: side_seam, above_hem_cm: 10, inside: true}}
-    source: "satin, fibre content per style, MADE IN CHINA required"
-  neck:
-    item: Neck label
-    text: "HAKISTOP"
-    size_cm: {proposed: [5, 2]}
-    material: {proposed: "woven, black ground"}
-    enabled: false                     # some tees have a black HAKISTOP neck label — a variant can turn it on
-    placement: {proposed: {view: back, at: cb_neck, inside: true}}
-    source: "seen on some tees (black HAKISTOP neck label)"
+    source: "Founder 22 Oct 2026: care label by fibre (engine/labels.care_label(blank.fabric)); MADE IN CHINA"
 hang_tag:
   item: Hang tag
   supplied_by: "Haki supplies its own hang tags"
