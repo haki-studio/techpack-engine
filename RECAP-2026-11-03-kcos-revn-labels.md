@@ -25,3 +25,7 @@ Builder `kcos-labels`, for lifetime-product-lead. Founder go via Chief 2026-11-0
   care = 100 % cotton white (by blank.fabric), separate size label (proposed); the old hem and neck labels are removed. Main + size placement stay
   {proposed} (previous hem spot) + a TODO: **Nick decides back neck vs hem**. Size label moved to 10.5 cm so it does not cover the main label on T6.
 - LESSONS D8 + test_tee_family_uses_the_standard_label_files (red on the old yaml). Full suite 722 pass / 2 known konpeito fails.
+
+## Source confirmed (product lead, 3 Nov)
+- 425 GSM = Mandy WhatsApp 2026-10-31 05:17Z: "the fabric is 425gsm of hidden inventory hoodie. not 365gsm". She said 365, not 350.
+  The pack's "350" is our Hidden Inventory BOM figure (SELF_HI_BOM), so the note is accurate as worded. Founder send card filed by the product lead.
