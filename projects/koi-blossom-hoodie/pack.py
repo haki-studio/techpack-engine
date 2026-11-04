@@ -193,7 +193,7 @@ def summary():
     o.append(t(12, qy, "OPEN QUESTIONS — confirm before sampling", 2.6, 700))
     qs = [f"1. Frame: on {FR_S} the taller pieces need 2 hoopings (split S1/S2 with registration crosses, G5/G6); a larger / jacket frame removes the joins — which frames do you have?",
           "2. Thread board: all 12 targets are read from a low-res AI mockup — approve physical colours (G3), especially the 6 blues against the washed navy shell.",
-          "3. Shell: assumed washed navy 12 oz duck, piece-dyed and pre-washed before embroidery. If the jacket is garment-washed after embroidery, wash-test the sew-out.",
+          "3. Shell: assumed washed navy 12 oz 100% cotton duck [proposed — confirm fibre], piece-dyed and pre-washed before embroidery. If the jacket is garment-washed after embroidery, wash-test the sew-out.",
           "4. Back, hood and the back half of the sleeves: the mockup shows the front only — assumed plain. Confirm (or send a back / hood mockup).",
           f"5. Hem band + cuffs: the mockup flowers run over the band / cuff seams; the art stops 10 above them (keep-out). Mockup blue left unstitched in that strip, size M: "
           f"FR {FID['FR']['band_zone_mm2']:.0f}, FL {FID['FL']['band_zone_mm2']:.0f}, SR {FID['SR']['band_zone_mm2']:.0f} mm2 (fidelity.py). OK, or embroider the band?",
