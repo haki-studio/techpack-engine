@@ -17,7 +17,9 @@ Real fix, not xfail. Every assertion is unchanged (incl. the K01 limbs_dst==4 / 
 
 ## State
 - Local: 721 passed + 2 failed before; konpeito file 11/11 after. Full suite ~11.5 min locally.
-- Prove-the-guard: a deliberate failing test was pushed to the PR branch, CI went red, then reverted (see PR body).
+- Prove-the-guard: canary `tests/test_ci_canary.py` (assert 1+1==3) at 0d3ccc3 → run 42414893141 FAILED, log names
+  the canary. Same run exposed a real CI-env gap: 6 test_labelsheet tests need `pdftoppm` → added `poppler-utils`.
+  Canary reverted + poppler at de401e3 → run 42415491809 SUCCESS, 723 passed in 5m38s on GitHub (11.5 min locally).
 
 ## Caveats
 - `requirements.txt` is unpinned; CI resolves latest compatible versions, local venv may differ (numpy 2.2.6,
