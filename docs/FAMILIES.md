@@ -71,7 +71,7 @@ Edit `families/tee/family.yaml` once and every tee's pack changes on the next bu
 | block constants (shoulder slope, hems), fit | body colour, hex, Pantone, wash |
 | blank fabric, rib, care | decorations: method, view, placement, size per size, art, ink colours, notes |
 | construction + stitching | `spec:` overrides of a method's default spec lines |
-| labels (main/size hem label, care, neck), hang tag | `overrides:` anything in the family for this one product (e.g. `labels: {neck: {enabled: true}}`) |
+| labels (Haki standard main label, size label, care label by fibre), hang tag | `overrides:` anything in the family for this one product (e.g. `labels: {size: {enabled: false}}`) |
 | packing, placement keep-outs, top factory questions | revisions |
 
 Print methods (`engine/family/methods.yaml`) are shared by every family; each has its own spec lines (screen: inks,
