@@ -270,7 +270,7 @@ def p_bom():
         ("Thread — topstitch", "Coats Gral 40 (Tex 60) poly", "tonal navy", "topstitch, bartacks", "Coats", "~ 120 m", True),
         ("Embroidery thread", "Madeira Polyneon 40 (9 colours, see G3)", "per embroidery spec", "01 wave, 5 pieces", "Madeira", thread_qty(), False),
         ("Embroidery backing", "2.5 oz cutaway", "navy / charcoal", "behind BK, FR, FL, SR, SL", "TBC", "5 pieces", False),
-        ("Main label", LS.main_bom(), "white / black", "CB neck facing", "Haki file", "1", False),
+        ("Main label", LS.main_bom(), "white / black", "CB neck facing", "Haki file", "1", LS.main_proposed()),
         ("Size label", "woven, 2 × 1.5 cm", "black / cream", "under main label", "TBC", "1", True),
         ("Care / content label", LS.care_bom(SHELL_MAT), "white / black", "wearer's left inside side seam", "Haki file", "1", True),
         ("Hangtag + string", "350 gsm board, cotton string, brass-tone barb", "cream / black", "through main label loop", "TBC", "1", True),
