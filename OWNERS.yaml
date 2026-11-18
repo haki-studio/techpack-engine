@@ -1,0 +1,9 @@
+# Who owns this repo (mission api-first-engineering, 2026-11-18). Read by the merge gate.
+repo: haki-studio/techpack-engine
+owner_team: products
+lead_session: lead-products
+cto_signs: true
+purpose: Tech pack generator - garment mockups + fit chart in; embroidery stitch files, graded pattern DXF and factory tech pack PDF out.
+# No runtime PLM access; size-chart values are copied into project files by hand (source noted in code comments).
+writes_plm_tables: []
+reads_plm_tables: []

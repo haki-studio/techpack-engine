@@ -1,8 +1,8 @@
-"""Rev K/L/M pullover pack (factory-facing): K1 factory summary = questions for Mandy, K2 overview, K3 hoop plan + files,
-K4 back badges + hem script, K5 star field rules, K6 block / size chart; then the Rev J badge stitch-detail pages
+"""Rev K/L/M/N pullover pack (factory-facing): K1 factory summary = questions for Mandy, K2 overview, K3 hoop plan + files,
+K4 back badges + hem script, K5 star field rules, K6 block / size chart, K7 labels (Rev N); then the Rev J badge stitch-detail pages
 (E01-E04, R1) as reference with a banner. Every stitch number is read from result_<tag>_*.json (DST read-back).
 No prices, no machine minutes and no cost thoughts go in here (request-a-supplier-quote: the factory names prices first).
-usage: python3 pv_pack.py [SIZE] -> out/pv/<SIZE>/HAKI_KCOS-PULLOVER_RevM_<SIZE>.pdf + _files.zip"""
+usage: python3 pv_pack.py [SIZE] -> out/pv/<SIZE>/HAKI_KCOS-PULLOVER_RevN_<SIZE>.pdf + _files.zip"""
 import sys, os, glob, json, zipfile, io
 import cairosvg
 import kccore
@@ -11,12 +11,14 @@ from sheet import t, header, doc, embed_svg_png, INK, MUTED, RED, ORANGE, GUIDE
 import pv_block as B
 import kcdoc as KD, tofu
 import pv_bom as BOM
+import labelsheet as LS
 
 SIZE = next((a for a in sys.argv[1:] if a in B.CHART), "M")
 OUT = f"out/pv/{SIZE}"; PG = f"{OUT}/pages"; os.makedirs(PG, exist_ok=True)
 REVJ = os.environ.get("KCOS_REVJ_PDF", "/mnt/c/Users/devin/Desktop/TECH PACKS/2 Keep Clean Our Space hoodie/Keep Clean Our Space hoodie - Rev J - full tech pack - USABLE WITH CAVEAT.pdf")
 MOCK = "inputs/mockups-3-2026-10-27.png"   # Rev M: "Mockups 3", Nick approved 27 Oct
-SB.FOOT = "HAKI STUDIOS · Keep Clean Our Space pullover hoodie (washed black) · Rev M · 28 Oct 2026 · size M"
+REV = "Rev N"   # Rev N (3 Nov 2026) = Rev M + labels page K7 + fabric 425 GSM; stitch files unchanged from Rev M
+SB.FOOT = f"HAKI STUDIOS · Keep Clean Our Space pullover hoodie (washed black) · {REV} · 3 Nov 2026 · size M"
 plan = json.load(open(f"{OUT}/plan_allover.json"))
 R = {}
 for fp in glob.glob(f"{OUT}/result_allover_*.json"): R.update(json.load(open(fp)))
@@ -45,7 +47,7 @@ def wrap(o, x, y, text, size=2.5, w=400, fill=INK, width=125, lh=None):
 
 def k1():
     o = header("K1 · FACTORY SUMMARY — please answer these before sampling",
-               "Rev M: washed-black kangaroo-pocket pullover hoodie, Come Over block, Hidden Inventory fabric + wash. Embroidered on cut pieces before sewing.", "K1")
+               f"{REV} = Rev M + labels page K7 + fabric 425 GSM (stitch files unchanged). Washed-black kangaroo-pocket pullover, Come Over block, Hidden Inventory fabric + wash.", "K1")
     y = 33
     o.append(t(12, y, "HOOPINGS PER PIECE (our plan, size M, field up to 340 x 505 mm each, frame can be turned 90 degrees)", 2.8, 700)); y += 5
     cols = (12, 52, 70, 150, 178, 200)
@@ -67,6 +69,7 @@ def k1():
                  ("Wash", "The same wash as our Hidden Inventory Hoodie (question 2)."),
                  ("Block", "Your Come Over hoodie pattern and measurements (page K6), not Hidden Inventory."),
                  *BOM.label_rows()):
+        if h == "Self": o.append(t(170, y, "<- " + BOM.GSM_NOTE_SHORT, 2.1, 700, AMB))   # Rev N: Mandy 30-31 Oct, same line (Q6 must clear the footer)
         o.append(t(12, y, h, 2.4, 700)); o.append(t(52, y, q, 2.4)); y += 3.8
     y += 2
     o.append(t(12, y, "QUESTIONS", 2.8, 700)); y += 5
@@ -193,11 +196,33 @@ def k6():
         o.append(t(150 + i * 72, 36 + h, f"{B.NAMES[P]} (size M, cut line)", 2.0, 400, MUTED))
     return o
 
+def k7():
+    """K7 labels (Rev N): the Rev J T6b layout (labelsheet.hoodie_page) adapted for the pullover: no lining, no facing,
+    the hood joins the body at the neck seam; adds the rib question and the 425 GSM note."""
+    o = header("K7 · LABELS — Haki standard main + care label", "Main + care label = the Haki standard labels (founder 22 Oct 2026), artwork right at 1 : 1, files in the zip labels/. Positions on the finished garment.", "K7")
+    y = 36; o.append(t(12, 31, "PLACEMENT", 2.2, 700))
+    for i, (a, b_, p) in enumerate(BOM.PLACEMENT):
+        if i % 2 == 0: o.append(f'<rect x="11" y="{y - 3.0:.2f}" width="180" height="4.4" fill="{LS.ALT}"/>')
+        o.append(t(12, y, a, 1.75, 700)); o.append(t(40, y, b_ + ("  [proposed — confirm]" if p else ""), 1.6, 400, LS.PROP if p else INK)); y += 4.4
+    fb = LS.care_fibre(BOM.CARE_SHELL); y += 5
+    o.append(t(12, y, f"CARE LABEL — Haki standard, {fb}", 2.2, 700, LS.GREEN if fb and BOM.FIBRE_CONFIRMED else AMB)); y += 5
+    for l in (f"Picked from the self fabric: {BOM.SELF}", f"Rib (cuffs + body hem): {BOM.RIB}"):
+        y = wrap(o, 12, y, l, 1.65, width=170, lh=3.0) + 0.6
+    y = wrap(o, 12, y, BOM.GSM_NOTE, 1.65, 700, AMB, width=120, lh=3.0) + 0.6
+    y = wrap(o, 12, y, "Embroidery thread is not on the standard label.", 1.65, width=120, lh=3.0) + 4
+    o.append(t(12, y, "QUESTION", 2.2, 700)); y += 4.6
+    o.append(t(12, y, "7. Rib on the care label.", 1.9, 700)); y = wrap(o, 46, y, BOM.RIB_Q, 1.8, width=95, lh=2.9) + 1
+    o.append(f'<line x1="46" y1="{y:.2f}" x2="190" y2="{y:.2f}" stroke="#CFCFCF" stroke-width="0.2"/>'); o.append(t(46, y - 0.6, "Answer:", 1.6, 400, MUTED))
+    pl = BOM.PLACEMENT
+    o += LS.panel(200, 30, 86, BOM.CARE_SHELL, f"Position: {pl[0][1].split(',')[0]}, {pl[0][1].split(',')[1].strip()}.",
+                  f"Position: {pl[3][1]} [proposed — confirm].", fibre_confirmed=BOM.FIBRE_CONFIRMED)[0]
+    return o
+
 def build():
     pages = [("K1", k1()),
              ("K2", img_page("K2", "K2 · OVERVIEW — target look (mockup) and our size-M layout", "Mockup (approved) = look and placement (do not copy its lettering). Layout = what the stitch files sew.",
                              MOCK, w=200, extra=None)),
-             ("K3", k3()), ("K4", k4()), ("K5", k5()), ("K6", k6())]
+             ("K3", k3()), ("K4", k4()), ("K5", k5()), ("K6", k6()), ("K7", k7())]
     from pypdf import PdfWriter, PdfReader
     wr = PdfWriter()
     for k, o in pages:
@@ -213,16 +238,16 @@ def build():
         bp = io.BytesIO(cairosvg.svg2pdf(bytestring=ban.encode())); banner = PdfReader(bp).pages[0]
         for i in (16, 17, 18, 19, 25):         # E01-E04, R1
             p = rj.pages[i]; p.merge_page(banner); wr.add_page(p)
-    pdf = f"{OUT}/HAKI_KCOS-PULLOVER_RevM_{SIZE}.pdf"; wr.write(pdf)
-    z = f"{OUT}/HAKI_KCOS-PULLOVER_RevM_{SIZE}_files.zip"
+    pdf = f"{OUT}/HAKI_KCOS-PULLOVER_RevN_{SIZE}.pdf"; wr.write(pdf)
+    z = f"{OUT}/HAKI_KCOS-PULLOVER_RevN_{SIZE}_files.zip"
     with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.write(pdf, os.path.basename(pdf))
         for fp in sorted(glob.glob(f"{OUT}/stitch_allover/*")):
             if fp.endswith((".dst", ".pes", "_preview.png")): zf.write(fp, "stitch_files/" + os.path.basename(fp))
         for n in BOM.export_labels(f"{OUT}/labels"): zf.write(f"{OUT}/labels/{n}", "labels/" + n)   # Haki standard labels
-        zf.writestr("README.txt", "Keep Clean Our Space pullover hoodie, Rev M, size M.\nOne DST + PES per hooping (name = piece-hooping), plus a preview of each.\n"
+        zf.writestr("README.txt", f"Keep Clean Our Space pullover hoodie, {REV}, size M (stitch files unchanged from Rev M).\nOne DST + PES per hooping (name = piece-hooping), plus a preview of each.\n"
                     "Pieces: FR front, BK back, PK kangaroo pocket, SR/SL sleeves, HR/HL hood sides. Hooping plan and placement: PDF pages K3-K4.\n"
-                    f"labels/: Haki standard main label + the {BOM.LS.care_fibre(BOM.CARE_SHELL)} care label (page K1).\n"
+                    f"labels/: Haki standard main label + the {BOM.LS.care_fibre(BOM.CARE_SHELL)} care label (placement + artwork: page K7).\n"
                     "Other sizes are built after your answers on page K1 (your pattern, wash, hoopings).\n")
     print(pdf, z, TOT)
 
