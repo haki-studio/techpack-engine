@@ -8,6 +8,7 @@ from shapely.ops import unary_union
 from pypdf import PdfWriter, PdfReader
 from sheet import t, swatch, doc, INK, MUTED, RED, ORANGE, GUIDE, GREEN, SW, SH
 from render import f
+import labelsheet as LS
 from motifs2 import HEX, PAL
 import tech
 import specbase as SB
@@ -123,9 +124,9 @@ def threads():
     tr = [("Backing", "2.5 oz cutaway, black/charcoal (navy shell), 30 larger than each hooping; trim to 5 from stitching. Very dense art: test a second layer on the strike-off."),
           ("Needles / bobbin", "75/11 sharp (canvas) · 60wt navy polyester pre-wound bobbin"),
           ("Frames", f"{FR_S} (factory.json{'' if PROF['frames_confirmed'] else ', PROPOSED'}): back 4, each front 2, each sleeve 4 hoopings (split files, G5/G6)"),
-          ("Patches / labels", "no embroidered patches or labels — woven main + printed care label = Haki standard (garment pages)")]
+          ("Patches / labels", LS.pack_patches_row(os.path.dirname(os.path.abspath(__file__))))]
     for i, (a, b) in enumerate(tr):
-        o.append(t(12, yb + 14 + i * 3.4, a, 1.75, 600)); o.append(t(40, yb + 14 + i * 3.4, b, 1.7))
+        o.append(t(12, yb + 14 + i * 3.4, a, 1.75, 600)); o.append(t(40, yb + 14 + i * 3.4, b, 1.7, 400, LS.AMBER if LS.flagged(b) else INK))
     return o
 
 def summary():

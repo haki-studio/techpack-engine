@@ -7,6 +7,7 @@ from shapely.ops import unary_union
 from pypdf import PdfWriter, PdfReader
 from sheet import t, swatch, doc, INK, MUTED, RED, ORANGE, GUIDE, GREEN, SW, SH
 from render import f
+import labelsheet as LS
 from motifs2 import HEX, PAL
 import tech, stitchrender as SR
 import specbase as SB
@@ -182,9 +183,9 @@ def threads():
           ("Topping", "none (canvas surface is firm); optional water-soluble topping on the foam if the loops sink - strike-off decides"),
           ("Needles", "75/11 sharp (canvas)"), ("Bobbin", "60wt navy polyester pre-wound (dark shell) - re-check on the new shell colour"),
           ("Frames", f"{FR_S} (factory.json{'' if PROF['frames_confirmed'] else ', PROPOSED'}): {HOOPS} hoopings per jacket at M (G6); a frame ≥ {max(CUR[p]['size_mm'][0] for p in PS)+30:.0f} × {max(CUR[p]['size_mm'][1] for p in PS)+30:.0f} sews every piece in one"),
-          ("Patches / labels", "no embroidered patches or labels — woven main + printed care label = Haki standard (garment pages)")]
+          ("Patches / labels", LS.pack_patches_row(os.path.dirname(os.path.abspath(__file__))))]
     for i, (a, b) in enumerate(tr):
-        o.append(t(12, yb + 4.5 + i * 3.5, a, 1.8, 600)); o.append(t(38, yb + 4.5 + i * 3.5, b, 1.75))
+        o.append(t(12, yb + 4.5 + i * 3.5, a, 1.8, 600)); o.append(t(38, yb + 4.5 + i * 3.5, b, 1.75, 400, LS.AMBER if LS.flagged(b) else INK))
     return o
 
 def summary():

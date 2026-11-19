@@ -223,7 +223,7 @@ def p_bom():
     for i, (a, b_, q, p) in enumerate(rows):
         y = 38 + i * 4.6
         if i % 2 == 0: o.append(f'<rect x="11" y="{f(y - 3.1)}" width="{SW - 22}" height="4.6" fill="{ALT}"/>')
-        o.append(t(cx[0], y, a, 1.8, 700)); o.append(t(cx[1], y, b_ + ("  [proposed — confirm]" if p else ""), 1.75, 400, LS.AMBER if LS.MISSING in b_ else PROP if p else INK)); o.append(t(cx[2], y, q, 1.8, 600))
+        o.append(t(cx[0], y, a, 1.8, 700)); o.append(t(cx[1], y, b_ + ("  [proposed — confirm]" if p else ""), 1.75, 400, LS.AMBER if LS.MISSING in b_ else PROP if p or LS.flagged(b_) else INK)); o.append(t(cx[2], y, q, 1.8, 600))
     y = 38 + len(rows) * 4.6 + 6
     o.append(t(12, y, "ZIP LENGTH PER SIZE (cm, hem-band edge to CF neck − 0.5)", 1.9, 700)); y += 4.4
     for j, sz in enumerate(SIZES):
