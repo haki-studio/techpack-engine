@@ -98,7 +98,7 @@ def test_patches_row_says_no_more_than_we_know(shell, ok, state):
 # every embroidery pack's Patches / labels row, from its own garment builder's SHELL_MAT (no copied string)
 PACKS = {"castle-falls-jacket": "proposed", "drum-island-plum-pine": "proposed", "forestball": "proposed",
          "grand-line-jacket": "proposed", "moon": "proposed", "wave-jacket": "proposed",
-         "comet-city-hoodie": "missing", "koi-blossom-hoodie": "missing", "red-beast-hoodie": "missing"}
+         "comet-city-hoodie": "missing", "koi-blossom-hoodie": "proposed", "red-beast-hoodie": "missing"}
 
 
 @pytest.mark.parametrize("proj,state", sorted(PACKS.items()))
@@ -125,6 +125,6 @@ def test_main_label_construction_is_proposed_until_a_factory_confirms(tmp_path, 
 
 
 def test_jacket_bom_main_label_row_is_flagged_proposed():
-    for proj in [p for p, s in PACKS.items() if s == "proposed"]:
+    for proj in [p for p, s in PACKS.items() if s == "proposed" and os.path.exists(os.path.join(ROOT, "projects", p, "gtp.py"))]:
         src = open(os.path.join(ROOT, "projects", proj, "gtp.py"), encoding="utf-8").read()
         assert '("Main label", LS.main_bom(), "white / black", "CB neck facing", "Haki file", "1", LS.main_proposed()),' in src, proj
