@@ -10,7 +10,7 @@ body:
   wash: "garment washed"
 overrides:
   labels:
-    neck: {enabled: true}
+    size: {enabled: false}            # a variant can switch a family label off (template test)
 decorations:
   - name: Back print
     method: dtf

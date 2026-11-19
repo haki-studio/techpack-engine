@@ -9,6 +9,7 @@ from pypdf import PdfWriter, PdfReader
 import moonpal
 from sheet import t, swatch, doc, INK, MUTED, RED, ORANGE, GUIDE, GREEN, SW, SH
 from render import f
+import labelsheet as LS
 from motifs2 import HEX, PAL
 import tech, specbase as SB
 from specbase import img_tag
@@ -138,8 +139,8 @@ def threads():
     tr = [("Backing", "2.5 oz cutaway, black/navy (dark ground), cut 30 larger than each art box; trim to 5 from stitching after embroidery"),
           ("Topping", "none (canvas surface is firm)"), ("Needles", "75/11 sharp (canvas)"), ("Bobbin", "60wt polyester, navy (dark ground) pre-wound"),
           ("Frames", f"01 back: border frame ≥ {ab[2]-ab[0]+14:.0f} × {ab[3]-ab[1]+14:.0f} (M, single file) or the 360² split files (G5); 04 sleeves: split per the frame (G5); 02/03: 360²"),
-          ("Patches / labels", "no embroidered patches or labels — woven main + printed care label = Haki standard (garment pages)")]
-    for i, (a, b) in enumerate(tr): o.append(t(12, yb + 11.5 + i * 3.6, a, 1.8, 600)); o.append(t(42, yb + 11.5 + i * 3.6, b, 1.8))
+          ("Patches / labels", LS.pack_patches_row(os.path.dirname(os.path.abspath(__file__))))]
+    for i, (a, b) in enumerate(tr): o.append(t(12, yb + 11.5 + i * 3.6, a, 1.8, 600)); o.append(t(42, yb + 11.5 + i * 3.6, b, 1.8, 400, LS.AMBER if LS.flagged(b) else INK))
     return o
 
 EMB_Q = ["1. Licensed figure: licence confirmed by client 2026-10-16. Placeholder box 68 × 79 mm (M) = mockup figure + 3 mm, on the pole top, centred on CB;",

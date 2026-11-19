@@ -6,17 +6,21 @@ MISSING and name what was recorded. Never the nearest label.
     rows:   main_desc(), care_desc(shell)            -> BOM / placement wording
     page:   o, h = panel(x, y, w, shell, main_where, care_where)
     BOM:    main_bom(), care_bom(shell)               -> short cells (≈ 80 characters)
+    pack:   patches_row(shell)                        -> the embroidery pack's "Patches / labels" trims cell
+            garment_shell(project_dir)                -> that project's SHELL_MAT, read from its garment builder
+    flags:  main_weave(), flagged(text)               -> the main label's construction (+ [proposed — confirm]); amber?
     zip:    files(shell) / export(dir, shell)         -> the pack's labels/
 fibre_confirmed: True only when the shell fibre comes from a supplier / factory spec. Our own proposal (e.g. the jackets'
 "100% cotton duck canvas") still picks the matching care label, but every mention is amber "[proposed — confirm fibre: …]".
 """
-import os, io, base64, shutil, textwrap
+import os, io, ast, base64, shutil, textwrap
 import labels as LB
 from sheet import t, INK, MUTED, GREEN
 from render import f
 
 AMBER = "#B26A00"
 MISSING = "[MISSING — fibre content not confirmed]"
+PROPOSED = "[proposed — confirm]"
 FIBRE = {"100-cotton": "100 % cotton", "90-cotton-10-polyester": "90 % cotton / 10 % polyester"}
 
 
@@ -26,8 +30,23 @@ def care_fibre(shell):
     return FIBRE[k] if k else None
 
 
+def main_proposed():
+    """True while the main label's construction (labels.MAIN_WEAVE) is our proposal, not confirmed by a factory."""
+    return not LB.MAIN_WEAVE_CONFIRMED
+
+
+def main_weave():
+    """labels.MAIN_WEAVE + ' [proposed — confirm]' until confirmed — the one place the main label's construction is worded (labels.MAIN_WEAVE)."""
+    return LB.MAIN_WEAVE + (" " + PROPOSED if main_proposed() else "")
+
+
+def flagged(s):
+    """a cell that must print amber: anything MISSING or proposed."""
+    return MISSING in s or "[proposed" in s
+
+
 def main_desc():
-    return "Haki standard main label: woven, flat, 6.5 × 2 cm, white ground, black HAKI STUDIOS logo; sewn down on all 4 sides (labels/" + os.path.basename(LB.MAIN) + ")"
+    return "Haki standard main label: woven" + (" " + PROPOSED if main_proposed() else "") + ", flat, 6.5 × 2 cm, white ground, black HAKI STUDIOS logo; sewn down on all 4 sides (labels/" + os.path.basename(LB.MAIN) + ")"
 
 
 def unconfirmed(fb):
@@ -41,13 +60,42 @@ def care_desc(shell, fibre_confirmed=False):
 
 
 def main_bom(ref="T8"):
-    return f"Haki standard: woven, flat, 6.5 × 2 cm, sewn down on all 4 sides ({ref} art)"
+    return f"Haki std 6.5 × 2 cm, woven{' ' + PROPOSED if main_proposed() else ''}, sewn down 4 sides ({ref})"
 
 
 def care_bom(shell, ref="T8", fibre_confirmed=False):
     fb = care_fibre(shell)
     if not fb: return f"{MISSING} — shell has no fibre %"
     return f"Haki std {fb}, 3 × 6.5 satin ({ref})" + ("" if fibre_confirmed else " " + unconfirmed(fb))
+
+
+def patches_row(shell, fibre_confirmed=False):
+    """the embroidery pack's "Patches / labels" trims cell, worded from the care-label state (never says more than we know)."""
+    fb = care_fibre(shell)
+    care = (f"care label {fb}" if fibre_confirmed else "care label " + unconfirmed(fb)) if fb else f"care label {MISSING}"
+    return f"no embroidered patches or labels — Haki standard main label; {care} (garment pages)"
+
+
+SHELL_SOURCES = ("gtp.py", "garment.py", "build.py")
+
+
+def garment_shell(project_dir):
+    """the SHELL_MAT a project's garment builder sets (gtp.py / garment.py / build.py; `SHELL_MAT = "…"` or
+    `X.SHELL_MAT = "…"`), read without importing it (those modules build pages on import). None if not found."""
+    for fn in SHELL_SOURCES:
+        p = os.path.join(project_dir, fn)
+        if not os.path.exists(p): continue
+        for n in ast.walk(ast.parse(open(p, encoding="utf-8").read())):
+            if isinstance(n, ast.Assign) and isinstance(n.value, ast.Constant) and isinstance(n.value.value, str):
+                for tg in n.targets:
+                    if (isinstance(tg, ast.Name) and tg.id == "SHELL_MAT") or (isinstance(tg, ast.Attribute) and tg.attr == "SHELL_MAT"):
+                        return n.value.value
+    return None
+
+
+def pack_patches_row(project_dir, fibre_confirmed=False):
+    """patches_row() for the project in project_dir; a project with no recorded shell prints MISSING."""
+    return patches_row(garment_shell(project_dir) or "", fibre_confirmed)
 
 
 def files(shell):
@@ -97,7 +145,7 @@ def panel(x, y, w, shell, main_where, care_where, title="HAKI STUDIOS STANDARD L
     o.append(f'<rect x="{f(lx)}" y="{f(yy)}" width="{f(mw * sm)}" height="{f(mh * sm)}" fill="none" stroke="#555" stroke-width="0.25"/>')
     o += _dims(lx, yy, mw * sm, mh * sm, f"{mw / 10:g} cm", f"{mh / 10:g} cm"); yy += mh * sm + 4
     s_, yy = _lines(x, yy, "White ground, black HAKI STUDIOS logo + mark. Woven, flat, sewn down on all 4 sides (black thread). " + main_where, w); o += s_
-    s_, yy = _lines(x, yy, "Weave (damask) [proposed — confirm]", w, 1.7, 600, AMBER); o += s_
+    s_, yy = _lines(x, yy, main_weave(), w, 1.7, 600, AMBER if main_proposed() else INK); o += s_
     yy += 3
     cw, ch = LB.CARE_MM; fb = care_fibre(shell)
     sc = min(1.0, (w - 12) / (2 * cw + 4))
