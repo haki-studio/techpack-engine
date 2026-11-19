@@ -43,7 +43,8 @@ class Flat(HF.Flat):
 # feed the block pages this design's pattern
 ZB.G = {sz: F.pieces(sz) for sz in SIZES}; ZB.gM, ZB.mM = ZB.G["M"]; ZB.HF.Flat = Flat
 ZB.STYLE = STYLE
-ZB.SHELL_MAT = "washed navy 12 oz duck"         # as recorded (cover, questions): no fibre % -> care label MISSING (LESSONS D7)
+ZB.SHELL_MAT = "washed navy 12 oz 100% cotton duck"   # lead ruling 2026-11-04: duck = cotton duck -> Haki 100 % cotton care label, PROPOSED
+                                                     # (fibre_confirmed=False = amber "[proposed — confirm fibre]", as the jackets); the factory confirms via RFQ Q1 (LESSONS D7)
 import construction as CN                       # Rev E: T2-T5 overrides (notes 9-10, D+/H+ rows, S02, label off the table) + CS/CI/CD pages
 CN.install(ZB)
 
@@ -91,7 +92,7 @@ def p_cover(index):
     tot = sum(ALLR["M"][P]["full"]["stitches"] for P in kbcore.PIECES)
     for a, b_, p in [("Block", "zip hoodie = Drum Island body + sleeve (approved)", False), ("Hood", "3 panels, sherpa-lined (block)", True),
                      ("Hem / cuffs", "self fabric + elastic (block)", True), ("Welts", f"mockup position, {F.WELT_ANG:.0f}°, 1.4 × 13", True),
-                     ("Shell", "washed navy 12 oz duck", True), ("Embroidery", f"fronts + sleeves, {tot:,} st (M, DST)", False),
+                     ("Shell", ZB.SHELL_MAT, True), ("Embroidery", f"fronts + sleeves, {tot:,} st (M, DST)", False),
                      ("Pattern", "XS–3XL, DXF (AAMA) + 1:1 plot (M)", False)]:
         o.append(t(ix, y, a, 1.9, 400, MUTED)); o.append(t(ix + 21, y, b_, 1.8, 600, PROP if p else INK)); y += 3.7
     o.append(t(SW - 14, SH - 8, SHT.FOOT, 1.8, 400, MUTED, "end"))
@@ -152,7 +153,7 @@ def p_questions():
     o = SHT.header("OPEN QUESTIONS + REVISION LOG", "Everything still to confirm for the garment, in one place (embroidery questions: G4).", "T8")
     qs = ["1. Hood: block option 1 (engine hoodie block, 3-panel sherpa hood, elastic bands) — decided by the founder 19 Oct 2026; sizes Q/R still proposed (T3, T5).",
           f"2. Welts: at the mockup position + angle ({F.WELT_ANG:.0f}° from horizontal, centre {F.WELT_C[0]:.0f} from CF / {F.WELT_C[1]:.0f} below the CF neck at M), 1.4 × 13 — confirm.",
-          "3. Shell: washed navy 12 oz duck, pre-washed before embroidery; wash-test the embroidered sample.",
+          "3. Shell: washed navy 12 oz 100% cotton duck [proposed — confirm fibre: 100 % cotton], pre-washed before embroidery; wash-test the embroidered sample. The care label (T6b) follows the fibre.",
           "4. Back + hood: no embroidery (the mockup shows the front only) — confirm.",
           "5. Hem band + cuff bands: the mockup flowers run over them; the art stops 10 above the band seams. OK?",
           "6. Sample plan: blank fit sample of the hoodie block (zip-hoodie-block T7) first, then the embroidered M sample.",

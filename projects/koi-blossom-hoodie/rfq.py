@@ -54,7 +54,7 @@ def p_cover(index):
     Fl = GM.Flat("M"); b = HF.bounds(Fl, True); s = 82 / (b[2] - b[0])
     o.append(ZB.flat_g(HF.draw_back(Fl), b, 106, 57, s)); o.append(t(106, 57 + (b[3] - b[1]) * s + 4.5, prop("BACK + HOOD plain, no embroidery"), 1.9, 700, PROP))
     ix = 196; y = 56; o.append(t(ix, y, "COLOURWAY — WASHED NAVY", 2.4, 700)); y += 4
-    for hx, a, b_ in [(kbcore.FABRIC, "Shell", prop("washed navy duck, 12 oz")), ("#EFE6D2", "Hood lining", prop("cream sherpa")),
+    for hx, a, b_ in [(kbcore.FABRIC, "Shell", prop("washed navy 100 % cotton duck, 12 oz")), ("#EFE6D2", "Hood lining", prop("cream sherpa")),
                       ("#7A5A48", "Body lining", prop("plaid cotton flannel")), ("#B08A4A", "CF zip", prop("2-way, antique brass metal")),
                       ("#6F93C8", "Embroidery", "12 thread colours, blues + fish accents (G3)")]:
         o.append(f'<rect x="{ix}" y="{f(y - 2.4)}" width="4.5" height="3" fill="{hx}" stroke="#999" stroke-width="0.1"/>')
@@ -100,8 +100,8 @@ def p_q1():
         o.append(t(tx, ty, q, 1.5)); blank(o, tx + 56, ty, 37); ty += 4.25
     y = max(y, ty) + 4
     o.append(t(12, y, "WHY WE ASK THE FIBRE", 1.9, 700)); y += 3.8
-    y = para(o, 12, y, "The care label (T6b) is printed from the fibre content of the shell. It is not confirmed yet, so the care label is held: "
-                       "please state the fibre % of the fabrics you propose, and we send the matching care label artwork.", 170, 1.55, INK, 2.9)
+    y = para(o, 12, y, "The care label (T6b) is printed from the fibre content of the shell. We propose the Haki standard 100 % cotton care label (cotton duck), "
+                       "not confirmed yet: please state the fibre % of the fabrics you propose. If the shell is not 100 % cotton, we send the matching care label artwork.", 170, 1.55, INK, 2.9)
     y += 2; o.append(t(12, y, "ATTACHED", 1.9, 700)); y += 3.8
     for l in ["This pack (factory summary) + the full tech pack (reference) · pattern/: DXF per size + all sizes (AAMA, mm; layer 8 = embroidery positions,",
               "layer 13 = needle starts), 1:1 plot PDF size M · elements/: stitch files DST + PES per size and piece, thread charts, art SVG (true size) · labels/: label artwork"]:
@@ -117,7 +117,7 @@ OPEN = [("Back + hood", "plain — no embroidery on the back, the hood or the ba
         ("Grading", "XS–S sew the art at 92 %, M–XL at 100 % (L + XL sew the size-M art; on the wearer's left front a few motifs are re-placed on each size's piece), XXL–3XL at 108 % (G5)."),
         ("Welt pockets", f"position + angle as drawn ({F.WELT_ANG:.0f}° from horizontal), opening 1.4 × 13 cm (T2, T7); pocket bag trimmed to fit (CP)."),
         ("Thread colours", "all 12 are targets from the design artwork — please match them on your physical thread card before the strike-off (G3, F1)."),
-        ("Care label", "held until the fibre content is confirmed (Q1); the main label is final (T6b)."),
+        ("Care label", "proposed: Haki standard 100 % cotton care label (cotton duck), pending your fibre % for the shell (Q1); the main label is final (T6b)."),
         ("Construction", "seam table (CS), inside view + bag-out order (CI), welt pocket + zip details (CD). Confirm each, or tell us the method you would use."),
         ("Wash", "no garment wash; the shell is pre-washed before cutting and embroidery (CS)."),
         ("Embroidery method", "embroider an oversized block of shell, then lay the 1:1 pattern piece on it and re-cut (E0). Or tell us your method.")]
@@ -288,7 +288,7 @@ def p_qf():
     for q in ["MOQ per colourway (pcs)", "MOQ per order (pcs)", "Sample lead time (days)", "Bulk lead time (days)", "Shell you propose: weight + wash",
               "Fibre % — shell", "Fibre % — body lining (flannel)", "Fibre % — sleeve lining (taffeta)", "Fibre % — hood lining (sherpa)", "Fibre % — pocketing", "Payment terms"]:
         o.append(t(x2, y, q, 1.45)); blank(o, x2 + 52, y, 36); y += 4.15
-    y += 1.5; y = para(o, x2, y, "The care label (T6b) is printed from the shell fibre content, which is not confirmed yet: please state it, and we send the matching care label artwork. "
+    y += 1.5; y = para(o, x2, y, "The care label (T6b) is printed from the shell fibre content: proposed 100 % cotton (cotton duck), not confirmed yet. Please state it; if it differs, we send the matching care label artwork. "
                                  "Shrinkage questions: CS. Frames, colours per head, trims in stock: QF2.", 95, 1.4, MUTED, 2.6)
     y = 32; o.append(t(x3, y, "3  SAMPLE PLAN — in this order", 2.1, 700)); y += 4.6
     for l in ["1. Fit sample, size M, no embroidery: hood, bands and zip; measure against T3, including D+ and H+.",
@@ -347,7 +347,7 @@ def p_qf2():
     y += 2; o.append(t(x3, y, "3  LABELS  [proposed — confirm]", 2.0, 700)); y += 4.2
     for l in ["Main label: Haki standard woven damask, back neck facing, 1 cm below the hood seam, text upright when the jacket hangs (T6b).",
               "Size label: folded into the main-label seam. Content + country-of-origin + care label: left side seam of the lining (T6). "
-              "The care label waits for the fibre %; content + origin are required for bulk. RN: we send it."]:
+              "Care label: proposed 100 % cotton, pending your fibre %; content + origin are required for bulk. RN: we send it."]:
         y = para(o, x3, y, l, 82, 1.35, PROP, 2.45); y += 0.8
     y += 1.5; o.append(t(x3, y, "4  COLOUR STANDARDS  [proposed — confirm]", 2.0, 700)); y += 4.2
     for l in ["We send a physical swatch or Pantone TCX for the shell, sherpa, plaid flannel, zip tape and elastic before the fit sample. "
@@ -363,7 +363,7 @@ CLR = {sz: EP.clearances(sz)["FR"]["hem"] for sz in ("M", "L", "XL")}
 # ---------------------------------------------------------------- TBD (internal: md + png + a page in the internal pack)
 TBD = [("Decide with the factory", [
           "MOQ, sample + bulk lead times, FOB price at 100/200/300/500, sample cost, payment terms, freight air + sea (Q1). They quote first.",
-          "Shell they propose (weight, wash) + fibre % of shell, flannel, taffeta, sherpa, pocketing (Q1). The care label waits on this (labelsheet MISSING state).",
+          "Shell they propose (weight, wash) + fibre % of shell, flannel, taffeta, sherpa, pocketing (Q1). Care label = Haki 100 % cotton PROPOSED (amber, labelsheet fibre_confirmed=False) pending their shell fibre %; a different answer swaps the label.",
           "Embroidery in-house or subcontracted; largest frame + needles per head. A bigger frame removes the S1/S2 hoop splits (G5/G6).",
           "Physical thread card for the 12 threads, the 6 blues on washed navy first (G3).",
           "Construction (Rev E/F): seam table CS, inside view + bag-out order CI, welt / zip / hood details CD, pocket bag CP: every method amber [proposed]; their answers to QF2 (a)-(m).",
@@ -379,7 +379,7 @@ TBD = [("Decide with the factory", [
           "Back + hood plain (★ default, founder card koi-blossom-rfq-questions; shown amber until he answers).",
           "Art 10 mm above hem band / cuffs, 15 mm off the zip (★ default, amber).",
           "Grading XS–S 92 %, L/XL sew the M art, XXL–3XL 108 % (★ default, amber).",
-          "Fibre for the care label: 'confirm fibre' and the factory is asked (★ default). Never a guessed %.",
+          "Fibre for the care label: ★ proposed 100 % cotton (cotton duck, as the six jackets; lead ruling 2026-11-04), amber '[proposed — confirm fibre]' until the factory states the fibre % (Q1).",
           "'Prepared for' + quantity + reply-by on the cover: blank, the founder writes them.",
           "Product name 'Blossom Tetra Hooded Jacket' (style code HK-HD-KOIB-NV kept). Welt position + angle (mockup).",
           "Fish fill: PR #52 tetra-governed fish replaces the Rev C fish before bulk (files are for sampling).",
@@ -516,7 +516,7 @@ def factory_zip():
 pattern/     DXF per size + all sizes (AAMA, mm; layer 8 = embroidery art box + design centre, layer 13 = needle start), 1:1 plot PDF size M.
 elements/01_front-fish/<size>/   wearer's right + left front stitch files (DST + PES), thread charts, previews.
 elements/02_sleeve-fish/<size>/  wearer's right + left sleeve (front half) stitch files. splits/ = the two hoopings of a piece that needs 2 on a {PK.FR_S} mm frame [proposed - confirm]; a 1-hooping piece: sew its full file.
-labels/      Haki standard main label artwork (care label follows once the fibre content is confirmed).
+labels/      Haki standard main label + care label artwork (care label: 100 % cotton, proposed - confirm the shell fibre %).
 
 {SAMPLING}
 Every [proposed - confirm] in the PDFs is still open: please confirm it or propose your alternative.

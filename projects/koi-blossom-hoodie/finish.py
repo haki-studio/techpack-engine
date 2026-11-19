@@ -17,7 +17,7 @@ PKG = "out/pkg"; shutil.rmtree(PKG, ignore_errors=True); os.makedirs(f"{PKG}/ele
 for el, (slug, _, _) in kbcore.ELEMS.items():
     shutil.copytree(f"out/{el}_{slug}", f"{PKG}/elements/{el}_{slug}", ignore=shutil.ignore_patterns("summary.json", "result_*.json"))
 emb = f"out/HAKI_{kbcore.SHORT}_EMBROIDERY-PACK_{kbcore.REV_EMB.replace(' ', '')}.pdf"
-gar = glob.glob(f"out/garment/HAKI_{kbcore.SHORT}_GARMENT_*.pdf")[0]
+gar = f"out/garment/HAKI_{kbcore.SHORT}_GARMENT_{kbcore.REV_GAR.replace(' ', '')}.pdf"   # this revision's garment pages (a glob [0] picked an older Rev in out/)
 from pypdf import PdfWriter, PdfReader
 w = PdfWriter(); w.append(PdfReader(gar)); w.append(PdfReader(emb))
 full = f"out/HAKI_{kbcore.SHORT}_INTERNAL_{kbcore.REV_EMB.replace(' ', '')}.pdf"; w.write(full + ".tmp.pdf")     # internal merged pack; factory copies = rfq.py
